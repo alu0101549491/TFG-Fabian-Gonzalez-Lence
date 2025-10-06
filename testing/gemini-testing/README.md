@@ -158,7 +158,8 @@ mkdir -p src/view src/controller
 touch style.css
 ```
 
-> [!Warning] The model forgot to create the `src/model` directory, which is necessary for the project structure, so we had to create it manually.
+> [!WARNING] 
+> The model forgot to create the `src/model` directory, which is necessary for the project structure, so we had to create it manually.
 
 Then, it provided the code for each of the files step by step, most of them without any error, only little mistakes like calling parameters that are never used, it defines that the `R` key is used to restart the game but it doesn't work like the other keybinds, lack of consistency on the documentation, etc. In general, the code is well structured, easy to read and understand, and it works pretty solid.
 
