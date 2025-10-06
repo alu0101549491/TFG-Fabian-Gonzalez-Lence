@@ -1,24 +1,34 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+// src/main.ts
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+import { GameModel } from './model/GameModel';
+import { GameView } from './view/GameView';
+import { GameController } from './controller/GameController';
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+function init() {
+  const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
+  const statusDisplay = document.getElementById('status-display') as HTMLSpanElement;
+  const livesDisplay = document.getElementById('lives-display') as HTMLSpanElement;
+  const scoreDisplay = document.getElementById('score-display') as HTMLSpanElement;
+
+  if (!canvas || !statusDisplay || !livesDisplay || !scoreDisplay) {
+    console.error('Required DOM elements not found. Cannot initialize game.');
+    return;
+  }
+
+  // 1. Initialize the Model (State)
+  const model = new GameModel(canvas.width, canvas.height);
+
+  // 2. Initialize the View (Rendering)
+  const view = new GameView(canvas, model, statusDisplay, livesDisplay, scoreDisplay);
+
+  // 3. Initialize the Controller (Input & Flow)
+  const controller = new GameController(model, view);
+
+  // Start the game loop managed by the controller
+  controller.startGame();
+
+  console.log('Breakout game initialized and running!');
+}
+
+// Ensure the DOM is fully loaded before initialization
+document.addEventListener('DOMContentLoaded', init);

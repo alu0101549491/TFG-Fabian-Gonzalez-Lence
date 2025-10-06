@@ -1,13 +1,27 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="public/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>gemini-testing</title>
-  </head>
-  <body>
-    <div id="app"></div>
+    <title>TS Breakout (MVC)</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <h1>TypeScript Breakout Game</h1>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
+    <div id="game-info">
+        Game Status: <span id="status-display">PAUSED</span> | 
+        Lives: <span id="lives-display">3</span> | 
+        Score: <span id="score-display">0</span>
+    </div>
+    <div class="controls">
+        Press **A/Left Arrow** and **D/Right Arrow** to move.
+        Press **Spacebar** to launch/pause.
+    </div>
+    
     <script type="module" src="/src/main.ts"></script>
-  </body>
+</body>
 </html>
