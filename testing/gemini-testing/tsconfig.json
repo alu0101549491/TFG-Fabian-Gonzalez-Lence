@@ -2,25 +2,33 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "module": "ESNext",
+    "module": "NodeNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
     "skipLibCheck": true,
 
+    "esModuleInterop": true, 
+
     /* Bundler mode */
-    "moduleResolution": "bundler",
+    "moduleResolution": "NodeNext",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
+    // CRITICAL FIX 1: Disable verbatimModuleSyntax
+    "verbatimModuleSyntax": false, 
     "moduleDetection": "force",
     "noEmit": true,
 
+    // CRITICAL FIX 2: Add isolatedModules (Required by NodeNext/ts-jest ESM preset)
+    "isolatedModules": true,
+
     /* Linting */
     "strict": true,
+    // CRITICAL: Temporarily relax this for Jest globals import, 
+    // or specifically exclude test files from this check if issues persist.
+    // "noUncheckedSideEffectImports": true, 
+    
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src"]
 }
