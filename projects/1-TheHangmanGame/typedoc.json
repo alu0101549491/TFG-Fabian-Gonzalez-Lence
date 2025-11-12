@@ -1,0 +1,21 @@
+{
+  "entryPoints": ["./src"],
+  "entryPointStrategy": "expand",
+  "out": "./docs/api",
+  "exclude": ["**/*.test.ts", "**/__tests__/**"],
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "excludeInternal": false,
+  "name": "The Hangman Game - API Documentation",
+  "includeVersion": true,
+  "readme": "./README.md",
+  "plugin": [],
+  "theme": "default",
+  "categorizeByGroup": true,
+  "categoryOrder": ["Model", "View", "Controller", "*"],
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  }
+}
