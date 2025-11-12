@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Classic Hangman game with animal names - A TypeScript SPA">
+  <meta name="author" content="Fabián González Lence">
+  <title>The Hangman Game</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+  <div id="app">
+    <section class="hero is-primary">
+      <div class="hero-body">
+        <h1 class="title has-text-centered">The Hangman Game</h1>
+        <p class="subtitle has-text-centered">Guess the animal name!</p>
+      </div>
+    </section>
+
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-8">
+          <!-- Message Display -->
+          <div id="message-container" class="box has-text-centered"></div>
+
+          <!-- Hangman Canvas -->
+          <div class="box has-text-centered">
+            <canvas id="hangman-canvas" width="400" height="400"></canvas>
+          </div>
+
+          <!-- Word Display -->
+          <div id="word-container" class="box"></div>
+
+          <!-- Alphabet Display -->
+          <div id="alphabet-container" class="box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
