@@ -5,19 +5,21 @@ import {MessageDisplay} from './message-display';
 
 /**
  * Main view coordinator that composes all display components.
- * Implements the Composite pattern to manage multiple view elements.
+ * Implements the Composite Pattern to manage multiple view elements,
+ * providing a unified interface to the GameController.
+ *
  * @category View
  */
 export class GameView {
   /** Word display component */
   private wordDisplay: WordDisplay;
-  
+
   /** Alphabet display component */
   private alphabetDisplay: AlphabetDisplay;
-  
+
   /** Hangman renderer component */
   private hangmanRenderer: HangmanRenderer;
-  
+
   /** Message display component */
   private messageDisplay: MessageDisplay;
 
@@ -25,6 +27,7 @@ export class GameView {
    * Creates a new GameView instance and initializes all display components.
    */
   constructor() {
+    // Initialize all child components
     this.wordDisplay = new WordDisplay('word-container');
     this.alphabetDisplay = new AlphabetDisplay('alphabet-container');
     this.hangmanRenderer = new HangmanRenderer('hangman-canvas');
@@ -35,15 +38,33 @@ export class GameView {
    * Initializes all view components.
    */
   public initialize(): void {
-    // TODO: Implementation
+    // Render alphabet buttons
+    this.alphabetDisplay.render();
+
+    // Show initial hangman state (gallows only)
+    this.hangmanRenderer.render(0);
+
+    // Show initial attempt counter
+    this.messageDisplay.showAttempts(0, 6);
+
+    // Hide restart button initially
+    this.messageDisplay.hideRestartButton();
   }
 
   /**
    * Updates the word display with current letter states.
-   * @param letters - Array of letters to display (empty string for unrevealed)
+   * @param letters - Array where each element is either the letter (if guessed) or empty string
    */
   public updateWordBoxes(letters: string[]): void {
-    // TODO: Implementation
+    // Render word boxes if not already done (first call)
+    this.wordDisplay.render(letters.length);
+
+    // Update each box with its letter (if revealed)
+    letters.forEach((letter, index) => {
+      if (letter) {
+        this.wordDisplay.updateBox(index, letter);
+      }
+    });
   }
 
   /**
@@ -51,7 +72,7 @@ export class GameView {
    * @param letter - The letter to disable
    */
   public disableLetter(letter: string): void {
-    // TODO: Implementation
+    this.alphabetDisplay.disableLetter(letter);
   }
 
   /**
@@ -60,7 +81,7 @@ export class GameView {
    * @param max - Maximum allowed failed attempts
    */
   public updateAttemptCounter(current: number, max: number): void {
-    // TODO: Implementation
+    this.messageDisplay.showAttempts(current, max);
   }
 
   /**
@@ -68,7 +89,7 @@ export class GameView {
    * @param attempts - Number of failed attempts
    */
   public renderHangman(attempts: number): void {
-    // TODO: Implementation
+    this.hangmanRenderer.render(attempts);
   }
 
   /**
@@ -76,7 +97,7 @@ export class GameView {
    * @param word - The word that was guessed
    */
   public showVictoryMessage(word: string): void {
-    // TODO: Implementation
+    this.messageDisplay.showVictory(word);
   }
 
   /**
@@ -84,27 +105,41 @@ export class GameView {
    * @param word - The word that was not guessed
    */
   public showDefeatMessage(word: string): void {
-    // TODO: Implementation
+    this.messageDisplay.showDefeat(word);
   }
 
   /**
    * Shows the restart button.
    */
   public showRestartButton(): void {
-    // TODO: Implementation
+    this.messageDisplay.showRestartButton();
   }
 
   /**
    * Hides the restart button.
    */
   public hideRestartButton(): void {
-    // TODO: Implementation
+    this.messageDisplay.hideRestartButton();
   }
 
   /**
    * Resets all view components to initial state.
    */
   public reset(): void {
-    // TODO: Implementation
+    // Reset word display
+    this.wordDisplay.reset();
+
+    // Enable all alphabet letters
+    this.alphabetDisplay.enableAllLetters();
+
+    // Clear and render initial hangman
+    this.hangmanRenderer.clear();
+    this.hangmanRenderer.render(0);
+
+    // Show initial attempt counter
+    this.messageDisplay.showAttempts(0, 6);
+
+    // Hide restart button
+    this.messageDisplay.hideRestartButton();
   }
 }

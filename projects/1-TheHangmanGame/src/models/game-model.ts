@@ -4,21 +4,22 @@ import {WordDictionary} from './word-dictionary';
 /**
  * Core game logic for the Hangman game.
  * Manages game state, processes guesses, and determines victory/defeat conditions.
+ *
  * @category Model
  */
 export class GameModel {
   /** The secret word to be guessed */
   private secretWord: string;
-  
+
   /** Set of letters that have been guessed */
   private guessedLetters: Set<string>;
-  
+
   /** Number of incorrect guess attempts made */
   private failedAttempts: number;
-  
+
   /** Maximum number of allowed failed attempts */
-  private readonly maxAttempts: number;
-  
+  private readonly maxAttempts: number = 6;
+
   /** Dictionary providing random words */
   private wordDictionary: WordDictionary;
 
@@ -31,14 +32,15 @@ export class GameModel {
     this.secretWord = '';
     this.guessedLetters = new Set();
     this.failedAttempts = 0;
-    this.maxAttempts = 6;
   }
 
   /**
    * Initializes a new game with a random word.
    */
   public initializeGame(): void {
-    // TODO: Implementation
+    this.secretWord = this.wordDictionary.getRandomWord();
+    this.guessedLetters.clear();
+    this.failedAttempts = 0;
   }
 
   /**
@@ -47,8 +49,24 @@ export class GameModel {
    * @returns The result of the guess attempt
    */
   public guessLetter(letter: string): GuessResult {
-    // TODO: Implementation
-    return GuessResult.INCORRECT;
+    // Normalize to uppercase and ensure single character
+    letter = letter.toUpperCase();
+
+    // Check if letter has already been guessed
+    if (this.isLetterGuessed(letter)) {
+      return GuessResult.ALREADY_GUESSED;
+    }
+
+    // Add letter to guessed set
+    this.guessedLetters.add(letter);
+
+    // Check if letter exists in secret word
+    if (this.secretWord.includes(letter)) {
+      return GuessResult.CORRECT;
+    } else {
+      this.failedAttempts++;
+      return GuessResult.INCORRECT;
+    }
   }
 
   /**
@@ -57,8 +75,7 @@ export class GameModel {
    * @returns True if the letter has been guessed, false otherwise
    */
   public isLetterGuessed(letter: string): boolean {
-    // TODO: Implementation
-    return false;
+    return this.guessedLetters.has(letter.toUpperCase());
   }
 
   /**
@@ -66,8 +83,17 @@ export class GameModel {
    * @returns Array where each element is either the letter (if guessed) or empty string
    */
   public getRevealedWord(): string[] {
-    // TODO: Implementation
-    return [];
+    const revealed: string[] = [];
+
+    for (const char of this.secretWord) {
+      if (this.guessedLetters.has(char)) {
+        revealed.push(char);
+      } else {
+        revealed.push('');
+      }
+    }
+
+    return revealed;
   }
 
   /**
@@ -91,8 +117,7 @@ export class GameModel {
    * @returns True if the game is over, false otherwise
    */
   public isGameOver(): boolean {
-    // TODO: Implementation
-    return false;
+    return this.isVictory() || this.isDefeat();
   }
 
   /**
@@ -100,8 +125,7 @@ export class GameModel {
    * @returns True if all letters have been correctly guessed
    */
   public isVictory(): boolean {
-    // TODO: Implementation
-    return false;
+    return this.checkVictoryCondition();
   }
 
   /**
@@ -109,8 +133,7 @@ export class GameModel {
    * @returns True if maximum failed attempts reached
    */
   public isDefeat(): boolean {
-    // TODO: Implementation
-    return false;
+    return this.failedAttempts >= this.maxAttempts;
   }
 
   /**
@@ -125,7 +148,7 @@ export class GameModel {
    * Resets the game state for a new game.
    */
   public resetGame(): void {
-    // TODO: Implementation
+    this.initializeGame();
   }
 
   /**
@@ -134,7 +157,12 @@ export class GameModel {
    * @private
    */
   private checkVictoryCondition(): boolean {
-    // TODO: Implementation
-    return false;
+    // Check if all unique letters in secretWord are in guessedLetters
+    for (const char of this.secretWord) {
+      if (!this.guessedLetters.has(char)) {
+        return false;
+      }
+    }
+    return true;
   }
 }
