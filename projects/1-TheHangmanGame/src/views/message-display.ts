@@ -1,18 +1,20 @@
 /**
  * Manages the display of game messages and the restart button.
- * Shows victory/defeat messages and attempt counter.
+ * Shows victory/defeat messages, attempt counter, and restart button.
+ *
  * @category View
  */
 export class MessageDisplay {
   /** Container element for messages */
   private container: HTMLElement;
-  
+
   /** Restart button element */
   private restartButton: HTMLButtonElement;
 
   /**
    * Creates a new MessageDisplay instance.
    * @param containerId - The ID of the container HTML element
+   * @throws {Error} If the container element is not found
    */
   constructor(containerId: string) {
     const element = document.getElementById(containerId);
@@ -20,7 +22,12 @@ export class MessageDisplay {
       throw new Error(`Element with id "${containerId}" not found`);
     }
     this.container = element;
+
+    // Create restart button
     this.restartButton = document.createElement('button');
+    this.restartButton.type = 'button';
+    this.restartButton.classList.add('restart-button');
+    this.restartButton.textContent = 'Restart Game';
   }
 
   /**
@@ -28,7 +35,11 @@ export class MessageDisplay {
    * @param word - The secret word that was guessed
    */
   public showVictory(word: string): void {
-    // TODO: Implementation
+    this.clear();
+    const message = document.createElement('div');
+    message.classList.add('victory-message');
+    message.textContent = `You Won! The word was: ${word.toUpperCase()}`;
+    this.container.appendChild(message);
   }
 
   /**
@@ -36,7 +47,11 @@ export class MessageDisplay {
    * @param word - The secret word that was not guessed
    */
   public showDefeat(word: string): void {
-    // TODO: Implementation
+    this.clear();
+    const message = document.createElement('div');
+    message.classList.add('defeat-message');
+    message.textContent = `You Lost. The word was: ${word.toUpperCase()}`;
+    this.container.appendChild(message);
   }
 
   /**
@@ -45,14 +60,18 @@ export class MessageDisplay {
    * @param max - Maximum allowed failed attempts
    */
   public showAttempts(current: number, max: number): void {
-    // TODO: Implementation
+    this.clear();
+    const message = document.createElement('div');
+    message.classList.add('attempt-counter');
+    message.textContent = `Attempts: ${current}/${max}`;
+    this.container.appendChild(message);
   }
 
   /**
    * Clears all messages from the display.
    */
   public clear(): void {
-    // TODO: Implementation
+    this.container.innerHTML = '';
   }
 
   /**
@@ -60,20 +79,26 @@ export class MessageDisplay {
    * @param handler - The function to call when restart is clicked
    */
   public attachRestartHandler(handler: () => void): void {
-    // TODO: Implementation
+    this.restartButton.addEventListener('click', handler);
   }
 
   /**
    * Makes the restart button visible.
    */
   public showRestartButton(): void {
-    // TODO: Implementation
+    // Remove if already present (defensive)
+    if (this.restartButton.parentNode === this.container) {
+      return;
+    }
+    this.container.appendChild(this.restartButton);
   }
 
   /**
    * Hides the restart button.
    */
   public hideRestartButton(): void {
-    // TODO: Implementation
+    if (this.restartButton.parentNode === this.container) {
+      this.container.removeChild(this.restartButton);
+    }
   }
 }

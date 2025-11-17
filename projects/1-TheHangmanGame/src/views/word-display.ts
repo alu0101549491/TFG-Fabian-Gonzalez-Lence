@@ -1,18 +1,20 @@
 /**
- * Manages the visual display of the word being guessed.
+ * Manages the visual display of the word being guessed in the Hangman game.
  * Creates and updates letter boxes showing the current progress.
+ *
  * @category View
  */
 export class WordDisplay {
   /** Container element for the word display */
   private container: HTMLElement;
-  
+
   /** Array of letter box elements */
   private letterBoxes: HTMLElement[];
 
   /**
    * Creates a new WordDisplay instance.
    * @param containerId - The ID of the container HTML element
+   * @throws {Error} If the container element is not found
    */
   constructor(containerId: string) {
     const element = document.getElementById(containerId);
@@ -28,23 +30,37 @@ export class WordDisplay {
    * @param wordLength - The number of letters in the word
    */
   public render(wordLength: number): void {
-    // TODO: Implementation
+    // Clear previous content
+    this.container.innerHTML = '';
+    this.letterBoxes = [];
+
+    // Create letter boxes for each character in the word
+    for (let i = 0; i < wordLength; i++) {
+      const box = this.createLetterBox();
+      this.container.appendChild(box);
+      this.letterBoxes.push(box);
+    }
   }
 
   /**
    * Updates a specific letter box with a revealed letter.
    * @param index - The position of the letter (0-based)
    * @param letter - The letter to display
+   * @throws {Error} If the index is out of bounds
    */
   public updateBox(index: number, letter: string): void {
-    // TODO: Implementation
+    if (index < 0 || index >= this.letterBoxes.length) {
+      throw new Error(`Index ${index} is out of bounds`);
+    }
+    this.letterBoxes[index].textContent = letter.toUpperCase();
   }
 
   /**
    * Resets the display by clearing all letter boxes.
    */
   public reset(): void {
-    // TODO: Implementation
+    this.container.innerHTML = '';
+    this.letterBoxes = [];
   }
 
   /**
@@ -53,7 +69,8 @@ export class WordDisplay {
    * @private
    */
   private createLetterBox(): HTMLElement {
-    // TODO: Implementation
-    return document.createElement('div');
+    const box = document.createElement('div');
+    box.classList.add('letter-box');
+    return box;
   }
 }
