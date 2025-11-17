@@ -7,7 +7,7 @@
  */
 export class WordDictionary {
   /** Collection of animal names available for the game */
-  private words: string[];
+  private readonly words: string[];
 
   /**
    * Creates a new WordDictionary instance and initializes the animal words.
