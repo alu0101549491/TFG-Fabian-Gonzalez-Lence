@@ -12,7 +12,7 @@ export class GameModel {
   private secretWord: string;
 
   /** Set of letters that have been guessed */
-  private guessedLetters: Set<string>;
+  private readonly guessedLetters: Set<string>;
 
   /** Number of incorrect guess attempts made */
   private failedAttempts: number;
@@ -43,14 +43,29 @@ export class GameModel {
     this.failedAttempts = 0;
   }
 
-  /**
+/**
    * Processes a letter guess and updates game state.
    * @param letter - The letter being guessed
    * @returns The result of the guess attempt
    */
   public guessLetter(letter: string): GuessResult {
-    // Normalize to uppercase and ensure single character
+    // Validate input: single alphabetic character
+    if (!letter || typeof letter !== 'string' || !/^[a-zA-Z]$/.test(letter)) {
+      throw new Error('Invalid letter. Must be a single alphabetic character.');
+    }
+
+    // Normalize to uppercase
     letter = letter.toUpperCase();
+
+    // Ensure game initialized
+    if (!this.secretWord) {
+      throw new Error('Game not initialized. Call initializeGame() first.');
+    }
+
+    // Prevent processing when game already ended
+    if (this.isGameOver()) {
+      throw new Error('Game is over. Call resetGame() to start a new game.');
+    }
 
     // Check if letter has already been guessed
     if (this.isLetterGuessed(letter)) {
@@ -157,8 +172,9 @@ export class GameModel {
    * @private
    */
   private checkVictoryCondition(): boolean {
-    // Check if all unique letters in secretWord are in guessedLetters
-    for (const char of this.secretWord) {
+    // Check unique letters only
+    const uniqueLetters = new Set(this.secretWord);
+    for (const char of uniqueLetters) {
       if (!this.guessedLetters.has(char)) {
         return false;
       }
