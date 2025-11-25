@@ -12,6 +12,8 @@
  * @see {@link https://typescripttutorial.net}
  */
 
+import animals from '../data/animals.json';
+
 /**
  * Manages the dictionary of animal names for the Hangman game.
  * Provides functionality to retrieve random words from the collection.
@@ -27,8 +29,8 @@ export class WordDictionary {
    * Creates a new WordDictionary instance and initializes the animal words.
    */
   constructor() {
-    this.words = [];
-    this.initializeAnimalWords();
+    // Initialize from external JSON data and normalize to UPPERCASE
+    this.words = Array.isArray(animals) ? animals.map((w: string) => w.toUpperCase()) : [];
   }
 
   /**
@@ -53,17 +55,5 @@ export class WordDictionary {
     return this.words.length;
   }
 
-  /**
-   * Initializes the internal collection with animal names.
-   * @private
-   */
-  private initializeAnimalWords(): void {
-    this.words = [
-      'CAT', 'DOG', 'FOX', 'BEAR', 'LION',
-      'ELEPHANT', 'GIRAFFE', 'DOLPHIN', 'PENGUIN', 'TIGER',
-      'RHINOCEROS', 'CROCODILE', 'CHIMPANZEE', 'ALLIGATOR', 'BUTTERFLY',
-      'DEER', 'SEAL', 'FROG', 'DUCK', 'CHEETAH',
-      'GORILLA', 'LEOPARD', 'RACCOON', 'KANGAROO', 'HIPPOPOTAMUS'
-    ];
-  }
+  // Words are loaded from `src/data/animals.json` at build time via import
 }
