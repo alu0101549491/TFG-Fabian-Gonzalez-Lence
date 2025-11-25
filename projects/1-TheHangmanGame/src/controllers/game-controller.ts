@@ -37,8 +37,8 @@ export class GameController {
     this.view.initialize();
 
     // Attach event handlers
-    this.view.alphabetDisplay.attachClickHandler((letter) => this.handleLetterClick(letter));
-    this.view.messageDisplay.attachRestartHandler(() => this.handleRestartClick());
+    this.view.attachAlphabetClickHandler((letter) => this.handleLetterClick(letter));
+    this.view.attachRestartHandler(() => this.handleRestartClick());
 
     // Sync view with initial model state
     this.syncViewWithModel();
