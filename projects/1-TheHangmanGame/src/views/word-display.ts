@@ -11,6 +11,9 @@ export class WordDisplay {
   /** Array of letter box elements */
   private letterBoxes: HTMLElement[];
 
+  /** CSS class applied to each letter box */
+  private readonly LETTER_BOX_CLASS = 'letter-box';
+
   /**
    * Creates a new WordDisplay instance.
    * @param containerId - The ID of the container HTML element
@@ -33,13 +36,14 @@ export class WordDisplay {
     // Clear previous content
     this.container.innerHTML = '';
     this.letterBoxes = [];
-
-    // Create letter boxes for each character in the word
+    // Batch DOM inserts to minimize reflows
+    const fragment = document.createDocumentFragment();
     for (let i = 0; i < wordLength; i++) {
       const box = this.createLetterBox();
-      this.container.appendChild(box);
+      fragment.appendChild(box);
       this.letterBoxes.push(box);
     }
+    this.container.appendChild(fragment);
   }
 
   /**
@@ -70,7 +74,7 @@ export class WordDisplay {
    */
   private createLetterBox(): HTMLElement {
     const box = document.createElement('div');
-    box.classList.add('letter-box');
+    box.classList.add(this.LETTER_BOX_CLASS);
     return box;
   }
 }

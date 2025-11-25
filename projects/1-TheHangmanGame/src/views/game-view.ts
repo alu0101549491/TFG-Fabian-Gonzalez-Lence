@@ -23,6 +23,12 @@ export class GameView {
   /** Message display component */
   private messageDisplay: MessageDisplay;
 
+  /** Flag to track if the word has been rendered */
+  private wordRendered: boolean = false;
+
+  /** Current length of the secret word */
+  private currentWordLength: number = 0;
+
   /**
    * Creates a new GameView instance and initializes all display components.
    */
@@ -49,6 +55,10 @@ export class GameView {
 
     // Hide restart button initially
     this.messageDisplay.hideRestartButton();
+
+    // Reset word rendered state
+    this.wordRendered = false;
+    this.currentWordLength = 0;
   }
 
   /**
@@ -56,8 +66,12 @@ export class GameView {
    * @param letters - Array where each element is either the letter (if guessed) or empty string
    */
   public updateWordBoxes(letters: string[]): void {
-    // Render word boxes if not already done (first call)
-    this.wordDisplay.render(letters.length);
+    // Render word boxes only when needed (first call or when word length changes)
+    if (!this.wordRendered || this.currentWordLength !== letters.length) {
+      this.wordDisplay.render(letters.length);
+      this.wordRendered = true;
+      this.currentWordLength = letters.length;
+    }
 
     // Update each box with its letter (if revealed)
     letters.forEach((letter, index) => {
@@ -65,6 +79,22 @@ export class GameView {
         this.wordDisplay.updateBox(index, letter);
       }
     });
+  }
+
+  /**
+   * Attach alphabet letter click handler via GameView (facade).
+   * @param handler - receives clicked letter as uppercase string
+   */
+  public attachAlphabetClickHandler(handler: (letter: string) => void): void {
+    this.alphabetDisplay.attachClickHandler(handler);
+  }
+
+  /**
+   * Attach restart button handler via GameView (facade).
+   * @param handler - function to call when restart clicked
+   */
+  public attachRestartHandler(handler: () => void): void {
+    this.messageDisplay.attachRestartHandler(handler);
   }
 
   /**
@@ -128,6 +158,8 @@ export class GameView {
   public reset(): void {
     // Reset word display
     this.wordDisplay.reset();
+    this.wordRendered = false;
+    this.currentWordLength = 0;
 
     // Enable all alphabet letters
     this.alphabetDisplay.enableAllLetters();
