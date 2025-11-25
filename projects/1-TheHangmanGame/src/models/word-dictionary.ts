@@ -1,4 +1,18 @@
 /**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since 2025-11-25
+ * @file TFG-Fabian-Gonzalez-Lence/projects/1-TheHangmanGame/src/models/word-dictionary.ts
+ * @desc Manages the dictionary of animal names for the Hangman game.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/1-TheHangmanGame}
+ * @see {@link https://typescripttutorial.net}
+ */
+
+/**
  * Manages the dictionary of animal names for the Hangman game.
  * Provides functionality to retrieve random words from the collection.
  * All words are stored in UPPERCASE for consistency.
@@ -7,7 +21,7 @@
  */
 export class WordDictionary {
   /** Collection of animal names available for the game */
-  private readonly words: string[];
+  private words: string[];
 
   /**
    * Creates a new WordDictionary instance and initializes the animal words.

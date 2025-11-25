@@ -1,4 +1,18 @@
 /**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since 2025-11-25
+ * @file TFG-Fabian-Gonzalez-Lence/projects/1-TheHangmanGame/src/views/alphabet-display.ts
+ * @desc Manages the visual display of the alphabet buttons (A-Z) and their interactions.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/1-TheHangmanGame}
+ * @see {@link https://typescripttutorial.net}
+ */
+
+/**
  * Manages the visual display of the alphabet buttons in the Hangman game.
  * Creates interactive buttons for each letter A-Z, handles their state (enabled/disabled),
  * and attaches click event handlers for user interaction.
