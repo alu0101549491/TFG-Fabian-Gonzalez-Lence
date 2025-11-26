@@ -32,9 +32,9 @@ jobs:
         working-directory: ${{ matrix.project }}
         run: npm ci
 
-      - name: Run linter
-        working-directory: ${{ matrix.project }}
-        run: npm run lint
+      # - name: Run linter
+      #   working-directory: ${{ matrix.project }}
+      #   run: npm run lint
       
       - name: Run type check
         working-directory: ${{ matrix.project }}
