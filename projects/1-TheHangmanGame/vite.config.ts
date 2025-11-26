@@ -19,9 +19,9 @@ export default defineConfig({
   root: '.',
   publicDir: 'public',
   build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: true,
+    // outDir: 'dist',
+    // assetsDir: 'assets',
+    // sourcemap: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
