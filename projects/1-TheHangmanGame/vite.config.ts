@@ -18,7 +18,7 @@ import {resolve} from 'path';
 export default defineConfig({
   root: '.',
   publicDir: 'public',
-  base: '/1-TheHangmanGame/',  // KEY FIX!
+  base: '/1-TheHangmanGame/dist/',  // KEY FIX!
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
