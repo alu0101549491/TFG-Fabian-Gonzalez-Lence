@@ -1,0 +1,66 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # --- Build PROJECT 1 ---
+      - name: Install deps (project 1)
+        working-directory: projects/1-TheHangmanGame
+        run: npm ci
+
+      - name: Build project 1
+        working-directory: projects/1-TheHangmanGame
+        run: npm run build
+
+      # --- Build PROJECT 2 (add more if you have) ---
+      # - name: Install deps (project 2)
+      #   working-directory: projects/2-OtherProject
+      #   run: npm ci
+      #
+      # - name: Build project 2
+      #   working-directory: projects/2-OtherProject
+      #   run: npm run build
+
+      # --- Prepare final deploy directory ---
+      - name: Prepare final web directory
+        run: |
+          mkdir web-dist
+          cp -r projects/1-TheHangmanGame/dist web-dist/1-TheHangmanGame
+        # cp -r projects/2-OtherProject/dist web-dist/2-OtherProject
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web-dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

@@ -9,49 +9,45 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-    
+        project:
+          - projects/1-TheHangmanGame
+          # Add the other projects
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: '1-TheHangmanGame/package-lock.json'
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
       
       - name: Install dependencies
-        working-directory: 1-TheHangmanGame
+        working-directory: ${{ matrix.project }}
         run: npm ci
-      
+
       - name: Run linter
-        working-directory: 1-TheHangmanGame
+        working-directory: ${{ matrix.project }}
         run: npm run lint
       
       - name: Run type check
-        working-directory: 1-TheHangmanGame
+        working-directory: ${{ matrix.project }}
         run: npm run type-check
       
       - name: Run tests
-        working-directory: 1-TheHangmanGame
+        working-directory: ${{ matrix.project }}
         run: npm run test:coverage
       
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        with:
-          file: 1-TheHangmanGame/coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-      
       - name: Build project
-        working-directory: 1-TheHangmanGame
+        working-directory: ${{ matrix.project }}
         run: npm run build
       
       - name: Generate documentation
-        working-directory: 1-TheHangmanGame
-        run: npm run docs
+        working-directory: ${{ matrix.project }}
+        run: npm run docs || echo "No docs script"
