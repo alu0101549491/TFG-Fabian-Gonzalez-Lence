@@ -58,7 +58,7 @@ jobs:
         run: npm run build
         env:
           # Set base path for GitHub Pages subdirectory
-          BASE_URL: /1-TheHangmanGame/
+          BASE_URL: /TFG-Fabian-Gonzalez-Lence/1-TheHangmanGame/
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
