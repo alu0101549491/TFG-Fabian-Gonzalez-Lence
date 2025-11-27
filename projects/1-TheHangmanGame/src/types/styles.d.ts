@@ -5,6 +5,6 @@ declare module 'bulma/css/bulma.min.css';
 
 // Allow importing JSON files as modules
 declare module '*.json' {
-	const value: any;
+	const value: unknown;
 	export default value;
 }

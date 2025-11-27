@@ -57,7 +57,7 @@ export class GameModel {
     this.failedAttempts = 0;
   }
 
-/**
+  /**
    * Processes a letter guess and updates game state.
    * @param letter - The letter being guessed
    * @returns The result of the guess attempt
