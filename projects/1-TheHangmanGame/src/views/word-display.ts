@@ -26,7 +26,7 @@ export class WordDisplay {
   private letterBoxes: HTMLElement[];
 
   /** CSS class applied to each letter box */
-  private readonly LETTER_BOX_CLASS = 'letter-box';
+  private readonly letterBoxClass = 'letter-box';
 
   /**
    * Creates a new WordDisplay instance.
@@ -88,7 +88,7 @@ export class WordDisplay {
    */
   private createLetterBox(): HTMLElement {
     const box = document.createElement('div');
-    box.classList.add(this.LETTER_BOX_CLASS);
+    box.classList.add(this.letterBoxClass);
     return box;
   }
 }

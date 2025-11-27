@@ -82,7 +82,8 @@ export class AlphabetDisplay {
 
   /**
    * Attaches a click handler to all letter buttons.
-   * @param handler - The function to call when a letter is clicked, receives the clicked letter as parameter
+   * @param handler - The function to call when a letter is clicked,
+   *  receives the clicked letter as parameter
    */
   public attachClickHandler(handler: (letter: string) => void): void {
     this.letterButtons.forEach((button, letter) => {

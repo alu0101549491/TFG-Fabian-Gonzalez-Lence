@@ -4,23 +4,18 @@
  * Degree in Computer Engineering
  * Final Degree Project (TFG)
  *
- * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since 2025-11-25
- * @file TFG-Fabian-Gonzalez-Lence/projects/1-TheHangmanGame/src/models/guess-result.ts
- * @desc Enumeration representing the result of a letter guess attempt in the Hangman game.
+ * @file Enumeration representing the result of a letter guess attempt in the Hangman game.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/1-TheHangmanGame}
  * @see {@link https://typescripttutorial.net}
  */
 
 /**
  * Enumeration representing the result of a letter guess attempt in the Hangman game.
- * This enum is used to communicate the outcome of a player's letter guess between the Model and Controller layers.
+ * This enum is used to communicate the outcome of a player's letter guess between
+ * the Model and Controller layers.
  *
  * @category Model
- * @example
- * // Usage in GameModel:
- * const result = gameModel.guessLetter('A');
- * // result can be GuessResult.CORRECT, GuessResult.INCORRECT, or GuessResult.ALREADY_GUESSED
  */
 export enum GuessResult {
   /**

@@ -99,14 +99,14 @@ export class GameController {
 
     // Update view based on guess result
     switch (result) {
-      case GuessResult.CORRECT:
-      case GuessResult.INCORRECT:
-        // Sync view with updated model state
-        this.syncViewWithModel();
-        break;
-      case GuessResult.ALREADY_GUESSED:
-        // No action needed - letter already disabled
-        break;
+    case GuessResult.CORRECT:
+    case GuessResult.INCORRECT:
+      // Sync view with updated model state
+      this.syncViewWithModel();
+      break;
+    case GuessResult.ALREADY_GUESSED:
+      // No action needed - letter already disabled
+      break;
     }
   }
 
