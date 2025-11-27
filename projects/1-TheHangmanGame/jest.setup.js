@@ -1,3 +1,6 @@
+/* eslint-env jest, browser */
+/* global HTMLCanvasElement, jest, global */
+
 // Setup file for Jest
 // Add custom matchers or global test configuration here
 
