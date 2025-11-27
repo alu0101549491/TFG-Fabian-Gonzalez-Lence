@@ -15,10 +15,14 @@
 import {defineConfig} from 'vite';
 import {resolve} from 'path';
 
+// Determine base path based on environment
+// When deployed to GitHub Pages in a mono-repo, use the project subdirectory
+const base = process.env.BASE_URL || '/';
+
 export default defineConfig({
+  base,
   root: '.',
   publicDir: 'public',
-  base: '/1-TheHangmanGame/dist/',  // KEY FIX!
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

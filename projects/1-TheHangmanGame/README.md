@@ -142,6 +142,55 @@ Documentation will be available in `docs/api/index.html`
 - **Code Quality**: ESLint compliance with Google TypeScript Style Guide
 - **Documentation**: Complete JSDoc/TypeDoc coverage
 
+## 🌐 Deployment
+
+### GitHub Pages Deployment
+
+This project is configured for automatic deployment to GitHub Pages within a mono-repo structure.
+
+#### Live Demo
+
+The application is deployed at:
+```
+https://alu0101549491.github.io/TFG-Fabian-Gonzalez-Lence/1-TheHangmanGame/
+```
+
+#### Automatic Deployment
+
+Deployment is triggered automatically when:
+- Changes are pushed to the `main` or `master` branch in the `projects/1-TheHangmanGame/` directory
+- Manual workflow dispatch from GitHub Actions
+
+#### Manual Deployment
+
+To manually deploy:
+
+1. Go to the GitHub repository
+2. Navigate to **Actions** tab
+3. Select **Deploy Hangman Game to GitHub Pages**
+4. Click **Run workflow**
+
+#### Local Production Build
+
+To test the production build locally:
+
+```bash
+# Build for GitHub Pages
+npm run build:gh-pages
+
+# Preview the production build
+npm run preview
+```
+
+#### Deployment Configuration
+
+The deployment uses:
+- **Vite** for building optimized production bundles
+- **GitHub Actions** for CI/CD automation
+- **GitHub Pages** for hosting
+
+See [DEPLOYMENT.md](./deployment/DEPLOYMENT.md) for detailed deployment documentation.
+
 ## 👥 Author
 
 - **Fabián González Lence**
