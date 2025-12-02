@@ -1,0 +1,289 @@
+/* Global Styles */
+:root {
+  --primary-color: #1db954;
+  --secondary-color: #191414;
+  --background-color: #121212;
+  --surface-color: #282828;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --border-color: #404040;
+  --hover-color: #1ed760;
+  --error-color: #f15e6c;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* App Layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-header {
+  background-color: var(--secondary-color);
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.app-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+/* Player Container */
+.player {
+  background-color: var(--surface-color);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Track Info */
+.track-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.track-info img {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.track-info-text {
+  flex: 1;
+}
+
+.track-info-text h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.track-info-text p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.controls button {
+  background-color: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.controls button:hover:not(:disabled) {
+  color: var(--hover-color);
+  transform: scale(1.1);
+}
+
+.controls button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.controls .play-pause {
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  width: 56px;
+  height: 56px;
+  font-size: 1.5rem;
+}
+
+.controls .play-pause:hover {
+  background-color: var(--hover-color);
+}
+
+/* Progress Bar */
+.progress-bar {
+  margin: 2rem 0;
+}
+
+.progress-bar-container {
+  position: relative;
+  height: 6px;
+  background-color: var(--border-color);
+  border-radius: 3px;
+  cursor: pointer;
+  margin: 1rem 0;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--primary-color);
+  border-radius: 3px;
+  transition: width 0.1s;
+}
+
+.progress-time {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Playlist */
+.playlist {
+  margin-top: 2rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 2rem;
+}
+
+.playlist h3 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.playlist-items {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.playlist-item:hover {
+  background-color: var(--border-color);
+}
+
+.playlist-item.active {
+  background-color: var(--border-color);
+}
+
+.playlist-item img {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  margin-right: 1rem;
+}
+
+.playlist-item-info {
+  flex: 1;
+}
+
+.playlist-item-info p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.playlist-item button {
+  background-color: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.playlist-item button:hover {
+  color: var(--error-color);
+}
+
+/* Add Song Form */
+.add-song-form {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: var(--secondary-color);
+  border-radius: 8px;
+}
+
+.add-song-form h4 {
+  margin-bottom: 1rem;
+}
+
+.add-song-form input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.add-song-form button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-song-form button:hover {
+  background-color: var(--hover-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 1rem;
+  }
+
+  .app-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .app-main {
+    padding: 1rem;
+  }
+
+  .player {
+    padding: 1.5rem;
+  }
+
+  .track-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .track-info img {
+    width: 200px;
+    height: 200px;
+  }
+}
