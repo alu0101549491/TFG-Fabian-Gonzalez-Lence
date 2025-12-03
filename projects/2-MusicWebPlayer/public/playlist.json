@@ -1,0 +1,41 @@
+{
+  "name": "Default Playlist",
+  "description": "A collection of sample songs for the Music Web Player",
+  "songs": [
+    {
+      "id": "json-1",
+      "title": "Morning Light",
+      "artist": "Sunrise Collective",
+      "cover": "/covers/default-cover.jpg",
+      "url": "/songs/sample-song-1.mp3"
+    },
+    {
+      "id": "json-2",
+      "title": "City Nights",
+      "artist": "Urban Soundscapes",
+      "cover": "/covers/default-cover.jpg",
+      "url": "/songs/sample-song-2.mp3"
+    },
+    {
+      "id": "json-3",
+      "title": "Ocean Waves",
+      "artist": "Nature Harmonics",
+      "cover": "/covers/default-cover.jpg",
+      "url": "/songs/sample-song-3.mp3"
+    },
+    {
+      "id": "json-4",
+      "title": "Mountain Echo",
+      "artist": "Alpine Melodies",
+      "cover": "/covers/default-cover.jpg",
+      "url": "/songs/sample-song-4.mp3"
+    },
+    {
+      "id": "json-5",
+      "title": "Desert Wind",
+      "artist": "Arid Tunes",
+      "cover": "/covers/default-cover.jpg",
+      "url": "/songs/sample-song-5.mp3"
+    }
+  ]
+}
