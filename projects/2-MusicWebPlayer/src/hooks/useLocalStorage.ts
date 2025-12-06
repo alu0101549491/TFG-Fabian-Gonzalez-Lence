@@ -1,52 +1,127 @@
-import {useState, useEffect} from 'react';
-
 /**
- * Interface for the useLocalStorage hook return value.
- * @template T The type of value stored
+ * @module Hooks/useLocalStorage
  * @category Hooks
+ * @description
+ * This module provides a custom React hook for managing state synchronized with localStorage.
+ * It supports cross-tab synchronization, error handling, and follows the same API pattern as useState.
  */
-export interface LocalStorageHook<T> {
-  /** The current stored value */
-  storedValue: T;
-  
-  /** Function to update the stored value */
-  setValue: (value: T) => void;
-}
+
+import { useState, useEffect } from 'react';
 
 /**
  * Custom hook for managing state synchronized with localStorage.
- * @template T The type of value to store
- * @param key The localStorage key
- * @param initialValue The initial value if no stored value exists
- * @returns Hook interface with stored value and setter
- * @category Hooks
+ * @template T The type of value to store (must be JSON-serializable)
+ * @param key The localStorage key under which to store the value
+ * @param initialValue The default value to use if nothing is in localStorage
+ * @returns A tuple with the stored value and a setter function (similar to useState)
+ * @example
+ * // Simple usage
+ * const [name, setName] = useLocalStorage<string>('userName', 'Guest');
+ * setName('John'); // Saves 'John' to localStorage under 'userName'
+ *
+ * // Array usage (playlist)
+ * const [songs, setSongs] = useLocalStorage<Song[]>('playlist', []);
+ * setSongs([...songs, newSong]); // Adds song and persists
+ *
+ * // Object usage
+ * const [settings, setSettings] = useLocalStorage<Settings>('appSettings', defaultSettings);
+ *
+ * // Updater function
+ * setSongs(prevSongs => [...prevSongs, newSong]);
  */
 export function useLocalStorage<T>(
-    key: string,
-    initialValue: T,
-): LocalStorageHook<T> {
-  // TODO: Implementation
-  const [storedValue, setStoredValue] = useState<T>(initialValue);
+  key: string,
+  initialValue: T
+): [T, (value: T | ((val: T) => T)) => void] {
+  // Initialize state with value from localStorage or initialValue
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    return readValue<T>(key, initialValue);
+  });
 
-  const setValue = (value: T): void => {
-    // TODO: Implementation
-  };
-
-  const readValue = (): T => {
-    // TODO: Implementation
-    return initialValue;
-  };
-
-  const handleStorageChange = (event: StorageEvent): void => {
-    // TODO: Implementation
-  };
-
+  // Set up storage event listener for cross-tab synchronization
   useEffect(() => {
-    // TODO: Set up storage event listener
-    return () => {
-      // TODO: Cleanup
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === key) {
+        // Only update if the change came from another tab/window
+        if (event.storageArea === localStorage) {
+          try {
+            const newValue = event.newValue
+              ? JSON.parse(event.newValue)
+              : initialValue;
+            setStoredValue(newValue);
+          } catch (error) {
+            console.warn(`Error parsing storage event for key "${key}":`, error);
+          }
+        }
+      }
     };
-  }, [key]);
 
-  return {storedValue, setValue};
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [key, initialValue]);
+
+  /**
+   * Updates the stored value in both state and localStorage.
+   * @param value New value or updater function
+   */
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      // Handle updater function pattern
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
+
+      // Update state
+      setStoredValue(valueToStore);
+
+      // Update localStorage
+      try {
+        localStorage.setItem(key, JSON.stringify(valueToStore));
+      } catch (error) {
+        // Handle quota exceeded or other localStorage errors
+        console.warn(`Error saving to localStorage for key "${key}":`, error);
+
+        // Optionally notify user about storage issues
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('localStorage may be full or disabled. Data will not persist.');
+        }
+      }
+    } catch (error) {
+      console.warn(`Error in setValue for key "${key}":`, error);
+    }
+  };
+
+  return [storedValue, setValue];
+}
+
+/**
+ * Reads and parses value from localStorage.
+ * @template T The type of value to read
+ * @param key The localStorage key
+ * @param initialValue The default value if nothing is in localStorage
+ * @returns Parsed value from localStorage, or initialValue if not found or error occurs
+ */
+function readValue<T>(key: string, initialValue: T): T {
+  // Validate key
+  if (!key || typeof key !== 'string') {
+    return initialValue;
+  }
+
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : initialValue;
+  } catch (error) {
+    // Handle JSON parse errors or other issues
+    console.warn(`Error reading localStorage key "${key}":`, error);
+
+    // If there's an error, we might want to clear the bad data
+    try {
+      localStorage.removeItem(key);
+    } catch (removeError) {
+      console.warn(`Error removing corrupted data for key "${key}":`, removeError);
+    }
+
+    return initialValue;
+  }
 }
