@@ -1,3 +1,12 @@
+/**
+ * @module Components/Controls
+ * @category Components
+ * @description
+ * This component renders the playback control buttons for the music player.
+ * It provides Previous, Play/Pause, and Next buttons with proper accessibility,
+ * visual feedback, and responsive design.
+ */
+
 import React from 'react';
 
 /**
@@ -5,23 +14,38 @@ import React from 'react';
  * @category Components
  */
 export interface ControlsProps {
-  /** Whether audio is currently playing */
+  /**
+   * Whether audio is currently playing
+   * Determines if Play or Pause icon is shown
+   */
   isPlaying: boolean;
-  
-  /** Callback for play/pause button */
+
+  /**
+   * Callback function when Play/Pause button is clicked
+   */
   onPlayPause: () => void;
-  
-  /** Callback for next button */
+
+  /**
+   * Callback function when Next button is clicked
+   */
   onNext: () => void;
-  
-  /** Callback for previous button */
+
+  /**
+   * Callback function when Previous button is clicked
+   */
   onPrevious: () => void;
-  
-  /** Whether next button should be disabled */
-  disableNext: boolean;
-  
-  /** Whether previous button should be disabled */
-  disablePrevious: boolean;
+
+  /**
+   * Whether the Next button should be disabled
+   * @default false
+   */
+  disableNext?: boolean;
+
+  /**
+   * Whether the Previous button should be disabled
+   * @default false
+   */
+  disablePrevious?: boolean;
 }
 
 /**
@@ -31,22 +55,48 @@ export interface ControlsProps {
  * @category Components
  */
 export const Controls: React.FC<ControlsProps> = (props) => {
-  const handlePlayPauseClick = (): void => {
-    // TODO: Implementation
-  };
+  // Default values for optional props
+  const {
+    disableNext = false,
+    disablePrevious = false,
+  } = props;
 
-  const handleNextClick = (): void => {
-    // TODO: Implementation
-  };
+  // Unicode symbols for icons (could be replaced with React Icons)
+  const PlayIcon = '▶';    // U+25B6
+  const PauseIcon = '❚❚';  // U+275A x2
+  const PreviousIcon = '◄'; // U+25C4
+  const NextIcon = '►';     // U+25BA
 
-  const handlePreviousClick = (): void => {
-    // TODO: Implementation
-  };
-
-  // TODO: Implementation
   return (
     <div className="controls">
-      {/* TODO: Render control buttons */}
+      <button
+        type="button"
+        className="controls__button controls__button--previous"
+        onClick={props.onPrevious}
+        disabled={disablePrevious}
+        aria-label="Previous song"
+      >
+        {PreviousIcon}
+      </button>
+
+      <button
+        type="button"
+        className="controls__button controls__button--play-pause"
+        onClick={props.onPlayPause}
+        aria-label={props.isPlaying ? "Pause" : "Play"}
+      >
+        {props.isPlaying ? PauseIcon : PlayIcon}
+      </button>
+
+      <button
+        type="button"
+        className="controls__button controls__button--next"
+        onClick={props.onNext}
+        disabled={disableNext}
+        aria-label="Next song"
+      >
+        {NextIcon}
+      </button>
     </div>
   );
 };
