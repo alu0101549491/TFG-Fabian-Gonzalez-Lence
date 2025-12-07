@@ -9,6 +9,7 @@
 import React, { useState } from 'react';
 import { Song } from '@types/song';
 import { AddSongForm } from './AddSongForm';
+import styles from '@styles/Playlist.module.css';
 
 /**
  * Props for the Playlist component.
@@ -120,25 +121,25 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
   };
 
   return (
-    <div className="playlist">
-      <h3 className="playlist__header">
+    <div className={styles.playlist}>
+      <h3 className={styles.playlist__header}>
         Playlist ({songs.length} {songs.length === 1 ? 'song' : 'songs'})
       </h3>
 
       {/* Empty state */}
       {songs.length === 0 ? (
-        <div className="playlist__empty">
+        <div className={styles.playlist__empty}>
           <p>No songs in playlist.</p>
           <p>Add your first song below!</p>
         </div>
       ) : (
         /* Song list */
-        <ul className="playlist__items" role="list">
+        <ul className={styles.playlist__items} role="list">
           {songs.map((song, index) => (
             <li
               key={song.id}
-              className={`playlist__item ${
-                index === props.currentSongIndex ? 'playlist__item--active' : ''
+              className={`${styles.playlist__item} ${
+                index === props.currentSongIndex ? styles['playlist__item--active'] : ''
               }`}
               onClick={() => handleSongClick(index)}
               role="button"
@@ -152,23 +153,23 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
               <img
                 src={song.cover}
                 alt={`${song.title} cover`}
-                className="playlist__item-thumbnail"
+                className={styles['playlist__item-thumbnail']}
                 onError={handleImageError}
               />
 
               {/* Song info */}
-              <div className="playlist__item-info">
-                <p className="playlist__item-title" title={song.title}>
+              <div className={styles['playlist__item-info']}>
+                <p className={styles['playlist__item-title']} title={song.title}>
                   {song.title}
                 </p>
-                <p className="playlist__item-artist" title={song.artist}>
+                <p className={styles['playlist__item-artist']} title={song.artist}>
                   {song.artist}
                 </p>
               </div>
 
               {/* Currently playing indicator */}
               {index === props.currentSongIndex && (
-                <span className="playlist__item-indicator" aria-hidden="true">
+                <span className={styles['playlist__item-indicator']} aria-hidden="true">
                   ♫
                 </span>
               )}
@@ -176,8 +177,8 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
               {/* Delete button */}
               <button
                 type="button"
-                className={`playlist__item-delete ${
-                  deleteConfirmId === song.id ? 'playlist__item-delete--confirm' : ''
+                className={`${styles['playlist__item-delete']} ${
+                  deleteConfirmId === song.id ? styles['playlist__item-delete--confirm'] : ''
                 }`}
                 onClick={(e) => handleDeleteClick(e, song.id)}
                 aria-label={

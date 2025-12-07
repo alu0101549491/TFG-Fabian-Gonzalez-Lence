@@ -1,0 +1,69 @@
+.progress-bar {
+  /* Container layout */
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  margin: var(--spacing-lg) 0;
+}
+
+.progress-bar__time {
+  /* Time display base styles */
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  min-width: 45px; /* Prevent jumping when time changes */
+  user-select: none;
+}
+
+.progress-bar__time--current {
+  text-align: right;
+}
+
+.progress-bar__time--total {
+  text-align: left;
+}
+
+.progress-bar__container {
+  /* Progress bar track */
+  flex: 1;
+  height: 6px;
+  background-color: var(--color-progress-inactive);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: height var(--transition-fast);
+}
+
+.progress-bar__container:hover {
+  height: 8px; /* Slightly taller on hover for easier clicking */
+}
+
+.progress-bar__container:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.progress-bar__fill {
+  /* Progress bar filled portion */
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: 3px;
+  transition: width var(--transition-fast);
+  pointer-events: none; /* Allow clicks to pass through to container */
+}
+
+/* Optional: thumb indicator on hover */
+.progress-bar__container:hover .progress-bar__fill::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background-color: var(--color-primary);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+}

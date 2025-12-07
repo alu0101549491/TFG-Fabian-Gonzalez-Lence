@@ -9,6 +9,7 @@
 import React, { useState } from 'react';
 import { Song } from '@types/song';
 import { AudioValidator } from '@utils/audio-validator';
+import styles from '@styles/AddSongForm.module.css';
 
 /**
  * Props for the AddSongForm component.
@@ -193,12 +194,12 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
   };
 
   return (
-    <form className="add-song-form" onSubmit={handleSubmit} noValidate>
-      <h3 className="add-song-form__title">Add New Song</h3>
+    <form className={styles['add-song-form']} onSubmit={handleSubmit} noValidate>
+      <h3 className={styles['add-song-form__title']}>Add New Song</h3>
 
       {/* Global error messages */}
       {globalErrors.length > 0 && (
-        <div className="add-song-form__errors" role="alert">
+        <div className={styles['add-song-form__errors']} role="alert">
           <ul>
             {globalErrors.map((error, index) => (
               <li key={index}>{error}</li>
@@ -209,14 +210,14 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
 
       {/* Success message */}
       {submitSuccess && (
-        <div className="add-song-form__success" role="status">
+        <div className={styles['add-song-form__success']} role="status">
           Song added successfully!
         </div>
       )}
 
       {/* Title input */}
-      <div className="add-song-form__field">
-        <label htmlFor="song-title" className="add-song-form__label">
+      <div className={styles['add-song-form__field']}>
+        <label htmlFor="song-title" className={styles['add-song-form__label']}>
           Title *
         </label>
         <input
@@ -225,22 +226,22 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
           name="title"
           value={formData.title}
           onChange={(e) => handleInputChange('title', e.target.value)}
-          className={`add-song-form__input ${fieldErrors.title ? 'add-song-form__input--error' : ''}`}
+          className={`${styles['add-song-form__input']} ${fieldErrors.title ? styles['add-song-form__input--error'] : ''}`}
           placeholder="Enter song title"
           required
           aria-invalid={!!fieldErrors.title}
           aria-describedby={fieldErrors.title ? "title-error" : undefined}
         />
         {fieldErrors.title && (
-          <span id="title-error" className="add-song-form__error-message" role="alert">
+          <span id="title-error" className={styles['add-song-form__error-message']} role="alert">
             {fieldErrors.title}
           </span>
         )}
       </div>
 
       {/* Artist input */}
-      <div className="add-song-form__field">
-        <label htmlFor="song-artist" className="add-song-form__label">
+      <div className={styles['add-song-form__field']}>
+        <label htmlFor="song-artist" className={styles['add-song-form__label']}>
           Artist *
         </label>
         <input
@@ -249,22 +250,22 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
           name="artist"
           value={formData.artist}
           onChange={(e) => handleInputChange('artist', e.target.value)}
-          className={`add-song-form__input ${fieldErrors.artist ? 'add-song-form__input--error' : ''}`}
+          className={`${styles['add-song-form__input']} ${fieldErrors.artist ? styles['add-song-form__input--error'] : ''}`}
           placeholder="Enter artist name"
           required
           aria-invalid={!!fieldErrors.artist}
           aria-describedby={fieldErrors.artist ? "artist-error" : undefined}
         />
         {fieldErrors.artist && (
-          <span id="artist-error" className="add-song-form__error-message" role="alert">
+          <span id="artist-error" className={styles['add-song-form__error-message']} role="alert">
             {fieldErrors.artist}
           </span>
         )}
       </div>
 
       {/* Cover URL input */}
-      <div className="add-song-form__field">
-        <label htmlFor="song-cover" className="add-song-form__label">
+      <div className={styles['add-song-form__field']}>
+        <label htmlFor="song-cover" className={styles['add-song-form__label']}>
           Cover Image URL *
         </label>
         <input
@@ -273,22 +274,22 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
           name="cover"
           value={formData.cover}
           onChange={(e) => handleInputChange('cover', e.target.value)}
-          className={`add-song-form__input ${fieldErrors.cover ? 'add-song-form__input--error' : ''}`}
+          className={`${styles['add-song-form__input']} ${fieldErrors.cover ? styles['add-song-form__input--error'] : ''}`}
           placeholder="https://example.com/cover.jpg"
           required
           aria-invalid={!!fieldErrors.cover}
           aria-describedby={fieldErrors.cover ? "cover-error" : undefined}
         />
         {fieldErrors.cover && (
-          <span id="cover-error" className="add-song-form__error-message" role="alert">
+          <span id="cover-error" className={styles['add-song-form__error-message']} role="alert">
             {fieldErrors.cover}
           </span>
         )}
       </div>
 
       {/* Audio URL input */}
-      <div className="add-song-form__field">
-        <label htmlFor="song-url" className="add-song-form__label">
+      <div className={styles['add-song-form__field']}>
+        <label htmlFor="song-url" className={styles['add-song-form__label']}>
           Audio File URL *
         </label>
         <input
@@ -297,14 +298,14 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
           name="url"
           value={formData.url}
           onChange={(e) => handleInputChange('url', e.target.value)}
-          className={`add-song-form__input ${fieldErrors.url ? 'add-song-form__input--error' : ''}`}
+          className={`${styles['add-song-form__input']} ${fieldErrors.url ? styles['add-song-form__input--error'] : ''}`}
           placeholder="https://example.com/song.mp3"
           required
           aria-invalid={!!fieldErrors.url}
           aria-describedby={fieldErrors.url ? "url-error" : undefined}
         />
         {fieldErrors.url && (
-          <span id="url-error" className="add-song-form__error-message" role="alert">
+          <span id="url-error" className={styles['add-song-form__error-message']} role="alert">
             {fieldErrors.url}
           </span>
         )}
@@ -313,7 +314,7 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
       {/* Submit button */}
       <button
         type="submit"
-        className="add-song-form__submit"
+        className={styles['add-song-form__submit']}
         disabled={isSubmitting}
       >
         {isSubmitting ? 'Adding...' : 'Add Song'}

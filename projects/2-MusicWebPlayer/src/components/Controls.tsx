@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import styles from '@styles/Controls.module.css';
 
 /**
  * Props for the Controls component.
@@ -68,10 +69,10 @@ export const Controls: React.FC<ControlsProps> = (props) => {
   const NextIcon = '►';     // U+25BA
 
   return (
-    <div className="controls">
+    <div className={styles.controls}>
       <button
         type="button"
-        className="controls__button controls__button--previous"
+        className={`${styles.controls__button} ${styles['controls__button--previous']}`}
         onClick={props.onPrevious}
         disabled={disablePrevious}
         aria-label="Previous song"
@@ -81,7 +82,7 @@ export const Controls: React.FC<ControlsProps> = (props) => {
 
       <button
         type="button"
-        className="controls__button controls__button--play-pause"
+        className={`${styles.controls__button} ${styles['controls__button--play-pause']}`}
         onClick={props.onPlayPause}
         aria-label={props.isPlaying ? "Pause" : "Play"}
       >
@@ -90,7 +91,7 @@ export const Controls: React.FC<ControlsProps> = (props) => {
 
       <button
         type="button"
-        className="controls__button controls__button--next"
+        className={`${styles.controls__button} ${styles['controls__button--next']}`}
         onClick={props.onNext}
         disabled={disableNext}
         aria-label="Next song"

@@ -1,0 +1,100 @@
+.add-song-form {
+  background-color: var(--color-surface);
+  padding: var(--spacing-lg);
+  border-radius: 8px;
+  margin-top: var(--spacing-lg);
+}
+
+.add-song-form__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-primary);
+}
+
+.add-song-form__field {
+  margin-bottom: var(--spacing-md);
+}
+
+.add-song-form__label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.add-song-form__input {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: border-color var(--transition-fast);
+}
+
+.add-song-form__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.add-song-form__input--error {
+  border-color: var(--color-error);
+}
+
+.add-song-form__error-message {
+  display: block;
+  margin-top: var(--spacing-xs);
+  font-size: 0.75rem;
+  color: var(--color-error);
+}
+
+.add-song-form__errors {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  border-radius: 4px;
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.add-song-form__errors ul {
+  margin: 0;
+  padding-left: var(--spacing-md);
+  color: var(--color-error);
+  font-size: 0.875rem;
+}
+
+.add-song-form__success {
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--color-success);
+  border-radius: 4px;
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  color: var(--color-success);
+  font-weight: 500;
+  text-align: center;
+}
+
+.add-song-form__submit {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+}
+
+.add-song-form__submit:hover:not(:disabled) {
+  background-color: var(--color-secondary);
+}
+
+.add-song-form__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

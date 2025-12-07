@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { TimeFormatter } from '@utils/time-formatter';
+import styles from '@styles/ProgressBar.module.css';
 
 /**
  * Props for the ProgressBar component.
@@ -106,13 +107,13 @@ export const ProgressBar: React.FC<ProgressBarProps> = (props) => {
   const progressPercentage = calculateProgressPercentage();
 
   return (
-    <div className="progress-bar">
-      <span className="progress-bar__time progress-bar__time--current">
+    <div className={styles['progress-bar']}>
+      <span className={`${styles['progress-bar__time']} ${styles['progress-bar__time--current']}`}>
         {currentTimeFormatted}
       </span>
 
       <div
-        className="progress-bar__container"
+        className={styles['progress-bar__container']}
         onClick={handleProgressClick}
         role="progressbar"
         aria-valuemin={0}
@@ -123,12 +124,12 @@ export const ProgressBar: React.FC<ProgressBarProps> = (props) => {
         onKeyDown={handleKeyDown}
       >
         <div
-          className="progress-bar__fill"
+          className={styles['progress-bar__fill']}
           style={{ width: `${progressPercentage}%` }}
         />
       </div>
 
-      <span className="progress-bar__time progress-bar__time--total">
+      <span className={`${styles['progress-bar__time']} ${styles['progress-bar__time--total']}`}>
         {durationFormatted}
       </span>
     </div>
