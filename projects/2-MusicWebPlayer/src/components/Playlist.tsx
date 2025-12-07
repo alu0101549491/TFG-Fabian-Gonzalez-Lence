@@ -54,6 +54,9 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
   // State for delete confirmation
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
+  // Ensure songs is always an array
+  const songs = Array.isArray(props.songs) ? props.songs : [];
+
   /**
    * Handles clicking on a song to play it.
    * @param index - Index of the clicked song
@@ -119,11 +122,11 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
   return (
     <div className="playlist">
       <h3 className="playlist__header">
-        Playlist ({props.songs.length} {props.songs.length === 1 ? 'song' : 'songs'})
+        Playlist ({songs.length} {songs.length === 1 ? 'song' : 'songs'})
       </h3>
 
       {/* Empty state */}
-      {props.songs.length === 0 ? (
+      {songs.length === 0 ? (
         <div className="playlist__empty">
           <p>No songs in playlist.</p>
           <p>Add your first song below!</p>
@@ -131,7 +134,7 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
       ) : (
         /* Song list */
         <ul className="playlist__items" role="list">
-          {props.songs.map((song, index) => (
+          {songs.map((song, index) => (
             <li
               key={song.id}
               className={`playlist__item ${
