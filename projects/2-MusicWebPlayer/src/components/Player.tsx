@@ -28,12 +28,41 @@ export const Player: React.FC = () => {
   // Reference to the HTML audio element
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // State for initial playlist loading
+  const [initialPlaylist, setInitialPlaylist] = useState<Song[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   // Initialize hooks
   const audioPlayer = useAudioPlayer(audioRef);
-  const playlistManager = usePlaylist(PlaylistDataProvider.loadInitialPlaylist());
+  const playlistManager = usePlaylist(initialPlaylist);
 
   // State for error notifications
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Debug function to reset playlist (development only)
+  const handleResetPlaylist = () => {
+    if (process.env.NODE_ENV === 'development') {
+      localStorage.removeItem('music-player-playlist');
+      window.location.reload();
+    }
+  };
+
+  // Load initial playlist on mount
+  useEffect(() => {
+    const loadPlaylist = async () => {
+      try {
+        const playlist = await PlaylistDataProvider.loadInitialPlaylist();
+        setInitialPlaylist(playlist);
+      } catch (error) {
+        console.error('Failed to load initial playlist:', error);
+        setErrorMessage('Failed to load playlist. Please refresh the page.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPlaylist();
+  }, []);
 
   /**
    * Gets the current song based on the playlist index.
@@ -62,16 +91,26 @@ export const Player: React.FC = () => {
 
   /**
    * Advances to the next song in the playlist.
+   * @param autoPlayNext - Whether to auto-play the next song (default: true when called from button, false when song ends)
    */
-  const handleNext = (): void => {
+  const handleNext = (autoPlayNext: boolean = true): void => {
+    // Check if we're at the last song
+    const isLastSong = playlistManager.currentIndex >= playlistManager.playlist.length - 1;
+    
+    // If it's the last song and we shouldn't auto-play (song ended naturally), just stop
+    if (isLastSong && !autoPlayNext) {
+      // Don't advance, just stop playing
+      return;
+    }
+
     const newIndex = playlistManager.next();
     const nextSong = playlistManager.getSongAt(newIndex);
 
     if (nextSong) {
       audioPlayer.setSource(nextSong.url, nextSong.id);
 
-      // Auto-play if currently playing
-      if (audioPlayer.isPlaying) {
+      // Auto-play if currently playing OR if we're coming from song end (autoPlayNext = false means natural end)
+      if (audioPlayer.isPlaying || !autoPlayNext) {
         audioPlayer.play().catch(error => {
           console.error('Auto-play failed:', error);
           setErrorMessage('Unable to play next song. Please try again.');
@@ -141,13 +180,14 @@ export const Player: React.FC = () => {
     playlistManager.removeSong(id);
   };
 
-  // Load initial song when component mounts
+  // Load initial song when playlist becomes available
   useEffect(() => {
     const initialSong = playlistManager.getSongAt(0);
-    if (initialSong && audioRef.current) {
+    if (initialSong && audioRef.current && !audioRef.current.src) {
+      // Only set source if audio element doesn't have a source yet
       audioPlayer.setSource(initialSong.url, initialSong.id);
     }
-  }, []);
+  }, [playlistManager.playlist.length]); // Trigger when playlist is loaded
 
   // Auto-clear error messages after a delay
   useEffect(() => {
@@ -172,7 +212,8 @@ export const Player: React.FC = () => {
     if (!audioRef.current) return;
 
     const handleEnded = (): void => {
-      handleNext();
+      // Pass false to indicate this is natural song ending, not user clicking next
+      handleNext(false);
     };
 
     audioRef.current.addEventListener('ended', handleEnded);
@@ -187,21 +228,53 @@ export const Player: React.FC = () => {
       {/* Hidden audio element */}
       <audio ref={audioRef} />
 
-      {/* Error notification */}
-      {errorMessage && (
-        <div className={styles.player__error} role="alert">
-          <p>{errorMessage}</p>
-          <button
-            onClick={() => setErrorMessage(null)}
-            aria-label="Dismiss error"
-          >
-            ×
-          </button>
+      {/* Loading state */}
+      {isLoading && (
+        <div className={styles.player__content}>
+          <p style={{ textAlign: 'center', padding: '2rem' }}>Loading playlist...</p>
         </div>
       )}
 
-      {/* Main player content */}
-      <div className={styles.player__content}>
+      {/* Main content - only show when loaded */}
+      {!isLoading && (
+        <>
+          {/* Error notification */}
+          {errorMessage && (
+            <div className={styles.player__error} role="alert">
+              <p>{errorMessage}</p>
+              <button
+                onClick={() => setErrorMessage(null)}
+                aria-label="Dismiss error"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Debug: Reset Playlist Button (development only) */}
+          {process.env.NODE_ENV === 'development' && (
+            <button
+              onClick={handleResetPlaylist}
+              style={{
+                position: 'fixed',
+                bottom: '10px',
+                right: '10px',
+                padding: '8px 12px',
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                zIndex: 9999
+              }}
+            >
+              🔄 Reset Playlist Cache
+            </button>
+          )}
+
+          {/* Main player content */}
+          <div className={styles.player__content}>
         <div className={styles.player__layout}>
           {/* Left column: Controls */}
           <div className={styles['player__controls-section']}>
@@ -242,6 +315,8 @@ export const Player: React.FC = () => {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };

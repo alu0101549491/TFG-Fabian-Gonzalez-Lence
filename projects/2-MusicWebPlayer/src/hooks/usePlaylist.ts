@@ -56,6 +56,13 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
   // Track current song index (doesn't need persistence)
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
+  // Update playlist when initialData changes (only if playlist is empty)
+  useEffect(() => {
+    if (initialData.length > 0 && playlist.length === 0) {
+      setPlaylist(initialData);
+    }
+  }, [initialData, setPlaylist]);
+
   /**
    * Adds a new song to the playlist.
    * @param song Complete song object with all required fields
