@@ -6,7 +6,7 @@
  * It handles playlist persistence, navigation, and song management with localStorage integration.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Song } from '@types/song';
 import { useLocalStorage } from './useLocalStorage';
 
@@ -154,14 +154,14 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
    * Directly sets the current song index.
    * @param index New index to set
    */
-  const setCurrentIndex = (index: number): void => {
+  const setCurrentIndexSafe = (index: number): void => {
     // Clamp index to valid range
     const clampedIndex = Math.max(0, Math.min(index, Math.max(0, playlist.length - 1)));
     setCurrentIndex(clampedIndex);
   };
 
   // Reset currentIndex if playlist becomes empty
-  useState(() => {
+  useEffect(() => {
     if (playlist.length === 0) {
       setCurrentIndex(0);
     }
@@ -175,6 +175,6 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
     getSongAt,
     next,
     previous,
-    setCurrentIndex,
+    setCurrentIndex: setCurrentIndexSafe,
   };
 }
