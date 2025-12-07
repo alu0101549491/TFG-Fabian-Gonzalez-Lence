@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import styles from '@styles/TrackInfo.module.css';
 
 /**
  * Props for the TrackInfo component.
@@ -56,23 +57,23 @@ export const TrackInfo: React.FC<TrackInfoProps> = (props) => {
   const displayCover = props.cover || '/covers/default-cover.jpg';
 
   return (
-    <div className="track-info">
+    <div className={styles['track-info']}>
       <img
         src={displayCover}
         alt={`${displayTitle} by ${displayArtist} album cover`}
-        className="track-info__cover"
+        className={styles['track-info__cover']}
         onError={handleImageError}
         loading="lazy"
       />
-      <div className="track-info__details">
+      <div className={styles['track-info__details']}>
         <h2
-          className="track-info__title"
+          className={styles['track-info__title']}
           title={displayTitle} // Tooltip shows full text on hover
         >
           {displayTitle}
         </h2>
         <p
-          className="track-info__artist"
+          className={styles['track-info__artist']}
           title={displayArtist} // Tooltip shows full text on hover
         >
           {displayArtist}

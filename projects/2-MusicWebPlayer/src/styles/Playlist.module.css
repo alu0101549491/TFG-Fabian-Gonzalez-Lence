@@ -1,0 +1,129 @@
+.playlist {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.playlist__header {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-primary);
+}
+
+.playlist__empty {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-secondary);
+}
+
+.playlist__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: var(--spacing-lg);
+}
+
+.playlist__item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  gap: var(--spacing-sm);
+  position: relative;
+}
+
+.playlist__item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.playlist__item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.playlist__item--active {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid var(--color-primary);
+}
+
+.playlist__item-thumbnail {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.playlist__item-info {
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+}
+
+.playlist__item-title {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist__item-artist {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist__item-indicator {
+  color: var(--color-primary);
+  font-size: 1.25rem;
+  margin-right: var(--spacing-xs);
+}
+
+.playlist__item-delete {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.playlist__item-delete:hover {
+  color: var(--color-error);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.playlist__item-delete:focus-visible {
+  outline: 2px solid var(--color-error);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling (optional) */
+.playlist__items::-webkit-scrollbar {
+  width: 8px;
+}
+
+.playlist__items::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+.playlist__items::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.playlist__items::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}

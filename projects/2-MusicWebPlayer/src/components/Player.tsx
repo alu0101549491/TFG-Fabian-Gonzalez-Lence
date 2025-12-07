@@ -16,6 +16,7 @@ import { TrackInfo } from './TrackInfo';
 import { Controls } from './Controls';
 import { ProgressBar } from './ProgressBar';
 import { Playlist } from './Playlist';
+import styles from '@styles/Player.module.css';
 
 /**
  * Main container component that orchestrates all player functionality.
@@ -182,13 +183,13 @@ export const Player: React.FC = () => {
   }, [playlistManager.currentIndex, playlistManager.playlist.length]);
 
   return (
-    <div className="player">
+    <div className={styles.player}>
       {/* Hidden audio element */}
       <audio ref={audioRef} />
 
       {/* Error notification */}
       {errorMessage && (
-        <div className="player__error" role="alert">
+        <div className={styles.player__error} role="alert">
           <p>{errorMessage}</p>
           <button
             onClick={() => setErrorMessage(null)}
@@ -200,39 +201,46 @@ export const Player: React.FC = () => {
       )}
 
       {/* Main player content */}
-      <div className="player__content">
-        {/* Track information */}
-        <TrackInfo
-          title={currentSong?.title || 'No Song Selected'}
-          artist={currentSong?.artist || 'Unknown Artist'}
-          cover={currentSong?.cover || '/covers/default-cover.jpg'}
-        />
+      <div className={styles.player__content}>
+        <div className={styles.player__layout}>
+          {/* Left column: Controls */}
+          <div className={styles['player__controls-section']}>
+            {/* Track information */}
+            <TrackInfo
+              title={currentSong?.title || 'No Song Selected'}
+              artist={currentSong?.artist || 'Unknown Artist'}
+              cover={currentSong?.cover || '/covers/default-cover.jpg'}
+            />
 
-        {/* Playback controls */}
-        <Controls
-          isPlaying={audioPlayer.isPlaying}
-          onPlayPause={handlePlayPause}
-          onNext={handleNext}
-          onPrevious={handlePrevious}
-          disableNext={playlistManager.currentIndex >= playlistManager.playlist.length - 1}
-          disablePrevious={playlistManager.currentIndex <= 0}
-        />
+            {/* Progress bar */}
+            <ProgressBar
+              currentTime={audioPlayer.currentTime}
+              duration={audioPlayer.duration}
+              onSeek={handleSeek}
+            />
 
-        {/* Progress bar */}
-        <ProgressBar
-          currentTime={audioPlayer.currentTime}
-          duration={audioPlayer.duration}
-          onSeek={handleSeek}
-        />
+            {/* Playback controls */}
+            <Controls
+              isPlaying={audioPlayer.isPlaying}
+              onPlayPause={handlePlayPause}
+              onNext={handleNext}
+              onPrevious={handlePrevious}
+              disableNext={playlistManager.currentIndex >= playlistManager.playlist.length - 1}
+              disablePrevious={playlistManager.currentIndex <= 0}
+            />
+          </div>
 
-        {/* Playlist */}
-        <Playlist
-          songs={playlistManager.playlist}
-          currentSongIndex={playlistManager.currentIndex}
-          onSongSelect={handleSongSelect}
-          onAddSong={handleAddSong}
-          onRemoveSong={handleRemoveSong}
-        />
+          {/* Right column: Playlist */}
+          <div className={styles['player__playlist-section']}>
+            <Playlist
+              songs={playlistManager.playlist}
+              currentSongIndex={playlistManager.currentIndex}
+              onSongSelect={handleSongSelect}
+              onAddSong={handleAddSong}
+              onRemoveSong={handleRemoveSong}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
