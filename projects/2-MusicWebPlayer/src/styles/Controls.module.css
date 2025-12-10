@@ -57,3 +57,13 @@
   background-color: var(--color-secondary);
   transform: scale(1.05);
 }
+
+.controls__button--shuffle,
+.controls__button--repeat {
+  font-size: 1.25rem;
+}
+
+.controls__button--active {
+  color: var(--color-primary);
+  background-color: rgba(59, 130, 246, 0.1);
+}
