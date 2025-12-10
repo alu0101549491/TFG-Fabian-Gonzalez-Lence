@@ -10,6 +10,7 @@
 import { useState, useEffect, RefObject } from 'react';
 import { PlaybackError } from '@types/playback-error';
 import { ErrorHandler } from '@utils/error-handler';
+import { useLocalStorage } from './useLocalStorage';
 
 /**
  * Interface for the useAudioPlayer hook return value.
@@ -28,6 +29,12 @@ export interface AudioPlayerHook {
   /** Current playback error, if any */
   error: string | null;
 
+  /** Current volume level (0-100) */
+  volume: number;
+
+  /** Whether audio is muted */
+  isMuted: boolean;
+
   /** Function to start playback */
   play: () => Promise<void>;
 
@@ -39,6 +46,12 @@ export interface AudioPlayerHook {
 
   /** Function to set the audio source */
   setSource: (url: string, songId?: string) => void;
+
+  /** Function to set the volume level */
+  setVolume: (volume: number) => void;
+
+  /** Function to toggle mute state */
+  toggleMute: () => void;
 }
 
 /**
@@ -55,6 +68,17 @@ export function useAudioPlayer(
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [currentSongId, setCurrentSongId] = useState<string | undefined>(undefined);
+
+  // Volume control state
+  const [volume, setVolumeState] = useLocalStorage<number>(
+    'music-player-volume',
+    70  // Default 70%
+  );
+  const [isMuted, setIsMuted] = useLocalStorage<boolean>(
+    'music-player-muted',
+    false
+  );
+  const [volumeBeforeMute, setVolumeBeforeMute] = useState<number>(70);
 
   /**
    * Starts or resumes audio playback.
@@ -127,6 +151,43 @@ export function useAudioPlayer(
   };
 
   /**
+   * Sets the volume level.
+   * @param newVolume Volume level (0-100)
+   */
+  const setVolume = (newVolume: number): void => {
+    const clampedVolume = Math.max(0, Math.min(100, newVolume));
+    setVolumeState(clampedVolume);
+
+    if (audioRef.current) {
+      audioRef.current.volume = clampedVolume / 100;  // Convert to 0-1 range
+    }
+
+    // Unmute if setting volume > 0
+    if (clampedVolume > 0 && isMuted) {
+      setIsMuted(false);
+    }
+  };
+
+  /**
+   * Toggles mute state.
+   */
+  const toggleMute = (): void => {
+    if (isMuted) {
+      // Unmute - restore previous volume
+      setIsMuted(false);
+      setVolume(volumeBeforeMute);
+    } else {
+      // Mute - save current volume and set to 0
+      setVolumeBeforeMute(volume);
+      setIsMuted(true);
+
+      if (audioRef.current) {
+        audioRef.current.volume = 0;
+      }
+    }
+  };
+
+  /**
    * Updates currentTime state as audio plays.
    */
   const handleTimeUpdate = (): void => {
@@ -185,14 +246,25 @@ export function useAudioPlayer(
     };
   }, [audioRef]);
 
+  // Sync volume with audio element
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : (volume / 100);
+    }
+  }, [audioRef, volume, isMuted]);
+
   return {
     isPlaying,
     currentTime,
     duration,
     error,
+    volume,
+    isMuted,
     play,
     pause,
     seek,
     setSource,
+    setVolume,
+    toggleMute
   };
 }

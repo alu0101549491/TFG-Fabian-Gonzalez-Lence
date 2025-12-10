@@ -1,13 +1,6 @@
-/**
- * @module Components/Controls
- * @category Components
- * @description
- * This component renders the playback control buttons for the music player.
- * It provides Previous, Play/Pause, and Next buttons with proper accessibility,
- * visual feedback, and responsive design.
- */
-
+// src/components/Controls.tsx
 import React from 'react';
+import { RepeatMode } from '@types/playback-modes';
 import styles from '@styles/Controls.module.css';
 
 /**
@@ -47,6 +40,26 @@ export interface ControlsProps {
    * @default false
    */
   disablePrevious?: boolean;
+
+  /**
+   * Current repeat mode
+   */
+  repeatMode: RepeatMode;
+
+  /**
+   * Whether shuffle is enabled
+   */
+  isShuffled: boolean;
+
+  /**
+   * Callback function when repeat mode is toggled
+   */
+  onRepeatToggle: () => void;
+
+  /**
+   * Callback function when shuffle is toggled
+   */
+  onShuffleToggle: () => void;
 }
 
 /**
@@ -62,14 +75,18 @@ export const Controls: React.FC<ControlsProps> = (props) => {
     disablePrevious = false,
   } = props;
 
-  // Unicode symbols for icons (could be replaced with React Icons)
+  // Unicode symbols for icons
   const PlayIcon = '▶';    // U+25B6
   const PauseIcon = '❚❚';  // U+275A x2
   const PreviousIcon = '◄'; // U+25C4
   const NextIcon = '►';     // U+25BA
+  const ShuffleIcon = '🔀';  // U+1F500
+  const RepeatIcon = '🔁';  // U+1F501
+  const RepeatOneIcon = '🔂'; // U+1F502
 
   return (
     <div className={styles.controls}>
+      {/* Previous button */}
       <button
         type="button"
         className={`${styles.controls__button} ${styles['controls__button--previous']}`}
@@ -80,6 +97,7 @@ export const Controls: React.FC<ControlsProps> = (props) => {
         {PreviousIcon}
       </button>
 
+      {/* Play/Pause button */}
       <button
         type="button"
         className={`${styles.controls__button} ${styles['controls__button--play-pause']}`}
@@ -89,6 +107,7 @@ export const Controls: React.FC<ControlsProps> = (props) => {
         {props.isPlaying ? PauseIcon : PlayIcon}
       </button>
 
+      {/* Next button */}
       <button
         type="button"
         className={`${styles.controls__button} ${styles['controls__button--next']}`}
@@ -97,6 +116,34 @@ export const Controls: React.FC<ControlsProps> = (props) => {
         aria-label="Next song"
       >
         {NextIcon}
+      </button>
+
+      {/* Shuffle button */}
+      <button
+        type="button"
+        className={`${styles.controls__button} ${styles['controls__button--shuffle']} ${
+          props.isShuffled ? styles['controls__button--active'] : ''
+        }`}
+        onClick={props.onShuffleToggle}
+        aria-label={props.isShuffled ? "Disable shuffle" : "Enable shuffle"}
+        aria-pressed={props.isShuffled}
+        title="Shuffle"
+      >
+        {ShuffleIcon}
+      </button>
+
+      {/* Repeat button */}
+      <button
+        type="button"
+        className={`${styles.controls__button} ${styles['controls__button--repeat']} ${
+          props.repeatMode !== RepeatMode.OFF ? styles['controls__button--active'] : ''
+        }`}
+        onClick={props.onRepeatToggle}
+        aria-label={`Repeat: ${props.repeatMode}`}
+        aria-pressed={props.repeatMode !== RepeatMode.OFF}
+        title={`Repeat: ${props.repeatMode}`}
+      >
+        {props.repeatMode === RepeatMode.ONE ? RepeatOneIcon : RepeatIcon}
       </button>
     </div>
   );

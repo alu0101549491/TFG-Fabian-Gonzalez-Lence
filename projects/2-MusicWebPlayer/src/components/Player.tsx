@@ -1,12 +1,4 @@
-/**
- * @module Components/Player
- * @category Components
- * @description
- * This is the main container component that orchestrates all player functionality.
- * It manages the audio element, coordinates between hooks and child components,
- * and handles all user interactions.
- */
-
+// src/components/Player.tsx
 import React, { useRef, useEffect, useState } from 'react';
 import { Song } from '@types/song';
 import { useAudioPlayer } from '@hooks/useAudioPlayer';
@@ -16,6 +8,8 @@ import { TrackInfo } from './TrackInfo';
 import { Controls } from './Controls';
 import { ProgressBar } from './ProgressBar';
 import { Playlist } from './Playlist';
+import { VolumeControl } from './VolumeControl';
+import { RepeatMode } from '@types/playback-modes';
 import styles from '@styles/Player.module.css';
 
 /**
@@ -39,39 +33,11 @@ export const Player: React.FC = () => {
   // State for error notifications
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Debug function to reset playlist (development only)
-  const handleResetPlaylist = () => {
-    if (process.env.NODE_ENV === 'development') {
-      localStorage.removeItem('music-player-playlist');
-      window.location.reload();
-    }
-  };
-
-  // Load initial playlist on mount
-  useEffect(() => {
-    const loadPlaylist = async () => {
-      try {
-        const playlist = await PlaylistDataProvider.loadInitialPlaylist();
-        setInitialPlaylist(playlist);
-      } catch (error) {
-        console.error('Failed to load initial playlist:', error);
-        setErrorMessage('Failed to load playlist. Please refresh the page.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadPlaylist();
-  }, []);
-
   /**
    * Gets the current song based on the playlist index.
    * @returns The current Song object or null if no song is selected
    */
-  const getCurrentSong = (): Song | null => {
-    return playlistManager.getSongAt(playlistManager.currentIndex);
-  };
-  const currentSong = getCurrentSong();
+  const currentSong = playlistManager.getCurrentSong();
 
   /**
    * Toggles between play and pause.
@@ -91,26 +57,16 @@ export const Player: React.FC = () => {
 
   /**
    * Advances to the next song in the playlist.
-   * @param autoPlayNext - Whether to auto-play the next song (default: true when called from button, false when song ends)
    */
-  const handleNext = (autoPlayNext: boolean = true): void => {
-    // Check if we're at the last song
-    const isLastSong = playlistManager.currentIndex >= playlistManager.playlist.length - 1;
-    
-    // If it's the last song and we shouldn't auto-play (song ended naturally), just stop
-    if (isLastSong && !autoPlayNext) {
-      // Don't advance, just stop playing
-      return;
-    }
-
+  const handleNext = (): void => {
     const newIndex = playlistManager.next();
     const nextSong = playlistManager.getSongAt(newIndex);
 
     if (nextSong) {
       audioPlayer.setSource(nextSong.url, nextSong.id);
 
-      // Auto-play if currently playing OR if we're coming from song end (autoPlayNext = false means natural end)
-      if (audioPlayer.isPlaying || !autoPlayNext) {
+      // Auto-play if currently playing
+      if (audioPlayer.isPlaying) {
         audioPlayer.play().catch(error => {
           console.error('Auto-play failed:', error);
           setErrorMessage('Unable to play next song. Please try again.');
@@ -180,6 +136,39 @@ export const Player: React.FC = () => {
     playlistManager.removeSong(id);
   };
 
+  /**
+   * Handles toggling the repeat mode.
+   */
+  const handleRepeatToggle = (): void => {
+    const modes = [RepeatMode.OFF, RepeatMode.ALL, RepeatMode.ONE];
+    const currentIndex = modes.indexOf(playlistManager.repeatMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    playlistManager.setRepeatMode(modes[nextIndex]);
+  };
+
+  /**
+   * Handles toggling the shuffle mode.
+   */
+  const handleShuffleToggle = (): void => {
+    playlistManager.toggleShuffle();
+  };
+
+  // Load initial playlist on mount
+  useEffect(() => {
+    const loadPlaylist = async () => {
+      try {
+        const playlist = await PlaylistDataProvider.loadInitialPlaylist();
+        setInitialPlaylist(playlist);
+      } catch (error) {
+        console.error('Failed to load initial playlist:', error);
+        setErrorMessage('Failed to load playlist. Please refresh the page.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadPlaylist();
+  }, []);
+
   // Load initial song when playlist becomes available
   useEffect(() => {
     const initialSong = playlistManager.getSongAt(0);
@@ -187,7 +176,7 @@ export const Player: React.FC = () => {
       // Only set source if audio element doesn't have a source yet
       audioPlayer.setSource(initialSong.url, initialSong.id);
     }
-  }, [playlistManager.playlist.length]); // Trigger when playlist is loaded
+  }, [playlistManager.playlist.length]);
 
   // Auto-clear error messages after a delay
   useEffect(() => {
@@ -195,7 +184,6 @@ export const Player: React.FC = () => {
       const timeout = setTimeout(() => {
         setErrorMessage(null);
       }, 5000); // Clear after 5 seconds
-
       return () => clearTimeout(timeout);
     }
   }, [errorMessage]);
@@ -212,8 +200,24 @@ export const Player: React.FC = () => {
     if (!audioRef.current) return;
 
     const handleEnded = (): void => {
-      // Pass false to indicate this is natural song ending, not user clicking next
-      handleNext(false);
+      if (playlistManager.repeatMode === RepeatMode.ONE) {
+        // Repeat current song
+        audioRef.current!.currentTime = 0;
+        audioPlayer.play().catch(error => {
+          console.error('Auto-play failed:', error);
+          setErrorMessage('Unable to replay song. Please try again.');
+        });
+      } else if (playlistManager.hasNext()) {
+        // Play next song
+        handleNext();
+        audioPlayer.play().catch(error => {
+          console.error('Auto-play failed:', error);
+          setErrorMessage('Unable to play next song. Please try again.');
+        });
+      } else {
+        // End of playlist with Repeat Off
+        audioPlayer.pause();
+      }
     };
 
     audioRef.current.addEventListener('ended', handleEnded);
@@ -221,7 +225,15 @@ export const Player: React.FC = () => {
     return () => {
       audioRef.current?.removeEventListener('ended', handleEnded);
     };
-  }, [playlistManager.currentIndex, playlistManager.playlist.length]);
+  }, [playlistManager.repeatMode, playlistManager.currentIndex, playlistManager.playlist.length]);
+
+  // Debug function to reset playlist (development only)
+  const handleResetPlaylist = () => {
+    if (process.env.NODE_ENV === 'development') {
+      localStorage.removeItem('music-player-playlist');
+      window.location.reload();
+    }
+  };
 
   return (
     <div className={styles.player}>
@@ -275,46 +287,58 @@ export const Player: React.FC = () => {
 
           {/* Main player content */}
           <div className={styles.player__content}>
-        <div className={styles.player__layout}>
-          {/* Left column: Controls */}
-          <div className={styles['player__controls-section']}>
-            {/* Track information */}
-            <TrackInfo
-              title={currentSong?.title || 'No Song Selected'}
-              artist={currentSong?.artist || 'Unknown Artist'}
-              cover={currentSong?.cover || '/covers/default-cover.jpg'}
-            />
+            <div className={styles.player__layout}>
+              {/* Left column: Controls */}
+              <div className={styles['player__controls-section']}>
+                {/* Track information */}
+                <TrackInfo
+                  title={currentSong?.title || 'No Song Selected'}
+                  artist={currentSong?.artist || 'Unknown Artist'}
+                  cover={currentSong?.cover || '/covers/default-cover.jpg'}
+                />
 
-            {/* Progress bar */}
-            <ProgressBar
-              currentTime={audioPlayer.currentTime}
-              duration={audioPlayer.duration}
-              onSeek={handleSeek}
-            />
+                {/* Progress bar */}
+                <ProgressBar
+                  currentTime={audioPlayer.currentTime}
+                  duration={audioPlayer.duration}
+                  onSeek={handleSeek}
+                />
 
-            {/* Playback controls */}
-            <Controls
-              isPlaying={audioPlayer.isPlaying}
-              onPlayPause={handlePlayPause}
-              onNext={handleNext}
-              onPrevious={handlePrevious}
-              disableNext={playlistManager.currentIndex >= playlistManager.playlist.length - 1}
-              disablePrevious={playlistManager.currentIndex <= 0}
-            />
+                {/* Playback controls */}
+                <Controls
+                  isPlaying={audioPlayer.isPlaying}
+                  onPlayPause={handlePlayPause}
+                  onNext={handleNext}
+                  onPrevious={handlePrevious}
+                  disableNext={!playlistManager.hasNext()}
+                  disablePrevious={!playlistManager.hasPrevious()}
+                  repeatMode={playlistManager.repeatMode}
+                  isShuffled={playlistManager.isShuffled}
+                  onRepeatToggle={handleRepeatToggle}
+                  onShuffleToggle={handleShuffleToggle}
+                />
+
+                {/* Volume control */}
+                <VolumeControl
+                  volume={audioPlayer.volume}
+                  isMuted={audioPlayer.isMuted}
+                  onVolumeChange={audioPlayer.setVolume}
+                  onToggleMute={audioPlayer.toggleMute}
+                />
+              </div>
+
+              {/* Right column: Playlist */}
+              <div className={styles['player__playlist-section']}>
+                <Playlist
+                  songs={playlistManager.playlist}
+                  currentSongIndex={playlistManager.getCurrentSongIndex()}
+                  onSongSelect={handleSongSelect}
+                  onAddSong={handleAddSong}
+                  onRemoveSong={handleRemoveSong}
+                />
+              </div>
+            </div>
           </div>
-
-          {/* Right column: Playlist */}
-          <div className={styles['player__playlist-section']}>
-            <Playlist
-              songs={playlistManager.playlist}
-              currentSongIndex={playlistManager.currentIndex}
-              onSongSelect={handleSongSelect}
-              onAddSong={handleAddSong}
-              onRemoveSong={handleRemoveSong}
-            />
-          </div>
-        </div>
-      </div>
         </>
       )}
     </div>
