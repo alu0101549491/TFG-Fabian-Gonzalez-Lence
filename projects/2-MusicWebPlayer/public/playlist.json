@@ -4,24 +4,45 @@
   "songs": [
     {
       "id": "json-1",
-      "title": "After Hours",
-      "artist": "The Weeknd",
-      "cover": "/covers/cover-1.jpg",
-      "url": "/songs/song-1.mp3"
+      "title": "Mountains",
+      "artist": "A. Cooper",
+      "cover": "/covers/mountains.jpg",
+      "url": "/songs/mountains.mp3"
     },
     {
       "id": "json-2",
-      "title": "BAILE INoLVIDABLE",
-      "artist": "Bad Bunny",
-      "cover": "/covers/cover-4.jpg",
-      "url": "/songs/song-4.mp3"
+      "title": "Breathless",
+      "artist": "Sapio",
+      "cover": "/covers/breathless.jpg",
+      "url": "/songs/breathless.mp3"
     },
     {
       "id": "json-3",
-      "title": "Something About Us",
-      "artist": "Daft Punk",
-      "cover": "/covers/cover-2.jpg",
-      "url": "/songs/song-2.mp3"
+      "title": "Honey",
+      "artist": "Serge Quadrado",
+      "cover": "/covers/honey.jpg",
+      "url": "/songs/honey.mp3"
+    },
+    {
+      "id": "json-4",
+      "title": "Nights Like This",
+      "artist": "Beat Mekanik",
+      "cover": "/covers/nights_like_this.jpg",
+      "url": "/songs/nights_like_this.mp3"
+    },
+    {
+      "id": "json-5",
+      "title": "Psychic",
+      "artist": "Tadiwanaishe",
+      "cover": "/covers/psychic.jpeg",
+      "url": "/songs/psychic.mp3"
+    },
+    {
+      "id": "json-6",
+      "title": "The End",
+      "artist": "Sapio",
+      "cover": "/covers/the_end.jpeg",
+      "url": "/songs/the_end.mp3"
     }
   ]
 }

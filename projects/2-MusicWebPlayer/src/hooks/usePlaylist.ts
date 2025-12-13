@@ -385,6 +385,13 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
     }
   }, [playlist.length]);
 
+  // Update playlist when initialData changes (only if playlist is empty)
+  useEffect(() => {
+    if (initialData.length > 0 && playlist.length === 0) {
+      setPlaylist(initialData);
+    }
+  }, [initialData, playlist.length, setPlaylist]);
+
   // Regenerate shuffle queue when playlist changes
   useEffect(() => {
     if (isShuffled && playlist.length > 0) {

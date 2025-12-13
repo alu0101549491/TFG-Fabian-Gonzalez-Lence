@@ -42,3 +42,5 @@ docs/api/
 .tmp/
 temp/
 *.tmp
+
+copyright/
