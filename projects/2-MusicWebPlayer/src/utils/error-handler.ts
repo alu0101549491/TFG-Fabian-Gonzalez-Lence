@@ -168,9 +168,37 @@ export class ErrorHandler {
       originalError: error,
     };
   }
+
+  /**
+   * Creates a PlaybackError object with the given type, songId, and optional originalError.
+   * @param type - The type of error
+   * @param songId - The ID of the song
+   * @param originalError - The original error object (optional)
+   * @returns PlaybackError object
+   * @example
+   * const error = ErrorHandler.createPlaybackError(ErrorType.DECODE_ERROR, "123", new Error("Decode failed"));
+   * // error: { type: ErrorType.DECODE_ERROR, message: "This audio file appears to be corrupted or incomplete.", songId: "123", originalError: Error("Decode failed") }
+   */
+  public static createPlaybackError(type: ErrorType, songId: string, originalError?: Error): PlaybackError {
+    return { type, message: ERROR_MESSAGES[type] || ERROR_MESSAGES.DEFAULT, songId, originalError };
+  }
 }
 
 // Type declaration for MediaError (not all browsers have this in TypeScript)
 interface MediaError extends Error {
   code: number;
+}
+
+function isMediaError(err: unknown): err is MediaError {
+  return !!err && typeof (err as any) === 'object' && 'code' in (err as any) && typeof (err as any).code === 'number';
+}
+
+function mapMediaErrorCode(code: number): ErrorType {
+  switch (code) {
+    case MEDIA_ERR_ABORTED: return ErrorType.LOAD_ERROR;
+    case MEDIA_ERR_NETWORK: return ErrorType.NETWORK_ERROR;
+    case MEDIA_ERR_DECODE: return ErrorType.DECODE_ERROR;
+    case MEDIA_ERR_SRC_NOT_SUPPORTED: return ErrorType.UNSUPPORTED_FORMAT;
+    default: return ErrorType.LOAD_ERROR;
+  }
 }

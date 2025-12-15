@@ -8,11 +8,23 @@
  */
 
 /**
- * Represents a song in the music player application.
- * This interface defines the structure of song data used across all components,
- * hooks, and utilities in the application.
+ * Represents a music track with metadata and file references.
  *
- * @category Types
+ * @interface Song
+ * @property {string} id - Unique identifier for the song
+ * @property {string} title - Display name of the song
+ * @property {string} artist - Name of the artist or band
+ * @property {string} cover - URL to the album/cover art image
+ * @property {string} url - URL to the audio file (MP3, WAV, OGG, M4A)
+ *
+ * @example
+ * const song: Song = {
+ *   id: "1",
+ *   title: "Bohemian Rhapsody",
+ *   artist: "Queen",
+ *   cover: "/covers/queen.jpg",
+ *   url: "/songs/bohemian-rhapsody.mp3"
+ * };
  */
 export interface Song {
   /**
@@ -33,7 +45,7 @@ export interface Song {
    * Displayed in UI components (TrackInfo, Playlist).
    * Should be a non-empty string with max length of 200 characters.
    */
-  title: string;
+  readonly title: string;
 
   /**
    * The artist or band name who performed the song.
@@ -43,7 +55,7 @@ export interface Song {
    * Displayed in UI alongside the song title.
    * Should be a non-empty string with max length of 100 characters.
    */
-  artist: string;
+  readonly artist: string;
 
   /**
    * URL to the album/song cover art image.
@@ -54,7 +66,7 @@ export interface Song {
    * Must be a valid URL (HTTP/HTTPS) or relative path pointing to an image file.
    * The application should handle broken/missing images with a placeholder.
    */
-  cover: string;
+  readonly cover: string;
 
   /**
    * URL to the audio file.
@@ -65,5 +77,5 @@ export interface Song {
    * Must be a valid URL (HTTP/HTTPS or relative path) pointing to a supported audio format.
    * Must be accessible and not blocked by CORS.
    */
-  url: string;
+  readonly url: string;
 }
