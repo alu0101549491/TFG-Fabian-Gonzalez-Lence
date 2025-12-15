@@ -148,7 +148,7 @@ export class AudioValidator {
 
     // Validate cover URL
     if (!song.cover || typeof song.cover !== 'string' || !song.cover.trim()) {
-      errors.push(ERROR_MESSAGES.REQUIRED_FIELD('Cover URL'));
+      errors.push(ERROR_MESSAGES.INVALID_URL('Cover'));
     } else if (!this.isValidImageUrl(song.cover)) {
       errors.push(ERROR_MESSAGES.INVALID_URL('Cover'));
     } else if (!this.isValidImageFormat(song.cover)) {

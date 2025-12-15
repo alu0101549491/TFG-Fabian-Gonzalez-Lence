@@ -32,8 +32,13 @@ export class TimeFormatter {
    */
   public static formatTime(seconds: number): string {
     // Handle edge cases
-    if (isNaN(seconds) || !isFinite(seconds)) {
+    if (isNaN(seconds) || seconds < 0) {
       return "00:00";
+    }
+
+    if (!isFinite(seconds)) {
+      // Infinity => show maximum displayable time
+      return `${this.padZero(Math.floor(MAX_DISPLAYABLE_SECONDS / 60))}:${this.padZero(MAX_DISPLAYABLE_SECONDS % 60)}`;
     }
 
     // Convert to integer and handle negative values

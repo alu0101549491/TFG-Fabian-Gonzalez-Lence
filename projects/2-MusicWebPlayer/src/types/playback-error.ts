@@ -48,48 +48,22 @@ export enum ErrorType {
 }
 
 /**
- * Represents a playback error with contextual information.
- * This interface standardizes error reporting for audio playback failures,
- * providing both machine-readable error types and user-friendly messages.
+ * Structured error information for audio playback failures.
  *
- * @category Types
+ * @interface PlaybackError
+ * @property {ErrorType} type - Category of error that occurred
+ * @property {string} message - User-friendly error message for display
+ * @property {string} songId - ID of the song that failed to play
+ *
+ * @example
+ * const error: PlaybackError = {
+ *   type: ErrorType.LOAD_ERROR,
+ *   message: "Unable to load song. The file may have been moved or deleted.",
+ *   songId: "song-123"
+ * };
  */
 export interface PlaybackError {
-  /**
-   * The category of error that occurred.
-   * @property {ErrorType} type
-   * @example ErrorType.LOAD_ERROR
-   */
-  type: ErrorType;
-
-  /**
-   * Human-readable error message to display to the user.
-   * @property {string} message
-   * @example "Unable to load song. The file may have been moved or deleted."
-   * @remarks Should be user-friendly, concise, and actionable.
-   */
-  message: string;
-
-  /**
-   * Unique identifier of the song that caused the error.
-   * @property {string} songId
-   * @example "550e8400-e29b-41d4-a716-446655440000"
-   * @remarks Allows tracking which song failed, enables retry or skip functionality.
-   */
-  songId: string;
-
-  /**
-   * When the error occurred (timestamp in milliseconds since epoch).
-   * @property {number} [timestamp]
-   * @example Date.now()
-   * @optional
-   */
-  timestamp?: number;
-
-  /**
-   * Original JavaScript Error object for debugging purposes.
-   * @property {Error} [originalError]
-   * @optional
-   */
-  originalError?: Error;
+  readonly type: ErrorType;
+  readonly message: string;
+  readonly songId: string;
 }

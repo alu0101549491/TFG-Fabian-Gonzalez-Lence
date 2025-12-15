@@ -8,11 +8,20 @@
  */
 
 /**
- * Represents the result of a validation operation.
- * This interface follows the Result pattern, providing both a success/failure indicator
- * and detailed error messages when validation fails.
+ * Result of a validation operation.
  *
- * @category Types
+ * Provides a standardized structure for communicating validation outcomes.
+ *
+ * @interface ValidationResult
+ * @property {boolean} isValid - True if validation passed, false if any errors.
+ * @property {string[]} errors - Array of user-friendly error messages (empty when valid).
+ *
+ * @example
+ * // Successful validation
+ * const ok: ValidationResult = { isValid: true, errors: [] };
+ *
+ * // Failed validation
+ * const fail: ValidationResult = { isValid: false, errors: ["Title is required"] };
  */
 export interface ValidationResult {
   /**
@@ -35,12 +44,4 @@ export interface ValidationResult {
    * - Each message should be user-friendly, specific, and actionable
    */
   readonly errors: string[];
-
-  /**
-   * Optional array of non-critical warnings that don't prevent submission.
-   * @property {string[]} [warnings]
-   * @example ["Cover image URL returns 404, placeholder will be used"]
-   * @optional
-   */
-  readonly warnings?: string[];
 }
