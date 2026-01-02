@@ -19,14 +19,16 @@ const App: React.FC = () => {
   return (
     <div className="app">
       {/* Skip to content link for accessibility */}
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
+      {/*
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+      */}
 
       {/* Application header */}
       <header className="app-header">
         <div className="app-header__content">
-          <span className="app-header__icon" aria-hidden="true">🎵</span>
+          {/*<span className="app-header__icon" aria-hidden="true">🎵</span>*/}
           <h1 className="app-header__title">Music Web Player</h1>
         </div>
       </header>
