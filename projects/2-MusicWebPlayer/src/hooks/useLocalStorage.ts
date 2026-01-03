@@ -6,7 +6,7 @@
  * It supports cross-tab synchronization, error handling, and follows the same API pattern as useState.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * Custom hook for managing state synchronized with localStorage.
@@ -43,15 +43,13 @@ export function useLocalStorage<T>(
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === key) {
         // Only update if the change came from another tab/window
-        if (event.storageArea === localStorage) {
-          try {
-            const newValue = event.newValue
-              ? JSON.parse(event.newValue)
-              : initialValue;
-            setStoredValue(newValue);
-          } catch (error) {
-            console.warn(`Error parsing storage event for key "${key}":`, error);
-          }
+        try {
+          const newValue = event.newValue
+            ? JSON.parse(event.newValue)
+            : initialValue;
+          setStoredValue(newValue);
+        } catch (error) {
+          console.warn(`Error parsing storage event for key "${key}":`, error);
         }
       }
     };
@@ -64,33 +62,39 @@ export function useLocalStorage<T>(
 
   /**
    * Updates the stored value in both state and localStorage.
+   * Uses useCallback for stability.
    * @param value New value or updater function
    */
-  const setValue = (value: T | ((val: T) => T)) => {
-    try {
-      // Handle updater function pattern
-      const valueToStore =
-        value instanceof Function ? value(storedValue) : value;
-
-      // Update state
-      setStoredValue(valueToStore);
-
-      // Update localStorage
+  const setValue = useCallback(
+    (value: T | ((val: T) => T)) => {
       try {
-        localStorage.setItem(key, JSON.stringify(valueToStore));
-      } catch (error) {
-        // Handle quota exceeded or other localStorage errors
-        console.warn(`Error saving to localStorage for key "${key}":`, error);
+        // Handle updater function pattern
+        const valueToStore =
+          value instanceof Function ? value(storedValue) : value;
 
-        // Optionally notify user about storage issues
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('localStorage may be full or disabled. Data will not persist.');
+        // Update state
+        setStoredValue(valueToStore);
+
+        // Update localStorage
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem(key, JSON.stringify(valueToStore));
+          }
+        } catch (error) {
+          // Handle quota exceeded or other localStorage errors
+          console.warn(`Error saving to localStorage for key "${key}":`, error);
+
+          // Optionally notify user about storage issues
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('localStorage may be full or disabled. Data will not persist.');
+          }
         }
+      } catch (error) {
+        console.warn(`Error in setValue for key "${key}":`, error);
       }
-    } catch (error) {
-      console.warn(`Error in setValue for key "${key}":`, error);
-    }
-  };
+    },
+    [key, storedValue]
+  );
 
   return [storedValue, setValue];
 }
@@ -105,6 +109,11 @@ export function useLocalStorage<T>(
 function readValue<T>(key: string, initialValue: T): T {
   // Validate key
   if (!key || typeof key !== 'string') {
+    return initialValue;
+  }
+
+  // Guard for non-browser environments
+  if (typeof window === 'undefined' || !window.localStorage) {
     return initialValue;
   }
 

@@ -6,7 +6,7 @@
  * It handles playlist persistence, navigation, and song management with localStorage integration.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Song } from '@types/song';
 import { useLocalStorage } from './useLocalStorage';
 import { RepeatMode } from '@types/playback-modes';
@@ -78,8 +78,11 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
     initialData
   );
 
-  // Track current song index (doesn't need persistence)
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  // Track current song index (persisted)
+  const [currentIndex, setCurrentIndex] = useLocalStorage<number>(
+    'music-player-current-index',
+    0
+  );
 
   // Playback modes
   const [repeatMode, setRepeatModeState] = useLocalStorage<RepeatMode>(
@@ -99,7 +102,7 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
   /**
    * Generates a shuffled queue of song indices.
    */
-  const generateShuffleQueue = (): void => {
+  const generateShuffleQueue = useCallback((): number[] => {
     // Fisher-Yates shuffle
     const indices = Array.from({ length: playlist.length }, (_, i) => i);
 
@@ -117,14 +120,15 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
 
     setShuffleQueue(indices);
     setShuffleIndex(0);
-  };
+    return indices;
+  }, [playlist.length, currentIndex]);
 
 
   /**
    * Adds a new song to the playlist.
    * @param song Complete song object with all required fields
    */
-  const addSong = (song: Song): void => {
+  const addSong = useCallback((song: Song): void => {
     setPlaylist(prevPlaylist => {
       // Check for duplicate ID (optional - could allow duplicates)
       if (prevPlaylist.some(existingSong => existingSong.id === song.id)) {
@@ -136,43 +140,39 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
       // Add the new song to the end of the playlist
       return [...prevPlaylist, song];
     });
-  };
+  }, [setPlaylist]);
 
   /**
    * Removes a song from the playlist by ID.
    * @param id Unique identifier of song to remove
    */
-  const removeSong = (id: string): void => {
-    setPlaylist(prevPlaylist => {
-      const indexToRemove = prevPlaylist.findIndex(song => song.id === id);
-      if (indexToRemove === -1) return prevPlaylist;
+  const removeSong = useCallback((id: string): void => {
+    const indexToRemove = playlist.findIndex(song => song.id === id);
+    if (indexToRemove === -1) return;
 
-      // Create new playlist without the removed song
-      const newPlaylist = prevPlaylist.filter(song => song.id !== id);
+    const newPlaylist = playlist.filter(song => song.id !== id);
+    // Update playlist
+    setPlaylist(newPlaylist);
 
-      // Adjust currentIndex if necessary
-      if (indexToRemove < currentIndex) {
-        // Song before current was removed - decrement currentIndex
-        setCurrentIndex(prev => Math.max(0, prev - 1));
-      } else if (indexToRemove === currentIndex) {
-        // Current song was removed - set to 0 or last song
-        if (newPlaylist.length === 0) {
-          setCurrentIndex(0);
-        } else {
-          const newIndex = Math.min(currentIndex, newPlaylist.length - 1);
-          setCurrentIndex(newIndex);
-        }
+    // Adjust currentIndex if necessary (after setting playlist)
+    if (indexToRemove < currentIndex) {
+      // Song before current was removed - decrement currentIndex
+      setCurrentIndex(prev => Math.max(0, prev - 1));
+    } else if (indexToRemove === currentIndex) {
+      // Current song was removed - set to 0 or last song
+      if (newPlaylist.length === 0) {
+        setCurrentIndex(0);
+      } else {
+        const newIndex = Math.min(currentIndex, newPlaylist.length - 1);
+        setCurrentIndex(newIndex);
       }
-      // If song after current was removed, no index adjustment needed
+    }
 
-      // If shuffle is enabled, regenerate the queue
-      if (isShuffled) {
-        generateShuffleQueue();
-      }
-
-      return newPlaylist;
-    });
-  };
+    // If shuffle is enabled, regenerate the queue
+    if (isShuffled) {
+      generateShuffleQueue();
+    }
+  }, [playlist, currentIndex, isShuffled, setPlaylist, setCurrentIndex, generateShuffleQueue]);
 
   /**
    * Retrieves song at specific index.
@@ -195,7 +195,7 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
    * Advances to next song in playlist.
    * @returns New currentIndex value
    */
-  const next = (): number => {
+  const next = useCallback((): number => {
     if (repeatMode === RepeatMode.ONE) {
       // Stay on current song (handled in Player's ended event)
       return getCurrentSongIndex();
@@ -208,10 +208,14 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
       if (nextShuffleIndex >= shuffleQueue.length) {
         // End of shuffle queue
         if (repeatMode === RepeatMode.ALL) {
-          // Reshuffle and continue
-          generateShuffleQueue();
-          setShuffleIndex(0);
-          return shuffleQueue[0];
+          // Reshuffle and continue - use the freshly generated queue
+          const newQueue = generateShuffleQueue();
+          if (newQueue.length > 0) {
+            setShuffleIndex(0);
+            setCurrentIndex(newQueue[0]);
+            return newQueue[0];
+          }
+          return getCurrentSongIndex();
         } else {
           // Repeat Off - stay on last song
           return getCurrentSongIndex();
@@ -219,7 +223,10 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
       }
 
       setShuffleIndex(nextShuffleIndex);
-      return shuffleQueue[nextShuffleIndex];
+      // Update persisted currentIndex to match shuffle selection
+      const selected = shuffleQueue[nextShuffleIndex];
+      setCurrentIndex(selected);
+      return selected;
     }
 
     // Normal sequential mode
@@ -236,13 +243,13 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
     const newIndex = currentIndex + 1;
     setCurrentIndex(newIndex);
     return newIndex;
-  };
+  }, [repeatMode, isShuffled, shuffleIndex, shuffleQueue, currentIndex, playlist.length, generateShuffleQueue, setCurrentIndex]);
 
   /**
    * Goes back to previous song in playlist.
    * @returns New currentIndex value
    */
-  const previous = (): number => {
+  const previous = useCallback((): number => {
     if (isShuffled) {
       // Go back in shuffle queue
       const prevShuffleIndex = shuffleIndex - 1;
@@ -251,8 +258,13 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
         // Beginning of shuffle queue
         if (repeatMode === RepeatMode.ALL) {
           // Wrap to end
-          setShuffleIndex(shuffleQueue.length - 1);
-          return shuffleQueue[shuffleQueue.length - 1];
+          const last = shuffleQueue.length - 1;
+          if (last >= 0) {
+            setShuffleIndex(last);
+            setCurrentIndex(shuffleQueue[last]);
+            return shuffleQueue[last];
+          }
+          return getCurrentSongIndex();
         } else {
           // Repeat Off - stay on first song
           return getCurrentSongIndex();
@@ -260,7 +272,9 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
       }
 
       setShuffleIndex(prevShuffleIndex);
-      return shuffleQueue[prevShuffleIndex];
+      const selected = shuffleQueue[prevShuffleIndex];
+      setCurrentIndex(selected);
+      return selected;
     }
 
     // Normal sequential mode
@@ -277,20 +291,20 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
     const newIndex = currentIndex - 1;
     setCurrentIndex(newIndex);
     return newIndex;
-  };
+  }, [isShuffled, shuffleIndex, shuffleQueue, repeatMode, currentIndex, playlist.length, setCurrentIndex]);
 
   /**
    * Sets the repeat mode.
    * @param mode The repeat mode to set
    */
-  const setRepeatMode = (mode: RepeatMode): void => {
+  const setRepeatMode = useCallback((mode: RepeatMode): void => {
     setRepeatModeState(mode);
-  };
+  }, [setRepeatModeState]);
 
   /**
    * Toggles shuffle mode.
    */
-  const toggleShuffle = (): void => {
+  const toggleShuffle = useCallback((): void => {
     if (isShuffled) {
       // Turning shuffle off
       setIsShuffled(false);
@@ -306,13 +320,13 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
       setIsShuffled(true);
       generateShuffleQueue();
     }
-  };
+  }, [isShuffled, shuffleQueue, shuffleIndex, generateShuffleQueue, setIsShuffled, setShuffleQueue, setShuffleIndex, setCurrentIndex]);
 
   /**
    * Checks if there's a next song available.
    * @returns true if there's a next song, false otherwise
    */
-  const hasNext = (): boolean => {
+  const hasNext = useCallback((): boolean => {
     if (repeatMode === RepeatMode.ALL) return true; // Always has next in circular mode
 
     if (isShuffled) {
@@ -320,13 +334,13 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
     }
 
     return currentIndex < playlist.length - 1;
-  };
+  }, [repeatMode, isShuffled, shuffleIndex, shuffleQueue.length, currentIndex, playlist.length]);
 
   /**
    * Checks if there's a previous song available.
    * @returns true if there's a previous song, false otherwise
    */
-  const hasPrevious = (): boolean => {
+  const hasPrevious = useCallback((): boolean => {
     if (repeatMode === RepeatMode.ALL) return true; // Always has previous in circular mode
 
     if (isShuffled) {
@@ -334,13 +348,13 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
     }
 
     return currentIndex > 0;
-  };
+  }, [repeatMode, isShuffled, shuffleIndex, currentIndex]);
 
   /**
    * Directly sets the current song index.
    * @param index New index to set
    */
-  const setCurrentIndexSafe = (index: number): void => {
+  const setCurrentIndexSafe = useCallback((index: number): void => {
     // If shuffle is enabled, we need to find the position in the shuffle queue
     if (isShuffled && shuffleQueue.length > 0) {
       // Find the position of the requested index in the shuffle queue
@@ -356,7 +370,7 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
       const clampedIndex = Math.max(0, Math.min(index, Math.max(0, playlist.length - 1)));
       setCurrentIndex(clampedIndex);
     }
-  };
+  }, [isShuffled, shuffleQueue, playlist.length, setCurrentIndex]);
   
   /**
    * Gets the actual current song index considering shuffle mode.
@@ -397,7 +411,7 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
     if (isShuffled && playlist.length > 0) {
       generateShuffleQueue();
     }
-  }, [playlist, isShuffled]);
+  }, [playlist.length, isShuffled]);
 
   return {
     playlist,

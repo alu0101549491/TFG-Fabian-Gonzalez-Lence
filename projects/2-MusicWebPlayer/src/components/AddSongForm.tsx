@@ -6,7 +6,7 @@
  * It handles input validation, error display, and submission to the parent component.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Song } from '@types/song';
 import { AudioValidator } from '@utils/audio-validator';
 import styles from '@styles/AddSongForm.module.css';
@@ -66,6 +66,8 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  const successTimerRef = useRef<number | null>(null);
+
   /**
    * Updates form field state when user types.
    * @param field Which field to update
@@ -111,6 +113,7 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
     if (!validationResult.isValid) {
       // Parse errors and map to fields
       const newFieldErrors: FieldErrors = {};
+      const otherErrors: string[] = [];
 
       validationResult.errors.forEach(error => {
         if (error.includes('Title')) {
@@ -123,10 +126,11 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
           newFieldErrors.url = error;
         } else {
           // Add to global errors if not field-specific
-          setGlobalErrors(prev => [...prev, error]);
+          otherErrors.push(error);
         }
       });
 
+      setGlobalErrors(otherErrors);
       setFieldErrors(newFieldErrors);
       return false;
     }
@@ -138,9 +142,8 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
    * Generates a unique ID for new songs.
    * @returns Unique ID string
    */
-  const generateId = (): string => {
-    // Simple timestamp-based ID with random suffix
-    return `song-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const generateId = () => {
+    return (crypto?.randomUUID && crypto.randomUUID()) || `song-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   };
 
   /**
@@ -187,11 +190,11 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
     setSubmitSuccess(true);
     setIsSubmitting(false);
 
-    // Hide success message after 3 seconds
-    setTimeout(() => {
-      setSubmitSuccess(false);
-    }, 3000);
+    successTimerRef.current = window.setTimeout(() => setSubmitSuccess(false), 3000);
   };
+
+  // Cleanup timer on unmount
+  useEffect(() => () => { if (successTimerRef.current) clearTimeout(successTimerRef.current); }, []);
 
   return (
     <form className={styles['add-song-form']} onSubmit={handleSubmit} noValidate>
