@@ -6,7 +6,7 @@
  * and allows users to seek to specific positions in the audio.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { TimeFormatter } from '@utils/time-formatter';
 import styles from '@styles/ProgressBar.module.css';
 
@@ -41,6 +41,16 @@ export interface ProgressBarProps {
  * @category Components
  */
 export const ProgressBar: React.FC<ProgressBarProps> = (props) => {
+  const SEEK_STEP_SECONDS = 5;
+
+  /**
+   * Clamps the time value between 0 and the duration.
+   * @param t Time value to clamp
+   * @param dur Duration value
+   * @returns Clamped time value
+   */
+  const clampTime = (t: number, dur: number) => Math.max(0, Math.min(t, dur || 0));
+
   /**
    * Calculates the progress percentage for the fill bar.
    * @returns Percentage value between 0 and 100
@@ -68,27 +78,25 @@ export const ProgressBar: React.FC<ProgressBarProps> = (props) => {
    * Handles click on progress bar to seek to new position.
    * @param event Mouse click event
    */
-  const handleProgressClick = (event: React.MouseEvent<HTMLDivElement>): void => {
+  const handleProgressClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     if (props.duration <= 0) return;
     const time = calculateClickPosition(event);
-    props.onSeek(time);
-  };
+    props.onSeek(clampTime(time, props.duration));
+  }, [props.duration, props.onSeek]);
 
   /**
    * Handles keyboard navigation for accessibility.
    * @param event Keyboard event
    */
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
-    const skipAmount = 5; // seconds
-
     switch (event.key) {
       case 'ArrowRight':
         event.preventDefault();
-        props.onSeek(Math.min(props.currentTime + skipAmount, props.duration));
+        props.onSeek(clampTime(props.currentTime + SEEK_STEP_SECONDS, props.duration));
         break;
       case 'ArrowLeft':
         event.preventDefault();
-        props.onSeek(Math.max(props.currentTime - skipAmount, 0));
+        props.onSeek(clampTime(props.currentTime - SEEK_STEP_SECONDS, props.duration));
         break;
       case 'Home':
         event.preventDefault();
@@ -119,13 +127,14 @@ export const ProgressBar: React.FC<ProgressBarProps> = (props) => {
         aria-valuemin={0}
         aria-valuemax={props.duration}
         aria-valuenow={props.currentTime}
+        aria-valuetext={TimeFormatter.formatTime(props.currentTime)}
         aria-label="Playback progress"
         tabIndex={0}
         onKeyDown={handleKeyDown}
       >
         <div
           className={styles['progress-bar__fill']}
-          style={{ width: `${progressPercentage}%` }}
+          style={{ width: `${progressPercentage.toFixed(2)}%` }}
         />
       </div>
 
