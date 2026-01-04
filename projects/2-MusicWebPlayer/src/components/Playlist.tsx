@@ -6,7 +6,7 @@
  * and add new songs. It integrates with the AddSongForm component.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Song } from '@types/song';
 import { AddSongForm } from './AddSongForm';
 import styles from '@styles/Playlist.module.css';
@@ -54,6 +54,7 @@ export interface PlaylistProps {
 export const Playlist: React.FC<PlaylistProps> = (props) => {
   // State for delete confirmation
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const deleteTimerRef = useRef<number | null>(null);
 
   // Ensure songs is always an array
   const songs = Array.isArray(props.songs) ? props.songs : [];
@@ -78,18 +79,31 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
       // Second click confirms deletion
       props.onRemoveSong(id);
       setDeleteConfirmId(null);
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current);
+        deleteTimerRef.current = null;
+      }
     } else {
       // First click asks for confirmation
       setDeleteConfirmId(id);
 
-      // Reset after 3 seconds
-      setTimeout(() => {
-        if (deleteConfirmId === id) {
-          setDeleteConfirmId(null);
-        }
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current);
+      }
+      deleteTimerRef.current = window.setTimeout(() => {
+        setDeleteConfirmId((current) => (current === id ? null : current));
+        deleteTimerRef.current = null;
       }, 3000);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current);
+      }
+    };
+  }, []);
 
   /**
    * Handles keyboard interaction for song selection.
@@ -103,12 +117,14 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
     }
   };
 
+  const DEFAULT_COVER = '/covers/default-cover.jpg';
+
   /**
    * Handles image loading errors by setting a fallback image.
    * @param event - Image error event
    */
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>): void => {
-    event.currentTarget.src = '/covers/default-cover.jpg';
+    event.currentTarget.src = DEFAULT_COVER;
     event.currentTarget.alt = 'Default album cover';
   };
 
@@ -134,69 +150,69 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
         </div>
       ) : (
         /* Song list */
-        <ul className={styles.playlist__items} role="list">
-          {songs.map((song, index) => (
-            <li
-              key={song.id}
-              className={`${styles.playlist__item} ${
-                index === props.currentSongIndex ? styles['playlist__item--active'] : ''
-              }`}
-              onClick={() => handleSongClick(index)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => handleKeyDown(e, index)}
-              aria-label={`${song.title} by ${song.artist}${
-                index === props.currentSongIndex ? ' (currently playing)' : ''
-              }`}
-            >
-              {/* Thumbnail */}
-              <img
-                src={song.cover}
-                alt={`${song.title} cover`}
-                className={styles['playlist__item-thumbnail']}
-                onError={handleImageError}
-              />
-
-              {/* Song info */}
-              <div className={styles['playlist__item-info']}>
-                <p className={styles['playlist__item-title']} title={song.title}>
-                  {song.title}
-                </p>
-                <p className={styles['playlist__item-artist']} title={song.artist}>
-                  {song.artist}
-                </p>
-              </div>
-
-              {/* Currently playing indicator */}
-              {index === props.currentSongIndex && (
-                <span className={styles['playlist__item-indicator']} aria-hidden="true">
-                  ♫
-                </span>
-              )}
-
-              {/* Delete button */}
-              <button
-                type="button"
-                className={`${styles['playlist__item-delete']} ${
-                  deleteConfirmId === song.id ? styles['playlist__item-delete--confirm'] : ''
-                }`}
-                onClick={(e) => handleDeleteClick(e, song.id)}
-                aria-label={
-                  deleteConfirmId === song.id
-                    ? `Confirm delete ${song.title}`
-                    : `Remove ${song.title} from playlist`
-                }
-                title={
-                  deleteConfirmId === song.id
-                    ? 'Click again to confirm'
-                    : 'Remove song'
-                }
+        <ol className={styles.playlist__items}>
+          {songs.map((song, index) => {
+            const isActive = index === props.currentSongIndex;
+            return (
+              <li
+                key={song.id}
+                className={`${styles.playlist__item} ${isActive ? styles['playlist__item--active'] : ''}`}
+                onClick={() => handleSongClick(index)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => handleKeyDown(e, index)}
+                aria-current={isActive ? 'true' : undefined}
+                aria-label={`${song.title} by ${song.artist}${isActive ? ' (currently playing)' : ''}`}
               >
-                {deleteConfirmId === song.id ? '✓' : '×'}
-              </button>
-            </li>
-          ))}
-        </ul>
+                {/* Thumbnail */}
+                <img
+                  src={song.cover}
+                  alt={`${song.title} cover`}
+                  className={styles['playlist__item-thumbnail']}
+                  onError={handleImageError}
+                />
+
+                {/* Song info */}
+                <div className={styles['playlist__item-info']}>
+                  <p className={styles['playlist__item-title']} title={song.title}>
+                    {song.title}
+                  </p>
+                  <p className={styles['playlist__item-artist']} title={song.artist}>
+                    {song.artist}
+                  </p>
+                </div>
+
+                {/* Currently playing indicator */}
+                {index === props.currentSongIndex && (
+                  <span className={styles['playlist__item-indicator']} aria-hidden="true">
+                    ♫
+                  </span>
+                )}
+
+                {/* Delete button */}
+                <button
+                  type="button"
+                  className={`${styles['playlist__item-delete']} ${
+                    deleteConfirmId === song.id ? styles['playlist__item-delete--confirm'] : ''
+                  }`}
+                  onClick={(e) => handleDeleteClick(e, song.id)}
+                  aria-label={
+                    deleteConfirmId === song.id
+                      ? `Confirm delete ${song.title}`
+                      : `Remove ${song.title} from playlist`
+                  }
+                  title={
+                    deleteConfirmId === song.id
+                      ? 'Click again to confirm'
+                      : 'Remove song'
+                  }
+                >
+                  {deleteConfirmId === song.id ? '✓' : '×'}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
       )}
 
       {/* Add song form */}
