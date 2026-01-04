@@ -208,12 +208,11 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
       if (nextShuffleIndex >= shuffleQueue.length) {
         // End of shuffle queue
         if (repeatMode === RepeatMode.ALL) {
-          // Reshuffle and continue - use the freshly generated queue
-          const newQueue = generateShuffleQueue();
-          if (newQueue.length > 0) {
+          // Wrap to the start of the existing shuffle queue (cycle)
+          if (shuffleQueue.length > 0) {
             setShuffleIndex(0);
-            setCurrentIndex(newQueue[0]);
-            return newQueue[0];
+            setCurrentIndex(shuffleQueue[0]);
+            return shuffleQueue[0];
           }
           return getCurrentSongIndex();
         } else {
