@@ -1,5 +1,5 @@
 // Setup file for Jest with React Testing Library
-import '@testing-library/jest-dom';
+require('@testing-library/jest-dom');
 
 // Mock HTMLMediaElement (Audio API)
 window.HTMLMediaElement.prototype.load = jest.fn();
