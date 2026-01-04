@@ -171,12 +171,13 @@ export const Player: React.FC = () => {
 
   // Load initial song when playlist becomes available
   useEffect(() => {
-    const initialSong = playlistManager.getSongAt(0);
-    if (initialSong && audioRef.current && !audioRef.current.src) {
+    // Use the playlist manager's current song (respects shuffle and saved index)
+    const current = playlistManager.getCurrentSong();
+    if (current && audioRef.current && !audioRef.current.src) {
       // Only set source if audio element doesn't have a source yet
-      audioPlayer.setSource(initialSong.url, initialSong.id);
+      audioPlayer.setSource(current.url, current.id);
     }
-  }, [playlistManager.playlist.length]);
+  }, [playlistManager.playlist.length, playlistManager.currentIndex, playlistManager.isShuffled]);
 
   // Auto-clear error messages after a delay
   useEffect(() => {
