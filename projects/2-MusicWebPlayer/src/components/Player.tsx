@@ -232,6 +232,8 @@ export const Player: React.FC = () => {
   const handleResetPlaylist = () => {
     if (process.env.NODE_ENV === 'development') {
       localStorage.removeItem('music-player-playlist');
+      localStorage.removeItem('music-player-repeat-mode');
+      localStorage.removeItem('music-player-shuffle');
       window.location.reload();
     }
   };
