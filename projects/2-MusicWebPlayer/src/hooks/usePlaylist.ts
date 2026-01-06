@@ -87,7 +87,7 @@ export function usePlaylist(initialData: Song[]): PlaylistHook {
   // Playback modes
   const [repeatMode, setRepeatModeState] = useLocalStorage<RepeatMode>(
     'music-player-repeat-mode',
-    RepeatMode.ALL  // Default to current behavior
+    RepeatMode.OFF  // Default to repeat off
   );
 
   const [isShuffled, setIsShuffled] = useLocalStorage<boolean>(

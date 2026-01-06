@@ -39,4 +39,5 @@ export default {
   },
   coverageDirectory: 'coverage',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  silent: true,
 };
