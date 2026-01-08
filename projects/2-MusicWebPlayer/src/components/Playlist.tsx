@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Song } from '@types/song';
+import { Song } from '../types/song';
 import { AddSongForm } from './AddSongForm';
 import styles from '@styles/Playlist.module.css';
 

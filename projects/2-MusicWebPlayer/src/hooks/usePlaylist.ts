@@ -14,9 +14,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Song } from '@types/song';
+import { Song } from '../types/song';
 import { useLocalStorage } from './useLocalStorage';
-import { RepeatMode } from '@types/playback-modes';
+import { RepeatMode } from '../types/playback-modes';
 
 /**
  * Interface for the usePlaylist hook return value.

@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Song } from '@types/song';
+import { Song } from '../types/song';
 import { AudioValidator } from '@utils/audio-validator';
 import styles from '@styles/AddSongForm.module.css';
 

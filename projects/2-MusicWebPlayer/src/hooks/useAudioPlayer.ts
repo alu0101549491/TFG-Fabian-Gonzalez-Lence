@@ -14,7 +14,6 @@
  */
 
 import { useState, useEffect, useCallback, RefObject } from 'react';
-import { PlaybackError } from '@types/playback-error';
 import { ErrorHandler } from '@utils/error-handler';
 import { useLocalStorage } from './useLocalStorage';
 
