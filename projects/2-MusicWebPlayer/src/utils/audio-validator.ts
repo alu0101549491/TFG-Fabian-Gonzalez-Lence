@@ -1,10 +1,17 @@
 /**
- * @module Utilities/AudioValidator
- * @category Utilities
- * @description
- * This module provides validation functions for audio and song data in the Music Web Player.
- * It validates URLs, file formats, and complete song objects to ensure data integrity
- * before adding songs to the playlist.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/utils/audio-validator.ts
+ * @desc Provides validation functions for audio and song data in the Music Web Player.
+ *       It validates URLs, file formats, and complete song objects to ensure data integrity
+ *       before adding songs to the playlist.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import { Song } from '@types/song';

@@ -1,10 +1,16 @@
 /**
- * @module Utilities/ErrorHandler
- * @category Utilities
- * @description
- * This module provides utility functions for handling and formatting playback errors
- * in the Music Web Player application. It converts native errors into domain-specific
- * PlaybackError objects and provides user-friendly error messages.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/utils/error-handler.ts
+ * @desc Provides utility functions for handling and formatting playback errors in the Music Web Player application.
+ *       It converts native errors into domain-specific PlaybackError objects and provides user-friendly error messages.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import { ErrorType, PlaybackError } from '@types/playback-error';

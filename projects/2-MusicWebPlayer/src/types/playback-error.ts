@@ -1,9 +1,17 @@
 /**
- * @module Types/PlaybackError
- * @category Types
- * @description
- * This module defines the error types and structure for audio playback errors in the Music Web Player.
- * It provides a standardized way to represent and handle errors that occur during audio loading and playback.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/types/playback-error.ts
+ * @desc Defines the error types and structure for audio playback errors in the Music Web Player.
+ *       It provides a standardized way to represent and handle errors that occur during audio loading
+ *       and playback.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

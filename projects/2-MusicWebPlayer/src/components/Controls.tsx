@@ -1,4 +1,17 @@
-// src/components/Controls.tsx
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/components/Controls.tsx
+ * @desc Component that renders playback control buttons including play/pause, next, previous, repeat, and shuffle.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
+ */
+
 import React from 'react';
 import { RepeatMode } from '@types/playback-modes';
 import styles from '@styles/Controls.module.css';

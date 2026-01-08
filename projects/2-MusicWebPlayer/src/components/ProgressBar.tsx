@@ -1,9 +1,16 @@
 /**
- * @module Components/ProgressBar
- * @category Components
- * @description
- * This component displays the playback progress bar with time indicators
- * and allows users to seek to specific positions in the audio.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/components/ProgressBar.tsx
+ * @desc Component that displays the playback progress bar with time indicators and allows users to seek
+ *       to specific positions in the audio.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import React, { useCallback } from 'react';

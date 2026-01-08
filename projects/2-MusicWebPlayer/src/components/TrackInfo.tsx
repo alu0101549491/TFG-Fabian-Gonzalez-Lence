@@ -1,9 +1,16 @@
 /**
- * @module Components/TrackInfo
- * @category Components
- * @description
- * This component displays the current track information including cover art,
- * title, and artist. It's a pure presentational component with no internal state.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/components/TrackInfo.tsx
+ * @desc Component that displays the current track information including cover art, title, and artist.
+ *       It's a pure presentational component with no internal state.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import React from 'react';

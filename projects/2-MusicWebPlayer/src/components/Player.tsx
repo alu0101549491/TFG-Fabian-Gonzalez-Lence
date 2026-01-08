@@ -1,4 +1,18 @@
-// src/components/Player.tsx
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/components/Player.tsx
+ * @desc Main container component that orchestrates all player functionality. Manages state and coordinates
+ *       between audio playback and UI components.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
+ */
+
 import React, { useRef, useEffect, useState } from 'react';
 import { Song } from '@types/song';
 import { useAudioPlayer } from '@hooks/useAudioPlayer';

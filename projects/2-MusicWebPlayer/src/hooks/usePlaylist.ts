@@ -1,9 +1,16 @@
 /**
- * @module Hooks/usePlaylist
- * @category Hooks
- * @description
- * This module provides a custom React hook for managing playlist state and operations.
- * It handles playlist persistence, navigation, and song management with localStorage integration.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/hooks/usePlaylist.ts
+ * @desc Custom React hook for managing playlist state and operations. It handles playlist persistence,
+ *       navigation, and song management with localStorage integration.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import { useState, useEffect, useCallback } from 'react';

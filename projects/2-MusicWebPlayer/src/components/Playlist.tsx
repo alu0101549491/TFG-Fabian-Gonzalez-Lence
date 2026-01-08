@@ -1,9 +1,16 @@
 /**
- * @module Components/Playlist
- * @category Components
- * @description
- * This component displays the playlist of songs and allows users to select, delete,
- * and add new songs. It integrates with the AddSongForm component.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/components/Playlist.tsx
+ * @desc Component that displays the playlist of songs and allows users to select, delete, and add new songs.
+ *       It integrates with the AddSongForm component.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import React, { useState, useRef, useEffect } from 'react';

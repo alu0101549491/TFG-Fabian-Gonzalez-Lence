@@ -1,10 +1,17 @@
 /**
- * @module Types/Song
- * @category Types
- * @description
- * This module defines the core data structure for songs in the Music Web Player application.
- * The Song interface represents the fundamental data model used throughout the application
- * for playlist management, playback, and UI rendering.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/types/song.ts
+ * @desc Defines the core data structure for songs in the Music Web Player application. The Song interface
+ *       represents the fundamental data model used throughout the application for playlist management,
+ *       playback, and UI rendering.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**
