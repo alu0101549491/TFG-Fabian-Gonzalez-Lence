@@ -1,0 +1,54 @@
+.track-info {
+  /* Container styles */
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  /* Responsive: column on mobile, row on desktop */
+}
+
+.track-info__cover {
+  /* Cover image styles */
+  width: 300px;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  /* Responsive: 200px on mobile */
+}
+
+.track-info__details {
+  /* Text container styles */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.track-info__title {
+  /* Title styles */
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+  /* Text overflow handling */
+}
+
+.track-info__artist {
+  /* Artist styles */
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  margin: 0;
+  /* Text overflow handling */
+}
+
+@media (max-width: 767px) {
+  .track-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .track-info__cover {
+    width: 200px;
+    height: 200px;
+  }
+}

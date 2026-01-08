@@ -1,0 +1,48 @@
+{
+  "name": "Default Playlist",
+  "description": "A collection of sample songs for the Music Web Player",
+  "songs": [
+    {
+      "id": "json-1",
+      "title": "Mountains",
+      "artist": "A. Cooper",
+      "cover": "/covers/mountains.jpg",
+      "url": "/songs/mountains.mp3"
+    },
+    {
+      "id": "json-2",
+      "title": "Breathless",
+      "artist": "Sapio",
+      "cover": "/covers/breathless.jpg",
+      "url": "/songs/breathless.mp3"
+    },
+    {
+      "id": "json-3",
+      "title": "Honey",
+      "artist": "Serge Quadrado",
+      "cover": "/covers/honey.jpg",
+      "url": "/songs/honey.mp3"
+    },
+    {
+      "id": "json-4",
+      "title": "Nights Like This",
+      "artist": "Beat Mekanik",
+      "cover": "/covers/nights_like_this.jpg",
+      "url": "/songs/nights_like_this.mp3"
+    },
+    {
+      "id": "json-5",
+      "title": "Psychic",
+      "artist": "Tadiwanaishe",
+      "cover": "/covers/psychic.jpeg",
+      "url": "/songs/psychic.mp3"
+    },
+    {
+      "id": "json-6",
+      "title": "The End",
+      "artist": "Sapio",
+      "cover": "/covers/the_end.jpeg",
+      "url": "/songs/the_end.mp3"
+    }
+  ]
+}
