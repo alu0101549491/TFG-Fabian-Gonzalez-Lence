@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Permite ejecución manual
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,64 +22,43 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Necesario para detectar cambios
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'projects/*/package-lock.json'
-
-      - name: Detect changed projects
-        id: changes
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            # Si es manual, construir todo
-            echo "projects=all" >> $GITHUB_OUTPUT
-          else
-            # Detectar cambios en el último commit
-            CHANGED_DIRS=$(git diff --name-only HEAD~1 HEAD | grep '^projects/' | cut -d'/' -f1,2 | sort -u)
-            if [ -z "$CHANGED_DIRS" ]; then
-              echo "projects=none" >> $GITHUB_OUTPUT
-            else
-              # Convertir a JSON array
-              PROJECTS=$(echo "$CHANGED_DIRS" | sed 's|projects/||' | jq -R -s -c 'split("\n")[:-1]')
-              echo "projects=$PROJECTS" >> $GITHUB_OUTPUT
-            fi
-          fi
 
       - name: Build all projects
         env:
-          # Extrae el nombre del repositorio de GITHUB_REPOSITORY (owner/repo)
           REPO_NAME: ${{ github.event.repository.name }}
         run: |
-          # Crear directorio para el despliegue
           mkdir -p deploy
           
-          # Iterar sobre cada proyecto
-          for project_dir in projects/*/; do
-            project_name=$(basename "$project_dir")
-            echo "🔨 Building $project_name..."
-            
-            cd "$project_dir"
-            
-            # Instalar dependencias
+          # Build 1-TheHangmanGame
+          if [ -d "projects/1-TheHangmanGame" ]; then
+            echo "🔨 Building 1-TheHangmanGame..."
+            cd projects/1-TheHangmanGame
             npm ci
-            
-            # Construir el proyecto con la BASE_URL correcta
-            export BASE_URL="/$REPO_NAME/$project_name/"
+            export BASE_URL="/$REPO_NAME/1-TheHangmanGame/"
             npm run build
-            
-            # Copiar el build al directorio de despliegue
-            mkdir -p "../../deploy/$project_name"
-            cp -r dist/* "../../deploy/$project_name/"
-            
+            mkdir -p "../../deploy/1-TheHangmanGame"
+            cp -r dist/* "../../deploy/1-TheHangmanGame/"
             cd ../..
-            
-            echo "✅ $project_name built successfully"
-          done
+            echo "✅ 1-TheHangmanGame built successfully"
+          fi
+          
+          # Build 2-MusicWebPlayer
+          if [ -d "projects/2-MusicWebPlayer" ]; then
+            echo "🔨 Building 2-MusicWebPlayer..."
+            cd projects/2-MusicWebPlayer
+            npm ci
+            export BASE_URL="/$REPO_NAME/2-MusicWebPlayer/"
+            npm run build
+            mkdir -p "../../deploy/2-MusicWebPlayer"
+            cp -r dist/* "../../deploy/2-MusicWebPlayer/"
+            cd ../..
+            echo "✅ 2-MusicWebPlayer built successfully"
+          fi
 
       - name: Create index page
         run: |
@@ -163,7 +142,7 @@ jobs:
                       <a href="./2-MusicWebPlayer/" class="project-card">
                           <div class="project-icon">🎵</div>
                           <div class="project-name">Music Web Player</div>
-                          <div class="project-description">Modern music player application</div>
+                          <div class="project-description">Modern music player application with React</div>
                       </a>
                   </div>
               </div>
