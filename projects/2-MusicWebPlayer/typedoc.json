@@ -1,0 +1,21 @@
+{
+  "entryPoints": ["./src"],
+  "entryPointStrategy": "expand",
+  "out": "./docs/api",
+  "exclude": ["**/*.test.ts?(x)", "**/__tests__/**", "**/__mocks__/**"],
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "excludeInternal": false,
+  "name": "Music Web Player - API Documentation",
+  "includeVersion": true,
+  "readme": "./README.md",
+  "plugin": [],
+  "theme": "default",
+  "categorizeByGroup": true,
+  "categoryOrder": ["Components", "Hooks", "Types", "Utilities", "*"],
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  }
+}
