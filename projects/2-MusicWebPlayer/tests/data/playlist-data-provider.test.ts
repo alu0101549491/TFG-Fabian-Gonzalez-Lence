@@ -1,10 +1,18 @@
 // tests/data/playlist-data-provider.test.ts
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { PlaylistDataProvider } from '@/data/playlist-data-provider';
 import { Song } from '@/types/song';
 import { AudioValidator } from '@/utils/audio-validator';
 
 describe('PlaylistDataProvider', () => {
+  afterEach(() => {
+    // Clean up all mocks after each test
+    jest.restoreAllMocks();
+    if (global.fetch && jest.isMockFunction(global.fetch)) {
+      (global.fetch as jest.Mock).mockRestore();
+    }
+  });
+
   describe('loadInitialPlaylist', () => {
     describe('Basic Structure', () => {
       it('should return an array', async () => {
@@ -308,6 +316,50 @@ describe('PlaylistDataProvider', () => {
         consoleSpy.mockRestore();
       });
     });
+
+    describe('Error Handling', () => {
+      it('should fall back to default playlist when JSON loading fails', async () => {
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+        global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+        const playlist = await PlaylistDataProvider.loadInitialPlaylist();
+
+        expect(playlist).toEqual(PlaylistDataProvider.getDefaultPlaylist());
+        expect(consoleWarnSpy).toHaveBeenCalledWith('Error loading playlist JSON:', expect.any(Error));
+        
+        consoleWarnSpy.mockRestore();
+      });
+
+      it('should fall back to default playlist when JSON returns empty array', async () => {
+        global.fetch = jest.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({ songs: [] })
+        } as Response);
+
+        const playlist = await PlaylistDataProvider.loadInitialPlaylist();
+
+        expect(playlist).toEqual(PlaylistDataProvider.getDefaultPlaylist());
+      });
+
+      it('should use JSON data when available', async () => {
+        const mockJsonData = {
+          songs: [
+            { id: 'json-1', title: 'JSON Song', artist: 'JSON Artist', cover: '/covers/cover.jpg', url: '/songs/song.mp3' }
+          ]
+        };
+
+        global.fetch = jest.fn().mockResolvedValue({
+          ok: true,
+          json: async () => mockJsonData
+        } as Response);
+
+        const playlist = await PlaylistDataProvider.loadInitialPlaylist();
+
+        expect(playlist.length).toBe(1);
+        expect(playlist[0].id).toBe('json-1');
+        expect(playlist).not.toEqual(PlaylistDataProvider.getDefaultPlaylist());
+      });
+    });
   });
 
   describe('getDefaultPlaylist', () => {
@@ -318,7 +370,10 @@ describe('PlaylistDataProvider', () => {
       expect(playlist.length).toBeGreaterThanOrEqual(5);
     });
 
-    it('should return same data as loadInitialPlaylist', async () => {
+    it('should return same data as loadInitialPlaylist when JSON fetch fails', async () => {
+      // Mock fetch to fail so loadInitialPlaylist returns default
+      global.fetch = jest.fn().mockRejectedValue(new Error('No JSON'));
+
       const initialPlaylist = await PlaylistDataProvider.loadInitialPlaylist();
       const defaultPlaylist = PlaylistDataProvider.getDefaultPlaylist();
 
@@ -338,7 +393,12 @@ describe('PlaylistDataProvider', () => {
     });
   });
 
-  describe('fetchFromJSON (stub)', () => {
+  describe('fetchFromJSON', () => {
+    beforeEach(() => {
+      // Clear all mocks before each test
+      jest.clearAllMocks();
+    });
+
     it('should exist as a function', () => {
       expect(PlaylistDataProvider.fetchFromJSON).toBeDefined();
       expect(typeof PlaylistDataProvider.fetchFromJSON).toBe('function');
@@ -353,13 +413,193 @@ describe('PlaylistDataProvider', () => {
     it('should resolve with Song array', async () => {
       const playlist = await PlaylistDataProvider.fetchFromJSON();
 
-      // If implemented as stub returning data
       expect(Array.isArray(playlist)).toBe(true);
     });
 
-    it('should not break when called', () => {
-      // Should not throw synchronously
-      expect(() => PlaylistDataProvider.fetchFromJSON()).not.toThrow();
+    it('should load valid songs from JSON successfully', async () => {
+      const mockJsonData = {
+        songs: [
+          { id: 'json-1', title: 'JSON Song 1', artist: 'JSON Artist 1', cover: '/covers/cover1.jpg', url: '/songs/song1.mp3' },
+          { id: 'json-2', title: 'JSON Song 2', artist: 'JSON Artist 2', cover: '/covers/cover2.jpg', url: '/songs/song2.mp3' }
+        ]
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockJsonData
+      } as Response);
+
+      const playlist = await PlaylistDataProvider.fetchFromJSON();
+
+      expect(playlist.length).toBe(2);
+      expect(playlist[0].id).toBe('json-1');
+      expect(playlist[1].id).toBe('json-2');
+    });
+
+    it('should return empty array when fetch fails (HTTP error)', async () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 404
+      } as Response);
+
+      const playlist = await PlaylistDataProvider.fetchFromJSON();
+
+      expect(playlist).toEqual([]);
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to load playlist JSON: HTTP 404'));
+      
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should return empty array when JSON structure is invalid (missing songs)', async () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ invalid: 'data' })
+      } as Response);
+
+      const playlist = await PlaylistDataProvider.fetchFromJSON();
+
+      expect(playlist).toEqual([]);
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Invalid playlist JSON structure');
+      
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should return empty array when JSON structure has non-array songs', async () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ songs: 'not-an-array' })
+      } as Response);
+
+      const playlist = await PlaylistDataProvider.fetchFromJSON();
+
+      expect(playlist).toEqual([]);
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Invalid playlist JSON structure');
+      
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should filter out invalid songs from JSON', async () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const mockJsonData = {
+        songs: [
+          { id: 'valid-1', title: 'Valid Song', artist: 'Valid Artist', cover: '/covers/cover.jpg', url: '/songs/song.mp3' },
+          { id: 'invalid-1', title: '', artist: 'Artist', cover: '/covers/cover.jpg', url: '/songs/song.mp3' }, // Invalid: empty title
+          { id: 'valid-2', title: 'Another Valid', artist: 'Valid Artist 2', cover: '/covers/cover2.jpg', url: '/songs/song2.mp3' }
+        ]
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockJsonData
+      } as Response);
+
+      const playlist = await PlaylistDataProvider.fetchFromJSON();
+
+      expect(playlist.length).toBe(2); // Only valid songs
+      expect(playlist[0].id).toBe('valid-1');
+      expect(playlist[1].id).toBe('valid-2');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid song in playlist JSON'), expect.anything(), expect.anything());
+      
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should generate ID for songs without id in JSON', async () => {
+      const mockJsonData = {
+        songs: [
+          { title: 'Song Without ID', artist: 'Artist', cover: '/covers/cover.jpg', url: '/songs/song.mp3' }
+        ]
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockJsonData
+      } as Response);
+
+      const playlist = await PlaylistDataProvider.fetchFromJSON();
+
+      expect(playlist.length).toBe(1);
+      expect(playlist[0].id).toBeDefined();
+      expect(typeof playlist[0].id).toBe('string');
+      expect(playlist[0].id.length).toBeGreaterThan(0);
+    });
+
+    it('should use default cover for songs without cover in JSON', async () => {
+      const mockJsonData = {
+        songs: [
+          { id: '1', title: 'Song', artist: 'Artist', url: '/songs/song.mp3' }
+        ]
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockJsonData
+      } as Response);
+
+      const playlist = await PlaylistDataProvider.fetchFromJSON();
+
+      expect(playlist.length).toBe(1);
+      expect(playlist[0].cover).toBe('/covers/default-cover.jpg');
+    });
+
+    it('should handle fetch network errors', async () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+      const playlist = await PlaylistDataProvider.fetchFromJSON();
+
+      expect(playlist).toEqual([]);
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Error loading playlist JSON:', expect.any(Error));
+      
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should handle JSON parse errors', async () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => { throw new Error('Invalid JSON'); }
+      } as Response);
+
+      const playlist = await PlaylistDataProvider.fetchFromJSON();
+
+      expect(playlist).toEqual([]);
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Error loading playlist JSON:', expect.any(Error));
+      
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should handle malformed song data in JSON', async () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const mockJsonData = {
+        songs: [
+          null,
+          undefined,
+          { id: 'valid', title: 'Valid Song', artist: 'Artist', cover: '/covers/cover.jpg', url: '/songs/song.mp3' },
+          'not-an-object'
+        ]
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockJsonData
+      } as Response);
+
+      const playlist = await PlaylistDataProvider.fetchFromJSON();
+
+      expect(playlist.length).toBeGreaterThanOrEqual(1); // At least the valid one
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      
+      consoleWarnSpy.mockRestore();
     });
   });
 
@@ -404,6 +644,9 @@ describe('PlaylistDataProvider', () => {
 
   describe('Edge Cases', () => {
     it('should handle multiple consecutive calls', async () => {
+      // Mock fetch to fail so we get default playlist
+      global.fetch = jest.fn().mockRejectedValue(new Error('No JSON'));
+
       for (let i = 0; i < 10; i++) {
         const playlist = await PlaylistDataProvider.loadInitialPlaylist();
         expect(playlist.length).toBeGreaterThanOrEqual(5);

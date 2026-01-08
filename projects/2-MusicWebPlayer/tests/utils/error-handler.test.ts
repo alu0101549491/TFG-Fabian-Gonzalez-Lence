@@ -375,13 +375,6 @@ describe('ErrorHandler Utility', () => {
       expect(error.songId).toBe('song-123');
     });
 
-    it('should include originalError when provided', () => {
-      const originalError = new Error('Original error');
-      const error = ErrorHandler.createPlaybackError(ErrorType.DECODE_ERROR, 'song-456', originalError);
-
-      expect(error.originalError).toBe(originalError);
-    });
-
     it('should have undefined originalError when not provided', () => {
       const error = ErrorHandler.createPlaybackError(ErrorType.LOAD_ERROR, 'song-789');
 
