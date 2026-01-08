@@ -1,10 +1,16 @@
 /**
- * @module Hooks/useAudioPlayer
- * @category Hooks
- * @description
- * This module provides a custom React hook for managing HTML5 audio playback.
- * It encapsulates all audio playback logic, event handling, and state management
- * for the music player application.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/hooks/useAudioPlayer.ts
+ * @desc Custom React hook for managing HTML5 audio playback. It encapsulates all audio playback logic,
+ *       event handling, and state management for the music player application.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import { useState, useEffect, useCallback, RefObject } from 'react';

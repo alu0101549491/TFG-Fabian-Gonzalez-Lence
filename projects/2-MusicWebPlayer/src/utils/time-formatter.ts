@@ -1,10 +1,16 @@
 /**
- * @module Utilities/TimeFormatter
- * @category Utilities
- * @description
- * This module provides utility functions for formatting and parsing time values
- * in the Music Web Player application. It handles conversion between seconds
- * and MM:SS formatted strings for display in the UI.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/utils/time-formatter.ts
+ * @desc Provides utility functions for formatting and parsing time values in the Music Web Player application.
+ *       It handles conversion between seconds and MM:SS formatted strings for display in the UI.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 // Maximum displayable time in seconds (99:59)

@@ -1,10 +1,17 @@
 /**
- * @module Data/PlaylistDataProvider
- * @category Data
- * @description
- * This module provides the initial playlist data for the Music Web Player application.
- * It serves as the data source for the default playlist that loads when the application
- * starts for the first time, ensuring users have content to interact with immediately.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/data/playlist-data-provider.ts
+ * @desc Provides the initial playlist data for the Music Web Player application. It serves as the data source
+ *       for the default playlist that loads when the application starts for the first time, ensuring users
+ *       have content to interact with immediately.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import { Song } from '@types/song';

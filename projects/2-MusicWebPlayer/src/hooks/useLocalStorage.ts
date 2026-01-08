@@ -1,9 +1,16 @@
 /**
- * @module Hooks/useLocalStorage
- * @category Hooks
- * @description
- * This module provides a custom React hook for managing state synchronized with localStorage.
- * It supports cross-tab synchronization, error handling, and follows the same API pattern as useState.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/hooks/useLocalStorage.ts
+ * @desc Custom React hook for managing state synchronized with localStorage. It supports cross-tab
+ *       synchronization, error handling, and follows the same API pattern as useState.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import { useState, useEffect, useCallback } from 'react';

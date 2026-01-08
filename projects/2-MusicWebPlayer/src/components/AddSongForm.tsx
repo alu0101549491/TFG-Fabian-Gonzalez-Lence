@@ -1,9 +1,16 @@
 /**
- * @module Components/AddSongForm
- * @category Components
- * @description
- * This component provides a form for adding new songs to the playlist.
- * It handles input validation, error display, and submission to the parent component.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/components/AddSongForm.tsx
+ * @desc Component that provides a form for adding new songs to the playlist. It handles input validation,
+ *       error display, and submission to the parent component.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import React, { useState, useRef, useEffect } from 'react';

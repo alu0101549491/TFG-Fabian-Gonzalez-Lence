@@ -1,9 +1,16 @@
 /**
- * @module App
- * @category Components
- * @description
- * Root application component that serves as the entry point for the Music Web Player.
- * This component provides the overall layout structure and renders the main Player component.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/App.tsx
+ * @desc Root application component that serves as the entry point for the Music Web Player.
+ *       This component provides the overall layout structure and renders the main Player component.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import React from 'react';

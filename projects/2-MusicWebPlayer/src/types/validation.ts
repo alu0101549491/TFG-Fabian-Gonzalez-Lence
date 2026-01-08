@@ -1,10 +1,17 @@
 /**
- * @module Types/Validation
- * @category Types
- * @description
- * This module defines the validation result structure used throughout the Music Web Player application.
- * The ValidationResult interface provides a standardized way to represent the outcome of validation operations,
- * supporting both successful and failed validation scenarios with clear, actionable feedback.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 8, 2026
+ * @file src/types/validation.ts
+ * @desc Defines the validation result structure used throughout the Music Web Player application.
+ *       The ValidationResult interface provides a standardized way to represent the outcome of validation
+ *       operations, supporting both successful and failed validation scenarios with clear, actionable feedback.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/2-MusicWebPlayer}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**
