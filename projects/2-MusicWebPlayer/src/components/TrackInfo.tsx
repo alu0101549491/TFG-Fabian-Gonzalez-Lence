@@ -41,7 +41,7 @@ export interface TrackInfoProps {
   cover: string;
 }
 
-const DEFAULT_COVER = '/covers/default-cover.jpg';
+const DEFAULT_COVER = `${import.meta.env.BASE_URL}covers/default-cover.jpg`;
 
 /**
  * Component that displays current track information including cover art,

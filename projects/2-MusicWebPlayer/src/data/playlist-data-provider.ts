@@ -23,6 +23,9 @@ import { AudioValidator } from '@utils/audio-validator';
  * loading playlists from external JSON sources.
  */
 export class PlaylistDataProvider {
+  // Base URL for public assets
+  private static BASE_URL: string = import.meta.env.BASE_URL || '/TFG-Fabian-Gonzalez-Lence/2-MusicWebPlayer/';
+
   /**
    * Loads and returns the initial playlist data for the application.
    * Attempts to load from JSON first, then falls back to the default hardcoded playlist.
@@ -60,53 +63,46 @@ export class PlaylistDataProvider {
     // Default playlist with 7 diverse songs
     return [
       {
-        id: "1",
-        title: "Midnight Serenade",
-        artist: "Luna Eclipse",
-        cover: "/covers/default-cover.jpg",
-        url: "/songs/sample-song-1.mp3"
+        "id": "json-1",
+        "title": "Mountains",
+        "artist": "A. Cooper",
+        "cover": `${this.BASE_URL}covers/mountains.jpg`,
+        "url": `${this.BASE_URL}songs/mountains.mp3`
       },
       {
-        id: "2",
-        title: "Electric Dawn",
-        artist: "Neon Horizon",
-        cover: "/covers/default-cover.jpg",
-        url: "/songs/sample-song-2.mp3"
+        "id": "json-2",
+        "title": "Breathless",
+        "artist": "Sapio",
+        "cover": `${this.BASE_URL}covers/breathless.jpg`,
+        "url": `${this.BASE_URL}songs/breathless.mp3`
       },
       {
-        id: "3",
-        title: "Jazz in Paris",
-        artist: "Sophie Martin Quartet",
-        cover: "/covers/default-cover.jpg",
-        url: "/songs/sample-song-3.mp3"
+        "id": "json-3",
+        "title": "Honey",
+        "artist": "Serge Quadrado",
+        "cover": `${this.BASE_URL}covers/honey.jpg`,
+        "url": `${this.BASE_URL}songs/honey.mp3`
       },
       {
-        id: "4",
-        title: "Summer Breeze",
-        artist: "The Coastal Collective",
-        cover: "/covers/default-cover.jpg",
-        url: "/songs/sample-song-4.mp3"
+        "id": "json-4",
+        "title": "Nights Like This",
+        "artist": "Beat Mekanik",
+        "cover": `${this.BASE_URL}covers/nights_like_this.jpg`,
+        "url": `${this.BASE_URL}songs/nights_like_this.mp3`
       },
       {
-        id: "5",
-        title: "Symphony No. 5 (Excerpt)",
-        artist: "Classical Orchestra",
-        cover: "/covers/default-cover.jpg",
-        url: "/songs/sample-song-5.mp3"
+        "id": "json-5",
+        "title": "Psychic",
+        "artist": "Tadiwanaishe",
+        "cover": `${this.BASE_URL}covers/psychic.jpeg`,
+        "url": `${this.BASE_URL}songs/psychic.mp3`
       },
       {
-        id: "6",
-        title: "Rock Anthem",
-        artist: "The Wild Ones",
-        cover: "/covers/default-cover.jpg",
-        url: "/songs/sample-song-6.mp3"
-      },
-      {
-        id: "7",
-        title: "Chill Vibes",
-        artist: "Lo-Fi Dreamer",
-        cover: "/covers/default-cover.jpg",
-        url: "/songs/sample-song-7.mp3"
+        "id": "json-6",
+        "title": "The End",
+        "artist": "Sapio",
+        "cover": `${this.BASE_URL}covers/the_end.jpeg`,
+        "url": `${this.BASE_URL}songs/the_end.mp3`
       }
     ];
   }
@@ -120,7 +116,7 @@ export class PlaylistDataProvider {
    */
   public static async fetchFromJSON(): Promise<Song[]> {
     try {
-      const response = await fetch('/playlist.json');
+      const response = await fetch(`${this.BASE_URL}playlist.json`);
 
       if (!response.ok) {
         console.warn(`Failed to load playlist JSON: HTTP ${response.status}`);
@@ -145,7 +141,7 @@ export class PlaylistDataProvider {
             id: song.id || Math.random().toString(36).substr(2, 9),
             title: song.title || '',
             artist: song.artist || '',
-            cover: song.cover || '/covers/default-cover.jpg',
+            cover: song.cover || `${this.BASE_URL}covers/default-cover.jpg`,
             url: song.url || ''
           };
 
