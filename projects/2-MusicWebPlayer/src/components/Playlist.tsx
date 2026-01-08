@@ -16,7 +16,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Song } from '../types/song';
 import { AddSongForm } from './AddSongForm';
-import styles from '@styles/Playlist.module.css';
+import styles from '../styles/Playlist.module.css';
+import { getBaseUrl } from '../utils/env';
 
 /**
  * Props for the Playlist component.
@@ -124,7 +125,7 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
     }
   };
 
-  const DEFAULT_COVER = `${import.meta.env.BASE_URL}covers/default-cover.jpg`;
+  const DEFAULT_COVER = `${getBaseUrl()}covers/default-cover.jpg`;
 
   /**
    * Handles image loading errors by setting a fallback image.

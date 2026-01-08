@@ -14,7 +14,8 @@
  */
 
 import React from 'react';
-import styles from '@styles/TrackInfo.module.css';
+import styles from '../styles/TrackInfo.module.css';
+import { getBaseUrl } from '../utils/env';
 
 /**
  * Props for the TrackInfo component.
@@ -41,7 +42,7 @@ export interface TrackInfoProps {
   cover: string;
 }
 
-const DEFAULT_COVER = `${import.meta.env.BASE_URL}covers/default-cover.jpg`;
+const DEFAULT_COVER = `${getBaseUrl()}covers/default-cover.jpg`;
 
 /**
  * Component that displays current track information including cover art,

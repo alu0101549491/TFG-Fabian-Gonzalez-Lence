@@ -15,7 +15,8 @@
  */
 
 import { Song } from '../types/song';
-import { AudioValidator } from '@utils/audio-validator';
+import { AudioValidator } from '../utils/audio-validator';
+import { getBaseUrl } from '../utils/env';
 
 /**
  * Provides initial playlist data for the application.
@@ -24,7 +25,7 @@ import { AudioValidator } from '@utils/audio-validator';
  */
 export class PlaylistDataProvider {
   // Base URL for public assets
-  private static BASE_URL: string = import.meta.env.BASE_URL || '/TFG-Fabian-Gonzalez-Lence/2-MusicWebPlayer/';
+  private static BASE_URL: string = getBaseUrl();
 
   /**
    * Loads and returns the initial playlist data for the application.

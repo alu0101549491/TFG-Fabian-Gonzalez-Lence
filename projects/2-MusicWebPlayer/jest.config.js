@@ -14,14 +14,19 @@ export default {
     }],
   },
   moduleNameMapper: {
+    // CSS and asset mocks must come BEFORE path aliases to ensure files are mocked
+    '\\.(css|less|scss|sass)$': '<rootDir>/tests/__mocks__/styleMock.js',
+    '\\.(jpg|jpeg|png|gif|webp|svg|mp3|wav)$': '<rootDir>/tests/__mocks__/fileMock.js',
+    // Mock env module to avoid import.meta issues in Jest
+    '^.*/utils/env$': '<rootDir>/tests/__mocks__/envMock.ts',
+    // Path aliases
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@components/(.*)$': '<rootDir>/src/components/$1',
     '^@hooks/(.*)$': '<rootDir>/src/hooks/$1',
     '^@types/(.*)$': '<rootDir>/src/types/$1',
     '^@utils/(.*)$': '<rootDir>/src/utils/$1',
     '^@data/(.*)$': '<rootDir>/src/data/$1',
-    '\\.(css|less|scss|sass)$': '<rootDir>/tests/__mocks__/styleMock.js',
-    '\\.(jpg|jpeg|png|gif|webp|svg|mp3|wav)$': '<rootDir>/tests/__mocks__/fileMock.js',
+    '^@styles/(.*)$': '<rootDir>/src/styles/$1',
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
