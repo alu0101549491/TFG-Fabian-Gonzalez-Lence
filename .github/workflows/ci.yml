@@ -15,7 +15,7 @@ jobs:
         node-version: [18.x, 20.x]
         project:
           - projects/1-TheHangmanGame
-          # Add the other projects
+          - projects/2-MusicWebPlayer
 
     steps:
       - name: Checkout code
