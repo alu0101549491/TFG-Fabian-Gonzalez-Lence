@@ -16,11 +16,14 @@ import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import {resolve} from 'path';
 
+// Determine base path based on environment
+const base = process.env.BASE_URL || '/TFG-Fabian-Gonzalez-Lence/2-MusicWebPlayer/';
+
 export default defineConfig({
   plugins: [react()],
   root: '.',
   publicDir: 'public',
-  base: '/2-MusicWebPlayer/dist/',  // KEY FIX!s
+  base,  // CORREGIDO: Sin /dist/ al final
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
