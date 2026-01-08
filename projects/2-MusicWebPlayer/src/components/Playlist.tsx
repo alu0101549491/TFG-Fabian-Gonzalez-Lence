@@ -124,7 +124,7 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
     }
   };
 
-  const DEFAULT_COVER = '/covers/default-cover.jpg';
+  const DEFAULT_COVER = `${import.meta.env.BASE_URL}covers/default-cover.jpg`;
 
   /**
    * Handles image loading errors by setting a fallback image.
