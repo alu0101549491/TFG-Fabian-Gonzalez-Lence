@@ -14,7 +14,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Song } from '@types/song';
+import { Song } from '../types/song';
 import { useAudioPlayer } from '@hooks/useAudioPlayer';
 import { usePlaylist } from '@hooks/usePlaylist';
 import { PlaylistDataProvider } from '@data/playlist-data-provider';
@@ -23,7 +23,7 @@ import { Controls } from './Controls';
 import { ProgressBar } from './ProgressBar';
 import { Playlist } from './Playlist';
 import { VolumeControl } from './VolumeControl';
-import { RepeatMode } from '@types/playback-modes';
+import { RepeatMode } from '../types/playback-modes';
 import styles from '@styles/Player.module.css';
 
 /**

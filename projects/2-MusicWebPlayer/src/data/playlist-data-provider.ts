@@ -14,7 +14,7 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import { Song } from '@types/song';
+import { Song } from '../types/song';
 import { AudioValidator } from '@utils/audio-validator';
 
 /**

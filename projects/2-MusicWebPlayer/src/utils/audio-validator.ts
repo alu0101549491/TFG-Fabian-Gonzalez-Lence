@@ -14,8 +14,8 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import { Song } from '@types/song';
-import { ValidationResult } from '@types/validation';
+import { Song } from '../types/song';
+import { ValidationResult } from '../types/validation';
 
 // Constants for supported formats and validation
 const SUPPORTED_AUDIO_FORMATS = ['mp3', 'wav', 'ogg', 'm4a'];

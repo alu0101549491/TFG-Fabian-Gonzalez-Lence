@@ -13,7 +13,7 @@
  */
 
 import React from 'react';
-import { RepeatMode } from '@types/playback-modes';
+import { RepeatMode } from '../types/playback-modes';
 import styles from '@styles/Controls.module.css';
 
 /**
