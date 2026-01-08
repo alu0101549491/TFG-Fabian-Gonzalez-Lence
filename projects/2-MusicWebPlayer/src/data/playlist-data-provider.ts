@@ -24,88 +24,24 @@ import { getBaseUrl } from '../utils/env';
  * loading playlists from external JSON sources.
  */
 export class PlaylistDataProvider {
-  // Base URL for public assets
-  private static BASE_URL: string = getBaseUrl();
-
   /**
    * Loads and returns the initial playlist data for the application.
-   * Attempts to load from JSON first, then falls back to the default hardcoded playlist.
+   * Attempts to load from JSON first, then falls back to an empty playlist if loading fails.
    *
    * @returns Array of Song objects for the initial playlist
    * @static
    */
   public static async loadInitialPlaylist(): Promise<Song[]> {
     try {
-      // First try to load from JSON
+      // Try to load from JSON
       const jsonSongs = await this.fetchFromJSON();
-
-      // If we got valid songs from JSON, use them
-      if (jsonSongs.length > 0) {
-        return jsonSongs;
-      }
+      // Return the loaded songs (may be empty if JSON file is empty or has no valid songs)
+      return jsonSongs;
     } catch (error) {
-      // If JSON loading fails, log the error and continue with default
-      console.warn('Failed to load playlist from JSON:', error);
+      // If JSON loading throws an error, log and return empty array
+      console.warn('Error loading playlist JSON:', error);
+      return [];
     }
-
-    // Fall back to default playlist
-    return this.getDefaultPlaylist();
-  }
-
-  /**
-   * Returns a hardcoded default playlist with example songs.
-   * This provides a fallback playlist with diverse music examples that
-   * use audio files from the public directory.
-   *
-   * @returns Array of Song objects with complete data
-   * @static
-   */
-  public static getDefaultPlaylist(): Song[] {
-    // Default playlist with 7 diverse songs
-    return [
-      {
-        "id": "json-1",
-        "title": "Mountains",
-        "artist": "A. Cooper",
-        "cover": `${this.BASE_URL}covers/mountains.jpg`,
-        "url": `${this.BASE_URL}songs/mountains.mp3`
-      },
-      {
-        "id": "json-2",
-        "title": "Breathless",
-        "artist": "Sapio",
-        "cover": `${this.BASE_URL}covers/breathless.jpg`,
-        "url": `${this.BASE_URL}songs/breathless.mp3`
-      },
-      {
-        "id": "json-3",
-        "title": "Honey",
-        "artist": "Serge Quadrado",
-        "cover": `${this.BASE_URL}covers/honey.jpg`,
-        "url": `${this.BASE_URL}songs/honey.mp3`
-      },
-      {
-        "id": "json-4",
-        "title": "Nights Like This",
-        "artist": "Beat Mekanik",
-        "cover": `${this.BASE_URL}covers/nights_like_this.jpg`,
-        "url": `${this.BASE_URL}songs/nights_like_this.mp3`
-      },
-      {
-        "id": "json-5",
-        "title": "Psychic",
-        "artist": "Tadiwanaishe",
-        "cover": `${this.BASE_URL}covers/psychic.jpeg`,
-        "url": `${this.BASE_URL}songs/psychic.mp3`
-      },
-      {
-        "id": "json-6",
-        "title": "The End",
-        "artist": "Sapio",
-        "cover": `${this.BASE_URL}covers/the_end.jpeg`,
-        "url": `${this.BASE_URL}songs/the_end.mp3`
-      }
-    ];
   }
 
   /**
@@ -117,7 +53,8 @@ export class PlaylistDataProvider {
    */
   public static async fetchFromJSON(): Promise<Song[]> {
     try {
-      const response = await fetch(`${this.BASE_URL}playlist.json`);
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}playlist.json`);
 
       if (!response.ok) {
         console.warn(`Failed to load playlist JSON: HTTP ${response.status}`);
@@ -137,13 +74,21 @@ export class PlaylistDataProvider {
 
       for (const song of data.songs) {
         try {
-          // Create a temporary song object with the data
+          // Adjust paths from JSON to include BASE_URL
+          const adjustedCover = song.cover?.startsWith('/') 
+            ? `${baseUrl}${song.cover.slice(1)}` 
+            : song.cover;
+          
+          const adjustedUrl = song.url?.startsWith('/') 
+            ? `${baseUrl}${song.url.slice(1)}` 
+            : song.url;
+
           const tempSong: Song = {
             id: song.id || Math.random().toString(36).substr(2, 9),
             title: song.title || '',
             artist: song.artist || '',
-            cover: song.cover || `${this.BASE_URL}covers/default-cover.jpg`,
-            url: song.url || ''
+            cover: adjustedCover || `${baseUrl}covers/default-cover.jpg`,
+            url: adjustedUrl || ''
           };
 
           // Validate the song using AudioValidator
