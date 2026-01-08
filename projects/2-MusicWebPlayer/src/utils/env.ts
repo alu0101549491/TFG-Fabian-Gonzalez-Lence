@@ -28,12 +28,7 @@ export function getBaseUrl(): string {
   // In production/dev, use Vite's BASE_URL
   // This line is only executed in browser/Vite environment, not in Jest
   try {
-    let baseUrl = import.meta.env.BASE_URL || '/';
-    // Ensure it ends with a slash
-    if (!baseUrl.endsWith('/')) {
-      baseUrl += '/';
-    }
-    return baseUrl;
+    return import.meta.env.BASE_URL || '/';
   } catch {
     return '/';
   }
