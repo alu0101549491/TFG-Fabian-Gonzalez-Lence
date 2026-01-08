@@ -51,6 +51,9 @@ jobs:
           fi
 
       - name: Build all projects
+        env:
+          # Extrae el nombre del repositorio de GITHUB_REPOSITORY (owner/repo)
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
           # Crear directorio para el despliegue
           mkdir -p deploy
@@ -65,7 +68,8 @@ jobs:
             # Instalar dependencias
             npm ci
             
-            # Construir el proyecto
+            # Construir el proyecto con la BASE_URL correcta
+            export BASE_URL="/$REPO_NAME/$project_name/"
             npm run build
             
             # Copiar el build al directorio de despliegue
