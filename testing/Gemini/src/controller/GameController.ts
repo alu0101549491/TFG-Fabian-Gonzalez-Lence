@@ -1,8 +1,8 @@
 // src/controller/GameController.ts
 
-import { GameModel } from '../model/GameModel';
-import { GameView } from '../view/GameView';
-import { GameStatus } from '../model/GameStatus';
+import { GameModel } from '../model/GameModel.ts';
+import { GameView } from '../view/GameView.ts';
+import { GameStatus } from '../model/GameStatus.ts';
 
 /**
  * Handles user input and the main game loop.

@@ -1,10 +1,10 @@
 // src/view/GameView.ts
 
-import { GameModel } from '../model/GameModel';
-import { Ball } from '../model/Ball';
-import { Paddle } from '../model/Paddle';
-import { Brick } from '../model/Brick';
-import { GameStatus } from '../model/GameStatus';
+import { GameModel } from '../model/GameModel.ts';
+import { Ball } from '../model/Ball.ts';
+import { Paddle } from '../model/Paddle.ts';
+import { Brick } from '../model/Brick.ts';
+import { GameStatus } from '../model/GameStatus.ts';
 
 /**
  * Handles all rendering for the Breakout game onto the canvas.

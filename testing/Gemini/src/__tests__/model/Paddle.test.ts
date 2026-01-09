@@ -1,7 +1,7 @@
 // src/__tests__/model/Paddle.test.ts
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { Paddle } from '../../model/Paddle';
+import { Paddle } from '../../model/Paddle.ts';
 
 describe('Paddle', () => {
   const CANVAS_WIDTH = 800;

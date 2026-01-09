@@ -1,9 +1,9 @@
 // src/__tests__/model/GameModel.test.ts
 
 import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
-import { GameModel } from '../../model/GameModel';
-import { GameStatus } from '../../model/GameStatus';
-import { Brick } from '../../model/Brick';
+import { GameModel } from '../../model/GameModel.ts';
+import { GameStatus } from '../../model/GameStatus.ts';
+import { Brick } from '../../model/Brick.ts';
 
 describe('GameModel', () => {
   const CANVAS_WIDTH = 800;

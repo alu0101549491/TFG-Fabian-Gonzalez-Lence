@@ -1,9 +1,9 @@
 // src/model/GameModel.ts
 
-import { Ball } from './Ball';
-import { Paddle } from './Paddle';
-import { Brick } from './Brick';
-import { GameStatus } from './GameStatus';
+import { Ball } from './Ball.ts';
+import { Paddle } from './Paddle.ts';
+import { Brick } from './Brick.ts';
+import { GameStatus } from './GameStatus.ts';
 
 /**
  * The core Model for the Breakout game, managing all state and physics.
