@@ -17,7 +17,7 @@ import {resolve} from 'path';
 
 // Determine base path based on environment
 // When deployed to GitHub Pages in a mono-repo, use the project subdirectory
-const base = process.env.BASE_URL || '/';
+const base = process.env.BASE_URL || '/1-TheHangmanGame/';
 
 export default defineConfig({
   base,

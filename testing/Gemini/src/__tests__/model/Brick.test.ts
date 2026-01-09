@@ -1,7 +1,7 @@
 // src/__tests__/model/Brick.test.ts
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { Brick } from '../../model/Brick';
+import { Brick } from '../../model/Brick.ts';
 
 describe('Brick', () => {
   const START_X = 100;

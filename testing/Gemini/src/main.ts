@@ -1,8 +1,8 @@
 // src/main.ts
 
-import { GameModel } from './model/GameModel';
-import { GameView } from './view/GameView';
-import { GameController } from './controller/GameController';
+import { GameModel } from './model/GameModel.ts';
+import { GameView } from './view/GameView.ts';
+import { GameController } from './controller/GameController.ts';
 
 function init() {
   const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;

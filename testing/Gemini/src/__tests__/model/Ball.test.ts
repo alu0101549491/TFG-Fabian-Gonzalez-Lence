@@ -1,6 +1,6 @@
 // src/__tests__/model/Ball.test.ts
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { Ball } from '../../model/Ball';
+import { Ball } from '../../model/Ball.ts';
 
 describe('Ball', () => {
   const CANVAS_WIDTH = 800;
