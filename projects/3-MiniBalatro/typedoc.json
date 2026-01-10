@@ -1,0 +1,19 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "readme": "README.md",
+  "name": "Mini Balatro API Documentation",
+  "includeVersion": true,
+  "plugin": [],
+  "theme": "default",
+  "categorizeByGroup": true,
+  "sort": ["source-order"],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/tests/**"
+  ]
+}
