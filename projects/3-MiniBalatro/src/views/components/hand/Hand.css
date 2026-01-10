@@ -1,0 +1,24 @@
+.hand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.hand-cards {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 800px;
+}
+
+.hand-info {
+  color: #ecf0f1;
+  font-size: 0.9rem;
+}
+
+.card-count {
+  font-weight: 600;
+}

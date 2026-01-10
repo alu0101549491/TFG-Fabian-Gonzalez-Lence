@@ -1,0 +1,119 @@
+.score-display {
+  background: rgba(44, 62, 80, 0.9);
+  border-radius: 8px;
+  padding: 1.5rem;
+  color: #ecf0f1;
+}
+
+.score-main {
+  margin-bottom: 1rem;
+}
+
+.score-values {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.score-label {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+}
+
+.score-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.score-item--chips .score-value {
+  color: #3498db;
+}
+
+.score-item--mult .score-value {
+  color: #e74c3c;
+}
+
+.score-item--total .score-value {
+  color: #f39c12;
+  font-size: 2rem;
+}
+
+.score-operator {
+  font-size: 1.5rem;
+  font-weight: bold;
+  opacity: 0.6;
+}
+
+.score-progress {
+  margin-top: 1rem;
+}
+
+.progress-bar {
+  height: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2ecc71, #27ae60);
+  transition: width 0.5s ease;
+}
+
+.progress-text {
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.score-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(236, 240, 241, 0.2);
+}
+
+.info-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.hand-type {
+  font-weight: bold;
+  color: #9b59b6;
+  font-size: 1.1rem;
+}
+
+.resource {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.resource-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.resource-value {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.resource--money {
+  color: #f39c12;
+}
