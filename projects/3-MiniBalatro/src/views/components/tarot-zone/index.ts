@@ -1,0 +1,1 @@
+export {TarotZone} from './TarotZone';

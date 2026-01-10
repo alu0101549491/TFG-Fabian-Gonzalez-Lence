@@ -1,0 +1,1 @@
+export {GamePersistence} from './game-persistence';

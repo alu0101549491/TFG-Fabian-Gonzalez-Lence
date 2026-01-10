@@ -1,0 +1,243 @@
+graph TB
+    Player((Player))
+    System((System/Browser))
+    
+    %% Core Gameplay Use Cases
+    InitGame[Initialize Game]
+    SelectCards[Select Cards from Hand]
+    PlayHand[Play Hand]
+    DiscardCards[Discard Cards]
+    ViewScore[View Current Score]
+    ViewTargetScore[View Target Score]
+    ViewHandsRemaining[View Hands Remaining]
+    ViewDiscardsRemaining[View Discards Remaining]
+    
+    %% Hand Management Use Cases
+    DealCards[Deal Cards]
+    ReplaceDiscardedCards[Replace Discarded Cards]
+    ShuffleDeck[Shuffle Deck]
+    ManageDeck[Manage Card Deck]
+    
+    %% Scoring Use Cases
+    CalculateScore[Calculate Hand Score]
+    DetectPokerHand[Detect Poker Hand Type]
+    ApplyBaseScore[Apply Base Score]
+    ApplyMultipliers[Apply Multipliers]
+    PreviewScore[Preview Hand Score]
+    
+    %% Level Progression Use Cases
+    CompleteLevel[Complete Level]
+    FailLevel[Fail Level]
+    ProgressToNextLevel[Progress to Next Level]
+    SelectLevelType[Select Level Type]
+    ApplyBossEffects[Apply Boss Effects]
+    
+    %% Special Cards Use Cases
+    PurchasePlanetCard[Purchase Planet Card]
+    UseTarotCard[Use Tarot Card]
+    ActivateJoker[Activate Joker Card]
+    ApplyPlanetEffect[Apply Planet Effect]
+    ApplyTarotEffect[Apply Tarot Effect]
+    ApplyJokerEffect[Apply Joker Effect]
+    ManageJokers[Manage Active Jokers]
+    
+    %% Economy Use Cases
+    EarnMoney[Earn Money]
+    SpendMoney[Spend Money]
+    ViewBalance[View Current Balance]
+    
+    %% Shop Use Cases
+    EnterShop[Enter Shop]
+    ViewShopItems[View Shop Items]
+    PurchaseCard[Purchase Card]
+    RerollShop[Reroll Shop]
+    ExitShop[Exit Shop]
+    GenerateShopItems[Generate Shop Items]
+    
+    %% Game Flow Use Cases
+    StartNewGame[Start New Game]
+    ContinueGame[Continue Game]
+    WinGame[Win Game]
+    LoseGame[Lose Game]
+    ViewVictoryScreen[View Victory Screen]
+    ViewDefeatScreen[View Defeat Screen]
+    ReturnToMenu[Return to Menu]
+    
+    %% UI and Help Use Cases
+    ViewMainMenu[View Main Menu]
+    ViewGameScreen[View Game Screen]
+    ViewHelp[View Help]
+    ViewJokerZone[View Joker Zone]
+    ViewTarotZone[View Tarot Zone]
+    ViewShopScreen[View Shop Screen]
+    
+    %% System Use Cases
+    PersistGameData[Persist Game Data]
+    LoadGameData[Load Game Data]
+    UpdateUI[Update User Interface]
+    ValidateMove[Validate Player Move]
+    ProcessSynergies[Process Card Synergies]
+    CalculateFinalScore[Calculate Final Score]
+    CheckLevelCompletion[Check Level Completion]
+    
+    %% Player interactions - Core Gameplay
+    Player -->|starts| InitGame
+    Player -->|selects| SelectCards
+    Player -->|plays| PlayHand
+    Player -->|discards| DiscardCards
+    Player -->|views| ViewScore
+    Player -->|views| ViewTargetScore
+    Player -->|views| ViewHandsRemaining
+    Player -->|views| PreviewScore
+    
+    %% Player interactions - Special Cards
+    Player -->|purchases| PurchasePlanetCard
+    Player -->|uses| UseTarotCard
+    Player -->|activates| ActivateJoker
+    
+    %% Player interactions - Shop
+    Player -->|enters| EnterShop
+    Player -->|views| ViewShopItems
+    Player -->|purchases| PurchaseCard
+    Player -->|rerolls| RerollShop
+    Player -->|exits| ExitShop
+    
+    %% Player interactions - Game Flow
+    Player -->|starts| StartNewGame
+    Player -->|continues| ContinueGame
+    Player -->|views| ViewMainMenu
+    Player -->|views| ViewHelp
+    Player -->|returns| ReturnToMenu
+    
+    %% System interactions
+    System -->|executes| DealCards
+    System -->|shuffles| ShuffleDeck
+    System -->|calculates| CalculateScore
+    System -->|detects| DetectPokerHand
+    System -->|manages| ManageDeck
+    System -->|processes| ProcessSynergies
+    System -->|validates| ValidateMove
+    System -->|persists| PersistGameData
+    System -->|updates| UpdateUI
+    System -->|checks| CheckLevelCompletion
+    System -->|generates| GenerateShopItems
+    
+    %% Include relationships - Game Initialization
+    InitGame -.->|includes| ShuffleDeck
+    InitGame -.->|includes| DealCards
+    InitGame -.->|includes| UpdateUI
+    InitGame -.->|includes| ManageDeck
+    
+    StartNewGame -.->|includes| InitGame
+    ContinueGame -.->|includes| LoadGameData
+    
+    %% Include relationships - Hand Management
+    SelectCards -.->|includes| PreviewScore
+    SelectCards -.->|includes| UpdateUI
+    
+    PlayHand -.->|includes| ValidateMove
+    PlayHand -.->|includes| CalculateScore
+    PlayHand -.->|includes| UpdateUI
+    
+    DiscardCards -.->|includes| ValidateMove
+    DiscardCards -.->|includes| ReplaceDiscardedCards
+    DiscardCards -.->|includes| UpdateUI
+    
+    ReplaceDiscardedCards -.->|includes| ManageDeck
+    
+    %% Include relationships - Scoring
+    CalculateScore -.->|includes| DetectPokerHand
+    CalculateScore -.->|includes| ApplyBaseScore
+    CalculateScore -.->|includes| ApplyMultipliers
+    CalculateScore -.->|includes| ProcessSynergies
+    CalculateScore -.->|includes| CalculateFinalScore
+    
+    ProcessSynergies -.->|includes| ApplyJokerEffect
+    
+    PreviewScore -.->|includes| DetectPokerHand
+    PreviewScore -.->|includes| ApplyBaseScore
+    
+    %% Include relationships - Level Progression
+    PlayHand -.->|includes| CheckLevelCompletion
+    
+    CompleteLevel -.->|includes| EarnMoney
+    CompleteLevel -.->|includes| EnterShop
+    CompleteLevel -.->|includes| UpdateUI
+    
+    ProgressToNextLevel -.->|includes| SelectLevelType
+    ProgressToNextLevel -.->|includes| InitGame
+    
+    SelectLevelType -.->|includes| ApplyBossEffects
+    
+    %% Include relationships - Special Cards
+    PurchasePlanetCard -.->|includes| SpendMoney
+    PurchasePlanetCard -.->|includes| ApplyPlanetEffect
+    PurchasePlanetCard -.->|includes| UpdateUI
+    
+    UseTarotCard -.->|includes| ApplyTarotEffect
+    UseTarotCard -.->|includes| UpdateUI
+    
+    ActivateJoker -.->|includes| ManageJokers
+    ActivateJoker -.->|includes| UpdateUI
+    
+    %% Include relationships - Shop
+    EnterShop -.->|includes| GenerateShopItems
+    EnterShop -.->|includes| ViewShopScreen
+    
+    PurchaseCard -.->|includes| ValidateMove
+    PurchaseCard -.->|includes| SpendMoney
+    PurchaseCard -.->|includes| UpdateUI
+    
+    RerollShop -.->|includes| SpendMoney
+    RerollShop -.->|includes| GenerateShopItems
+    RerollShop -.->|includes| UpdateUI
+    
+    ExitShop -.->|includes| ProgressToNextLevel
+    
+    %% Include relationships - Game Flow
+    WinGame -.->|includes| ViewVictoryScreen
+    WinGame -.->|includes| PersistGameData
+    
+    LoseGame -.->|includes| ViewDefeatScreen
+    
+    ViewMainMenu -.->|includes| UpdateUI
+    ViewGameScreen -.->|includes| UpdateUI
+    ViewHelp -.->|includes| UpdateUI
+    
+    %% Extend relationships - Level Completion
+    CheckLevelCompletion ..->|extends| CompleteLevel
+    CheckLevelCompletion ..->|extends| FailLevel
+    
+    CompleteLevel ..->|extends| ProgressToNextLevel
+    FailLevel ..->|extends| LoseGame
+    
+    %% Extend relationships - Game End
+    ProgressToNextLevel ..->|extends| WinGame
+    
+    %% Extend relationships - Boss Effects
+    SelectLevelType ..->|extends| ApplyBossEffects
+    
+    %% Styling
+    classDef playerStyle fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    classDef systemStyle fill:#50C878,stroke:#2E7D4E,stroke-width:3px,color:#fff
+    classDef coreUseCase fill:#FFD700,stroke:#DAA520,stroke-width:2px
+    classDef scoringUseCase fill:#FF9F40,stroke:#CC7A33,stroke-width:2px
+    classDef levelUseCase fill:#9B59B6,stroke:#6C3483,stroke-width:2px
+    classDef specialCardsUseCase fill:#3498DB,stroke:#2471A3,stroke-width:2px
+    classDef economyUseCase fill:#2ECC71,stroke:#27AE60,stroke-width:2px
+    classDef shopUseCase fill:#E74C3C,stroke:#C0392B,stroke-width:2px
+    classDef gameFlowUseCase fill:#FF6B6B,stroke:#C92A2A,stroke-width:2px
+    classDef uiUseCase fill:#95A5A6,stroke:#7F8C8D,stroke-width:2px
+    classDef systemUseCase fill:#B19CD9,stroke:#7B68A8,stroke-width:2px
+    
+    class Player playerStyle
+    class System systemStyle
+    class InitGame,SelectCards,PlayHand,DiscardCards,ViewScore,ViewTargetScore,ViewHandsRemaining,ViewDiscardsRemaining,DealCards,ReplaceDiscardedCards,ShuffleDeck,ManageDeck coreUseCase
+    class CalculateScore,DetectPokerHand,ApplyBaseScore,ApplyMultipliers,PreviewScore,CalculateFinalScore scoringUseCase
+    class CompleteLevel,FailLevel,ProgressToNextLevel,SelectLevelType,ApplyBossEffects,CheckLevelCompletion levelUseCase
+    class PurchasePlanetCard,UseTarotCard,ActivateJoker,ApplyPlanetEffect,ApplyTarotEffect,ApplyJokerEffect,ManageJokers specialCardsUseCase
+    class EarnMoney,SpendMoney,ViewBalance economyUseCase
+    class EnterShop,ViewShopItems,PurchaseCard,RerollShop,ExitShop,GenerateShopItems,ViewShopScreen shopUseCase
+    class StartNewGame,ContinueGame,WinGame,LoseGame,ViewVictoryScreen,ViewDefeatScreen,ReturnToMenu gameFlowUseCase
+    class ViewMainMenu,ViewGameScreen,ViewHelp,ViewJokerZone,ViewTarotZone uiUseCase
+    class PersistGameData,LoadGameData,UpdateUI,ValidateMove,ProcessSynergies systemUseCase
