@@ -1,76 +1,108 @@
+/* ============================================
+   FILENAME: CardComponent.css
+   ============================================ */
+
+/* === ELEMENTS === */
 .card {
-  width: 80px;
-  height: 112px;
-  background: white;
-  border: 2px solid #2c3e50;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
   position: relative;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  width: var(--card-width);
+  height: var(--card-height);
+  background-color: white;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-weight-bold);
+  user-select: none;
+  will-change: transform;
 }
 
-.card:hover:not(.card--disabled) {
-  transform: translateY(-8px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+.card__value {
+  position: absolute;
+  top: var(--spacing-xs);
+  left: var(--spacing-xs);
+  font-size: var(--font-size-h3);
 }
 
-.card--selected {
-  transform: translateY(-12px);
-  border-color: #3498db;
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.5);
+.card__suit {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  font-size: var(--font-size-h2);
 }
 
-.card--disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.card--enhanced {
-  border-color: #f39c12;
-}
-
-.card-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  font-weight: bold;
-}
-
-.card-value {
-  font-size: 1.5rem;
-  margin-bottom: 0.25rem;
-}
-
-.card-suit {
+.card__center-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-size: 2rem;
 }
 
-.card-enhancements {
-  position: absolute;
-  bottom: 4px;
-  left: 4px;
-  right: 4px;
-  display: flex;
-  gap: 4px;
-  justify-content: center;
+.card--diamonds .card__value,
+.card--diamonds .card__suit,
+.card--diamonds .card__center-icon {
+  color: var(--color-suit-diamonds);
 }
 
-.enhancement {
-  font-size: 0.7rem;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-weight: bold;
+.card--hearts .card__value,
+.card--hearts .card__suit,
+.card--hearts .card__center-icon {
+  color: var(--color-suit-hearts);
 }
 
-.enhancement--chips {
-  background: #3498db;
+.card--spades .card__value,
+.card--spades .card__suit,
+.card--spades .card__center-icon {
+  color: var(--color-suit-spades);
+}
+
+.card--clubs .card__value,
+.card--clubs .card__suit,
+.card--clubs .card__center-icon {
+  color: var(--color-suit-clubs);
+}
+
+/* Special Cards */
+.card--joker {
+  background: linear-gradient(135deg, var(--color-joker-start), var(--color-joker-end));
   color: white;
+  border: 2px solid gold;
 }
 
-.enhancement--mult {
-  background: #e74c3c;
-  color: white;
+.card--planet {
+  background-color: var(--color-planet-bg);
+  border: 2px solid var(--color-planet-accent);
+  color: var(--color-planet-accent);
+}
+
+.card--tarot {
+  background-color: var(--color-tarot-bg);
+  border: 2px solid var(--color-tarot-border);
+  color: var(--color-tarot-border);
+}
+
+/* === STATES === */
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-card-hover);
+  z-index: var(--z-card-hover);
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+.card--selected {
+  animation: glowPulse 2s infinite;
+}
+
+/* === ANIMATIONS === */
+.card--dealing {
+  animation: cardDeal 0.5s ease-out forwards;
+}
+
+.card--flipping {
+  animation: cardFlip 0.6s ease-in-out forwards;
 }

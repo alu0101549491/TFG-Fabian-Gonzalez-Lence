@@ -1,58 +1,98 @@
+/* ============================================
+   FILENAME: GameBoard.css
+   ============================================ */
+
+/* === LAYOUT === */
 .game-board {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  gap: var(--spacing-md);
+  height: 100vh;
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-primary);
+  overflow: hidden;
+}
+
+.game-board__top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-panel);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow-panel);
+}
+
+.game-board__level-info {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+}
+
+.game-board__money,
+.game-board__round {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-number);
+  color: var(--color-money);
+}
+
+.game-board__joker-zone,
+.game-board__tarot-zone {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-panel);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow-panel);
+}
+
+.game-board__main-area {
   display: flex;
   flex-direction: column;
-  padding: 1rem;
+  gap: var(--spacing-md);
+  overflow-y: auto;
 }
 
-.game-board-header {
-  margin-bottom: 1rem;
+.game-board__hand-area {
+  min-height: var(--card-height);
 }
 
-.game-board-main {
-  flex: 1;
+.game-board__score-preview {
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-panel);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow-panel);
+}
+
+.game-board__actions {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-panel);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow-panel);
 }
 
-.game-board-controls {
+.game-board__counters {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1rem;
+  justify-content: space-between;
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
 }
 
-.game-board-button {
-  padding: 0.75rem 2rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* === RESPONSIVE === */
+@media (min-width: 768px) {
+  .game-board {
+    grid-template-rows: auto auto auto 1fr auto;
+  }
+
+  .game-board__joker-zone,
+  .game-board__tarot-zone {
+    flex-direction: row;
+  }
 }
 
-.game-board-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.game-board-button--play {
-  background: #2ecc71;
-  color: white;
-}
-
-.game-board-button--play:hover:not(:disabled) {
-  background: #27ae60;
-}
-
-.game-board-button--discard {
-  background: #e74c3c;
-  color: white;
-}
-
-.game-board-button--discard:hover:not(:disabled) {
-  background: #c0392b;
+@media (min-width: 1024px) {
+  .game-board {
+    padding: var(--spacing-lg);
+  }
 }

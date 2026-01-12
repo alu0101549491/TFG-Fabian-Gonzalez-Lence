@@ -1,119 +1,66 @@
+/* ============================================
+   FILENAME: ScoreDisplay.css
+   ============================================ */
+
+/* === LAYOUT === */
 .score-display {
-  background: rgba(44, 62, 80, 0.9);
-  border-radius: 8px;
-  padding: 1.5rem;
-  color: #ecf0f1;
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-panel);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow-panel);
 }
 
-.score-main {
-  margin-bottom: 1rem;
-}
-
-.score-values {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.score-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.score-label {
-  font-size: 0.8rem;
-  opacity: 0.8;
-  text-transform: uppercase;
-}
-
-.score-value {
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-.score-item--chips .score-value {
-  color: #3498db;
-}
-
-.score-item--mult .score-value {
-  color: #e74c3c;
-}
-
-.score-item--total .score-value {
-  color: #f39c12;
-  font-size: 2rem;
-}
-
-.score-operator {
-  font-size: 1.5rem;
-  font-weight: bold;
-  opacity: 0.6;
-}
-
-.score-progress {
-  margin-top: 1rem;
-}
-
-.progress-bar {
-  height: 20px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 0.5rem;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #2ecc71, #27ae60);
-  transition: width 0.5s ease;
-}
-
-.progress-text {
-  text-align: center;
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
-
-.score-info {
+.score-display__goal {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(236, 240, 241, 0.2);
+  margin-bottom: var(--spacing-sm);
 }
 
-.info-group {
+.score-display__goal-label {
+  color: var(--color-text-secondary);
+}
+
+.score-display__goal-value {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-number);
+}
+
+.score-display__progress-container {
+  height: 8px;
+  background-color: var(--color-bg-primary);
+  border-radius: 4px;
+  margin-bottom: var(--spacing-sm);
+  overflow: hidden;
+}
+
+.score-display__progress-bar {
+  height: 100%;
+  background-color: var(--color-success);
+  transition: width var(--transition-slow);
+}
+
+.score-display__preview {
   display: flex;
-  gap: 1rem;
-  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-family-mono);
 }
 
-.hand-type {
-  font-weight: bold;
-  color: #9b59b6;
-  font-size: 1.1rem;
+.score-display__chips {
+  color: var(--color-chips);
 }
 
-.resource {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
+.score-display__mult {
+  color: var(--color-mult);
 }
 
-.resource-label {
-  font-size: 0.9rem;
-  opacity: 0.8;
+.score-display__total {
+  font-weight: var(--font-weight-bold);
 }
 
-.resource-value {
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-.resource--money {
-  color: #f39c12;
+/* === ANIMATIONS === */
+.score-display__floating-number {
+  position: absolute;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-small);
+  animation: floatingNumber 1s ease-out forwards;
 }
