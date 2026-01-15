@@ -1,86 +1,106 @@
-import {CardValue} from './card-value.enum';
-import {Suit} from './suit.enum';
+// ============================================
+// FILE: src/models/core/card.ts
+// ============================================
+
+import { v4 as uuidv4 } from 'uuid';
+import { CardValue, getBaseChipsForValue, getNextValue } from './card-value.enum';
+import { Suit, getSuitSymbol } from './suit.enum';
 
 /**
- * Represents a single playing card with value, suit, and bonus modifiers.
- * Cards can be enhanced with permanent chip and multiplier bonuses.
+ * Represents a single playing card in the game.
+ * Cards can have permanent bonuses applied via tarot cards.
  */
 export class Card {
-  private value: CardValue;
-  private suit: Suit;
+  private readonly id: string;
   private chipBonus: number;
   private multBonus: number;
-  private id: string;
 
   /**
-   * Creates a new Card instance.
-   * @param {CardValue} value - The card's value
-   * @param {Suit} suit - The card's suit
+   * Creates a new card with specified value and suit.
+   * @param value The card's rank (A, K, Q, etc.)
+   * @param suit The card's suit (Diamonds, Hearts, Spades, Clubs)
    */
-  constructor(value: CardValue, suit: Suit) {
-    // TODO: Initialize card properties
+  constructor(
+    public value: CardValue,
+    public suit: Suit
+  ) {
+    this.id = uuidv4();
+    this.chipBonus = 0;
+    this.multBonus = 0;
+    console.log(`Card created: ${getValueDisplay(value)}${getSuitSymbol(suit)}`);
   }
 
   /**
-   * Gets the base chip value of the card based on its value.
-   * @return {number} Base chip value
+   * Returns total chips this card contributes (base value + permanent bonus).
+   * @returns The total chip value
    */
   public getBaseChips(): number {
-    // TODO: Implement base chips calculation
-    return 0;
+    return getBaseChipsForValue(this.value) + this.chipBonus;
   }
 
   /**
-   * Adds permanent chip and mult bonuses to the card.
-   * @param {number} chips - Chip bonus to add
-   * @param {number} mult - Multiplier bonus to add
+   * Adds permanent bonuses to card (used by The Empress/Emperor tarot).
+   * @param chips The chip bonus to add
+   * @param mult The mult bonus to add
+   * @throws Error if negative values are provided
    */
   public addPermanentBonus(chips: number, mult: number): void {
-    // TODO: Implement permanent bonus addition
+    if (chips < 0 || mult < 0) {
+      throw new Error('Bonus values cannot be negative');
+    }
+    this.chipBonus += chips;
+    this.multBonus += mult;
+    console.log(`Bonuses added to card ${this.id}: +${chips} chips, +${mult} mult`);
   }
 
   /**
-   * Changes the card's suit.
-   * @param {Suit} newSuit - The new suit for the card
+   * Changes the card's suit (used by The Star/Moon/Sun/World tarot).
+   * @param newSuit The new suit to assign
    */
   public changeSuit(newSuit: Suit): void {
-    // TODO: Implement suit change
+    console.log(`Changing suit of card ${this.id} from ${this.suit} to ${newSuit}`);
+    this.suit = newSuit;
   }
 
   /**
-   * Upgrades the card's value to the next higher value.
+   * Increments card value in sequence: A→2, 2→3, ..., K→A (used by Strength tarot).
    */
   public upgradeValue(): void {
-    // TODO: Implement value upgrade
+    const oldValue = this.value;
+    this.value = getNextValue(this.value);
+    console.log(`Card ${this.id} upgraded from ${oldValue} to ${this.value}`);
   }
 
   /**
-   * Creates a deep copy of the card.
-   * @return {Card} Cloned card instance
+   * Creates deep copy of card with new unique ID (used by Death tarot).
+   * @returns A new Card object with same value, suit, and bonuses but different ID
    */
   public clone(): Card {
-    // TODO: Implement card cloning
-    return new Card(this.value, this.suit);
+    const clonedCard = new Card(this.value, this.suit);
+    clonedCard.chipBonus = this.chipBonus;
+    clonedCard.multBonus = this.multBonus;
+    console.log(`Card ${this.id} cloned to new card ${clonedCard.id}`);
+    return clonedCard;
   }
 
-  // Getters
-  public getValue(): CardValue {
-    return this.value;
-  }
-
-  public getSuit(): Suit {
-    return this.suit;
-  }
-
-  public getChipBonus(): number {
-    return this.chipBonus;
-  }
-
-  public getMultBonus(): number {
-    return this.multBonus;
-  }
-
+  /**
+   * Returns the card's unique identifier.
+   * @returns The card's ID
+   */
   public getId(): string {
     return this.id;
   }
+
+  /**
+   * Returns the card's mult bonus.
+   * @returns The mult bonus value
+   */
+  public getMultBonus(): number {
+    return this.multBonus;
+  }
+}
+
+// Helper function to get display string for a card value
+function getValueDisplay(value: CardValue): string {
+  return value;
 }
