@@ -132,17 +132,17 @@ jobs:
           </head>
           <body>
               <div class="container">
-                  <h1>🚀 My Projects</h1>
+                  <h1>🚀 TFG - Análisis de Capacidades de la IA en la Generación Semiautomática de Aplicaciones Complejas</h1>
                   <div class="projects">
                       <a href="./1-TheHangmanGame/" class="project-card">
                           <div class="project-icon">🎮</div>
                           <div class="project-name">The Hangman Game</div>
-                          <div class="project-description">Classic word guessing game built with TypeScript</div>
+                          <div class="project-description">Juego clásico de adivinar palabras construido con TypeScript</div>
                       </a>
                       <a href="./2-MusicWebPlayer/" class="project-card">
                           <div class="project-icon">🎵</div>
                           <div class="project-name">Music Web Player</div>
-                          <div class="project-description">Modern music player application with React</div>
+                          <div class="project-description">Aplicación moderna de reproductor de música con React</div>
                       </a>
                   </div>
               </div>
