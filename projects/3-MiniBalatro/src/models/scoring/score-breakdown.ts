@@ -1,29 +1,31 @@
+// ============================================
+// FILE: src/models/scoring/score-breakdown.ts
+// ============================================
+
 /**
- * Represents a single step in the score calculation breakdown.
- * Used for displaying how the final score was calculated.
+ * Records individual contribution to score calculation.
+ * Enables detailed tracing and UI display of score sources.
  */
 export class ScoreBreakdown {
-  public source: string;
-  public chipsAdded: number;
-  public multAdded: number;
-  public description: string;
-
   /**
-   * Creates a new ScoreBreakdown instance.
-   * @param {string} source - Source of the bonus (card, joker, etc.)
-   * @param {number} chipsAdded - Chips added in this step
-   * @param {number} multAdded - Mult added in this step
-   * @param {string} description - Human-readable description
+   * Creates a breakdown entry for score tracing.
+   * @param source - Name of the source
+   * @param chipsAdded - Chips contributed by this source
+   * @param multAdded - Mult contributed by this source
+   * @param description - Human-readable description of effect
+   * @throws Error if source or description is empty
    */
   constructor(
-      source: string,
-      chipsAdded: number,
-      multAdded: number,
-      description: string
+    public readonly source: string,
+    public readonly chipsAdded: number,
+    public readonly multAdded: number,
+    public readonly description: string
   ) {
-    this.source = source;
-    this.chipsAdded = chipsAdded;
-    this.multAdded = multAdded;
-    this.description = description;
+    if (!source || !description) {
+      throw new Error('Source and description must not be empty');
+    }
+    if (chipsAdded < 0 || multAdded < 0) {
+      throw new Error('Added values cannot be negative');
+    }
   }
 }
