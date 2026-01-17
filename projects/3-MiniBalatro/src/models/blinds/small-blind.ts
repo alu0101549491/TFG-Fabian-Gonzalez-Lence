@@ -1,25 +1,31 @@
-import {Blind} from './blind';
+// ============================================
+// FILE: src/models/blinds/small-blind.ts
+// ============================================
+
+import { Blind } from './blind';
+import { BlindModifier } from './blind-modifier';
 
 /**
- * Represents a small blind - the easiest blind type.
- * First blind of each level trio.
+ * First blind in each round (easiest difficulty).
+ * Goal = base × 1.0, Reward = $2.
  */
 export class SmallBlind extends Blind {
   /**
-   * Creates a new SmallBlind instance.
-   * @param {number} level - Current level number
+   * Creates a small blind for the specified round.
+   * @param level - The level number
+   * @param roundNumber - The round number
+   * @throws Error if level or roundNumber <= 0
    */
-  constructor(level: number) {
-    super(level);
-    // TODO: Calculate score goal and reward
+  constructor(level: number, roundNumber: number) {
+    const baseGoal = SmallBlind.calculateBaseGoal(roundNumber);
+    super(level, baseGoal, 2);
   }
 
   /**
-   * Calculates the score goal for this small blind.
-   * @return {number} Required score
+   * Returns null (small blinds have no modifiers).
+   * @returns null
    */
-  public getScoreGoal(): number {
-    // TODO: Implement score goal calculation
-    return this.scoreGoal;
+  public getModifier(): BlindModifier | null {
+    return null;
   }
 }

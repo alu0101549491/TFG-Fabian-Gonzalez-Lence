@@ -1,25 +1,31 @@
-import {Blind} from './blind';
+// ============================================
+// FILE: src/models/blinds/big-blind.ts
+// ============================================
+
+import { Blind } from './blind';
+import { BlindModifier } from './blind-modifier';
 
 /**
- * Represents a big blind - medium difficulty.
- * Second blind of each level trio.
+ * Second blind in each round (medium difficulty).
+ * Goal = base × 1.5, Reward = $5.
  */
 export class BigBlind extends Blind {
   /**
-   * Creates a new BigBlind instance.
-   * @param {number} level - Current level number
+   * Creates a big blind for the specified round.
+   * @param level - The level number
+   * @param roundNumber - The round number
+   * @throws Error if level or roundNumber <= 0
    */
-  constructor(level: number) {
-    super(level);
-    // TODO: Calculate score goal and reward
+  constructor(level: number, roundNumber: number) {
+    const baseGoal = BigBlind.calculateBaseGoal(roundNumber);
+    super(level, Math.floor(baseGoal * 1.5), 5);
   }
 
   /**
-   * Calculates the score goal for this big blind.
-   * @return {number} Required score
+   * Returns null (big blinds have no modifiers).
+   * @returns null
    */
-  public getScoreGoal(): number {
-    // TODO: Implement score goal calculation
-    return this.scoreGoal;
+  public getModifier(): BlindModifier | null {
+    return null;
   }
 }
