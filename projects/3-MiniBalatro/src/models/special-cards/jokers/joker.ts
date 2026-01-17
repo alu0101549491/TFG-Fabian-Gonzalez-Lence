@@ -1,66 +1,52 @@
-import {JokerPriority} from './joker-priority.enum';
-import {ScoreContext} from '../../scoring/score-context';
+// ============================================
+// FILE: src/models/special-cards/jokers/joker.ts
+// ============================================
+
+import { ScoreContext } from '../../scoring/score-context';
+import { JokerPriority } from './joker-priority.enum';
 
 /**
  * Abstract base class for all joker cards.
- * Jokers apply special effects during score calculation.
+ * Jokers provide persistent bonuses during score calculation.
  */
 export abstract class Joker {
-  protected id: string;
-  protected name: string;
-  protected description: string;
-  protected priority: JokerPriority;
-
   /**
-   * Creates a new Joker instance.
-   * @param {string} id - Unique identifier
-   * @param {string} name - Display name
-   * @param {string} description - Effect description
-   * @param {JokerPriority} priority - Execution priority
+   * Creates a joker with specified properties.
+   * @param id - Unique identifier for the joker
+   * @param name - Display name
+   * @param description - Effect description for UI
+   * @param priority - When this joker's effect applies
+   * @throws Error if name or description is empty
    */
   constructor(
-      id: string,
-      name: string,
-      description: string,
-      priority: JokerPriority
+    public readonly id: string,
+    public readonly name: string,
+    public readonly description: string,
+    public readonly priority: JokerPriority
   ) {
-    this.id = id;
-    this.name = name;
-    this.description = description;
-    this.priority = priority;
+    if (!name || !description) {
+      throw new Error('Joker name and description must not be empty');
+    }
   }
 
   /**
    * Applies the joker's effect to the score context.
-   * @param {ScoreContext} context - Current scoring context
+   * @param context - The score calculation context
    */
   public abstract applyEffect(context: ScoreContext): void;
 
   /**
-   * Checks if the joker can activate in the current context.
-   * @param {ScoreContext} context - Current scoring context
-   * @return {boolean} True if joker can activate
+   * Checks if joker's conditions are met for activation.
+   * @param context - The score calculation context
+   * @returns True if joker should activate
    */
   public abstract canActivate(context: ScoreContext): boolean;
 
   /**
-   * Gets the execution priority of this joker.
-   * @return {JokerPriority} Joker's priority
+   * Returns the joker's priority level.
+   * @returns The JokerPriority value
    */
   public getPriority(): JokerPriority {
     return this.priority;
-  }
-
-  // Getters
-  public getId(): string {
-    return this.id;
-  }
-
-  public getName(): string {
-    return this.name;
-  }
-
-  public getDescription(): string {
-    return this.description;
   }
 }

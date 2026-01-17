@@ -1,49 +1,59 @@
-import {Joker} from './joker';
-import {JokerPriority} from './joker-priority.enum';
-import {ScoreContext} from '../../scoring/score-context';
+// ============================================
+// FILE: src/models/special-cards/jokers/chip-joker.ts
+// ============================================
+
+import { Joker } from './joker';
+import { JokerPriority } from './joker-priority.enum';
+import { ScoreContext } from '../../scoring/score-context';
 
 /**
- * Joker that adds chip bonuses to the score.
- * Executes first in the scoring order.
+ * Joker that adds chips to the score.
+ * Applied with CHIPS priority (first).
  */
 export class ChipJoker extends Joker {
-  private chipValue: number;
-  private condition: (context: ScoreContext) => boolean;
-
   /**
-   * Creates a new ChipJoker instance.
-   * @param {string} id - Unique identifier
-   * @param {string} name - Display name
-   * @param {string} description - Effect description
-   * @param {number} chipValue - Chips to add
-   * @param {Function} condition - Activation condition
+   * Creates a chip-adding joker with optional condition.
+   * @param id - Unique identifier
+   * @param name - Display name
+   * @param description - Effect description
+   * @param chipValue - Chips added per activation
+   * @param condition - Optional condition function
+   * @throws Error if chipValue <= 0
    */
   constructor(
-      id: string,
-      name: string,
-      description: string,
-      chipValue: number,
-      condition: (context: ScoreContext) => boolean
+    id: string,
+    name: string,
+    description: string,
+    public readonly chipValue: number,
+    private readonly condition?: (context: ScoreContext) => boolean
   ) {
     super(id, name, description, JokerPriority.CHIPS);
-    this.chipValue = chipValue;
-    this.condition = condition;
+    if (chipValue <= 0) {
+      throw new Error('Chip value must be positive');
+    }
   }
 
   /**
-   * Applies chip bonus to the context.
-   * @param {ScoreContext} context - Current scoring context
+   * Adds chips to context.chips based on condition.
+   * @param context - The score calculation context
    */
   public applyEffect(context: ScoreContext): void {
-    // TODO: Implement chip addition
+    if (this.canActivate(context)) {
+      const actualValue = typeof this.condition === 'function'
+        ? (this.condition(context) ? this.chipValue : 0)
+        : this.chipValue;
+
+      context.chips += actualValue;
+      console.log(`[${this.name}] Added ${actualValue} chips (Total: ${context.chips})`);
+    }
   }
 
   /**
-   * Checks if this joker's condition is met.
-   * @param {ScoreContext} context - Current scoring context
-   * @return {boolean} True if condition is met
+   * Checks if joker's conditions are met for activation.
+   * @param context - The score calculation context
+   * @returns True if joker should activate
    */
   public canActivate(context: ScoreContext): boolean {
-    return this.condition(context);
+    return this.condition ? this.condition(context) : true;
   }
 }

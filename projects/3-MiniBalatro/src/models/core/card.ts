@@ -98,6 +98,14 @@ export class Card {
   public getMultBonus(): number {
     return this.multBonus;
   }
+
+  /**
+   * Returns a string representation of the card (e.g., "A♠", "10♥").
+   * @returns The display string for the card
+   */
+  public getDisplayString(): string {
+    return `${getValueDisplay(this.value)}${getSuitSymbol(this.suit)}`;
+  }
 }
 
 // Helper function to get display string for a card value

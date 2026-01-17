@@ -1,45 +1,50 @@
-import {HandType} from '../../poker/hand-type.enum';
-import {HandUpgradeManager} from '../../poker/hand-upgrade-manager';
+// ============================================
+// FILE: src/models/special-cards/planets/planet.ts
+// ============================================
+
+import { HandType } from '../../poker/hand-type.enum';
+import { HandUpgradeManager } from '../../poker/hand-upgrade-manager';
 
 /**
- * Represents a planet card that permanently upgrades poker hand types.
- * Each planet targets a specific hand type and adds chips and mult.
+ * Represents a planet card that permanently upgrades a poker hand type.
+ * Planet effects are cumulative and persist for the entire game.
  */
 export class Planet {
-  private targetHandType: HandType;
-  private chipsBonus: number;
-  private multBonus: number;
-
   /**
-   * Creates a new Planet instance.
-   * @param {HandType} handType - Hand type to upgrade
-   * @param {number} chips - Chips to add
-   * @param {number} mult - Mult to add
+   * Creates a planet card with specified upgrades.
+   * @param name - Planet name
+   * @param targetHandType - Which hand type this upgrades
+   * @param chipsBonus - Additional chips to add
+   * @param multBonus - Additional mult to add
+   * @throws Error if negative bonuses provided
    */
-  constructor(handType: HandType, chips: number, mult: number) {
-    this.targetHandType = handType;
-    this.chipsBonus = chips;
-    this.multBonus = mult;
+  constructor(
+    public readonly name: string,
+    public readonly targetHandType: HandType,
+    public readonly chipsBonus: number,
+    public readonly multBonus: number
+  ) {
+    if (chipsBonus < 0 || multBonus < 0) {
+      throw new Error('Planet bonuses cannot be negative');
+    }
   }
 
   /**
-   * Applies this planet's upgrade to the hand upgrade manager.
-   * @param {HandUpgradeManager} upgradeManager - Manager to update
+   * Applies this planet's bonuses to the upgrade manager.
+   * @param upgradeManager - The hand upgrade manager
+   * @throws Error if upgradeManager is null
    */
   public apply(upgradeManager: HandUpgradeManager): void {
-    // TODO: Implement planet application
-  }
+    if (!upgradeManager) {
+      throw new Error('Upgrade manager cannot be null');
+    }
 
-  // Getters
-  public getTargetHandType(): HandType {
-    return this.targetHandType;
-  }
+    upgradeManager.applyPlanetUpgrade(
+      this.targetHandType,
+      this.chipsBonus,
+      this.multBonus
+    );
 
-  public getChipsBonus(): number {
-    return this.chipsBonus;
-  }
-
-  public getMultBonus(): number {
-    return this.multBonus;
+    console.log(`[${this.name}] Applied upgrade to ${this.targetHandType}: +${this.chipsBonus} chips, +${this.multBonus} mult`);
   }
 }

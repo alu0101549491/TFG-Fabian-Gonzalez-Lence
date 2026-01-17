@@ -1,49 +1,59 @@
-import {Joker} from './joker';
-import {JokerPriority} from './joker-priority.enum';
-import {ScoreContext} from '../../scoring/score-context';
+// ============================================
+// FILE: src/models/special-cards/jokers/mult-joker.ts
+// ============================================
+
+import { Joker } from './joker';
+import { JokerPriority } from './joker-priority.enum';
+import { ScoreContext } from '../../scoring/score-context';
 
 /**
- * Joker that adds multiplier bonuses to the score.
- * Executes second in the scoring order.
+ * Joker that adds mult to the score.
+ * Applied with MULT priority (second).
  */
 export class MultJoker extends Joker {
-  private multValue: number;
-  private condition: (context: ScoreContext) => boolean;
-
   /**
-   * Creates a new MultJoker instance.
-   * @param {string} id - Unique identifier
-   * @param {string} name - Display name
-   * @param {string} description - Effect description
-   * @param {number} multValue - Multiplier to add
-   * @param {Function} condition - Activation condition
+   * Creates a mult-adding joker with optional condition.
+   * @param id - Unique identifier
+   * @param name - Display name
+   * @param description - Effect description
+   * @param multValue - Mult added per activation
+   * @param condition - Optional condition function
+   * @throws Error if multValue <= 0
    */
   constructor(
-      id: string,
-      name: string,
-      description: string,
-      multValue: number,
-      condition: (context: ScoreContext) => boolean
+    id: string,
+    name: string,
+    description: string,
+    public readonly multValue: number,
+    private readonly condition?: (context: ScoreContext) => boolean
   ) {
     super(id, name, description, JokerPriority.MULT);
-    this.multValue = multValue;
-    this.condition = condition;
+    if (multValue <= 0) {
+      throw new Error('Mult value must be positive');
+    }
   }
 
   /**
-   * Applies multiplier bonus to the context.
-   * @param {ScoreContext} context - Current scoring context
+   * Adds mult to context.mult based on condition.
+   * @param context - The score calculation context
    */
   public applyEffect(context: ScoreContext): void {
-    // TODO: Implement mult addition
+    if (this.canActivate(context)) {
+      const actualValue = typeof this.condition === 'function'
+        ? (this.condition(context) ? this.multValue : 0)
+        : this.multValue;
+
+      context.mult += actualValue;
+      console.log(`[${this.name}] Added ${actualValue} mult (Total: ${context.mult})`);
+    }
   }
 
   /**
-   * Checks if this joker's condition is met.
-   * @param {ScoreContext} context - Current scoring context
-   * @return {boolean} True if condition is met
+   * Checks if joker's conditions are met for activation.
+   * @param context - The score calculation context
+   * @returns True if joker should activate
    */
   public canActivate(context: ScoreContext): boolean {
-    return this.condition(context);
+    return this.condition ? this.condition(context) : true;
   }
 }
