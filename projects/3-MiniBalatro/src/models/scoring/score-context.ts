@@ -1,36 +1,75 @@
-import {Card} from '../core/card';
-import {HandType} from '../poker/hand-type.enum';
+// ============================================
+// FILE: src/models/scoring/score-context.ts
+// ============================================
+
+import { Card } from '../core/card';
+import { HandType } from '../poker/hand-type.enum';
 
 /**
- * Represents the current state during score calculation.
- * Tracks chips, mult, and contextual information for joker effects.
+ * Holds intermediate state during score calculation.
+ * Tracks accumulating chips and mult as effects are applied.
  */
 export class ScoreContext {
-  public chips: number;
-  public mult: number;
-  public playedCards: Card[];
-  public handType: HandType;
-  public remainingDeckSize: number;
-
   /**
-   * Creates a new ScoreContext instance.
-   * @param {number} chips - Initial chips
-   * @param {number} mult - Initial multiplier
-   * @param {Card[]} playedCards - Cards in the played hand
-   * @param {HandType} handType - Type of poker hand
-   * @param {number} remainingDeckSize - Cards left in deck
+   * Creates a score context with initial values.
+   * @param chips - Initial chip value
+   * @param mult - Initial mult value
+   * @param playedCards - Cards that were played this hand
+   * @param handType - Detected poker hand type
+   * @param remainingDeckSize - Cards remaining in deck
+   * @throws Error if chips or mult negative, or playedCards empty
    */
   constructor(
-      chips: number,
-      mult: number,
-      playedCards: Card[],
-      handType: HandType,
-      remainingDeckSize: number
+    public chips: number,
+    public mult: number,
+    public readonly playedCards: Card[],
+    public readonly handType: HandType,
+    public readonly remainingDeckSize: number,
   ) {
-    this.chips = chips;
-    this.mult = mult;
-    this.playedCards = playedCards;
-    this.handType = handType;
-    this.remainingDeckSize = remainingDeckSize;
+    if (chips < 0 || mult < 0) {
+      throw new Error('Chips and mult must be non-negative');
+    }
+    if (!playedCards || playedCards.length === 0) {
+      throw new Error('Played cards array cannot be empty');
+    }
+    if (remainingDeckSize < 0) {
+      throw new Error('Remaining deck size cannot be negative');
+    }
+  }
+
+  /**
+   * Adds chips to the current total.
+   * @param amount - Amount to add
+   * @throws Error if amount is negative
+   */
+  public addChips(amount: number): void {
+    if (amount < 0) {
+      throw new Error('Chip amount cannot be negative');
+    }
+    this.chips += amount;
+  }
+
+  /**
+   * Adds mult to the current total.
+   * @param amount - Amount to add
+   * @throws Error if amount is negative
+   */
+  public addMult(amount: number): void {
+    if (amount < 0) {
+      throw new Error('Mult amount cannot be negative');
+    }
+    this.mult += amount;
+  }
+
+  /**
+   * Multiplies current mult by a multiplier.
+   * @param multiplier - Factor to multiply by
+   * @throws Error if multiplier < 1
+   */
+  public multiplyMult(multiplier: number): void {
+    if (multiplier < 1) {
+      throw new Error('Multiplier must be at least 1');
+    }
+    this.mult *= multiplier;
   }
 }
