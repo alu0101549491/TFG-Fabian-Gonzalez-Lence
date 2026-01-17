@@ -1,18 +1,38 @@
+// ============================================
+// FILE: src/models/poker/hand-upgrade.ts
+// ============================================
+
 /**
- * Represents upgrades to a poker hand type from planet cards.
- * Stores additional chips and multiplier bonuses.
+ * Represents permanent bonuses applied to a poker hand type.
+ * Used for tracking planet card upgrades.
  */
 export class HandUpgrade {
-  public additionalChips: number;
-  public additionalMult: number;
+  /**
+   * Creates a hand upgrade with specified bonuses.
+   * @param additionalChips - Bonus chips to add to base chips
+   * @param additionalMult - Bonus mult to add to base mult
+   * @throws Error if negative values are provided
+   */
+  constructor(
+    public additionalChips: number = 0,
+    public additionalMult: number = 0
+  ) {
+    if (additionalChips < 0 || additionalMult < 0) {
+      throw new Error('Upgrade values cannot be negative');
+    }
+  }
 
   /**
-   * Creates a new HandUpgrade instance.
-   * @param {number} additionalChips - Chip bonus from upgrades
-   * @param {number} additionalMult - Multiplier bonus from upgrades
+   * Adds more bonuses to existing upgrade.
+   * @param chips - Additional chips to add
+   * @param mult - Additional mult to add
+   * @throws Error if negative values are provided
    */
-  constructor(additionalChips: number = 0, additionalMult: number = 0) {
-    this.additionalChips = additionalChips;
-    this.additionalMult = additionalMult;
+  public addUpgrade(chips: number, mult: number): void {
+    if (chips < 0 || mult < 0) {
+      throw new Error('Upgrade values cannot be negative');
+    }
+    this.additionalChips += chips;
+    this.additionalMult += mult;
   }
 }
