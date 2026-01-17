@@ -1,48 +1,50 @@
-import {Blind} from './blind';
-import {BossType} from './boss-type.enum';
-import {BlindModifier} from './blind-modifier';
+// ============================================
+// FILE: src/models/blinds/boss-blind.ts
+// ============================================
+
+import { Blind } from './blind';
+import { BlindModifier } from './blind-modifier';
+import { BossType } from './boss-type.enum';
 
 /**
- * Represents a boss blind - hardest blind with special mechanics.
- * Third blind of each level trio (every third level).
+ * Third blind in each round (boss encounter).
+ * Goal = base × 2.0 (modified by boss), Reward = $10.
  */
 export class BossBlind extends Blind {
-  private bossType: BossType;
-
   /**
-   * Creates a new BossBlind instance.
-   * @param {number} level - Current level number
-   * @param {BossType} bossType - Type of boss
+   * Creates a boss blind with specified boss type.
+   * @param level - The level number
+   * @param roundNumber - The round number
+   * @param bossType - Which boss this blind represents
+   * @throws Error if level or roundNumber <= 0 or invalid BossType
    */
-  constructor(level: number, bossType: BossType) {
-    super(level);
-    this.bossType = bossType;
-    // TODO: Calculate score goal and reward
+  constructor(level: number, roundNumber: number, public readonly bossType: BossType) {
+    const baseGoal = BossBlind.calculateBaseGoal(roundNumber);
+    super(level, baseGoal * 2, 10);
   }
 
   /**
-   * Calculates the score goal for this boss blind.
-   * @return {number} Required score
-   */
-  public getScoreGoal(): number {
-    // TODO: Implement score goal calculation
-    return this.scoreGoal;
-  }
-
-  /**
-   * Gets the modifier specific to this boss type.
-   * @return {BlindModifier} Boss-specific modifier
+   * Returns boss-specific modifier.
+   * @returns BlindModifier configured for this boss
    */
   public getModifier(): BlindModifier {
-    // TODO: Implement boss-specific modifier creation
-    return new BlindModifier();
+    return BlindModifier.createForBoss(this.bossType);
   }
 
   /**
-   * Gets the boss type.
-   * @return {BossType} Type of boss
+   * Returns the type of boss for this blind.
+   * @returns BossType enum value
    */
   public getBossType(): BossType {
     return this.bossType;
+  }
+
+  /**
+   * Returns score goal modified by boss (if boss affects goal).
+   * @returns Modified goal
+   */
+  public getScoreGoal(): number {
+    const modifier = this.getModifier();
+    return Math.floor(super.getScoreGoal() * modifier.goalMultiplier);
   }
 }
