@@ -52,7 +52,7 @@ export abstract class Blind {
    * Returns modifier if this blind has special rules.
    * @returns BlindModifier for boss blinds, null for normal blinds
    */
-  public abstract getModifier(): BlindModifier | null;
+  public abstract getModifier(): BlindModifier | undefined;
 
   /**
    * Returns the level number of this blind.
