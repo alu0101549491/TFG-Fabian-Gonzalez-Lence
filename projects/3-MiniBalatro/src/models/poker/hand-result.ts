@@ -1,32 +1,34 @@
-import {HandType} from './hand-type.enum';
-import {Card} from '../core/card';
+// ============================================
+// FILE: src/models/poker/hand-result.ts
+// ============================================
+
+import { HandType } from './hand-type.enum';
+import { Card } from '../core/card';
 
 /**
- * Represents the result of evaluating a poker hand.
- * Contains the hand type and base scoring values.
+ * Encapsulates the result of evaluating a poker hand.
+ * Contains hand type, cards, and base scoring values.
  */
 export class HandResult {
-  public handType: HandType;
-  public cards: Card[];
-  public baseChips: number;
-  public baseMult: number;
-
   /**
-   * Creates a new HandResult instance.
-   * @param {HandType} handType - Type of poker hand detected
-   * @param {Card[]} cards - Cards that form the hand
-   * @param {number} baseChips - Base chip value for this hand type
-   * @param {number} baseMult - Base multiplier value for this hand type
+   * Creates a hand result with evaluated hand data.
+   * @param handType - The detected poker hand type
+   * @param cards - The cards that were evaluated
+   * @param baseChips - Base chips for this hand type (including upgrades)
+   * @param baseMult - Base mult for this hand type (including upgrades)
+   * @throws Error if cards array is empty or base values are negative
    */
   constructor(
-      handType: HandType,
-      cards: Card[],
-      baseChips: number,
-      baseMult: number
+    public readonly handType: HandType,
+    public readonly cards: Card[],
+    public readonly baseChips: number,
+    public readonly baseMult: number
   ) {
-    this.handType = handType;
-    this.cards = cards;
-    this.baseChips = baseChips;
-    this.baseMult = baseMult;
+    if (cards.length === 0) {
+      throw new Error('Cards array cannot be empty');
+    }
+    if (baseChips < 0 || baseMult < 0) {
+      throw new Error('Base values cannot be negative');
+    }
   }
 }
