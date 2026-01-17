@@ -25,7 +25,7 @@ export class SmallBlind extends Blind {
    * Returns null (small blinds have no modifiers).
    * @returns null
    */
-  public getModifier(): BlindModifier | null {
-    return null;
+  public getModifier(): BlindModifier | undefined {
+    return undefined;
   }
 }

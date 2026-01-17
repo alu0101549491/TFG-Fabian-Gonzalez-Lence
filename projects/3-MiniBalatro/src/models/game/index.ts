@@ -1,1 +1,1 @@
-export {GameState} from './game-state';
+export * from './game-state';
