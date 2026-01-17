@@ -1,49 +1,59 @@
-import {Joker} from './joker';
-import {JokerPriority} from './joker-priority.enum';
-import {ScoreContext} from '../../scoring/score-context';
+// ============================================
+// FILE: src/models/special-cards/jokers/multiplier-joker.ts
+// ============================================
+
+import { Joker } from './joker';
+import { JokerPriority } from './joker-priority.enum';
+import { ScoreContext } from '../../scoring/score-context';
 
 /**
- * Joker that multiplies the current score.
- * Executes last in the scoring order.
+ * Joker that multiplies the total mult.
+ * Applied with MULTIPLIER priority (last).
  */
 export class MultiplierJoker extends Joker {
-  private multiplierValue: number;
-  private condition: (context: ScoreContext) => boolean;
-
   /**
-   * Creates a new MultiplierJoker instance.
-   * @param {string} id - Unique identifier
-   * @param {string} name - Display name
-   * @param {string} description - Effect description
-   * @param {number} multiplierValue - Multiplier to apply
-   * @param {Function} condition - Activation condition
+   * Creates a mult-multiplying joker with optional condition.
+   * @param id - Unique identifier
+   * @param name - Display name
+   * @param description - Effect description
+   * @param multiplierValue - Factor to multiply mult by
+   * @param condition - Optional condition function
+   * @throws Error if multiplierValue < 1
    */
   constructor(
-      id: string,
-      name: string,
-      description: string,
-      multiplierValue: number,
-      condition: (context: ScoreContext) => boolean
+    id: string,
+    name: string,
+    description: string,
+    public readonly multiplierValue: number,
+    private readonly condition?: (context: ScoreContext) => boolean
   ) {
     super(id, name, description, JokerPriority.MULTIPLIER);
-    this.multiplierValue = multiplierValue;
-    this.condition = condition;
+    if (multiplierValue < 1) {
+      throw new Error('Multiplier value must be at least 1');
+    }
   }
 
   /**
-   * Applies score multiplication to the context.
-   * @param {ScoreContext} context - Current scoring context
+   * Multiplies context.mult by multiplierValue based on condition.
+   * @param context - The score calculation context
    */
   public applyEffect(context: ScoreContext): void {
-    // TODO: Implement score multiplication
+    if (this.canActivate(context)) {
+      const shouldApply = this.condition ? this.condition(context) : true;
+      if (shouldApply) {
+        const originalMult = context.mult;
+        context.mult *= this.multiplierValue;
+        console.log(`[${this.name}] Multiplied mult by ${this.multiplierValue} (${originalMult} → ${context.mult})`);
+      }
+    }
   }
 
   /**
-   * Checks if this joker's condition is met.
-   * @param {ScoreContext} context - Current scoring context
-   * @return {boolean} True if condition is met
+   * Checks if joker's conditions are met for activation.
+   * @param context - The score calculation context
+   * @returns True if joker should activate
    */
   public canActivate(context: ScoreContext): boolean {
-    return this.condition(context);
+    return this.condition ? this.condition(context) : true;
   }
 }

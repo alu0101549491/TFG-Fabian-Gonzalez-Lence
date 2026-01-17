@@ -1,39 +1,50 @@
-import {Tarot} from './tarot';
-import {GameState} from '../../game/game-state';
+// ============================================
+// FILE: src/models/special-cards/tarots/instant-tarot.ts
+// ============================================
+
+import { Tarot } from './tarot';
+import { GameState } from '../../game/game-state';
 
 /**
- * Tarot card that applies instant effects to game state.
- * Does not require a target card.
+ * Tarot card with instant effect that doesn't require a target.
+ * Example: The Hermit (doubles money).
  */
 export class InstantTarot extends Tarot {
-  private effect: (gameState: GameState) => void;
-
   /**
-   * Creates a new InstantTarot instance.
-   * @param {string} name - Tarot name
-   * @param {string} description - Effect description
-   * @param {Function} effect - Effect function to apply
+   * Creates an instant tarot with specified effect function.
+   * @param name - Tarot card name
+   * @param description - Effect description
+   * @param effect - Effect function to execute
+   * @throws Error if effect is null
    */
   constructor(
-      name: string,
-      description: string,
-      effect: (gameState: GameState) => void
+    name: string,
+    description: string,
+    private readonly effect: (gameState: GameState) => void
   ) {
     super(name, description);
-    this.effect = effect;
+    if (!effect) {
+      throw new Error('Effect function cannot be null');
+    }
   }
 
   /**
-   * Uses the tarot on game state.
-   * @param {GameState} gameState - Current game state
+   * Executes the instant effect on game state.
+   * @param gameState - The game state to modify
+   * @throws Error if gameState is null
    */
   public use(gameState: GameState): void {
-    // TODO: Implement instant effect
+    if (!gameState) {
+      throw new Error('Game state cannot be null');
+    }
+
+    this.effect(gameState);
+    console.log(`[${this.name}] Instant effect applied`);
   }
 
   /**
-   * Instant tarots don't require a target card.
-   * @return {boolean} Always false
+   * Returns false (instant tarots don't need targets).
+   * @returns False
    */
   public requiresTarget(): boolean {
     return false;

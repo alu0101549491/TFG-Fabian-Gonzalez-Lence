@@ -1,1 +1,1 @@
-export {Planet} from './planet';
+export * from './planet';
