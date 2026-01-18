@@ -16,13 +16,15 @@ export abstract class Joker {
    * @param name - Display name
    * @param description - Effect description for UI
    * @param priority - When this joker's effect applies
+   * @param condition - Optional condition function for activation
    * @throws Error if name or description is empty
    */
   constructor(
     public readonly id: string,
     public readonly name: string,
     public readonly description: string,
-    public readonly priority: JokerPriority
+    public readonly priority: JokerPriority,
+    protected readonly condition?: (context: ScoreContext) => boolean
   ) {
     if (!name || !description) {
       throw new Error('Joker name and description must not be empty');
@@ -40,7 +42,9 @@ export abstract class Joker {
    * @param context - The score calculation context
    * @returns True if joker should activate
    */
-  public abstract canActivate(context: ScoreContext): boolean;
+  public canActivate(context: ScoreContext): boolean {
+    return this.condition ? this.condition(context) : true;
+  }
 
   /**
    * Returns the joker's priority level.

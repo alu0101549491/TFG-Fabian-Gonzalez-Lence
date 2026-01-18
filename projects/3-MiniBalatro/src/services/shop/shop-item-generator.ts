@@ -9,12 +9,7 @@ import { Planet } from '../../models/special-cards/planets/planet';
 import { Tarot } from '../../models/special-cards/tarots/tarot';
 import { BalancingConfig } from '../config/balancing-config';
 import { HandType } from '../../models/poker/hand-type.enum';
-import { BossType } from '../../models/blinds/boss-type.enum';
-import { CardValue } from '../../models/core/card-value.enum';
-import { Suit } from '../../models/core/suit.enum';
 import { ChipJoker } from '../../models/special-cards/jokers/chip-joker';
-import { MultJoker } from '../../models/special-cards/jokers/mult-joker';
-import { MultiplierJoker } from '../../models/special-cards/jokers/multiplier-joker';
 import { InstantTarot } from '../../models/special-cards/tarots/instant-tarot';
 import { TargetedTarot } from '../../models/special-cards/tarots/targeted-tarot';
 import { TarotEffect } from '../../models/special-cards/tarots/tarot-effect.enum';
@@ -31,6 +26,10 @@ export class ShopItemGenerator {
    */
   constructor() {
     this.balancingConfig = new BalancingConfig();
+    // Initialize async loading in background (non-blocking)
+    this.balancingConfig.initializeAsync().catch(error => {
+      console.error('Failed to load balancing config for shop:', error);
+    });
   }
 
   /**
@@ -106,26 +105,32 @@ export class ShopItemGenerator {
     const tarotId = tarotIds[randomIndex];
     const tarotDef = this.balancingConfig.getTarotDefinition(tarotId);
 
-    // Determine if this is an instant or targeted tarot
-    const isInstant = Math.random() < 0.5; // 50% chance for each type
+    // Check if this is an instant or targeted tarot based on definition
+    const isInstant = tarotDef.effectType === 'instant' || !tarotDef.targetRequired;
 
     if (isInstant) {
       // Create an instant tarot (e.g., The Hermit)
       return new InstantTarot(
+        tarotId,
         tarotDef.name,
         tarotDef.description || 'Instant effect',
         (gameState) => {
-          // Example effect: double money
-          gameState.addMoney(gameState.getMoney());
+          // Handle instant effects
+          if (tarotId === 'theHermit') {
+            // The Hermit: Doubles player's current money
+            gameState.addMoney(gameState.getMoney());
+          }
+          // Add more instant tarot effects here as needed
         }
       );
     } else {
-      // Create a targeted tarot (e.g., The Empress)
+      // Create a targeted tarot (e.g., The Empress, The Emperor, suit changers)
       return new TargetedTarot(
+        tarotId,
         tarotDef.name,
         tarotDef.description || 'Targeted effect',
         tarotDef.effectType || TarotEffect.ADD_MULT,
-        tarotDef.effectValue || 4
+        tarotDef.effectValue
       );
     }
   }

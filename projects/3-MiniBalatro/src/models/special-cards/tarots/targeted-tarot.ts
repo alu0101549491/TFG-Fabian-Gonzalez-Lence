@@ -14,18 +14,20 @@ import { Suit } from '../../core/suit.enum';
 export class TargetedTarot extends Tarot {
   /**
    * Creates a targeted tarot with specified effect.
+   * @param id - Unique identifier for the tarot
    * @param name - Tarot card name
    * @param description - Effect description
    * @param effectType - Type of effect this tarot applies
    * @param effectValue - Optional value for effect
    */
   constructor(
+    id: string,
     name: string,
     description: string,
     public readonly effectType: TarotEffect,
     public readonly effectValue?: any
   ) {
-    super(name, description);
+    super(id, name, description);
   }
 
   /**

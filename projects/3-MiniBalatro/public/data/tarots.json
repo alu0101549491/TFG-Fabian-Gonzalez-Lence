@@ -1,0 +1,80 @@
+{
+  "tarots": [
+    {
+      "id": "theHermit",
+      "name": "The Hermit",
+      "description": "Doubles player's current money",
+      "effectType": "instant",
+      "targetRequired": false
+    },
+    {
+      "id": "theEmpress",
+      "name": "The Empress",
+      "description": "Choose a card to grant +4 mult when played",
+      "effectType": "addMult",
+      "effectValue": 4,
+      "targetRequired": true
+    },
+    {
+      "id": "theEmperor",
+      "name": "The Emperor",
+      "description": "Choose a card to grant +20 chips when played",
+      "effectType": "addChips",
+      "effectValue": 20,
+      "targetRequired": true
+    },
+    {
+      "id": "strength",
+      "name": "Strength",
+      "description": "Choose a card to increment its value in sequence (A→2, 2→3, …, K→A)",
+      "effectType": "upgradeValue",
+      "targetRequired": true
+    },
+    {
+      "id": "theHangedMan",
+      "name": "The Hanged Man",
+      "description": "Choose a card from the deck to destroy permanently",
+      "effectType": "destroy",
+      "targetRequired": true
+    },
+    {
+      "id": "death",
+      "name": "Death",
+      "description": "Choose a card to add a duplicate copy to the deck",
+      "effectType": "duplicate",
+      "targetRequired": true
+    },
+    {
+      "id": "theStar",
+      "name": "The Star",
+      "description": "Choose a card to change its suit to Diamonds",
+      "effectType": "changeSuit",
+      "effectValue": "DIAMONDS",
+      "targetRequired": true
+    },
+    {
+      "id": "theMoon",
+      "name": "The Moon",
+      "description": "Choose a card to change its suit to Clubs",
+      "effectType": "changeSuit",
+      "effectValue": "CLUBS",
+      "targetRequired": true
+    },
+    {
+      "id": "theSun",
+      "name": "The Sun",
+      "description": "Choose a card to change its suit to Hearts",
+      "effectType": "changeSuit",
+      "effectValue": "HEARTS",
+      "targetRequired": true
+    },
+    {
+      "id": "theWorld",
+      "name": "The World",
+      "description": "Choose a card to change its suit to Spades",
+      "effectType": "changeSuit",
+      "effectValue": "SPADES",
+      "targetRequired": true
+    }
+  ]
+}

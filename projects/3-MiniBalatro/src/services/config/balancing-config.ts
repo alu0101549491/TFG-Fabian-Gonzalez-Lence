@@ -4,7 +4,6 @@
 
 import { CardValue } from '../../models/core/card-value.enum';
 import { HandType } from '../../models/poker/hand-type.enum';
-import { BossType } from '../../models/blinds/boss-type.enum';
 import { TarotEffect } from '../../models/special-cards/tarots/tarot-effect.enum';
 
 /**
@@ -17,10 +16,36 @@ export class BalancingConfig {
   private jokerDefinitions: any[];
   private planetDefinitions: any[];
   private tarotDefinitions: any[];
-  private blindTargets: any[];
+  // Note: blindTargets is reserved for future use if manual score targets are needed
+  // Currently blinds calculate their own targets using formulas
+  // private blindTargets: any[];
+
+  // Mapping from JSON hand type names to HandType enum
+  private static handTypeMapping: Record<string, HandType> = {
+    'highCard': HandType.HIGH_CARD,
+    'pair': HandType.PAIR,
+    'twoPair': HandType.TWO_PAIR,
+    'threeOfAKind': HandType.THREE_OF_A_KIND,
+    'straight': HandType.STRAIGHT,
+    'flush': HandType.FLUSH,
+    'fullHouse': HandType.FULL_HOUSE,
+    'fourOfAKind': HandType.FOUR_OF_A_KIND,
+    'straightFlush': HandType.STRAIGHT_FLUSH
+  };
+
+  // Mapping from JSON effect types to TarotEffect enum
+  private static tarotEffectMapping: Record<string, TarotEffect> = {
+    'addMult': TarotEffect.ADD_MULT,
+    'addChips': TarotEffect.ADD_CHIPS,
+    'changeSuit': TarotEffect.CHANGE_SUIT,
+    'upgradeValue': TarotEffect.UPGRADE_VALUE,
+    'duplicate': TarotEffect.DUPLICATE,
+    'destroy': TarotEffect.DESTROY
+  };
 
   /**
-   * Initializes balancing config and loads data.
+   * Initializes balancing config with fallback data.
+   * Call initializeAsync() to load from JSON files.
    */
   constructor() {
     this.handValues = new Map();
@@ -28,30 +53,135 @@ export class BalancingConfig {
     this.jokerDefinitions = [];
     this.planetDefinitions = [];
     this.tarotDefinitions = [];
-    this.blindTargets = [];
 
-    this.loadFromJSON();
+    // Load fallback data immediately
+    this.loadFallbackData();
+  }
+
+  /**
+   * Asynchronously loads configuration from JSON files.
+   * Should be called after construction to override fallback data.
+   * @returns Promise that resolves when loading is complete
+   */
+  public async initializeAsync(): Promise<void> {
+    try {
+      // Load hand values
+      await this.loadHandValues();
+      
+      // Load jokers
+      await this.loadJokers();
+      
+      // Load planets
+      await this.loadPlanets();
+      
+      // Load tarots
+      await this.loadTarots();
+      
+      console.log('Balancing configuration loaded successfully from JSON');
+    } catch (error) {
+      console.error('Failed to load balancing configuration from JSON, using fallback data:', error);
+    }
   }
 
   /**
    * Loads all configuration from JSON data.
+   * @deprecated Use initializeAsync() instead
    */
-  public loadFromJSON(): void {
-    // In a real implementation, this would load from actual JSON files
-    // For now, we'll use hardcoded data that matches the requirements
+  public async loadFromJSON(): Promise<void> {
+    return this.initializeAsync();
+  }
 
-    // Load hand values
-    this.handValues.set(HandType.HIGH_CARD, { chips: 5, mult: 1 });
-    this.handValues.set(HandType.PAIR, { chips: 10, mult: 2 });
-    this.handValues.set(HandType.TWO_PAIR, { chips: 20, mult: 2 });
-    this.handValues.set(HandType.THREE_OF_A_KIND, { chips: 30, mult: 3 });
-    this.handValues.set(HandType.STRAIGHT, { chips: 30, mult: 4 });
-    this.handValues.set(HandType.FLUSH, { chips: 35, mult: 4 });
-    this.handValues.set(HandType.FULL_HOUSE, { chips: 40, mult: 4 });
-    this.handValues.set(HandType.FOUR_OF_A_KIND, { chips: 60, mult: 7 });
-    this.handValues.set(HandType.STRAIGHT_FLUSH, { chips: 100, mult: 8 });
+  /**
+   * Loads hand values from JSON file.
+   */
+  private async loadHandValues(): Promise<void> {
+    try {
+      const response = await fetch('/data/hand-values.json');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      
+      // Map JSON hand type names to HandType enum
+      for (const [key, value] of Object.entries(data)) {
+        const handType = BalancingConfig.handTypeMapping[key];
+        if (handType) {
+          this.handValues.set(handType, value as { chips: number; mult: number });
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load hand values from JSON, using defaults:', error);
+      this.loadDefaultHandValues();
+    }
+  }
 
-    // Load card values
+  /**
+   * Loads joker definitions from JSON file.
+   */
+  private async loadJokers(): Promise<void> {
+    try {
+      const response = await fetch('/data/jokers.json');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      this.jokerDefinitions = data.jokers || [];
+    } catch (error) {
+      console.warn('Failed to load jokers from JSON, using defaults:', error);
+      this.loadDefaultJokers();
+    }
+  }
+
+  /**
+   * Loads planet definitions from JSON file.
+   */
+  private async loadPlanets(): Promise<void> {
+    try {
+      const response = await fetch('/data/planets.json');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      
+      // Map JSON hand type names to HandType enum in planet definitions
+      this.planetDefinitions = (data.planets || []).map((planet: any) => ({
+        ...planet,
+        targetHandType: BalancingConfig.handTypeMapping[planet.targetHandType] || planet.targetHandType
+      }));
+    } catch (error) {
+      console.warn('Failed to load planets from JSON, using defaults:', error);
+      this.loadDefaultPlanets();
+    }
+  }
+
+  /**
+   * Loads tarot definitions from JSON file.
+   */
+  private async loadTarots(): Promise<void> {
+    try {
+      const response = await fetch('/data/tarots.json');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      
+      // Map JSON effect types to TarotEffect enum
+      this.tarotDefinitions = (data.tarots || []).map((tarot: any) => ({
+        ...tarot,
+        effectType: tarot.effectType === 'instant' 
+          ? 'instant' 
+          : BalancingConfig.tarotEffectMapping[tarot.effectType] || tarot.effectType
+      }));
+    } catch (error) {
+      console.warn('Failed to load tarots from JSON, using defaults:', error);
+      this.loadDefaultTarots();
+    }
+  }
+
+  /**
+   * Loads card values (standard poker values).
+   */
+  private loadCardValues(): void {
     this.cardValues.set(CardValue.ACE, 11);
     this.cardValues.set(CardValue.KING, 10);
     this.cardValues.set(CardValue.QUEEN, 10);
@@ -65,8 +195,27 @@ export class BalancingConfig {
     this.cardValues.set(CardValue.FOUR, 4);
     this.cardValues.set(CardValue.THREE, 3);
     this.cardValues.set(CardValue.TWO, 2);
+  }
 
-    // Load joker definitions
+  /**
+   * Loads default hand values as fallback.
+   */
+  private loadDefaultHandValues(): void {
+    this.handValues.set(HandType.HIGH_CARD, { chips: 5, mult: 1 });
+    this.handValues.set(HandType.PAIR, { chips: 10, mult: 2 });
+    this.handValues.set(HandType.TWO_PAIR, { chips: 20, mult: 2 });
+    this.handValues.set(HandType.THREE_OF_A_KIND, { chips: 30, mult: 3 });
+    this.handValues.set(HandType.STRAIGHT, { chips: 30, mult: 4 });
+    this.handValues.set(HandType.FLUSH, { chips: 35, mult: 4 });
+    this.handValues.set(HandType.FULL_HOUSE, { chips: 40, mult: 4 });
+    this.handValues.set(HandType.FOUR_OF_A_KIND, { chips: 60, mult: 7 });
+    this.handValues.set(HandType.STRAIGHT_FLUSH, { chips: 100, mult: 8 });
+  }
+
+  /**
+   * Loads default joker definitions as fallback.
+   */
+  private loadDefaultJokers(): void {
     this.jokerDefinitions = [
       {
         id: 'joker',
@@ -83,11 +232,14 @@ export class BalancingConfig {
         type: 'mult',
         value: 3,
         condition: 'perDiamond'
-      },
-      // Add more joker definitions here...
+      }
     ];
+  }
 
-    // Load planet definitions
+  /**
+   * Loads default planet definitions as fallback.
+   */
+  private loadDefaultPlanets(): void {
     this.planetDefinitions = [
       {
         id: 'pluto',
@@ -104,45 +256,43 @@ export class BalancingConfig {
         targetHandType: HandType.PAIR,
         chipsBonus: 15,
         multBonus: 1
-      },
-      // Add more planet definitions here...
+      }
     ];
+  }
 
-    // Load tarot definitions
+  /**
+   * Loads default tarot definitions as fallback.
+   */
+  private loadDefaultTarots(): void {
     this.tarotDefinitions = [
       {
         id: 'theEmpress',
         name: 'The Empress',
         description: 'Choose a card to grant +4 mult when played',
         effectType: TarotEffect.ADD_MULT,
-        effectValue: 4
+        effectValue: 4,
+        targetRequired: true
       },
       {
         id: 'theEmperor',
         name: 'The Emperor',
         description: 'Choose a card to grant +20 chips when played',
         effectType: TarotEffect.ADD_CHIPS,
-        effectValue: 20
-      },
-      // Add more tarot definitions here...
+        effectValue: 20,
+        targetRequired: true
+      }
     ];
+  }
 
-    // Load blind targets
-    this.blindTargets = [
-      {
-        round: 1,
-        small: 300,
-        big: 450,
-        boss: 600
-      },
-      {
-        round: 2,
-        small: 450,
-        big: 675,
-        boss: 900
-      },
-      // Add more rounds here...
-    ];
+  /**
+   * Loads all fallback data if JSON loading completely fails.
+   */
+  private loadFallbackData(): void {
+    this.loadDefaultHandValues();
+    this.loadCardValues();
+    this.loadDefaultJokers();
+    this.loadDefaultPlanets();
+    this.loadDefaultTarots();
   }
 
   /**

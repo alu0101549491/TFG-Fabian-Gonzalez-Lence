@@ -1,0 +1,38 @@
+{
+  "highCard": {
+    "chips": 5,
+    "mult": 1
+  },
+  "pair": {
+    "chips": 10,
+    "mult": 2
+  },
+  "twoPair": {
+    "chips": 20,
+    "mult": 2
+  },
+  "threeOfAKind": {
+    "chips": 30,
+    "mult": 3
+  },
+  "straight": {
+    "chips": 30,
+    "mult": 4
+  },
+  "flush": {
+    "chips": 35,
+    "mult": 4
+  },
+  "fullHouse": {
+    "chips": 40,
+    "mult": 4
+  },
+  "fourOfAKind": {
+    "chips": 60,
+    "mult": 7
+  },
+  "straightFlush": {
+    "chips": 100,
+    "mult": 8
+  }
+}
