@@ -1,1 +1,1 @@
-export {JokerZone} from './JokerZone';
+export * from './JokerZone';

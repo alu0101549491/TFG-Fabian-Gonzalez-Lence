@@ -1,70 +1,66 @@
+// ============================================
+// FILE: src/views/components/card/CardComponent.tsx
+// ============================================
+
 import React from 'react';
-import {Card} from '@models/core/card';
-import {SUIT_SYMBOLS, SUIT_COLORS, CARD_VALUE_NAMES} from '@utils/constants';
+import { Card } from '../../../models/core/card';
+import { CardValue } from '../../../models/core/card-value.enum';
+import { Suit } from '../../../models/core/suit.enum';
+import { getSuitSymbol, getSuitColor } from '../../../models/core/suit.enum';
+import { getDisplayString } from '../../../models/core/card-value.enum';
 import './CardComponent.css';
 
 /**
- * Props for CardComponent
+ * Interface for CardComponent props.
  */
 interface CardComponentProps {
   card: Card;
-  isSelected?: boolean;
-  isDisabled?: boolean;
-  onClick?: () => void;
-  showEnhancements?: boolean;
+  isSelected: boolean;
+  onClick: () => void;
 }
 
 /**
- * CardComponent - renders a single playing card.
- * Displays value, suit, and any enhancements (chips/mult bonuses).
+ * Individual playing card component.
+ * Displays card value, suit, and bonuses.
  */
 export const CardComponent: React.FC<CardComponentProps> = ({
   card,
-  isSelected = false,
-  isDisabled = false,
-  onClick,
-  showEnhancements = true,
+  isSelected,
+  onClick
 }) => {
-  // TODO: Implement card rendering
-  // TODO: Add animations for selection
-  // TODO: Display enhancement badges
+  /**
+   * Gets the display string for a card value.
+   * @param value - CardValue enum
+   * @returns Display string
+   */
+  const getValueDisplay = (value: CardValue): string => {
+    return getDisplayString(value);
+  };
 
-  const value = card.getValue();
-  const suit = card.getSuit();
-  const chipBonus = card.getChipBonus();
-  const multBonus = card.getMultBonus();
-
-  const hasEnhancements = chipBonus > 0 || multBonus > 0;
-  const suitColor = SUIT_COLORS[suit];
-
-  const cardClasses = [
-    'card',
-    isSelected ? 'card--selected' : '',
-    isDisabled ? 'card--disabled' : '',
-    hasEnhancements ? 'card--enhanced' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const suitSymbol = getSuitSymbol(card.suit);
+  const suitColor = getSuitColor(card.suit);
+  const valueDisplay = getValueDisplay(card.value);
 
   return (
-    <div className={cardClasses} onClick={onClick}>
-      <div className="card-content" style={{color: suitColor}}>
-        <div className="card-value">{CARD_VALUE_NAMES[value]}</div>
-        <div className="card-suit">{SUIT_SYMBOLS[suit]}</div>
+    <div
+      className={`card ${isSelected ? 'selected' : ''}`}
+      onClick={onClick}
+    >
+      <div className="card-corner top-left" style={{ color: suitColor }}>
+        <div className="card-value">{valueDisplay}</div>
+        <div className="card-suit">{suitSymbol}</div>
       </div>
-
-      {showEnhancements && hasEnhancements && (
-        <div className="card-enhancements">
-          {chipBonus > 0 && (
-            <span className="enhancement enhancement--chips">
-              +{chipBonus}
-            </span>
-          )}
-          {multBonus > 0 && (
-            <span className="enhancement enhancement--mult">
-              +{multBonus}×
-            </span>
-          )}
+      <div className="card-center" style={{ color: suitColor }}>
+        <span className="suit-symbol-large">{suitSymbol}</span>
+      </div>
+      <div className="card-corner bottom-right" style={{ color: suitColor }}>
+        <div className="card-value">{valueDisplay}</div>
+        <div className="card-suit">{suitSymbol}</div>
+      </div>
+      {(card.getBaseChips() > 0 || card.getMultBonus() > 0) && (
+        <div className="card-bonuses">
+          {card.getBaseChips() > 0 && <span className="bonus-chips">+{card.getBaseChips()}</span>}
+          {card.getMultBonus() > 0 && <span className="bonus-mult">+{card.getMultBonus()}</span>}
         </div>
       )}
     </div>

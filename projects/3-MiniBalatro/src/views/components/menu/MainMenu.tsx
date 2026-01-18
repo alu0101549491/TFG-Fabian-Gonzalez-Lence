@@ -1,55 +1,48 @@
+// ============================================
+// FILE: src/views/components/menu/MainMenu.tsx
+// ============================================
+
 import React from 'react';
 import './MainMenu.css';
 
 /**
- * Props for MainMenu component
+ * Interface for MainMenu component props.
  */
 interface MainMenuProps {
-  onNewGame?: () => void;
-  onContinue?: () => void;
-  onSettings?: () => void;
+  onStartNewGame: () => void;
+  onContinueGame: () => void;
   hasSavedGame: boolean;
 }
 
 /**
- * MainMenu component - displays the main menu screen.
- * Provides options to start, continue, or configure the game.
+ * Main menu screen component.
+ * Displays game start options.
  */
 export const MainMenu: React.FC<MainMenuProps> = ({
-  onNewGame,
-  onContinue,
-  onSettings,
-  hasSavedGame,
+  onStartNewGame,
+  onContinueGame,
+  hasSavedGame
 }) => {
-  // TODO: Implement menu interactions
-  // TODO: Add animations
-  // TODO: Display game stats
-
   return (
     <div className="main-menu">
-      <div className="menu-content">
-        <h1 className="game-title">Mini Balatro</h1>
-        <p className="game-subtitle">Poker Roguelike</p>
-
-        <div className="menu-buttons">
-          <button className="menu-button menu-button--primary" onClick={onNewGame}>
-            New Game
-          </button>
-
-          {hasSavedGame && (
-            <button className="menu-button" onClick={onContinue}>
-              Continue
-            </button>
-          )}
-
-          <button className="menu-button" onClick={onSettings}>
-            Settings
-          </button>
-        </div>
-
-        <div className="menu-footer">
-          <p className="version">Version 1.0.0</p>
-        </div>
+      <h1 className="game-title">Mini Balatro</h1>
+      <div className="menu-buttons">
+        <button
+          className="menu-button"
+          onClick={onStartNewGame}
+        >
+          New Game
+        </button>
+        <button
+          className="menu-button"
+          onClick={onContinueGame}
+          disabled={!hasSavedGame}
+        >
+          Continue
+        </button>
+        <button className="menu-button">
+          Help
+        </button>
       </div>
     </div>
   );

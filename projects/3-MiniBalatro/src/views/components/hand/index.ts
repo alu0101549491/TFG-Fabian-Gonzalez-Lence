@@ -1,1 +1,1 @@
-export {Hand} from './Hand';
+export * from './Hand';

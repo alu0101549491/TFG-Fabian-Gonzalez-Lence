@@ -1,48 +1,48 @@
-import React from 'react';
-import {Tarot} from '@models/special-cards/tarots/tarot';
+// ============================================
+// FILE: src/views/components/tarot-zone/TarotZone.tsx
+// ============================================
+
+import React, { useState } from 'react';
+import { Tarot } from '../../../models/special-cards/tarots/tarot';
 import './TarotZone.css';
 
 /**
- * Props for TarotZone component
+ * Interface for TarotZone component props.
  */
 interface TarotZoneProps {
-  tarots: Tarot[];
-  maxTarots: number;
-  onTarotClick?: (tarotId: string) => void;
+  consumables: Tarot[];
+  onUseConsumable: (tarotId: string, targetCardId?: string) => void;
 }
 
 /**
- * TarotZone component - displays consumable tarot cards.
- * Shows available tarots and allows usage.
+ * Tarot/consumables display component.
+ * Shows active tarot cards with use buttons.
  */
 export const TarotZone: React.FC<TarotZoneProps> = ({
-  tarots,
-  maxTarots,
-  onTarotClick,
+  consumables,
+  onUseConsumable
 }) => {
-  // TODO: Implement tarot display
-  // TODO: Add usage indicators
-  // TODO: Show targeting requirements
-
-  const emptySlots = maxTarots - tarots.length;
+  const emptySlots = 2 - consumables.length;
 
   return (
     <div className="tarot-zone">
-      <h3 className="tarot-zone-title">Consumables</h3>
+      <h3 className="zone-title">Tarot Cards</h3>
       <div className="tarot-slots">
-        {tarots.map((tarot, index) => (
-          <div
-            key={`tarot-${index}`}
-            className="tarot-card"
-            onClick={() => onTarotClick?.(`tarot-${index}`)}
-            title={tarot.getDescription()}
-          >
-            <div className="tarot-name">{tarot.getName()}</div>
+        {consumables.map((tarot) => (
+          <div key={tarot.name} className="tarot-card">
+            <div className="tarot-name">{tarot.name}</div>
+            <div className="tarot-description">{tarot.description}</div>
+            <button
+              className="use-button"
+              onClick={() => onUseConsumable(tarot.name)}
+            >
+              Use
+            </button>
           </div>
         ))}
-        {Array.from({length: emptySlots}).map((_, index) => (
-          <div key={`empty-${index}`} className="tarot-slot tarot-slot--empty">
-            <span className="slot-label">Empty</span>
+        {[...Array(emptySlots)].map((_, index) => (
+          <div key={`empty-${index}`} className="tarot-slot-empty">
+            Empty
           </div>
         ))}
       </div>

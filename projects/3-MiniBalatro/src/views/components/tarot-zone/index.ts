@@ -1,1 +1,1 @@
-export {TarotZone} from './TarotZone';
+export * from './TarotZone';
