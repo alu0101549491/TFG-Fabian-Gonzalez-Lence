@@ -65,6 +65,14 @@ export class GameState {
   }
 
   /**
+   * Returns the HandUpgradeManager instance.
+   * @returns HandUpgradeManager
+   */
+  public getUpgradeManager(): HandUpgradeManager {
+    return this.upgradeManager;
+  }
+
+  /**
    * Deals 8 cards from deck to current hand (called at level start).
    * @throws Error if deck has < 8 cards remaining
    */
