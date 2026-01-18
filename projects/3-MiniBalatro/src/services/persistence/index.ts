@@ -1,1 +1,1 @@
-export {GamePersistence} from './game-persistence';
+export * from './game-persistence';

@@ -1,2 +1,2 @@
-export {GameConfig} from './game-config';
-export {BalancingConfig} from './balancing-config';
+export * from './game-config';
+export * from './balancing-config';

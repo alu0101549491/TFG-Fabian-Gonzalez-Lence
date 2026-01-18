@@ -1,33 +1,71 @@
-import {ShopItemType} from './shop-item-type.enum';
-import {Joker} from '../../models/special-cards/jokers/joker';
-import {Planet} from '../../models/special-cards/planets/planet';
-import {Tarot} from '../../models/special-cards/tarots/tarot';
+// ============================================
+// FILE: src/services/shop/shop-item.ts
+// ============================================
+
+import { v4 as uuidv4 } from 'uuid';
+import { ShopItemType } from './shop-item-type.enum';
+import { Joker } from '../../models/special-cards/jokers/joker';
+import { Planet } from '../../models/special-cards/planets/planet';
+import { Tarot } from '../../models/special-cards/tarots/tarot';
 
 /**
- * Represents an item available for purchase in the shop.
+ * Represents a single purchasable item in the shop.
+ * Contains the special card and its cost.
  */
 export class ShopItem {
-  public id: string;
-  public type: ShopItemType;
-  public item: Joker | Planet | Tarot;
-  public cost: number;
+  private readonly id: string;
 
   /**
-   * Creates a new ShopItem instance.
-   * @param {string} id - Unique item identifier
-   * @param {ShopItemType} type - Type of item
-   * @param {Joker | Planet | Tarot} item - The actual item
-   * @param {number} cost - Purchase cost
+   * Creates a shop item with specified properties.
+   * @param type - Type of item (Joker/Planet/Tarot)
+   * @param item - The actual special card object
+   * @param cost - Purchase price
+   * @throws Error if item null or cost <= 0
    */
   constructor(
-      id: string,
-      type: ShopItemType,
-      item: Joker | Planet | Tarot,
-      cost: number
+    public readonly type: ShopItemType,
+    public readonly item: Joker | Planet | Tarot,
+    public readonly cost: number
   ) {
-    this.id = id;
-    this.type = type;
-    this.item = item;
-    this.cost = cost;
+    if (!item) {
+      throw new Error('Item cannot be null');
+    }
+    if (cost <= 0) {
+      throw new Error('Cost must be positive');
+    }
+
+    this.id = uuidv4();
+  }
+
+  /**
+   * Returns the item's unique ID.
+   * @returns The item ID
+   */
+  public getId(): string {
+    return this.id;
+  }
+
+  /**
+   * Returns the item type.
+   * @returns The ShopItemType enum
+   */
+  public getType(): ShopItemType {
+    return this.type;
+  }
+
+  /**
+   * Returns the special card object.
+   * @returns Joker, Planet, or Tarot
+   */
+  public getItem(): Joker | Planet | Tarot {
+    return this.item;
+  }
+
+  /**
+   * Returns the purchase cost.
+   * @returns Positive number
+   */
+  public getCost(): number {
+    return this.cost;
   }
 }
