@@ -1,114 +1,86 @@
+// ============================================
+// FILE: src/utils/constants.ts
+// ============================================
+
 /**
- * Application-wide constants and magic numbers.
- * Centralizes values used across multiple modules.
+ * Game constants and configuration values.
+ * All magic numbers and strings are centralized here for easy balancing.
  */
 
 /**
- * Game timing constants (in milliseconds)
+ * Game configuration constants.
  */
-export const ANIMATION_DURATION = {
-  CARD_FLIP: 300,
-  CARD_DEAL: 150,
-  CARD_DISCARD: 200,
-  SCORE_COUNT_UP: 1000,
-  TRANSITION: 500,
-} as const;
+export const GAME_CONFIG = {
+  INITIAL_MONEY: 5,
+  MAX_JOKERS: 5,
+  MAX_CONSUMABLES: 2,
+  HAND_SIZE: 8,
+  MAX_HANDS_PER_BLIND: 3,
+  MAX_DISCARDS_PER_BLIND: 3,
+  VICTORY_ROUNDS: 8,
+};
 
 /**
- * UI dimension constants (in pixels)
- */
-export const UI_DIMENSIONS = {
-  CARD_WIDTH: 80,
-  CARD_HEIGHT: 112,
-  CARD_SPACING: 10,
-  JOKER_SIZE: 60,
-  HAND_MAX_WIDTH: 800,
-} as const;
-
-/**
- * Scoring multiplier tiers for visual feedback
- */
-export const SCORE_TIERS = {
-  LOW: 1000,
-  MEDIUM: 5000,
-  HIGH: 10000,
-  EXTREME: 50000,
-} as const;
-
-/**
- * Color scheme for card suits
- */
-export const SUIT_COLORS = {
-  DIAMONDS: '#e74c3c',
-  HEARTS: '#e74c3c',
-  SPADES: '#2c3e50',
-  CLUBS: '#2c3e50',
-} as const;
-
-/**
- * Z-index layers for proper element stacking
- */
-export const Z_INDEX = {
-  BACKGROUND: 0,
-  CARDS: 10,
-  SELECTED_CARD: 20,
-  JOKERS: 30,
-  MODALS: 100,
-  TOOLTIPS: 200,
-} as const;
-
-/**
- * Local storage keys
- */
-export const STORAGE_KEYS = {
-  GAME_SAVE: 'mini-balatro-save',
-  SETTINGS: 'mini-balatro-settings',
-  HIGH_SCORES: 'mini-balatro-high-scores',
-} as const;
-
-/**
- * Game progression constants
- */
-export const PROGRESSION = {
-  MAX_ROUNDS: 24,
-  ROUNDS_PER_ANTE: 3,
-  VICTORY_ROUND: 24,
-} as const;
-
-/**
- * Shop configuration
+ * Shop configuration constants.
  */
 export const SHOP_CONFIG = {
-  BASE_REROLL_COST: 5,
-  REROLL_COST_INCREMENT: 2,
-  MAX_ITEMS: 6,
-  JOKER_SLOTS: 2,
-  CONSUMABLE_SLOTS: 2,
-} as const;
+  JOKER_COST: 5,
+  PLANET_COST: 3,
+  TAROT_COST: 3,
+  REROLL_COST: 3,
+  ITEMS_PER_SHOP: 4,
+};
 
 /**
- * Debug flags
+ * Blind reward constants.
  */
-export const DEBUG = {
-  SHOW_CARD_IDS: false,
-  SKIP_ANIMATIONS: false,
-  INFINITE_MONEY: false,
-  UNLOCK_ALL_JOKERS: false,
-} as const;
+export const BLIND_REWARDS = {
+  SMALL_BLIND: 2,
+  BIG_BLIND: 5,
+  BOSS_BLIND: 10,
+};
 
 /**
- * Mathematical constants used in calculations
+ * Color palette constants.
  */
-export const MATH_CONSTANTS = {
-  SCORE_SCALING_BASE: 1.5,
-  BLIND_DIFFICULTY_EXPONENT: 1.6,
-  BOSS_MULTIPLIER: 2.0,
-} as const;
+export const COLORS = {
+  // Theme Colors
+  BG_PRIMARY: '#1a1a2e',
+  BG_PANEL: '#16213e',
+  BORDER: '#0f3460',
+  ACCENT: '#e94560',
+  TEXT_PRIMARY: '#f1f1f1',
+  TEXT_SECONDARY: '#a8a8a8',
+
+  // Suit Colors
+  SUIT_DIAMONDS: '#ff6b6b',
+  SUIT_HEARTS: '#ee5a6f',
+  SUIT_SPADES: '#4ecdc4',
+  SUIT_CLUBS: '#95e1d3',
+
+  // Indicator Colors
+  CHIPS: '#f9ca24',
+  MULT: '#6c5ce7',
+  MONEY: '#00d2d3',
+  SUCCESS: '#2ecc71',
+  WARNING: '#95a5a6',
+  ERROR: '#e74c3c',
+};
 
 /**
- * Card value display names
+ * Suit symbols constants.
  */
-export const CARD_VALUE_NAMES: Record<string, string> = {
+export const SUIT_SYMBOLS = {
+  DIAMONDS: '♦',
+  HEARTS: '♥',
+  SPADES: '♠',
+  CLUBS: '♣',
+};
+
+/**
+ * Card value display constants.
+ */
+export const CARD_VALUE_DISPLAY = {
   ACE: 'A',
   KING: 'K',
   QUEEN: 'Q',
@@ -122,29 +94,184 @@ export const CARD_VALUE_NAMES: Record<string, string> = {
   FOUR: '4',
   THREE: '3',
   TWO: '2',
-} as const;
+};
 
 /**
- * Suit display symbols
+ * Base card values (chips).
  */
-export const SUIT_SYMBOLS: Record<string, string> = {
-  DIAMONDS: '♦',
-  HEARTS: '♥',
-  SPADES: '♠',
-  CLUBS: '♣',
-} as const;
+export const BASE_CARD_VALUES = {
+  ACE: 11,
+  KING: 10,
+  QUEEN: 10,
+  JACK: 10,
+  TEN: 10,
+  NINE: 9,
+  EIGHT: 8,
+  SEVEN: 7,
+  SIX: 6,
+  FIVE: 5,
+  FOUR: 4,
+  THREE: 3,
+  TWO: 2,
+};
 
 /**
- * Hand type display names
+ * Base hand values (chips and mult).
  */
-export const HAND_TYPE_NAMES: Record<string, string> = {
-  STRAIGHT_FLUSH: 'Straight Flush',
-  FOUR_OF_A_KIND: 'Four of a Kind',
-  FULL_HOUSE: 'Full House',
-  FLUSH: 'Flush',
-  STRAIGHT: 'Straight',
-  THREE_OF_A_KIND: 'Three of a Kind',
-  TWO_PAIR: 'Two Pair',
-  PAIR: 'Pair',
-  HIGH_CARD: 'High Card',
-} as const;
+export const BASE_HAND_VALUES = {
+  HIGH_CARD: { chips: 5, mult: 1 },
+  PAIR: { chips: 10, mult: 2 },
+  TWO_PAIR: { chips: 20, mult: 2 },
+  THREE_OF_A_KIND: { chips: 30, mult: 3 },
+  STRAIGHT: { chips: 30, mult: 4 },
+  FLUSH: { chips: 35, mult: 4 },
+  FULL_HOUSE: { chips: 40, mult: 4 },
+  FOUR_OF_A_KIND: { chips: 60, mult: 7 },
+  STRAIGHT_FLUSH: { chips: 100, mult: 8 },
+};
+
+/**
+ * Planet upgrades constants.
+ */
+export const PLANET_UPGRADES = {
+  PLUTO: { handType: 'HIGH_CARD', chips: 10, mult: 1 },
+  MERCURY: { handType: 'PAIR', chips: 15, mult: 1 },
+  URANUS: { handType: 'TWO_PAIR', chips: 20, mult: 1 },
+  VENUS: { handType: 'THREE_OF_A_KIND', chips: 20, mult: 2 },
+  SATURN: { handType: 'STRAIGHT', chips: 30, mult: 3 },
+  JUPITER: { handType: 'FLUSH', chips: 15, mult: 2 },
+  EARTH: { handType: 'FULL_HOUSE', chips: 25, mult: 2 },
+  MARS: { handType: 'FOUR_OF_A_KIND', chips: 30, mult: 3 },
+  NEPTUNE: { handType: 'STRAIGHT_FLUSH', chips: 40, mult: 4 },
+};
+
+/**
+ * Difficulty progression constants.
+ */
+export const DIFFICULTY_CONFIG = {
+  BASE_GOAL: 300,
+  GROWTH_RATE: 1.5,
+  SMALL_BLIND_MULTIPLIER: 1.0,
+  BIG_BLIND_MULTIPLIER: 1.5,
+  BOSS_BLIND_MULTIPLIER: 2.0,
+};
+
+/**
+ * Animation timing constants.
+ */
+export const ANIMATION_TIMING = {
+  CARD_DEAL_DELAY: 50, // ms between cards
+  CARD_TRANSITION: 200, // ms for card animations
+  SCORE_INCREMENT: 400, // ms for score counting
+  SHOP_TRANSITION: 300, // ms for shop opening
+};
+
+/**
+ * Storage keys.
+ */
+export const STORAGE_KEYS = {
+  GAME_SAVE: 'miniBalatro_save',
+  SETTINGS: 'miniBalatro_settings',
+  STATISTICS: 'miniBalatro_stats',
+};
+
+/**
+ * UI configuration constants.
+ */
+export const UI_CONFIG = {
+  MIN_SCREEN_WIDTH: 1024,
+  MIN_SCREEN_HEIGHT: 768,
+  CARD_WIDTH: 100,
+  CARD_HEIGHT: 140,
+  CARD_BORDER_RADIUS: 8,
+};
+
+/**
+ * Calculates the score goal for a blind.
+ * Formula: base × (growthRate)^(round-1) × blindMultiplier
+ * @param roundNumber - Current round number
+ * @param blindType - Type of blind ('small', 'big', or 'boss')
+ * @returns Calculated score goal
+ */
+export function calculateBlindGoal(
+  roundNumber: number,
+  blindType: 'small' | 'big' | 'boss'
+): number {
+  const base = DIFFICULTY_CONFIG.BASE_GOAL;
+  const growth = Math.pow(DIFFICULTY_CONFIG.GROWTH_RATE, roundNumber - 1);
+
+  let multiplier: number;
+  switch (blindType) {
+    case 'small':
+      multiplier = DIFFICULTY_CONFIG.SMALL_BLIND_MULTIPLIER;
+      break;
+    case 'big':
+      multiplier = DIFFICULTY_CONFIG.BIG_BLIND_MULTIPLIER;
+      break;
+    case 'boss':
+      multiplier = DIFFICULTY_CONFIG.BOSS_BLIND_MULTIPLIER;
+      break;
+    default:
+      throw new Error(`Invalid blind type: ${blindType}`);
+  }
+
+  return Math.floor(base * growth * multiplier);
+}
+
+/**
+ * Returns the CSS color for a suit.
+ * @param suit - Suit name
+ * @returns CSS color string
+ */
+export function getSuitColor(suit: string): string {
+  switch (suit.toUpperCase()) {
+    case 'DIAMONDS':
+      return COLORS.SUIT_DIAMONDS;
+    case 'HEARTS':
+      return COLORS.SUIT_HEARTS;
+    case 'SPADES':
+      return COLORS.SUIT_SPADES;
+    case 'CLUBS':
+      return COLORS.SUIT_CLUBS;
+    default:
+      return COLORS.TEXT_PRIMARY;
+  }
+}
+
+/**
+ * Returns the Unicode symbol for a suit.
+ * @param suit - Suit name
+ * @returns Unicode symbol
+ */
+export function getSuitSymbol(suit: string): string {
+  switch (suit.toUpperCase()) {
+    case 'DIAMONDS':
+      return SUIT_SYMBOLS.DIAMONDS;
+    case 'HEARTS':
+      return SUIT_SYMBOLS.HEARTS;
+    case 'SPADES':
+      return SUIT_SYMBOLS.SPADES;
+    case 'CLUBS':
+      return SUIT_SYMBOLS.CLUBS;
+    default:
+      return '?';
+  }
+}
+
+/**
+ * Formats money amount with dollar sign.
+ * @param amount - Money amount
+ * @returns Formatted string
+ */
+export function formatMoney(amount: number): string {
+  return `$${amount}`;
+}
+
+/**
+ * Formats score with thousands separator.
+ * @param score - Score value
+ * @returns Formatted string
+ */
+export function formatScore(score: number): string {
+  return score.toLocaleString();
+}
