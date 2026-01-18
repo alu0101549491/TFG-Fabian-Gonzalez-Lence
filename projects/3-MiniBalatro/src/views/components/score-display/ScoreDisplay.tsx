@@ -1,99 +1,65 @@
+// ============================================
+// FILE: src/views/components/score-display/ScoreDisplay.tsx
+// ============================================
+
 import React from 'react';
-import {HandType} from '@models/poker/hand-type.enum';
-import {HAND_TYPE_NAMES} from '@utils/constants';
 import './ScoreDisplay.css';
 
 /**
- * Props for ScoreDisplay component
+ * Interface for ScoreDisplay component props.
  */
 interface ScoreDisplayProps {
   currentScore: number;
-  targetScore: number;
-  chips: number;
-  mult: number;
-  handsRemaining: number;
-  discardsRemaining: number;
-  currentHandType?: HandType;
-  money: number;
+  goalScore: number;
+  previewScore: { chips: number; mult: number; total: number } | null;
 }
 
 /**
- * ScoreDisplay component - shows current scoring information.
- * Displays score progress, hand type, and remaining resources.
+ * Score information panel component.
+ * Shows current score, goal, and preview.
  */
 export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   currentScore,
-  targetScore,
-  chips,
-  mult,
-  handsRemaining,
-  discardsRemaining,
-  currentHandType,
-  money,
+  goalScore,
+  previewScore
 }) => {
-  // TODO: Implement score display
-  // TODO: Add progress bar
-  // TODO: Animate score changes
+  /**
+   * Calculates progress percentage.
+   * @returns Percentage (0-100)
+   */
+  const calculateProgress = (): number => {
+    return Math.min(100, (currentScore / goalScore) * 100);
+  };
 
-  const progress = Math.min((currentScore / targetScore) * 100, 100);
+  const progress = calculateProgress();
 
   return (
     <div className="score-display">
-      <div className="score-main">
-        <div className="score-values">
-          <div className="score-item score-item--chips">
-            <span className="score-label">Chips</span>
-            <span className="score-value">{chips}</span>
-          </div>
-          <div className="score-operator">×</div>
-          <div className="score-item score-item--mult">
-            <span className="score-label">Mult</span>
-            <span className="score-value">{mult}</span>
-          </div>
-          <div className="score-operator">=</div>
-          <div className="score-item score-item--total">
-            <span className="score-label">Score</span>
-            <span className="score-value">{currentScore}</span>
-          </div>
+      <div className="goal-section">
+        <h3>Goal: {goalScore} pts</h3>
+        <div className="progress-bar">
+          <div
+            className="progress-fill"
+            style={{ width: `${progress}%` }}
+          />
         </div>
-
-        <div className="score-progress">
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{width: `${progress}%`}}
-            />
-          </div>
-          <div className="progress-text">
-            {currentScore} / {targetScore}
-          </div>
+        <div className="score-text">
+          Score: {currentScore} pts ({progress.toFixed(1)}%)
         </div>
       </div>
 
-      <div className="score-info">
-        <div className="info-group">
-          {currentHandType && (
-            <div className="hand-type">
-              {HAND_TYPE_NAMES[currentHandType]}
-            </div>
-          )}
-        </div>
-
-        <div className="info-group">
-          <div className="resource">
-            <span className="resource-label">Hands:</span>
-            <span className="resource-value">{handsRemaining}</span>
-          </div>
-          <div className="resource">
-            <span className="resource-label">Discards:</span>
-            <span className="resource-value">{discardsRemaining}</span>
-          </div>
-          <div className="resource resource--money">
-            <span className="resource-label">$</span>
-            <span className="resource-value">{money}</span>
+      {previewScore && (
+        <div className="preview-section">
+          <h4>Preview:</h4>
+          <div className="preview-breakdown">
+            <span className="chips">{previewScore.chips} chips</span>
+            <span className="multiply">×</span>
+            <span className="mult">{previewScore.mult} mult</span>
+            <span className="equals">=</span>
+            <span className="total">{previewScore.total} pts</span>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

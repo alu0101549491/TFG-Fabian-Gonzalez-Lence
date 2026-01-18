@@ -1,55 +1,44 @@
+// ============================================
+// FILE: src/views/components/hand/Hand.tsx
+// ============================================
+
 import React from 'react';
-import {Card} from '@models/core/card';
-import {CardComponent} from '../card/CardComponent';
+import { Card } from '../../../models/core/card';
+import { CardComponent } from '../card/CardComponent';
 import './Hand.css';
 
 /**
- * Props for Hand component
+ * Interface for Hand component props.
  */
 interface HandProps {
   cards: Card[];
-  selectedCards: string[];
-  onCardSelect?: (cardId: string) => void;
-  isDisabled?: boolean;
+  selectedCards: Card[];
+  onSelectCard: (cardId: string) => void;
 }
 
 /**
- * Hand component - displays player's current hand of cards.
- * Allows selection/deselection of cards for playing or discarding.
+ * Player hand display component.
+ * Shows 8 cards with selection handling.
  */
 export const Hand: React.FC<HandProps> = ({
   cards,
   selectedCards,
-  onCardSelect,
-  isDisabled = false,
+  onSelectCard
 }) => {
-  // TODO: Implement hand rendering logic
-  // TODO: Handle card selection
-  // TODO: Apply visual feedback for selected cards
-
-  const handleCardClick = (cardId: string): void => {
-    if (!isDisabled && onCardSelect) {
-      onCardSelect(cardId);
-    }
-  };
-
   return (
     <div className="hand">
-      <div className="hand-cards">
+      <div className="selection-indicator">
+        Selected: {selectedCards.length}/5
+      </div>
+      <div className="cards-container">
         {cards.map((card) => (
           <CardComponent
             key={card.getId()}
             card={card}
-            isSelected={selectedCards.includes(card.getId())}
-            onClick={() => handleCardClick(card.getId())}
-            isDisabled={isDisabled}
+            isSelected={selectedCards.some(c => c.getId() === card.getId())}
+            onClick={() => onSelectCard(card.getId())}
           />
         ))}
-      </div>
-      <div className="hand-info">
-        <span className="card-count">
-          {cards.length} card{cards.length !== 1 ? 's' : ''}
-        </span>
       </div>
     </div>
   );

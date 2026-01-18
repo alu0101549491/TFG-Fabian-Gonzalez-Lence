@@ -1,49 +1,39 @@
+// ============================================
+// FILE: src/views/components/joker-zone/JokerZone.tsx
+// ============================================
+
 import React from 'react';
-import {Joker} from '@models/special-cards/jokers/joker';
+import { Joker } from '../../../models/special-cards/jokers/joker';
 import './JokerZone.css';
 
 /**
- * Props for JokerZone component
+ * Interface for JokerZone component props.
  */
 interface JokerZoneProps {
   jokers: Joker[];
-  maxJokers: number;
-  onJokerClick?: (jokerId: string) => void;
 }
 
 /**
- * JokerZone component - displays active joker cards.
- * Shows joker effects and allows interaction.
+ * Joker display area component.
+ * Shows active jokers with effects.
  */
-export const JokerZone: React.FC<JokerZoneProps> = ({
-  jokers,
-  maxJokers,
-  onJokerClick,
-}) => {
-  // TODO: Implement joker display
-  // TODO: Add tooltips for joker effects
-  // TODO: Show activation indicators
-
-  const emptySlots = maxJokers - jokers.length;
+export const JokerZone: React.FC<JokerZoneProps> = ({ jokers }) => {
+  const emptySlots = 5 - jokers.length;
 
   return (
     <div className="joker-zone">
-      <h3 className="joker-zone-title">Jokers</h3>
+      <h3 className="zone-title">Jokers</h3>
       <div className="joker-slots">
-        {jokers.map((joker) => (
-          <div
-            key={joker.getId()}
-            className="joker-card"
-            onClick={() => onJokerClick?.(joker.getId())}
-            title={joker.getDescription()}
-          >
-            <div className="joker-name">{joker.getName()}</div>
-            <div className="joker-priority">{joker.getPriority()}</div>
+        {jokers.map((joker, index) => (
+          <div key={joker.id} className="joker-card">
+            <div className="joker-order">{index + 1}</div>
+            <div className="joker-name">{joker.name}</div>
+            <div className="joker-description">{joker.description}</div>
           </div>
         ))}
-        {Array.from({length: emptySlots}).map((_, index) => (
-          <div key={`empty-${index}`} className="joker-slot joker-slot--empty">
-            <span className="slot-label">Empty</span>
+        {[...Array(emptySlots)].map((_, index) => (
+          <div key={`empty-${index}`} className="joker-slot-empty">
+            Empty
           </div>
         ))}
       </div>
