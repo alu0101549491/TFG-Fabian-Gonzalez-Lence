@@ -12,11 +12,13 @@ import { GameState } from '../../game/game-state';
 export abstract class Tarot {
   /**
    * Creates a tarot card with specified properties.
+   * @param id - Unique identifier for the tarot
    * @param name - Tarot card name
    * @param description - Effect description for UI
    * @throws Error if name or description is empty
    */
   constructor(
+    public readonly id: string,
     public readonly name: string,
     public readonly description: string
   ) {

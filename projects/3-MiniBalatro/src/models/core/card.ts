@@ -3,7 +3,7 @@
 // ============================================
 
 import { v4 as uuidv4 } from 'uuid';
-import { CardValue, getBaseChipsForValue, getNextValue } from './card-value.enum';
+import { CardValue, getBaseChipsForValue, getNextValue, getValueDisplay } from './card-value.enum';
 import { Suit, getSuitSymbol } from './suit.enum';
 
 /**
@@ -106,9 +106,4 @@ export class Card {
   public getDisplayString(): string {
     return `${getValueDisplay(this.value)}${getSuitSymbol(this.suit)}`;
   }
-}
-
-// Helper function to get display string for a card value
-function getValueDisplay(value: CardValue): string {
-  return value;
 }

@@ -25,9 +25,9 @@ export class ChipJoker extends Joker {
     name: string,
     description: string,
     public readonly chipValue: number,
-    private readonly condition?: (context: ScoreContext) => boolean
+    condition?: (context: ScoreContext) => boolean
   ) {
-    super(id, name, description, JokerPriority.CHIPS);
+    super(id, name, description, JokerPriority.CHIPS, condition);
     if (chipValue <= 0) {
       throw new Error('Chip value must be positive');
     }
@@ -46,14 +46,5 @@ export class ChipJoker extends Joker {
       context.chips += actualValue;
       console.log(`[${this.name}] Added ${actualValue} chips (Total: ${context.chips})`);
     }
-  }
-
-  /**
-   * Checks if joker's conditions are met for activation.
-   * @param context - The score calculation context
-   * @returns True if joker should activate
-   */
-  public canActivate(context: ScoreContext): boolean {
-    return this.condition ? this.condition(context) : true;
   }
 }

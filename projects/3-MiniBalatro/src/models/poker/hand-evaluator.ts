@@ -3,8 +3,7 @@
 // ============================================
 
 import { Card } from '../core/card';
-import { CardValue, getNextValue } from '../core/card-value.enum';
-import { Suit } from '../core/suit.enum';
+import { CardValue } from '../core/card-value.enum';
 import { HandType, getBaseHandValues } from './hand-type.enum';
 import { HandResult } from './hand-result';
 import { HandUpgradeManager } from './hand-upgrade-manager';
@@ -48,64 +47,26 @@ export class HandEvaluator {
       throw new Error('Upgrade manager cannot be null');
     }
 
-    // Sort cards by value for easier evaluation
+    // Get the hand type using the shared detection logic
+    const handType = this.getHandType(cards);
+
+    // Sort cards by value for the result
     const sortedCards = [...cards].sort((a, b) => {
-      // Higher card values come first
       return b.value.localeCompare(a.value);
     });
 
-    // Check each hand type in priority order
-    for (const handType of this.handRankings) {
-      let isMatch = false;
+    const baseValues = getBaseHandValues(handType);
+    const upgrade = upgradeManager.getUpgradedValues(handType);
 
-      switch (handType) {
-        case HandType.STRAIGHT_FLUSH:
-          isMatch = this.checkStraightFlush(sortedCards);
-          break;
-        case HandType.FOUR_OF_A_KIND:
-          isMatch = this.checkFourOfAKind(sortedCards);
-          break;
-        case HandType.FULL_HOUSE:
-          isMatch = this.checkFullHouse(sortedCards);
-          break;
-        case HandType.FLUSH:
-          isMatch = this.checkFlush(sortedCards);
-          break;
-        case HandType.STRAIGHT:
-          isMatch = this.checkStraight(sortedCards);
-          break;
-        case HandType.THREE_OF_A_KIND:
-          isMatch = this.checkThreeOfAKind(sortedCards);
-          break;
-        case HandType.TWO_PAIR:
-          isMatch = this.checkTwoPair(sortedCards);
-          break;
-        case HandType.PAIR:
-          isMatch = this.checkPair(sortedCards);
-          break;
-        case HandType.HIGH_CARD:
-          isMatch = true; // Always matches if no other hand detected
-          break;
-      }
+    const result = new HandResult(
+      handType,
+      sortedCards,
+      baseValues.baseChips + upgrade.additionalChips,
+      baseValues.baseMult + upgrade.additionalMult
+    );
 
-      if (isMatch) {
-        const baseValues = getBaseHandValues(handType);
-        const upgrade = upgradeManager.getUpgradedValues(handType);
-
-        const result = new HandResult(
-          handType,
-          sortedCards,
-          baseValues.baseChips + upgrade.additionalChips,
-          baseValues.baseMult + upgrade.additionalMult
-        );
-
-        console.log(`Hand evaluated as ${handType} with ${result.baseChips} chips and ${result.baseMult}x mult`);
-        return result;
-      }
-    }
-
-    // This should never happen due to HIGH_CARD always matching
-    throw new Error('Failed to evaluate hand');
+    console.log(`Hand evaluated as ${handType} with ${result.baseChips} chips and ${result.baseMult}x mult`);
+    return result;
   }
 
   /**
@@ -125,6 +86,15 @@ export class HandEvaluator {
     });
 
     // Check each hand type in priority order
+    return this.detectHandType(sortedCards);
+  }
+
+  /**
+   * Core hand detection logic used by both evaluateHand and getHandType.
+   * @param sortedCards - Pre-sorted array of cards
+   * @returns Best HandType detected
+   */
+  private detectHandType(sortedCards: Card[]): HandType {
     for (const handType of this.handRankings) {
       let isMatch = false;
 
@@ -219,9 +189,6 @@ export class HandEvaluator {
     if (cards.length < 5) return false;
 
     // Pattern: 3 same + 2 same
-    const firstValue = cards[0].value;
-    const fourthValue = cards[4].value;
-
     // Check for three of first value and two of fourth value
     if (cards[0].value === cards[1].value &&
         cards[1].value === cards[2].value &&

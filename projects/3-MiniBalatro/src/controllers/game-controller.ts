@@ -4,7 +4,6 @@
 
 import { GameState } from '../models/game/game-state';
 import { Shop } from '../services/shop/shop';
-import { ShopItem } from '../services/shop/shop-item';
 import { GamePersistence } from '../services/persistence/game-persistence';
 import { Joker } from '../models/special-cards/jokers/joker';
 import { Tarot } from '../models/special-cards/tarots/tarot';
@@ -455,7 +454,7 @@ export class GameController {
     }
 
     // Find the tarot in consumables
-    const tarot = this.gameState.getConsumables().find(t => t.name === tarotId);
+    const tarot = this.gameState.getConsumables().find(t => t.id === tarotId);
     if (!tarot) {
       throw new Error('Tarot not found');
     }
@@ -574,18 +573,6 @@ export class GameController {
 
     // Victory condition: Passed 8 complete rounds (24 levels)
     return this.gameState.getRoundNumber() > 8;
-  }
-
-  /**
-   * Checks if player has lost the game.
-   * @returns true if defeat condition met
-   */
-  private checkDefeatCondition(): boolean {
-    if (!this.gameState) {
-      return false;
-    }
-
-    return this.gameState.isGameOver();
   }
 
   /**

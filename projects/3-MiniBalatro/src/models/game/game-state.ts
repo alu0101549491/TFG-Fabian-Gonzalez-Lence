@@ -13,7 +13,6 @@ import { ScoreCalculator } from '../scoring/score-calculator';
 import { ScoreResult } from '../scoring/score-result';
 import { HandEvaluator } from '../poker/hand-evaluator';
 import { BossBlind } from '../blinds/boss-blind';
-import { BossType } from '../blinds/boss-type.enum';
 
 /**
  * Central game state manager.
@@ -285,15 +284,13 @@ export class GameState {
       throw new Error('New tarot cannot be null');
     }
 
-    // TODO: Implement identification by ID
-    // Note: In a real implementation, we would need a way to identify tarots
-    // For now, we'll assume the first tarot is being replaced
-    if (this.consumables.length === 0) {
-      throw new Error(`No tarots available to replace`);
+    const index = this.consumables.findIndex(t => t.id === oldTarotId);
+    if (index === -1) {
+      throw new Error(`Tarot with ID ${oldTarotId} not found`);
     }
 
-    this.consumables[0] = newTarot;
-    console.log(`Replaced tarot with ${newTarot.name}`);
+    this.consumables[index] = newTarot;
+    console.log(`Replaced tarot ${oldTarotId} with ${newTarot.name}`);
   }
 
   /**
@@ -303,14 +300,12 @@ export class GameState {
    * @throws Error if tarotId not found, target required but not provided, or target invalid
    */
   public useConsumable(tarotId: string, target?: Card): void {
-    // TODO: Implement identification by ID
-    // Note: In a real implementation, we would need a way to identify tarots
-    // For now, we'll assume we're using the first tarot
-    if (this.consumables.length === 0) {
-      throw new Error('No tarots available to use');
+    const tarotIndex = this.consumables.findIndex(t => t.id === tarotId);
+    if (tarotIndex === -1) {
+      throw new Error(`Tarot with ID ${tarotId} not found`);
     }
 
-    const tarot = this.consumables[0];
+    const tarot = this.consumables[tarotIndex];
 
     if (tarot.requiresTarget() && !target) {
       throw new Error('This tarot requires a target card');
@@ -320,7 +315,7 @@ export class GameState {
     tarot.use(target || this);
 
     // Remove the tarot from inventory
-    this.consumables.splice(0, 1);
+    this.consumables.splice(tarotIndex, 1);
     console.log(`Used tarot: ${tarot.name}`);
   }
 

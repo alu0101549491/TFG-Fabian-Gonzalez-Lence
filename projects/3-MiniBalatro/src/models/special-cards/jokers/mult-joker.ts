@@ -25,9 +25,9 @@ export class MultJoker extends Joker {
     name: string,
     description: string,
     public readonly multValue: number,
-    private readonly condition?: (context: ScoreContext) => boolean
+    condition?: (context: ScoreContext) => boolean
   ) {
-    super(id, name, description, JokerPriority.MULT);
+    super(id, name, description, JokerPriority.MULT, condition);
     if (multValue <= 0) {
       throw new Error('Mult value must be positive');
     }
@@ -46,14 +46,5 @@ export class MultJoker extends Joker {
       context.mult += actualValue;
       console.log(`[${this.name}] Added ${actualValue} mult (Total: ${context.mult})`);
     }
-  }
-
-  /**
-   * Checks if joker's conditions are met for activation.
-   * @param context - The score calculation context
-   * @returns True if joker should activate
-   */
-  public canActivate(context: ScoreContext): boolean {
-    return this.condition ? this.condition(context) : true;
   }
 }

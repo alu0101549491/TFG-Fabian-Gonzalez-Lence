@@ -1,0 +1,76 @@
+{
+  "planets": [
+    {
+      "id": "pluto",
+      "name": "Pluto",
+      "description": "+10 chips, +1 mult for High Card",
+      "targetHandType": "highCard",
+      "chipsBonus": 10,
+      "multBonus": 1
+    },
+    {
+      "id": "mercury",
+      "name": "Mercury",
+      "description": "+15 chips, +1 mult for Pair",
+      "targetHandType": "pair",
+      "chipsBonus": 15,
+      "multBonus": 1
+    },
+    {
+      "id": "uranus",
+      "name": "Uranus",
+      "description": "+20 chips, +1 mult for Two Pair",
+      "targetHandType": "twoPair",
+      "chipsBonus": 20,
+      "multBonus": 1
+    },
+    {
+      "id": "venus",
+      "name": "Venus",
+      "description": "+20 chips, +2 mult for Three of a Kind",
+      "targetHandType": "threeOfAKind",
+      "chipsBonus": 20,
+      "multBonus": 2
+    },
+    {
+      "id": "saturn",
+      "name": "Saturn",
+      "description": "+30 chips, +3 mult for Straight",
+      "targetHandType": "straight",
+      "chipsBonus": 30,
+      "multBonus": 3
+    },
+    {
+      "id": "jupiter",
+      "name": "Jupiter",
+      "description": "+15 chips, +2 mult for Flush",
+      "targetHandType": "flush",
+      "chipsBonus": 15,
+      "multBonus": 2
+    },
+    {
+      "id": "earth",
+      "name": "Earth",
+      "description": "+25 chips, +2 mult for Full House",
+      "targetHandType": "fullHouse",
+      "chipsBonus": 25,
+      "multBonus": 2
+    },
+    {
+      "id": "mars",
+      "name": "Mars",
+      "description": "+30 chips, +3 mult for Four of a Kind",
+      "targetHandType": "fourOfAKind",
+      "chipsBonus": 30,
+      "multBonus": 3
+    },
+    {
+      "id": "neptune",
+      "name": "Neptune",
+      "description": "+40 chips, +4 mult for Straight Flush",
+      "targetHandType": "straightFlush",
+      "chipsBonus": 40,
+      "multBonus": 4
+    }
+  ]
+}

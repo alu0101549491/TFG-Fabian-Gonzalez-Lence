@@ -25,9 +25,9 @@ export class MultiplierJoker extends Joker {
     name: string,
     description: string,
     public readonly multiplierValue: number,
-    private readonly condition?: (context: ScoreContext) => boolean
+    condition?: (context: ScoreContext) => boolean
   ) {
-    super(id, name, description, JokerPriority.MULTIPLIER);
+    super(id, name, description, JokerPriority.MULTIPLIER, condition);
     if (multiplierValue < 1) {
       throw new Error('Multiplier value must be at least 1');
     }
@@ -46,14 +46,5 @@ export class MultiplierJoker extends Joker {
         console.log(`[${this.name}] Multiplied mult by ${this.multiplierValue} (${originalMult} → ${context.mult})`);
       }
     }
-  }
-
-  /**
-   * Checks if joker's conditions are met for activation.
-   * @param context - The score calculation context
-   * @returns True if joker should activate
-   */
-  public canActivate(context: ScoreContext): boolean {
-    return this.condition ? this.condition(context) : true;
   }
 }

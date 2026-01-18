@@ -12,17 +12,19 @@ import { GameState } from '../../game/game-state';
 export class InstantTarot extends Tarot {
   /**
    * Creates an instant tarot with specified effect function.
+   * @param id - Unique identifier for the tarot
    * @param name - Tarot card name
    * @param description - Effect description
    * @param effect - Effect function to execute
    * @throws Error if effect is null
    */
   constructor(
+    id: string,
     name: string,
     description: string,
     private readonly effect: (gameState: GameState) => void
   ) {
-    super(name, description);
+    super(id, name, description);
     if (!effect) {
       throw new Error('Effect function cannot be null');
     }

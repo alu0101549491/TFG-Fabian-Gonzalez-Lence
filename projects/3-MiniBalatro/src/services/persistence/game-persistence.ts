@@ -3,16 +3,6 @@
 // ============================================
 
 import { GameState } from '../../models/game/game-state';
-import { Deck } from '../../models/core/deck';
-import { Card } from '../../models/core/card';
-import { Joker } from '../../models/special-cards/jokers/joker';
-import { Tarot } from '../../models/special-cards/tarots/tarot';
-import { Planet } from '../../models/special-cards/planets/planet';
-import { Blind } from '../../models/blinds/blind';
-import { HandUpgradeManager } from '../../models/poker/hand-upgrade-manager';
-import { ScoreCalculator } from '../../models/scoring/score-calculator';
-import { HandEvaluator } from '../../models/poker/hand-evaluator';
-import { BlindGenerator } from '../../models/blinds/blind-generator';
 
 /**
  * Handles game state persistence to browser localStorage.
@@ -118,7 +108,7 @@ export class GamePersistence {
         id: card.getId(),
         value: card.value,
         suit: card.suit,
-        chipBonus: card.getBaseChips() - this.getBaseCardValue(card.value),
+        chips: card.getBaseChips(),
         multBonus: card.getMultBonus()
       })),
 
@@ -175,44 +165,14 @@ export class GamePersistence {
     gameState['discardsRemaining'] = parsed.discardsRemaining;
 
     // Restore current hand
-    const deck = new Deck();
-    parsed.currentHand.forEach((cardData: any) => {
-      // This is a simplified reconstruction
-      // In a real implementation, we'd need to properly reconstruct the Card objects
-      // with all their properties and methods
-    });
+    // This is a simplified reconstruction
+    // In a real implementation, we'd need to properly reconstruct the Card objects
+    // with all their properties and methods
 
     // Restore jokers, consumables, blind, etc.
     // This would require more complex reconstruction logic
 
     console.log('Game state deserialized (simplified)');
     return gameState;
-  }
-
-  /**
-   * Gets the base value for a card.
-   * @param value - Card value
-   * @returns Base chip value
-   */
-  private getBaseCardValue(value: string): number {
-    // This is a simplified implementation
-    // In a real app, we'd use the proper card value mapping
-    const values: Record<string, number> = {
-      'ACE': 11,
-      'KING': 10,
-      'QUEEN': 10,
-      'JACK': 10,
-      'TEN': 10,
-      'NINE': 9,
-      'EIGHT': 8,
-      'SEVEN': 7,
-      'SIX': 6,
-      'FIVE': 5,
-      'FOUR': 4,
-      'THREE': 3,
-      'TWO': 2
-    };
-
-    return values[value] || 0;
   }
 }
