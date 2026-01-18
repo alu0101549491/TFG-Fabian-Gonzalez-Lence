@@ -269,7 +269,7 @@ export class GameController {
       throw new Error('Game state not initialized');
     }
 
-    this.shop = new Shop(this.gameState);
+    this.shop = new Shop();
     this.isInShop = true;
 
     // Trigger shop open callback
@@ -303,12 +303,12 @@ export class GameController {
     }
 
     // Check if player can afford
-    if (this.gameState.getMoney() < item.price) {
+    if (this.gameState.getMoney() < item.cost) {
       return false;
     }
 
     // Spend money
-    if (!this.gameState.spendMoney(item.price)) {
+    if (!this.gameState.spendMoney(item.cost)) {
       return false;
     }
 
@@ -378,7 +378,7 @@ export class GameController {
     }
 
     // Regenerate shop items
-    this.shop.rerollItems();
+    this.shop.reroll(this.gameState.getMoney());
 
     // Trigger shop open callback (as items changed)
     if (this.onShopOpen) {
