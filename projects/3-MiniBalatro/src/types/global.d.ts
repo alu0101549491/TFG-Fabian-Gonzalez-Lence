@@ -1,194 +1,185 @@
+// ============================================
+// FILE: src/types/global.d.ts
+// ============================================
+
 /**
- * Global type definitions for the Mini Balatro application.
- * Provides shared types used across multiple modules.
+ * Global type definitions for Mini Balatro.
  */
 
 /**
- * Represents a unique identifier for game entities
+ * Represents the current screen/view state.
  */
-export type EntityId = string;
+export type AppScreen = 'menu' | 'game' | 'shop' | 'victory' | 'defeat';
 
 /**
- * Coordinate position on the game board
+ * Represents a blind type identifier.
  */
-export interface Position {
-  x: number;
-  y: number;
+export type BlindType = 'small' | 'big' | 'boss';
+
+/**
+ * Represents suit color as hex string.
+ */
+export type SuitColor = string;
+
+/**
+ * Callback function type for game state changes.
+ */
+export type StateChangeCallback = (gameState: any) => void;
+
+/**
+ * Callback function type for shop events.
+ */
+export type ShopCallback = (shop?: any) => void;
+
+/**
+ * Callback function type for game end events.
+ */
+export type GameEndCallback = () => void;
+
+/**
+ * Configuration object for hand values.
+ */
+export interface HandValueConfig {
+  chips: number;
+  mult: number;
 }
 
 /**
- * Animation state for UI elements
+ * Configuration object for planet upgrades.
  */
-export interface AnimationState {
-  isAnimating: boolean;
-  duration: number;
-  delay?: number;
+export interface PlanetUpgradeConfig {
+  handType: string;
+  chips: number;
+  mult: number;
 }
 
 /**
- * Selection state for interactive elements
+ * Shop item data structure.
  */
-export interface Selectable {
-  isSelected: boolean;
-  isSelectable: boolean;
+export interface ShopItemData {
+  id: string;
+  type: 'joker' | 'planet' | 'tarot';
+  name: string;
+  description: string;
+  cost: number;
 }
 
 /**
- * Common props for all game components
+ * Score calculation breakdown entry.
+ */
+export interface ScoreBreakdownEntry {
+  source: string;
+  chipsAdded: number;
+  multAdded: number;
+  description: string;
+}
+
+/**
+ * Game statistics data.
+ */
+export interface GameStatistics {
+  levelsCompleted: number;
+  totalScore: number;
+  moneyRemaining: number;
+  roundsCompleted: number;
+  handsPlayed: number;
+  jokersUsed: string[];
+  planetsCollected: string[];
+}
+
+/**
+ * Persisted game state data.
+ */
+export interface PersistedGameData {
+  levelNumber: number;
+  roundNumber: number;
+  money: number;
+  accumulatedScore: number;
+  handsRemaining: number;
+  discardsRemaining: number;
+  deckState: any;
+  jokers: any[];
+  consumables: any[];
+  upgrades: any;
+  timestamp: number;
+}
+
+/**
+ * UI component props base interface.
  */
 export interface BaseComponentProps {
   className?: string;
   style?: React.CSSProperties;
-  onClick?: () => void;
-  onHover?: () => void;
 }
 
 /**
- * Game phase enumeration
+ * Error types for game operations.
  */
-export enum GamePhase {
-  MENU = 'MENU',
-  PLAYING = 'PLAYING',
-  SHOP = 'SHOP',
-  VICTORY = 'VICTORY',
-  DEFEAT = 'DEFEAT',
+export enum GameErrorType {
+  INVALID_ACTION = 'INVALID_ACTION',
+  INSUFFICIENT_FUNDS = 'INSUFFICIENT_FUNDS',
+  INVENTORY_FULL = 'INVENTORY_FULL',
+  NO_SAVED_GAME = 'NO_SAVED_GAME',
+  PERSISTENCE_ERROR = 'PERSISTENCE_ERROR',
 }
 
 /**
- * Player action types
+ * Game error with type and message.
  */
-export enum PlayerAction {
-  SELECT_CARD = 'SELECT_CARD',
-  PLAY_HAND = 'PLAY_HAND',
-  DISCARD = 'DISCARD',
-  USE_CONSUMABLE = 'USE_CONSUMABLE',
-  PURCHASE_ITEM = 'PURCHASE_ITEM',
-  REROLL_SHOP = 'REROLL_SHOP',
-  EXIT_SHOP = 'EXIT_SHOP',
-}
-
-/**
- * Notification types for user feedback
- */
-export enum NotificationType {
-  INFO = 'INFO',
-  SUCCESS = 'SUCCESS',
-  WARNING = 'WARNING',
-  ERROR = 'ERROR',
-}
-
-/**
- * Notification message structure
- */
-export interface Notification {
-  id: EntityId;
-  type: NotificationType;
+export interface GameError {
+  type: GameErrorType;
   message: string;
-  duration?: number;
 }
 
 /**
- * Statistics tracking structure
+ * Extends Window interface for custom properties.
  */
-export interface GameStatistics {
-  totalGamesPlayed: number;
-  totalGamesWon: number;
-  highestScore: number;
-  highestRound: number;
-  totalHandsPlayed: number;
-  favoriteHandType: string | null;
-  totalMoneyEarned: number;
-  totalMoneySpent: number;
+declare global {
+  interface Window {
+    gameController?: any;
+    debugMode?: boolean;
+  }
 }
 
 /**
- * Settings structure
+ * Module declarations for CSS imports.
  */
-export interface GameSettings {
-  soundEnabled: boolean;
-  musicEnabled: boolean;
-  animationsEnabled: boolean;
-  showTutorial: boolean;
-  cardStyle: 'classic' | 'modern';
+declare module '*.css' {
+  const content: { [className: string]: string };
+  export default content;
 }
 
 /**
- * Serializable game save data
+ * Module declarations for image imports.
  */
-export interface SaveData {
-  version: string;
-  timestamp: number;
-  gameState: Record<string, unknown>;
-  statistics: GameStatistics;
+declare module '*.png' {
+  const value: string;
+  export default value;
+}
+
+declare module '*.jpg' {
+  const value: string;
+  export default value;
+}
+
+declare module '*.svg' {
+  const value: string;
+  export default value;
 }
 
 /**
- * Event callback types
- */
-export type CardEventHandler = (cardId: EntityId) => void;
-export type ScoreEventHandler = (score: number) => void;
-export type ShopEventHandler = (itemId: EntityId) => void;
-export type GameEventHandler = () => void;
-
-/**
- * Utility type for readonly arrays
- */
-export type ReadonlyArray<T> = readonly T[];
-
-/**
- * Utility type for partial deep objects
+ * Utility type for making all properties optional recursively.
  */
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
 /**
- * Utility type for making specific properties required
+ * Utility type for readonly array.
  */
-export type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+export type ReadonlyArray<T> = readonly T[];
 
 /**
- * Color theme type
+ * Utility type for non-nullable.
  */
-export interface ColorTheme {
-  primary: string;
-  secondary: string;
-  background: string;
-  text: string;
-  accent: string;
-  success: string;
-  warning: string;
-  error: string;
-}
-
-/**
- * Tooltip configuration
- */
-export interface TooltipConfig {
-  content: string;
-  position: 'top' | 'bottom' | 'left' | 'right';
-  delay?: number;
-}
-
-/**
- * Filter function type
- */
-export type FilterFunction<T> = (item: T) => boolean;
-
-/**
- * Comparator function type
- */
-export type ComparatorFunction<T> = (a: T, b: T) => number;
-
-/**
- * Extend Window interface for custom properties
- */
-declare global {
-  interface Window {
-    gameDebug?: {
-      getGameState: () => unknown;
-      setMoney: (amount: number) => void;
-      skipToRound: (round: number) => void;
-    };
-  }
-}
+export type NonNullable<T> = T extends null | undefined ? never : T;
