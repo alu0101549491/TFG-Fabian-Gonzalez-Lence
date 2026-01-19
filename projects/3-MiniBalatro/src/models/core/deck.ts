@@ -105,6 +105,42 @@ export class Deck {
   }
 
   /**
+   * Adds cards to the discard pile (used when playing/discarding cards).
+   * @param cards - Cards to add to discard pile
+   */
+  public addToDiscardPile(cards: Card[]): void {
+    this.discardPile.push(...cards);
+    console.log(`Added ${cards.length} cards to discard pile. Discard pile now has ${this.discardPile.length} cards.`);
+  }
+
+  /**
+   * Returns the current cards in the deck (for serialization).
+   * @returns Array of cards currently in the deck
+   */
+  public getCards(): Card[] {
+    return [...this.cards];
+  }
+
+  /**
+   * Returns the current discard pile (for serialization).
+   * @returns Array of cards in the discard pile
+   */
+  public getDiscardPile(): Card[] {
+    return [...this.discardPile];
+  }
+
+  /**
+   * Sets the deck and discard pile state (for deserialization).
+   * @param cards - Cards to set as the deck
+   * @param discardPile - Cards to set as the discard pile
+   */
+  public setState(cards: Card[], discardPile: Card[]): void {
+    this.cards = [...cards];
+    this.discardPile = [...discardPile];
+    console.log(`Deck state set: ${this.cards.length} cards in deck, ${this.discardPile.length} in discard pile`);
+  }
+
+  /**
    * Resets deck to full 52 standard cards, shuffled, clears discard pile.
    */
   public reset(): void {

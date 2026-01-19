@@ -95,20 +95,13 @@ export const App: React.FC = () => {
     }
   };
 
-  /**
-   * Returns to main menu.
-   */
-  const handleReturnToMenu = () => {
-    setCurrentScreen('menu');
-  };
-
   return (
     <div className="app">
       {currentScreen === 'menu' && controller && (
         <MainMenu
           onStartNewGame={handleStartNewGame}
           onContinueGame={handleContinueGame}
-          hasSavedGame={controller.gamePersistence.hasSavedGame()}
+          hasSavedGame={controller.hasSavedGame()}
         />
       )}
       {currentScreen === 'game' && controller && gameState && !isInShop && (

@@ -13,10 +13,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './views/App';
 
-// Import global styles
-import '../assets/styles/global.css';
-import '../assets/styles/animations.css';
-
 /**
  * Initialize the application
  */

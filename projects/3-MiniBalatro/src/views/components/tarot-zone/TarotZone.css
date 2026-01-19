@@ -2,56 +2,113 @@
    FILENAME: TarotZone.css
    ============================================ */
 
-/* === LAYOUT === */
 .tarot-zone {
   display: flex;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  background-color: var(--color-bg-panel);
-  border-radius: var(--panel-radius);
-  box-shadow: var(--shadow-panel);
+  flex-direction: column;
+  gap: 12px;
 }
 
-.tarot-zone__slot {
+.tarot-slots {
+  display: flex;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.tarot-card {
   position: relative;
-  width: calc(var(--card-width) * 0.9);
-  height: calc(var(--card-height) * 0.9);
-  border: 2px dashed var(--color-tarot-border);
-  border-radius: var(--card-radius);
-  background-color: rgba(233, 69, 96, 0.1);
+  width: 100px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #2d2d44 0%, #1f1f30 100%);
+  border: 2px solid rgba(0, 210, 211, 0.5);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-.tarot-zone__slot--filled {
-  border: none;
-  background-color: transparent;
+.tarot-card:hover {
+  transform: translateY(-8px) scale(1.05);
+  border-color: #00d2d3;
+  box-shadow: 0 8px 24px rgba(0, 210, 211, 0.4);
 }
 
-.tarot-zone__card {
+.tarot-image {
   width: 100%;
-  height: 100%;
+  height: auto;
+  aspect-ratio: 5/7;
+  object-fit: cover;
+  display: block;
 }
 
-.tarot-zone__use-button {
+.tarot-info {
   position: absolute;
-  bottom: var(--spacing-xs);
-  right: var(--spacing-xs);
-  padding: var(--spacing-xs);
-  background-color: var(--color-tarot-border);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.7) 70%, transparent 100%);
+  padding: 8px 6px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tarot-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.use-button {
+  width: 100%;
+  padding: 4px;
+  background: linear-gradient(135deg, #00d2d3 0%, #00b4d8 100%);
   color: white;
   border: none;
-  border-radius: var(--button-radius);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
   cursor: pointer;
-  font-size: var(--font-size-small);
-  transition: background-color var(--transition-fast);
+  transition: all 0.2s ease;
 }
 
-.tarot-zone__use-button:hover {
-  background-color: var(--color-accent);
+.use-button:hover {
+  background: linear-gradient(135deg, #00b8b9 0%, #009abe 100%);
+  transform: scale(1.05);
 }
 
-/* === RESPONSIVE === */
-@media (min-width: 768px) {
-  .tarot-zone {
-    justify-content: flex-start;
-  }
+.tarot-slot-empty {
+  width: 100px;
+  aspect-ratio: 5/7;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 2px dashed rgba(0, 210, 211, 0.3);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.tarot-slot-empty:hover {
+  opacity: 0.8;
+  border-color: rgba(0, 210, 211, 0.5);
+}
+
+.empty-slot-icon {
+  font-size: 28px;
+}
+
+.empty-slot-text {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
 }

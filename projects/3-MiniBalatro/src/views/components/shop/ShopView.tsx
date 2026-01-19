@@ -5,7 +5,6 @@
 import React, { useState } from 'react';
 import { GameController } from '../../../controllers/game-controller';
 import { Shop } from '../../../services/shop/shop';
-import { ShopItem } from '../../../services/shop/shop-item';
 import { ShopItemType } from '../../../services/shop/shop-item-type.enum';
 import './ShopView.css';
 
@@ -28,6 +27,46 @@ export const ShopView: React.FC<ShopViewProps> = ({
   playerMoney
 }) => {
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const [availableItems, setAvailableItems] = useState(shop?.getAvailableItems() || []);
+  const [currentMoney, setCurrentMoney] = useState(playerMoney);
+
+  // Update items and money when shop or playerMoney changes
+  React.useEffect(() => {
+    if (shop) {
+      setAvailableItems(shop.getAvailableItems());
+    }
+    setCurrentMoney(playerMoney);
+  }, [shop, playerMoney]);
+
+  /**
+   * Gets the image path for a special card based on its name and type.
+   * @param itemName - Name of the item
+   * @param itemType - Type of the item (JOKER, PLANET, TAROT)
+   * @returns Path to the image asset
+   */
+  const getCardImage = (itemName: string, itemType: ShopItemType): string => {
+    // Convert name to filename format (e.g., "Greedy Joker" -> "greedyJoker")
+    const baseName = itemName
+      .split(' ')
+      .map((word, index) => {
+        if (index === 0) {
+          return word.toLowerCase();
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join('');
+
+    switch (itemType) {
+      case ShopItemType.JOKER:
+        return `/assets/jokers/${baseName}.png`;
+      case ShopItemType.PLANET:
+        return `/assets/planets/${baseName}.png`;
+      case ShopItemType.TAROT:
+        return `/assets/tarots/${baseName}.png`;
+      default:
+        return '';
+    }
+  };
 
   /**
    * Handles item purchase.
@@ -42,7 +81,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
       return;
     }
 
-    if (playerMoney < item.getCost()) {
+    if (currentMoney < item.getCost()) {
       setPurchaseError('Not enough money');
       return;
     }
@@ -52,6 +91,9 @@ export const ShopView: React.FC<ShopViewProps> = ({
       setPurchaseError('Inventory full - replace an item first');
     } else {
       setPurchaseError(null);
+      // Update local state immediately for responsive UI
+      setAvailableItems(shop.getAvailableItems());
+      setCurrentMoney(controller.getGameState()?.getMoney() || currentMoney);
     }
   };
 
@@ -61,7 +103,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
   const handleReroll = () => {
     if (!shop) return;
 
-    if (playerMoney < shop.getRerollCost()) {
+    if (currentMoney < shop.getRerollCost()) {
       setPurchaseError('Not enough money to reroll');
       return;
     }
@@ -71,6 +113,9 @@ export const ShopView: React.FC<ShopViewProps> = ({
       setPurchaseError('Not enough money to reroll');
     } else {
       setPurchaseError(null);
+      // Update local state immediately
+      setAvailableItems(shop.getAvailableItems());
+      setCurrentMoney(controller.getGameState()?.getMoney() || currentMoney);
     }
   };
 
@@ -87,7 +132,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
    * @returns true if affordable
    */
   const canAfford = (cost: number): boolean => {
-    return playerMoney >= cost;
+    return currentMoney >= cost;
   };
 
   /**
@@ -108,37 +153,63 @@ export const ShopView: React.FC<ShopViewProps> = ({
     return <div className="shop-view">Shop not available</div>;
   }
 
-  const availableItems = shop.getAvailableItems();
   const rerollCost = shop.getRerollCost();
 
   return (
     <div className="shop-view">
       <div className="shop-header">
         <h2>Shop</h2>
-        <div className="shop-money">Money: ${playerMoney}</div>
+        <div className="shop-money">Money: ${currentMoney}</div>
       </div>
 
       <div className="shop-items">
-        {availableItems.map((shopItem) => (
-          <div
-            key={shopItem.getId()}
-            className={`shop-item ${!canAfford(shopItem.getCost()) ? 'unaffordable' : ''}`}
-          >
-            <div className="item-type" style={{ color: getItemTypeColor(shopItem.getType()) }}>
-              {shopItem.getType()}
-            </div>
-            <div className="item-name">{shopItem.getItem().name}</div>
-            <div className="item-description">{shopItem.getItem().description}</div>
-            <div className="item-cost">${shopItem.getCost()}</div>
-            <button
-              className="purchase-button"
-              onClick={() => handlePurchase(shopItem.getId())}
-              disabled={!canAfford(shopItem.getCost())}
+        {availableItems.map((shopItem) => {
+          const item = shopItem.getItem();
+          const itemType = shopItem.getType();
+          const imagePath = getCardImage(item.name, itemType);
+          
+          // Get description safely
+          let description = 'Special card';
+          if ('description' in item && item.description) {
+            description = item.description;
+          } else if ('getDescription' in item && typeof item.getDescription === 'function') {
+            description = item.getDescription();
+          }
+
+          return (
+            <div
+              key={shopItem.getId()}
+              className={`shop-item ${!canAfford(shopItem.getCost()) ? 'unaffordable' : ''}`}
             >
-              Purchase
-            </button>
-          </div>
-        ))}
+              <img 
+                src={imagePath} 
+                alt={item.name}
+                className="item-image"
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              <div className="item-info">
+                <div className="item-type" style={{ color: getItemTypeColor(itemType) }}>
+                  {itemType}
+                </div>
+                <div className="item-name">{item.name}</div>
+                <div className="item-description">{description}</div>
+              </div>
+              <div className="item-footer">
+                <div className="item-cost">${shopItem.getCost()}</div>
+                <button
+                  className="purchase-button"
+                  onClick={() => handlePurchase(shopItem.getId())}
+                  disabled={!canAfford(shopItem.getCost())}
+                >
+                  Purchase
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {purchaseError && (

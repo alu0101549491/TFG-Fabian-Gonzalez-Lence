@@ -17,6 +17,8 @@ export class ScoreContext {
    * @param playedCards - Cards that were played this hand
    * @param handType - Detected poker hand type
    * @param remainingDeckSize - Cards remaining in deck
+   * @param emptyJokerSlots - Number of empty joker slots (5 - active jokers)
+   * @param discardsRemaining - Number of discards remaining this round
    * @throws Error if chips or mult negative, or playedCards empty
    */
   constructor(
@@ -25,6 +27,8 @@ export class ScoreContext {
     public readonly playedCards: Card[],
     public readonly handType: HandType,
     public readonly remainingDeckSize: number,
+    public readonly emptyJokerSlots: number,
+    public readonly discardsRemaining: number,
   ) {
     if (chips < 0 || mult < 0) {
       throw new Error('Chips and mult must be non-negative');
@@ -34,6 +38,12 @@ export class ScoreContext {
     }
     if (remainingDeckSize < 0) {
       throw new Error('Remaining deck size cannot be negative');
+    }
+    if (emptyJokerSlots < 0 || emptyJokerSlots > 5) {
+      throw new Error('Empty joker slots must be between 0 and 5');
+    }
+    if (discardsRemaining < 0) {
+      throw new Error('Discards remaining cannot be negative');
     }
   }
 

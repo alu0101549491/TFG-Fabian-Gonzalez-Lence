@@ -50,9 +50,25 @@ export class HandEvaluator {
     // Get the hand type using the shared detection logic
     const handType = this.getHandType(cards);
 
-    // Sort cards by value for the result
+    // Sort cards by value for the result (highest to lowest)
+    const valueOrder: Record<CardValue, number> = {
+      [CardValue.ACE]: 14,
+      [CardValue.KING]: 13,
+      [CardValue.QUEEN]: 12,
+      [CardValue.JACK]: 11,
+      [CardValue.TEN]: 10,
+      [CardValue.NINE]: 9,
+      [CardValue.EIGHT]: 8,
+      [CardValue.SEVEN]: 7,
+      [CardValue.SIX]: 6,
+      [CardValue.FIVE]: 5,
+      [CardValue.FOUR]: 4,
+      [CardValue.THREE]: 3,
+      [CardValue.TWO]: 2
+    };
+
     const sortedCards = [...cards].sort((a, b) => {
-      return b.value.localeCompare(a.value);
+      return valueOrder[b.value] - valueOrder[a.value];
     });
 
     const baseValues = getBaseHandValues(handType);
@@ -80,9 +96,25 @@ export class HandEvaluator {
       throw new Error('Cards array must contain between 1 and 5 cards');
     }
 
-    // Sort cards by value for easier evaluation
+    // Sort cards by value for easier evaluation (highest to lowest)
+    const valueOrder: Record<CardValue, number> = {
+      [CardValue.ACE]: 14,
+      [CardValue.KING]: 13,
+      [CardValue.QUEEN]: 12,
+      [CardValue.JACK]: 11,
+      [CardValue.TEN]: 10,
+      [CardValue.NINE]: 9,
+      [CardValue.EIGHT]: 8,
+      [CardValue.SEVEN]: 7,
+      [CardValue.SIX]: 6,
+      [CardValue.FIVE]: 5,
+      [CardValue.FOUR]: 4,
+      [CardValue.THREE]: 3,
+      [CardValue.TWO]: 2
+    };
+
     const sortedCards = [...cards].sort((a, b) => {
-      return b.value.localeCompare(a.value);
+      return valueOrder[b.value] - valueOrder[a.value];
     });
 
     // Check each hand type in priority order
@@ -170,8 +202,9 @@ export class HandEvaluator {
       return true;
     }
 
-    // Check last four cards
-    if (cards[1].value === cards[2].value &&
+    // Check last four cards (only if we have 5 cards)
+    if (cards.length >= 5 &&
+        cards[1].value === cards[2].value &&
         cards[2].value === cards[3].value &&
         cards[3].value === cards[4].value) {
       return true;
@@ -296,13 +329,13 @@ export class HandEvaluator {
       return true;
     }
 
-    // Check middle three cards
-    if (cards[1].value === cards[2].value && cards[2].value === cards[3].value) {
+    // Check middle three cards (only if we have at least 4 cards)
+    if (cards.length >= 4 && cards[1].value === cards[2].value && cards[2].value === cards[3].value) {
       return true;
     }
 
-    // Check last three cards
-    if (cards[2].value === cards[3].value && cards[3].value === cards[4].value) {
+    // Check last three cards (only if we have 5 cards)
+    if (cards.length >= 5 && cards[2].value === cards[3].value && cards[3].value === cards[4].value) {
       return true;
     }
 

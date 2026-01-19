@@ -3,6 +3,7 @@
 // ============================================
 
 import { ScoreBreakdown } from './score-breakdown';
+import { HandType } from '../poker/hand-type.enum';
 
 /**
  * Encapsulates complete score calculation result.
@@ -15,13 +16,15 @@ export class ScoreResult {
    * @param chips - Final total chips after all additions
    * @param mult - Final total mult after all additions and multiplications
    * @param breakdown - Detailed list of all score contributions
+   * @param handType - The type of poker hand played
    * @throws Error if any numeric value is negative
    */
   constructor(
     public readonly totalScore: number,
     public readonly chips: number,
     public readonly mult: number,
-    public readonly breakdown: ScoreBreakdown[]
+    public readonly breakdown: ScoreBreakdown[],
+    public readonly handType?: HandType
   ) {
     if (totalScore < 0 || chips < 0 || mult < 0) {
       throw new Error('Score values cannot be negative');

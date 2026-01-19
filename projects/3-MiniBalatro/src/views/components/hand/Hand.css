@@ -5,11 +5,23 @@
 /* === LAYOUT === */
 .hand {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  flex-direction: column;
+  gap: 8px;
+}
+
+.selection-indicator {
+  font-size: 14px;
+  color: #a8a8a8;
+  font-weight: 600;
+}
+
+.cards-container {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
   justify-content: center;
-  padding: var(--spacing-sm);
-  min-height: calc(var(--card-height) + 2 * var(--spacing-sm));
+  flex-wrap: wrap;
+  padding: 8px 0;
 }
 
 .hand__card {
@@ -46,7 +58,8 @@
 
 /* === RESPONSIVE === */
 @media (min-width: 768px) {
-  .hand {
+  .cards-container {
     justify-content: flex-start;
   }
 }
+

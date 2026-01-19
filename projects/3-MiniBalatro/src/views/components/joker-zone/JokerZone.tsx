@@ -20,20 +20,50 @@ interface JokerZoneProps {
 export const JokerZone: React.FC<JokerZoneProps> = ({ jokers }) => {
   const emptySlots = 5 - jokers.length;
 
+  /**
+   * Gets the image path for a joker based on its name.
+   * @param jokerName - Name of the joker
+   * @returns Path to the image asset
+   */
+  const getJokerImage = (jokerName: string): string => {
+    // Convert name to filename format (e.g., "Greedy Joker" -> "greedyJoker")
+    const baseName = jokerName
+      .split(' ')
+      .map((word, index) => {
+        if (index === 0) {
+          return word.toLowerCase();
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join('');
+
+    return `/assets/jokers/${baseName}.png`;
+  };
+
   return (
     <div className="joker-zone">
-      <h3 className="zone-title">Jokers</h3>
       <div className="joker-slots">
         {jokers.map((joker, index) => (
           <div key={joker.id} className="joker-card">
-            <div className="joker-order">{index + 1}</div>
-            <div className="joker-name">{joker.name}</div>
-            <div className="joker-description">{joker.description}</div>
+            <img 
+              src={getJokerImage(joker.name)} 
+              alt={joker.name}
+              className="joker-image"
+              onError={(e) => {
+                // Fallback if image fails to load
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            <div className="joker-info">
+              <div className="joker-order">{index + 1}</div>
+              <div className="joker-name">{joker.name}</div>
+            </div>
           </div>
         ))}
         {[...Array(emptySlots)].map((_, index) => (
           <div key={`empty-${index}`} className="joker-slot-empty">
-            Empty
+            <div className="empty-slot-icon">?</div>
+            <div className="empty-slot-text">Empty Slot</div>
           </div>
         ))}
       </div>

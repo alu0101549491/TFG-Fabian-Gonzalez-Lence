@@ -18,6 +18,7 @@ export class MultJoker extends Joker {
    * @param description - Effect description
    * @param multValue - Mult added per activation
    * @param condition - Optional condition function
+   * @param multiplierFn - Optional function to calculate the multiplier (e.g., count diamonds)
    * @throws Error if multValue <= 0
    */
   constructor(
@@ -25,7 +26,8 @@ export class MultJoker extends Joker {
     name: string,
     description: string,
     public readonly multValue: number,
-    condition?: (context: ScoreContext) => boolean
+    condition?: (context: ScoreContext) => boolean,
+    private readonly multiplierFn?: (context: ScoreContext) => number
   ) {
     super(id, name, description, JokerPriority.MULT, condition);
     if (multValue <= 0) {
@@ -34,14 +36,14 @@ export class MultJoker extends Joker {
   }
 
   /**
-   * Adds mult to context.mult based on condition.
+   * Adds mult to context.mult based on condition and multiplier.
    * @param context - The score calculation context
    */
   public applyEffect(context: ScoreContext): void {
     if (this.canActivate(context)) {
-      const actualValue = typeof this.condition === 'function'
-        ? (this.condition(context) ? this.multValue : 0)
-        : this.multValue;
+      // If there's a multiplier function (e.g., count diamonds), use it
+      const multiplier = this.multiplierFn ? this.multiplierFn(context) : 1;
+      const actualValue = this.multValue * multiplier;
 
       context.mult += actualValue;
       console.log(`[${this.name}] Added ${actualValue} mult (Total: ${context.mult})`);

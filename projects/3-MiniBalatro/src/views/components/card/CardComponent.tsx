@@ -4,10 +4,7 @@
 
 import React from 'react';
 import { Card } from '../../../models/core/card';
-import { CardValue } from '../../../models/core/card-value.enum';
-import { Suit } from '../../../models/core/suit.enum';
-import { getSuitSymbol, getSuitColor } from '../../../models/core/suit.enum';
-import { getDisplayString } from '../../../models/core/card-value.enum';
+import { getSuitSymbol, getSuitColor } from '../../../utils/constants';
 import './CardComponent.css';
 
 /**
@@ -28,22 +25,13 @@ export const CardComponent: React.FC<CardComponentProps> = ({
   isSelected,
   onClick
 }) => {
-  /**
-   * Gets the display string for a card value.
-   * @param value - CardValue enum
-   * @returns Display string
-   */
-  const getValueDisplay = (value: CardValue): string => {
-    return getDisplayString(value);
-  };
-
   const suitSymbol = getSuitSymbol(card.suit);
   const suitColor = getSuitColor(card.suit);
-  const valueDisplay = getValueDisplay(card.value);
+  const valueDisplay = card.getDisplayString();
 
   return (
     <div
-      className={`card ${isSelected ? 'selected' : ''}`}
+      className={`card ${isSelected ? 'card--selected' : ''}`}
       onClick={onClick}
     >
       <div className="card-corner top-left" style={{ color: suitColor }}>

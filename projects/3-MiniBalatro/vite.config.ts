@@ -2,15 +2,15 @@ import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-// Determine base path - NO trailing slash on base path
-const base = process.env.BASE_URL || '/3-MiniBalatro/';
+// Determine base path - use '/' for dev, '/3-MiniBalatro/' for production
+const base = process.env.NODE_ENV === 'production' ? '/3-MiniBalatro/' : '/';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   root: '.',
   publicDir: 'public',
-  base,  // Ejemplo: /3-MiniBalatro/
+  base,  // '/' for dev, '/3-MiniBalatro/' for production
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
