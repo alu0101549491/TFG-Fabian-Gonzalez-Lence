@@ -10,9 +10,15 @@ import { Tarot } from '../../models/special-cards/tarots/tarot';
 import { BalancingConfig } from '../config/balancing-config';
 import { HandType } from '../../models/poker/hand-type.enum';
 import { ChipJoker } from '../../models/special-cards/jokers/chip-joker';
+import { MultJoker } from '../../models/special-cards/jokers/mult-joker';
+import { MultiplierJoker } from '../../models/special-cards/jokers/multiplier-joker';
 import { InstantTarot } from '../../models/special-cards/tarots/instant-tarot';
 import { TargetedTarot } from '../../models/special-cards/tarots/targeted-tarot';
 import { TarotEffect } from '../../models/special-cards/tarots/tarot-effect.enum';
+import { ScoreContext } from '../../models/scoring/score-context';
+import { Suit } from '../../models/core/suit.enum';
+import { Card } from '../../models/core/card';
+import { CardValue } from '../../models/core/card-value.enum';
 
 /**
  * Generates random jokers, planets, and tarot cards for shop.
@@ -46,18 +52,8 @@ export class ShopItemGenerator {
     // Select a random joker ID
     const randomIndex = Math.floor(Math.random() * jokerIds.length);
     const jokerId = jokerIds[randomIndex];
-    const jokerDef = this.balancingConfig.getJokerDefinition(jokerId);
-
-    // Create a joker based on the definition
-    // This is a simplified implementation - in a real app, we'd have a factory
-    // For now, we'll create a basic joker with the name from the definition
-    return new ChipJoker(
-      jokerId,
-      jokerDef.name,
-      jokerDef.description || 'Increases your score',
-      jokerDef.value || 5,
-      jokerDef.condition ? () => true : undefined
-    );
+    
+    return this.generateJokerById(jokerId);
   }
 
   /**
@@ -76,17 +72,229 @@ export class ShopItemGenerator {
     const planetId = planetIds[randomIndex];
     const planetDef = this.balancingConfig.getPlanetDefinition(planetId);
 
-    // Select a random hand type to upgrade
-    const handTypes = Object.values(HandType);
-    const randomHandType = handTypes[Math.floor(Math.random() * handTypes.length)];
+    // Convert targetHandType string to HandType enum
+    const handType = this.convertStringToHandType(planetDef.targetHandType);
 
-    // Create a planet with the selected hand type
+    // Create a planet with the correct hand type from definition
     return new Planet(
       planetDef.name,
-      randomHandType,
+      handType,
       planetDef.chipsBonus || 10,
       planetDef.multBonus || 1
     );
+  }
+
+  /**
+   * Converts a camelCase hand type string to HandType enum.
+   * @param handTypeString - camelCase string like "pair", "highCard", "twoPair"
+   * @returns Corresponding HandType enum value
+   */
+  private convertStringToHandType(handTypeString: string): HandType {
+    // Map camelCase strings to SCREAMING_SNAKE_CASE enum values
+    const mapping: Record<string, HandType> = {
+      'straightFlush': HandType.STRAIGHT_FLUSH,
+      'fourOfAKind': HandType.FOUR_OF_A_KIND,
+      'fullHouse': HandType.FULL_HOUSE,
+      'flush': HandType.FLUSH,
+      'straight': HandType.STRAIGHT,
+      'threeOfAKind': HandType.THREE_OF_A_KIND,
+      'twoPair': HandType.TWO_PAIR,
+      'pair': HandType.PAIR,
+      'highCard': HandType.HIGH_CARD
+    };
+
+    const handType = mapping[handTypeString];
+    if (!handType) {
+      console.warn(`Unknown hand type string "${handTypeString}", defaulting to HIGH_CARD`);
+      return HandType.HIGH_CARD;
+    }
+
+    return handType;
+  }
+
+  /**
+   * Creates a specific joker by ID.
+   * @param jokerId - ID of the joker to create
+   * @returns Joker instance
+   * @throws Error if joker ID not found
+   */
+  public generateJokerById(jokerId: string): Joker {
+    const jokerDef = this.balancingConfig.getJokerDefinition(jokerId);
+    if (!jokerDef) {
+      throw new Error(`Joker definition not found for ID: ${jokerId}`);
+    }
+
+    // Build condition and multiplier functions based on the condition string
+    const { conditionFn, multiplierFn } = this.buildJokerConditionAndMultiplier(jokerDef.condition);
+
+    // Create the appropriate joker type based on the "type" field
+    switch (jokerDef.type) {
+      case 'chips':
+        return new ChipJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Increases chips',
+          jokerDef.value || 5,
+          conditionFn
+        );
+      
+      case 'mult':
+        return new MultJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Increases mult',
+          jokerDef.value || 4,
+          conditionFn,
+          multiplierFn  // Pass multiplier function for per-card conditions
+        );
+      
+      case 'multiplier':
+        return new MultiplierJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Multiplies mult',
+          jokerDef.value || 2,
+          conditionFn,
+          multiplierFn  // Pass multiplier function for dynamic multipliers
+        );
+      
+      default:
+        // Default to ChipJoker if type is unknown
+        console.warn(`Unknown joker type "${jokerDef.type}" for ${jokerId}, defaulting to ChipJoker`);
+        return new ChipJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Increases your score',
+          jokerDef.value || 5,
+          conditionFn
+        );
+    }
+  }
+
+  /**
+   * Builds condition and multiplier functions based on the condition string from JSON.
+   * @param condition - Condition string from joker definition
+   * @returns Object with conditionFn and multiplierFn
+   */
+  private buildJokerConditionAndMultiplier(condition: string): {
+    conditionFn?: (context: ScoreContext) => boolean;
+    multiplierFn?: (context: ScoreContext) => number;
+  } {
+    if (!condition || condition === 'always') {
+      return {}; // Always active, no special conditions
+    }
+
+    // Handle per-suit conditions (these need multiplier functions)
+    switch (condition) {
+      case 'perDiamond':
+        return {
+          // Only activate if there are diamonds
+          conditionFn: (context: ScoreContext) => 
+            context.playedCards.some((card: Card) => card.suit === Suit.DIAMONDS),
+          // Count diamonds
+          multiplierFn: (context: ScoreContext) => 
+            context.playedCards.filter((card: Card) => card.suit === Suit.DIAMONDS).length
+        };
+      
+      case 'perHeart':
+        return {
+          conditionFn: (context: ScoreContext) => 
+            context.playedCards.some((card: Card) => card.suit === Suit.HEARTS),
+          multiplierFn: (context: ScoreContext) => 
+            context.playedCards.filter((card: Card) => card.suit === Suit.HEARTS).length
+        };
+      
+      case 'perSpade':
+        return {
+          conditionFn: (context: ScoreContext) => 
+            context.playedCards.some((card: Card) => card.suit === Suit.SPADES),
+          multiplierFn: (context: ScoreContext) => 
+            context.playedCards.filter((card: Card) => card.suit === Suit.SPADES).length
+        };
+      
+      case 'perClub':
+        return {
+          conditionFn: (context: ScoreContext) => 
+            context.playedCards.some((card: Card) => card.suit === Suit.CLUBS),
+          multiplierFn: (context: ScoreContext) => 
+            context.playedCards.filter((card: Card) => card.suit === Suit.CLUBS).length
+        };
+      
+      case 'perFibonacciCard':
+        return {
+          conditionFn: (context: ScoreContext) => {
+            const fibValues = [CardValue.ACE, CardValue.TWO, CardValue.THREE, CardValue.FIVE, CardValue.EIGHT];
+            return context.playedCards.some((card: Card) => fibValues.includes(card.value));
+          },
+          multiplierFn: (context: ScoreContext) => {
+            const fibValues = [CardValue.ACE, CardValue.TWO, CardValue.THREE, CardValue.FIVE, CardValue.EIGHT];
+            return context.playedCards.filter((card: Card) => fibValues.includes(card.value)).length;
+          }
+        };
+      
+      case 'perEvenCard':
+        return {
+          conditionFn: (context: ScoreContext) => {
+            const evenValues = [CardValue.TWO, CardValue.FOUR, CardValue.SIX, CardValue.EIGHT, CardValue.TEN];
+            return context.playedCards.some((card: Card) => evenValues.includes(card.value));
+          },
+          multiplierFn: (context: ScoreContext) => {
+            const evenValues = [CardValue.TWO, CardValue.FOUR, CardValue.SIX, CardValue.EIGHT, CardValue.TEN];
+            return context.playedCards.filter((card: Card) => evenValues.includes(card.value)).length;
+          }
+        };
+      
+      case 'perOddCard':
+        return {
+          conditionFn: (context: ScoreContext) => {
+            const oddValues = [CardValue.ACE, CardValue.THREE, CardValue.FIVE, CardValue.SEVEN, CardValue.NINE];
+            return context.playedCards.some((card: Card) => oddValues.includes(card.value));
+          },
+          multiplierFn: (context: ScoreContext) => {
+            const oddValues = [CardValue.ACE, CardValue.THREE, CardValue.FIVE, CardValue.SEVEN, CardValue.NINE];
+            return context.playedCards.filter((card: Card) => oddValues.includes(card.value)).length;
+          }
+        };
+      
+      case 'perKingOrQueen':
+        return {
+          conditionFn: (context: ScoreContext) => {
+            const royalValues = [CardValue.QUEEN, CardValue.KING];
+            return context.playedCards.some((card: Card) => royalValues.includes(card.value));
+          },
+          multiplierFn: (context: ScoreContext) => {
+            const royalValues = [CardValue.QUEEN, CardValue.KING];
+            return context.playedCards.filter((card: Card) => royalValues.includes(card.value)).length;
+          }
+        };
+      
+      // Handle boolean conditions (no multiplier needed)
+      case 'handSizeLessThanOrEqual3':
+        return {
+          conditionFn: (context: ScoreContext) => context.playedCards.length <= 3
+        };
+      
+      case 'perEmptyJokerSlot':
+        return {
+          conditionFn: () => true, // Always active (always has at least ×1)
+          multiplierFn: (context: ScoreContext) => context.emptyJokerSlots + 1
+        };
+      
+      case 'noDiscardsRemaining':
+        return {
+          conditionFn: (context: ScoreContext) => context.discardsRemaining === 0
+        };
+      
+      case 'perRemainingCard':
+        return {
+          conditionFn: (context: ScoreContext) => context.remainingDeckSize > 0,
+          multiplierFn: (context: ScoreContext) => context.remainingDeckSize
+        };
+      
+      default:
+        console.warn(`Unknown condition "${condition}", defaulting to always active`);
+        return {};
+    }
   }
 
   /**
@@ -125,6 +333,42 @@ export class ShopItemGenerator {
       );
     } else {
       // Create a targeted tarot (e.g., The Empress, The Emperor, suit changers)
+      return new TargetedTarot(
+        tarotId,
+        tarotDef.name,
+        tarotDef.description || 'Targeted effect',
+        tarotDef.effectType || TarotEffect.ADD_MULT,
+        tarotDef.effectValue
+      );
+    }
+  }
+
+  /**
+   * Creates a specific tarot by ID.
+   * @param tarotId - ID of the tarot to create
+   * @returns Tarot instance
+   * @throws Error if tarot ID not found
+   */
+  public generateTarotById(tarotId: string): Tarot {
+    const tarotDef = this.balancingConfig.getTarotDefinition(tarotId);
+    if (!tarotDef) {
+      throw new Error(`Tarot definition not found for ID: ${tarotId}`);
+    }
+
+    const isInstant = tarotDef.effectType === 'instant' || !tarotDef.targetRequired;
+
+    if (isInstant) {
+      return new InstantTarot(
+        tarotId,
+        tarotDef.name,
+        tarotDef.description || 'Instant effect',
+        (gameState) => {
+          if (tarotId === 'theHermit') {
+            gameState.addMoney(gameState.getMoney());
+          }
+        }
+      );
+    } else {
       return new TargetedTarot(
         tarotId,
         tarotDef.name,

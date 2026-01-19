@@ -99,10 +99,32 @@ export class GameController {
 
       this.gameState = savedState;
       this.isGameActive = true;
-      this.isInShop = false;
-
-      // Check if we need to open shop (if saved in shop state)
-      // This would require additional metadata in the saved state
+      
+      // Load controller state
+      const controllerState = this.gamePersistence.loadControllerState();
+      const wasInShop = controllerState?.isInShop || false;
+      
+      // If player was in shop, restore shop state
+      if (wasInShop) {
+        this.isInShop = false; // Will be set by openShop
+        this.openShop();
+        console.log('Restored shop state');
+      } else {
+        // Check if hand is empty and deal cards if needed
+        const currentHand = savedState.getCurrentHand();
+        if (currentHand.length === 0) {
+          try {
+            savedState.dealHand();
+            console.log('Dealt new hand after loading game (hand was empty)');
+          } catch (error) {
+            console.error('Could not deal hand:', error);
+          }
+        } else {
+          console.log(`Restored hand with ${currentHand.length} cards`);
+        }
+        
+        this.isInShop = false;
+      }
 
       // Trigger state change callback
       if (this.onStateChange && this.gameState) {
@@ -115,6 +137,14 @@ export class GameController {
       console.error('Failed to load game:', error);
       return false;
     }
+  }
+
+  /**
+   * Checks if a saved game exists.
+   * @returns true if saved game exists, false otherwise
+   */
+  public hasSavedGame(): boolean {
+    return this.gamePersistence.hasSavedGame();
   }
 
   /**
@@ -269,6 +299,7 @@ export class GameController {
     }
 
     this.shop = new Shop();
+    this.shop.generateItems(4); // Generate 4 random items
     this.isInShop = true;
 
     // Trigger shop open callback
@@ -276,7 +307,7 @@ export class GameController {
       this.onShopOpen(this.shop);
     }
 
-    console.log('Shop opened');
+    console.log('Shop opened with items:', this.shop.getAvailableItems().length);
   }
 
   /**
@@ -630,6 +661,21 @@ export class GameController {
   }
 
   /**
+   * Gets preview score for currently selected cards.
+   * @returns ScoreResult with preview calculations, or null if no cards selected
+   * @throws Error if game not active
+   */
+  public getPreviewScore(): ScoreResult | null {
+    if (!this.isGameActive) {
+      throw new Error('Game is not active');
+    }
+    if (!this.gameState) {
+      throw new Error('Game state not initialized');
+    }
+    return this.gameState.getPreviewScore();
+  }
+
+  /**
    * Returns whether game is currently active.
    * @returns boolean
    */
@@ -655,7 +701,8 @@ export class GameController {
 
     try {
       this.gamePersistence.saveGame(this.gameState);
-      console.log('Game state saved');
+      this.gamePersistence.saveControllerState(this.isInShop);
+      console.log('Game state and controller state saved');
     } catch (error) {
       console.error('Failed to save game:', error);
     }

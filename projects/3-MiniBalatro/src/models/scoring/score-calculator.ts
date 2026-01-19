@@ -39,6 +39,7 @@ export class ScoreCalculator {
    * @param jokers - Active jokers to apply
    * @param remainingDeckSize - Cards remaining in deck
    * @param blindModifier - Optional blind modifier (boss effects)
+   * @param discardsRemaining - Number of discards remaining this round
    * @returns ScoreResult with totalScore = chips × mult
    * @throws Error if cards empty or > 5, or remainingDeckSize negative
    */
@@ -46,7 +47,8 @@ export class ScoreCalculator {
     cards: Card[],
     jokers: Joker[],
     remainingDeckSize: number,
-    blindModifier?: BlindModifier
+    blindModifier?: BlindModifier,
+    discardsRemaining: number = 0
   ): ScoreResult {
     if (!cards || cards.length === 0 || cards.length > 5) {
       throw new Error('Cards array must contain between 1 and 5 cards');
@@ -59,7 +61,16 @@ export class ScoreCalculator {
 
     // Step 1: Evaluate hand type and get base values
     const handResult = this.evaluator.evaluateHand(cards, this.upgradeManager);
-    const context = this.applyBaseValues(handResult, blindModifier);
+    
+    // Calculate empty joker slots (5 max slots - active jokers)
+    const emptyJokerSlots = Math.max(0, 5 - jokers.length);
+    
+    const context = this.applyBaseValues(
+      handResult, 
+      blindModifier, 
+      emptyJokerSlots, 
+      discardsRemaining
+    );
 
     // Create breakdown entries for base values (we keep breakdown separate from ScoreContext)
     const breakdown: ScoreBreakdown[] = [
@@ -72,7 +83,7 @@ export class ScoreCalculator {
     ];
 
     // Step 2: Apply individual card bonuses
-    this.applyCardBonuses(context, cards, jokers, breakdown);
+    this.applyCardBonuses(context, cards, breakdown);
 
     // Step 3: Apply joker effects by priority
     this.applyJokerEffects(context, jokers, breakdown);
@@ -80,7 +91,7 @@ export class ScoreCalculator {
     // Step 4: Calculate final score
     const totalScore = this.calculateFinalScore(context);
 
-    const result = new ScoreResult(totalScore, context.chips, context.mult, breakdown);
+    const result = new ScoreResult(totalScore, context.chips, context.mult, breakdown, handResult.handType);
 
     console.log(`Score calculation complete: ${totalScore} = ${context.chips} × ${context.mult}`);
     return result;
@@ -90,11 +101,15 @@ export class ScoreCalculator {
    * Creates initial context with base chips and mult from hand type.
    * @param handResult - Hand evaluation result
    * @param blindModifier - Optional blind modifier
+   * @param emptyJokerSlots - Number of empty joker slots
+   * @param discardsRemaining - Number of discards remaining
    * @returns ScoreContext with base values
    */
   private applyBaseValues(
     handResult: HandResult,
-    blindModifier?: BlindModifier
+    blindModifier?: BlindModifier,
+    emptyJokerSlots: number = 0,
+    discardsRemaining: number = 0
   ): ScoreContext {
     let baseChips = handResult.baseChips;
     let baseMult = handResult.baseMult;
@@ -114,7 +129,9 @@ export class ScoreCalculator {
       baseMult,
       handResult.cards,
       handResult.handType,
-      handResult.cards.length // Simplified for example
+      handResult.cards.length, // remainingDeckSize - simplified for now
+      emptyJokerSlots,
+      discardsRemaining
     );
 
     console.log(`Base values: ${baseChips} chips, ${baseMult} mult (${handResult.handType})`);
@@ -122,16 +139,14 @@ export class ScoreCalculator {
   }
 
   /**
-   * Applies individual card chips and per-card joker effects.
+   * Applies individual card chips and per-card tarot bonuses.
    * @param context - Current score context
    * @param cards - Played cards
-   * @param jokers - Active jokers
    * @param breakdown - Score breakdown array to append entries to
    */
   private applyCardBonuses(
     context: ScoreContext,
     cards: Card[],
-    jokers: Joker[],
     breakdown: ScoreBreakdown[]
   ): void {
     console.log('Applying card bonuses...');
@@ -163,27 +178,6 @@ export class ScoreCalculator {
             `Mult bonus from ${cardDisplay}`
           )
         );
-      }
-
-      // Check per-card joker effects
-      for (const joker of jokers) {
-        // This is a simplified check - real implementation would need
-        // to check if the joker has a per-card condition
-        if (joker.canActivate(context)) {
-          // Example: Greedy Joker adds +3 mult per Diamond
-          // In a real implementation, we'd check the joker's specific condition
-          // For this example, we'll assume all per-card jokers add to mult
-          const multBonus = 3; // Example value
-          context.addMult(multBonus);
-          breakdown.push(
-            new ScoreBreakdown(
-              joker.name,
-              0,
-              multBonus,
-              `${joker.name} on ${cardDisplay}`
-            )
-          );
-        }
       }
     }
 

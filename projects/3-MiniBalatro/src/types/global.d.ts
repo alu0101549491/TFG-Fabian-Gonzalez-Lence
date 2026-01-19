@@ -142,30 +142,8 @@ declare global {
 }
 
 /**
- * Module declarations for CSS imports.
+ * Module declarations for image imports (CSS handled in vite-env.d.ts).
  */
-declare module '*.css' {
-  const content: { [className: string]: string };
-  export default content;
-}
-
-/**
- * Module declarations for image imports.
- */
-declare module '*.png' {
-  const value: string;
-  export default value;
-}
-
-declare module '*.jpg' {
-  const value: string;
-  export default value;
-}
-
-declare module '*.svg' {
-  const value: string;
-  export default value;
-}
 
 /**
  * Utility type for making all properties optional recursively.

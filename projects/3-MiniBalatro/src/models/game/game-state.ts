@@ -145,12 +145,32 @@ export class GameState {
       this.selectedCards,
       this.jokers,
       this.deck.getRemaining(),
-      this.currentBlind.getModifier()
+      this.currentBlind.getModifier(),
+      this.discardsRemaining
     );
 
     // Add to accumulated score
     this.accumulatedScore += result.totalScore;
     console.log(`Played hand for ${result.totalScore} points. Total: ${this.accumulatedScore}/${this.currentBlind.getScoreGoal()}`);
+
+    // Remove played cards from hand and add to discard pile
+    const playedCount = this.selectedCards.length;
+    const playedCards = [...this.selectedCards]; // Copy before clearing selection
+    this.currentHand = this.currentHand.filter(card =>
+      !this.selectedCards.some(selected => selected.getId() === card.getId())
+    );
+    
+    // Add played cards to deck's discard pile
+    this.deck.addToDiscardPile(playedCards);
+
+    // Draw replacement cards
+    if (this.deck.getRemaining() >= playedCount) {
+      const replacements = this.deck.drawCards(playedCount);
+      this.currentHand.push(...replacements);
+      console.log(`Drew ${replacements.length} replacement cards`);
+    } else {
+      console.log('Not enough cards in deck to replace played cards');
+    }
 
     // Decrement hands remaining
     this.handsRemaining--;
@@ -175,16 +195,20 @@ export class GameState {
 
     const discardCount = this.selectedCards.length;
 
-    // Remove selected cards from hand
+    // Remove discarded cards from hand
+    const discardedCards = [...this.selectedCards]; // Copy before clearing
     this.currentHand = this.currentHand.filter(card =>
       !this.selectedCards.some(selected => selected.getId() === card.getId())
     );
 
-    // Draw replacement cards
+    // Check if deck has enough cards
     if (this.deck.getRemaining() < discardCount) {
       // In a real implementation, we would reshuffle the discard pile here
       throw new Error('Not enough cards in deck to replace discarded cards');
     }
+
+    // Add discarded cards to deck's discard pile
+    this.deck.addToDiscardPile(discardedCards);
 
     const replacements = this.deck.drawCards(discardCount);
     this.currentHand.push(...replacements);
@@ -421,6 +445,9 @@ export class GameState {
       this.applyBlindModifiers();
     }
 
+    // Reset deck: combine deck + discard pile, shuffle
+    this.deck.reset();
+
     // Reset score and clear hand
     this.accumulatedScore = 0;
     this.currentHand = [];
@@ -453,11 +480,41 @@ export class GameState {
 
   // Getter methods
   public getCurrentHand(): Card[] {
-    return [...this.currentHand]; // Return copy
+    return this.sortCards([...this.currentHand]); // Return sorted copy
   }
 
   public getSelectedCards(): Card[] {
     return [...this.selectedCards]; // Return copy
+  }
+
+  /**
+   * Sorts cards by value from highest to lowest (ACE to TWO).
+   * @param cards - Array of cards to sort
+   * @returns Sorted array of cards
+   */
+  private sortCards(cards: Card[]): Card[] {
+    // Define the order of card values from highest to lowest
+    const valueOrder: Record<string, number> = {
+      'A': 14,   // ACE
+      'K': 13,   // KING
+      'Q': 12,   // QUEEN
+      'J': 11,   // JACK
+      '10': 10,  // TEN
+      '9': 9,    // NINE
+      '8': 8,    // EIGHT
+      '7': 7,    // SEVEN
+      '6': 6,    // SIX
+      '5': 5,    // FIVE
+      '4': 4,    // FOUR
+      '3': 3,    // THREE
+      '2': 2     // TWO
+    };
+
+    return cards.sort((a, b) => {
+      const valueA = valueOrder[a.value] || 0;
+      const valueB = valueOrder[b.value] || 0;
+      return valueB - valueA; // Sort descending (highest to lowest)
+    });
   }
 
   public getJokers(): Joker[] {
@@ -490,6 +547,40 @@ export class GameState {
 
   public getRoundNumber(): number {
     return this.roundNumber;
+  }
+
+  public getDeckRemaining(): number {
+    return this.deck.getRemaining();
+  }
+
+  /**
+   * Returns the Deck instance for serialization purposes.
+   * @returns The deck instance
+   */
+  public getDeck(): Deck {
+    return this.deck;
+  }
+
+  /**
+   * Calculates a preview score for the currently selected cards.
+   * Does not modify game state.
+   * @returns ScoreResult with preview calculations, or null if no cards selected
+   */
+  public getPreviewScore(): ScoreResult | null {
+    if (this.selectedCards.length === 0) {
+      return null;
+    }
+
+    // Calculate score using the same logic as playing a hand
+    const result = this.scoreCalculator.calculateScore(
+      this.selectedCards,
+      this.jokers,
+      this.deck.getRemaining(),
+      this.currentBlind.getModifier(),
+      this.discardsRemaining
+    );
+
+    return result;
   }
 
   /**

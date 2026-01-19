@@ -4,7 +4,8 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { CardValue, getBaseChipsForValue, getNextValue, getValueDisplay } from './card-value.enum';
-import { Suit, getSuitSymbol } from './suit.enum';
+import { Suit } from './suit.enum';
+import { getSuitSymbol } from '../../utils/constants';
 
 /**
  * Represents a single playing card in the game.

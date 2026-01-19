@@ -3,6 +3,13 @@
 // ============================================
 
 import { GameState } from '../../models/game/game-state';
+import { Card } from '../../models/core/card';
+import { BalancingConfig } from '../config/balancing-config';
+import { ShopItemGenerator } from '../shop/shop-item-generator';
+import { SmallBlind } from '../../models/blinds/small-blind';
+import { BigBlind } from '../../models/blinds/big-blind';
+import { BossBlind } from '../../models/blinds/boss-blind';
+import { BossType } from '../../models/blinds/boss-type.enum';
 
 /**
  * Handles game state persistence to browser localStorage.
@@ -10,6 +17,9 @@ import { GameState } from '../../models/game/game-state';
  */
 export class GamePersistence {
   private readonly storageKey: string;
+  private readonly controllerStateKey: string;
+  private itemGenerator: ShopItemGenerator;
+  private balancingConfig: BalancingConfig;
 
   /**
    * Creates persistence manager with specified storage key.
@@ -20,6 +30,13 @@ export class GamePersistence {
       throw new Error('Storage key cannot be empty');
     }
     this.storageKey = storageKey;
+    this.controllerStateKey = `${storageKey}_controller`;
+    this.itemGenerator = new ShopItemGenerator();
+    this.balancingConfig = new BalancingConfig();
+    // Initialize async loading
+    this.balancingConfig.initializeAsync().catch(error => {
+      console.error('Failed to load balancing config for persistence:', error);
+    });
   }
 
   /**
@@ -79,9 +96,43 @@ export class GamePersistence {
   public clearSavedGame(): void {
     try {
       localStorage.removeItem(this.storageKey);
+      localStorage.removeItem(this.controllerStateKey);
       console.log('Saved game cleared');
     } catch (error) {
       console.error('Failed to clear saved game:', error);
+    }
+  }
+
+  /**
+   * Saves controller state (isInShop flag).
+   * @param isInShop - Whether player is currently in shop
+   */
+  public saveControllerState(isInShop: boolean): void {
+    try {
+      const controllerState = { isInShop };
+      localStorage.setItem(this.controllerStateKey, JSON.stringify(controllerState));
+      console.log(`Controller state saved: isInShop=${isInShop}`);
+    } catch (error) {
+      console.error('Failed to save controller state:', error);
+    }
+  }
+
+  /**
+   * Loads controller state.
+   * @returns Object with isInShop flag, or null if not found
+   */
+  public loadControllerState(): { isInShop: boolean } | null {
+    try {
+      const serialized = localStorage.getItem(this.controllerStateKey);
+      if (!serialized) {
+        return null;
+      }
+      const parsed = JSON.parse(serialized);
+      console.log(`Controller state loaded: isInShop=${parsed.isInShop}`);
+      return { isInShop: parsed.isInShop || false };
+    } catch (error) {
+      console.error('Failed to load controller state:', error);
+      return null;
     }
   }
 
@@ -94,6 +145,8 @@ export class GamePersistence {
   private serializeGameState(gameState: GameState): string {
     // Create a simplified representation of the game state
     // that can be safely serialized to JSON
+    const deck = gameState.getDeck();
+    
     const simplified = {
       // Basic game info
       levelNumber: gameState.getLevelNumber(),
@@ -102,6 +155,20 @@ export class GamePersistence {
       accumulatedScore: gameState.getAccumulatedScore(),
       handsRemaining: gameState.getHandsRemaining(),
       discardsRemaining: gameState.getDiscardsRemaining(),
+
+      // Deck state
+      deckCards: deck.getCards().map(card => ({
+        value: card.value,
+        suit: card.suit,
+        chips: card.getBaseChips(),
+        multBonus: card.getMultBonus()
+      })),
+      discardPile: deck.getDiscardPile().map(card => ({
+        value: card.value,
+        suit: card.suit,
+        chips: card.getBaseChips(),
+        multBonus: card.getMultBonus()
+      })),
 
       // Current hand (simplified)
       currentHand: gameState.getCurrentHand().map(card => ({
@@ -121,14 +188,16 @@ export class GamePersistence {
 
       // Consumables
       consumables: gameState.getConsumables().map(tarot => ({
-        id: tarot.name, // Using name as ID for simplicity
+        id: tarot.id,
         name: tarot.name,
+        description: tarot.description,
         type: tarot.constructor.name
       })),
 
       // Current blind
       currentBlind: {
         level: gameState.getCurrentBlind().getLevel(),
+        roundNumber: gameState.getRoundNumber(),
         type: gameState.getCurrentBlind().constructor.name,
         scoreGoal: gameState.getCurrentBlind().getScoreGoal()
       },
@@ -164,15 +233,122 @@ export class GamePersistence {
     gameState['handsRemaining'] = parsed.handsRemaining;
     gameState['discardsRemaining'] = parsed.discardsRemaining;
 
-    // Restore current hand
-    // This is a simplified reconstruction
-    // In a real implementation, we'd need to properly reconstruct the Card objects
-    // with all their properties and methods
+    // Restore deck state
+    if (parsed.deckCards && Array.isArray(parsed.deckCards) && parsed.discardPile && Array.isArray(parsed.discardPile)) {
+      const deckCards = parsed.deckCards.map((cardData: any) => {
+        const card = new Card(cardData.value, cardData.suit);
+        if (cardData.chips || cardData.multBonus) {
+          const baseChips = card.getBaseChips();
+          const chipBonus = (cardData.chips || 0) - baseChips;
+          if (chipBonus > 0 || cardData.multBonus > 0) {
+            card.addPermanentBonus(Math.max(0, chipBonus), cardData.multBonus || 0);
+          }
+        }
+        return card;
+      });
 
-    // Restore jokers, consumables, blind, etc.
-    // This would require more complex reconstruction logic
+      const discardPileCards = parsed.discardPile.map((cardData: any) => {
+        const card = new Card(cardData.value, cardData.suit);
+        if (cardData.chips || cardData.multBonus) {
+          const baseChips = card.getBaseChips();
+          const chipBonus = (cardData.chips || 0) - baseChips;
+          if (chipBonus > 0 || cardData.multBonus > 0) {
+            card.addPermanentBonus(Math.max(0, chipBonus), cardData.multBonus || 0);
+          }
+        }
+        return card;
+      });
 
-    console.log('Game state deserialized (simplified)');
+      const deck = gameState.getDeck();
+      deck.setState(deckCards, discardPileCards);
+      console.log(`Restored deck: ${deckCards.length} cards in deck, ${discardPileCards.length} in discard pile`);
+    }
+
+    // Restore current hand by reconstructing Card objects
+    if (parsed.currentHand && Array.isArray(parsed.currentHand)) {
+      const restoredHand = parsed.currentHand.map((cardData: any) => {
+        const card = new Card(cardData.value, cardData.suit);
+        // Note: Card IDs will be regenerated (UUID), but value/suit are preserved
+        // Restore bonuses if they exist
+        if (cardData.chips || cardData.multBonus) {
+          const baseChips = card.getBaseChips();
+          const chipBonus = (cardData.chips || 0) - baseChips;
+          if (chipBonus > 0 || cardData.multBonus > 0) {
+            card.addPermanentBonus(Math.max(0, chipBonus), cardData.multBonus || 0);
+          }
+        }
+        return card;
+      });
+      gameState['currentHand'] = restoredHand;
+      console.log(`Restored hand with ${restoredHand.length} cards`);
+    }
+
+    // Restore upgrade manager state
+    if (parsed.upgrades && Array.isArray(parsed.upgrades)) {
+      const upgradeManager = gameState.getUpgradeManager();
+      parsed.upgrades.forEach((upgradeData: any) => {
+        if (upgradeData.chips > 0 || upgradeData.mult > 0) {
+          upgradeManager.applyPlanetUpgrade(
+            upgradeData.handType,
+            upgradeData.chips,
+            upgradeData.mult
+          );
+        }
+      });
+      console.log(`Restored ${parsed.upgrades.length} hand upgrades`);
+    }
+
+    // Restore jokers
+    if (parsed.jokers && Array.isArray(parsed.jokers)) {
+      parsed.jokers.forEach((jokerData: any) => {
+        try {
+          // Recreate the specific joker by ID
+          const joker = this.itemGenerator.generateJokerById(jokerData.id);
+          gameState.addJoker(joker);
+        } catch (error) {
+          console.error(`Failed to restore joker: ${jokerData.name} (${jokerData.id})`, error);
+        }
+      });
+      console.log(`Restored ${parsed.jokers.length} jokers`);
+    }
+
+    // Restore consumables (tarots)
+    if (parsed.consumables && Array.isArray(parsed.consumables)) {
+      parsed.consumables.forEach((tarotData: any) => {
+        try {
+          // Recreate the specific tarot by ID
+          const tarot = this.itemGenerator.generateTarotById(tarotData.id);
+          gameState.addConsumable(tarot);
+        } catch (error) {
+          console.error(`Failed to restore consumable: ${tarotData.name} (${tarotData.id})`, error);
+        }
+      });
+      console.log(`Restored ${parsed.consumables.length} consumables`);
+    }
+
+    // Restore current blind
+    if (parsed.currentBlind) {
+      try {
+        const blindLevel = parsed.currentBlind.level;
+        const roundNumber = parsed.currentBlind.roundNumber || parsed.roundNumber;
+        const blindType = parsed.currentBlind.type;
+        
+        // Create the appropriate blind type based on the class name
+        if (blindType === 'SmallBlind') {
+          gameState['currentBlind'] = new SmallBlind(blindLevel, roundNumber);
+        } else if (blindType === 'BigBlind') {
+          gameState['currentBlind'] = new BigBlind(blindLevel, roundNumber);
+        } else if (blindType === 'BossBlind') {
+          // For boss blind, we'll use a default boss type (can be improved)
+          gameState['currentBlind'] = new BossBlind(blindLevel, roundNumber, BossType.THE_WALL);
+        }
+        console.log(`Restored blind: ${blindType} at level ${blindLevel}`);
+      } catch (error) {
+        console.error('Failed to restore blind', error);
+      }
+    }
+
+    console.log('Game state deserialized');
     return gameState;
   }
 }

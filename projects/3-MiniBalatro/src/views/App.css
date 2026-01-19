@@ -1,0 +1,35 @@
+/* ============================================
+   FILE: src/views/App.css
+   ============================================ */
+
+/**
+ * Root application styles.
+ * Defines the main container and high-level layout.
+ */
+
+.app {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  overflow-x: hidden;
+}
+
+/* Ensure smooth transitions between screens */
+.app > * {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
