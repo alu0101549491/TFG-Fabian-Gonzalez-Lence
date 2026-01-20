@@ -4,6 +4,9 @@
 
 import React from 'react';
 import { Joker } from '../../../models/special-cards/jokers/joker';
+import { GameConfig } from '../../../services/config/game-config';
+import { Tooltip } from '../tooltip/Tooltip';
+import { JokerTooltipContent } from '../tooltip/JokerTooltipContent';
 import './JokerZone.css';
 
 /**
@@ -11,14 +14,15 @@ import './JokerZone.css';
  */
 interface JokerZoneProps {
   jokers: Joker[];
+  onRemoveJoker?: (jokerId: string) => void;
 }
 
 /**
  * Joker display area component.
- * Shows active jokers with effects.
+ * Shows active jokers with effects and hover tooltips.
  */
-export const JokerZone: React.FC<JokerZoneProps> = ({ jokers }) => {
-  const emptySlots = 5 - jokers.length;
+export const JokerZone: React.FC<JokerZoneProps> = ({ jokers, onRemoveJoker }) => {
+  const emptySlots = GameConfig.MAX_JOKERS - jokers.length;
 
   /**
    * Gets the image path for a joker based on its name.
@@ -43,22 +47,38 @@ export const JokerZone: React.FC<JokerZoneProps> = ({ jokers }) => {
   return (
     <div className="joker-zone">
       <div className="joker-slots">
-        {jokers.map((joker, index) => (
-          <div key={joker.id} className="joker-card">
-            <img 
-              src={getJokerImage(joker.name)} 
-              alt={joker.name}
-              className="joker-image"
-              onError={(e) => {
-                // Fallback if image fails to load
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            <div className="joker-info">
-              <div className="joker-order">{index + 1}</div>
-              <div className="joker-name">{joker.name}</div>
+        {jokers.map((joker /*, index*/) => (
+          <Tooltip key={joker.id} content={<JokerTooltipContent joker={joker} />}>
+            <div className="joker-card">
+              {onRemoveJoker && (
+                <button
+                  className="remove-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Remove ${joker.name}?`)) {
+                      onRemoveJoker(joker.id);
+                    }
+                  }}
+                  title="Remove joker"
+                >
+                  ✖
+                </button>
+              )}
+              <img 
+                src={getJokerImage(joker.name)} 
+                alt={joker.name}
+                className="joker-image"
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              <div className="joker-info">
+                {/* <div className="joker-order">{index + 1}</div> */}
+                <div className="joker-name">{joker.name}</div>
+              </div>
             </div>
-          </div>
+          </Tooltip>
         ))}
         {[...Array(emptySlots)].map((_, index) => (
           <div key={`empty-${index}`} className="joker-slot-empty">

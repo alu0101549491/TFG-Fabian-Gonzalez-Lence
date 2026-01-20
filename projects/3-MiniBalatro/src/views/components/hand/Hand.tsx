@@ -5,6 +5,7 @@
 import React from 'react';
 import { Card } from '../../../models/core/card';
 import { CardComponent } from '../card/CardComponent';
+import { GameConfig } from '../../../services/config/game-config';
 import './Hand.css';
 
 /**
@@ -28,7 +29,7 @@ export const Hand: React.FC<HandProps> = ({
   return (
     <div className="hand">
       <div className="selection-indicator">
-        Selected: {selectedCards.length}/5
+        Selected: {selectedCards.length}/{GameConfig.MAX_CARDS_TO_PLAY}
       </div>
       <div className="cards-container">
         {cards.map((card) => (

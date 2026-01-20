@@ -4,6 +4,7 @@
 
 import { Blind } from './blind';
 import { BlindModifier } from './blind-modifier';
+import { GameConfig } from '../../services/config/game-config';
 
 /**
  * First blind in each round (easiest difficulty).
@@ -18,7 +19,7 @@ export class SmallBlind extends Blind {
    */
   constructor(level: number, roundNumber: number) {
     const baseGoal = SmallBlind.calculateBaseGoal(roundNumber);
-    super(level, baseGoal, 2);
+    super(level, baseGoal, GameConfig.SMALL_BLIND_REWARD);
   }
 
   /**

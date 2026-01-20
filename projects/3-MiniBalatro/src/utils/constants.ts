@@ -11,13 +11,15 @@
  * Game configuration constants.
  */
 export const GAME_CONFIG = {
-  INITIAL_MONEY: 5,
+  INITIAL_MONEY: 200,
   MAX_JOKERS: 5,
   MAX_CONSUMABLES: 2,
   HAND_SIZE: 8,
+  MAX_CARDS_TO_PLAY: 5,  // Maximum cards that can be played in one hand
   MAX_HANDS_PER_BLIND: 3,
   MAX_DISCARDS_PER_BLIND: 3,
   VICTORY_ROUNDS: 8,
+  LEVELS_PER_ROUND: 3,  // Number of blinds (small, big, boss) per round
 };
 
 /**
@@ -53,10 +55,10 @@ export const COLORS = {
   TEXT_SECONDARY: '#a8a8a8',
 
   // Suit Colors
-  SUIT_DIAMONDS: '#ff6b6b',
-  SUIT_HEARTS: '#ee5a6f',
-  SUIT_SPADES: '#4ecdc4',
-  SUIT_CLUBS: '#95e1d3',
+  SUIT_DIAMONDS: '#e89230ff',
+  SUIT_HEARTS: '#d62d46ff',
+  SUIT_SPADES: '#061413ff',
+  SUIT_CLUBS: '#3cc264ff',
 
   // Indicator Colors
   CHIPS: '#f9ca24',

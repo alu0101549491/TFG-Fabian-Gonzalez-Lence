@@ -4,7 +4,7 @@
 
 import { ShopItem } from './shop-item';
 import { ShopItemGenerator } from './shop-item-generator';
-import { ShopItemType } from './shop-item-type.enum';
+import { GameConfig } from '../config/game-config';
 
 /**
  * Manages shop inventory and transactions.
@@ -19,7 +19,7 @@ export class Shop {
    * @param rerollCost - Cost to regenerate shop items
    * @throws Error if rerollCost <= 0
    */
-  constructor(rerollCost: number = 2) {
+  constructor(rerollCost: number = GameConfig.SHOP_REROLL_COST) {
     if (rerollCost <= 0) {
       throw new Error('Reroll cost must be positive');
     }
@@ -29,19 +29,21 @@ export class Shop {
   }
 
   /**
-   * Generates new shop inventory.
-   * @param count - Number of items to generate
+   * Generates new shop items.
+   * @param count - Number of items to generate (default 4)
+   * @param ownedJokerIds - Array of joker IDs already owned by player (prevents duplicates)
+   * @returns Promise that resolves when items are generated
    * @throws Error if count <= 0
    */
-  public generateItems(count: number = 4): void {
+  public async generateItems(count: number = 4, ownedJokerIds: string[] = []): Promise<void> {
     if (count <= 0) {
       throw new Error('Count must be positive');
     }
 
     const generator = new ShopItemGenerator();
-    this.availableItems = generator.generateShopItems(count);
+    this.availableItems = await generator.generateShopItems(count, ownedJokerIds);
 
-    console.log(`Generated ${this.availableItems.length} shop items`);
+    console.log(`Generated ${this.availableItems.length} shop items (excluding ${ownedJokerIds.length} owned jokers)`);
   }
 
   /**
@@ -71,11 +73,12 @@ export class Shop {
   /**
    * Regenerates shop items if player can afford reroll cost.
    * @param playerMoney - Player's current money
-   * @returns true if successful, false if not affordable
+   * @param ownedJokerIds - Array of joker IDs already owned by player (prevents duplicates)
+   * @returns Promise resolving to true if successful, false if not affordable
    */
-  public reroll(playerMoney: number): boolean {
+  public async reroll(playerMoney: number, ownedJokerIds: string[] = []): Promise<boolean> {
     if (playerMoney >= this.rerollCost) {
-      this.generateItems(4);
+      await this.generateItems(GameConfig.ITEMS_PER_SHOP, ownedJokerIds);
       console.log(`Shop rerolled for $${this.rerollCost}`);
       return true;
     }

@@ -5,6 +5,7 @@
 import { Blind } from './blind';
 import { BlindModifier } from './blind-modifier';
 import { BossType } from './boss-type.enum';
+import { GameConfig } from '../../services/config/game-config';
 
 /**
  * Third blind in each round (boss encounter).
@@ -20,7 +21,8 @@ export class BossBlind extends Blind {
    */
   constructor(level: number, roundNumber: number, public readonly bossType: BossType) {
     const baseGoal = BossBlind.calculateBaseGoal(roundNumber);
-    super(level, baseGoal * 2, 10);
+    const multiplier = GameConfig.BOSS_BLIND_MULTIPLIER;
+    super(level, baseGoal * multiplier, GameConfig.BOSS_BLIND_REWARD);
   }
 
   /**

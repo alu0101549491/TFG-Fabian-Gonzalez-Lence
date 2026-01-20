@@ -100,7 +100,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
   /**
    * Handles shop reroll.
    */
-  const handleReroll = () => {
+  const handleReroll = async () => {
     if (!shop) return;
 
     if (currentMoney < shop.getRerollCost()) {
@@ -108,7 +108,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
       return;
     }
 
-    const success = controller.rerollShop();
+    const success = await controller.rerollShop();
     if (!success) {
       setPurchaseError('Not enough money to reroll');
     } else {

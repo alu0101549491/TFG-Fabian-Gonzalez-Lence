@@ -84,9 +84,9 @@ export const App: React.FC = () => {
   /**
    * Continues a saved game.
    */
-  const handleContinueGame = () => {
+  const handleContinueGame = async () => {
     if (controller) {
-      const success = controller.continueGame();
+      const success = await controller.continueGame();
       if (success) {
         setCurrentScreen('game');
       } else {

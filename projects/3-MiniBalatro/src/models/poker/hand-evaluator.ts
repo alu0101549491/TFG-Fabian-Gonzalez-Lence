@@ -74,14 +74,19 @@ export class HandEvaluator {
     const baseValues = getBaseHandValues(handType);
     const upgrade = upgradeManager.getUpgradedValues(handType);
 
+    // Get the cards that actually contribute to scoring
+    const scoringCards = this.getScoringCards(sortedCards, handType);
+
     const result = new HandResult(
       handType,
       sortedCards,
+      scoringCards,
       baseValues.baseChips + upgrade.additionalChips,
       baseValues.baseMult + upgrade.additionalMult
     );
 
     console.log(`Hand evaluated as ${handType} with ${result.baseChips} chips and ${result.baseMult}x mult`);
+    console.log(`Scoring cards: ${scoringCards.length}/${sortedCards.length} cards`);
     return result;
   }
 
@@ -380,5 +385,134 @@ export class HandEvaluator {
     }
 
     return false;
+  }
+
+  /**
+   * Gets the cards that contribute chips to the score for a given hand type.
+   * @param cards - Sorted array of cards
+   * @param handType - The detected hand type
+   * @returns Array of cards that should contribute chips
+   */
+  private getScoringCards(cards: Card[], handType: HandType): Card[] {
+    switch (handType) {
+      case HandType.STRAIGHT_FLUSH:
+      case HandType.FULL_HOUSE:
+      case HandType.FLUSH:
+      case HandType.STRAIGHT:
+        // All 5 cards score
+        return [...cards];
+
+      case HandType.FOUR_OF_A_KIND:
+        // Only the 4 matching cards score
+        return this.extractFourOfAKind(cards);
+
+      case HandType.THREE_OF_A_KIND:
+        // Only the 3 matching cards score
+        return this.extractThreeOfAKind(cards);
+
+      case HandType.TWO_PAIR:
+        // Only the 4 cards forming the two pairs score
+        return this.extractTwoPair(cards);
+
+      case HandType.PAIR:
+        // Only the 2 matching cards score
+        return this.extractPair(cards);
+
+      case HandType.HIGH_CARD:
+        // Only the highest card scores
+        return [cards[0]]; // Already sorted highest to lowest
+
+      default:
+        // Fallback: all cards score
+        return [...cards];
+    }
+  }
+
+  /**
+   * Extracts the four cards that form a four of a kind.
+   * @param cards - Sorted array of cards
+   * @returns Array of 4 matching cards
+   */
+  private extractFourOfAKind(cards: Card[]): Card[] {
+    // Check first four cards
+    if (cards[0].value === cards[1].value &&
+        cards[1].value === cards[2].value &&
+        cards[2].value === cards[3].value) {
+      return [cards[0], cards[1], cards[2], cards[3]];
+    }
+
+    // Check last four cards
+    if (cards.length >= 5 &&
+        cards[1].value === cards[2].value &&
+        cards[2].value === cards[3].value &&
+        cards[3].value === cards[4].value) {
+      return [cards[1], cards[2], cards[3], cards[4]];
+    }
+
+    // Fallback (shouldn't happen)
+    return [...cards];
+  }
+
+  /**
+   * Extracts the three cards that form a three of a kind.
+   * @param cards - Sorted array of cards
+   * @returns Array of 3 matching cards
+   */
+  private extractThreeOfAKind(cards: Card[]): Card[] {
+    // Check first three cards
+    if (cards[0].value === cards[1].value && cards[1].value === cards[2].value) {
+      return [cards[0], cards[1], cards[2]];
+    }
+
+    // Check middle three cards
+    if (cards.length >= 4 &&
+        cards[1].value === cards[2].value &&
+        cards[2].value === cards[3].value) {
+      return [cards[1], cards[2], cards[3]];
+    }
+
+    // Check last three cards
+    if (cards.length >= 5 &&
+        cards[2].value === cards[3].value &&
+        cards[3].value === cards[4].value) {
+      return [cards[2], cards[3], cards[4]];
+    }
+
+    // Fallback
+    return [...cards];
+  }
+
+  /**
+   * Extracts the four cards that form two pairs.
+   * @param cards - Sorted array of cards
+   * @returns Array of 4 cards forming two pairs
+   */
+  private extractTwoPair(cards: Card[]): Card[] {
+    const pairCards: Card[] = [];
+
+    for (let i = 0; i < cards.length - 1; i++) {
+      if (cards[i].value === cards[i + 1].value) {
+        pairCards.push(cards[i], cards[i + 1]);
+        i++; // Skip next card to avoid counting same pair twice
+      }
+    }
+
+    return pairCards;
+  }
+
+  /**
+   * Extracts the two cards that form a pair.
+   * @param cards - Sorted array of cards
+   * @returns Array of 2 matching cards
+   */
+  private extractPair(cards: Card[]): Card[] {
+    for (let i = 0; i < cards.length - 1; i++) {
+      if (cards[i].value === cards[i + 1].value) {
+        return [cards[i], cards[i + 1]];
+      }
+    }
+
+    // Fallback (shouldn't happen)
+    return [cards[0], cards[1]];
   }
 }

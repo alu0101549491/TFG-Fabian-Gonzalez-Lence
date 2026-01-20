@@ -40,6 +40,7 @@ export class ScoreCalculator {
    * @param remainingDeckSize - Cards remaining in deck
    * @param blindModifier - Optional blind modifier (boss effects)
    * @param discardsRemaining - Number of discards remaining this round
+   * @param totalJokerCount - Total number of ALL jokers (including economic ones) for empty slot calculation
    * @returns ScoreResult with totalScore = chips × mult
    * @throws Error if cards empty or > 5, or remainingDeckSize negative
    */
@@ -48,7 +49,8 @@ export class ScoreCalculator {
     jokers: Joker[],
     remainingDeckSize: number,
     blindModifier?: BlindModifier,
-    discardsRemaining: number = 0
+    discardsRemaining: number = 0,
+    totalJokerCount?: number
   ): ScoreResult {
     if (!cards || cards.length === 0 || cards.length > 5) {
       throw new Error('Cards array must contain between 1 and 5 cards');
@@ -63,7 +65,10 @@ export class ScoreCalculator {
     const handResult = this.evaluator.evaluateHand(cards, this.upgradeManager);
     
     // Calculate empty joker slots (5 max slots - active jokers)
-    const emptyJokerSlots = Math.max(0, 5 - jokers.length);
+    // Use totalJokerCount if provided (to account for economic jokers that don't score)
+    // Otherwise use the length of scoring jokers passed in
+    const activeJokerCount = totalJokerCount !== undefined ? totalJokerCount : jokers.length;
+    const emptyJokerSlots = Math.max(0, 5 - activeJokerCount);
     
     const context = this.applyBaseValues(
       handResult, 
@@ -82,8 +87,8 @@ export class ScoreCalculator {
       )
     ];
 
-    // Step 2: Apply individual card bonuses
-    this.applyCardBonuses(context, cards, breakdown);
+    // Step 2: Apply individual card bonuses (only for scoring cards)
+    this.applyCardBonuses(context, handResult.scoringCards, breakdown);
 
     // Step 3: Apply joker effects by priority
     this.applyJokerEffects(context, jokers, breakdown);
@@ -127,7 +132,7 @@ export class ScoreCalculator {
     const context = new ScoreContext(
       baseChips,
       baseMult,
-      handResult.cards,
+      handResult.scoringCards,  // Only cards that contribute to score
       handResult.handType,
       handResult.cards.length, // remainingDeckSize - simplified for now
       emptyJokerSlots,

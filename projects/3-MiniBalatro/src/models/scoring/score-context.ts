@@ -14,7 +14,7 @@ export class ScoreContext {
    * Creates a score context with initial values.
    * @param chips - Initial chip value
    * @param mult - Initial mult value
-   * @param playedCards - Cards that were played this hand
+   * @param playedCards - Cards that contribute to scoring (not all played cards)
    * @param handType - Detected poker hand type
    * @param remainingDeckSize - Cards remaining in deck
    * @param emptyJokerSlots - Number of empty joker slots (5 - active jokers)

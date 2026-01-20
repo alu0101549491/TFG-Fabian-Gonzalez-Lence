@@ -6,6 +6,8 @@ import { Deck } from '../core/deck';
 import { Card } from '../core/card';
 import { Joker } from '../special-cards/jokers/joker';
 import { Tarot } from '../special-cards/tarots/tarot';
+import { TargetedTarot } from '../special-cards/tarots/targeted-tarot';
+import { TarotEffect } from '../special-cards/tarots/tarot-effect.enum';
 import { Blind } from '../blinds/blind';
 import { BlindGenerator } from '../blinds/blind-generator';
 import { HandUpgradeManager } from '../poker/hand-upgrade-manager';
@@ -13,6 +15,7 @@ import { ScoreCalculator } from '../scoring/score-calculator';
 import { ScoreResult } from '../scoring/score-result';
 import { HandEvaluator } from '../poker/hand-evaluator';
 import { BossBlind } from '../blinds/boss-blind';
+import { GameConfig } from '../../services/config/game-config';
 
 /**
  * Central game state manager.
@@ -45,12 +48,12 @@ export class GameState {
     this.selectedCards = [];
     this.jokers = [];
     this.consumables = [];
-    this.money = 5; // Starting money
+    this.money = GameConfig.INITIAL_MONEY; // Starting money
     this.accumulatedScore = 0;
     this.levelNumber = 1;
     this.roundNumber = 1;
-    this.handsRemaining = 3;
-    this.discardsRemaining = 3;
+    this.handsRemaining = GameConfig.MAX_HANDS_PER_BLIND;
+    this.discardsRemaining = GameConfig.MAX_DISCARDS_PER_BLIND;
     this.upgradeManager = new HandUpgradeManager();
     this.blindGenerator = new BlindGenerator();
     this.scoreCalculator = new ScoreCalculator(
@@ -76,7 +79,7 @@ export class GameState {
    * @throws Error if deck has < 8 cards remaining
    */
   public dealHand(): void {
-    if (this.deck.getRemaining() < 8) {
+    if (this.deck.getRemaining() < GameConfig.HAND_SIZE) {
       // If deck is low, reshuffle discard pile
       console.log('Deck low, reshuffling discard pile...');
       // In a real implementation, we would reshuffle the discard pile here
@@ -84,7 +87,7 @@ export class GameState {
       throw new Error('Not enough cards in deck to deal hand');
     }
 
-    this.currentHand = this.deck.drawCards(8);
+    this.currentHand = this.deck.drawCards(GameConfig.HAND_SIZE);
     this.selectedCards = [];
     console.log(`Dealt new hand of ${this.currentHand.length} cards`);
   }
@@ -105,7 +108,7 @@ export class GameState {
 
     if (selectedIndex === -1) {
       // Card not selected, add it if we have room
-      if (this.selectedCards.length < 5) {
+      if (this.selectedCards.length < GameConfig.MAX_CARDS_TO_PLAY) {
         this.selectedCards.push(card);
         console.log(`Selected card ${card.getDisplayString()}`);
       }
@@ -133,20 +136,29 @@ export class GameState {
     if (this.selectedCards.length === 0) {
       throw new Error('No cards selected to play');
     }
-    if (this.selectedCards.length > 5) {
-      throw new Error('Cannot play more than 5 cards at once');
+    if (this.selectedCards.length > GameConfig.MAX_CARDS_TO_PLAY) {
+      throw new Error(`Cannot play more than ${GameConfig.MAX_CARDS_TO_PLAY} cards at once`);
     }
     if (this.handsRemaining <= 0) {
       throw new Error('No hands remaining');
     }
 
-    // Calculate score
+    // Calculate score - only include scoring jokers (chips, mult, multiplier)
+    // Economic jokers like Golden Joker should not affect hand scoring
+    const scoringJokers = this.jokers.filter(joker => {
+      // Filter out economic jokers by checking their description/effect type
+      // Economic jokers have effects like "+$X" that trigger on level completion
+      return !joker.description.includes('+$');
+    });
+
+    // Pass total joker count (including economic ones) for proper empty slot calculation
     const result = this.scoreCalculator.calculateScore(
       this.selectedCards,
-      this.jokers,
+      scoringJokers,
       this.deck.getRemaining(),
       this.currentBlind.getModifier(),
-      this.discardsRemaining
+      this.discardsRemaining,
+      this.jokers.length  // Total jokers including economic ones
     );
 
     // Add to accumulated score
@@ -233,7 +245,7 @@ export class GameState {
       throw new Error('Joker cannot be null');
     }
 
-    if (this.jokers.length < 5) {
+    if (this.jokers.length < GameConfig.MAX_JOKERS) {
       this.jokers.push(joker);
       console.log(`Added joker: ${joker.name}`);
       return true;
@@ -288,7 +300,7 @@ export class GameState {
       throw new Error('Tarot cannot be null');
     }
 
-    if (this.consumables.length < 2) {
+    if (this.consumables.length < GameConfig.MAX_CONSUMABLES) {
       this.consumables.push(tarot);
       console.log(`Added tarot: ${tarot.name}`);
       return true;
@@ -318,6 +330,21 @@ export class GameState {
   }
 
   /**
+   * Removes a tarot/consumable from inventory.
+   * @param tarotId - ID of tarot to remove
+   * @throws Error if tarotId not found
+   */
+  public removeConsumable(tarotId: string): void {
+    const index = this.consumables.findIndex(t => t.id === tarotId);
+    if (index === -1) {
+      throw new Error(`Tarot with ID ${tarotId} not found`);
+    }
+
+    this.consumables.splice(index, 1);
+    console.log(`Removed consumable ${tarotId}`);
+  }
+
+  /**
    * Uses a tarot card and removes it from inventory.
    * @param tarotId - ID of tarot to use
    * @param target - Optional target card if required
@@ -337,6 +364,24 @@ export class GameState {
 
     // Apply the tarot effect
     tarot.use(target || this);
+
+    // Handle special effects that modify deck/hand
+    if (tarot instanceof TargetedTarot && target) {
+      if (tarot.effectType === TarotEffect.DESTROY) {
+        // Remove card from hand
+        this.currentHand = this.currentHand.filter(c => c.getId() !== target.getId());
+        // Decrease max deck size (card is already out of deck, in hand)
+        this.deck.decreaseMaxDeckSize();
+        console.log(`[The Hanged Man] Permanently destroyed ${target.getDisplayString()}`);
+      } else if (tarot.effectType === TarotEffect.DUPLICATE) {
+        // Clone the card and add to hand (so it can be played immediately)
+        const duplicatedCard = target.clone();
+        this.currentHand.push(duplicatedCard);
+        // Also increase max deck size to track the new card exists
+        this.deck.increaseMaxDeckSize();
+        console.log(`[Death] Duplicated ${target.getDisplayString()} - added to hand`);
+      }
+    }
 
     // Remove the tarot from inventory
     this.consumables.splice(tarotIndex, 1);
@@ -437,16 +482,16 @@ export class GameState {
     this.currentBlind = this.blindGenerator.generateBlind(this.levelNumber);
 
     // Reset hands and discards
-    this.handsRemaining = 3;
-    this.discardsRemaining = 3;
+    this.handsRemaining = GameConfig.MAX_HANDS_PER_BLIND;
+    this.discardsRemaining = GameConfig.MAX_DISCARDS_PER_BLIND;
 
     // Apply boss blind modifiers if needed
     if (this.currentBlind instanceof BossBlind) {
       this.applyBlindModifiers();
     }
 
-    // Reset deck: combine deck + discard pile, shuffle
-    this.deck.reset();
+    // Recombine deck and discard pile, shuffle (preserves card bonuses)
+    this.deck.recombineAndShuffle();
 
     // Reset score and clear hand
     this.accumulatedScore = 0;
@@ -572,12 +617,19 @@ export class GameState {
     }
 
     // Calculate score using the same logic as playing a hand
+    // Only include scoring jokers (chips, mult, multiplier)
+    const scoringJokers = this.jokers.filter(joker => {
+      return !joker.description.includes('+$');
+    });
+
+    // Pass total joker count (including economic ones) for proper empty slot calculation
     const result = this.scoreCalculator.calculateScore(
       this.selectedCards,
-      this.jokers,
+      scoringJokers,
       this.deck.getRemaining(),
       this.currentBlind.getModifier(),
-      this.discardsRemaining
+      this.discardsRemaining,
+      this.jokers.length  // Total jokers including economic ones
     );
 
     return result;
@@ -592,12 +644,12 @@ export class GameState {
     this.selectedCards = [];
     this.jokers = [];
     this.consumables = [];
-    this.money = 5;
+    this.money = GameConfig.INITIAL_MONEY;
     this.accumulatedScore = 0;
     this.levelNumber = 1;
     this.roundNumber = 1;
-    this.handsRemaining = 3;
-    this.discardsRemaining = 3;
+    this.handsRemaining = GameConfig.MAX_HANDS_PER_BLIND;
+    this.discardsRemaining = GameConfig.MAX_DISCARDS_PER_BLIND;
     this.upgradeManager = new HandUpgradeManager();
     this.currentBlind = this.blindGenerator.generateBlind(this.levelNumber);
 

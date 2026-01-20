@@ -13,6 +13,7 @@ import { Card } from '../models/core/card';
 import { BossBlind } from '../models/blinds/boss-blind';
 import { BossType } from '../models/blinds/boss-type.enum';
 import { ShopItemType } from '../services/shop/shop-item-type.enum';
+import { GameConfig } from '../services/config/game-config';
 
 /**
  * Main game flow controller.
@@ -88,9 +89,9 @@ export class GameController {
 
   /**
    * Loads saved game and resumes.
-   * @returns true if successfully loaded, false otherwise
+   * @returns Promise resolving to true if successfully loaded, false otherwise
    */
-  public continueGame(): boolean {
+  public async continueGame(): Promise<boolean> {
     try {
       const savedState = this.gamePersistence.loadGame();
       if (!savedState) {
@@ -107,7 +108,7 @@ export class GameController {
       // If player was in shop, restore shop state
       if (wasInShop) {
         this.isInShop = false; // Will be set by openShop
-        this.openShop();
+        await this.openShop();
         console.log('Restored shop state');
       } else {
         // Check if hand is empty and deal cards if needed
@@ -196,10 +197,10 @@ export class GameController {
 
   /**
    * Plays selected cards, calculates score, checks level completion.
-   * @returns ScoreResult with details of calculation
+   * @returns Promise resolving to ScoreResult with details of calculation
    * @throws Error if no cards selected, no hands remaining, or game not active
    */
-  public playSelectedHand(): ScoreResult {
+  public async playSelectedHand(): Promise<ScoreResult> {
     if (!this.isGameActive) {
       throw new Error('Game is not active');
     }
@@ -214,7 +215,7 @@ export class GameController {
 
     // Check if level complete
     if (this.gameState.isLevelComplete()) {
-      this.completeBlind();
+      await this.completeBlind();
     }
 
     // Check if game over
@@ -262,7 +263,7 @@ export class GameController {
   /**
    * Handles successful blind completion.
    */
-  private completeBlind(): void {
+  private async completeBlind(): Promise<void> {
     if (!this.gameState) {
       throw new Error('Game state not initialized');
     }
@@ -278,7 +279,7 @@ export class GameController {
     }
 
     // Open shop
-    this.openShop();
+    await this.openShop();
 
     // Check victory condition
     if (this.checkVictoryCondition()) {
@@ -288,9 +289,11 @@ export class GameController {
 
   /**
    * Opens shop with 4 random items.
+   * Prevents duplicate jokers (both owned and in shop).
+   * @returns Promise that resolves when shop is ready
    * @throws Error if already in shop
    */
-  public openShop(): void {
+  public async openShop(): Promise<void> {
     if (this.isInShop) {
       throw new Error('Already in shop');
     }
@@ -298,8 +301,11 @@ export class GameController {
       throw new Error('Game state not initialized');
     }
 
+    // Get IDs of currently owned jokers to prevent duplicates
+    const ownedJokerIds = this.gameState.getJokers().map(joker => joker.id);
+
     this.shop = new Shop();
-    this.shop.generateItems(4); // Generate 4 random items
+    await this.shop.generateItems(GameConfig.ITEMS_PER_SHOP, ownedJokerIds); // Generate 4 random items
     this.isInShop = true;
 
     // Trigger shop open callback
@@ -307,7 +313,7 @@ export class GameController {
       this.onShopOpen(this.shop);
     }
 
-    console.log('Shop opened with items:', this.shop.getAvailableItems().length);
+    console.log(`Shop opened with ${this.shop.getAvailableItems().length} items (excluding ${ownedJokerIds.length} owned jokers)`);
   }
 
   /**
@@ -383,10 +389,11 @@ export class GameController {
 
   /**
    * Regenerates shop items for a cost.
-   * @returns true if successful, false if insufficient money
+   * Prevents duplicate jokers (both owned and in shop).
+   * @returns Promise resolving to true if successful, false if insufficient money
    * @throws Error if not in shop
    */
-  public rerollShop(): boolean {
+  public async rerollShop(): Promise<boolean> {
     if (!this.isInShop) {
       throw new Error('Not in shop');
     }
@@ -407,8 +414,11 @@ export class GameController {
       return false;
     }
 
+    // Get IDs of currently owned jokers to prevent duplicates
+    const ownedJokerIds = this.gameState.getJokers().map(joker => joker.id);
+
     // Regenerate shop items
-    this.shop.reroll(this.gameState.getMoney());
+    await this.shop.reroll(this.gameState.getMoney(), ownedJokerIds);
 
     // Trigger shop open callback (as items changed)
     if (this.onShopOpen) {
@@ -583,6 +593,48 @@ export class GameController {
     }
 
     this.gameState.replaceConsumable(oldTarotId, newTarot);
+
+    // Trigger state change callback
+    if (this.onStateChange) {
+      this.onStateChange(this.gameState);
+    }
+
+    // Auto-save game state
+    this.saveGame();
+  }
+
+  /**
+   * Removes a joker from the active set.
+   * @param jokerId - ID of joker to remove
+   * @throws Error if jokerId not found
+   */
+  public removeJoker(jokerId: string): void {
+    if (!this.gameState) {
+      throw new Error('Game state not initialized');
+    }
+
+    this.gameState.removeJoker(jokerId);
+
+    // Trigger state change callback
+    if (this.onStateChange) {
+      this.onStateChange(this.gameState);
+    }
+
+    // Auto-save game state
+    this.saveGame();
+  }
+
+  /**
+   * Removes a tarot/consumable from inventory.
+   * @param tarotId - ID of tarot to remove
+   * @throws Error if tarotId not found
+   */
+  public removeConsumable(tarotId: string): void {
+    if (!this.gameState) {
+      throw new Error('Game state not initialized');
+    }
+
+    this.gameState.removeConsumable(tarotId);
 
     // Trigger state change callback
     if (this.onStateChange) {
