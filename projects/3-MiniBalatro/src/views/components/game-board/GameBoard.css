@@ -50,6 +50,61 @@
   font-family: 'Inter', monospace;
 }
 
+/* === BOSS BLIND INFO === */
+.game-board__boss-info {
+  padding: 20px;
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  border: 3px solid #8b0000;
+  border-radius: 12px;
+  box-shadow: 
+    0 4px 16px rgba(231, 76, 60, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: boss-pulse 2s ease-in-out infinite;
+}
+
+.boss-info__container {
+  text-align: center;
+}
+
+.boss-info__name {
+  margin: 0 0 12px 0;
+  font-size: 28px;
+  font-weight: 900;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.3);
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
+}
+
+.boss-info__effect {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff5e6;
+  line-height: 1.5;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes boss-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 4px 16px rgba(231, 76, 60, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 6px 24px rgba(231, 76, 60, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+}
+
 /* === SPECIAL CARDS ROW === */
 .game-board__special-cards {
   display: flex;

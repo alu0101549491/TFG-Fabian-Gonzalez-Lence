@@ -2,6 +2,8 @@
 // FILE: src/services/shop/shop-item-type.enum.ts
 // ============================================
 
+import { GameConfig } from '../config/game-config';
+
 /**
  * Enum defining purchasable item types in shop.
  */
@@ -32,9 +34,9 @@ export function getItemTypeDisplayName(type: ShopItemType): string {
  */
 export function getDefaultCost(type: ShopItemType): number {
   switch (type) {
-    case ShopItemType.JOKER: return 5;
-    case ShopItemType.PLANET: return 3;
-    case ShopItemType.TAROT: return 3;
+    case ShopItemType.JOKER: return GameConfig.JOKER_COST;
+    case ShopItemType.PLANET: return GameConfig.PLANET_COST;
+    case ShopItemType.TAROT: return GameConfig.TAROT_COST;
     default: return 0;
   }
 }

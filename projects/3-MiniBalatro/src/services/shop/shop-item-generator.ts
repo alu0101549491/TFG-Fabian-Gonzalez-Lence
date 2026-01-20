@@ -12,6 +12,7 @@ import { HandType } from '../../models/poker/hand-type.enum';
 import { ChipJoker } from '../../models/special-cards/jokers/chip-joker';
 import { MultJoker } from '../../models/special-cards/jokers/mult-joker';
 import { MultiplierJoker } from '../../models/special-cards/jokers/multiplier-joker';
+import { EconomicJoker } from '../../models/special-cards/jokers/economic-joker';
 import { InstantTarot } from '../../models/special-cards/tarots/instant-tarot';
 import { TargetedTarot } from '../../models/special-cards/tarots/targeted-tarot';
 import { TarotEffect } from '../../models/special-cards/tarots/tarot-effect.enum';
@@ -26,16 +27,23 @@ import { CardValue } from '../../models/core/card-value.enum';
  */
 export class ShopItemGenerator {
   private balancingConfig: BalancingConfig;
+  private initPromise: Promise<void>;
 
   /**
    * Creates a shop item generator with balancing configuration.
    */
   constructor() {
     this.balancingConfig = new BalancingConfig();
-    // Initialize async loading in background (non-blocking)
-    this.balancingConfig.initializeAsync().catch(error => {
-      console.error('Failed to load balancing config for shop:', error);
-    });
+    // Store the initialization promise so we can await it
+    this.initPromise = this.balancingConfig.initializeAsync();
+  }
+
+  /**
+   * Ensures configuration is loaded before generating items.
+   * @returns Promise that resolves when config is loaded
+   */
+  public async ensureInitialized(): Promise<void> {
+    await this.initPromise;
   }
 
   /**
@@ -135,7 +143,8 @@ export class ShopItemGenerator {
           jokerDef.name,
           jokerDef.description || 'Increases chips',
           jokerDef.value || 5,
-          conditionFn
+          conditionFn,
+          multiplierFn  // Pass multiplier function for per-card conditions
         );
       
       case 'mult':
@@ -156,6 +165,15 @@ export class ShopItemGenerator {
           jokerDef.value || 2,
           conditionFn,
           multiplierFn  // Pass multiplier function for dynamic multipliers
+        );
+      
+      case 'economic':
+        // Economic jokers provide monetary benefits, not scoring effects
+        return new EconomicJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Provides economic benefit',
+          jokerDef.value || 0
         );
       
       default:
@@ -381,16 +399,23 @@ export class ShopItemGenerator {
 
   /**
    * Generates specified number of random shop items with costs.
+   * Waits for configuration to load before generating items.
+   * Ensures no duplicate jokers appear in shop (both in current shop and owned by player).
    * @param count - Number of items to generate
-   * @returns Array of ShopItems with diverse types
+   * @param ownedJokerIds - Array of joker IDs already owned by player
+   * @returns Promise resolving to array of ShopItems with diverse types
    * @throws Error if count <= 0
    */
-  public generateShopItems(count: number): ShopItem[] {
+  public async generateShopItems(count: number, ownedJokerIds: string[] = []): Promise<ShopItem[]> {
     if (count <= 0) {
       throw new Error('Count must be positive');
     }
 
+    // Wait for configuration to load
+    await this.ensureInitialized();
+
     const items: ShopItem[] = [];
+    const usedJokerIds = new Set<string>(ownedJokerIds); // Track owned + already generated jokers
 
     for (let i = 0; i < count; i++) {
       // Randomly select item type with weighted distribution
@@ -401,7 +426,7 @@ export class ShopItemGenerator {
 
       if (random < 0.4) {
         type = ShopItemType.JOKER;
-        item = this.generateRandomJoker();
+        item = this.generateUniqueJoker(usedJokerIds);
       } else if (random < 0.7) {
         type = ShopItemType.PLANET;
         item = this.generateRandomPlanet();
@@ -416,5 +441,31 @@ export class ShopItemGenerator {
     }
 
     return items;
+  }
+
+  /**
+   * Generates a unique joker that hasn't been used yet.
+   * @param usedJokerIds - Set of joker IDs already owned or in current shop
+   * @returns Unique Joker not in the usedJokerIds set
+   */
+  private generateUniqueJoker(usedJokerIds: Set<string>): Joker {
+    const allJokerIds = this.balancingConfig.getAllJokerIds();
+    const availableJokerIds = allJokerIds.filter(id => !usedJokerIds.has(id));
+
+    // If all jokers are owned/used, allow duplicates (fallback)
+    if (availableJokerIds.length === 0) {
+      console.warn('All jokers owned/in shop, allowing duplicate');
+      const randomIndex = Math.floor(Math.random() * allJokerIds.length);
+      return this.generateJokerById(allJokerIds[randomIndex]);
+    }
+
+    // Select a random available joker
+    const randomIndex = Math.floor(Math.random() * availableJokerIds.length);
+    const selectedJokerId = availableJokerIds[randomIndex];
+    
+    // Mark this joker as used for this shop generation
+    usedJokerIds.add(selectedJokerId);
+
+    return this.generateJokerById(selectedJokerId);
   }
 }

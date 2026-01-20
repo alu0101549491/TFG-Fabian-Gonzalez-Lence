@@ -10,6 +10,9 @@ import { JokerZone } from '../joker-zone/JokerZone';
 import { TarotZone } from '../tarot-zone/TarotZone';
 import { HandInfoPanel } from '../hand-info-panel/HandInfoPanel';
 import { Card } from '../../../models/core/card';
+import { BossBlind } from '../../../models/blinds/boss-blind';
+import { getBossDisplayName, getBossDescription } from '../../../models/blinds/boss-type.enum';
+import { GameConfig } from '../../../services/config/game-config';
 import './GameBoard.css';
 
 /**
@@ -76,8 +79,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   /**
    * Handles playing the selected hand.
    */
-  const handlePlayHand = () => {
-    const result = controller.playSelectedHand();
+  const handlePlayHand = async () => {
+    const result = await controller.playSelectedHand();
     // Update preview score based on result
     if (result) {
       setPreviewScore({
@@ -113,13 +116,35 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setForceUpdate(prev => prev + 1);
   };
 
+  /**
+   * Handles removing a joker.
+   * @param jokerId - ID of the joker to remove
+   */
+  const handleRemoveJoker = (jokerId: string) => {
+    controller.removeJoker(jokerId);
+    setForceUpdate(prev => prev + 1);
+  };
+
+  /**
+   * Handles removing a tarot/consumable.
+   * @param tarotId - ID of the tarot to remove
+   */
+  const handleRemoveConsumable = (tarotId: string) => {
+    controller.removeConsumable(tarotId);
+    setForceUpdate(prev => prev + 1);
+  };
+
   const currentBlind = gameState.getCurrentBlind();
   const handsRemaining = gameState.getHandsRemaining();
   const discardsRemaining = gameState.getDiscardsRemaining();
   const currentScore = gameState.getAccumulatedScore();
   const goalScore = currentBlind.getScoreGoal();
   const progressPercent = Math.min((currentScore / goalScore) * 100, 100);
-  const deckRemaining = gameState.getDeckRemaining();
+
+  // Check if current blind is a boss blind
+  const isBossBlind = currentBlind instanceof BossBlind;
+  const bossName = isBossBlind ? getBossDisplayName((currentBlind as BossBlind).getBossType()) : null;
+  const bossEffect = isBossBlind ? getBossDescription((currentBlind as BossBlind).getBossType()) : null;
 
   return (
     <div className="game-board">
@@ -130,20 +155,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </span>
         <span className="game-board__money">Money: ${gameState.getMoney()}</span>
         <span className="game-board__round">Round: {gameState.getRoundNumber()}</span>
-        <span className="game-board__deck">Deck: {deckRemaining} cards</span>
+        <span className="game-board__deck">Deck: {gameState.getDeck().getRemaining()}/{gameState.getDeck().getMaxDeckSize()} cards</span>
       </div>
+
+      {/* Boss Blind Info (only shown for boss blinds) */}
+      {isBossBlind && (
+        <div className="game-board__boss-info">
+          <div className="boss-info__container">
+            <h2 className="boss-info__name">{bossName}</h2>
+            <p className="boss-info__effect">{bossEffect}</p>
+          </div>
+        </div>
+      )}
 
       {/* Special Cards Row */}
       <div className="game-board__special-cards">
         <div className="special-cards-section">
           <h3 className="section-title">Jokers</h3>
-          <JokerZone jokers={gameState.getJokers()} />
+          <JokerZone 
+            jokers={gameState.getJokers()}
+            onRemoveJoker={handleRemoveJoker}
+          />
         </div>
         <div className="special-cards-section">
           <h3 className="section-title">Consumables</h3>
           <TarotZone
             consumables={gameState.getConsumables()}
             onUseConsumable={handleUseConsumable}
+            onRemoveConsumable={handleRemoveConsumable}
             selectedCardIds={selectedCards.map(card => card.getId())}
           />
         </div>
@@ -215,8 +254,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </button>
         </div>
         <div className="counters">
-          <span className="counter">Hands: {handsRemaining}/3</span>
-          <span className="counter">Discards: {discardsRemaining}/3</span>
+          <span className="counter">Hands: {handsRemaining}/{GameConfig.MAX_HANDS_PER_BLIND}</span>
+          <span className="counter">Discards: {discardsRemaining}/{GameConfig.MAX_DISCARDS_PER_BLIND}</span>
         </div>
       </div>
 

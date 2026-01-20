@@ -169,6 +169,7 @@ export class GamePersistence {
         chips: card.getBaseChips(),
         multBonus: card.getMultBonus()
       })),
+      maxDeckSize: deck.getMaxDeckSize(),  // Save maximum deck size
 
       // Current hand (simplified)
       currentHand: gameState.getCurrentHand().map(card => ({
@@ -260,8 +261,8 @@ export class GamePersistence {
       });
 
       const deck = gameState.getDeck();
-      deck.setState(deckCards, discardPileCards);
-      console.log(`Restored deck: ${deckCards.length} cards in deck, ${discardPileCards.length} in discard pile`);
+      deck.setState(deckCards, discardPileCards, parsed.maxDeckSize);
+      console.log(`Restored deck: ${deckCards.length} cards in deck, ${discardPileCards.length} in discard pile, max: ${parsed.maxDeckSize || 'not saved (defaulting to current total)'}`);
     }
 
     // Restore current hand by reconstructing Card objects

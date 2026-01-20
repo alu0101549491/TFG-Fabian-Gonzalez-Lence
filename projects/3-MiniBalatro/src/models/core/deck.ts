@@ -23,6 +23,7 @@ export class DeckError extends Error {
 export class Deck {
   private cards: Card[];
   private discardPile: Card[];
+  private maxDeckSize: number;  // Track maximum possible deck size
 
   /**
    * Creates a new deck with 52 standard cards (13 values × 4 suits), shuffled.
@@ -30,6 +31,7 @@ export class Deck {
   constructor() {
     this.cards = [];
     this.discardPile = [];
+    this.maxDeckSize = 52;  // Initial size
     this.initializeStandardDeck();
     this.shuffle();
     console.log('Deck initialized and shuffled');
@@ -77,11 +79,13 @@ export class Deck {
       throw new DeckError('Cannot add null or undefined card to deck');
     }
     this.cards.push(card);
-    console.log(`Card ${card.getId()} added to deck. Total cards: ${this.cards.length}`);
+    this.maxDeckSize++;  // Increase maximum deck size when duplicating
+    console.log(`Card ${card.getId()} added to deck. Total cards: ${this.cards.length}, Max: ${this.maxDeckSize}`);
   }
 
   /**
    * Permanently removes a card from deck by ID (used by The Hanged Man tarot).
+   * This reduces the maximum deck size permanently.
    * @param cardId The ID of the card to remove
    * @throws DeckError if cardId not found in deck
    */
@@ -91,9 +95,28 @@ export class Deck {
       throw new DeckError(`Card with ID ${cardId} not found in deck`);
     }
 
-    const [removedCard] = this.cards.splice(index, 1);
-    this.discardPile.push(removedCard);
-    console.log(`Card ${cardId} removed from deck. ${this.cards.length} cards remaining.`);
+    this.cards.splice(index, 1);
+    this.maxDeckSize--;  // Permanently decrease maximum deck size
+    console.log(`Card ${cardId} permanently destroyed. Max deck size now: ${this.maxDeckSize}, Current: ${this.cards.length}`);
+    // Note: We don't add to discard pile - card is permanently gone
+  }
+
+  /**
+   * Decreases the maximum deck size (used when destroying a card that's already in hand).
+   * Call this when a card is permanently destroyed but not currently in the deck.
+   */
+  public decreaseMaxDeckSize(): void {
+    this.maxDeckSize--;
+    console.log(`Max deck size decreased to: ${this.maxDeckSize}`);
+  }
+
+  /**
+   * Increases the maximum deck size (used when duplicating a card).
+   * Call this when a new card is created via duplication.
+   */
+  public increaseMaxDeckSize(): void {
+    this.maxDeckSize++;
+    console.log(`Max deck size increased to: ${this.maxDeckSize}`);
   }
 
   /**
@@ -102,6 +125,14 @@ export class Deck {
    */
   public getRemaining(): number {
     return this.cards.length;
+  }
+
+  /**
+   * Returns the maximum possible deck size (decreases when cards are permanently destroyed).
+   * @returns The maximum deck size
+   */
+  public getMaxDeckSize(): number {
+    return this.maxDeckSize;
   }
 
   /**
@@ -133,11 +164,13 @@ export class Deck {
    * Sets the deck and discard pile state (for deserialization).
    * @param cards - Cards to set as the deck
    * @param discardPile - Cards to set as the discard pile
+   * @param maxDeckSize - Optional max deck size (defaults to cards.length + discardPile.length)
    */
-  public setState(cards: Card[], discardPile: Card[]): void {
+  public setState(cards: Card[], discardPile: Card[], maxDeckSize?: number): void {
     this.cards = [...cards];
     this.discardPile = [...discardPile];
-    console.log(`Deck state set: ${this.cards.length} cards in deck, ${this.discardPile.length} in discard pile`);
+    this.maxDeckSize = maxDeckSize ?? (cards.length + discardPile.length);
+    console.log(`Deck state set: ${this.cards.length} cards in deck, ${this.discardPile.length} in discard pile, max: ${this.maxDeckSize}`);
   }
 
   /**
@@ -147,7 +180,23 @@ export class Deck {
     this.initializeStandardDeck();
     this.shuffle();
     this.discardPile = [];
+    this.maxDeckSize = 52;  // Reset to initial size
     console.log('Deck reset to 52 cards and shuffled');
+  }
+
+  /**
+   * Recombines all cards (deck + discard pile) and shuffles, preserving card bonuses.
+   * Use this between rounds to maintain permanent upgrades from tarots.
+   */
+  public recombineAndShuffle(): void {
+    // Combine all cards from deck and discard pile
+    this.cards.push(...this.discardPile);
+    this.discardPile = [];
+    
+    // Shuffle the combined deck
+    this.shuffle();
+    
+    console.log(`Deck recombined and shuffled: ${this.cards.length} cards, max: ${this.maxDeckSize}`);
   }
 
   /**

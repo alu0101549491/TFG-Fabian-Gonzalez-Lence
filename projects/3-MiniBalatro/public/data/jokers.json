@@ -51,7 +51,7 @@
     {
       "id": "jokerStencil",
       "name": "Joker Stencil",
-      "description": "×1 mult per empty slot in joker hand",
+      "description": "×1 mult per empty slot in joker hand (This Joker counts as empty)",
       "type": "multiplier",
       "value": 1,
       "condition": "perEmptyJokerSlot"

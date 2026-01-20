@@ -7,6 +7,7 @@ import { SmallBlind } from './small-blind';
 import { BigBlind } from './big-blind';
 import { BossBlind } from './boss-blind';
 import { BossType } from './boss-type.enum';
+import { GameConfig } from '../../services/config/game-config';
 
 /**
  * Generates appropriate blinds based on level progression.
@@ -25,7 +26,7 @@ export class BlindGenerator {
     }
 
     const roundNumber = BlindGenerator.calculateRoundNumber(level);
-    const positionInRound = (level - 1) % 3;
+    const positionInRound = (level - 1) % GameConfig.LEVELS_PER_ROUND;
 
     console.log(`Generating blind for level ${level} (round ${roundNumber}, position ${positionInRound})`);
 
@@ -62,7 +63,7 @@ export class BlindGenerator {
     if (level <= 0) {
       throw new Error('Level must be positive');
     }
-    return Math.floor((level - 1) / 3) + 1;
+    return Math.floor((level - 1) / GameConfig.LEVELS_PER_ROUND) + 1;
   }
 
   /**

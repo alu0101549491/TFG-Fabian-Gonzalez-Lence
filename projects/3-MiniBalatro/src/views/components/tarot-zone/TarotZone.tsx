@@ -4,6 +4,9 @@
 
 import React from 'react';
 import { Tarot } from '../../../models/special-cards/tarots/tarot';
+import { GameConfig } from '../../../services/config/game-config';
+import { Tooltip } from '../tooltip/Tooltip';
+import { TarotTooltipContent } from '../tooltip/TarotTooltipContent';
 import './TarotZone.css';
 
 /**
@@ -12,19 +15,21 @@ import './TarotZone.css';
 interface TarotZoneProps {
   consumables: Tarot[];
   onUseConsumable: (tarotId: string, targetCardId?: string) => void;
+  onRemoveConsumable?: (tarotId: string) => void;
   selectedCardIds?: string[]; // IDs of currently selected cards
 }
 
 /**
  * Tarot/consumables display component.
- * Shows active tarot cards with use buttons.
+ * Shows active tarot cards with use buttons and hover tooltips.
  */
 export const TarotZone: React.FC<TarotZoneProps> = ({
   consumables,
   onUseConsumable,
+  onRemoveConsumable,
   selectedCardIds = []
 }) => {
-  const emptySlots = 2 - consumables.length;
+  const emptySlots = GameConfig.MAX_CONSUMABLES - consumables.length;
 
   /**
    * Handles using a tarot card.
@@ -69,26 +74,42 @@ export const TarotZone: React.FC<TarotZoneProps> = ({
     <div className="tarot-zone">
       <div className="tarot-slots">
         {consumables.map((tarot) => (
-          <div key={tarot.id} className="tarot-card">
-            <img 
-              src={getTarotImage(tarot.name)} 
-              alt={tarot.name}
-              className="tarot-image"
-              onError={(e) => {
-                // Fallback if image fails to load
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            <div className="tarot-info">
-              <div className="tarot-name">{tarot.name}</div>
-              <button
-                className="use-button"
-                onClick={() => handleUseTarot(tarot)}
-              >
-                Use
-              </button>
+          <Tooltip key={tarot.id} content={<TarotTooltipContent tarot={tarot} />}>
+            <div className="tarot-card">
+              {onRemoveConsumable && (
+                <button
+                  className="remove-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Remove ${tarot.name}?`)) {
+                      onRemoveConsumable(tarot.id);
+                    }
+                  }}
+                  title="Remove tarot"
+                >
+                  ✖
+                </button>
+              )}
+              <img 
+                src={getTarotImage(tarot.name)} 
+                alt={tarot.name}
+                className="tarot-image"
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              <div className="tarot-info">
+                <div className="tarot-name">{tarot.name}</div>
+                <button
+                  className="use-button"
+                  onClick={() => handleUseTarot(tarot)}
+                >
+                  Use
+                </button>
+              </div>
             </div>
-          </div>
+          </Tooltip>
         ))}
         {[...Array(emptySlots)].map((_, index) => (
           <div key={`empty-${index}`} className="tarot-slot-empty">
