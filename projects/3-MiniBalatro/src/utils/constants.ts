@@ -11,7 +11,7 @@
  * Game configuration constants.
  */
 export const GAME_CONFIG = {
-  INITIAL_MONEY: 200,
+  INITIAL_MONEY: 5,
   MAX_JOKERS: 5,
   MAX_CONSUMABLES: 2,
   HAND_SIZE: 8,
@@ -79,6 +79,28 @@ export const COLORS = {
   SUCCESS: '#2ecc71',         // Green for success states
   WARNING: '#95a5a6',         // Gray for warning states
   ERROR: '#e74c3c',           // Red for error states
+
+  // Victory Modal Colors - Green theme for blind completion
+  VICTORY_BG_START: '#1a472a',    // Dark green gradient start
+  VICTORY_BG_END: '#2d5a3d',      // Dark green gradient end
+  VICTORY_BORDER: '#4ade80',      // Bright green border/glow
+  VICTORY_TEXT: '#86efac',        // Light green text
+  VICTORY_TITLE: '#4ade80',       // Bright green title
+  VICTORY_BTN_START: '#22c55e',   // Green button gradient start
+  VICTORY_BTN_END: '#16a34a',     // Green button gradient end
+  VICTORY_BTN_HOVER_START: '#16a34a',  // Green button hover start
+  VICTORY_BTN_HOVER_END: '#15803d',    // Green button hover end
+
+  // Defeat Modal Colors - Red theme for blind failure
+  DEFEAT_BG_START: '#4a1a1a',     // Dark red gradient start
+  DEFEAT_BG_END: '#5a2d2d',       // Dark red gradient end
+  DEFEAT_BORDER: '#ef4444',       // Bright red border/glow
+  DEFEAT_TEXT: '#fca5a5',         // Light red text
+  DEFEAT_TITLE: '#ef4444',        // Bright red title
+  DEFEAT_BTN_START: '#dc2626',    // Red button gradient start
+  DEFEAT_BTN_END: '#b91c1c',      // Red button gradient end
+  DEFEAT_BTN_HOVER_START: '#b91c1c',   // Red button hover start
+  DEFEAT_BTN_HOVER_END: '#991b1b',     // Red button hover end
 };
 
 /**

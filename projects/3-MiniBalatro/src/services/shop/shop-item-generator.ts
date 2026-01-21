@@ -13,6 +13,7 @@ import { ChipJoker } from '../../models/special-cards/jokers/chip-joker';
 import { MultJoker } from '../../models/special-cards/jokers/mult-joker';
 import { MultiplierJoker } from '../../models/special-cards/jokers/multiplier-joker';
 import { EconomicJoker } from '../../models/special-cards/jokers/economic-joker';
+import { PermanentUpgradeJoker } from '../../models/special-cards/jokers/permanent-upgrade-joker';
 import { InstantTarot } from '../../models/special-cards/tarots/instant-tarot';
 import { TargetedTarot } from '../../models/special-cards/tarots/targeted-tarot';
 import { TarotEffect } from '../../models/special-cards/tarots/tarot-effect.enum';
@@ -80,8 +81,8 @@ export class ShopItemGenerator {
     const planetId = planetIds[randomIndex];
     const planetDef = this.balancingConfig.getPlanetDefinition(planetId);
 
-    // Convert targetHandType string to HandType enum
-    const handType = this.convertStringToHandType(planetDef.targetHandType);
+    // targetHandType is already a HandType enum (converted by BalancingConfig)
+    const handType = planetDef.targetHandType as HandType;
 
     // Create a planet with the correct hand type from definition
     return new Planet(
@@ -90,34 +91,6 @@ export class ShopItemGenerator {
       planetDef.chipsBonus || 10,
       planetDef.multBonus || 1
     );
-  }
-
-  /**
-   * Converts a camelCase hand type string to HandType enum.
-   * @param handTypeString - camelCase string like "pair", "highCard", "twoPair"
-   * @returns Corresponding HandType enum value
-   */
-  private convertStringToHandType(handTypeString: string): HandType {
-    // Map camelCase strings to SCREAMING_SNAKE_CASE enum values
-    const mapping: Record<string, HandType> = {
-      'straightFlush': HandType.STRAIGHT_FLUSH,
-      'fourOfAKind': HandType.FOUR_OF_A_KIND,
-      'fullHouse': HandType.FULL_HOUSE,
-      'flush': HandType.FLUSH,
-      'straight': HandType.STRAIGHT,
-      'threeOfAKind': HandType.THREE_OF_A_KIND,
-      'twoPair': HandType.TWO_PAIR,
-      'pair': HandType.PAIR,
-      'highCard': HandType.HIGH_CARD
-    };
-
-    const handType = mapping[handTypeString];
-    if (!handType) {
-      console.warn(`Unknown hand type string "${handTypeString}", defaulting to HIGH_CARD`);
-      return HandType.HIGH_CARD;
-    }
-
-    return handType;
   }
 
   /**
@@ -174,6 +147,16 @@ export class ShopItemGenerator {
           jokerDef.name,
           jokerDef.description || 'Provides economic benefit',
           jokerDef.value || 0
+        );
+      
+      case 'permanentUpgrade':
+        // Permanent upgrade jokers modify cards after they're played
+        return new PermanentUpgradeJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Permanently upgrades played cards',
+          jokerDef.value || 5,  // chipBonus
+          0  // multBonus (could be made configurable later)
         );
       
       default:

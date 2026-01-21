@@ -3,7 +3,7 @@
 // ============================================
 
 import { HandType } from '../poker/hand-type.enum';
-import { BossType, getRandomHandTypeForMouth } from './boss-type.enum';
+import { BossType } from './boss-type.enum';
 
 /**
  * Encapsulates rule modifications applied by boss blinds.
@@ -46,7 +46,8 @@ export class BlindModifier {
       case BossType.THE_WATER:
         return new BlindModifier(1.0, null, 0);
       case BossType.THE_MOUTH:
-        return new BlindModifier(1.0, null, null, [getRandomHandTypeForMouth()]);
+        // Start with empty allowedHandTypes - will be set after first successful hand
+        return new BlindModifier(1.0, null, null, null);
       case BossType.THE_NEEDLE:
         return new BlindModifier(0.5, 1, null);
       case BossType.THE_FLINT:

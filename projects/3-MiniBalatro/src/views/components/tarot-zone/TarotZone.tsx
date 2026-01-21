@@ -15,7 +15,7 @@ import './TarotZone.css';
 interface TarotZoneProps {
   consumables: Tarot[];
   onUseConsumable: (tarotId: string, targetCardId?: string) => void;
-  onRemoveConsumable?: (tarotId: string) => void;
+  onRemoveConsumable?: (index: number) => void; // Changed to use index instead of ID
   selectedCardIds?: string[]; // IDs of currently selected cards
 }
 
@@ -73,8 +73,8 @@ export const TarotZone: React.FC<TarotZoneProps> = ({
   return (
     <div className="tarot-zone">
       <div className="tarot-slots">
-        {consumables.map((tarot) => (
-          <Tooltip key={tarot.id} content={<TarotTooltipContent tarot={tarot} />}>
+        {consumables.map((tarot, index) => (
+          <Tooltip key={`${tarot.id}-${index}`} content={<TarotTooltipContent tarot={tarot} />}>
             <div className="tarot-card">
               {onRemoveConsumable && (
                 <button
@@ -82,7 +82,7 @@ export const TarotZone: React.FC<TarotZoneProps> = ({
                   onClick={(e) => {
                     e.stopPropagation();
                     if (window.confirm(`Remove ${tarot.name}?`)) {
-                      onRemoveConsumable(tarot.id);
+                      onRemoveConsumable(index);
                     }
                   }}
                   title="Remove tarot"

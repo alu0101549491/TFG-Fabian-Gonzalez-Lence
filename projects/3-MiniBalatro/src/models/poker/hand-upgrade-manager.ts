@@ -76,5 +76,25 @@ export class HandUpgradeManager {
       this.upgrades.set(handType, new HandUpgrade());
     }
     console.log('All hand upgrades reset');
+}
+  /**
+   * Restores upgrade state from saved data (used for game loading).
+   * @param handType - The hand type to restore
+   * @param chips - Total accumulated chips
+   * @param mult - Total accumulated mult
+   * @param level - The hand level
+   * @throws Error if handType is invalid or negative values are provided
+   */
+  public restoreUpgrade(handType: HandType, chips: number, mult: number, level: number): void {
+    if (!Object.values(HandType).includes(handType)) {
+      throw new Error('Invalid hand type');
+    }
+    if (chips < 0 || mult < 0 || level < 1) {
+      throw new Error('Invalid restore values');
+    }
+
+    const upgrade = new HandUpgrade(chips, mult);
+    upgrade.level = level;
+    this.upgrades.set(handType, upgrade);
   }
 }

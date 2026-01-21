@@ -39,6 +39,28 @@ export function applyThemeColors(): void {
   root.style.setProperty('--color-warning', COLORS.WARNING);
   root.style.setProperty('--color-error', COLORS.ERROR);
 
+  // Victory Modal Colors
+  root.style.setProperty('--victory-bg-start', COLORS.VICTORY_BG_START);
+  root.style.setProperty('--victory-bg-end', COLORS.VICTORY_BG_END);
+  root.style.setProperty('--victory-border', COLORS.VICTORY_BORDER);
+  root.style.setProperty('--victory-text', COLORS.VICTORY_TEXT);
+  root.style.setProperty('--victory-title', COLORS.VICTORY_TITLE);
+  root.style.setProperty('--victory-btn-start', COLORS.VICTORY_BTN_START);
+  root.style.setProperty('--victory-btn-end', COLORS.VICTORY_BTN_END);
+  root.style.setProperty('--victory-btn-hover-start', COLORS.VICTORY_BTN_HOVER_START);
+  root.style.setProperty('--victory-btn-hover-end', COLORS.VICTORY_BTN_HOVER_END);
+
+  // Defeat Modal Colors
+  root.style.setProperty('--defeat-bg-start', COLORS.DEFEAT_BG_START);
+  root.style.setProperty('--defeat-bg-end', COLORS.DEFEAT_BG_END);
+  root.style.setProperty('--defeat-border', COLORS.DEFEAT_BORDER);
+  root.style.setProperty('--defeat-text', COLORS.DEFEAT_TEXT);
+  root.style.setProperty('--defeat-title', COLORS.DEFEAT_TITLE);
+  root.style.setProperty('--defeat-btn-start', COLORS.DEFEAT_BTN_START);
+  root.style.setProperty('--defeat-btn-end', COLORS.DEFEAT_BTN_END);
+  root.style.setProperty('--defeat-btn-hover-start', COLORS.DEFEAT_BTN_HOVER_START);
+  root.style.setProperty('--defeat-btn-hover-end', COLORS.DEFEAT_BTN_HOVER_END);
+
   console.log('Theme colors applied from constants.ts');
 }
 

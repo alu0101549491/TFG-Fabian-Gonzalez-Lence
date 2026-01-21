@@ -7,6 +7,8 @@
  * Used for tracking planet card upgrades.
  */
 export class HandUpgrade {
+  public level: number;
+
   /**
    * Creates a hand upgrade with specified bonuses.
    * @param additionalChips - Bonus chips to add to base chips
@@ -20,6 +22,7 @@ export class HandUpgrade {
     if (additionalChips < 0 || additionalMult < 0) {
       throw new Error('Upgrade values cannot be negative');
     }
+    this.level = 1; // All hands start at level 1
   }
 
   /**
@@ -34,5 +37,6 @@ export class HandUpgrade {
     }
     this.additionalChips += chips;
     this.additionalMult += mult;
+    this.level++; // Each planet card increases level by 1
   }
 }

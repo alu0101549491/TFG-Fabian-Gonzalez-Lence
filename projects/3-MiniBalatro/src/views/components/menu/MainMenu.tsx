@@ -2,7 +2,8 @@
 // FILE: src/views/components/menu/MainMenu.tsx
 // ============================================
 
-import React from 'react';
+import React, { useState } from 'react';
+import { HelpModal } from '../modals/HelpModal';
 import './MainMenu.css';
 
 /**
@@ -16,13 +17,15 @@ interface MainMenuProps {
 
 /**
  * Main menu screen component.
- * Displays game start options.
+ * Displays game start options and help modal.
  */
 export const MainMenu: React.FC<MainMenuProps> = ({
   onStartNewGame,
   onContinueGame,
   hasSavedGame
 }) => {
+  const [showHelp, setShowHelp] = useState(false);
+
   return (
     <div className="main-menu">
       <h1 className="game-title">Mini Balatro</h1>
@@ -40,10 +43,15 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         >
           Continue
         </button>
-        <button className="menu-button">
+        <button 
+          className="menu-button"
+          onClick={() => setShowHelp(true)}
+        >
           Help
         </button>
       </div>
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 };

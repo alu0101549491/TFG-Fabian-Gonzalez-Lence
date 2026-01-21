@@ -11,7 +11,7 @@ import { Planet } from '../models/special-cards/planets/planet';
 import { ScoreResult } from '../models/scoring/score-result';
 import { Card } from '../models/core/card';
 import { BossBlind } from '../models/blinds/boss-blind';
-import { BossType } from '../models/blinds/boss-type.enum';
+import { BossType, getBossDisplayName } from '../models/blinds/boss-type.enum';
 import { ShopItemType } from '../services/shop/shop-item-type.enum';
 import { GameConfig } from '../services/config/game-config';
 
@@ -26,6 +26,21 @@ export class GameController {
   private gamePersistence: GamePersistence;
   private isInShop: boolean = false;
   private isGameActive: boolean = false;
+  
+  // Blind victory state
+  private isPendingBlindVictory: boolean = false;
+  private victoryScore: number = 0;
+  private victoryReward: number = 0;
+  private victoryBlindLevel: number = 0;
+
+  // Blind defeat state
+  private isPendingBlindDefeat: boolean = false;
+  private defeatBlindLevel: number = 0;
+  private defeatRoundNumber: number = 0;
+  private defeatAchievedScore: number = 0;
+  private defeatTargetScore: number = 0;
+  private defeatIsBoss: boolean = false;
+  private defeatBossName: string = '';
 
   // Callback properties
   public onStateChange?: (state: GameState) => void;
@@ -34,6 +49,15 @@ export class GameController {
   public onVictory?: () => void;
   public onDefeat?: () => void;
   public onBossIntro?: (bossType: BossType) => void;
+  public onBlindVictory?: (blindLevel: number, score: number, reward: number) => void;
+  public onBlindDefeat?: (
+    blindLevel: number,
+    roundNumber: number,
+    achievedScore: number,
+    targetScore: number,
+    isBossBlind: boolean,
+    bossName?: string
+  ) => void;
 
   /**
    * Creates game controller with optional UI callbacks.
@@ -43,6 +67,8 @@ export class GameController {
    * @param onVictory - Callback when game is won
    * @param onDefeat - Callback when game is lost
    * @param onBossIntro - Callback when boss blind is introduced
+   * @param onBlindVictory - Callback when blind is successfully cleared
+   * @param onBlindDefeat - Callback when blind is failed
    */
   constructor(
     onStateChange?: (state: GameState) => void,
@@ -50,7 +76,16 @@ export class GameController {
     onShopClose?: () => void,
     onVictory?: () => void,
     onDefeat?: () => void,
-    onBossIntro?: (bossType: BossType) => void
+    onBossIntro?: (bossType: BossType) => void,
+    onBlindVictory?: (blindLevel: number, score: number, reward: number) => void,
+    onBlindDefeat?: (
+      blindLevel: number,
+      roundNumber: number,
+      achievedScore: number,
+      targetScore: number,
+      isBossBlind: boolean,
+      bossName?: string
+    ) => void
   ) {
     this.gamePersistence = new GamePersistence();
     this.onStateChange = onStateChange;
@@ -59,6 +94,8 @@ export class GameController {
     this.onVictory = onVictory;
     this.onDefeat = onDefeat;
     this.onBossIntro = onBossIntro;
+    this.onBlindVictory = onBlindVictory;
+    this.onBlindDefeat = onBlindDefeat;
   }
 
   /**
@@ -104,9 +141,24 @@ export class GameController {
       // Load controller state
       const controllerState = this.gamePersistence.loadControllerState();
       const wasInShop = controllerState?.isInShop || false;
+      const victoryState = controllerState?.victoryState;
       
+      // Restore victory state if pending
+      if (victoryState?.isPending) {
+        this.isPendingBlindVictory = true;
+        this.victoryScore = victoryState.score;
+        this.victoryReward = victoryState.reward;
+        this.victoryBlindLevel = victoryState.blindLevel;
+        
+        // Trigger blind victory callback to show modal
+        if (this.onBlindVictory) {
+          this.onBlindVictory(this.victoryBlindLevel, this.victoryScore, this.victoryReward);
+        }
+        
+        console.log('Restored pending blind victory state');
+      }
       // If player was in shop, restore shop state
-      if (wasInShop) {
+      else if (wasInShop) {
         this.isInShop = false; // Will be set by openShop
         await this.openShop();
         console.log('Restored shop state');
@@ -278,10 +330,21 @@ export class GameController {
       this.gameState.addMoney(2);
     }
 
-    // Open shop
-    await this.openShop();
+    // Store victory information for modal
+    this.isPendingBlindVictory = true;
+    this.victoryScore = this.gameState.getAccumulatedScore(); // Blind completion score
+    this.victoryReward = reward + (hasGoldenJoker ? 2 : 0);
+    this.victoryBlindLevel = this.gameState.getLevelNumber();
 
-    // Check victory condition
+    // Trigger blind victory callback to show modal
+    if (this.onBlindVictory) {
+      this.onBlindVictory(this.victoryBlindLevel, this.victoryScore, this.victoryReward);
+    }
+
+    // Save game state with pending victory
+    this.saveGame();
+
+    // Check victory condition (only if all blinds completed)
     if (this.checkVictoryCondition()) {
       this.triggerVictory();
     }
@@ -314,6 +377,52 @@ export class GameController {
     }
 
     console.log(`Shop opened with ${this.shop.getAvailableItems().length} items (excluding ${ownedJokerIds.length} owned jokers)`);
+  }
+
+  /**
+   * Confirms blind victory and opens shop.
+   * Should be called after player sees victory modal.
+   */
+  public async confirmBlindVictory(): Promise<void> {
+    if (!this.isPendingBlindVictory) {
+      throw new Error('No pending blind victory');
+    }
+
+    // Clear victory state
+    this.isPendingBlindVictory = false;
+    this.victoryScore = 0;
+    this.victoryReward = 0;
+    this.victoryBlindLevel = 0;
+
+    // Open shop
+    await this.openShop();
+
+    // Save game state (now in shop, victory cleared)
+    this.saveGame();
+  }
+
+  /**
+   * Confirms blind defeat and clears game state.
+   * Should be called after player sees defeat modal.
+   */
+  public confirmBlindDefeat(): void {
+    if (!this.isPendingBlindDefeat) {
+      throw new Error('No pending blind defeat');
+    }
+
+    // Clear defeat state
+    this.isPendingBlindDefeat = false;
+    this.defeatBlindLevel = 0;
+    this.defeatRoundNumber = 0;
+    this.defeatAchievedScore = 0;
+    this.defeatTargetScore = 0;
+    this.defeatIsBoss = false;
+    this.defeatBossName = '';
+
+    // Trigger the old onDefeat callback for screen transition
+    if (this.onDefeat) {
+      this.onDefeat();
+    }
   }
 
   /**
@@ -646,6 +755,28 @@ export class GameController {
   }
 
   /**
+   * Removes a tarot/consumable from inventory by index.
+   * This is useful when there are multiple consumables with the same ID.
+   * @param index - Index of tarot to remove in the consumables array
+   * @throws Error if index is out of bounds
+   */
+  public removeConsumableByIndex(index: number): void {
+    if (!this.gameState) {
+      throw new Error('Game state not initialized');
+    }
+
+    this.gameState.removeConsumableByIndex(index);
+
+    // Trigger state change callback
+    if (this.onStateChange) {
+      this.onStateChange(this.gameState);
+    }
+
+    // Auto-save game state
+    this.saveGame();
+  }
+
+  /**
    * Checks if player has won the game.
    * @returns true if victory condition met
    */
@@ -679,15 +810,43 @@ export class GameController {
    * Handles game defeat.
    */
   private triggerDefeat(): void {
+    if (!this.gameState) {
+      return;
+    }
+
+    // Gather defeat information
+    const currentBlind = this.gameState.getCurrentBlind();
+    this.defeatBlindLevel = this.gameState.getLevelNumber();
+    this.defeatRoundNumber = this.gameState.getRoundNumber();
+    this.defeatAchievedScore = this.gameState.getAccumulatedScore();
+    this.defeatTargetScore = currentBlind.getScoreGoal();
+    
+    // Check if it's a boss blind
+    if (currentBlind instanceof BossBlind) {
+      this.defeatIsBoss = true;
+      this.defeatBossName = getBossDisplayName(currentBlind.getBossType());
+    } else {
+      this.defeatIsBoss = false;
+      this.defeatBossName = '';
+    }
+
+    this.isPendingBlindDefeat = true;
     this.isGameActive = false;
+
+    // Trigger defeat modal callback
+    if (this.onBlindDefeat) {
+      this.onBlindDefeat(
+        this.defeatBlindLevel,
+        this.defeatRoundNumber,
+        this.defeatAchievedScore,
+        this.defeatTargetScore,
+        this.defeatIsBoss,
+        this.defeatBossName || undefined
+      );
+    }
 
     // Save game as lost
     this.saveGame();
-
-    // Trigger defeat callback
-    if (this.onDefeat) {
-      this.onDefeat();
-    }
 
     console.log('Game over - defeat!');
   }
@@ -753,11 +912,72 @@ export class GameController {
 
     try {
       this.gamePersistence.saveGame(this.gameState);
-      this.gamePersistence.saveControllerState(this.isInShop);
+      this.gamePersistence.saveControllerState(this.isInShop, {
+        isPending: this.isPendingBlindVictory,
+        score: this.victoryScore,
+        reward: this.victoryReward,
+        blindLevel: this.victoryBlindLevel
+      });
       console.log('Game state and controller state saved');
     } catch (error) {
       console.error('Failed to save game:', error);
     }
+  }
+
+  /**
+   * Returns whether a blind victory is pending confirmation.
+   * @returns boolean
+   */
+  public isPendingVictory(): boolean {
+    return this.isPendingBlindVictory;
+  }
+
+  /**
+   * Gets the victory information for the modal.
+   * @returns Object with blind level, score, and reward, or null if no pending victory
+   */
+  public getVictoryInfo(): { blindLevel: number; score: number; reward: number } | null {
+    if (!this.isPendingBlindVictory) {
+      return null;
+    }
+    return {
+      blindLevel: this.victoryBlindLevel,
+      score: this.victoryScore,
+      reward: this.victoryReward
+    };
+  }
+
+  /**
+   * Returns whether a blind defeat is pending confirmation.
+   * @returns boolean
+   */
+  public isPendingDefeat(): boolean {
+    return this.isPendingBlindDefeat;
+  }
+
+  /**
+   * Gets the defeat information for the modal.
+   * @returns Object with defeat details, or null if no pending defeat
+   */
+  public getDefeatInfo(): {
+    blindLevel: number;
+    roundNumber: number;
+    achievedScore: number;
+    targetScore: number;
+    isBossBlind: boolean;
+    bossName?: string;
+  } | null {
+    if (!this.isPendingBlindDefeat) {
+      return null;
+    }
+    return {
+      blindLevel: this.defeatBlindLevel,
+      roundNumber: this.defeatRoundNumber,
+      achievedScore: this.defeatAchievedScore,
+      targetScore: this.defeatTargetScore,
+      isBossBlind: this.defeatIsBoss,
+      bossName: this.defeatBossName || undefined
+    };
   }
 
   /**
@@ -768,6 +988,17 @@ export class GameController {
     this.shop = null;
     this.isGameActive = false;
     this.isInShop = false;
+    this.isPendingBlindVictory = false;
+    this.victoryScore = 0;
+    this.victoryReward = 0;
+    this.victoryBlindLevel = 0;
+    this.isPendingBlindDefeat = false;
+    this.defeatBlindLevel = 0;
+    this.defeatRoundNumber = 0;
+    this.defeatAchievedScore = 0;
+    this.defeatTargetScore = 0;
+    this.defeatIsBoss = false;
+    this.defeatBossName = '';
 
     try {
       this.gamePersistence.clearSavedGame();
