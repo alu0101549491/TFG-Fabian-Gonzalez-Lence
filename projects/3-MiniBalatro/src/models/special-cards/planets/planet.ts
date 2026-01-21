@@ -16,13 +16,15 @@ export class Planet {
    * @param targetHandType - Which hand type this upgrades
    * @param chipsBonus - Additional chips to add
    * @param multBonus - Additional mult to add
+   * @param description - Description of the planet's effect (optional)
    * @throws Error if negative bonuses provided
    */
   constructor(
     public readonly name: string,
     public readonly targetHandType: HandType,
     public readonly chipsBonus: number,
-    public readonly multBonus: number
+    public readonly multBonus: number,
+    public readonly description?: string
   ) {
     if (chipsBonus < 0 || multBonus < 0) {
       throw new Error('Planet bonuses cannot be negative');

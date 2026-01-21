@@ -18,6 +18,7 @@ import { InstantTarot } from '../../models/special-cards/tarots/instant-tarot';
 import { TargetedTarot } from '../../models/special-cards/tarots/targeted-tarot';
 import { TarotEffect } from '../../models/special-cards/tarots/tarot-effect.enum';
 import { ScoreContext } from '../../models/scoring/score-context';
+import { TAROT_CONFIG } from '../../utils/constants';
 import { Suit } from '../../models/core/suit.enum';
 import { Card } from '../../models/core/card';
 import { CardValue } from '../../models/core/card-value.enum';
@@ -89,7 +90,8 @@ export class ShopItemGenerator {
       planetDef.name,
       handType,
       planetDef.chipsBonus || 10,
-      planetDef.multBonus || 1
+      planetDef.multBonus || 1,
+      planetDef.description
     );
   }
 
@@ -326,8 +328,10 @@ export class ShopItemGenerator {
         (gameState) => {
           // Handle instant effects
           if (tarotId === 'theHermit') {
-            // The Hermit: Doubles player's current money
-            gameState.addMoney(gameState.getMoney());
+            // The Hermit: Doubles player's current money, capped at $20 bonus
+            const currentMoney = gameState.getMoney();
+            const moneyToAdd = Math.min(currentMoney, TAROT_CONFIG.HERMIT_MAX_MONEY_BONUS);
+            gameState.addMoney(moneyToAdd);
           }
           // Add more instant tarot effects here as needed
         }
@@ -365,7 +369,9 @@ export class ShopItemGenerator {
         tarotDef.description || 'Instant effect',
         (gameState) => {
           if (tarotId === 'theHermit') {
-            gameState.addMoney(gameState.getMoney());
+            const currentMoney = gameState.getMoney();
+            const moneyToAdd = Math.min(currentMoney, TAROT_CONFIG.HERMIT_MAX_MONEY_BONUS);
+            gameState.addMoney(moneyToAdd);
           }
         }
       );

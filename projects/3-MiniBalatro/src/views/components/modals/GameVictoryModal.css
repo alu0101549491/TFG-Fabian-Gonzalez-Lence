@@ -1,0 +1,265 @@
+/* ============================================ */
+/* FILE: src/views/components/modals/GameVictoryModal.css */
+/* ============================================ */
+
+.game-victory-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.game-victory-modal {
+  background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 50%, #db2777 100%);
+  border: 4px solid #fbbf24;
+  border-radius: 25px;
+  padding: 50px;
+  min-width: 500px;
+  max-width: 600px;
+  box-shadow: 
+    0 0 50px rgba(251, 191, 36, 0.8),
+    0 0 100px rgba(124, 58, 237, 0.6),
+    0 15px 60px rgba(0, 0, 0, 0.7);
+  animation: victorySlideIn 0.6s ease-out, victoryPulse 2s ease-in-out infinite 1s;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-victory-modal::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 70%
+  );
+  animation: shimmer 3s infinite;
+}
+
+.game-victory-header {
+  text-align: center;
+  margin-bottom: 35px;
+  border-bottom: 3px solid #fbbf24;
+  padding-bottom: 25px;
+  position: relative;
+  z-index: 1;
+}
+
+.game-victory-title {
+  font-size: 3.5em;
+  color: #fbbf24;
+  margin: 0 0 15px 0;
+  text-shadow: 
+    0 0 20px rgba(251, 191, 36, 1),
+    0 0 40px rgba(251, 191, 36, 0.6),
+    0 4px 10px rgba(0, 0, 0, 0.5);
+  font-weight: bold;
+  animation: victoryTitleGlow 1.5s ease-in-out infinite;
+}
+
+.game-victory-subtitle {
+  font-size: 1.5em;
+  color: #f3f4f6;
+  margin: 0;
+  font-weight: 600;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.game-victory-content {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  margin-bottom: 35px;
+  position: relative;
+  z-index: 1;
+}
+
+.game-victory-message {
+  text-align: center;
+  padding: 20px;
+  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 15px;
+  border: 2px solid rgba(251, 191, 36, 0.4);
+}
+
+.game-victory-message p {
+  font-size: 1.2em;
+  color: #f3f4f6;
+  margin: 10px 0;
+  line-height: 1.6;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.game-victory-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.3) 0%, rgba(234, 179, 8, 0.3) 100%);
+  border-radius: 12px;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+}
+
+.game-victory-stat-label {
+  font-size: 1.3em;
+  color: #fef3c7;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.game-victory-stat-value {
+  font-size: 2em;
+  color: #ffffff;
+  font-weight: bold;
+  text-shadow: 
+    0 0 10px rgba(251, 191, 36, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.game-victory-achievement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.4) 0%, rgba(219, 39, 119, 0.4) 100%);
+  border-radius: 15px;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.4);
+}
+
+.game-victory-trophy {
+  font-size: 5em;
+  margin-bottom: 15px;
+  animation: trophyBounce 1s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8));
+}
+
+.game-victory-achievement-text {
+  font-size: 1.5em;
+  color: #fbbf24;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
+  text-shadow: 
+    0 0 10px rgba(251, 191, 36, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.game-victory-menu-btn {
+  width: 100%;
+  padding: 18px 35px;
+  font-size: 1.4em;
+  font-weight: bold;
+  color: #1e3a8a;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border: 3px solid #ffffff;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 6px 20px rgba(251, 191, 36, 0.6),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+  position: relative;
+  z-index: 1;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.game-victory-menu-btn:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  transform: translateY(-3px);
+  box-shadow: 
+    0 8px 25px rgba(251, 191, 36, 0.8),
+    inset 0 2px 0 rgba(255, 255, 255, 0.5);
+}
+
+.game-victory-menu-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 4px 15px rgba(251, 191, 36, 0.6),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* Animations */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes victorySlideIn {
+  from {
+    transform: translateY(-100px) scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes victoryPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 50px rgba(251, 191, 36, 0.8),
+      0 0 100px rgba(124, 58, 237, 0.6),
+      0 15px 60px rgba(0, 0, 0, 0.7);
+  }
+  50% {
+    box-shadow: 
+      0 0 60px rgba(251, 191, 36, 1),
+      0 0 120px rgba(124, 58, 237, 0.8),
+      0 15px 60px rgba(0, 0, 0, 0.7);
+  }
+}
+
+@keyframes victoryTitleGlow {
+  0%, 100% {
+    text-shadow: 
+      0 0 20px rgba(251, 191, 36, 1),
+      0 0 40px rgba(251, 191, 36, 0.6),
+      0 4px 10px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    text-shadow: 
+      0 0 30px rgba(251, 191, 36, 1),
+      0 0 60px rgba(251, 191, 36, 0.8),
+      0 4px 10px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@keyframes trophyBounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.05);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}

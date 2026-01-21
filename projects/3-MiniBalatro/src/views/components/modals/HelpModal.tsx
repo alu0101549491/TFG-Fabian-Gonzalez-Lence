@@ -68,7 +68,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
                 <strong>Straight Flush:</strong> Straight with same suit
               </div>
               <div className="help-item">
-                <strong>Royal Flush:</strong> 10-J-Q-K-A of same suit (Highest)
+                <strong>Royal Flush:</strong> A-K-Q-J-10 of same suit (Highest)
               </div>
             </div>
           </section>
@@ -92,13 +92,13 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
             </p>
             <div className="help-examples">
               <div className="help-example">
-                <strong>Greedy Joker:</strong> Adds chips when you play Diamond cards
+                <strong>Joker:</strong> Adds +4 mult for the played hand
               </div>
               <div className="help-example">
-                <strong>Blue Joker:</strong> Adds chips based on remaining deck size
+                <strong>Odd Todd:</strong> Adds +31 chips per odd value card (A,3,5,7,9) played
               </div>
               <div className="help-example">
-                <strong>Hiker:</strong> Permanently upgrades cards each time you play them
+                <strong>Triboulet:</strong> Each K or Q played multiplies total mult by ×2
               </div>
             </div>
           </section>
@@ -111,13 +111,13 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
             </p>
             <div className="help-examples">
               <div className="help-example">
-                <strong>The Empress:</strong> Adds permanent bonus chips to a card
+                <strong>The Empress:</strong> Adds permanent bonus mult to a card
               </div>
               <div className="help-example">
-                <strong>Death:</strong> Converts a card to a random new card
+                <strong>Death:</strong> Duplicates a selected card in your hand
               </div>
               <div className="help-example">
-                <strong>The Hermit:</strong> Doubles your current money
+                <strong>The Hermit:</strong> Doubles your current money (max +$20)
               </div>
             </div>
           </section>

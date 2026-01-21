@@ -336,17 +336,20 @@ export class GameController {
     this.victoryReward = reward + (hasGoldenJoker ? 2 : 0);
     this.victoryBlindLevel = this.gameState.getLevelNumber();
 
-    // Trigger blind victory callback to show modal
-    if (this.onBlindVictory) {
-      this.onBlindVictory(this.victoryBlindLevel, this.victoryScore, this.victoryReward);
-    }
+    // Check if this is the final boss (Round 8, Level 24)
+    const isGameWon = this.checkVictoryCondition();
 
     // Save game state with pending victory
     this.saveGame();
 
-    // Check victory condition (only if all blinds completed)
-    if (this.checkVictoryCondition()) {
+    if (isGameWon) {
+      // Trigger game victory instead of blind victory
       this.triggerVictory();
+    } else {
+      // Trigger blind victory callback to show modal
+      if (this.onBlindVictory) {
+        this.onBlindVictory(this.victoryBlindLevel, this.victoryScore, this.victoryReward);
+      }
     }
   }
 
@@ -785,8 +788,13 @@ export class GameController {
       return false;
     }
 
-    // Victory condition: Passed 8 complete rounds (24 levels)
-    return this.gameState.getRoundNumber() > 8;
+    // Victory condition: Just completed the final round's boss blind
+    // Check if current round equals VICTORY_ROUNDS and we're at a boss blind (level % 3 === 0)
+    const currentRound = this.gameState.getRoundNumber();
+    const currentLevel = this.gameState.getLevelNumber();
+    const isCompletingBossBlind = currentLevel % 3 === 0;
+    
+    return currentRound === GameConfig.VICTORY_ROUNDS && isCompletingBossBlind;
   }
 
   /**
@@ -798,7 +806,7 @@ export class GameController {
     // Save game as completed
     this.saveGame();
 
-    // Trigger victory callback
+    // Trigger victory callback with final score
     if (this.onVictory) {
       this.onVictory();
     }
@@ -869,6 +877,14 @@ export class GameController {
    */
   public getShop(): Shop | null {
     return this.shop;
+  }
+
+  /**
+   * Gets the victory score (score from completing the final boss).
+   * @returns Victory score, or 0 if no victory pending
+   */
+  public getVictoryScore(): number {
+    return this.victoryScore;
   }
 
   /**

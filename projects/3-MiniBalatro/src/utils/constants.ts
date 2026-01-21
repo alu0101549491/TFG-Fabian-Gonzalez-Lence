@@ -34,6 +34,13 @@ export const SHOP_CONFIG = {
 };
 
 /**
+ * Tarot card effect constants.
+ */
+export const TAROT_CONFIG = {
+  HERMIT_MAX_MONEY_BONUS: 20,  // Maximum money The Hermit can give
+};
+
+/**
  * Blind reward constants.
  */
 export const BLIND_REWARDS = {
