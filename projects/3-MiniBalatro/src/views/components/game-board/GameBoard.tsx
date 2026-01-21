@@ -66,6 +66,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [selectedCards, controller]);
 
   /**
+   * Checks if current hand is blocked by The Mouth boss.
+   * @returns true if hand won't count for score
+   */
+  const isHandBlocked = (): boolean => {
+    if (!previewScore) return false;
+    // If preview shows 0 total despite having a hand type, it's blocked
+    return previewScore.total === 0 && previewScore.handType !== undefined && selectedCards.length > 0;
+  };
+
+  /**
    * Handles card selection.
    * @param cardId - ID of card to select/deselect
    */
@@ -126,11 +136,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   /**
-   * Handles removing a tarot/consumable.
-   * @param tarotId - ID of the tarot to remove
+   * Handles removing a consumable from inventory.
+   * @param index - Index of the tarot to remove in the consumables array
    */
-  const handleRemoveConsumable = (tarotId: string) => {
-    controller.removeConsumable(tarotId);
+  const handleRemoveConsumable = (index: number) => {
+    controller.removeConsumableByIndex(index);
     setForceUpdate(prev => prev + 1);
   };
 
@@ -220,12 +230,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       {/* Preview Score */}
       {previewScore && (
         <div className="game-board__preview">
-          <span className="preview-hand-type">
-            {previewScore.handType?.replace(/_/g, ' ')}
-          </span>
-          <span className="preview-calculation">
-            {previewScore.chips} chips × {previewScore.mult} mult = {previewScore.total} pts
-          </span>
+          {isHandBlocked() ? (
+            <div className="preview-warning">
+              <span className="warning-icon">⚠️</span>
+              <span className="warning-text">
+                Hand type "{previewScore.handType?.replace(/_/g, ' ')}" won't count! 
+                {isBossBlind && bossName === 'The Mouth' && (
+                  <span> Only one hand type allowed for The Mouth!</span>
+                )}
+              </span>
+            </div>
+          ) : (
+            <>
+              <span className="preview-hand-type">
+                {previewScore.handType?.replace(/_/g, ' ')}
+              </span>
+              <span className="preview-calculation">
+                {previewScore.chips} chips × {previewScore.mult} mult = {previewScore.total} pts
+              </span>
+            </>
+          )}
         </div>
       )}
 

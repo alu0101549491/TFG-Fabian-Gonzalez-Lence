@@ -104,14 +104,26 @@ export class GamePersistence {
   }
 
   /**
-   * Saves controller state (isInShop flag).
+   * Saves controller state (isInShop flag and blind victory state).
    * @param isInShop - Whether player is currently in shop
+   * @param victoryState - Optional victory state information
    */
-  public saveControllerState(isInShop: boolean): void {
+  public saveControllerState(
+    isInShop: boolean,
+    victoryState?: {
+      isPending: boolean;
+      score: number;
+      reward: number;
+      blindLevel: number;
+    }
+  ): void {
     try {
-      const controllerState = { isInShop };
+      const controllerState = {
+        isInShop,
+        victoryState: victoryState || { isPending: false, score: 0, reward: 0, blindLevel: 0 }
+      };
       localStorage.setItem(this.controllerStateKey, JSON.stringify(controllerState));
-      console.log(`Controller state saved: isInShop=${isInShop}`);
+      console.log(`Controller state saved: isInShop=${isInShop}, pendingVictory=${victoryState?.isPending || false}`);
     } catch (error) {
       console.error('Failed to save controller state:', error);
     }
@@ -119,17 +131,29 @@ export class GamePersistence {
 
   /**
    * Loads controller state.
-   * @returns Object with isInShop flag, or null if not found
+   * @returns Object with isInShop flag and victory state, or null if not found
    */
-  public loadControllerState(): { isInShop: boolean } | null {
+  public loadControllerState(): {
+    isInShop: boolean;
+    victoryState: {
+      isPending: boolean;
+      score: number;
+      reward: number;
+      blindLevel: number;
+    };
+  } | null {
     try {
       const serialized = localStorage.getItem(this.controllerStateKey);
       if (!serialized) {
         return null;
       }
       const parsed = JSON.parse(serialized);
-      console.log(`Controller state loaded: isInShop=${parsed.isInShop}`);
-      return { isInShop: parsed.isInShop || false };
+      const result = {
+        isInShop: parsed.isInShop || false,
+        victoryState: parsed.victoryState || { isPending: false, score: 0, reward: 0, blindLevel: 0 }
+      };
+      console.log(`Controller state loaded: isInShop=${result.isInShop}, pendingVictory=${result.victoryState.isPending}`);
+      return result;
     } catch (error) {
       console.error('Failed to load controller state:', error);
       return null;
@@ -200,14 +224,23 @@ export class GamePersistence {
         level: gameState.getCurrentBlind().getLevel(),
         roundNumber: gameState.getRoundNumber(),
         type: gameState.getCurrentBlind().constructor.name,
-        scoreGoal: gameState.getCurrentBlind().getScoreGoal()
+        scoreGoal: gameState.getCurrentBlind().getScoreGoal(),
+        // Save boss type if this is a boss blind
+        bossType: gameState.getCurrentBlind() instanceof BossBlind 
+          ? (gameState.getCurrentBlind() as BossBlind).getBossType() 
+          : undefined,
+        // Save The Mouth's locked hand type if it has been set
+        lockedHandType: gameState.getCurrentBlind() instanceof BossBlind 
+          ? (gameState.getCurrentBlind() as BossBlind).getModifier().allowedHandTypes?.[0]
+          : undefined
       },
 
       // Upgrade manager state
       upgrades: Array.from(gameState.getUpgradeManager()['upgrades']).map(([handType, upgrade]) => ({
         handType,
         chips: upgrade.additionalChips,
-        mult: upgrade.additionalMult
+        mult: upgrade.additionalMult,
+        level: upgrade.level
       }))
     };
 
@@ -288,11 +321,13 @@ export class GamePersistence {
     if (parsed.upgrades && Array.isArray(parsed.upgrades)) {
       const upgradeManager = gameState.getUpgradeManager();
       parsed.upgrades.forEach((upgradeData: any) => {
-        if (upgradeData.chips > 0 || upgradeData.mult > 0) {
-          upgradeManager.applyPlanetUpgrade(
+        if (upgradeData.chips > 0 || upgradeData.mult > 0 || upgradeData.level > 1) {
+          // Use restoreUpgrade to properly set level without incrementing
+          upgradeManager.restoreUpgrade(
             upgradeData.handType,
             upgradeData.chips,
-            upgradeData.mult
+            upgradeData.mult,
+            upgradeData.level || 1 // Default to 1 for old saves without level
           );
         }
       });
@@ -340,10 +375,23 @@ export class GamePersistence {
         } else if (blindType === 'BigBlind') {
           gameState['currentBlind'] = new BigBlind(blindLevel, roundNumber);
         } else if (blindType === 'BossBlind') {
-          // For boss blind, we'll use a default boss type (can be improved)
-          gameState['currentBlind'] = new BossBlind(blindLevel, roundNumber, BossType.THE_WALL);
+          // Restore the actual boss type (default to THE_WALL if not saved)
+          const bossType = parsed.currentBlind.bossType || BossType.THE_WALL;
+          const bossBlind = new BossBlind(blindLevel, roundNumber, bossType);
+          
+          // If The Mouth boss has a locked hand type, restore it
+          if (bossType === BossType.THE_MOUTH && parsed.currentBlind.lockedHandType) {
+            bossBlind.setAllowedHandType(parsed.currentBlind.lockedHandType);
+            console.log(`Restored The Mouth with locked hand type: ${parsed.currentBlind.lockedHandType}`);
+          }
+          
+          gameState['currentBlind'] = bossBlind;
+          console.log(`Restored boss blind: ${bossType} at level ${blindLevel}`);
         }
-        console.log(`Restored blind: ${blindType} at level ${blindLevel}`);
+        
+        if (blindType !== 'BossBlind') {
+          console.log(`Restored blind: ${blindType} at level ${blindLevel}`);
+        }
       } catch (error) {
         console.error('Failed to restore blind', error);
       }

@@ -2,8 +2,6 @@
 // FILE: src/models/blinds/boss-type.enum.ts
 // ============================================
 
-import { HandType } from '../poker/hand-type.enum';
-
 /**
  * Enum defining all boss blind types.
  * Each boss has unique rule modifications.
@@ -46,14 +44,4 @@ export function getBossDescription(bossType: BossType): string {
     case BossType.THE_FLINT: return 'Base chips and mult of all hands are halved';
     default: return 'Unknown boss effect';
   }
-}
-
-/**
- * Returns a random hand type for The Mouth boss.
- * @returns A random HandType
- */
-export function getRandomHandTypeForMouth(): HandType {
-  const handTypes = Object.values(HandType);
-  const randomIndex = Math.floor(Math.random() * handTypes.length);
-  return handTypes[randomIndex];
 }

@@ -64,6 +64,21 @@ export class ScoreCalculator {
     // Step 1: Evaluate hand type and get base values
     const handResult = this.evaluator.evaluateHand(cards, this.upgradeManager);
     
+    // Check if this hand type is allowed by blind modifier (e.g., The Mouth boss)
+    if (blindModifier && blindModifier.allowedHandTypes && blindModifier.allowedHandTypes.length > 0) {
+      if (!blindModifier.allowedHandTypes.includes(handResult.handType)) {
+        console.log(`Hand type ${handResult.handType} is not allowed! Only ${blindModifier.allowedHandTypes.join(', ')} allowed. Returning 0 score.`);
+        // Return a result with 0 score and a special warning breakdown
+        const warningBreakdown = new ScoreBreakdown(
+          'Hand Not Allowed',
+          0,
+          0,
+          `Only ${blindModifier.allowedHandTypes.join(', ')} hands count for score!`
+        );
+        return new ScoreResult(0, 0, 0, [warningBreakdown], handResult.handType);
+      }
+    }
+    
     // Calculate empty joker slots (5 max slots - active jokers)
     // Use totalJokerCount if provided (to account for economic jokers that don't score)
     // Otherwise use the length of scoring jokers passed in
@@ -74,7 +89,8 @@ export class ScoreCalculator {
       handResult, 
       blindModifier, 
       emptyJokerSlots, 
-      discardsRemaining
+      discardsRemaining,
+      remainingDeckSize
     );
 
     // Create breakdown entries for base values (we keep breakdown separate from ScoreContext)
@@ -108,13 +124,15 @@ export class ScoreCalculator {
    * @param blindModifier - Optional blind modifier
    * @param emptyJokerSlots - Number of empty joker slots
    * @param discardsRemaining - Number of discards remaining
+   * @param remainingDeckSize - Cards remaining in deck
    * @returns ScoreContext with base values
    */
   private applyBaseValues(
     handResult: HandResult,
     blindModifier?: BlindModifier,
     emptyJokerSlots: number = 0,
-    discardsRemaining: number = 0
+    discardsRemaining: number = 0,
+    remainingDeckSize: number = 0
   ): ScoreContext {
     let baseChips = handResult.baseChips;
     let baseMult = handResult.baseMult;
@@ -126,6 +144,8 @@ export class ScoreCalculator {
       }
       if (blindModifier.multDivisor) {
         baseMult = Math.floor(baseMult / blindModifier.multDivisor);
+        // Ensure base mult never goes below 1 (prevents unplayable hands like High Card becoming 2x0)
+        baseMult = Math.max(1, baseMult);
       }
     }
 
@@ -134,7 +154,7 @@ export class ScoreCalculator {
       baseMult,
       handResult.scoringCards,  // Only cards that contribute to score
       handResult.handType,
-      handResult.cards.length, // remainingDeckSize - simplified for now
+      remainingDeckSize, // Use actual remaining deck size
       emptyJokerSlots,
       discardsRemaining
     );

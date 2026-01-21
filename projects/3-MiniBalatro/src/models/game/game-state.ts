@@ -5,6 +5,7 @@
 import { Deck } from '../core/deck';
 import { Card } from '../core/card';
 import { Joker } from '../special-cards/jokers/joker';
+import { PermanentUpgradeJoker } from '../special-cards/jokers/permanent-upgrade-joker';
 import { Tarot } from '../special-cards/tarots/tarot';
 import { TargetedTarot } from '../special-cards/tarots/targeted-tarot';
 import { TarotEffect } from '../special-cards/tarots/tarot-effect.enum';
@@ -161,12 +162,40 @@ export class GameState {
       this.jokers.length  // Total jokers including economic ones
     );
 
+    // For The Mouth boss: Lock in the hand type after the first hand is played
+    // BUT only if the hand actually scored points (wasn't rejected)
+    if (this.currentBlind instanceof BossBlind) {
+      const bossBlind = this.currentBlind as BossBlind;
+      if (bossBlind.getBossType() === 'THE_MOUTH') {
+        const modifier = bossBlind.getModifier();
+        // If allowedHandTypes is not yet set (null or empty), lock it to the played hand
+        if (!modifier.allowedHandTypes || modifier.allowedHandTypes.length === 0) {
+          // Only lock if this hand actually scored (wasn't rejected due to being wrong type)
+          if (result.handType && result.totalScore > 0) {
+            bossBlind.setAllowedHandType(result.handType);
+            console.log(`The Mouth: First hand played was ${result.handType}, locking this as the only allowed hand type`);
+          } else if (result.totalScore === 0) {
+            console.log(`The Mouth: Hand ${result.handType} was rejected (0 score), not locking yet. Player can try again.`);
+          }
+        }
+      }
+    }
+
     // Add to accumulated score
     this.accumulatedScore += result.totalScore;
     console.log(`Played hand for ${result.totalScore} points. Total: ${this.accumulatedScore}/${this.currentBlind.getScoreGoal()}`);
 
+    // Apply permanent upgrades from jokers (e.g., Hiker) to played cards
+    // This happens AFTER scoring so the upgrades take effect on next play
+    const permanentUpgradeJokers = this.jokers.filter(joker => joker instanceof PermanentUpgradeJoker) as PermanentUpgradeJoker[];
+    if (permanentUpgradeJokers.length > 0) {
+      console.log(`Applying permanent upgrades to ${this.selectedCards.length} played cards...`);
+      for (const upgradeJoker of permanentUpgradeJokers) {
+        upgradeJoker.upgradeCards(this.selectedCards);
+      }
+    }
+
     // Remove played cards from hand and add to discard pile
-    const playedCount = this.selectedCards.length;
     const playedCards = [...this.selectedCards]; // Copy before clearing selection
     this.currentHand = this.currentHand.filter(card =>
       !this.selectedCards.some(selected => selected.getId() === card.getId())
@@ -175,13 +204,15 @@ export class GameState {
     // Add played cards to deck's discard pile
     this.deck.addToDiscardPile(playedCards);
 
-    // Draw replacement cards
-    if (this.deck.getRemaining() >= playedCount) {
-      const replacements = this.deck.drawCards(playedCount);
+    // Draw cards to refill hand to HAND_SIZE (8 cards by default)
+    // This ensures hand is always refilled to full size, even if cards were destroyed
+    const cardsNeeded = GameConfig.HAND_SIZE - this.currentHand.length;
+    if (cardsNeeded > 0 && this.deck.getRemaining() >= cardsNeeded) {
+      const replacements = this.deck.drawCards(cardsNeeded);
       this.currentHand.push(...replacements);
-      console.log(`Drew ${replacements.length} replacement cards`);
-    } else {
-      console.log('Not enough cards in deck to replace played cards');
+      console.log(`Drew ${replacements.length} cards to refill hand to ${GameConfig.HAND_SIZE}`);
+    } else if (cardsNeeded > 0) {
+      console.log(`Not enough cards in deck to refill hand (need ${cardsNeeded}, have ${this.deck.getRemaining()})`);
     }
 
     // Decrement hands remaining
@@ -205,25 +236,25 @@ export class GameState {
       throw new Error('No discards remaining');
     }
 
-    const discardCount = this.selectedCards.length;
-
     // Remove discarded cards from hand
     const discardedCards = [...this.selectedCards]; // Copy before clearing
     this.currentHand = this.currentHand.filter(card =>
       !this.selectedCards.some(selected => selected.getId() === card.getId())
     );
 
-    // Check if deck has enough cards
-    if (this.deck.getRemaining() < discardCount) {
-      // In a real implementation, we would reshuffle the discard pile here
-      throw new Error('Not enough cards in deck to replace discarded cards');
-    }
-
     // Add discarded cards to deck's discard pile
     this.deck.addToDiscardPile(discardedCards);
 
-    const replacements = this.deck.drawCards(discardCount);
-    this.currentHand.push(...replacements);
+    // Draw cards to refill hand to HAND_SIZE (8 cards by default)
+    // This ensures hand is always refilled to full size, even if cards were destroyed
+    const cardsNeeded = GameConfig.HAND_SIZE - this.currentHand.length;
+    if (cardsNeeded > 0 && this.deck.getRemaining() >= cardsNeeded) {
+      const replacements = this.deck.drawCards(cardsNeeded);
+      this.currentHand.push(...replacements);
+      console.log(`Drew ${replacements.length} cards to refill hand to ${GameConfig.HAND_SIZE}`);
+    } else if (cardsNeeded > 0) {
+      console.log(`Not enough cards in deck to refill hand (need ${cardsNeeded}, have ${this.deck.getRemaining()})`);
+    }
 
     // Decrement discards remaining
     this.discardsRemaining--;
@@ -231,7 +262,7 @@ export class GameState {
     // Clear selection
     this.clearSelection();
 
-    console.log(`Discarded ${discardCount} cards, drew ${replacements.length} replacements. ${this.discardsRemaining} discards remaining`);
+    console.log(`Discarded ${discardedCards.length} cards, hand refilled to ${this.currentHand.length}. ${this.discardsRemaining} discards remaining`);
   }
 
   /**
@@ -345,6 +376,22 @@ export class GameState {
   }
 
   /**
+   * Removes a tarot/consumable from inventory by index.
+   * This is useful when there are multiple consumables with the same ID.
+   * @param index - Index of tarot to remove in the consumables array
+   * @throws Error if index is out of bounds
+   */
+  public removeConsumableByIndex(index: number): void {
+    if (index < 0 || index >= this.consumables.length) {
+      throw new Error(`Invalid index ${index} for consumables array of length ${this.consumables.length}`);
+    }
+
+    const tarot = this.consumables[index];
+    this.consumables.splice(index, 1);
+    console.log(`Removed consumable at index ${index}: ${tarot.name} (${tarot.id})`);
+  }
+
+  /**
    * Uses a tarot card and removes it from inventory.
    * @param tarotId - ID of tarot to use
    * @param target - Optional target card if required
@@ -370,6 +417,11 @@ export class GameState {
       if (tarot.effectType === TarotEffect.DESTROY) {
         // Remove card from hand
         this.currentHand = this.currentHand.filter(c => c.getId() !== target.getId());
+        
+        // Also remove from selectedCards if it was selected
+        // This prevents the bug where destroyed card stays in selection
+        this.selectedCards = this.selectedCards.filter(c => c.getId() !== target.getId());
+        
         // Decrease max deck size (card is already out of deck, in hand)
         this.deck.decreaseMaxDeckSize();
         console.log(`[The Hanged Man] Permanently destroyed ${target.getDisplayString()}`);
@@ -488,6 +540,13 @@ export class GameState {
     // Apply boss blind modifiers if needed
     if (this.currentBlind instanceof BossBlind) {
       this.applyBlindModifiers();
+    }
+
+    // Return current hand cards to discard pile before recombining
+    // This ensures all cards are available for the next level
+    if (this.currentHand.length > 0) {
+      this.deck.addToDiscardPile(this.currentHand);
+      console.log(`Returned ${this.currentHand.length} cards from hand to discard pile`);
     }
 
     // Recombine deck and discard pile, shuffle (preserves card bonuses)
@@ -654,5 +713,29 @@ export class GameState {
     this.currentBlind = this.blindGenerator.generateBlind(this.levelNumber);
 
     console.log('Game reset to initial state');
+  }
+
+  /**
+   * DEBUG: Forces the current blind to be a specific boss type.
+   * Useful for testing boss mechanics.
+   * @param bossType - The boss type to force (e.g., 'THE_MOUTH', 'THE_WALL', etc.)
+   */
+  public debugForceBoss(bossType: string): void {
+    const validBossTypes = ['THE_WALL', 'THE_WHEEL', 'THE_WATER', 'THE_NEEDLE', 'THE_FLINT', 'THE_MOUTH'];
+    
+    if (!validBossTypes.includes(bossType)) {
+      console.error(`Invalid boss type: ${bossType}. Valid types: ${validBossTypes.join(', ')}`);
+      return;
+    }
+
+    const newBoss = new BossBlind(this.levelNumber, this.roundNumber, bossType as any);
+    this.currentBlind = newBoss;
+    this.accumulatedScore = 0;
+    this.handsRemaining = GameConfig.MAX_HANDS_PER_BLIND;
+    this.discardsRemaining = GameConfig.MAX_DISCARDS_PER_BLIND;
+    
+    console.log(`🐛 DEBUG: Forced boss to ${bossType}`);
+    console.log(`   Goal: ${newBoss.getScoreGoal()}`);
+    console.log(`   Modifier: ${JSON.stringify(newBoss.getModifier())}`);
   }
 }

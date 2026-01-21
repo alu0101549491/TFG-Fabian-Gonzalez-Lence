@@ -6,12 +6,15 @@ import { Blind } from './blind';
 import { BlindModifier } from './blind-modifier';
 import { BossType } from './boss-type.enum';
 import { GameConfig } from '../../services/config/game-config';
+import { HandType } from '../poker/hand-type.enum';
 
 /**
  * Third blind in each round (boss encounter).
  * Goal = base × 2.0 (modified by boss), Reward = $10.
  */
 export class BossBlind extends Blind {
+  private modifier: BlindModifier;
+
   /**
    * Creates a boss blind with specified boss type.
    * @param level - The level number
@@ -23,6 +26,7 @@ export class BossBlind extends Blind {
     const baseGoal = BossBlind.calculateBaseGoal(roundNumber);
     const multiplier = GameConfig.BOSS_BLIND_MULTIPLIER;
     super(level, baseGoal * multiplier, GameConfig.BOSS_BLIND_REWARD);
+    this.modifier = BlindModifier.createForBoss(this.bossType);
   }
 
   /**
@@ -30,7 +34,26 @@ export class BossBlind extends Blind {
    * @returns BlindModifier configured for this boss
    */
   public getModifier(): BlindModifier {
-    return BlindModifier.createForBoss(this.bossType);
+    return this.modifier;
+  }
+
+  /**
+   * Sets the allowed hand types for The Mouth boss.
+   * This is called after the first hand is played to lock in that hand type.
+   * @param handType - The hand type to allow
+   * @throws Error if not The Mouth boss or handType is null
+   */
+  public setAllowedHandType(handType: HandType): void {
+    if (this.bossType !== BossType.THE_MOUTH) {
+      throw new Error('setAllowedHandType can only be called on The Mouth boss');
+    }
+    if (!handType) {
+      throw new Error('Hand type cannot be null');
+    }
+
+    // Create a new modifier with the locked-in hand type
+    this.modifier = new BlindModifier(1.0, null, null, [handType]);
+    console.log(`The Mouth: Locked in hand type ${handType}`);
   }
 
   /**

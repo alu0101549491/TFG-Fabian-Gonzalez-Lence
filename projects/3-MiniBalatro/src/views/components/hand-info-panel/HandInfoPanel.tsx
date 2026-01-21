@@ -37,21 +37,11 @@ export const HandInfoPanel: React.FC<HandInfoPanelProps> = ({
 
   /**
    * Gets the current level of a hand type.
-   * Level = 1 + (upgrades applied)
+   * Level starts at 1 and increases by 1 for each planet card used.
    */
   const getHandLevel = (handType: HandType): number => {
     const upgrade = upgradeManager.getUpgradedValues(handType);
-    // Simple level calculation: if any upgrades exist, increment level
-    // In real Balatro, each Planet card increases level by 1
-    if (upgrade.additionalChips > 0 || upgrade.additionalMult > 0) {
-      // For now, estimate level based on upgrades
-      // Each planet typically adds +10 chips and +1 mult
-      return 1 + Math.max(
-        Math.floor(upgrade.additionalChips / 10),
-        upgrade.additionalMult
-      );
-    }
-    return 1;
+    return upgrade.level;
   };
 
   /**
