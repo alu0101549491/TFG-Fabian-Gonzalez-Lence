@@ -44,29 +44,41 @@ export const BLIND_REWARDS = {
 
 /**
  * Color palette constants.
+ * 
+ * IMPORTANT: These colors are the single source of truth for the application.
+ * They are automatically applied to CSS custom properties via apply-theme.ts.
+ * 
+ * To change colors across the entire application:
+ * 1. Modify the values in this COLORS object
+ * 2. Refresh the page - changes will be applied automatically
+ * 
+ * No need to edit CSS files directly!
  */
 export const COLORS = {
-  // Theme Colors
-  BG_PRIMARY: '#1a1a2e',
-  BG_PANEL: '#16213e',
-  BORDER: '#0f3460',
-  ACCENT: '#e94560',
-  TEXT_PRIMARY: '#f1f1f1',
-  TEXT_SECONDARY: '#a8a8a8',
+  // Theme Colors - Main backgrounds and UI elements
+  BG_PRIMARY: '#1a1a2e',      // Main app background (dark navy)
+  BG_PANEL: '#16213e',        // Panel/card container background (darker navy)
+  BORDER: '#0f3460',          // Border color for panels and cards (blue-navy)
+  ACCENT: '#e94560',          // Primary accent color (red-pink)
 
-  // Suit Colors
-  SUIT_DIAMONDS: '#e89230ff',
-  SUIT_HEARTS: '#d62d46ff',
-  SUIT_SPADES: '#061413ff',
-  SUIT_CLUBS: '#3cc264ff',
+  // Text Colors - For readable text on dark backgrounds
+  TEXT_PRIMARY: '#f1f1f1',    // Primary text color (light gray)
+  TEXT_SECONDARY: '#a8a8a8',  // Secondary/muted text color (medium gray)
+  TEXT_TERTIARY: '#4f4f4fff', // Tertiary/more muted text color (dark gray)
 
-  // Indicator Colors
-  CHIPS: '#f9ca24',
-  MULT: '#6c5ce7',
-  MONEY: '#00d2d3',
-  SUCCESS: '#2ecc71',
-  WARNING: '#95a5a6',
-  ERROR: '#e74c3c',
+  // Suit Colors - For card suits (diamonds, hearts, spades, clubs)
+  SUIT_DIAMONDS: '#e89230',   // Orange for diamonds ♦
+  SUIT_HEARTS: '#d62d46',     // Red for hearts ♥
+  SUIT_SPADES: '#061413',     // Black for spades ♠
+  SUIT_CLUBS: '#3cc264',      // Green for clubs ♣
+
+  // Indicator Colors - For chips, mult, money displays
+  CHIPS: '#f9ca24',           // Yellow/gold for chip count
+  MULT: '#6c5ce7',            // Purple for multiplier
+  MONEY: '#00d2d3',           // Cyan for money/currency
+  SUCCESS: '#2ecc71',         // Green for success states
+  WARNING: '#95a5a6',         // Gray for warning states
+  ERROR: '#e74c3c',           // Red for error states
 };
 
 /**
