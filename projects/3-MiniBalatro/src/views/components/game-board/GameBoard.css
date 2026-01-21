@@ -11,8 +11,8 @@
   padding: 20px;
   gap: 16px;
   min-height: 100vh;
-  background-color: #1a1a2e;
-  color: #f1f1f1;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 /* === HEADER BAR === */
@@ -22,38 +22,38 @@
   gap: 16px;
   align-items: center;
   padding: 12px 20px;
-  background-color: #16213e;
-  border: 2px solid #0f3460;
+  background-color: var(--color-bg-panel);
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
 }
 
 .game-board__level {
-  color: #f1f1f1;
+  color: var(--color-text-primary);
 }
 
 .game-board__money {
   text-align: center;
-  color: #00d2d3;
+  color: var(--color-money);
   font-family: 'Inter', monospace;
 }
 
 .game-board__round {
   text-align: center;
-  color: #f1f1f1;
+  color: var(--color-text-primary);
 }
 
 .game-board__deck {
   text-align: right;
-  color: #a29bfe;
+  color: var(--color-mult);
   font-family: 'Inter', monospace;
 }
 
 /* === BOSS BLIND INFO === */
 .game-board__boss-info {
   padding: 20px;
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  background: linear-gradient(135deg, var(--color-error) 0%, #c0392b 100%);
   border: 3px solid #8b0000;
   border-radius: 12px;
   box-shadow: 
@@ -110,8 +110,8 @@
   display: flex;
   gap: 20px;
   padding: 16px;
-  background-color: #16213e;
-  border: 2px solid #0f3460;
+  background-color: var(--color-bg-panel);
+  border: 2px solid var(--color-border);
   border-radius: 8px;
 }
 
@@ -123,7 +123,7 @@
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #a8a8a8;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -131,8 +131,8 @@
 /* === GOAL SECTION === */
 .game-board__goal {
   padding: 16px 20px;
-  background-color: #16213e;
-  border: 2px solid #0f3460;
+  background-color: var(--color-bg-panel);
+  border: 2px solid var(--color-border);
   border-radius: 8px;
 }
 
@@ -140,7 +140,7 @@
   margin: 0 0 12px 0;
   font-size: 18px;
   font-weight: 700;
-  color: #f9ca24;
+  color: var(--color-chips);
 }
 
 .goal-progress {
@@ -152,7 +152,7 @@
 .progress-bar {
   width: 100%;
   height: 24px;
-  background-color: #0f3460;
+  background-color: var(--color-border);
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid #1a4d7a;
@@ -160,21 +160,21 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6c5ce7 0%, #a29bfe 100%);
+  background: linear-gradient(90deg, var(--color-mult) 0%, #a29bfe 100%);
   transition: width 0.5s ease;
   box-shadow: 0 0 10px rgba(108, 92, 231, 0.5);
 }
 
 .progress-text {
   font-size: 14px;
-  color: #a8a8a8;
+  color: var(--color-text-secondary);
 }
 
 /* === HAND AREA === */
 .game-board__hand-area {
   padding: 16px 20px;
-  background-color: #16213e;
-  border: 2px solid #0f3460;
+  background-color: var(--color-bg-panel);
+  border: 2px solid var(--color-border);
   border-radius: 8px;
 }
 

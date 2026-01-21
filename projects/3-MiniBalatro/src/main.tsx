@@ -12,11 +12,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './views/App';
+import { applyThemeColors } from './utils/apply-theme';
 
 /**
  * Initialize the application
  */
 const initializeApp = () => {
+  // Apply theme colors from constants.ts to CSS variables
+  applyThemeColors();
+
   // Get root element
   const rootElement = document.getElementById('root');
 
