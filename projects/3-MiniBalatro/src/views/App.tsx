@@ -10,6 +10,7 @@ import { GameBoard } from './components/game-board/GameBoard';
 import { ShopView } from './components/shop/ShopView';
 import { BlindVictoryModal } from './components/modals/BlindVictoryModal';
 import { BlindDefeatModal } from './components/modals/BlindDefeatModal';
+import { GameVictoryModal } from './components/modals/GameVictoryModal';
 import './App.css';
 
 /**
@@ -36,14 +37,16 @@ export const App: React.FC = () => {
     isBossBlind: boolean;
     bossName?: string;
   } | null>(null);
+  const [showGameVictory, setShowGameVictory] = useState<boolean>(false);
+  const [gameVictoryScore, setGameVictoryScore] = useState<number>(0);
 
-  // Initialize controller on mount
+  // Initialize game controller on mount
   useEffect(() => {
     const newController = new GameController(
       (state) => handleStateChange(state),
       () => handleShopOpen(),
       () => handleShopClose(),
-      () => handleVictory(),
+      () => handleVictory(newController),
       () => handleDefeat(),
       undefined, // Boss intro callback (not used currently)
       (blindLevel, score, reward) => handleBlindVictory(blindLevel, score, reward),
@@ -89,9 +92,18 @@ export const App: React.FC = () => {
   /**
    * Handles game victory.
    */
-  const handleVictory = () => {
-    // alert('Congratulations! You won the game!');
-    setCurrentScreen('menu');
+  const handleVictory = (ctrl: GameController) => {
+    console.log('🎉 handleVictory called!');
+    if (ctrl) {
+      // Get the final score from the controller (stored during blind completion)
+      const finalScore = ctrl.getVictoryScore();
+      console.log('Final score:', finalScore);
+      setGameVictoryScore(finalScore);
+      setShowGameVictory(true);
+      console.log('Game victory modal should show now');
+    } else {
+      console.log('ERROR: No controller available');
+    }
   };
 
   /**
@@ -177,6 +189,14 @@ export const App: React.FC = () => {
     }
   };
 
+  /**
+   * Handles returning to menu from game victory modal.
+   */
+  const handleGameVictoryReturnToMenu = () => {
+    setShowGameVictory(false);
+    setCurrentScreen('menu');
+  };
+
   return (
     <div className="app">
       {currentScreen === 'menu' && controller && (
@@ -216,6 +236,12 @@ export const App: React.FC = () => {
           isBossBlind={defeatData.isBossBlind}
           bossName={defeatData.bossName}
           onReturnToMenu={handleReturnToMenu}
+        />
+      )}
+      {showGameVictory && (
+        <GameVictoryModal
+          finalScore={gameVictoryScore}
+          onReturnToMenu={handleGameVictoryReturnToMenu}
         />
       )}
     </div>

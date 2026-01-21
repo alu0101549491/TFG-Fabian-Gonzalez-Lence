@@ -3,7 +3,7 @@
     {
       "id": "pluto",
       "name": "Pluto",
-      "description": "+10 chips, +1 mult for High Card",
+      "description": "Upgrades High Card (+10 chips x +1 mult)",
       "targetHandType": "highCard",
       "chipsBonus": 10,
       "multBonus": 1
@@ -11,7 +11,7 @@
     {
       "id": "mercury",
       "name": "Mercury",
-      "description": "+15 chips, +1 mult for Pair",
+      "description": "Upgrades Pair (+15 chips x +1 mult)",
       "targetHandType": "pair",
       "chipsBonus": 15,
       "multBonus": 1
@@ -19,7 +19,7 @@
     {
       "id": "uranus",
       "name": "Uranus",
-      "description": "+20 chips, +1 mult for Two Pair",
+      "description": "Upgrades Two Pair (+20 chips x +1 mult)",
       "targetHandType": "twoPair",
       "chipsBonus": 20,
       "multBonus": 1
@@ -27,7 +27,7 @@
     {
       "id": "venus",
       "name": "Venus",
-      "description": "+20 chips, +2 mult for Three of a Kind",
+      "description": "Upgrades Three of a Kind (+20 chips x +2 mult)",
       "targetHandType": "threeOfAKind",
       "chipsBonus": 20,
       "multBonus": 2
@@ -35,7 +35,7 @@
     {
       "id": "saturn",
       "name": "Saturn",
-      "description": "+30 chips, +3 mult for Straight",
+      "description": "Upgrades Straight (+30 chips x +3 mult)",
       "targetHandType": "straight",
       "chipsBonus": 30,
       "multBonus": 3
@@ -43,7 +43,7 @@
     {
       "id": "jupiter",
       "name": "Jupiter",
-      "description": "+15 chips, +2 mult for Flush",
+      "description": "Upgrades Flush (+15 chips x +2 mult)",
       "targetHandType": "flush",
       "chipsBonus": 15,
       "multBonus": 2
@@ -51,7 +51,7 @@
     {
       "id": "earth",
       "name": "Earth",
-      "description": "+25 chips, +2 mult for Full House",
+      "description": "Upgrades Full House (+25 chips x +2 mult)",
       "targetHandType": "fullHouse",
       "chipsBonus": 25,
       "multBonus": 2
@@ -59,7 +59,7 @@
     {
       "id": "mars",
       "name": "Mars",
-      "description": "+30 chips, +3 mult for Four of a Kind",
+      "description": "Upgrades Four of a Kind (+30 chips x +3 mult)",
       "targetHandType": "fourOfAKind",
       "chipsBonus": 30,
       "multBonus": 3
@@ -67,7 +67,7 @@
     {
       "id": "neptune",
       "name": "Neptune",
-      "description": "+40 chips, +4 mult for Straight Flush",
+      "description": "Upgrades Straight Flush (+40 chips x +4 mult)",
       "targetHandType": "straightFlush",
       "chipsBonus": 40,
       "multBonus": 4

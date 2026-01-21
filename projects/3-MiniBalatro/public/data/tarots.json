@@ -3,7 +3,7 @@
     {
       "id": "theHermit",
       "name": "The Hermit",
-      "description": "Doubles player's current money",
+      "description": "Doubles player's current money (max +$20)",
       "effectType": "instant",
       "targetRequired": false
     },
