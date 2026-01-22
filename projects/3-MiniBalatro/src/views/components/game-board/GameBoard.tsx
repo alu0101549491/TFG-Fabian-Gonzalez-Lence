@@ -11,6 +11,7 @@ import { TarotZone } from '../tarot-zone/TarotZone';
 import { HandInfoPanel } from '../hand-info-panel/HandInfoPanel';
 import { Card } from '../../../models/core/card';
 import { BossBlind } from '../../../models/blinds/boss-blind';
+import { BlindGenerator } from '../../../models/blinds/blind-generator';
 import { getBossDisplayName, getBossDescription } from '../../../models/blinds/boss-type.enum';
 import { GameConfig } from '../../../services/config/game-config';
 import './GameBoard.css';
@@ -161,7 +162,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       {/* Top Header Bar */}
       <div className="game-board__header">
         <span className="game-board__level">
-          Level: {gameState.getLevelNumber()} - {currentBlind.constructor.name.replace('Blind', ' Blind')}
+          Level: {gameState.getLevelNumber()} - {BlindGenerator.getBlindTypeForLevel(gameState.getLevelNumber())} Blind
         </span>
         <span className="game-board__money">Money: ${gameState.getMoney()}</span>
         <span className="game-board__round">Round: {gameState.getRoundNumber()}</span>
