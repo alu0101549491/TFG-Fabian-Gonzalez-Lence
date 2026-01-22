@@ -1,43 +1,44 @@
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
+import {resolve} from 'path';
+
+// Determine base path - use BASE_URL from environment or default to project path
+const base = process.env.BASE_URL || '/3-MiniBalatro/';
 
 // https://vitejs.dev/config/
-export default defineConfig(({command, mode}) => {
-  // Use BASE_URL from environment if set, otherwise determine from command
-  const base = process.env.BASE_URL || 
-    (command === 'build' ? `/${process.env.REPO_NAME || 'TFG-Fabian-Gonzalez-Lence'}/3-MiniBalatro/` : '/');
-
-  return {
-    plugins: [react()],
-    root: '.',
-    publicDir: 'public',
-    base,  // '/' for dev, '/REPO_NAME/3-MiniBalatro/' for production
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, './src'),
-        '@models': path.resolve(__dirname, './src/models'),
-        '@controllers': path.resolve(__dirname, './src/controllers'),
-        '@services': path.resolve(__dirname, './src/services'),
-        '@views': path.resolve(__dirname, './src/views'),
-        '@utils': path.resolve(__dirname, './src/utils'),
-        '@types': path.resolve(__dirname, './src/types'),
+export default defineConfig({
+  plugins: [react()],
+  root: '.',
+  publicDir: 'public',
+  base,  // Example: /3-MiniBalatro/
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src'),
+      '@models': resolve(__dirname, './src/models'),
+      '@controllers': resolve(__dirname, './src/controllers'),
+      '@services': resolve(__dirname, './src/services'),
+      '@views': resolve(__dirname, './src/views'),
+      '@utils': resolve(__dirname, './src/utils'),
+      '@types': resolve(__dirname, './src/types'),
+    },
+  },
+  server: {
+    port: 3000,
+    open: true,
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: true,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
       },
-    },
-    server: {
-      port: 3000,
-      open: true,
-    },
-    build: {
-      outDir: 'dist',
-      sourcemap: true,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom'],
-          },
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
         },
       },
     },
-  };
+  },
 });
