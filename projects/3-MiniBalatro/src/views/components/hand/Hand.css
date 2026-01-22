@@ -1,0 +1,65 @@
+/* ============================================
+   FILENAME: Hand.css
+   ============================================ */
+
+/* === LAYOUT === */
+.hand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.selection-indicator {
+  font-size: 14px;
+  color: #a8a8a8;
+  font-weight: 600;
+}
+
+.cards-container {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 8px 0;
+}
+
+.hand__card {
+  position: relative;
+  width: var(--card-width);
+  height: var(--card-height);
+  transition: transform var(--transition-default), box-shadow var(--transition-default);
+  z-index: var(--z-card);
+  cursor: pointer;
+}
+
+.hand__card--selected {
+  transform: translateY(-20px);
+  box-shadow: var(--shadow-card-selected);
+  z-index: var(--z-card-selected);
+}
+
+.hand__card--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hand__selection-indicator {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 12px solid var(--color-accent);
+}
+
+/* === RESPONSIVE === */
+@media (min-width: 768px) {
+  .cards-container {
+    justify-content: flex-start;
+  }
+}
+

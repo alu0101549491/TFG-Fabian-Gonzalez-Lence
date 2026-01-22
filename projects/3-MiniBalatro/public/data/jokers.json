@@ -1,0 +1,125 @@
+{
+  "jokers": [
+    {
+      "id": "joker",
+      "name": "Joker",
+      "description": "+4 mult",
+      "type": "mult",
+      "value": 4,
+      "condition": "always"
+    },
+    {
+      "id": "greedyJoker",
+      "name": "Greedy Joker",
+      "description": "+3 mult per Diamond card played",
+      "type": "mult",
+      "value": 3,
+      "condition": "perDiamond"
+    },
+    {
+      "id": "lustyJoker",
+      "name": "Lusty Joker",
+      "description": "+3 mult per Heart card played",
+      "type": "mult",
+      "value": 3,
+      "condition": "perHeart"
+    },
+    {
+      "id": "wrathfulJoker",
+      "name": "Wrathful Joker",
+      "description": "+3 mult per Spade card played",
+      "type": "mult",
+      "value": 3,
+      "condition": "perSpade"
+    },
+    {
+      "id": "gluttonousJoker",
+      "name": "Gluttonous Joker",
+      "description": "+3 mult per Club card played",
+      "type": "mult",
+      "value": 3,
+      "condition": "perClub"
+    },
+    {
+      "id": "halfJoker",
+      "name": "Half Joker",
+      "description": "+20 mult if hand contains 3 cards or less",
+      "type": "mult",
+      "value": 20,
+      "condition": "handSizeLessThanOrEqual3"
+    },
+    {
+      "id": "jokerStencil",
+      "name": "Joker Stencil",
+      "description": "×1 mult per empty slot in joker hand (This Joker counts as empty)",
+      "type": "multiplier",
+      "value": 1,
+      "condition": "perEmptyJokerSlot"
+    },
+    {
+      "id": "mysticSummit",
+      "name": "Mystic Summit",
+      "description": "+15 mult if no discards available",
+      "type": "mult",
+      "value": 15,
+      "condition": "noDiscardsRemaining"
+    },
+    {
+      "id": "fibonacci",
+      "name": "Fibonacci",
+      "description": "+8 mult per A, 2, 3, 5, or 8 played",
+      "type": "mult",
+      "value": 8,
+      "condition": "perFibonacciCard"
+    },
+    {
+      "id": "evenSteven",
+      "name": "Even Steven",
+      "description": "+4 mult per even value card (2,4,6,8,10) played",
+      "type": "mult",
+      "value": 4,
+      "condition": "perEvenCard"
+    },
+    {
+      "id": "oddTodd",
+      "name": "Odd Todd",
+      "description": "+31 chips per odd value card (A,3,5,7,9) played",
+      "type": "chips",
+      "value": 31,
+      "condition": "perOddCard"
+    },
+    {
+      "id": "blueJoker",
+      "name": "Blue Joker",
+      "description": "+2 chips per remaining card in deck (max +104)",
+      "type": "chips",
+      "value": 2,
+      "maxValue": 104,
+      "condition": "perRemainingCard"
+    },
+    {
+      "id": "hiker",
+      "name": "Hiker",
+      "description": "Each played card permanently gains +5 chips (cumulative)",
+      "type": "permanentUpgrade",
+      "value": 5,
+      "condition": "onCardPlayed"
+    },
+    {
+      "id": "goldenJoker",
+      "name": "Golden Joker",
+      "description": "+$2 at the end of each passed level",
+      "type": "economic",
+      "value": 2,
+      "condition": "onLevelComplete"
+    },
+    {
+      "id": "triboulet",
+      "name": "Triboulet",
+      "description": "Each K or Q played multiplies total mult by ×2",
+      "type": "multiplier",
+      "value": 2,
+      "condition": "perKingOrQueen"
+    }
+  ]
+}

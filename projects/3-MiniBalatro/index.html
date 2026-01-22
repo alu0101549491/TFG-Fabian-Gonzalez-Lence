@@ -1,0 +1,64 @@
+<!-- ============================================
+     FILE: public/index.html
+     ============================================ -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Mini Balatro - A web-based card game inspired by Balatro combining poker mechanics with roguelike elements" />
+    <meta name="theme-color" content="#1a1a2e" />
+
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Mini Balatro" />
+    <meta property="og:description" content="A strategic card game combining poker hands with roguelike progression" />
+    <meta property="og:image" content="/assets/images/og-image.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg" />
+    <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png" />
+
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet" />
+
+    <!-- Global Styles -->
+    <link rel="stylesheet" href="/assets/styles/global.css" />
+    <link rel="stylesheet" href="/assets/styles/animations.css" />
+
+    <title>Mini Balatro</title>
+  </head>
+  <body>
+    <!-- Root element for React application -->
+    <div id="root"></div>
+
+    <!-- Fallback message for browsers with JavaScript disabled -->
+    <noscript>
+      <div style="
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: 'Inter', sans-serif;
+        background-color: #1a1a2e;
+        color: #f1f1f1;
+        text-align: center;
+        padding: 2rem;
+      ">
+        <div>
+          <h1>JavaScript Required</h1>
+          <p>Mini Balatro requires JavaScript to run. Please enable JavaScript in your browser settings.</p>
+        </div>
+      </div>
+    </noscript>
+
+    <!-- Main application script (loaded by Vite) -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

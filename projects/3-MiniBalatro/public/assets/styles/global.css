@@ -1,0 +1,236 @@
+/* ============================================
+   FILENAME: global.css
+   ============================================ */
+
+/* === CSS CUSTOM PROPERTIES === */
+:root {
+  /* Color Palette - Background & Panels */
+  /* These colors are dynamically set from src/utils/constants.ts via apply-theme.ts */
+  /* To change colors, modify COLORS object in constants.ts */
+  --color-bg-primary: #1a1a2e;         /* Fallback, overridden by applyThemeColors() */
+  --color-bg-panel: #16213e;           /* Fallback, overridden by applyThemeColors() */
+  --color-border: #0f3460;             /* Fallback, overridden by applyThemeColors() */
+  --color-accent: #e94560;             /* Fallback, overridden by applyThemeColors() */
+
+  /* Color Palette - Text */
+  --color-text-primary: #f1f1f1;       /* Fallback, overridden by applyThemeColors() */
+  --color-text-secondary: #a8a8a8;     /* Fallback, overridden by applyThemeColors() */
+
+  /* Color Palette - Suits */
+  --color-suit-diamonds: #ff6b6b;      /* Fallback, overridden by applyThemeColors() */
+  --color-suit-hearts: #ee5a6f;        /* Fallback, overridden by applyThemeColors() */
+  --color-suit-spades: #4ecdc4;        /* Fallback, overridden by applyThemeColors() */
+  --color-suit-clubs: #95e1d3;         /* Fallback, overridden by applyThemeColors() */
+
+  /* Color Palette - Indicators */
+  --color-chips: #f9ca24;              /* Fallback, overridden by applyThemeColors() */
+  --color-mult: #6c5ce7;               /* Fallback, overridden by applyThemeColors() */
+  --color-money: #00d2d3;              /* Fallback, overridden by applyThemeColors() */
+  --color-success: #2ecc71;            /* Fallback, overridden by applyThemeColors() */
+  --color-warning: #95a5a6;            /* Fallback, overridden by applyThemeColors() */
+  --color-error: #e74c3c;              /* Fallback, overridden by applyThemeColors() */
+
+  /* Special Card Backgrounds (derived from base colors) */
+  --color-joker-start: #6c5ce7;        /* Uses --color-mult */
+  --color-joker-end: #f9ca24;          /* Uses --color-chips */
+  --color-planet-bg: #0f3460;          /* Uses --color-border */
+  --color-planet-accent: #4ecdc4;      /* Uses --color-suit-spades */
+  --color-tarot-bg: #16213e;           /* Uses --color-bg-panel */
+  --color-tarot-border: #e94560;       /* Uses --color-accent */
+
+  /* Typography */
+  --font-family-primary: 'Inter', 'Roboto', sans-serif;
+  --font-family-secondary: 'Playfair Display', 'Merriweather', serif;
+  --font-family-mono: 'Courier New', monospace;
+
+  /* Font Sizes */
+  --font-size-h1: 3rem;        /* 48px */
+  --font-size-h2: 2rem;        /* 32px */
+  --font-size-h3: 1.5rem;      /* 24px */
+  --font-size-body: 1rem;      /* 16px */
+  --font-size-small: 0.875rem; /* 14px */
+  --font-size-number: 1.25rem; /* 20px */
+
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing System (8px base) */
+  --spacing-xs: 0.5rem;   /* 8px */
+  --spacing-sm: 1rem;     /* 16px */
+  --spacing-md: 1.5rem;   /* 24px */
+  --spacing-lg: 2rem;     /* 32px */
+  --spacing-xl: 2.5rem;   /* 40px */
+  --spacing-xxl: 3rem;    /* 48px */
+
+  /* Component Sizes */
+  --card-width: 100px;
+  --card-height: 140px;
+  --card-radius: 8px;
+  --button-radius: 4px;
+  --panel-radius: 8px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 8px 16px rgba(0, 0, 0, 0.4);
+  --shadow-card-selected: 0 8px 24px rgba(233, 69, 96, 0.6);
+  --shadow-panel: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-button: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+  /* Transitions */
+  --transition-fast: 150ms ease-out;
+  --transition-default: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+  --transition-score: 400ms ease-out;
+
+  /* Z-Index Layers */
+  --z-base: 1;
+  --z-card: 10;
+  --z-card-hover: 20;
+  --z-card-selected: 30;
+  --z-panel: 50;
+  --z-modal: 100;
+  --z-tooltip: 200;
+}
+
+/* === CSS RESET / NORMALIZATION === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family-primary);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === BASE TYPOGRAPHY === */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+}
+
+p {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-chips);
+}
+
+/* === LAYOUT UTILITIES === */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+.flex {
+  display: flex;
+}
+
+.flex--column {
+  flex-direction: column;
+}
+
+.flex--center {
+  justify-content: center;
+  align-items: center;
+}
+
+.flex--space-between {
+  justify-content: space-between;
+}
+
+.flex--wrap {
+  flex-wrap: wrap;
+}
+
+.grid {
+  display: grid;
+}
+
+.grid--center {
+  place-items: center;
+}
+
+/* === SPACING UTILITIES === */
+.margin-xs { margin: var(--spacing-xs); }
+.margin-sm { margin: var(--spacing-sm); }
+.margin-md { margin: var(--spacing-md); }
+.margin-lg { margin: var(--spacing-lg); }
+.margin-xl { margin: var(--spacing-xl); }
+
+.padding-xs { padding: var(--spacing-xs); }
+.padding-sm { padding: var(--spacing-sm); }
+.padding-md { padding: var(--spacing-md); }
+.padding-lg { padding: var(--spacing-lg); }
+.padding-xl { padding: var(--spacing-xl); }
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+/* === TEXT UTILITIES === */
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-accent { color: var(--color-accent); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-error { color: var(--color-error); }
+
+.font-regular { font-weight: var(--font-weight-regular); }
+.font-semibold { font-weight: var(--font-weight-semibold); }
+.font-bold { font-weight: var(--font-weight-bold); }
+
+.font-mono {
+  font-family: var(--font-family-mono);
+}
+
+/* === RESPONSIVE BREAKPOINTS === */
+@media (min-width: 768px) {
+  :root {
+    --card-width: 90px;
+    --card-height: 126px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --card-width: 100px;
+    --card-height: 140px;
+  }
+}
