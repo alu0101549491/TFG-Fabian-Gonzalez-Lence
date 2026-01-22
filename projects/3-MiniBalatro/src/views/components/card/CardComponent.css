@@ -1,0 +1,130 @@
+/* ============================================
+   FILENAME: CardComponent.css
+   ============================================ */
+
+/* === ELEMENTS === */
+.card {
+  position: relative;
+  width: var(--card-width);
+  height: var(--card-height);
+  background-color: white;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-weight-bold);
+  user-select: none;
+  will-change: transform;
+}
+
+.card__value {
+  position: absolute;
+  top: var(--spacing-xs);
+  left: var(--spacing-xs);
+  font-size: var(--font-size-h3);
+}
+
+.card__suit {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  font-size: var(--font-size-h2);
+}
+
+.card__center-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+}
+
+.card--diamonds .card__value,
+.card--diamonds .card__suit,
+.card--diamonds .card__center-icon {
+  color: var(--color-suit-diamonds);
+}
+
+.card--hearts .card__value,
+.card--hearts .card__suit,
+.card--hearts .card__center-icon {
+  color: var(--color-suit-hearts);
+}
+
+.card--spades .card__value,
+.card--spades .card__suit,
+.card--spades .card__center-icon {
+  color: var(--color-suit-spades);
+}
+
+.card--clubs .card__value,
+.card--clubs .card__suit,
+.card--clubs .card__center-icon {
+  color: var(--color-suit-clubs);
+}
+
+/* Special Cards */
+.card--joker {
+  background: linear-gradient(135deg, var(--color-joker-start), var(--color-joker-end));
+  color: white;
+  border: 2px solid gold;
+}
+
+.card--planet {
+  background-color: var(--color-planet-bg);
+  border: 2px solid var(--color-planet-accent);
+  color: var(--color-planet-accent);
+}
+
+.card--tarot {
+  background-color: var(--color-tarot-bg);
+  border: 2px solid var(--color-tarot-border);
+  color: var(--color-tarot-border);
+}
+
+/* === STATES === */
+.card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-card-hover);
+  z-index: var(--z-card-hover);
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+.card--selected {
+  transform: translateY(-20px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(108, 92, 231, 0.6), 0 0 20px rgba(108, 92, 231, 0.8);
+  border: 3px solid #6c5ce7;
+  z-index: 100;
+  animation: glowPulse 1.5s ease-in-out infinite;
+}
+
+.card--selected:hover {
+  transform: translateY(-20px) scale(1.05);
+}
+
+/* === ANIMATIONS === */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(108, 92, 231, 0.6), 0 0 20px rgba(108, 92, 231, 0.8);
+  }
+  50% {
+    box-shadow: 0 8px 32px rgba(108, 92, 231, 0.8), 0 0 30px rgba(108, 92, 231, 1);
+  }
+}
+
+.card--dealing {
+  animation: cardDeal 0.5s ease-out forwards;
+}
+
+.card--flipping {
+  animation: cardFlip 0.6s ease-in-out forwards;
+}

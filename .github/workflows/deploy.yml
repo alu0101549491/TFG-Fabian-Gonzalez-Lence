@@ -59,6 +59,19 @@ jobs:
             cd ../..
             echo "✅ 2-MusicWebPlayer built successfully"
           fi
+          
+          # Build 3-MiniBalatro
+          if [ -d "projects/3-MiniBalatro" ]; then
+            echo "🔨 Building 3-MiniBalatro..."
+            cd projects/3-MiniBalatro
+            npm ci
+            export BASE_URL="/$REPO_NAME/3-MiniBalatro/"
+            npm run build
+            mkdir -p "../../deploy/3-MiniBalatro"
+            cp -r dist/* "../../deploy/3-MiniBalatro/"
+            cd ../..
+            echo "✅ 3-MiniBalatro built successfully"
+          fi
 
       - name: Create index page
         run: |
@@ -143,6 +156,11 @@ jobs:
                           <div class="project-icon">🎵</div>
                           <div class="project-name">Music Web Player</div>
                           <div class="project-description">Aplicación moderna de reproductor de música con React</div>
+                      </a>
+                      <a href="./3-MiniBalatro/" class="project-card">
+                          <div class="project-icon">🃏</div>
+                          <div class="project-name">Mini Balatro</div>
+                          <div class="project-description">Fun and addictive dice game</div>
                       </a>
                   </div>
               </div>

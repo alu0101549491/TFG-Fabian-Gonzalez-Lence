@@ -1,0 +1,508 @@
+classDiagram
+    %% ========================================
+    %% CORE GAME ENTITIES
+    %% ========================================
+    
+    class Card {
+        -value: CardValue
+        -suit: Suit
+        -chipBonus: number
+        -multBonus: number
+        -id: string
+        
+        +constructor(value: CardValue, suit: Suit)
+        +getBaseChips(): number
+        +addPermanentBonus(chips: number, mult: number): void
+        +changeSuit(newSuit: Suit): void
+        +upgradeValue(): void
+        +clone(): Card
+    }
+    
+    class CardValue {
+        <<enumeration>>
+        ACE
+        KING
+        QUEEN
+        JACK
+        TEN
+        NINE
+        EIGHT
+        SEVEN
+        SIX
+        FIVE
+        FOUR
+        THREE
+        TWO
+    }
+    
+    class Suit {
+        <<enumeration>>
+        DIAMONDS
+        HEARTS
+        SPADES
+        CLUBS
+    }
+    
+    class Deck {
+        -cards: Card[]
+        -discardPile: Card[]
+        
+        +constructor()
+        +shuffle(): void
+        +drawCards(count: number): Card[]
+        +addCard(card: Card): void
+        +removeCard(cardId: string): void
+        +getRemaining(): number
+        +reset(): void
+        -initializeStandardDeck(): void
+    }
+    
+    %% ========================================
+    %% POKER HAND SYSTEM
+    %% ========================================
+    
+    class HandEvaluator {
+        -handRankings: HandType[]
+        
+        +evaluateHand(cards: Card[]): HandResult
+        +getHandType(cards: Card[]): HandType
+        -checkStraightFlush(cards: Card[]): boolean
+        -checkFourOfAKind(cards: Card[]): boolean
+        -checkFullHouse(cards: Card[]): boolean
+        -checkFlush(cards: Card[]): boolean
+        -checkStraight(cards: Card[]): boolean
+        -checkThreeOfAKind(cards: Card[]): boolean
+        -checkTwoPair(cards: Card[]): boolean
+        -checkPair(cards: Card[]): boolean
+    }
+    
+    class HandResult {
+        +handType: HandType
+        +cards: Card[]
+        +baseChips: number
+        +baseMult: number
+    }
+    
+    class HandType {
+        <<enumeration>>
+        STRAIGHT_FLUSH
+        FOUR_OF_A_KIND
+        FULL_HOUSE
+        FLUSH
+        STRAIGHT
+        THREE_OF_A_KIND
+        TWO_PAIR
+        PAIR
+        HIGH_CARD
+    }
+    
+    class HandUpgradeManager {
+        -upgrades: Map~HandType, HandUpgrade~
+        
+        +applyPlanetUpgrade(handType: HandType, chips: number, mult: number): void
+        +getUpgradedValues(handType: HandType): HandUpgrade
+        +reset(): void
+    }
+    
+    class HandUpgrade {
+        +additionalChips: number
+        +additionalMult: number
+    }
+    
+    %% ========================================
+    %% SPECIAL CARDS
+    %% ========================================
+    
+    class Joker {
+        <<abstract>>
+        -id: string
+        -name: string
+        -description: string
+        -priority: JokerPriority
+        
+        +constructor(id: string, name: string)
+        +applyEffect(context: ScoreContext): void
+        +canActivate(context: ScoreContext): boolean
+        +getPriority(): JokerPriority
+    }
+    
+    class JokerPriority {
+        <<enumeration>>
+        CHIPS
+        MULT
+        MULTIPLIER
+    }
+    
+    class ChipJoker {
+        -chipValue: number
+        -condition: Function
+        
+        +applyEffect(context: ScoreContext): void
+    }
+    
+    class MultJoker {
+        -multValue: number
+        -condition: Function
+        
+        +applyEffect(context: ScoreContext): void
+    }
+    
+    class MultiplierJoker {
+        -multiplierValue: number
+        -condition: Function
+        
+        +applyEffect(context: ScoreContext): void
+    }
+    
+    class Planet {
+        -targetHandType: HandType
+        -chipsBonus: number
+        -multBonus: number
+        
+        +constructor(handType: HandType, chips: number, mult: number)
+        +apply(upgradeManager: HandUpgradeManager): void
+    }
+    
+    class Tarot {
+        <<abstract>>
+        -name: string
+        -description: string
+        
+        +constructor(name: string)
+        +use(target: Card | GameState): void
+        +requiresTarget(): boolean
+    }
+    
+    class InstantTarot {
+        +use(gameState: GameState): void
+    }
+    
+    class TargetedTarot {
+        -effectType: TarotEffect
+        
+        +use(target: Card): void
+    }
+    
+    class TarotEffect {
+        <<enumeration>>
+        ADD_CHIPS
+        ADD_MULT
+        CHANGE_SUIT
+        UPGRADE_VALUE
+        DUPLICATE
+        DESTROY
+    }
+    
+    %% ========================================
+    %% SCORING SYSTEM
+    %% ========================================
+    
+    class ScoreCalculator {
+        -evaluator: HandEvaluator
+        -upgradeManager: HandUpgradeManager
+        
+        +constructor(evaluator: HandEvaluator, upgradeManager: HandUpgradeManager)
+        +calculateScore(cards: Card[], jokers: Joker[], blindModifier?: BlindModifier): ScoreResult
+        -applyBaseValues(handResult: HandResult): ScoreContext
+        -applyCardBonuses(context: ScoreContext, cards: Card[]): void
+        -applyJokerEffects(context: ScoreContext, jokers: Joker[]): void
+        -calculateFinalScore(context: ScoreContext): number
+    }
+    
+    class ScoreContext {
+        +chips: number
+        +mult: number
+        +playedCards: Card[]
+        +handType: HandType
+        +remainingDeckSize: number
+    }
+    
+    class ScoreResult {
+        +totalScore: number
+        +chips: number
+        +mult: number
+        +breakdown: ScoreBreakdown[]
+    }
+    
+    class ScoreBreakdown {
+        +source: string
+        +chipsAdded: number
+        +multAdded: number
+        +description: string
+    }
+    
+    %% ========================================
+    %% BLIND SYSTEM
+    %% ========================================
+    
+    class Blind {
+        <<abstract>>
+        -level: number
+        -scoreGoal: number
+        -moneyReward: number
+        
+        +constructor(level: number)
+        +getScoreGoal(): number
+        +getReward(): number
+        +getModifier(): BlindModifier | null
+    }
+    
+    class SmallBlind {
+        +constructor(level: number)
+        +getScoreGoal(): number
+    }
+    
+    class BigBlind {
+        +constructor(level: number)
+        +getScoreGoal(): number
+    }
+    
+    class BossBlind {
+        -bossType: BossType
+        
+        +constructor(level: number, bossType: BossType)
+        +getModifier(): BlindModifier
+        +getBossType(): BossType
+    }
+    
+    class BossType {
+        <<enumeration>>
+        THE_WALL
+        THE_WATER
+        THE_MOUTH
+        THE_NEEDLE
+        THE_FLINT
+    }
+    
+    class BlindModifier {
+        +goalMultiplier: number
+        +maxHands: number
+        +maxDiscards: number
+        +allowedHandTypes: HandType[]
+        +chipsDivisor: number
+        +multDivisor: number
+    }
+    
+    class BlindGenerator {
+        +generateBlind(roundNumber: number): Blind
+        -selectRandomBoss(): BossType
+        -calculateBaseGoal(round: number): number
+    }
+    
+    %% ========================================
+    %% GAME STATE & MANAGEMENT
+    %% ========================================
+    
+    class GameState {
+        -deck: Deck
+        -currentHand: Card[]
+        -jokers: Joker[]
+        -consumables: Tarot[]
+        -currentBlind: Blind
+        -money: number
+        -score: number
+        -handsRemaining: number
+        -discardsRemaining: number
+        -roundNumber: number
+        -upgradeManager: HandUpgradeManager
+        
+        +constructor()
+        +dealHand(): void
+        +playHand(selectedCards: Card[]): ScoreResult
+        +discardCards(selectedCards: Card[]): void
+        +addJoker(joker: Joker): void
+        +removeJoker(jokerId: string): void
+        +addConsumable(tarot: Tarot): void
+        +useConsumable(tarotId: string, target?: Card): void
+        +addMoney(amount: number): void
+        +spendMoney(amount: number): boolean
+        +advanceToNextBlind(): void
+        +isLevelComplete(): boolean
+        +isGameOver(): boolean
+        +reset(): void
+    }
+    
+    class GameController {
+        -gameState: GameState
+        -scoreCalculator: ScoreCalculator
+        -blindGenerator: BlindGenerator
+        -shop: Shop
+        
+        +constructor()
+        +startNewGame(): void
+        +selectCard(cardId: string): void
+        +playSelectedHand(): ScoreResult
+        +discardSelected(): void
+        +completeBlind(): void
+        +openShop(): void
+        +purchaseShopItem(itemId: string): boolean
+        +useConsumable(tarotId: string, targetCardId?: string): void
+        -checkVictoryCondition(): boolean
+        -checkDefeatCondition(): boolean
+    }
+    
+    %% ========================================
+    %% SHOP SYSTEM
+    %% ========================================
+    
+    class Shop {
+        -availableItems: ShopItem[]
+        -rerollCost: number
+        
+        +constructor()
+        +generateItems(round: number): void
+        +purchaseItem(itemId: string, money: number): ShopItem | null
+        +reroll(money: number): boolean
+        +getAvailableItems(): ShopItem[]
+    }
+    
+    class ShopItem {
+        +id: string
+        +type: ShopItemType
+        +item: Joker | Planet | Tarot
+        +cost: number
+    }
+    
+    class ShopItemType {
+        <<enumeration>>
+        JOKER
+        PLANET
+        TAROT
+    }
+    
+    class ShopItemGenerator {
+        +generateRandomJoker(): Joker
+        +generateRandomPlanet(): Planet
+        +generateRandomTarot(): Tarot
+        +generateShopItems(count: number): ShopItem[]
+    }
+    
+    %% ========================================
+    %% PERSISTENCE
+    %% ========================================
+    
+    class GamePersistence {
+        -storageKey: string
+        
+        +saveGame(gameState: GameState): void
+        +loadGame(): GameState | null
+        +hasSavedGame(): boolean
+        +clearSavedGame(): void
+        -serializeGameState(gameState: GameState): string
+        -deserializeGameState(data: string): GameState
+    }
+    
+    %% ========================================
+    %% CONFIGURATION
+    %% ========================================
+    
+    class GameConfig {
+        <<static>>
+        +readonly INITIAL_MONEY: number
+        +readonly MAX_JOKERS: number
+        +readonly MAX_CONSUMABLES: number
+        +readonly HAND_SIZE: number
+        +readonly MAX_HANDS_PER_BLIND: number
+        +readonly MAX_DISCARDS_PER_BLIND: number
+        +readonly JOKER_COST: number
+        +readonly PLANET_COST: number
+        +readonly TAROT_COST: number
+        +getCardValue(value: CardValue): number
+        +getHandBaseValues(handType: HandType): HandUpgrade
+    }
+    
+    class BalancingConfig {
+        +handValues: Map~HandType, HandUpgrade~
+        +cardValues: Map~CardValue, number~
+        +jokerDefinitions: JokerDefinition[]
+        +planetDefinitions: PlanetDefinition[]
+        +tarotDefinitions: TarotDefinition[]
+        +blindTargets: BlindTarget[]
+        
+        +loadFromJSON(): void
+    }
+    
+    %% ========================================
+    %% RELATIONSHIPS
+    %% ========================================
+    
+    %% Core entity relationships
+    Card --> CardValue : has
+    Card --> Suit : has
+    Deck --> Card : contains
+    
+    %% Hand evaluation
+    HandEvaluator --> HandResult : returns
+    HandEvaluator --> HandType : evaluates
+    HandResult --> HandType : has
+    HandResult --> Card : references
+    HandUpgradeManager --> HandUpgrade : manages
+    HandUpgradeManager --> HandType : keys by
+    
+    %% Special cards hierarchy
+    ChipJoker --|> Joker : extends
+    MultJoker --|> Joker : extends
+    MultiplierJoker --|> Joker : extends
+    Joker --> JokerPriority : has
+    InstantTarot --|> Tarot : extends
+    TargetedTarot --|> Tarot : extends
+    TargetedTarot --> TarotEffect : applies
+    Planet --> HandType : targets
+    Planet --> HandUpgradeManager : modifies
+    
+    %% Scoring system
+    ScoreCalculator --> HandEvaluator : uses
+    ScoreCalculator --> HandUpgradeManager : uses
+    ScoreCalculator --> ScoreResult : returns
+    ScoreCalculator --> ScoreContext : uses
+    ScoreResult --> ScoreBreakdown : contains
+    ScoreContext --> Card : references
+    ScoreContext --> HandType : has
+    
+    %% Blind system
+    SmallBlind --|> Blind : extends
+    BigBlind --|> Blind : extends
+    BossBlind --|> Blind : extends
+    BossBlind --> BossType : has
+    BossBlind --> BlindModifier : provides
+    BlindGenerator --> Blind : creates
+    BlindGenerator --> BossType : selects
+    
+    %% Game state management
+    GameState --> Deck : owns
+    GameState --> Card : manages
+    GameState --> Joker : contains
+    GameState --> Tarot : contains
+    GameState --> Blind : has current
+    GameState --> HandUpgradeManager : owns
+    GameController --> GameState : manages
+    GameController --> ScoreCalculator : uses
+    GameController --> BlindGenerator : uses
+    GameController --> Shop : manages
+    GameController --> ScoreResult : receives
+    
+    %% Shop system
+    Shop --> ShopItem : contains
+    Shop --> ShopItemGenerator : uses
+    ShopItem --> ShopItemType : has
+    ShopItem --> Joker : may contain
+    ShopItem --> Planet : may contain
+    ShopItem --> Tarot : may contain
+    ShopItemGenerator --> Joker : creates
+    ShopItemGenerator --> Planet : creates
+    ShopItemGenerator --> Tarot : creates
+    
+    %% Persistence
+    GamePersistence --> GameState : saves/loads
+    
+    %% Configuration
+    GameConfig --> CardValue : provides values
+    GameConfig --> HandType : provides values
+    BalancingConfig --> HandUpgrade : contains
+    
+    %% Notes
+    note for ScoreCalculator "Enforces strict calculation order: base → cards → chip jokers → mult jokers → multiplier jokers"
+    note for GameState "Central state manager - coordinates all game entities"
+    note for Joker "Abstract base - concrete jokers implement specific effects"
+    note for BossBlind "Applies unique modifiers every third level"
+    note for HandEvaluator "Recognizes poker hands with proper priority hierarchy"

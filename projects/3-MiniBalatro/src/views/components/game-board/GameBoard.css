@@ -1,0 +1,374 @@
+/* ============================================
+   FILENAME: GameBoard.css
+   ============================================ */
+
+/* === MAIN LAYOUT === */
+.game-board {
+  display: flex;
+  flex-direction: column;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  gap: 16px;
+  min-height: 100vh;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+/* === HEADER BAR === */
+.game-board__header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 20px;
+  background-color: var(--color-bg-panel);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.game-board__level {
+  color: var(--color-text-primary);
+}
+
+.game-board__money {
+  text-align: center;
+  color: var(--color-money);
+  font-family: 'Inter', monospace;
+}
+
+.game-board__round {
+  text-align: center;
+  color: var(--color-text-primary);
+}
+
+.game-board__deck {
+  text-align: right;
+  color: var(--color-mult);
+  font-family: 'Inter', monospace;
+}
+
+/* === BOSS BLIND INFO === */
+.game-board__boss-info {
+  padding: 20px;
+  background: linear-gradient(135deg, var(--color-error) 0%, #c0392b 100%);
+  border: 3px solid #8b0000;
+  border-radius: 12px;
+  box-shadow: 
+    0 4px 16px rgba(231, 76, 60, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: boss-pulse 2s ease-in-out infinite;
+}
+
+.boss-info__container {
+  text-align: center;
+}
+
+.boss-info__name {
+  margin: 0 0 12px 0;
+  font-size: 28px;
+  font-weight: 900;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.3);
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
+}
+
+.boss-info__effect {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff5e6;
+  line-height: 1.5;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes boss-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 4px 16px rgba(231, 76, 60, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 6px 24px rgba(231, 76, 60, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* === SPECIAL CARDS ROW === */
+.game-board__special-cards {
+  display: flex;
+  gap: 20px;
+  padding: 16px;
+  background-color: var(--color-bg-panel);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.special-cards-section {
+  flex: 1;
+}
+
+.section-title {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* === GOAL SECTION === */
+.game-board__goal {
+  padding: 16px 20px;
+  background-color: var(--color-bg-panel);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.goal-title {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-chips);
+}
+
+.goal-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 24px;
+  background-color: var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #1a4d7a;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-mult) 0%, #a29bfe 100%);
+  transition: width 0.5s ease;
+  box-shadow: 0 0 10px rgba(108, 92, 231, 0.5);
+}
+
+.progress-text {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* === HAND AREA === */
+.game-board__hand-area {
+  padding: 16px 20px;
+  background-color: var(--color-bg-panel);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.hand-label {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #a8a8a8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* === PREVIEW SCORE === */
+.game-board__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  background-color: #0f3460;
+  border: 2px solid #1a4d7a;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.preview-hand-type {
+  font-size: 20px;
+  font-weight: 700;
+  color: #a29bfe;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.preview-calculation {
+  font-size: 16px;
+  color: #f9ca24;
+}
+
+.preview-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  border: 2px solid #e65100;
+  border-radius: 8px;
+  animation: warning-pulse 1.5s ease-in-out infinite;
+}
+
+.warning-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.warning-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 1.4;
+}
+
+@keyframes warning-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(255, 152, 0, 0.7);
+  }
+}
+
+/* === ACTIONS ROW === */
+.game-board__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: #16213e;
+  border: 2px solid #0f3460;
+  border-radius: 8px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.action-button {
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-button--play {
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+}
+
+.action-button--play:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(46, 204, 113, 0.4);
+}
+
+.action-button--discard {
+  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
+}
+
+.action-button--discard:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(149, 165, 166, 0.4);
+}
+
+.action-button--info {
+  background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+  font-size: 15px;
+}
+
+.action-button--info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(108, 92, 231, 0.4);
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.counters {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #a8a8a8;
+}
+
+.counter {
+  padding: 8px 16px;
+  background-color: #0f3460;
+  border-radius: 6px;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 1024px) {
+  .game-board {
+    padding: 16px;
+  }
+
+  .game-board__special-cards {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-board__header {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .game-board__level,
+  .game-board__money,
+  .game-board__round {
+    text-align: center;
+  }
+
+  .game-board__actions {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .action-buttons {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .action-button {
+    width: 100%;
+  }
+
+  .counters {
+    justify-content: center;
+    width: 100%;
+  }
+}

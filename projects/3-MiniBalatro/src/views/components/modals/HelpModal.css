@@ -1,0 +1,253 @@
+/* ============================================ */
+/* FILE: src/views/components/modals/HelpModal.css */
+/* ============================================ */
+
+.help-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.help-modal {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 3px solid #3b82f6;
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 800px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 
+    0 0 30px rgba(59, 130, 246, 0.5),
+    0 10px 50px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.4s ease-out;
+}
+
+/* Custom scrollbar */
+.help-modal::-webkit-scrollbar {
+  width: 10px;
+}
+
+.help-modal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.help-modal::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 10px;
+}
+
+.help-modal::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+.help-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #3b82f6;
+  padding-bottom: 15px;
+}
+
+.help-modal-title {
+  font-size: 2em;
+  color: #3b82f6;
+  margin: 0;
+  text-shadow: 
+    0 0 10px rgba(59, 130, 246, 0.8),
+    0 0 20px rgba(59, 130, 246, 0.4);
+  font-weight: bold;
+}
+
+.help-modal-close {
+  background: transparent;
+  border: 2px solid #ef4444;
+  color: #ef4444;
+  font-size: 1.5em;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.help-modal-close:hover {
+  background: #ef4444;
+  color: white;
+  transform: rotate(90deg);
+}
+
+.help-modal-content {
+  color: #e2e8f0;
+  line-height: 1.6;
+}
+
+.help-section {
+  margin-bottom: 25px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  border-left: 4px solid #3b82f6;
+}
+
+.help-section-title {
+  font-size: 1.4em;
+  color: #60a5fa;
+  margin: 0 0 12px 0;
+  font-weight: bold;
+}
+
+.help-section p {
+  margin: 8px 0;
+  font-size: 1.05em;
+}
+
+.help-note {
+  font-style: italic;
+  color: #94a3b8;
+  font-size: 0.95em;
+  margin-top: 8px;
+}
+
+.help-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.help-item {
+  background: rgba(59, 130, 246, 0.1);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.95em;
+}
+
+.help-item strong {
+  color: #60a5fa;
+}
+
+.help-examples {
+  margin-top: 10px;
+}
+
+.help-example {
+  background: rgba(34, 197, 94, 0.1);
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 3px solid #22c55e;
+}
+
+.help-example strong {
+  color: #4ade80;
+}
+
+.help-tips {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0 0;
+}
+
+.help-tips li {
+  background: rgba(251, 191, 36, 0.1);
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 3px solid #fbbf24;
+  position: relative;
+  padding-left: 35px;
+}
+
+.help-tips li::before {
+  content: "💡";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.help-modal-footer {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 2px solid #3b82f6;
+  text-align: center;
+}
+
+.help-modal-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: 2px solid #60a5fa;
+  color: white;
+  font-size: 1.3em;
+  padding: 15px 50px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.help-modal-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+}
+
+.help-modal-btn:active {
+  transform: translateY(0);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .help-modal {
+    max-width: 95%;
+    padding: 20px;
+    max-height: 90vh;
+  }
+
+  .help-modal-title {
+    font-size: 1.5em;
+  }
+
+  .help-list {
+    grid-template-columns: 1fr;
+  }
+
+  .help-section-title {
+    font-size: 1.2em;
+  }
+}

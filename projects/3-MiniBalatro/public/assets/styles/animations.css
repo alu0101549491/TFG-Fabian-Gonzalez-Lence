@@ -1,0 +1,123 @@
+/* ============================================
+   FILENAME: animations.css
+   ============================================ */
+
+/* === CARD ANIMATIONS === */
+@keyframes cardDeal {
+  0% {
+    transform: translateY(-100px) rotate(-10deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes cardLift {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(-20px) scale(1.02);
+  }
+}
+
+@keyframes cardFlip {
+  0% {
+    transform: rotateY(0);
+  }
+  100% {
+    transform: rotateY(180deg);
+  }
+}
+
+/* === SCORE ANIMATIONS === */
+@keyframes scoreIncrement {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+}
+
+@keyframes floatingNumber {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50px) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* === GLOW/PULSE EFFECTS === */
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(233, 69, 96, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(233, 69, 96, 0);
+  }
+}
+
+@keyframes borderPulse {
+  0% {
+    border-color: var(--color-accent);
+  }
+  50% {
+    border-color: var(--color-chips);
+  }
+  100% {
+    border-color: var(--color-accent);
+  }
+}
+
+/* === TRANSITION ANIMATIONS === */
+@keyframes slideIn {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* === REDUCED MOTION VARIANTS === */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,246 @@
+/* ============================================
+   FILE: src/views/components/hand-info-panel/HandInfoPanel.css
+   ============================================ */
+
+/* Overlay background */
+.hand-info-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 999;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Panel container */
+.hand-info-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 700px;
+  max-height: 85vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 16px;
+  border: 2px solid rgba(108, 92, 231, 0.5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Header */
+.hand-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #2d2d44 0%, #1f1f30 100%);
+  border-bottom: 2px solid rgba(108, 92, 231, 0.3);
+}
+
+.hand-info-header h2 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 50%, #00d2d3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.close-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+/* Content */
+.hand-info-content {
+  padding: 20px 24px;
+  max-height: calc(85vh - 100px);
+  overflow-y: auto;
+}
+
+/* Custom scrollbar */
+.hand-info-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.hand-info-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.hand-info-content::-webkit-scrollbar-thumb {
+  background: rgba(108, 92, 231, 0.5);
+  border-radius: 4px;
+}
+
+.hand-info-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(108, 92, 231, 0.7);
+}
+
+/* Grid */
+.hand-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Hand row */
+.hand-info-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 2fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #2d2d44 0%, #1f1f30 100%);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.hand-info-row:hover {
+  border-color: rgba(108, 92, 231, 0.5);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.2);
+}
+
+.hand-info-row.upgraded {
+  border-color: rgba(255, 215, 0, 0.4);
+  background: linear-gradient(135deg, #2d2d44 0%, #1f1f30 100%);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+}
+
+.hand-info-row.upgraded:hover {
+  border-color: rgba(255, 215, 0, 0.6);
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+}
+
+/* Hand name */
+.hand-info-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upgrade-indicator {
+  color: #ffd700;
+  font-size: 20px;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+/* Level */
+.hand-info-level {
+  font-size: 16px;
+  font-weight: bold;
+  color: #a29bfe;
+  text-align: center;
+  padding: 8px 16px;
+  background: rgba(162, 155, 254, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(162, 155, 254, 0.3);
+}
+
+/* Values */
+.hand-info-values {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.chips-value {
+  color: #f9ca24;
+}
+
+.mult-value {
+  color: #00d2d3;
+}
+
+/* Legend */
+.hand-info-legend {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hand-info-panel {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .hand-info-header h2 {
+    font-size: 24px;
+  }
+
+  .hand-info-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .hand-info-name {
+    justify-content: center;
+  }
+
+  .hand-info-values {
+    justify-content: center;
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "planets": [
+    {
+      "id": "pluto",
+      "name": "Pluto",
+      "description": "Upgrades High Card (+10 chips x +1 mult)",
+      "targetHandType": "highCard",
+      "chipsBonus": 10,
+      "multBonus": 1
+    },
+    {
+      "id": "mercury",
+      "name": "Mercury",
+      "description": "Upgrades Pair (+15 chips x +1 mult)",
+      "targetHandType": "pair",
+      "chipsBonus": 15,
+      "multBonus": 1
+    },
+    {
+      "id": "uranus",
+      "name": "Uranus",
+      "description": "Upgrades Two Pair (+20 chips x +1 mult)",
+      "targetHandType": "twoPair",
+      "chipsBonus": 20,
+      "multBonus": 1
+    },
+    {
+      "id": "venus",
+      "name": "Venus",
+      "description": "Upgrades Three of a Kind (+20 chips x +2 mult)",
+      "targetHandType": "threeOfAKind",
+      "chipsBonus": 20,
+      "multBonus": 2
+    },
+    {
+      "id": "saturn",
+      "name": "Saturn",
+      "description": "Upgrades Straight (+30 chips x +3 mult)",
+      "targetHandType": "straight",
+      "chipsBonus": 30,
+      "multBonus": 3
+    },
+    {
+      "id": "jupiter",
+      "name": "Jupiter",
+      "description": "Upgrades Flush (+15 chips x +2 mult)",
+      "targetHandType": "flush",
+      "chipsBonus": 15,
+      "multBonus": 2
+    },
+    {
+      "id": "earth",
+      "name": "Earth",
+      "description": "Upgrades Full House (+25 chips x +2 mult)",
+      "targetHandType": "fullHouse",
+      "chipsBonus": 25,
+      "multBonus": 2
+    },
+    {
+      "id": "mars",
+      "name": "Mars",
+      "description": "Upgrades Four of a Kind (+30 chips x +3 mult)",
+      "targetHandType": "fourOfAKind",
+      "chipsBonus": 30,
+      "multBonus": 3
+    },
+    {
+      "id": "neptune",
+      "name": "Neptune",
+      "description": "Upgrades Straight Flush (+40 chips x +4 mult)",
+      "targetHandType": "straightFlush",
+      "chipsBonus": 40,
+      "multBonus": 4
+    }
+  ]
+}

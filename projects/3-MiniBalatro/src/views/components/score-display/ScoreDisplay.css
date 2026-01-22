@@ -1,0 +1,66 @@
+/* ============================================
+   FILENAME: ScoreDisplay.css
+   ============================================ */
+
+/* === LAYOUT === */
+.score-display {
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-panel);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow-panel);
+}
+
+.score-display__goal {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
+}
+
+.score-display__goal-label {
+  color: var(--color-text-secondary);
+}
+
+.score-display__goal-value {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-number);
+}
+
+.score-display__progress-container {
+  height: 8px;
+  background-color: var(--color-bg-primary);
+  border-radius: 4px;
+  margin-bottom: var(--spacing-sm);
+  overflow: hidden;
+}
+
+.score-display__progress-bar {
+  height: 100%;
+  background-color: var(--color-success);
+  transition: width var(--transition-slow);
+}
+
+.score-display__preview {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-family-mono);
+}
+
+.score-display__chips {
+  color: var(--color-chips);
+}
+
+.score-display__mult {
+  color: var(--color-mult);
+}
+
+.score-display__total {
+  font-weight: var(--font-weight-bold);
+}
+
+/* === ANIMATIONS === */
+.score-display__floating-number {
+  position: absolute;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-small);
+  animation: floatingNumber 1s ease-out forwards;
+}
