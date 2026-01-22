@@ -96,7 +96,7 @@ export class BalancingConfig {
    */
   private async loadHandValues(): Promise<void> {
     try {
-      const response = await fetch('/data/hand-values.json');
+      const response = await fetch(`${import.meta.env.BASE_URL}data/hand-values.json`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -120,7 +120,7 @@ export class BalancingConfig {
    */
   private async loadJokers(): Promise<void> {
     try {
-      const response = await fetch('/data/jokers.json');
+      const response = await fetch(`${import.meta.env.BASE_URL}data/jokers.json`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -137,7 +137,7 @@ export class BalancingConfig {
    */
   private async loadPlanets(): Promise<void> {
     try {
-      const response = await fetch('/data/planets.json');
+      const response = await fetch(`${import.meta.env.BASE_URL}data/planets.json`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -159,7 +159,7 @@ export class BalancingConfig {
    */
   private async loadTarots(): Promise<void> {
     try {
-      const response = await fetch('/data/tarots.json');
+      const response = await fetch(`${import.meta.env.BASE_URL}data/tarots.json`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

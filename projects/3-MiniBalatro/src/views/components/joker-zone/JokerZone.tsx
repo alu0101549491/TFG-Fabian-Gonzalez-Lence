@@ -41,7 +41,7 @@ export const JokerZone: React.FC<JokerZoneProps> = ({ jokers, onRemoveJoker }) =
       })
       .join('');
 
-    return `/assets/jokers/${baseName}.png`;
+    return `${import.meta.env.BASE_URL}assets/jokers/${baseName}.png`;
   };
 
   return (

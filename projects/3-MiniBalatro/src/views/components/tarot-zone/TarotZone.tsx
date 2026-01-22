@@ -67,7 +67,7 @@ export const TarotZone: React.FC<TarotZoneProps> = ({
       })
       .join('');
 
-    return `/assets/tarots/${baseName}.png`;
+    return `${import.meta.env.BASE_URL}assets/tarots/${baseName}.png`;
   };
 
   return (

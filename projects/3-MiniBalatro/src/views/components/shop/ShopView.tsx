@@ -58,11 +58,11 @@ export const ShopView: React.FC<ShopViewProps> = ({
 
     switch (itemType) {
       case ShopItemType.JOKER:
-        return `/assets/jokers/${baseName}.png`;
+        return `${import.meta.env.BASE_URL}assets/jokers/${baseName}.png`;
       case ShopItemType.PLANET:
-        return `/assets/planets/${baseName}.png`;
+        return `${import.meta.env.BASE_URL}assets/planets/${baseName}.png`;
       case ShopItemType.TAROT:
-        return `/assets/tarots/${baseName}.png`;
+        return `${import.meta.env.BASE_URL}assets/tarots/${baseName}.png`;
       default:
         return '';
     }
