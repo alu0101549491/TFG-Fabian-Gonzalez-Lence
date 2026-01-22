@@ -13,7 +13,8 @@
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "docs": "typedoc --out docs/api src/index.ts"
+    "docs": "typedoc --out docs/api src/index.ts",
+    "type-check": "tsc --noEmit"
   },
   "keywords": [
     "game",
