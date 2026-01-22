@@ -7,88 +7,103 @@
   position: relative;
   width: var(--card-width);
   height: var(--card-height);
-  background-color: white;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   border-radius: var(--card-radius);
   box-shadow: var(--shadow-card);
-  overflow: hidden;
+  overflow: visible;
   color: var(--color-text-tertiary);
   font-family: var(--font-family-primary);
   font-weight: var(--font-weight-bold);
   user-select: none;
   will-change: transform;
-}
-
-.card__value {
-  position: absolute;
-  top: var(--spacing-xs);
-  left: var(--spacing-xs);
-  font-size: var(--font-size-h3);
-}
-
-.card__suit {
-  position: absolute;
-  top: var(--spacing-xs);
-  right: var(--spacing-xs);
-  font-size: var(--font-size-h2);
-}
-
-.card__center-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 2rem;
-}
-
-.card--diamonds .card__value,
-.card--diamonds .card__suit,
-.card--diamonds .card__center-icon {
-  color: var(--color-suit-diamonds);
-}
-
-.card--hearts .card__value,
-.card--hearts .card__suit,
-.card--hearts .card__center-icon {
-  color: var(--color-suit-hearts);
-}
-
-.card--spades .card__value,
-.card--spades .card__suit,
-.card--spades .card__center-icon {
-  color: var(--color-suit-spades);
-}
-
-.card--clubs .card__value,
-.card--clubs .card__suit,
-.card--clubs .card__center-icon {
-  color: var(--color-suit-clubs);
-}
-
-/* Special Cards */
-.card--joker {
-  background: linear-gradient(135deg, var(--color-joker-start), var(--color-joker-end));
-  color: white;
-  border: 2px solid gold;
-}
-
-.card--planet {
-  background-color: var(--color-planet-bg);
-  border: 2px solid var(--color-planet-accent);
-  color: var(--color-planet-accent);
-}
-
-.card--tarot {
-  background-color: var(--color-tarot-bg);
-  border: 2px solid var(--color-tarot-border);
-  color: var(--color-tarot-border);
-}
-
-/* === STATES === */
-.card {
+  border: 2px solid #e0e0e0;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
+/* Card Corners - Top Left and Bottom Right */
+.card-corner {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card-corner.top-left {
+  top: 6px;
+  left: 8px;
+}
+
+.card-corner.bottom-right {
+  bottom: 6px;
+  right: 8px;
+  transform: rotate(180deg);
+}
+
+.card-value {
+  font-size: 20px;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.card-suit {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Card Center - Large Suit Symbol */
+.card-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  opacity: 0.4;
+  pointer-events: none;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.suit-symbol-large {
+  font-size: inherit;
+  line-height: 1;
+}
+
+/* Card Bonuses - Bottom Info Bar */
+.card-bonuses {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.bonus-chips {
+  color: #3b82f6;
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+}
+
+.bonus-mult {
+  color: #ef4444;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+}
+
+/* === STATES === */
 .card:hover {
   transform: translateY(-8px);
   box-shadow: var(--shadow-card-hover);
