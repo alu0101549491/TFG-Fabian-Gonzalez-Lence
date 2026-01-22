@@ -16,6 +16,7 @@ jobs:
         project:
           - projects/1-TheHangmanGame
           - projects/2-MusicWebPlayer
+          - projects/3-MiniBalatro
 
     steps:
       - name: Checkout code

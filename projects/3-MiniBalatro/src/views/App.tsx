@@ -42,7 +42,7 @@ export const App: React.FC = () => {
 
   // Initialize game controller on mount
   useEffect(() => {
-    const newController = new GameController(
+    const newController: GameController = new GameController(
       (state) => handleStateChange(state),
       () => handleShopOpen(),
       () => handleShopClose(),
