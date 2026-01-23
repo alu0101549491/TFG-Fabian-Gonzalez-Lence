@@ -63,7 +63,8 @@ export abstract class Blind {
   }
 
   /**
-   * Calculates base score goal for a round: 300 × (1.5)^(roundNumber-1).
+   * Calculates base score goal for a round using Balatro's values.
+   * Returns the small blind value for the given round.
    * @param roundNumber - The round number (1, 2, 3, ...)
    * @returns Positive number
    */
@@ -71,6 +72,12 @@ export abstract class Blind {
     if (roundNumber <= 0) {
       throw new Error('Round number must be positive');
     }
-    return Math.floor(300 * Math.pow(1.5, roundNumber - 1));
+    
+    // Balatro base values for each round
+    const roundBaseValues = [300, 800, 2000, 5000, 11000, 20000, 35000, 50000];
+    
+    // For rounds beyond 8, use round 8's value
+    const index = Math.min(roundNumber - 1, roundBaseValues.length - 1);
+    return roundBaseValues[index];
   }
 }

@@ -190,10 +190,23 @@ export const PLANET_UPGRADES = {
 
 /**
  * Difficulty progression constants.
+ * Base values match Balatro's difficulty curve.
+ * Small blind uses base value directly.
+ * Big blind = base × 1.5
+ * Boss blind = base × 2.0
  */
 export const DIFFICULTY_CONFIG = {
-  BASE_GOAL: 300,
-  GROWTH_RATE: 1.5,
+  // Balatro base values for each round (small blind values)
+  ROUND_BASE_VALUES: [
+    300,    // Round 1
+    800,    // Round 2
+    2000,   // Round 3
+    5000,   // Round 4
+    11000,  // Round 5
+    20000,  // Round 6
+    35000,  // Round 7
+    50000,  // Round 8
+  ],
   SMALL_BLIND_MULTIPLIER: 1.0,
   BIG_BLIND_MULTIPLIER: 1.5,
   BOSS_BLIND_MULTIPLIER: 2.0,
@@ -230,9 +243,9 @@ export const UI_CONFIG = {
 };
 
 /**
- * Calculates the score goal for a blind.
- * Formula: base × (growthRate)^(round-1) × blindMultiplier
- * @param roundNumber - Current round number
+ * Calculates the score goal for a blind using Balatro's difficulty curve.
+ * Uses predefined base values for each round with multipliers for blind types.
+ * @param roundNumber - Current round number (1-8)
  * @param blindType - Type of blind ('small', 'big', or 'boss')
  * @returns Calculated score goal
  */
@@ -240,8 +253,9 @@ export function calculateBlindGoal(
   roundNumber: number,
   blindType: 'small' | 'big' | 'boss'
 ): number {
-  const base = DIFFICULTY_CONFIG.BASE_GOAL;
-  const growth = Math.pow(DIFFICULTY_CONFIG.GROWTH_RATE, roundNumber - 1);
+  // Get base value for the round (rounds beyond 8 use round 8's value)
+  const baseIndex = Math.min(roundNumber - 1, DIFFICULTY_CONFIG.ROUND_BASE_VALUES.length - 1);
+  const base = DIFFICULTY_CONFIG.ROUND_BASE_VALUES[baseIndex];
 
   let multiplier: number;
   switch (blindType) {
@@ -258,7 +272,7 @@ export function calculateBlindGoal(
       throw new Error(`Invalid blind type: ${blindType}`);
   }
 
-  return Math.floor(base * growth * multiplier);
+  return Math.floor(base * multiplier);
 }
 
 /**
