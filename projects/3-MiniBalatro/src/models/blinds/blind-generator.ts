@@ -15,6 +15,12 @@ import { GameConfig } from '../../services/config/game-config';
  */
 export class BlindGenerator {
   /**
+   * History of recently used bosses to avoid repetition.
+   * Keeps track of the last 2 bosses used.
+   */
+  private bossHistory: BossType[] = [];
+
+  /**
    * Generates the appropriate blind for the given level number.
    * @param level - The level number
    * @returns SmallBlind, BigBlind, or BossBlind based on level
@@ -43,14 +49,32 @@ export class BlindGenerator {
   }
 
   /**
-   * Randomly selects one of the 5 boss types.
-   * @returns One of the 5 BossType values with equal probability
+   * Randomly selects one of the 5 boss types with variety tracking.
+   * Avoids selecting the same boss as the last 2 bosses used.
+   * @returns One of the 5 BossType values with improved variety
    */
   private selectRandomBoss(): BossType {
-    const bossTypes = Object.values(BossType);
-    const randomIndex = Math.floor(Math.random() * bossTypes.length);
-    const selectedBoss = bossTypes[randomIndex];
-    console.log(`Selected random boss: ${selectedBoss}`);
+    const allBossTypes = Object.values(BossType);
+    
+    // Filter out bosses that were recently used
+    const availableBosses = allBossTypes.filter(
+      boss => !this.bossHistory.includes(boss)
+    );
+    
+    // If all bosses are in history (shouldn't happen with 5 bosses and history of 2),
+    // or if this is first/second boss, use available bosses or all
+    const selectFrom = availableBosses.length > 0 ? availableBosses : allBossTypes;
+    
+    const randomIndex = Math.floor(Math.random() * selectFrom.length);
+    const selectedBoss = selectFrom[randomIndex];
+    
+    // Update history: keep last 2 bosses
+    this.bossHistory.push(selectedBoss);
+    if (this.bossHistory.length > 2) {
+      this.bossHistory.shift();
+    }
+    
+    console.log(`Selected boss: ${selectedBoss} (history: ${this.bossHistory.join(', ')})`);
     return selectedBoss;
   }
 
