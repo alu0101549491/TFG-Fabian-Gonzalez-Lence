@@ -37,14 +37,13 @@ export class GameConfig {
   public static readonly BOSS_BLIND_REWARD: number = BLIND_REWARDS.BOSS_BLIND;
 
   // Difficulty config (imported from constants)
-  public static readonly BASE_GOAL: number = DIFFICULTY_CONFIG.BASE_GOAL;
-  public static readonly GOAL_MULTIPLIER: number = DIFFICULTY_CONFIG.GROWTH_RATE;
+  public static readonly ROUND_BASE_VALUES: number[] = DIFFICULTY_CONFIG.ROUND_BASE_VALUES;
   public static readonly SMALL_BLIND_MULTIPLIER: number = DIFFICULTY_CONFIG.SMALL_BLIND_MULTIPLIER;
   public static readonly BIG_BLIND_MULTIPLIER: number = DIFFICULTY_CONFIG.BIG_BLIND_MULTIPLIER;
   public static readonly BOSS_BLIND_MULTIPLIER: number = DIFFICULTY_CONFIG.BOSS_BLIND_MULTIPLIER;
 
   /**
-   * Calculates score goal for blind.
+   * Calculates score goal for blind using Balatro's difficulty values.
    * @param roundNumber - Current round number
    * @param blindType - Type of blind ('small', 'big', or 'boss')
    * @returns Score goal
@@ -55,7 +54,9 @@ export class GameConfig {
       throw new Error('Round number must be positive');
     }
 
-    const baseGoal = this.BASE_GOAL * Math.pow(this.GOAL_MULTIPLIER, roundNumber - 1);
+    // Get base value for the round (rounds beyond 8 use round 8's value)
+    const baseIndex = Math.min(roundNumber - 1, this.ROUND_BASE_VALUES.length - 1);
+    const baseGoal = this.ROUND_BASE_VALUES[baseIndex];
 
     switch (blindType) {
       case 'small': return Math.floor(baseGoal * DIFFICULTY_CONFIG.SMALL_BLIND_MULTIPLIER);
