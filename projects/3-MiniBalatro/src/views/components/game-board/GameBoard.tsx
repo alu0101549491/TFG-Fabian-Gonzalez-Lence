@@ -36,6 +36,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [previewScore, setPreviewScore] = useState<{chips: number, mult: number, total: number, handType?: string} | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [isHandInfoOpen, setIsHandInfoOpen] = useState(false);
+  const [sortMode, setSortMode] = useState<'rank' | 'suit'>('rank');
+  const [currentLevel, setCurrentLevel] = useState<number>(gameState.getLevelNumber());
+
+  // Reset sort mode to rank when level changes
+  useEffect(() => {
+    const newLevel = gameState.getLevelNumber();
+    if (newLevel !== currentLevel) {
+      setSortMode('rank');
+      setCurrentLevel(newLevel);
+    }
+  }, [gameState, currentLevel]);
 
   // Update selected cards when game state changes
   useEffect(() => {
@@ -65,6 +76,52 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       setPreviewScore(null);
     }
   }, [selectedCards, controller]);
+
+  /**
+   * Sorts cards by rank (A, K, Q, J, 10, 9, 8, 7, 6, 5, 4, 3, 2)
+   */
+  const sortByRank = (cards: Card[]): Card[] => {
+    const rankOrder: Record<string, number> = {
+      'A': 1, 'K': 2, 'Q': 3, 'J': 4, '10': 5,
+      '9': 6, '8': 7, '7': 8, '6': 9, '5': 10,
+      '4': 11, '3': 12, '2': 13
+    };
+    return [...cards].sort((a, b) => rankOrder[a.value] - rankOrder[b.value]);
+  };
+
+  /**
+   * Sorts cards by suit (Spades, Hearts, Clubs, Diamonds), then by rank within each suit
+   */
+  const sortBySuit = (cards: Card[]): Card[] => {
+    const suitOrder: Record<string, number> = {
+      'SPADES': 1, 'HEARTS': 2, 'CLUBS': 3, 'DIAMONDS': 4
+    };
+    const rankOrder: Record<string, number> = {
+      'A': 1, 'K': 2, 'Q': 3, 'J': 4, '10': 5,
+      '9': 6, '8': 7, '7': 8, '6': 9, '5': 10,
+      '4': 11, '3': 12, '2': 13
+    };
+    return [...cards].sort((a, b) => {
+      const suitDiff = suitOrder[a.suit] - suitOrder[b.suit];
+      if (suitDiff !== 0) return suitDiff;
+      return rankOrder[a.value] - rankOrder[b.value];
+    });
+  };
+
+  /**
+   * Gets sorted cards based on current sort mode
+   */
+  const getSortedCards = (): Card[] => {
+    const cards = gameState.getCurrentHand();
+    return sortMode === 'rank' ? sortByRank(cards) : sortBySuit(cards);
+  };
+
+  /**
+   * Toggles between rank and suit sorting
+   */
+  const toggleSortMode = () => {
+    setSortMode(prev => prev === 'rank' ? 'suit' : 'rank');
+  };
 
   /**
    * Checks if current hand is blocked by The Mouth boss.
@@ -221,8 +278,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           Current hand ({selectedCards.length} selected):
         </div>
         <Hand
-          key={`hand-${forceUpdate}-${gameState.getCurrentHand().length}`}
-          cards={gameState.getCurrentHand()}
+          key={`hand-${forceUpdate}-${gameState.getCurrentHand().length}-${sortMode}`}
+          cards={getSortedCards()}
           selectedCards={selectedCards}
           onSelectCard={handleSelectCard}
         />
@@ -261,7 +318,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       {/* Action Buttons and Counters */}
       <div className="game-board__actions">
-        <div className="action-buttons">
+        <div className="action-buttons action-buttons--left">
           <button
             className="action-button action-button--play"
             onClick={handlePlayHand}
@@ -276,16 +333,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           >
             Discard
           </button>
+        </div>
+        <div className="counters">
+          <span className="counter">Hands: {handsRemaining}/{GameConfig.MAX_HANDS_PER_BLIND}</span>
+          <span className="counter">Discards: {discardsRemaining}/{GameConfig.MAX_DISCARDS_PER_BLIND}</span>
+        </div>
+        <div className="action-buttons action-buttons--right">
           <button
             className="action-button action-button--info"
             onClick={() => setIsHandInfoOpen(true)}
           >
             📊 Hand Info
           </button>
-        </div>
-        <div className="counters">
-          <span className="counter">Hands: {handsRemaining}/{GameConfig.MAX_HANDS_PER_BLIND}</span>
-          <span className="counter">Discards: {discardsRemaining}/{GameConfig.MAX_DISCARDS_PER_BLIND}</span>
+          <button
+            className="action-button action-button--sort"
+            onClick={toggleSortMode}
+            title={`Currently sorting by ${sortMode}. Click to sort by ${sortMode === 'rank' ? 'suit' : 'rank'}`}
+          >
+            {sortMode === 'rank' ? '🔢 Sort: Rank' : '♠️ Sort: Suit'}
+          </button>
         </div>
       </div>
 

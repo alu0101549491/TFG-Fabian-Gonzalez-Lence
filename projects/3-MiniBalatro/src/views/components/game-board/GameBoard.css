@@ -271,20 +271,39 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 16px;
   background-color: #16213e;
   border: 2px solid #0f3460;
   border-radius: 8px;
+  gap: 12px;
 }
 
 .action-buttons {
   display: flex;
+  gap: 10px;
+}
+
+.action-buttons--left {
+  flex: 0 0 auto;
+}
+
+.action-buttons--right {
+  flex: 0 0 auto;
+}
+
+.counters {
+  display: flex;
   gap: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #a8a8a8;
+  flex: 0 1 auto;
+  justify-content: center;
 }
 
 .action-button {
-  padding: 12px 32px;
-  font-size: 16px;
+  padding: 10px 20px;
+  font-size: 14px;
   font-weight: 700;
   border: none;
   border-radius: 8px;
@@ -292,6 +311,8 @@
   transition: all 0.2s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  min-width: 130px;
 }
 
 .action-button--play {
@@ -320,12 +341,23 @@
   background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
-  font-size: 15px;
 }
 
 .action-button--info:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(108, 92, 231, 0.4);
+}
+
+.action-button--sort {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.action-button--sort:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
+  background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
 }
 
 .action-button:disabled {
@@ -334,16 +366,8 @@
   transform: none;
 }
 
-.counters {
-  display: flex;
-  gap: 24px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #a8a8a8;
-}
-
 .counter {
-  padding: 8px 16px;
+  padding: 6px 12px;
   background-color: #0f3460;
   border-radius: 6px;
 }
