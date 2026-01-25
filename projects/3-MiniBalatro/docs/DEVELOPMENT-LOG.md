@@ -18673,3 +18673,670 @@ The score preview section now provides a stable, predictable UI experience by re
 **Performance:** ✅ **IMPROVED (fewer reflows)**
 
 ---
+
+## Enhancement #68: Card Sorting Toggle Button
+
+**Date:** January 25, 2026
+
+### User Request
+> Let's add a switch like button to this lower component of the game. It's purpose is to switch between ordering the cards by rank (A, K, Q, J, 10, ...) or by suit (Spades, Hearts, Clubs, Diamonds). By default at the start of each level is set as Rank.
+
+### Problem Statement
+
+**Missing Feature:**
+Players had no way to organize their hand cards, making it difficult to:
+- Spot flush opportunities (all cards of same suit)
+- Identify straight possibilities (sequential ranks)
+- Organize cards mentally for strategic planning
+- Different players have different preferences for card organization
+
+**User Experience Impact:**
+- Harder to identify hand patterns
+- Mental overhead in finding suited cards
+- Difficult to spot potential combinations
+- No flexibility in card presentation
+
+### Solution Design
+
+**Two Sorting Modes:**
+1. **By Rank (Default)**: A → K → Q → J → 10 → 9 → 8 → 7 → 6 → 5 → 4 → 3 → 2
+2. **By Suit**: Spades → Hearts → Clubs → Diamonds (with rank sorting within each suit)
+
+**Key Features:**
+- Toggle button to switch between modes
+- Visual indicator of current mode (emoji + text)
+- Automatic reset to "Rank" mode at the start of each new level
+- Smooth integration with existing UI
+
+### Implementation Details
+
+#### **GameBoard.tsx** - State and Sorting Logic
+
+**1. Added State Management:**
+```tsx
+const [sortMode, setSortMode] = useState<'rank' | 'suit'>('rank');
+const [currentLevel, setCurrentLevel] = useState<number>(gameState.getLevelNumber());
+```
+
+**2. Level Change Detection:**
+```tsx
+// Reset sort mode to rank when level changes
+useEffect(() => {
+  const newLevel = gameState.getLevelNumber();
+  if (newLevel !== currentLevel) {
+    setSortMode('rank');
+    setCurrentLevel(newLevel);
+  }
+}, [gameState, currentLevel]);
+```
+
+**3. Sorting Functions:**
+```tsx
+/**
+ * Sorts cards by rank (A, K, Q, J, 10, 9, 8, 7, 6, 5, 4, 3, 2)
+ */
+const sortByRank = (cards: Card[]): Card[] => {
+  const rankOrder: Record<string, number> = {
+    'A': 1, 'K': 2, 'Q': 3, 'J': 4, '10': 5,
+    '9': 6, '8': 7, '7': 8, '6': 9, '5': 10,
+    '4': 11, '3': 12, '2': 13
+  };
+  return [...cards].sort((a, b) => rankOrder[a.value] - rankOrder[b.value]);
+};
+
+/**
+ * Sorts cards by suit (Spades, Hearts, Clubs, Diamonds), then by rank within each suit
+ */
+const sortBySuit = (cards: Card[]): Card[] => {
+  const suitOrder: Record<string, number> = {
+    'SPADES': 1, 'HEARTS': 2, 'CLUBS': 3, 'DIAMONDS': 4
+  };
+  const rankOrder: Record<string, number> = {
+    'A': 1, 'K': 2, 'Q': 3, 'J': 4, '10': 5,
+    '9': 6, '8': 7, '7': 8, '6': 9, '5': 10,
+    '4': 11, '3': 12, '2': 13
+  };
+  return [...cards].sort((a, b) => {
+    const suitDiff = suitOrder[a.suit] - suitOrder[b.suit];
+    if (suitDiff !== 0) return suitDiff;
+    return rankOrder[a.value] - rankOrder[b.value];
+  });
+};
+```
+
+**4. Applied Sorting to Hand:**
+```tsx
+const getSortedCards = (): Card[] => {
+  const cards = gameState.getCurrentHand();
+  return sortMode === 'rank' ? sortByRank(cards) : sortBySuit(cards);
+};
+
+// In JSX:
+<Hand
+  key={`hand-${forceUpdate}-${gameState.getCurrentHand().length}-${sortMode}`}
+  cards={getSortedCards()}
+  selectedCards={selectedCards}
+  onSelectCard={handleSelectCard}
+/>
+```
+
+**5. Toggle Button:**
+```tsx
+<button
+  className="action-button action-button--sort"
+  onClick={toggleSortMode}
+  title={`Currently sorting by ${sortMode}. Click to sort by ${sortMode === 'rank' ? 'suit' : 'rank'}`}
+>
+  {sortMode === 'rank' ? '🔢 Sort: Rank' : '♠️ Sort: Suit'}
+</button>
+```
+
+#### **GameBoard.css** - Sort Button Styling
+
+```css
+.action-button--sort {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+  font-size: 15px;
+  min-width: 140px;
+}
+
+.action-button--sort:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
+  background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
+}
+```
+
+**Design Choices:**
+- **Blue gradient**: Distinguishes from action buttons (green/gray)
+- **Min-width 140px**: Prevents width change when text toggles
+- **Emoji indicators**: 🔢 for rank, ♠️ for suit
+- **Tooltip**: Shows current mode and next mode on hover
+
+### User Experience Improvements
+
+**Before (No Sorting):**
+```
+Hand: [5♦] [A♠] [K♣] [3♥] [A♥] [10♠] [2♦] [7♣]
+Player: "Where are my Aces? Do I have any more Spades?"
+[manually scans entire hand]
+```
+
+**After (With Sorting):**
+
+**Rank Mode:**
+```
+Hand: [A♠] [A♥] [K♣] [10♠] [7♣] [5♦] [3♥] [2♦]
+Player: "Ah, I have two Aces at the front!"
+```
+
+**Suit Mode:**
+```
+Hand: [A♠] [10♠] [K♣] [7♣] [A♥] [3♥] [5♦] [2♦]
+Player: "I have 2 Spades, 2 Clubs, 2 Hearts, 2 Diamonds - no flush"
+```
+
+**Benefits:**
+- **Faster pattern recognition**: Similar cards grouped together
+- **Reduced cognitive load**: Less mental organization needed
+- **Flexible strategy**: Choose organization that fits current situation
+- **Professional feel**: Matches how physical poker players organize hands
+
+### Strategic Implications
+
+**When to Use Rank Sort:**
+- Looking for pairs, three-of-a-kind, four-of-a-kind
+- Spotting straight possibilities
+- Evaluating high card strength
+- Most common sorting preference
+
+**When to Use Suit Sort:**
+- Identifying flush potential
+- Planning diamond/heart joker synergies
+- Checking suit distribution
+- When multiple suit-based jokers are active
+
+**Example Scenario:**
+```
+Player has:
+- Greedy Joker (mult per Diamond card)
+- Lusty Joker (mult per Heart card)
+
+With Suit Sort:
+[A♠] [K♠] [Q♠] [J♠] [A♥] [K♥] [Q♥] [5♦]
+      ↑ Spades ↑     ↑ Hearts ↑   ↑ Diamond ↑
+
+Player can instantly see:
+- 4 Spades (no flush, need 5)
+- 2 Hearts (Lusty Joker bonus)
+- 1 Diamond (Greedy Joker bonus)
+Decision: Play Hearts for Lusty bonus
+```
+
+### Technical Implementation
+
+**React Key Updates:**
+```tsx
+// Key includes sortMode to force re-render on sort change
+key={`hand-${forceUpdate}-${gameState.getCurrentHand().length}-${sortMode}`}
+```
+
+**Array Immutability:**
+```tsx
+// Always creates new array, never mutates original
+return [...cards].sort((a, b) => /* ... */);
+```
+
+**Level Change Detection:**
+```tsx
+// useEffect watches for level changes
+// Automatically resets to rank at level start
+const newLevel = gameState.getLevelNumber();
+if (newLevel !== currentLevel) {
+  setSortMode('rank');
+  setCurrentLevel(newLevel);
+}
+```
+
+**Predictable Behavior:**
+- Level 1 Small Blind → **Rank** (default)
+- Player switches to Suit
+- Level 1 Big Blind starts → **Rank** (reset)
+- Player switches to Suit again
+- Level 1 Boss Blind starts → **Rank** (reset)
+
+### Files Modified
+
+```
+src/views/components/game-board/
+├── GameBoard.tsx       [Modified - Added sorting state, logic, and button]
+└── GameBoard.css       [Modified - Added sort button styles]
+```
+
+**Code Statistics:**
+- **GameBoard.tsx**: +58 lines (state, sorting functions, toggle logic)
+- **GameBoard.css**: +14 lines (sort button styling)
+- **Total**: +72 lines
+
+### Accessibility
+
+**Keyboard Navigation:**
+- Button fully keyboard accessible
+- Tab to focus, Enter/Space to activate
+
+**Visual Clarity:**
+- Clear text labels ("Sort: Rank" / "Sort: Suit")
+- Emoji provides quick visual scan
+- Tooltip explains functionality
+
+**Screen Readers:**
+- Button has descriptive text
+- Title attribute provides additional context
+- State change announced through text change
+
+### Future Enhancements
+
+**Potential Improvements:**
+1. **Sort by Value**: Group by card value regardless of suit (all Aces together)
+2. **Custom Sort**: Drag-and-drop manual ordering
+3. **Persist Preference**: Remember user's preferred sort between sessions
+4. **Animation**: Smooth card rearrangement when sorting changes
+5. **Keyboard Shortcut**: Quick toggle with 'S' key
+6. **Sort by Joker Synergy**: Auto-sort based on active joker effects
+
+**Example (Persistent Preference):**
+```tsx
+// Load from localStorage
+const [sortMode, setSortMode] = useState<'rank' | 'suit'>(
+  () => (localStorage.getItem('preferredSort') as 'rank' | 'suit') || 'rank'
+);
+
+// Save to localStorage
+useEffect(() => {
+  localStorage.setItem('preferredSort', sortMode);
+}, [sortMode]);
+```
+
+### Testing Recommendations
+
+**Manual Testing:**
+1. Start new game → verify cards sorted by rank (default)
+2. Click "Sort: Rank" button → switches to "Sort: Suit"
+3. Verify cards reorganize by suit
+4. Click "Sort: Suit" button → switches back to "Sort: Rank"
+5. Complete level → advance to next level
+6. Verify sort automatically reset to "Rank"
+7. Test with various hand combinations
+
+**Edge Cases:**
+- Empty hand → sorting doesn't crash
+- Single card → sorting works
+- All same suit → rank sort vs suit sort produces different order
+- All same rank → suit sort groups them, rank sort shows all together
+
+### Lessons Learned
+
+**UX Principles:**
+1. **Flexibility matters**: Different users prefer different organizations
+2. **Reset to defaults**: Don't surprise users with unexpected state
+3. **Visual feedback**: Button text/emoji clearly shows current state
+4. **Tooltips help**: Explain functionality without cluttering UI
+
+**Technical Insights:**
+1. Array immutability important for React re-renders
+2. useEffect great for cross-cutting concerns (level changes)
+3. Key prop crucial for forcing re-renders on sort changes
+4. Record types excellent for lookup tables
+
+**Design Decisions:**
+1. **Why reset per level?** Players form new strategy each level
+2. **Why rank default?** Most universal sorting method
+3. **Why blue color?** Distinguishes utility function from actions
+4. **Why emoji?** Quick visual differentiation, no translation needed
+
+### Conclusion
+
+The card sorting toggle button provides players with essential flexibility in organizing their hand. With automatic reset to rank sorting at each level and clear visual indicators, players can quickly switch between viewing patterns by rank or by suit. This enhancement reduces cognitive load, enables faster strategic decisions, and accommodates different player preferences without complicating the interface.
+
+**Status:** ✅ **COMPLETED**  
+**User Experience:** ✅ **ENHANCED**  
+**Strategic Depth:** ✅ **INCREASED**  
+**Flexibility:** ✅ **SIGNIFICANTLY IMPROVED**
+
+---
+
+## Enhancement #69: Action Button Layout Redistribution
+
+**Date:** January 25, 2026
+
+### User Request
+> Redistribute this buttons to be separated.
+
+### Problem Statement
+
+**Layout Issue:**
+All four action buttons were grouped together on the left side, with counters on the right:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ [Play Hand] [Discard] [Hand Info] [Sort: Rank]  │  H: 3/3 D: 3/3 │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Issues:**
+- Visual imbalance (heavy left, light right)
+- No logical grouping of buttons
+- Counters felt disconnected
+- Hard to scan buttons quickly
+- No visual separation between action types
+
+### Solution Design
+
+**New Layout - Separated Groups:**
+```
+┌──────────────────────────────────────────────────────────────┐
+│ [Play Hand] [Discard]    │  H: 3/3  D: 3/3  │  [Hand Info] [Sort: Rank] │
+│      ↑ Primary Actions   │   ↑ Status       │       ↑ Utility Buttons     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Logical Grouping:**
+- **Left**: Primary game actions (Play/Discard) - most frequently used
+- **Center**: Status information (Hands/Discards remaining)
+- **Right**: Utility functions (Info/Sort) - less critical, informational
+
+### Implementation Details
+
+#### **GameBoard.tsx** - Split Button Groups
+
+**Before:**
+```tsx
+<div className="game-board__actions">
+  <div className="action-buttons">
+    {/* All 4 buttons together */}
+    <button className="action-button--play">Play Hand</button>
+    <button className="action-button--discard">Discard</button>
+    <button className="action-button--info">📊 Hand Info</button>
+    <button className="action-button--sort">🔢 Sort: Rank</button>
+  </div>
+  <div className="counters">
+    {/* Counters on far right */}
+  </div>
+</div>
+```
+
+**After:**
+```tsx
+<div className="game-board__actions">
+  <div className="action-buttons action-buttons--left">
+    <button className="action-button--play">Play Hand</button>
+    <button className="action-button--discard">Discard</button>
+  </div>
+  <div className="counters">
+    <span className="counter">Hands: {handsRemaining}/{MAX}</span>
+    <span className="counter">Discards: {discardsRemaining}/{MAX}</span>
+  </div>
+  <div className="action-buttons action-buttons--right">
+    <button className="action-button--info">📊 Hand Info</button>
+    <button className="action-button--sort">🔢 Sort: Rank</button>
+  </div>
+</div>
+```
+
+#### **GameBoard.css** - Three-Column Flexbox Layout
+
+**Key Changes:**
+```css
+.game-board__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: #16213e;
+  border: 2px solid #0f3460;
+  border-radius: 8px;
+  gap: 20px; /* NEW - spacing between groups */
+}
+
+.action-buttons--left {
+  flex: 0 0 auto; /* NEW - don't grow, don't shrink */
+}
+
+.action-buttons--right {
+  flex: 0 0 auto; /* NEW - don't grow, don't shrink */
+}
+
+.counters {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #a8a8a8;
+  flex: 0 1 auto; /* NEW - don't grow, can shrink if needed */
+}
+```
+
+**Flexbox Strategy:**
+- `justify-content: space-between` - Distributes groups evenly
+- `gap: 20px` - Ensures minimum spacing between groups
+- `flex: 0 0 auto` for button groups - Fixed width, no flex
+- `flex: 0 1 auto` for counters - Can compress if needed
+
+### Visual Comparison
+
+**Before (Unbalanced):**
+```
+┌──────────────────────────────────────────────────────────┐
+│  🟩 PLAY HAND  ⬜ DISCARD  📊 HAND INFO  🔢 SORT: RANK      H: 3/3  D: 3/3  │
+│  ←──────────────── All buttons together ─────────────→  ←─ Counters ─→    │
+└──────────────────────────────────────────────────────────┘
+```
+
+**After (Balanced):**
+```
+┌──────────────────────────────────────────────────────────┐
+│  🟩 PLAY HAND  ⬜ DISCARD     H: 3/3  D: 3/3     📊 HAND INFO  🔢 SORT: RANK  │
+│  ←─── Primary ────→      ←── Status ──→      ←───── Utility ─────→        │
+└──────────────────────────────────────────────────────────┘
+```
+
+### User Experience Improvements
+
+**Visual Balance:**
+- Three distinct groups create visual symmetry
+- Counters no longer feel "tacked on"
+- Even distribution across action bar
+- Clearer visual hierarchy
+
+**Cognitive Benefits:**
+- **Left zone**: "What can I do?"
+- **Center zone**: "What's my status?"
+- **Right zone**: "What can I check?"
+
+**Scanning Efficiency:**
+```
+Eye Movement Before:
+Start → [Button Button Button Button] → [Counter Counter]
+        ↑ 4 buttons to scan           ↑ Small counters far away
+
+Eye Movement After:
+Start → [Button Button] → [Counter Counter] → [Button Button]
+        ↑ 2 buttons      ↑ Central status    ↑ 2 buttons
+```
+
+**Grouping Logic:**
+1. **Primary Actions (Left)**:
+   - Play Hand (most common action)
+   - Discard (second most common)
+   - Color-coded: Green (positive), Gray (neutral)
+
+2. **Status (Center)**:
+   - Hands remaining
+   - Discards remaining
+   - Always visible, easily referenced
+
+3. **Utility (Right)**:
+   - Hand Info (reference/learning)
+   - Sort Toggle (organization)
+   - Color-coded: Purple (info), Blue (utility)
+
+### Responsive Behavior
+
+**Desktop (> 768px):**
+```
+[Primary Actions] ←─ Gap ─→ [Status] ←─ Gap ─→ [Utility Buttons]
+```
+
+**Mobile (≤ 768px):**
+```
+[Primary Actions]
+      ↓
+   [Status]
+      ↓
+[Utility Buttons]
+```
+
+(Responsive CSS already handles this via existing media queries)
+
+### Design Patterns
+
+**F-Pattern Reading:**
+Users naturally scan left-to-right, top-to-bottom:
+```
+1. See primary actions (Play/Discard)
+2. Glance at status (Hands/Discards)
+3. Notice utility options (Info/Sort)
+```
+
+**Fitts's Law:**
+- Most important actions (Play/Discard) on left = closer to hand cards
+- Less critical actions (Info/Sort) on right = further away
+- Reduces mouse travel distance for common actions
+
+**Progressive Disclosure:**
+- Essential actions immediate (left)
+- Status information central (middle)
+- Optional features available (right)
+
+### Accessibility Improvements
+
+**Tab Order:**
+```
+1. Play Hand
+2. Discard
+3. Hand Info
+4. Sort Toggle
+```
+Natural left-to-right tab order maintained.
+
+**Visual Grouping:**
+- Screen readers perceive three distinct button groups
+- Counters clearly associated with game state
+- Logical flow for keyboard navigation
+
+**Focus Indicators:**
+All buttons maintain visible focus states for keyboard users.
+
+### Files Modified
+
+```
+src/views/components/game-board/
+├── GameBoard.tsx       [Modified - Split buttons into left/right groups]
+└── GameBoard.css       [Modified - Three-column flexbox layout]
+```
+
+**Code Changes:**
+- **GameBoard.tsx**: Restructured JSX (11 lines changed)
+- **GameBoard.css**: Added flexbox positioning (8 lines added/modified)
+- **Total Impact**: Improved layout with minimal code changes
+
+### Performance Considerations
+
+**No Performance Impact:**
+- Same number of DOM elements
+- No additional JavaScript logic
+- Pure CSS layout change
+- No re-renders triggered
+
+**Layout Benefits:**
+- Stable flex layout (no shifting)
+- Hardware-accelerated rendering
+- Efficient repaint on resize
+
+### Testing Recommendations
+
+**Manual Testing:**
+1. Start game → verify buttons distributed evenly
+2. Resize window → check responsive behavior
+3. Tab through buttons → verify logical order
+4. Play hand → verify primary actions work
+5. Use sort toggle → verify utility buttons work
+6. Check various screen sizes (desktop/tablet/mobile)
+
+**Visual Verification:**
+```bash
+# Check button group classes
+grep "action-buttons--left" GameBoard.tsx
+grep "action-buttons--right" GameBoard.tsx
+
+# Verify CSS flexbox
+grep "flex: 0 0 auto" GameBoard.css
+```
+
+### Future Enhancements
+
+**Potential Improvements:**
+1. **Visual Separators**: Add subtle divider lines between groups
+2. **Grouped Tooltips**: Hovering over group shows description
+3. **Collapsible Groups**: Hide utility buttons on small screens
+4. **Dynamic Grouping**: Rearrange based on most-used buttons
+
+**Example (Visual Separators):**
+```css
+.action-buttons--left::after,
+.counters::after {
+  content: '';
+  position: absolute;
+  right: -10px;
+  height: 30px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+```
+
+### Lessons Learned
+
+**UI Layout Principles:**
+1. **Logical grouping > arbitrary placement**: Group by function, not availability
+2. **Visual balance matters**: Even distribution feels more stable
+3. **Proximity indicates relationship**: Related items should be closer
+4. **White space communicates**: Gaps separate distinct groups
+
+**Design Insights:**
+1. Simple flexbox reorganization yields major UX improvement
+2. Three-column layout more balanced than two-column
+3. Central status information naturally draws eye
+4. Minimal code changes can have outsized impact
+
+**Technical Best Practices:**
+1. Use semantic class names (`--left`, `--right`)
+2. Flexbox better than grid for this layout
+3. `gap` property cleaner than margins
+4. Responsive design already handled by existing CSS
+
+### Conclusion
+
+Redistributing the action buttons into three logical groups (Primary Actions, Status, Utility) creates a more balanced, scannable, and intuitive interface. The left-center-right layout provides clear visual separation, reduces cognitive load, and makes the action bar easier to navigate. This simple reorganization significantly improves the user experience without adding complexity or affecting performance.
+
+**Status:** ✅ **COMPLETED**  
+**Visual Balance:** ✅ **ACHIEVED**  
+**Scannability:** ✅ **IMPROVED**  
+**Logical Grouping:** ✅ **IMPLEMENTED**
+
+---
+
+**Total Changes:** 67 major feature implementations/fixes across 143+ files
+
+---
