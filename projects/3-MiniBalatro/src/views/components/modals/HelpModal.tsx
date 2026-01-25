@@ -39,36 +39,36 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
           {/* Poker Hands */}
           <section className="help-section">
             <h2 className="help-section-title">🃏 Poker Hands</h2>
+            <p className="help-note">
+              Listed from <strong>best to worst</strong>. All hands can be upgraded with 🪐 <strong>Planet cards</strong> to increase their base chips and multiplier, making even weak hands powerful!
+            </p>
             <div className="help-list">
-              <div className="help-item">
-                <strong>High Card:</strong> Single card (Lowest)
-              </div>
-              <div className="help-item">
-                <strong>Pair:</strong> Two cards of same rank
-              </div>
-              <div className="help-item">
-                <strong>Two Pair:</strong> Two different pairs
-              </div>
-              <div className="help-item">
-                <strong>Three of a Kind:</strong> Three cards of same rank
-              </div>
-              <div className="help-item">
-                <strong>Straight:</strong> Five cards in sequence
-              </div>
-              <div className="help-item">
-                <strong>Flush:</strong> Five cards of same suit
-              </div>
-              <div className="help-item">
-                <strong>Full House:</strong> Three of a kind + Pair
+              <div className="help-item help-item-best">
+                <strong>Straight Flush:</strong> Five cards in sequence, all same suit (Best!)
               </div>
               <div className="help-item">
                 <strong>Four of a Kind:</strong> Four cards of same rank
               </div>
               <div className="help-item">
-                <strong>Straight Flush:</strong> Straight with same suit
+                <strong>Full House:</strong> Three of a kind + Pair
               </div>
               <div className="help-item">
-                <strong>Royal Flush:</strong> A-K-Q-J-10 of same suit (Highest)
+                <strong>Flush:</strong> Five cards of same suit
+              </div>
+              <div className="help-item">
+                <strong>Straight:</strong> Five cards in sequence
+              </div>
+              <div className="help-item">
+                <strong>Three of a Kind:</strong> Three cards of same rank
+              </div>
+              <div className="help-item">
+                <strong>Two Pair:</strong> Two different pairs
+              </div>
+              <div className="help-item">
+                <strong>Pair:</strong> Two cards of same rank
+              </div>
+              <div className="help-item help-item-worst">
+                <strong>High Card:</strong> No matching cards (Weakest)
               </div>
             </div>
           </section>
@@ -88,7 +88,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
           <section className="help-section">
             <h2 className="help-section-title">🃏 Jokers</h2>
             <p>
-              Special cards that boost your score permanently. You can hold up to 5 jokers.
+              Special cards that boost your score permanently. You can hold up to 5 jokers. These are some examples of Joker Cards you can find:
             </p>
             <div className="help-examples">
               <div className="help-example">
@@ -107,7 +107,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
           <section className="help-section">
             <h2 className="help-section-title">🌟 Tarot Cards</h2>
             <p>
-              Single-use consumables that modify your cards or game state. You can hold up to 2 tarots.
+              Single-use consumables that modify your cards or game state. You can hold up to 2 tarots. These are some examples of Tarot Cards you can find:
             </p>
             <div className="help-examples">
               <div className="help-example">
@@ -150,6 +150,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
               <li>Build synergies between jokers (e.g., multiple Diamond-focused jokers)</li>
               <li>Save money for powerful jokers in later shops</li>
               <li>Use tarots strategically to upgrade your best cards</li>
+              <li>The tarot cards only can be activated on the middle of a level</li>
               <li>Pay attention to boss blind mechanics!</li>
             </ul>
           </section>
