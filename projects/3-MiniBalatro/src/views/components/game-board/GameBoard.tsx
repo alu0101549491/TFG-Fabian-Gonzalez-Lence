@@ -229,9 +229,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </div>
 
       {/* Preview Score */}
-      {previewScore && (
-        <div className="game-board__preview">
-          {isHandBlocked() ? (
+      <div className="game-board__preview">
+        {previewScore ? (
+          isHandBlocked() ? (
             <div className="preview-warning">
               <span className="warning-icon">⚠️</span>
               <span className="warning-text">
@@ -250,9 +250,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 {previewScore.chips} chips × {previewScore.mult} mult = {previewScore.total} pts
               </span>
             </>
-          )}
-        </div>
-      )}
+          )
+        ) : (
+          <div className="preview-empty">
+            <span className="preview-empty-icon">🎴</span>
+            <span className="preview-empty-text">Select cards to see score preview</span>
+          </div>
+        )}
+      </div>
 
       {/* Action Buttons and Counters */}
       <div className="game-board__actions">
