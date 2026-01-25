@@ -47,7 +47,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           className="menu-button"
           onClick={() => setShowHelp(true)}
         >
-          Help
+          How To Play
         </button>
       </div>
 

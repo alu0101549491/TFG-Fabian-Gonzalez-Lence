@@ -39,7 +39,7 @@ export function getBossDescription(bossType: BossType): string {
   switch (bossType) {
     case BossType.THE_WALL: return 'Scoring goal increases to 4× round base';
     case BossType.THE_WATER: return 'Level starts with 0 available discards';
-    case BossType.THE_MOUTH: return 'Only one specific type of poker hand is allowed';
+    case BossType.THE_MOUTH: return 'The first hand you play will define the only specific type of poker hand that is allowed to be played.';
     case BossType.THE_NEEDLE: return 'Only 1 hand can be played (goal reduced to 1× base)';
     case BossType.THE_FLINT: return 'Base chips and mult of all hands are halved';
     default: return 'Unknown boss effect';
