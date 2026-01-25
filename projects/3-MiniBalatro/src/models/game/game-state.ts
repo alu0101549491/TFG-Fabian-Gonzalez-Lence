@@ -506,6 +506,7 @@ export class GameState {
 
   /**
    * Progresses to next level after completing current blind.
+   * NOTE: Reward is given in completeBlind(), NOT here, to avoid duplication.
    * @throws Error if level not complete
    */
   public advanceToNextBlind(): void {
@@ -513,16 +514,8 @@ export class GameState {
       throw new Error('Cannot advance to next blind: current level not complete');
     }
 
-    // Add money reward
-    const reward = this.currentBlind.getReward();
-    this.addMoney(reward);
-
-    // Check for Golden Joker bonus
-    const hasGoldenJoker = this.jokers.some(j => j.name === 'Golden Joker');
-    if (hasGoldenJoker) {
-      this.addMoney(2);
-      console.log('Golden Joker bonus: +$2');
-    }
+    // Reward is already given in GameController.completeBlind()
+    // DO NOT add money here to avoid double-rewarding
 
     // Increment level
     this.levelNumber++;
