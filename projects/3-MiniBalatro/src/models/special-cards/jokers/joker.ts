@@ -43,6 +43,15 @@ export abstract class Joker {
    * @returns True if joker should activate
    */
   public canActivate(context: ScoreContext): boolean {
+    return this.checkCondition(context);
+  }
+
+  /**
+   * Protected helper for subclasses to evaluate activation condition.
+   * Returns true if no condition provided or the condition function returns true.
+   * @param context - The score calculation context
+   */
+  protected checkCondition(context: ScoreContext): boolean {
     return this.condition ? this.condition(context) : true;
   }
 

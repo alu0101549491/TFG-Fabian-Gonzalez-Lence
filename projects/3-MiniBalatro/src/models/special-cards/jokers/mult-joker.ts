@@ -40,13 +40,14 @@ export class MultJoker extends Joker {
    * @param context - The score calculation context
    */
   public applyEffect(context: ScoreContext): void {
-    if (this.canActivate(context)) {
-      // If there's a multiplier function (e.g., count diamonds), use it
-      const multiplier = this.multiplierFn ? this.multiplierFn(context) : 1;
-      const actualValue = this.multValue * multiplier;
-
-      context.mult += actualValue;
-      console.log(`[${this.name}] Added ${actualValue} mult (Total: ${context.mult})`);
+    if (!this.checkCondition(context)) {
+      return;
     }
+    // If there's a multiplier function (e.g., count diamonds), use it
+    const multiplier = this.multiplierFn ? this.multiplierFn(context) : 1;
+    const actualValue = this.multValue * multiplier;
+
+    context.mult += actualValue;
+    console.log(`[${this.name}] Added ${actualValue} mult (Total: ${context.mult})`);
   }
 }

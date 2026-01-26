@@ -76,7 +76,8 @@ export class HandUpgradeManager {
       this.upgrades.set(handType, new HandUpgrade());
     }
     console.log('All hand upgrades reset');
-}
+  }
+  
   /**
    * Restores upgrade state from saved data (used for game loading).
    * @param handType - The hand type to restore

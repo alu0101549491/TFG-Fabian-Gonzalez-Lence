@@ -40,16 +40,14 @@ export class MultiplierJoker extends Joker {
    * @param context - The score calculation context
    */
   public applyEffect(context: ScoreContext): void {
-    if (this.canActivate(context)) {
-      const shouldApply = this.condition ? this.condition(context) : true;
-      if (shouldApply) {
-        const originalMult = context.mult;
-        // Calculate dynamic multiplier (default: use base value)
-        const multiplierCount = this.multiplierFn ? this.multiplierFn(context) : 1;
-        const actualMultiplier = this.multiplierValue * multiplierCount;
-        context.mult *= actualMultiplier;
-        console.log(`[${this.name}] Multiplied mult by ${actualMultiplier} (${originalMult} → ${context.mult})`);
-      }
+    if (!this.checkCondition(context)) {
+      return;
     }
+    const originalMult = context.mult;
+    // Calculate dynamic multiplier (default: use base value)
+    const multiplierCount = this.multiplierFn ? this.multiplierFn(context) : 1;
+    const actualMultiplier = this.multiplierValue * multiplierCount;
+    context.mult *= actualMultiplier;
+    console.log(`[${this.name}] Multiplied mult by ${actualMultiplier} (${originalMult} → ${context.mult})`);
   }
 }
