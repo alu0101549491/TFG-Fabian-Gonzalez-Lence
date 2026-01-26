@@ -40,13 +40,14 @@ export class ChipJoker extends Joker {
    * @param context - The score calculation context
    */
   public applyEffect(context: ScoreContext): void {
-    if (this.canActivate(context)) {
-      // If there's a multiplier function (e.g., count odd cards), use it
-      const multiplier = this.multiplierFn ? this.multiplierFn(context) : 1;
-      const actualValue = this.chipValue * multiplier;
-
-      context.chips += actualValue;
-      console.log(`[${this.name}] Added ${actualValue} chips (Total: ${context.chips})`);
+    if (!this.checkCondition(context)) {
+      return;
     }
+    // If there's a multiplier function (e.g., count odd cards), use it
+    const multiplier = this.multiplierFn ? this.multiplierFn(context) : 1;
+    const actualValue = this.chipValue * multiplier;
+
+    context.chips += actualValue;
+    console.log(`[${this.name}] Added ${actualValue} chips (Total: ${context.chips})`);
   }
 }
