@@ -33,6 +33,24 @@ export abstract class Joker {
 
   /**
    * Applies the joker's effect to the score context.
+   *
+   * Implementation notes for authors of Joker subclasses:
+   * - The `ScoreCalculator` invokes `applyEffect` exactly once per joker
+   *   during the persistent joker phase (after individual card evaluation)
+   *   and in priority order: CHIPS → MULT → MULTIPLIER. Do not assume
+   *   `applyEffect` will be called per played card.
+   * - If a joker's behavior depends on individual played cards, the
+   *   implementation should inspect properties available on `context`
+   *   (for example `context.playedCards` or other context helpers) and
+   *   apply per-card logic internally in an idempotent manner to avoid
+   *   accidental double-application. The scoring orchestration will not
+   *   call `applyEffect` multiple times for the same joker.
+   * - `applyEffect` should only modify scoring-related fields on the
+   *   provided `ScoreContext` (e.g., chips, mult). Side-effects that
+   *   mutate unrelated game state should be avoided; economic effects
+   *   (money rewards) belong outside scoring and should be implemented
+   *   in `EconomicJoker`-specific APIs.
+   *
    * @param context - The score calculation context
    */
   public abstract applyEffect(context: ScoreContext): void;
