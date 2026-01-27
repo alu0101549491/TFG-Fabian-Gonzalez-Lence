@@ -5,6 +5,7 @@
 import { Deck } from '../core/deck';
 import { Card } from '../core/card';
 import { Joker } from '../special-cards/jokers/joker';
+import { EconomicJoker } from '../special-cards/jokers/economic-joker';
 import { PermanentUpgradeJoker } from '../special-cards/jokers/permanent-upgrade-joker';
 import { Tarot } from '../special-cards/tarots/tarot';
 import { TargetedTarot } from '../special-cards/tarots/targeted-tarot';
@@ -80,12 +81,11 @@ export class GameState {
    * @throws Error if deck has < 8 cards remaining
    */
   public dealHand(): void {
-    if (this.deck.getRemaining() < GameConfig.HAND_SIZE) {
-      // If deck is low, reshuffle discard pile
-      console.log('Deck low, reshuffling discard pile...');
-      // In a real implementation, we would reshuffle the discard pile here
-      // For now, we'll just throw an error if we can't deal
-      throw new Error('Not enough cards in deck to deal hand');
+    const remaining = this.deck.getRemaining();
+    if (remaining < GameConfig.HAND_SIZE) {
+      // If deck is low, log and throw with context (game rules: empty deck -> loss)
+      console.log(`Deck low: have ${remaining}, need ${GameConfig.HAND_SIZE}`);
+      throw new Error(`Not enough cards in deck to deal hand (have ${remaining}, need ${GameConfig.HAND_SIZE})`);
     }
 
     this.currentHand = this.deck.drawCards(GameConfig.HAND_SIZE);
@@ -146,11 +146,8 @@ export class GameState {
 
     // Calculate score - only include scoring jokers (chips, mult, multiplier)
     // Economic jokers like Golden Joker should not affect hand scoring
-    const scoringJokers = this.jokers.filter(joker => {
-      // Filter out economic jokers by checking their description/effect type
-      // Economic jokers have effects like "+$X" that trigger on level completion
-      return !joker.description.includes('+$');
-    });
+    // Filter out economic jokers (they don't affect hand scoring)
+    const scoringJokers = this.jokers.filter(joker => !(joker instanceof EconomicJoker));
 
     // Pass total joker count (including economic ones) for proper empty slot calculation
     const result = this.scoreCalculator.calculateScore(
@@ -212,7 +209,7 @@ export class GameState {
       this.currentHand.push(...replacements);
       console.log(`Drew ${replacements.length} cards to refill hand to ${GameConfig.HAND_SIZE}`);
     } else if (cardsNeeded > 0) {
-      console.log(`Not enough cards in deck to refill hand (need ${cardsNeeded}, have ${this.deck.getRemaining()})`);
+      console.log(`Not enough cards in deck to refill hand (need ${cardsNeeded}, have ${this.deck.getRemaining()}) - game rules may cause loss`);
     }
 
     // Decrement hands remaining
@@ -247,13 +244,13 @@ export class GameState {
 
     // Draw cards to refill hand to HAND_SIZE (8 cards by default)
     // This ensures hand is always refilled to full size, even if cards were destroyed
-    const cardsNeeded = GameConfig.HAND_SIZE - this.currentHand.length;
-    if (cardsNeeded > 0 && this.deck.getRemaining() >= cardsNeeded) {
-      const replacements = this.deck.drawCards(cardsNeeded);
+    const cardsNeededDiscard = GameConfig.HAND_SIZE - this.currentHand.length;
+    if (cardsNeededDiscard > 0 && this.deck.getRemaining() >= cardsNeededDiscard) {
+      const replacements = this.deck.drawCards(cardsNeededDiscard);
       this.currentHand.push(...replacements);
       console.log(`Drew ${replacements.length} cards to refill hand to ${GameConfig.HAND_SIZE}`);
-    } else if (cardsNeeded > 0) {
-      console.log(`Not enough cards in deck to refill hand (need ${cardsNeeded}, have ${this.deck.getRemaining()})`);
+    } else if (cardsNeededDiscard > 0) {
+      console.log(`Not enough cards in deck to refill hand (need ${cardsNeededDiscard}, have ${this.deck.getRemaining()}) - game rules may cause loss`);
     }
 
     // Decrement discards remaining
@@ -575,6 +572,33 @@ export class GameState {
     console.log(`Applied boss modifiers: hands=${this.handsRemaining}, discards=${this.discardsRemaining}`);
   }
 
+  /**
+   * Applies level completion rewards: blind reward + any economic jokers.
+   * Returns the total amount of money granted.
+   */
+  public applyLevelRewards(): number {
+    let totalGranted = 0;
+
+    // Blind base reward
+    const blindReward = this.currentBlind.getReward ? this.currentBlind.getReward() : 0;
+    if (blindReward > 0) {
+      this.addMoney(blindReward);
+      totalGranted += blindReward;
+      console.log(`Applied blind reward: $${blindReward}`);
+    }
+
+    // Economic jokers provide additional money (e.g., Golden Joker)
+    const economicJokers = this.jokers.filter(j => j instanceof EconomicJoker) as EconomicJoker[];
+    const econTotal = economicJokers.reduce((sum, j) => sum + (j.getValue ? j.getValue() : 0), 0);
+    if (econTotal > 0) {
+      this.addMoney(econTotal);
+      totalGranted += econTotal;
+      console.log(`Applied economic joker bonus: $${econTotal}`);
+    }
+
+    return totalGranted;
+  }
+
   // Getter methods
   public getCurrentHand(): Card[] {
     return this.sortCards([...this.currentHand]); // Return sorted copy
@@ -670,9 +694,7 @@ export class GameState {
 
     // Calculate score using the same logic as playing a hand
     // Only include scoring jokers (chips, mult, multiplier)
-    const scoringJokers = this.jokers.filter(joker => {
-      return !joker.description.includes('+$');
-    });
+    const scoringJokers = this.jokers.filter(joker => !(joker instanceof EconomicJoker));
 
     // Pass total joker count (including economic ones) for proper empty slot calculation
     const result = this.scoreCalculator.calculateScore(
