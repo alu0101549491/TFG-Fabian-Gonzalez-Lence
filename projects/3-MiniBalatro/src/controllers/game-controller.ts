@@ -99,6 +99,60 @@ export class GameController {
   }
 
   /**
+   * Validation helper: ensure game is active and gameState exists.
+   * @throws Error if game not active
+   */
+  private validateGameActive(): void {
+    if (!this.isGameActive || !this.gameState) {
+      throw new Error('Game is not active');
+    }
+  }
+
+  /**
+   * Validation helper: ensure action is not performed while in shop.
+   * @throws Error if currently in shop
+   */
+  private validateNotInShop(): void {
+    if (this.isInShop) {
+      throw new Error('This action cannot be performed while in shop');
+    }
+  }
+
+  /**
+   * Validation helper: ensure we are currently in shop and shop exists.
+   * @throws Error if not in shop
+   */
+  private validateInShop(): void {
+    if (!this.isInShop || !this.shop) {
+      throw new Error('Shop is not open');
+    }
+  }
+
+  /**
+   * Auto-save helper that wraps saveGame for reuse.
+   */
+  private autoSave(): void {
+    try {
+      this.saveGame();
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
+  }
+
+  /**
+   * Safely invoke the onStateChange callback.
+   */
+  private triggerStateChange(): void {
+    if (this.onStateChange && this.gameState) {
+      try {
+        this.onStateChange(this.gameState);
+      } catch (error) {
+        console.error('State change callback error:', error);
+      }
+    }
+  }
+
+  /**
    * Initializes a new game and deals first hand.
    */
   public startNewGame(): void {
@@ -113,13 +167,9 @@ export class GameController {
     // Deal initial hand
     this.gameState.dealHand();
 
-    // Trigger state change callback
-    if (this.onStateChange && this.gameState) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
 
     console.log('New game started');
   }
@@ -180,9 +230,7 @@ export class GameController {
       }
 
       // Trigger state change callback
-      if (this.onStateChange && this.gameState) {
-        this.onStateChange(this.gameState);
-      }
+      this.triggerStateChange();
 
       console.log('Game loaded successfully');
       return true;
@@ -206,25 +254,14 @@ export class GameController {
    * @throws Error if game not active, in shop, or cardId invalid
    */
   public selectCard(cardId: string): void {
-    if (!this.isGameActive) {
-      throw new Error('Game is not active');
-    }
-    if (this.isInShop) {
-      throw new Error('Cannot select cards while in shop');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateGameActive();
+    this.validateNotInShop();
 
-    this.gameState.selectCard(cardId);
+    this.gameState!.selectCard(cardId);
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
   }
 
   /**
@@ -232,19 +269,12 @@ export class GameController {
    * @throws Error if game not active
    */
   public clearSelection(): void {
-    if (!this.isGameActive) {
-      throw new Error('Game is not active');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateGameActive();
 
-    this.gameState.clearSelection();
+    this.gameState!.clearSelection();
 
     // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
+    this.triggerStateChange();
   }
 
   /**
@@ -253,35 +283,24 @@ export class GameController {
    * @throws Error if no cards selected, no hands remaining, or game not active
    */
   public async playSelectedHand(): Promise<ScoreResult> {
-    if (!this.isGameActive) {
-      throw new Error('Game is not active');
-    }
-    if (this.isInShop) {
-      throw new Error('Cannot play hand while in shop');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateGameActive();
+    this.validateNotInShop();
 
-    const result = this.gameState.playHand();
+    const result = this.gameState!.playHand();
 
     // Check if level complete
-    if (this.gameState.isLevelComplete()) {
+    if (this.gameState!.isLevelComplete()) {
       await this.completeBlind();
     }
 
     // Check if game over
-    if (this.gameState.isGameOver()) {
+    if (this.gameState!.isGameOver()) {
       this.triggerDefeat();
     }
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
 
     return result;
   }
@@ -291,25 +310,14 @@ export class GameController {
    * @throws Error if no cards selected, no discards remaining, or game not active
    */
   public discardSelected(): void {
-    if (!this.isGameActive) {
-      throw new Error('Game is not active');
-    }
-    if (this.isInShop) {
-      throw new Error('Cannot discard cards while in shop');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateGameActive();
+    this.validateNotInShop();
 
-    this.gameState.discardCards();
+    this.gameState!.discardCards();
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
   }
 
   /**
@@ -353,15 +361,11 @@ export class GameController {
    * @throws Error if already in shop
    */
   public async openShop(): Promise<void> {
-    if (this.isInShop) {
-      throw new Error('Already in shop');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateGameActive();
+    this.validateNotInShop();
 
     // Get IDs of currently owned jokers to prevent duplicates
-    const ownedJokerIds = this.gameState.getJokers().map(joker => joker.id);
+    const ownedJokerIds = this.gameState!.getJokers().map(joker => joker.id);
 
     this.shop = new Shop();
     await this.shop.generateItems(GameConfig.ITEMS_PER_SHOP, ownedJokerIds); // Generate 4 random items
@@ -393,8 +397,8 @@ export class GameController {
     // Open shop
     await this.openShop();
 
-    // Save game state (now in shop, victory cleared)
-    this.saveGame();
+    // Auto-save game state (now in shop, victory cleared)
+    this.autoSave();
   }
 
   /**
@@ -428,66 +432,55 @@ export class GameController {
    * @throws Error if not in shop or itemId invalid
    */
   public purchaseShopItem(itemId: string): boolean {
-    if (!this.isInShop) {
-      throw new Error('Not in shop');
-    }
-    if (!this.shop) {
-      throw new Error('Shop not initialized');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateInShop();
+    this.validateGameActive();
 
-    const item = this.shop.getItem(itemId);
+    const item = this.shop!.getItem(itemId);
     if (!item) {
       throw new Error('Item not found');
     }
 
     // Check if player can afford
-    if (this.gameState.getMoney() < item.cost) {
+    if (this.gameState!.getMoney() < item.cost) {
       return false;
     }
 
     // Spend money
-    if (!this.gameState.spendMoney(item.cost)) {
+    if (!this.gameState!.spendMoney(item.cost)) {
       return false;
     }
 
     // Apply item effect based on type
     switch (item.type) {
       case ShopItemType.JOKER:
-        if (this.gameState.getJokers().length >= 5) {
+        if (this.gameState!.getJokers().length >= 5) {
           // Need to replace existing joker
           // UI should prompt for replacement
           return false;
         }
-        this.gameState.addJoker(item.item as Joker);
+        this.gameState!.addJoker(item.item as Joker);
         break;
 
       case ShopItemType.PLANET:
-        (item.item as Planet).apply(this.gameState.getUpgradeManager());
+        (item.item as Planet).apply(this.gameState!.getUpgradeManager());
         break;
 
       case ShopItemType.TAROT:
-        if (this.gameState.getConsumables().length >= 2) {
+        if (this.gameState!.getConsumables().length >= 2) {
           // Need to replace existing tarot
           // UI should prompt for replacement
           return false;
         }
-        this.gameState.addConsumable(item.item as Tarot);
+        this.gameState!.addConsumable(item.item as Tarot);
         break;
     }
 
     // Remove item from shop
-    this.shop.removeItem(itemId);
+    this.shop!.removeItem(itemId);
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
 
     return true;
   }
@@ -499,39 +492,36 @@ export class GameController {
    * @throws Error if not in shop
    */
   public async rerollShop(): Promise<boolean> {
-    if (!this.isInShop) {
-      throw new Error('Not in shop');
-    }
-    if (!this.shop) {
-      throw new Error('Shop not initialized');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateInShop();
+    this.validateGameActive();
 
     // Check if player can afford reroll
-    if (this.gameState.getMoney() < this.shop.getRerollCost()) {
+    if (this.gameState!.getMoney() < this.shop!.getRerollCost()) {
       return false;
     }
 
     // Spend money
-    if (!this.gameState.spendMoney(this.shop.getRerollCost())) {
+    if (!this.gameState!.spendMoney(this.shop!.getRerollCost())) {
       return false;
     }
 
     // Get IDs of currently owned jokers to prevent duplicates
-    const ownedJokerIds = this.gameState.getJokers().map(joker => joker.id);
+    const ownedJokerIds = this.gameState!.getJokers().map(joker => joker.id);
 
     // Regenerate shop items
-    await this.shop.reroll(this.gameState.getMoney(), ownedJokerIds);
+    await this.shop!.reroll(this.gameState!.getMoney(), ownedJokerIds);
 
     // Trigger shop open callback (as items changed)
     if (this.onShopOpen) {
-      this.onShopOpen(this.shop);
+      try {
+        this.onShopOpen(this.shop!);
+      } catch (error) {
+        console.error('Shop open callback error:', error);
+      }
     }
 
     // Auto-save game state
-    this.saveGame();
+    this.autoSave();
 
     return true;
   }
@@ -541,43 +531,43 @@ export class GameController {
    * @throws Error if not in shop
    */
   public exitShop(): void {
-    if (!this.isInShop) {
-      throw new Error('Not in shop');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateInShop();
+    this.validateGameActive();
 
     // Close shop
     this.shop = null;
     this.isInShop = false;
 
     // Advance to next blind
-    this.gameState.advanceToNextBlind();
+    this.gameState!.advanceToNextBlind();
 
     // Deal new hand
-    this.gameState.dealHand();
+    this.gameState!.dealHand();
 
     // Check if boss blind for intro
-    if (this.gameState.getCurrentBlind() instanceof BossBlind) {
-      const bossType = (this.gameState.getCurrentBlind() as BossBlind).getBossType();
+    if (this.gameState!.getCurrentBlind() instanceof BossBlind) {
+      const bossType = (this.gameState!.getCurrentBlind() as BossBlind).getBossType();
       if (this.onBossIntro) {
-        this.onBossIntro(bossType);
+        try {
+          this.onBossIntro(bossType);
+        } catch (error) {
+          console.error('onBossIntro callback error:', error);
+        }
       }
     }
 
     // Trigger shop close callback
     if (this.onShopClose) {
-      this.onShopClose();
+      try {
+        this.onShopClose();
+      } catch (error) {
+        console.error('onShopClose callback error:', error);
+      }
     }
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
 
     console.log('Shop closed, advanced to next level');
   }
@@ -589,18 +579,11 @@ export class GameController {
    * @throws Error if game not active, in shop, or tarotId invalid
    */
   public useConsumable(tarotId: string, targetCardId?: string): void {
-    if (!this.isGameActive) {
-      throw new Error('Game is not active');
-    }
-    if (this.isInShop) {
-      throw new Error('Cannot use consumable while in shop');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateGameActive();
+    this.validateNotInShop();
 
     // Find the tarot in consumables
-    const tarot = this.gameState.getConsumables().find(t => t.id === tarotId);
+    const tarot = this.gameState!.getConsumables().find(t => t.id === tarotId);
     if (!tarot) {
       throw new Error('Tarot not found');
     }
@@ -608,22 +591,18 @@ export class GameController {
     // Find target card if required
     let targetCard: Card | undefined;
     if (tarot.requiresTarget() && targetCardId) {
-      targetCard = this.gameState.getCurrentHand().find(c => c.getId() === targetCardId);
+      targetCard = this.gameState!.getCurrentHand().find(c => c.getId() === targetCardId);
       if (!targetCard) {
         throw new Error('Target card not found');
       }
     }
 
     // Use the tarot
-    this.gameState.useConsumable(tarotId, targetCard);
+    this.gameState!.useConsumable(tarotId, targetCard);
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
   }
 
   /**
@@ -632,14 +611,10 @@ export class GameController {
    * @returns true if added, false if inventory full
    */
   public addJoker(joker: Joker): boolean {
-    if (!this.isInShop) {
-      throw new Error('Can only add jokers in shop');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateInShop();
+    this.validateGameActive();
 
-    return this.gameState.addJoker(joker);
+    return this.gameState!.addJoker(joker);
   }
 
   /**
@@ -649,22 +624,14 @@ export class GameController {
    * @throws Error if oldJokerId not found
    */
   public replaceJoker(oldJokerId: string, newJoker: Joker): void {
-    if (!this.isInShop) {
-      throw new Error('Can only replace jokers in shop');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateInShop();
+    this.validateGameActive();
 
-    this.gameState.replaceJoker(oldJokerId, newJoker);
+    this.gameState!.replaceJoker(oldJokerId, newJoker);
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
   }
 
   /**
@@ -673,14 +640,10 @@ export class GameController {
    * @returns true if added, false if inventory full
    */
   public addConsumable(tarot: Tarot): boolean {
-    if (!this.isInShop) {
-      throw new Error('Can only add tarots in shop');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateInShop();
+    this.validateGameActive();
 
-    return this.gameState.addConsumable(tarot);
+    return this.gameState!.addConsumable(tarot);
   }
 
   /**
@@ -690,22 +653,14 @@ export class GameController {
    * @throws Error if oldTarotId not found
    */
   public replaceConsumable(oldTarotId: string, newTarot: Tarot): void {
-    if (!this.isInShop) {
-      throw new Error('Can only replace tarots in shop');
-    }
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateInShop();
+    this.validateGameActive();
 
-    this.gameState.replaceConsumable(oldTarotId, newTarot);
+    this.gameState!.replaceConsumable(oldTarotId, newTarot);
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
   }
 
   /**
@@ -714,19 +669,13 @@ export class GameController {
    * @throws Error if jokerId not found
    */
   public removeJoker(jokerId: string): void {
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateGameActive();
 
-    this.gameState.removeJoker(jokerId);
+    this.gameState!.removeJoker(jokerId);
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
   }
 
   /**
@@ -735,19 +684,13 @@ export class GameController {
    * @throws Error if tarotId not found
    */
   public removeConsumable(tarotId: string): void {
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateGameActive();
 
-    this.gameState.removeConsumable(tarotId);
+    this.gameState!.removeConsumable(tarotId);
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
   }
 
   /**
@@ -757,19 +700,13 @@ export class GameController {
    * @throws Error if index is out of bounds
    */
   public removeConsumableByIndex(index: number): void {
-    if (!this.gameState) {
-      throw new Error('Game state not initialized');
-    }
+    this.validateGameActive();
 
-    this.gameState.removeConsumableByIndex(index);
+    this.gameState!.removeConsumableByIndex(index);
 
-    // Trigger state change callback
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
-    }
-
-    // Auto-save game state
-    this.saveGame();
+    // Trigger state change callback and auto-save
+    this.triggerStateChange();
+    this.autoSave();
   }
 
   /**
