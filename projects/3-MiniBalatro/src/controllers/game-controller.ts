@@ -320,20 +320,13 @@ export class GameController {
       throw new Error('Game state not initialized');
     }
 
-    // Add money reward
-    const reward = this.gameState.getCurrentBlind().getReward();
-    this.gameState.addMoney(reward);
-
-    // Check for Golden Joker bonus
-    const hasGoldenJoker = this.gameState.getJokers().some(j => j.name === 'Golden Joker');
-    if (hasGoldenJoker) {
-      this.gameState.addMoney(2);
-    }
+    // Apply level rewards (blind reward + economic jokers) via GameState helper
+    const totalReward = this.gameState.applyLevelRewards();
 
     // Store victory information for modal
     this.isPendingBlindVictory = true;
     this.victoryScore = this.gameState.getAccumulatedScore(); // Blind completion score
-    this.victoryReward = reward + (hasGoldenJoker ? 2 : 0);
+    this.victoryReward = totalReward;
     this.victoryBlindLevel = this.gameState.getLevelNumber();
 
     // Check if this is the final boss (Round 8, Level 24)
