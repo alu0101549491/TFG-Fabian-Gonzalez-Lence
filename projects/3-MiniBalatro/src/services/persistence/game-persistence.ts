@@ -456,8 +456,23 @@ export class GamePersistence {
       try {
         const blindLevel = parsed.currentBlind.level;
         const roundNumber = parsed.currentBlind.roundNumber || parsed.roundNumber;
-        const blindType = parsed.currentBlind.type;
+        let blindType = parsed.currentBlind.type;
         const savedScoreGoal = parsed.currentBlind.scoreGoal;
+        
+        // Handle legacy save data with minified class names
+        // Infer blind type from level number if type is not recognized
+        if (blindType !== 'SmallBlind' && blindType !== 'BigBlind' && blindType !== 'BossBlind') {
+          console.warn(`Unknown blind type "${blindType}", inferring from level ${blindLevel}`);
+          const positionInRound = (blindLevel - 1) % 3;
+          if (positionInRound === 0) {
+            blindType = 'SmallBlind';
+          } else if (positionInRound === 1) {
+            blindType = 'BigBlind';
+          } else {
+            blindType = 'BossBlind';
+          }
+          console.log(`Inferred blind type as: ${blindType}`);
+        }
         
         // Create the appropriate blind type based on the class name
         if (blindType === 'SmallBlind') {
