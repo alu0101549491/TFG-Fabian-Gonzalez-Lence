@@ -22,8 +22,9 @@ interface TarotZoneProps {
 /**
  * Tarot/consumables display component.
  * Shows active tarot cards with use buttons and hover tooltips.
+ * Memoized for performance optimization.
  */
-export const TarotZone: React.FC<TarotZoneProps> = ({
+const TarotZoneBase: React.FC<TarotZoneProps> = ({
   consumables,
   onUseConsumable,
   onRemoveConsumable,
@@ -121,3 +122,8 @@ export const TarotZone: React.FC<TarotZoneProps> = ({
     </div>
   );
 };
+
+/**
+ * Memoized TarotZone - only re-renders when consumables or callbacks change.
+ */
+export const TarotZone = React.memo(TarotZoneBase);

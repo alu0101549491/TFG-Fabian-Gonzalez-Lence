@@ -20,8 +20,9 @@ interface JokerZoneProps {
 /**
  * Joker display area component.
  * Shows active jokers with effects and hover tooltips.
+ * Memoized for performance optimization.
  */
-export const JokerZone: React.FC<JokerZoneProps> = ({ jokers, onRemoveJoker }) => {
+const JokerZoneBase: React.FC<JokerZoneProps> = ({ jokers, onRemoveJoker }) => {
   const emptySlots = GameConfig.MAX_JOKERS - jokers.length;
 
   /**
@@ -90,3 +91,8 @@ export const JokerZone: React.FC<JokerZoneProps> = ({ jokers, onRemoveJoker }) =
     </div>
   );
 };
+
+/**
+ * Memoized JokerZone - only re-renders when jokers or callbacks change.
+ */
+export const JokerZone = React.memo(JokerZoneBase);

@@ -30,10 +30,10 @@ export const BlindVictoryModal: React.FC<BlindVictoryModalProps> = ({
   onContinue
 }) => {
   return (
-    <div className="blind-victory-modal-overlay">
+    <div className="blind-victory-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="victory-title">
       <div className="blind-victory-modal">
         <div className="blind-victory-header">
-          <h1 className="blind-victory-title">Blind Cleared!</h1>
+          <h1 id="victory-title" className="blind-victory-title">Blind Cleared!</h1>
           <p className="blind-victory-level">Level {blindLevel}</p>
         </div>
 

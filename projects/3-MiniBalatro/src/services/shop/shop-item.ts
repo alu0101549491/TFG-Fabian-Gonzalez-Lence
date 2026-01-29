@@ -68,4 +68,13 @@ export class ShopItem {
   public getCost(): number {
     return this.cost;
   }
+
+  /**
+   * Restores the item ID during deserialization.
+   * Used by GamePersistence to maintain shop item IDs across saves.
+   * @param id - The ID to restore
+   */
+  public restoreId(id: string): void {
+    (this as any).id = id;
+  }
 }

@@ -21,8 +21,9 @@ interface CardComponentProps {
 /**
  * Individual playing card component.
  * Displays card value, suit, and bonuses with hover tooltip.
+ * Memoized for performance optimization.
  */
-export const CardComponent: React.FC<CardComponentProps> = ({
+const CardComponentBase: React.FC<CardComponentProps> = ({
   card,
   isSelected,
   onClick
@@ -58,3 +59,8 @@ export const CardComponent: React.FC<CardComponentProps> = ({
     </Tooltip>
   );
 };
+
+/**
+ * Memoized CardComponent - only re-renders when props change.
+ */
+export const CardComponent = React.memo(CardComponentBase);

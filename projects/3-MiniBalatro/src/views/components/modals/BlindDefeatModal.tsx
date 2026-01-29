@@ -39,10 +39,10 @@ export const BlindDefeatModal: React.FC<BlindDefeatModalProps> = ({
   onReturnToMenu
 }) => {
   return (
-    <div className="blind-defeat-modal-overlay">
+    <div className="blind-defeat-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="defeat-title">
       <div className="blind-defeat-modal">
         <div className="blind-defeat-header">
-          <h1 className="blind-defeat-title">Defeat!</h1>
+          <h1 id="defeat-title" className="blind-defeat-title">Defeat!</h1>
           {isBossBlind && bossName ? (
             <p className="blind-defeat-level">Lost to {bossName}</p>
           ) : (

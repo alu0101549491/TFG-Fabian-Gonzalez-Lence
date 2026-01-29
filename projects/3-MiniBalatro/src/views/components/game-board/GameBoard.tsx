@@ -2,7 +2,7 @@
 // FILE: src/views/components/game-board/GameBoard.tsx
 // ============================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { GameController } from '../../../controllers/game-controller';
 import { GameState } from '../../../models/game/game-state';
 import { Hand } from '../hand/Hand';
@@ -137,17 +137,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
    * Handles card selection.
    * @param cardId - ID of card to select/deselect
    */
-  const handleSelectCard = (cardId: string) => {
+  const handleSelectCard = useCallback((cardId: string) => {
     console.log('Card selected:', cardId);
     controller.selectCard(cardId);
     // Force component to update with new selection
     setForceUpdate(prev => prev + 1);
-  };
+  }, [controller]);
 
   /**
    * Handles playing the selected hand.
    */
-  const handlePlayHand = async () => {
+  const handlePlayHand = useCallback(async () => {
     const result = await controller.playSelectedHand();
     // Update preview score based on result
     if (result) {
@@ -160,47 +160,47 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // Clear selection and force update to show new cards
     setSelectedCards([]);
     setForceUpdate(prev => prev + 1);
-  };
+  }, [controller]);
 
   /**
    * Handles discarding selected cards.
    */
-  const handleDiscard = () => {
+  const handleDiscard = useCallback(() => {
     controller.discardSelected();
     // Clear selection and force update to show new cards
     setSelectedCards([]);
     setForceUpdate(prev => prev + 1);
-  };
+  }, [controller]);
 
   /**
    * Handles using a consumable/tarot card.
    * @param tarotId - ID of the tarot card to use
    * @param targetId - Optional ID of the target card
    */
-  const handleUseConsumable = (tarotId: string, targetId?: string) => {
+  const handleUseConsumable = useCallback((tarotId: string, targetId?: string) => {
     controller.useConsumable(tarotId, targetId);
     // Clear selection and force update to reflect changes immediately
     setSelectedCards([]);
     setForceUpdate(prev => prev + 1);
-  };
+  }, [controller]);
 
   /**
    * Handles removing a joker.
    * @param jokerId - ID of the joker to remove
    */
-  const handleRemoveJoker = (jokerId: string) => {
+  const handleRemoveJoker = useCallback((jokerId: string) => {
     controller.removeJoker(jokerId);
     setForceUpdate(prev => prev + 1);
-  };
+  }, [controller]);
 
   /**
    * Handles removing a consumable from inventory.
    * @param index - Index of the tarot to remove in the consumables array
    */
-  const handleRemoveConsumable = (index: number) => {
+  const handleRemoveConsumable = useCallback((index: number) => {
     controller.removeConsumableByIndex(index);
     setForceUpdate(prev => prev + 1);
-  };
+  }, [controller]);
 
   const currentBlind = gameState.getCurrentBlind();
   const handsRemaining = gameState.getHandsRemaining();
