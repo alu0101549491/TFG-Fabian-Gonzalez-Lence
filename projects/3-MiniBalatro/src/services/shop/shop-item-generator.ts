@@ -8,6 +8,8 @@ import { Joker } from '../../models/special-cards/jokers/joker';
 import { Planet } from '../../models/special-cards/planets/planet';
 import { Tarot } from '../../models/special-cards/tarots/tarot';
 import { BalancingConfig } from '../config/balancing-config';
+import { GameConfig } from '../config/game-config';
+import { JokerDefinition } from '../config/types';
 import { HandType } from '../../models/poker/hand-type.enum';
 import { ChipJoker } from '../../models/special-cards/jokers/chip-joker';
 import { MultJoker } from '../../models/special-cards/jokers/mult-joker';
@@ -30,9 +32,7 @@ import { CardValue } from '../../models/core/card-value.enum';
 export class ShopItemGenerator {
   private balancingConfig: BalancingConfig;
   private initPromise: Promise<void>;
-  private readonly jokerFactories: Record<string, (jokerId: string, jokerDef: any, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) => Joker>;
-  private static readonly JOKER_WEIGHT = 0.4;
-  private static readonly PLANET_WEIGHT = 0.3;
+  private readonly jokerFactories: Record<string, (jokerId: string, jokerDef: JokerDefinition, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) => Joker>;
 
   /**
    * Creates a shop item generator with balancing configuration.
@@ -43,7 +43,7 @@ export class ShopItemGenerator {
     this.initPromise = this.balancingConfig.initializeAsync();
     // Initialize factory map for joker creation by type
     this.jokerFactories = {
-      chips: (jokerId: string, jokerDef: any, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) =>
+      chips: (jokerId: string, jokerDef: JokerDefinition, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) =>
         new ChipJoker(
           jokerId,
           jokerDef.name,
@@ -52,7 +52,7 @@ export class ShopItemGenerator {
           conditionFn,
           multiplierFn
         ),
-      mult: (jokerId: string, jokerDef: any, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) =>
+      mult: (jokerId: string, jokerDef: JokerDefinition, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) =>
         new MultJoker(
           jokerId,
           jokerDef.name,
@@ -61,7 +61,7 @@ export class ShopItemGenerator {
           conditionFn,
           multiplierFn
         ),
-      multiplier: (jokerId: string, jokerDef: any, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) =>
+      multiplier: (jokerId: string, jokerDef: JokerDefinition, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) =>
         new MultiplierJoker(
           jokerId,
           jokerDef.name,
@@ -70,14 +70,14 @@ export class ShopItemGenerator {
           conditionFn,
           multiplierFn
         ),
-      economic: (jokerId: string, jokerDef: any) =>
+      economic: (jokerId: string, jokerDef: JokerDefinition) =>
         new EconomicJoker(
           jokerId,
           jokerDef.name,
           jokerDef.description || 'Provides economic benefit',
           jokerDef.value || 0
         ),
-      permanentUpgrade: (jokerId: string, jokerDef: any) =>
+      permanentUpgrade: (jokerId: string, jokerDef: JokerDefinition) =>
         new PermanentUpgradeJoker(
           jokerId,
           jokerDef.name,
@@ -178,7 +178,7 @@ export class ShopItemGenerator {
    * @param condition - Condition string from joker definition
    * @returns Object with conditionFn and multiplierFn
    */
-  private buildJokerConditionAndMultiplier(condition: string): {
+  private buildJokerConditionAndMultiplier(condition?: string): {
     conditionFn?: (context: ScoreContext) => boolean;
     multiplierFn?: (context: ScoreContext) => number;
   } {
@@ -304,8 +304,8 @@ export class ShopItemGenerator {
    */
   private selectItemType(): ShopItemType {
     const r = Math.random();
-    if (r < ShopItemGenerator.JOKER_WEIGHT) return ShopItemType.JOKER;
-    if (r < ShopItemGenerator.JOKER_WEIGHT + ShopItemGenerator.PLANET_WEIGHT) return ShopItemType.PLANET;
+    if (r < GameConfig.JOKER_WEIGHT) return ShopItemType.JOKER;
+    if (r < GameConfig.JOKER_WEIGHT + GameConfig.PLANET_WEIGHT) return ShopItemType.PLANET;
     return ShopItemType.TAROT;
   }
 

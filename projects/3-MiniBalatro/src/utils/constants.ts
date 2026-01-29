@@ -31,6 +31,10 @@ export const SHOP_CONFIG = {
   TAROT_COST: 3,
   REROLL_COST: 3,
   ITEMS_PER_SHOP: 4,
+  // Distribution weights (sum should be 1.0)
+  JOKER_WEIGHT: 0.4,
+  PLANET_WEIGHT: 0.3,
+  TAROT_WEIGHT: 0.3,
 };
 
 /**
