@@ -11,7 +11,7 @@
  * Game configuration constants.
  */
 export const GAME_CONFIG = {
-  INITIAL_MONEY: 5,
+  INITIAL_MONEY: 200,
   MAX_JOKERS: 5,
   MAX_CONSUMABLES: 2,
   HAND_SIZE: 8,

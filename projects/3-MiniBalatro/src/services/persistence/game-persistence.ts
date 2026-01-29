@@ -6,6 +6,8 @@ import { GameState } from '../../models/game/game-state';
 import { Card } from '../../models/core/card';
 import { BalancingConfig } from '../config/balancing-config';
 import { ShopItemGenerator } from '../shop/shop-item-generator';
+import { ShopItem } from '../shop/shop-item';
+import { ShopItemType } from '../shop/shop-item-type.enum';
 import { SmallBlind } from '../../models/blinds/small-blind';
 import { BigBlind } from '../../models/blinds/big-blind';
 import { BossBlind } from '../../models/blinds/boss-blind';
@@ -104,9 +106,82 @@ export class GamePersistence {
   }
 
   /**
-   * Saves controller state (isInShop flag and blind victory state).
+   * Serializes shop items for persistence.
+   * @param shopItems - Array of ShopItems to serialize
+   * @returns Serialized shop items data
+   */
+  public serializeShopItems(shopItems: ShopItem[]): any[] {
+    return shopItems.map(shopItem => {
+      // Handle different item types
+      let itemId: string;
+      if (shopItem.type === ShopItemType.PLANET) {
+        // For planets, find the ID by name from balancing config
+        const planetIds = this.balancingConfig.getAllPlanetIds();
+        const planetDef = planetIds
+          .map(id => ({ id, def: this.balancingConfig.getPlanetDefinition(id) }))
+          .find(p => p.def.name === shopItem.item.name);
+        itemId = planetDef?.id || shopItem.item.name; // Fallback to name if not found
+      } else {
+        // For jokers and tarots, use the id field
+        itemId = (shopItem.item as any).id;
+      }
+      
+      return {
+        id: shopItem.getId(),
+        type: shopItem.type,
+        cost: shopItem.cost,
+        itemId: itemId,
+        itemName: shopItem.item.name,
+        itemDescription: shopItem.item.description
+      };
+    });
+  }
+
+  /**
+   * Deserializes shop items from persistence data.
+   * @param serializedItems - Serialized shop items data
+   * @returns Promise resolving to array of ShopItems
+   */
+  public async deserializeShopItems(serializedItems: any[]): Promise<ShopItem[]> {
+    if (!serializedItems || serializedItems.length === 0) {
+      return [];
+    }
+
+    await this.itemGenerator.ensureInitialized();
+
+    const shopItems: ShopItem[] = [];
+    for (const serialized of serializedItems) {
+      try {
+        let item: any;
+        
+        if (serialized.type === ShopItemType.JOKER) {
+          item = this.itemGenerator.generateJokerById(serialized.itemId);
+        } else if (serialized.type === ShopItemType.PLANET) {
+          item = this.itemGenerator.generatePlanetById(serialized.itemId);
+        } else if (serialized.type === ShopItemType.TAROT) {
+          item = this.itemGenerator.generateTarotById(serialized.itemId);
+        } else {
+          console.warn(`Unknown shop item type: ${serialized.type}`);
+          continue;
+        }
+
+        const shopItem = new ShopItem(serialized.type, item, serialized.cost);
+        // Restore the original UUID
+        (shopItem as any).id = serialized.id;
+        shopItems.push(shopItem);
+      } catch (error) {
+        console.error(`Failed to deserialize shop item ${serialized.itemId}:`, error);
+      }
+    }
+
+    return shopItems;
+  }
+
+  /**
+   * Saves controller state (isInShop flag, blind victory state, and shop items).
    * @param isInShop - Whether player is currently in shop
    * @param victoryState - Optional victory state information
+   * @param shopItems - Optional shop items to save (serialized shop state)
    */
   public saveControllerState(
     isInShop: boolean,
@@ -115,15 +190,17 @@ export class GamePersistence {
       score: number;
       reward: number;
       blindLevel: number;
-    }
+    },
+    shopItems?: any[]
   ): void {
     try {
       const controllerState = {
         isInShop,
-        victoryState: victoryState || { isPending: false, score: 0, reward: 0, blindLevel: 0 }
+        victoryState: victoryState || { isPending: false, score: 0, reward: 0, blindLevel: 0 },
+        shopItems: shopItems || []
       };
       localStorage.setItem(this.controllerStateKey, JSON.stringify(controllerState));
-      console.log(`Controller state saved: isInShop=${isInShop}, pendingVictory=${victoryState?.isPending || false}`);
+      console.log(`Controller state saved: isInShop=${isInShop}, pendingVictory=${victoryState?.isPending || false}, shopItems=${shopItems?.length || 0}`);
     } catch (error) {
       console.error('Failed to save controller state:', error);
     }
@@ -131,7 +208,7 @@ export class GamePersistence {
 
   /**
    * Loads controller state.
-   * @returns Object with isInShop flag and victory state, or null if not found
+   * @returns Object with isInShop flag, victory state, and shop items, or null if not found
    */
   public loadControllerState(): {
     isInShop: boolean;
@@ -141,6 +218,7 @@ export class GamePersistence {
       reward: number;
       blindLevel: number;
     };
+    shopItems: any[];
   } | null {
     try {
       const serialized = localStorage.getItem(this.controllerStateKey);
@@ -150,9 +228,10 @@ export class GamePersistence {
       const parsed = JSON.parse(serialized);
       const result = {
         isInShop: parsed.isInShop || false,
-        victoryState: parsed.victoryState || { isPending: false, score: 0, reward: 0, blindLevel: 0 }
+        victoryState: parsed.victoryState || { isPending: false, score: 0, reward: 0, blindLevel: 0 },
+        shopItems: parsed.shopItems || []
       };
-      console.log(`Controller state loaded: isInShop=${result.isInShop}, pendingVictory=${result.victoryState.isPending}`);
+      console.log(`Controller state loaded: isInShop=${result.isInShop}, pendingVictory=${result.victoryState.isPending}, shopItems=${result.shopItems.length}`);
       return result;
     } catch (error) {
       console.error('Failed to load controller state:', error);
