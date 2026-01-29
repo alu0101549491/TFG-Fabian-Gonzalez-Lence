@@ -9,7 +9,9 @@ export default {
   ],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      useESM: true,
+      tsconfig: {
+        esModuleInterop: true,
+      },
     }],
   },
   moduleNameMapper: {
@@ -22,7 +24,7 @@ export default {
     '^@types/(.*)$': '<rootDir>/src/types/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.cjs'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
@@ -40,10 +42,4 @@ export default {
     },
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
-  extensionsToTreatAsEsm: ['.ts', '.tsx'],
-  globals: {
-    'ts-jest': {
-      useESM: true,
-    },
-  },
 };
