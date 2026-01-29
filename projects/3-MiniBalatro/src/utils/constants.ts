@@ -11,7 +11,7 @@
  * Game configuration constants.
  */
 export const GAME_CONFIG = {
-  INITIAL_MONEY: 200,
+  INITIAL_MONEY: 5,
   MAX_JOKERS: 5,
   MAX_CONSUMABLES: 2,
   HAND_SIZE: 8,
@@ -75,7 +75,7 @@ export const COLORS = {
   // Text Colors - For readable text on dark backgrounds
   TEXT_PRIMARY: '#f1f1f1',    // Primary text color (light gray)
   TEXT_SECONDARY: '#a8a8a8',  // Secondary/muted text color (medium gray)
-  TEXT_TERTIARY: '#4f4f4fff', // Tertiary/more muted text color (dark gray)
+  TEXT_TERTIARY: '#4f4f4f', // Tertiary/more muted text color (dark gray)
 
   // Suit Colors - For card suits (diamonds, hearts, spades, clubs)
   SUIT_DIAMONDS: '#e89230',   // Orange for diamonds ♦
@@ -195,11 +195,15 @@ export const PLANET_UPGRADES = {
 /**
  * Difficulty progression constants.
  * Base values match Balatro's difficulty curve.
+ * Formula: BASE_GOAL × (GROWTH_RATE)^(round-1)
  * Small blind uses base value directly.
  * Big blind = base × 1.5
  * Boss blind = base × 2.0
  */
 export const DIFFICULTY_CONFIG = {
+  // Base difficulty settings for formula-based calculation
+  BASE_GOAL: 300,
+  GROWTH_RATE: 1.5,
   // Balatro base values for each round (small blind values)
   ROUND_BASE_VALUES: [
     300,    // Round 1
@@ -246,93 +250,11 @@ export const UI_CONFIG = {
   CARD_BORDER_RADIUS: 8,
 };
 
-/**
- * Calculates the score goal for a blind using Balatro's difficulty curve.
- * Uses predefined base values for each round with multipliers for blind types.
- * @param roundNumber - Current round number (1-8)
- * @param blindType - Type of blind ('small', 'big', or 'boss')
- * @returns Calculated score goal
- */
-export function calculateBlindGoal(
-  roundNumber: number,
-  blindType: 'small' | 'big' | 'boss'
-): number {
-  // Get base value for the round (rounds beyond 8 use round 8's value)
-  const baseIndex = Math.min(roundNumber - 1, DIFFICULTY_CONFIG.ROUND_BASE_VALUES.length - 1);
-  const base = DIFFICULTY_CONFIG.ROUND_BASE_VALUES[baseIndex];
-
-  let multiplier: number;
-  switch (blindType) {
-    case 'small':
-      multiplier = DIFFICULTY_CONFIG.SMALL_BLIND_MULTIPLIER;
-      break;
-    case 'big':
-      multiplier = DIFFICULTY_CONFIG.BIG_BLIND_MULTIPLIER;
-      break;
-    case 'boss':
-      multiplier = DIFFICULTY_CONFIG.BOSS_BLIND_MULTIPLIER;
-      break;
-    default:
-      throw new Error(`Invalid blind type: ${blindType}`);
-  }
-
-  return Math.floor(base * multiplier);
-}
-
-/**
- * Returns the CSS color for a suit.
- * @param suit - Suit name
- * @returns CSS color string
- */
-export function getSuitColor(suit: string): string {
-  switch (suit.toUpperCase()) {
-    case 'DIAMONDS':
-      return COLORS.SUIT_DIAMONDS;
-    case 'HEARTS':
-      return COLORS.SUIT_HEARTS;
-    case 'SPADES':
-      return COLORS.SUIT_SPADES;
-    case 'CLUBS':
-      return COLORS.SUIT_CLUBS;
-    default:
-      return COLORS.TEXT_PRIMARY;
-  }
-}
-
-/**
- * Returns the Unicode symbol for a suit.
- * @param suit - Suit name
- * @returns Unicode symbol
- */
-export function getSuitSymbol(suit: string): string {
-  switch (suit.toUpperCase()) {
-    case 'DIAMONDS':
-      return SUIT_SYMBOLS.DIAMONDS;
-    case 'HEARTS':
-      return SUIT_SYMBOLS.HEARTS;
-    case 'SPADES':
-      return SUIT_SYMBOLS.SPADES;
-    case 'CLUBS':
-      return SUIT_SYMBOLS.CLUBS;
-    default:
-      return '?';
-  }
-}
-
-/**
- * Formats money amount with dollar sign.
- * @param amount - Money amount
- * @returns Formatted string
- */
-export function formatMoney(amount: number): string {
-  return `$${amount}`;
-}
-
-/**
- * Formats score with thousands separator.
- * @param score - Score value
- * @returns Formatted string
- */
-export function formatScore(score: number): string {
-  return score.toLocaleString();
-}
+// Re-export helper functions from helpers.ts for backward compatibility
+export {
+  calculateBlindGoal,
+  getSuitColor,
+  getSuitSymbol,
+  formatMoney,
+  formatScore
+} from './helpers';
