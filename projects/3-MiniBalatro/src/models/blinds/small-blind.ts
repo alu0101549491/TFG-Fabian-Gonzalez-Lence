@@ -39,4 +39,12 @@ export class SmallBlind extends Blind {
   public getModifier(): BlindModifier | undefined {
     return undefined;
   }
+
+  /**
+   * Returns the blind type identifier.
+   * @returns 'SmallBlind'
+   */
+  public getBlindType(): string {
+    return 'SmallBlind';
+  }
 }

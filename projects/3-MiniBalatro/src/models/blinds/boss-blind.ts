@@ -82,4 +82,12 @@ export class BossBlind extends Blind {
     const modifier = this.getModifier();
     return Math.floor(super.getScoreGoal() * modifier.goalMultiplier);
   }
+
+  /**
+   * Returns the blind type identifier.
+   * @returns 'BossBlind'
+   */
+  public getBlindType(): string {
+    return 'BossBlind';
+  }
 }

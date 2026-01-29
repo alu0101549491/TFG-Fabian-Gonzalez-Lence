@@ -65,6 +65,13 @@ export abstract class Blind {
   public abstract getModifier(): BlindModifier | undefined;
 
   /**
+   * Returns the blind type as a stable string identifier.
+   * This is used for serialization and won't be affected by minification.
+   * @returns String identifier for the blind type
+   */
+  public abstract getBlindType(): string;
+
+  /**
    * Returns the level number of this blind.
    * @returns Positive integer
    */
