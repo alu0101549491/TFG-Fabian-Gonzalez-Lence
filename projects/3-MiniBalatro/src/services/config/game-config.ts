@@ -30,6 +30,10 @@ export class GameConfig {
   public static readonly TAROT_COST: number = SHOP_CONFIG.TAROT_COST;
   public static readonly SHOP_REROLL_COST: number = SHOP_CONFIG.REROLL_COST;
   public static readonly ITEMS_PER_SHOP: number = SHOP_CONFIG.ITEMS_PER_SHOP;
+  // Distribution weights for shop item generation
+  public static readonly JOKER_WEIGHT: number = SHOP_CONFIG.JOKER_WEIGHT;
+  public static readonly PLANET_WEIGHT: number = SHOP_CONFIG.PLANET_WEIGHT;
+  public static readonly TAROT_WEIGHT: number = SHOP_CONFIG.TAROT_WEIGHT;
 
   // Blind rewards (imported from constants)
   public static readonly SMALL_BLIND_REWARD: number = BLIND_REWARDS.SMALL_BLIND;

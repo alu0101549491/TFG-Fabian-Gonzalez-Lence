@@ -5,6 +5,7 @@
 import { CardValue } from '../../models/core/card-value.enum';
 import { HandType } from '../../models/poker/hand-type.enum';
 import { TarotEffect } from '../../models/special-cards/tarots/tarot-effect.enum';
+import { JokerDefinition, PlanetDefinition, TarotDefinition } from './types';
 
 /**
  * Loads and manages balancing data from JSON configuration.
@@ -13,9 +14,9 @@ import { TarotEffect } from '../../models/special-cards/tarots/tarot-effect.enum
 export class BalancingConfig {
   private handValues: Map<HandType, { chips: number; mult: number }>;
   private cardValues: Map<CardValue, number>;
-  private jokerDefinitions: any[];
-  private planetDefinitions: any[];
-  private tarotDefinitions: any[];
+  private jokerDefinitions: JokerDefinition[];
+  private planetDefinitions: PlanetDefinition[];
+  private tarotDefinitions: TarotDefinition[];
   // Note: blindTargets is reserved for future use if manual score targets are needed
   // Currently blinds calculate their own targets using formulas
   // private blindTargets: any[];
@@ -145,9 +146,9 @@ export class BalancingConfig {
       
       // Map JSON hand type names to HandType enum in planet definitions
       this.planetDefinitions = (data.planets || []).map((planet: any) => ({
-        ...planet,
-        targetHandType: BalancingConfig.handTypeMapping[planet.targetHandType] || planet.targetHandType
-      }));
+          ...planet,
+          targetHandType: BalancingConfig.handTypeMapping[planet.targetHandType] || planet.targetHandType
+        }));
     } catch (error) {
       console.warn('Failed to load planets from JSON, using defaults:', error);
       this.loadDefaultPlanets();
@@ -167,11 +168,11 @@ export class BalancingConfig {
       
       // Map JSON effect types to TarotEffect enum
       this.tarotDefinitions = (data.tarots || []).map((tarot: any) => ({
-        ...tarot,
-        effectType: tarot.effectType === 'instant' 
-          ? 'instant' 
-          : BalancingConfig.tarotEffectMapping[tarot.effectType] || tarot.effectType
-      }));
+          ...tarot,
+          effectType: tarot.effectType === 'instant'
+            ? 'instant'
+            : BalancingConfig.tarotEffectMapping[tarot.effectType] || tarot.effectType
+        }));
     } catch (error) {
       console.warn('Failed to load tarots from JSON, using defaults:', error);
       this.loadDefaultTarots();
@@ -329,7 +330,7 @@ export class BalancingConfig {
    * @returns Joker definition object
    * @throws Error if jokerId not found
    */
-  public getJokerDefinition(jokerId: string): any {
+  public getJokerDefinition(jokerId: string): JokerDefinition {
     const definition = this.jokerDefinitions.find(j => j.id === jokerId);
     if (!definition) {
       throw new Error(`Joker definition not found: ${jokerId}`);
@@ -343,7 +344,7 @@ export class BalancingConfig {
    * @returns Planet definition object
    * @throws Error if planetId not found
    */
-  public getPlanetDefinition(planetId: string): any {
+  public getPlanetDefinition(planetId: string): PlanetDefinition {
     const definition = this.planetDefinitions.find(p => p.id === planetId);
     if (!definition) {
       throw new Error(`Planet definition not found: ${planetId}`);
@@ -357,7 +358,7 @@ export class BalancingConfig {
    * @returns Tarot definition object
    * @throws Error if tarotId not found
    */
-  public getTarotDefinition(tarotId: string): any {
+  public getTarotDefinition(tarotId: string): TarotDefinition {
     const definition = this.tarotDefinitions.find(t => t.id === tarotId);
     if (!definition) {
       throw new Error(`Tarot definition not found: ${tarotId}`);
