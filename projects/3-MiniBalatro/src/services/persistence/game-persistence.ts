@@ -457,16 +457,32 @@ export class GamePersistence {
         const blindLevel = parsed.currentBlind.level;
         const roundNumber = parsed.currentBlind.roundNumber || parsed.roundNumber;
         const blindType = parsed.currentBlind.type;
+        const savedScoreGoal = parsed.currentBlind.scoreGoal;
         
         // Create the appropriate blind type based on the class name
         if (blindType === 'SmallBlind') {
-          gameState['currentBlind'] = new SmallBlind(blindLevel, roundNumber);
+          const blind = new SmallBlind(blindLevel, roundNumber);
+          // Restore the exact score goal that was saved
+          if (savedScoreGoal !== undefined) {
+            (blind as any).scoreGoal = savedScoreGoal;
+          }
+          gameState['currentBlind'] = blind;
         } else if (blindType === 'BigBlind') {
-          gameState['currentBlind'] = new BigBlind(blindLevel, roundNumber);
+          const blind = new BigBlind(blindLevel, roundNumber);
+          // Restore the exact score goal that was saved
+          if (savedScoreGoal !== undefined) {
+            (blind as any).scoreGoal = savedScoreGoal;
+          }
+          gameState['currentBlind'] = blind;
         } else if (blindType === 'BossBlind') {
           // Restore the actual boss type (default to THE_WALL if not saved)
           const bossType = parsed.currentBlind.bossType || BossType.THE_WALL;
           const bossBlind = new BossBlind(blindLevel, roundNumber, bossType);
+          
+          // Restore the exact score goal that was saved
+          if (savedScoreGoal !== undefined) {
+            (bossBlind as any).scoreGoal = savedScoreGoal;
+          }
           
           // If The Mouth boss has a locked hand type, restore it
           if (bossType === BossType.THE_MOUTH && parsed.currentBlind.lockedHandType) {
@@ -475,11 +491,11 @@ export class GamePersistence {
           }
           
           gameState['currentBlind'] = bossBlind;
-          console.log(`Restored boss blind: ${bossType} at level ${blindLevel}`);
+          console.log(`Restored boss blind: ${bossType} at level ${blindLevel} with goal ${savedScoreGoal}`);
         }
         
         if (blindType !== 'BossBlind') {
-          console.log(`Restored blind: ${blindType} at level ${blindLevel}`);
+          console.log(`Restored blind: ${blindType} at level ${blindLevel} with goal ${savedScoreGoal}`);
         }
       } catch (error) {
         console.error('Failed to restore blind', error);
