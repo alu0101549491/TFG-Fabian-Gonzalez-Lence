@@ -2,7 +2,7 @@
 // FILE: src/views/App.tsx
 // ============================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { GameController } from '../controllers/game-controller';
 import { GameState } from '../models/game/game-state';
 import { MainMenu } from './components/menu/MainMenu';
@@ -65,29 +65,29 @@ export const App: React.FC = () => {
    * Handles game state changes from controller.
    * @param state - Updated game state
    */
-  const handleStateChange = (state: GameState) => {
+  const handleStateChange = useCallback((state: GameState) => {
     setGameState(state);
     
     // Expose game state globally for debugging (development only)
     if (import.meta.env.DEV) {
       (window as any).gameState = state;
     }
-  };
+  }, []);
 
   /**
    * Handles shop opening.
    */
-  const handleShopOpen = () => {
+  const handleShopOpen = useCallback(() => {
     setIsInShop(true);
     setCurrentScreen('game');
-  };
+  }, []);
 
   /**
    * Handles shop closing.
    */
-  const handleShopClose = () => {
+  const handleShopClose = useCallback(() => {
     setIsInShop(false);
-  };
+  }, []);
 
   /**
    * Handles game victory.
@@ -117,10 +117,10 @@ export const App: React.FC = () => {
   /**
    * Handles blind victory (shows modal).
    */
-  const handleBlindVictory = (blindLevel: number, score: number, reward: number) => {
+  const handleBlindVictory = useCallback((blindLevel: number, score: number, reward: number) => {
     setVictoryData({ blindLevel, score, reward });
     setShowBlindVictory(true);
-  };
+  }, []);
 
   /**
    * Handles continuing from blind victory modal to shop.
@@ -135,7 +135,7 @@ export const App: React.FC = () => {
   /**
    * Handles blind defeat (shows modal).
    */
-  const handleBlindDefeat = (
+  const handleBlindDefeat = useCallback((
     blindLevel: number,
     roundNumber: number,
     achievedScore: number,
@@ -152,7 +152,7 @@ export const App: React.FC = () => {
       bossName
     });
     setShowBlindDefeat(true);
-  };
+  }, []);
 
   /**
    * Handles returning to menu from defeat modal.

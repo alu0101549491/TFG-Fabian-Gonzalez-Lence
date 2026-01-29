@@ -166,8 +166,8 @@ export class GamePersistence {
         }
 
         const shopItem = new ShopItem(serialized.type, item, serialized.cost);
-        // Restore the original UUID
-        (shopItem as any).id = serialized.id;
+        // Restore the original UUID using the restoreId method
+        shopItem.restoreId(serialized.id);
         shopItems.push(shopItem);
       } catch (error) {
         console.error(`Failed to deserialize shop item ${serialized.itemId}:`, error);

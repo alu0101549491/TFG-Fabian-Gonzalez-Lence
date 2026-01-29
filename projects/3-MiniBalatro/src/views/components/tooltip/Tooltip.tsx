@@ -31,6 +31,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const tooltipId = useRef(`tooltip-${Math.random().toString(36).substr(2, 9)}`);
 
   /**
    * Calculates optimal tooltip position to stay within viewport.
@@ -112,13 +113,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
         className="tooltip-trigger"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        aria-describedby={isVisible ? tooltipId.current : undefined}
       >
         {children}
       </div>
       {isVisible && (
         <div
           ref={tooltipRef}
+          id={tooltipId.current}
           className="tooltip"
+          role="tooltip"
           style={position ? { top: `${position.top}px`, left: `${position.left}px` } : undefined}
         >
           {content}

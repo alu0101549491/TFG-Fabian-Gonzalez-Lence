@@ -24,10 +24,10 @@ export const GameVictoryModal: React.FC<GameVictoryModalProps> = ({
   onReturnToMenu
 }) => {
   return (
-    <div className="game-victory-modal-overlay">
+    <div className="game-victory-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="game-victory-title">
       <div className="game-victory-modal">
         <div className="game-victory-header">
-          <h1 className="game-victory-title">🎉 Victory! 🎉</h1>
+          <h1 id="game-victory-title" className="game-victory-title">🎉 Victory! 🎉</h1>
           <p className="game-victory-subtitle">You've conquered all 8 rounds!</p>
         </div>
 
