@@ -1,15 +1,15 @@
-// ============================================
-// FILE: src/index.ts
-// ============================================
-
 /**
- * Mini Balatro - Library Entry Point
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
  *
- * This file exports all public APIs for use as a library.
- * Import from this file when using Mini Balatro as a module.
- *
- * @example
- * import { GameController, GameState } from 'mini-balatro';
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 29, 2026
+ * @file src/index.ts
+ * @desc Library entry point exporting all public APIs for module usage.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/3-MiniBalatro}
+ * @see {@link https://typescripttutorial.net}
  */
 
 // Core Models

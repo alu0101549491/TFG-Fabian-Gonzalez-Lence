@@ -1,6 +1,16 @@
-// ============================================
-// FILE: src/views/components/menu/MainMenu.tsx
-// ============================================
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 29, 2026
+ * @file src/views/components/menu/MainMenu.tsx
+ * @desc Main menu screen component displaying game start options and help modal
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/3-MiniBalatro}
+ * @see {@link https://typescripttutorial.net}
+ */
 
 import React, { useState } from 'react';
 import { HelpModal } from '../modals/HelpModal';

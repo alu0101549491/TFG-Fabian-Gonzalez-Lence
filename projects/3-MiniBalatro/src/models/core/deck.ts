@@ -1,6 +1,16 @@
-// ============================================
-// FILE: src/models/core/deck.ts
-// ============================================
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 29, 2026
+ * @file src/models/core/deck.ts
+ * @desc Deck model managing 52 playing cards with drawing, shuffling, and persistence.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/3-MiniBalatro}
+ * @see {@link https://typescripttutorial.net}
+ */
 
 import { Card } from './card';
 import { CardValue } from './card-value.enum';

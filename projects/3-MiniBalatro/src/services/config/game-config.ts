@@ -1,6 +1,16 @@
-// ============================================
-// FILE: src/services/config/game-config.ts
-// ============================================
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 29, 2026
+ * @file src/services/config/game-config.ts
+ * @desc Global game configuration class exposing constants for mechanics, shop, and difficulty.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/3-MiniBalatro}
+ * @see {@link https://typescripttutorial.net}
+ */
 
 import { GAME_CONFIG, SHOP_CONFIG, BLIND_REWARDS, DIFFICULTY_CONFIG } from '../../utils/constants';
 

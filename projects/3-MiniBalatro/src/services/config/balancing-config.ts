@@ -1,6 +1,16 @@
-// ============================================
-// FILE: src/services/config/balancing-config.ts
-// ============================================
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 29, 2026
+ * @file src/services/config/balancing-config.ts
+ * @desc Balancing configuration loader managing JSON-based card, hand, joker, planet, and tarot definitions.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/3-MiniBalatro}
+ * @see {@link https://typescripttutorial.net}
+ */
 
 import { CardValue } from '../../models/core/card-value.enum';
 import { HandType } from '../../models/poker/hand-type.enum';
