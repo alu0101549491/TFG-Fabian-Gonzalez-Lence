@@ -1,6 +1,16 @@
-// ============================================
-// FILE: src/models/special-cards/planets/planet.ts
-// ============================================
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 29, 2026
+ * @file src/models/special-cards/planets/planet.ts
+ * @desc Planet card that permanently upgrades a poker hand type.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/3-MiniBalatro}
+ * @see {@link https://typescripttutorial.net}
+ */
 
 import { HandType } from '../../poker/hand-type.enum';
 import { HandUpgradeManager } from '../../poker/hand-upgrade-manager';

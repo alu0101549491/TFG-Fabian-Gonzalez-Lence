@@ -1,6 +1,16 @@
-// ============================================
-// FILE: src/views/components/tarot-zone/TarotZone.tsx
-// ============================================
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 29, 2026
+ * @file src/views/components/tarot-zone/TarotZone.tsx
+ * @desc Tarot/consumables display component showing active tarot cards with use buttons and hover tooltips
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/3-MiniBalatro}
+ * @see {@link https://typescripttutorial.net}
+ */
 
 import React from 'react';
 import { Tarot } from '../../../models/special-cards/tarots/tarot';

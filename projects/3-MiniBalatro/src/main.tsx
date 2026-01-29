@@ -1,12 +1,15 @@
-// ============================================
-// FILE: src/main.tsx
-// ============================================
-
 /**
- * Mini Balatro - React Application Entry Point
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
  *
- * This file initializes the React application and mounts it to the DOM.
- * It also imports global styles and sets up the development environment.
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 29, 2026
+ * @file src/main.tsx
+ * @desc React application entry point - initializes and mounts the app to DOM.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/3-MiniBalatro}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import React from 'react';

@@ -1,14 +1,20 @@
-// ============================================
-// FILE: src/utils/constants.ts
-// ============================================
-
 /**
- * Game constants and configuration values.
- * All magic numbers and strings are centralized here for easy balancing.
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 29, 2026
+ * @file src/utils/constants.ts
+ * @desc Game constants and configuration values. All magic numbers and strings are centralized here for easy balancing.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/3-MiniBalatro}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**
  * Game configuration constants.
+ * Contains core gameplay parameters like money, joker limits, hand sizes, and round progression.
  */
 export const GAME_CONFIG = {
   INITIAL_MONEY: 5,

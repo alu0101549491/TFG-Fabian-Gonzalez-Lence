@@ -1,6 +1,16 @@
-// ============================================
-// FILE: src/models/core/card.ts
-// ============================================
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since January 29, 2026
+ * @file src/models/core/card.ts
+ * @desc Playing card model with value, suit, and bonus management for tarot effects.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/3-MiniBalatro}
+ * @see {@link https://typescripttutorial.net}
+ */
 
 import { v4 as uuidv4 } from 'uuid';
 import { CardValue, getBaseChipsForValue, getNextValue, getValueDisplay } from './card-value.enum';
