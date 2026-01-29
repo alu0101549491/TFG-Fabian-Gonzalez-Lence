@@ -30,6 +30,9 @@ import { CardValue } from '../../models/core/card-value.enum';
 export class ShopItemGenerator {
   private balancingConfig: BalancingConfig;
   private initPromise: Promise<void>;
+  private readonly jokerFactories: Record<string, (jokerId: string, jokerDef: any, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) => Joker>;
+  private static readonly JOKER_WEIGHT = 0.4;
+  private static readonly PLANET_WEIGHT = 0.3;
 
   /**
    * Creates a shop item generator with balancing configuration.
@@ -38,6 +41,51 @@ export class ShopItemGenerator {
     this.balancingConfig = new BalancingConfig();
     // Store the initialization promise so we can await it
     this.initPromise = this.balancingConfig.initializeAsync();
+    // Initialize factory map for joker creation by type
+    this.jokerFactories = {
+      chips: (jokerId: string, jokerDef: any, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) =>
+        new ChipJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Increases chips',
+          jokerDef.value || 5,
+          conditionFn,
+          multiplierFn
+        ),
+      mult: (jokerId: string, jokerDef: any, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) =>
+        new MultJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Increases mult',
+          jokerDef.value || 4,
+          conditionFn,
+          multiplierFn
+        ),
+      multiplier: (jokerId: string, jokerDef: any, conditionFn?: (context: ScoreContext) => boolean, multiplierFn?: (context: ScoreContext) => number) =>
+        new MultiplierJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Multiplies mult',
+          jokerDef.value || 2,
+          conditionFn,
+          multiplierFn
+        ),
+      economic: (jokerId: string, jokerDef: any) =>
+        new EconomicJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Provides economic benefit',
+          jokerDef.value || 0
+        ),
+      permanentUpgrade: (jokerId: string, jokerDef: any) =>
+        new PermanentUpgradeJoker(
+          jokerId,
+          jokerDef.name,
+          jokerDef.description || 'Permanently upgrades played cards',
+          jokerDef.value || 5,
+          0
+        )
+    };
   }
 
   /**
@@ -64,6 +112,28 @@ export class ShopItemGenerator {
     const jokerId = jokerIds[randomIndex];
     
     return this.generateJokerById(jokerId);
+  }
+
+  /**
+   * Creates a specific planet by ID.
+   * @param planetId - ID of the planet to create
+   * @returns Planet instance
+   * @throws Error if planet ID not found
+   */
+  public generatePlanetById(planetId: string): Planet {
+    const planetDef = this.balancingConfig.getPlanetDefinition(planetId);
+    if (!planetDef) {
+      throw new Error(`Planet ${planetId} not found in balancing config`);
+    }
+
+    const handType = planetDef.targetHandType as HandType;
+    return new Planet(
+      planetDef.name,
+      handType,
+      planetDef.chipsBonus || 10,
+      planetDef.multBonus || 1,
+      planetDef.description
+    );
   }
 
   /**
@@ -101,78 +171,7 @@ export class ShopItemGenerator {
    * @returns Joker instance
    * @throws Error if joker ID not found
    */
-  public generateJokerById(jokerId: string): Joker {
-    const jokerDef = this.balancingConfig.getJokerDefinition(jokerId);
-    if (!jokerDef) {
-      throw new Error(`Joker definition not found for ID: ${jokerId}`);
-    }
-
-    // Build condition and multiplier functions based on the condition string
-    const { conditionFn, multiplierFn } = this.buildJokerConditionAndMultiplier(jokerDef.condition);
-
-    // Create the appropriate joker type based on the "type" field
-    switch (jokerDef.type) {
-      case 'chips':
-        return new ChipJoker(
-          jokerId,
-          jokerDef.name,
-          jokerDef.description || 'Increases chips',
-          jokerDef.value || 5,
-          conditionFn,
-          multiplierFn  // Pass multiplier function for per-card conditions
-        );
-      
-      case 'mult':
-        return new MultJoker(
-          jokerId,
-          jokerDef.name,
-          jokerDef.description || 'Increases mult',
-          jokerDef.value || 4,
-          conditionFn,
-          multiplierFn  // Pass multiplier function for per-card conditions
-        );
-      
-      case 'multiplier':
-        return new MultiplierJoker(
-          jokerId,
-          jokerDef.name,
-          jokerDef.description || 'Multiplies mult',
-          jokerDef.value || 2,
-          conditionFn,
-          multiplierFn  // Pass multiplier function for dynamic multipliers
-        );
-      
-      case 'economic':
-        // Economic jokers provide monetary benefits, not scoring effects
-        return new EconomicJoker(
-          jokerId,
-          jokerDef.name,
-          jokerDef.description || 'Provides economic benefit',
-          jokerDef.value || 0
-        );
-      
-      case 'permanentUpgrade':
-        // Permanent upgrade jokers modify cards after they're played
-        return new PermanentUpgradeJoker(
-          jokerId,
-          jokerDef.name,
-          jokerDef.description || 'Permanently upgrades played cards',
-          jokerDef.value || 5,  // chipBonus
-          0  // multBonus (could be made configurable later)
-        );
-      
-      default:
-        // Default to ChipJoker if type is unknown
-        console.warn(`Unknown joker type "${jokerDef.type}" for ${jokerId}, defaulting to ChipJoker`);
-        return new ChipJoker(
-          jokerId,
-          jokerDef.name,
-          jokerDef.description || 'Increases your score',
-          jokerDef.value || 5,
-          conditionFn
-        );
-    }
-  }
+  
 
   /**
    * Builds condition and multiplier functions based on the condition string from JSON.
@@ -301,6 +300,16 @@ export class ShopItemGenerator {
   }
 
   /**
+   * Selects a ShopItemType using configured weights.
+   */
+  private selectItemType(): ShopItemType {
+    const r = Math.random();
+    if (r < ShopItemGenerator.JOKER_WEIGHT) return ShopItemType.JOKER;
+    if (r < ShopItemGenerator.JOKER_WEIGHT + ShopItemGenerator.PLANET_WEIGHT) return ShopItemType.PLANET;
+    return ShopItemType.TAROT;
+  }
+
+  /**
    * Creates a random tarot from the available types.
    * @returns Random Tarot
    */
@@ -407,20 +416,15 @@ export class ShopItemGenerator {
     const usedJokerIds = new Set<string>(ownedJokerIds); // Track owned + already generated jokers
 
     for (let i = 0; i < count; i++) {
-      // Randomly select item type with weighted distribution
-      // 40% Joker, 30% Planet, 30% Tarot
-      const random = Math.random();
-      let type: ShopItemType;
+      // Select item type using configurable weights
+      const type = this.selectItemType();
       let item: Joker | Planet | Tarot;
 
-      if (random < 0.4) {
-        type = ShopItemType.JOKER;
+      if (type === ShopItemType.JOKER) {
         item = this.generateUniqueJoker(usedJokerIds);
-      } else if (random < 0.7) {
-        type = ShopItemType.PLANET;
+      } else if (type === ShopItemType.PLANET) {
         item = this.generateRandomPlanet();
       } else {
-        type = ShopItemType.TAROT;
         item = this.generateRandomTarot();
       }
 
@@ -456,5 +460,34 @@ export class ShopItemGenerator {
     usedJokerIds.add(selectedJokerId);
 
     return this.generateJokerById(selectedJokerId);
+  }
+
+  /**
+   * Generates a specific joker by ID using factory map.
+   */
+  public generateJokerById(jokerId: string): Joker {
+    const jokerDef = this.balancingConfig.getJokerDefinition(jokerId);
+    if (!jokerDef) {
+      throw new Error(`Joker definition not found for ID: ${jokerId}`);
+    }
+
+    // Build condition and multiplier functions based on the condition string
+    const { conditionFn, multiplierFn } = this.buildJokerConditionAndMultiplier(jokerDef.condition);
+
+    const factory = this.jokerFactories[jokerDef.type];
+    if (factory) {
+      return factory(jokerId, jokerDef, conditionFn, multiplierFn);
+    }
+
+    // Default fallback
+    console.warn(`Unknown joker type "${jokerDef.type}" for ${jokerId}, defaulting to ChipJoker`);
+    return new ChipJoker(
+      jokerId,
+      jokerDef.name,
+      jokerDef.description || 'Increases your score',
+      jokerDef.value || 5,
+      conditionFn,
+      multiplierFn
+    );
   }
 }

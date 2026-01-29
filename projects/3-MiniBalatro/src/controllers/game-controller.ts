@@ -210,8 +210,27 @@ export class GameController {
       // If player was in shop, restore shop state
       else if (wasInShop) {
         this.isInShop = false; // Will be set by openShop
-        await this.openShop();
-        console.log('Restored shop state');
+        
+        // Try to restore saved shop items
+        const savedShopItems = controllerState?.shopItems;
+        if (savedShopItems && savedShopItems.length > 0) {
+          // Restore shop with saved items
+          this.shop = new Shop();
+          const restoredItems = await this.gamePersistence.deserializeShopItems(savedShopItems);
+          this.shop.setItems(restoredItems);
+          this.isInShop = true;
+          
+          // Trigger shop open callback
+          if (this.onShopOpen) {
+            this.onShopOpen(this.shop);
+          }
+          
+          console.log(`Restored shop state with ${restoredItems.length} items`);
+        } else {
+          // Fallback: generate new shop items if none were saved
+          await this.openShop();
+          console.log('Shop state restored with new items (no saved items found)');
+        }
       } else {
         // Check if hand is empty and deal cards if needed
         const currentHand = savedState.getCurrentHand();
@@ -858,12 +877,18 @@ export class GameController {
 
     try {
       this.gamePersistence.saveGame(this.gameState);
+      
+      // Serialize shop items if in shop
+      const shopItems = this.isInShop && this.shop
+        ? this.gamePersistence.serializeShopItems(this.shop.getAvailableItems())
+        : [];
+      
       this.gamePersistence.saveControllerState(this.isInShop, {
         isPending: this.isPendingBlindVictory,
         score: this.victoryScore,
         reward: this.victoryReward,
         blindLevel: this.victoryBlindLevel
-      });
+      }, shopItems);
       console.log('Game state and controller state saved');
     } catch (error) {
       console.error('Failed to save game:', error);

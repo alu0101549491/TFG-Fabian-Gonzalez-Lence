@@ -125,4 +125,13 @@ export class Shop {
   public removeItem(itemId: string): void {
     this.availableItems = this.availableItems.filter(item => item.getId() !== itemId);
   }
+
+  /**
+   * Sets shop items directly (used for restoring from save).
+   * @param items - Array of ShopItems to set
+   */
+  public setItems(items: ShopItem[]): void {
+    this.availableItems = items;
+    console.log(`Shop items restored: ${items.length} items`);
+  }
 }
