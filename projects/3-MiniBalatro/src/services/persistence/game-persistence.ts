@@ -312,7 +312,7 @@ export class GamePersistence {
       currentBlind: {
         level: gameState.getCurrentBlind().getLevel(),
         roundNumber: gameState.getRoundNumber(),
-        type: gameState.getCurrentBlind().constructor.name,
+        type: gameState.getCurrentBlind().getBlindType(),
         scoreGoal: gameState.getCurrentBlind().getScoreGoal(),
         // Save boss type if this is a boss blind
         bossType: gameState.getCurrentBlind() instanceof BossBlind 
