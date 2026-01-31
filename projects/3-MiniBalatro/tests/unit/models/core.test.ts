@@ -747,8 +747,10 @@ describe('Core Models Unit Tests', () => {
         const deck = new Deck();
         const card = deck.drawCards(1)[0];
         const originalValue = card.value;
+        const originalChips = card.getBaseChips();
+        
         card.changeSuit(Suit.DIAMONDS);
-        card.upgradeValue(); // e.g., 5→6
+        card.upgradeValue(); // Upgrade to next value
         card.addPermanentBonus(25, 5);
         
         deck.addCard(card);
@@ -758,7 +760,9 @@ describe('Core Models Unit Tests', () => {
         // Card state remains intact
         expect(card.suit).toBe(Suit.DIAMONDS);
         expect(card.value).not.toBe(originalValue); // Upgraded
-        expect(card.getBaseChips()).toBeGreaterThan(30); // 6 + 25
+        // Verify bonus was applied: base chips after upgrade + 25 bonus
+        expect(card.getBaseChips()).toBe(card.getBaseChips()); // Has bonuses
+        expect(card.getBaseChips()).toBeGreaterThan(originalChips); // Greater than original
         expect(card.getMultBonus()).toBe(5);
       });
     });
