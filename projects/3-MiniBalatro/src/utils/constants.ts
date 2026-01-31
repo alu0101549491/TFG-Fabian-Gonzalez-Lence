@@ -16,7 +16,7 @@
  * Game configuration constants.
  * Contains core gameplay parameters like money, joker limits, hand sizes, and round progression.
  */
-export const GAME_CONFIG = {
+export const GAME_CONFIG = Object.freeze({
   INITIAL_MONEY: 5,
   MAX_JOKERS: 5,
   MAX_CONSUMABLES: 2,
@@ -26,7 +26,7 @@ export const GAME_CONFIG = {
   MAX_DISCARDS_PER_BLIND: 3,
   VICTORY_ROUNDS: 8,
   LEVELS_PER_ROUND: 3,  // Number of blinds (small, big, boss) per round
-};
+});
 
 /**
  * Shop configuration constants.
@@ -71,7 +71,7 @@ export const BLIND_REWARDS = {
  * 
  * No need to edit CSS files directly!
  */
-export const COLORS = {
+export const COLORS = Object.freeze({
   // Theme Colors - Main backgrounds and UI elements
   BG_PRIMARY: '#1a1a2e',      // Main app background (dark navy)
   BG_PANEL: '#16213e',        // Panel/card container background (darker navy)
@@ -118,7 +118,7 @@ export const COLORS = {
   DEFEAT_BTN_END: '#b91c1c',      // Red button gradient end
   DEFEAT_BTN_HOVER_START: '#b91c1c',   // Red button hover start
   DEFEAT_BTN_HOVER_END: '#991b1b',     // Red button hover end
-};
+});
 
 /**
  * Suit symbols constants.

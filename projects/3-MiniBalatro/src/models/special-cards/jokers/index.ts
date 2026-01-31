@@ -17,3 +17,5 @@ export * from './joker-priority.enum';
 export * from './chip-joker';
 export * from './mult-joker';
 export * from './multiplier-joker';
+export * from './economic-joker';
+export * from './permanent-upgrade-joker';
