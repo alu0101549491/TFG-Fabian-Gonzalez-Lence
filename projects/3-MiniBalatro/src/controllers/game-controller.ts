@@ -492,6 +492,8 @@ export class GameController {
 
       case ShopItemType.PLANET:
         (item.item as Planet).apply(this.gameState!.getUpgradeManager());
+        // Mark that a new upgrade was applied
+        this.gameState!.markNewUpgrade();
         break;
 
       case ShopItemType.TAROT:

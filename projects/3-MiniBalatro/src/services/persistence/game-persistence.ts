@@ -268,6 +268,7 @@ export class GamePersistence {
       accumulatedScore: gameState.getAccumulatedScore(),
       handsRemaining: gameState.getHandsRemaining(),
       discardsRemaining: gameState.getDiscardsRemaining(),
+      hasUnseenUpgrade: gameState.hasUnseenHandUpgrade(),
 
       // Deck state
       deckCards: deck.getCards().map(card => ({
@@ -359,6 +360,11 @@ export class GamePersistence {
     gameState['accumulatedScore'] = parsed.accumulatedScore;
     gameState['handsRemaining'] = parsed.handsRemaining;
     gameState['discardsRemaining'] = parsed.discardsRemaining;
+
+    // Restore upgrade notification flag (defaults to false if not present in old saves)
+    if (parsed.hasUnseenUpgrade !== undefined) {
+      gameState['hasUnseenUpgrade'] = parsed.hasUnseenUpgrade;
+    }
 
     // Restore deck state
     if (parsed.deckCards && Array.isArray(parsed.deckCards) && parsed.discardPile && Array.isArray(parsed.discardPile)) {
