@@ -1385,6 +1385,11 @@ describe('GameState Unit Tests', () => {
     it('should handle deck exhaustion gracefully via recombine', () => {
       // Play multiple levels to move cards to discard pile
       for (let level = 1; level <= 3; level++) {
+        // Ensure hands/discards counters are reset for this simulated level
+        // @ts-expect-error Accessing private fields for test control
+        gameState.handsRemaining = GameConfig.MAX_HANDS_PER_BLIND;
+        // @ts-expect-error Accessing private fields for test control
+        gameState.discardsRemaining = GameConfig.MAX_DISCARDS_PER_BLIND;
         // If deck doesn't have enough cards to deal, recombine discard pile first
         if (gameState.getDeck().getRemaining() < GameConfig.HAND_SIZE) {
           gameState.getDeck().recombineAndShuffle();
