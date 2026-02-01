@@ -21,6 +21,7 @@ import { ShopView } from './components/shop/ShopView';
 import { BlindVictoryModal } from './components/modals/BlindVictoryModal';
 import { BlindDefeatModal } from './components/modals/BlindDefeatModal';
 import { GameVictoryModal } from './components/modals/GameVictoryModal';
+import { HelpModal } from './components/modals/HelpModal';
 import './App.css';
 
 /**
@@ -49,6 +50,7 @@ export const App: React.FC = () => {
   } | null>(null);
   const [showGameVictory, setShowGameVictory] = useState<boolean>(false);
   const [gameVictoryScore, setGameVictoryScore] = useState<number>(0);
+  const [showHelp, setShowHelp] = useState<boolean>(false);
 
   // Initialize game controller on mount
   useEffect(() => {
@@ -220,6 +222,7 @@ export const App: React.FC = () => {
         <GameBoard
           controller={controller}
           gameState={gameState}
+          onShowHelp={() => setShowHelp(true)}
         />
       )}
       {currentScreen === 'game' && controller && gameState && isInShop && (
@@ -254,6 +257,9 @@ export const App: React.FC = () => {
           onReturnToMenu={handleGameVictoryReturnToMenu}
         />
       )}
+
+      {/* Help Modal */}
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 };

@@ -32,6 +32,7 @@ import './GameBoard.css';
 interface GameBoardProps {
   controller: GameController;
   gameState: GameState;
+  onShowHelp: () => void;
 }
 
 /**
@@ -40,7 +41,8 @@ interface GameBoardProps {
  */
 export const GameBoard: React.FC<GameBoardProps> = ({
   controller,
-  gameState
+  gameState,
+  onShowHelp
 }) => {
   const [selectedCards, setSelectedCards] = useState<Card[]>([]);
   const [previewScore, setPreviewScore] = useState<{chips: number, mult: number, total: number, handType?: string} | null>(null);
@@ -234,6 +236,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         <span className="game-board__money">Money: ${gameState.getMoney()}</span>
         <span className="game-board__round">Round: {gameState.getRoundNumber()}</span>
         <span className="game-board__deck">Deck: {gameState.getDeck().getRemaining()}/{gameState.getDeck().getMaxDeckSize()} cards</span>
+        <button
+          className="game-board__help-button"
+          onClick={onShowHelp}
+          title="How to play"
+        >
+          ❓
+        </button>
       </div>
 
       {/* Boss Blind Info (only shown for boss blinds) */}
