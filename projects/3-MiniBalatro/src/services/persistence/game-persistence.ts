@@ -313,7 +313,11 @@ export class GamePersistence {
         level: gameState.getCurrentBlind().getLevel(),
         roundNumber: gameState.getRoundNumber(),
         type: gameState.getCurrentBlind().getBlindType(),
-        scoreGoal: gameState.getCurrentBlind().getScoreGoal(),
+        // For boss blinds, save the base score goal (before modifier is applied)
+        // because BossBlind.getScoreGoal() applies the modifier dynamically
+        scoreGoal: gameState.getCurrentBlind() instanceof BossBlind
+          ? gameState.getCurrentBlind()['scoreGoal'] // Access base scoreGoal property
+          : gameState.getCurrentBlind().getScoreGoal(),
         // Save boss type if this is a boss blind
         bossType: gameState.getCurrentBlind() instanceof BossBlind 
           ? (gameState.getCurrentBlind() as BossBlind).getBossType() 
@@ -506,7 +510,7 @@ export class GamePersistence {
           }
           
           gameState['currentBlind'] = bossBlind;
-          console.log(`Restored boss blind: ${bossType} at level ${blindLevel} with goal ${savedScoreGoal}`);
+          console.log(`Restored boss blind: ${bossType} at level ${blindLevel} with goal ${bossBlind.getScoreGoal()} (base: ${savedScoreGoal})`);
         }
         
         if (blindType !== 'BossBlind') {
