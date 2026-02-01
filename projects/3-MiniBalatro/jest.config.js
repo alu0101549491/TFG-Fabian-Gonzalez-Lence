@@ -32,6 +32,8 @@ export default {
     '!src/main.tsx',
     '!src/**/*.test.{ts,tsx}',
     '!src/**/*.spec.{ts,tsx}',
+    // Exclude view components from coverage (UI-only files)
+    '!src/views/**/*.{ts,tsx}',
   ],
   coverageThreshold: {
     global: {
