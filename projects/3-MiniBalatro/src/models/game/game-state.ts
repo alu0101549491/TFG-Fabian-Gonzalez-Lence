@@ -50,6 +50,7 @@ export class GameState {
   private upgradeManager: HandUpgradeManager;
   private blindGenerator: BlindGenerator;
   private scoreCalculator: ScoreCalculator;
+  private hasUnseenUpgrade: boolean;
 
   /**
    * Initializes a new game with starting conditions.
@@ -72,6 +73,7 @@ export class GameState {
       new HandEvaluator(),
       this.upgradeManager
     );
+    this.hasUnseenUpgrade = false;
 
     // Generate first blind
     this.currentBlind = this.blindGenerator.generateBlind(this.levelNumber);
@@ -84,6 +86,28 @@ export class GameState {
    */
   public getUpgradeManager(): HandUpgradeManager {
     return this.upgradeManager;
+  }
+
+  /**
+   * Checks if there are unseen hand upgrades (planet card purchases).
+   * @returns true if a planet was bought and the upgrade hasn't been viewed
+   */
+  public hasUnseenHandUpgrade(): boolean {
+    return this.hasUnseenUpgrade;
+  }
+
+  /**
+   * Marks that a planet card was purchased (sets upgrade notification).
+   */
+  public markUpgradeAsSeen(): void {
+    this.hasUnseenUpgrade = false;
+  }
+
+  /**
+   * Marks that a planet card was purchased (sets upgrade notification).
+   */
+  public markNewUpgrade(): void {
+    this.hasUnseenUpgrade = true;
   }
 
   /**

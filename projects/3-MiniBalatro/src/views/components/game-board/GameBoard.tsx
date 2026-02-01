@@ -48,7 +48,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [previewScore, setPreviewScore] = useState<{chips: number, mult: number, total: number, handType?: string} | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [isHandInfoOpen, setIsHandInfoOpen] = useState(false);
+  const [hasUpgradeNotification, setHasUpgradeNotification] = useState(false);
   const [sortMode, setSortMode] = useState<'rank' | 'suit'>('rank');
+
+  // Sync upgrade notification with game state
+  useEffect(() => {
+    setHasUpgradeNotification(gameState.hasUnseenHandUpgrade());
+  }, [gameState, forceUpdate]);
   const [currentLevel, setCurrentLevel] = useState<number>(gameState.getLevelNumber());
 
   // Reset sort mode to rank when level changes
@@ -360,9 +366,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         <div className="action-buttons action-buttons--right">
           <button
             className="action-button action-button--info"
-            onClick={() => setIsHandInfoOpen(true)}
+            onClick={() => {
+              gameState.markUpgradeAsSeen();
+              setHasUpgradeNotification(false);
+              setIsHandInfoOpen(true);
+            }}
           >
             📊 Hand Info
+            {hasUpgradeNotification && <span className="notification-dot" />}
           </button>
           <button
             className="action-button action-button--sort"
