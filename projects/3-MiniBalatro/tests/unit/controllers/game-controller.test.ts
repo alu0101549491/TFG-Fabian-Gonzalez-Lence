@@ -158,6 +158,9 @@ class MockGameState {
   getRoundNumber() { return this._roundNumber; }
   getDeck() { return this._deck as any; }
   getUpgradeManager() { return this._upgradeManager as any; }
+  // Called by controller when a planet upgrade is applied immediately.
+  // Provide a no-op implementation for tests to match production API.
+  markNewUpgrade() { /* noop for tests */ }
   getCurrentBlind() { return this._blind as any; }
   dealHand() {
     // Populate hand with 8 basic cards to simulate a real deal
