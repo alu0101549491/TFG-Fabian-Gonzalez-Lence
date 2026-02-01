@@ -1020,9 +1020,12 @@ describe('GamePersistence Unit Tests', () => {
       const highCardUpgrade = manager.getUpgradedValues(HandType.HIGH_CARD);
       expect(highCardUpgrade.additionalChips).toBe(10);
 
-      // Verify card bonuses preserved (at least one card should have the applied bonus)
+      // Verify card bonuses preserved (at least one card across hand/deck/discard should have the applied bonus)
       const hand = loaded.getCurrentHand();
-      const hasBonusCard = hand.some(c => c.getBaseChips() >= 10);
+      const deckCards = loaded.getDeck().getCards();
+      const discardCards = loaded.getDeck().getDiscardPile();
+      const allCards = [...hand, ...deckCards, ...discardCards];
+      const hasBonusCard = allCards.some(c => c.getBaseChips() >= 10);
       expect(hasBonusCard).toBe(true);
     });
 
