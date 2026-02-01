@@ -18,7 +18,7 @@
 /* === HEADER BAR === */
 .game-board__header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
   gap: 16px;
   align-items: center;
   padding: 12px 20px;
@@ -48,6 +48,30 @@
   text-align: right;
   color: var(--color-mult);
   font-family: 'Inter', monospace;
+}
+
+.game-board__help-button {
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+  border: 2px solid #6c5ce7;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.game-board__help-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(108, 92, 231, 0.4);
+}
+
+.game-board__help-button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
 }
 
 /* === BOSS BLIND INFO === */
