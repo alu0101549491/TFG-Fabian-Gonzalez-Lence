@@ -49,6 +49,11 @@ export class AudioValidator {
     const trimmedUrl = url.trim();
     if (!trimmedUrl || trimmedUrl.length > MAX_URL_LENGTH) return false;
 
+    // Check for IndexedDB URLs (custom protocol for local storage)
+    if (trimmedUrl.startsWith('indexed-db://')) {
+      return true;
+    }
+
     // Check for HTTP/HTTPS URLs
     if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
       try {
@@ -86,6 +91,11 @@ export class AudioValidator {
   public static isSupportedFormat(url: string): boolean {
     if (!url || typeof url !== 'string') return false;
 
+    // IndexedDB URLs are always considered valid (files are validated on upload)
+    if (url.startsWith('indexed-db://')) {
+      return true;
+    }
+
     // Extract the file extension (case insensitive)
     const extensionMatch = url.split('?')[0].match(/\.([0-9a-z]+)(?:[\?#]|$)/i);
     if (!extensionMatch) return false;
@@ -104,6 +114,11 @@ export class AudioValidator {
    */
   public static isValidImageFormat(url: string): boolean {
     if (!url || typeof url !== 'string') return false;
+
+    // IndexedDB URLs are always considered valid (files are validated on upload)
+    if (url.startsWith('indexed-db://')) {
+      return true;
+    }
 
     const extensionMatch = url.split('?')[0].match(/\.([0-9a-z]+)(?:[\?#]|$)/i);
     if (!extensionMatch) return false;

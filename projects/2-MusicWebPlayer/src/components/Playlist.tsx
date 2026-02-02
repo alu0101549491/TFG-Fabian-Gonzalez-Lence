@@ -16,6 +16,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Song } from '../types/song';
 import { AddSongForm } from './AddSongForm';
+import { PlaylistItem } from './PlaylistItem';
 import styles from '../styles/Playlist.module.css';
 import { getBaseUrl } from '../utils/env';
 
@@ -162,62 +163,18 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
           {songs.map((song, index) => {
             const isActive = index === props.currentSongIndex;
             return (
-              <li
+              <PlaylistItem
                 key={song.id}
-                className={`${styles.playlist__item} ${isActive ? styles['playlist__item--active'] : ''}`}
+                cover={song.cover}
+                title={song.title}
+                artist={song.artist}
+                isActive={isActive}
+                isDeleteConfirm={deleteConfirmId === song.id}
+                onDefaultCover={DEFAULT_COVER}
                 onClick={() => handleSongClick(index)}
-                role="button"
-                tabIndex={0}
+                onDelete={(e) => handleDeleteClick(e, song.id)}
                 onKeyDown={(e) => handleKeyDown(e, index)}
-                aria-current={isActive ? 'true' : undefined}
-                aria-label={`${song.title} by ${song.artist}${isActive ? ' (currently playing)' : ''}`}
-              >
-                {/* Thumbnail */}
-                <img
-                  src={song.cover}
-                  alt={`${song.title} cover`}
-                  className={styles['playlist__item-thumbnail']}
-                  onError={handleImageError}
-                />
-
-                {/* Song info */}
-                <div className={styles['playlist__item-info']}>
-                  <p className={styles['playlist__item-title']} title={song.title}>
-                    {song.title}
-                  </p>
-                  <p className={styles['playlist__item-artist']} title={song.artist}>
-                    {song.artist}
-                  </p>
-                </div>
-
-                {/* Currently playing indicator */}
-                {index === props.currentSongIndex && (
-                  <span className={styles['playlist__item-indicator']} aria-hidden="true">
-                    ♫
-                  </span>
-                )}
-
-                {/* Delete button */}
-                <button
-                  type="button"
-                  className={`${styles['playlist__item-delete']} ${
-                    deleteConfirmId === song.id ? styles['playlist__item-delete--confirm'] : ''
-                  }`}
-                  onClick={(e) => handleDeleteClick(e, song.id)}
-                  aria-label={
-                    deleteConfirmId === song.id
-                      ? `Confirm delete ${song.title}`
-                      : `Remove ${song.title} from playlist`
-                  }
-                  title={
-                    deleteConfirmId === song.id
-                      ? 'Click again to confirm'
-                      : 'Remove song'
-                  }
-                >
-                  {deleteConfirmId === song.id ? '✓' : '×'}
-                </button>
-              </li>
+              />
             );
           })}
         </ol>

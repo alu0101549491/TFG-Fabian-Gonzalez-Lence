@@ -16,6 +16,7 @@
 import { useState, useEffect, useCallback, RefObject } from 'react';
 import { ErrorHandler } from '@utils/error-handler';
 import { useLocalStorage } from './useLocalStorage';
+import { IndexedDBStorage } from '@utils/indexed-db-storage';
 
 /**
  * Interface for the useAudioPlayer hook return value.
@@ -50,7 +51,7 @@ export interface AudioPlayerHook {
   seek: (time: number) => void;
 
   /** Function to set the audio source */
-  setSource: (url: string, songId?: string) => void;
+  setSource: (url: string, songId?: string) => Promise<void>;
 
   /** Function to set the volume level */
   setVolume: (volume: number) => void;
@@ -155,7 +156,7 @@ export function useAudioPlayer(
    * @param url URL or path to audio file
    * @param songId Optional ID of the song for error handling
    */
-  const setSource = useCallback((url: string, songId?: string): void => {
+  const setSource = useCallback(async (url: string, songId?: string): Promise<void> => {
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -167,8 +168,26 @@ export function useAudioPlayer(
       setError(null);
       setCurrentSongId(songId);
 
-      // Set new source
-      audio.src = url;
+      // Check if this is an IndexedDB URL
+      if (url.startsWith('indexed-db://')) {
+        const fileId = url.replace('indexed-db://', '');
+        const blobUrl = await IndexedDBStorage.getFileBlobURL(fileId);
+        
+        if (!blobUrl) {
+          throw new Error('File not found in storage');
+        }
+        
+        // Revoke previous blob URL if it exists
+        if (audio.src.startsWith('blob:')) {
+          URL.revokeObjectURL(audio.src);
+        }
+        
+        audio.src = blobUrl;
+      } else {
+        // Set regular URL
+        audio.src = url;
+      }
+      
       audio.load(); // Explicitly load the new source
     } catch (err) {
       console.error('Error setting audio source:', err);
