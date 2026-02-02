@@ -129,15 +129,6 @@ export const Playlist: React.FC<PlaylistProps> = (props) => {
   const DEFAULT_COVER = `${getBaseUrl()}covers/default-cover.jpg`;
 
   /**
-   * Handles image loading errors by setting a fallback image.
-   * @param event - Image error event
-   */
-  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>): void => {
-    event.currentTarget.src = DEFAULT_COVER;
-    event.currentTarget.alt = 'Default album cover';
-  };
-
-  /**
    * Handles adding a new song from the form.
    * @param song - The new song to add
    */
