@@ -72,12 +72,12 @@ export const Player: React.FC = () => {
   /**
    * Advances to the next song in the playlist.
    */
-  const handleNext = (): void => {
+  const handleNext = async (): Promise<void> => {
     const newIndex = playlistManager.next();
     const nextSong = playlistManager.getSongAt(newIndex);
 
     if (nextSong) {
-      audioPlayer.setSource(nextSong.url, nextSong.id);
+      await audioPlayer.setSource(nextSong.url, nextSong.id);
 
       // Auto-play if currently playing
       if (audioPlayer.isPlaying) {
@@ -92,12 +92,12 @@ export const Player: React.FC = () => {
   /**
    * Goes back to the previous song in the playlist.
    */
-  const handlePrevious = (): void => {
+  const handlePrevious = async (): Promise<void> => {
     const newIndex = playlistManager.previous();
     const prevSong = playlistManager.getSongAt(newIndex);
 
     if (prevSong) {
-      audioPlayer.setSource(prevSong.url, prevSong.id);
+      await audioPlayer.setSource(prevSong.url, prevSong.id);
 
       // Auto-play if currently playing
       if (audioPlayer.isPlaying) {
@@ -121,12 +121,12 @@ export const Player: React.FC = () => {
    * Handles user selecting a song from the playlist.
    * @param index - Index of the selected song
    */
-  const handleSongSelect = (index: number): void => {
+  const handleSongSelect = async (index: number): Promise<void> => {
     playlistManager.setCurrentIndex(index);
     const selectedSong = playlistManager.getSongAt(index);
 
     if (selectedSong) {
-      audioPlayer.setSource(selectedSong.url, selectedSong.id);
+      await audioPlayer.setSource(selectedSong.url, selectedSong.id);
       audioPlayer.play().catch(error => {
         console.error('Play failed:', error);
         setErrorMessage('Unable to play selected song. Please try again.');
