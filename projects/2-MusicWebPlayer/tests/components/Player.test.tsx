@@ -9,6 +9,35 @@ import * as PlaylistDataProvider from '@/data/playlist-data-provider';
 import { Song } from '@/types/song';
 import { RepeatMode } from '@/types/playback-modes';
 
+// Mock crypto.randomUUID if not available
+if (!global.crypto) {
+  // @ts-ignore
+  global.crypto = {};
+}
+if (!global.crypto.randomUUID) {
+  global.crypto.randomUUID = () => 'test-uuid-' + Math.random().toString(36).slice(2);
+}
+
+// Mock IndexedDB Storage
+jest.mock('@/utils/indexed-db-storage', () => ({
+  IndexedDBStorage: {
+    storeFile: jest.fn(() => Promise.resolve('test-id')),
+    getFile: jest.fn(() => Promise.resolve(null)),
+    getFileBlobURL: jest.fn(() => Promise.resolve('blob:test-url')),
+  }
+}));
+
+// Mock AudioValidator to always pass validation
+jest.mock('@/utils/audio-validator', () => ({
+  AudioValidator: {
+    validateSong: jest.fn(() => ({ isValid: true, errors: [] })),
+    isValidAudioUrl: jest.fn(() => true),
+    isValidImageUrl: jest.fn(() => true),
+    isSupportedFormat: jest.fn(() => true),
+    isValidImageFormat: jest.fn(() => true),
+  }
+}));
+
 // Mock the hooks
 jest.mock('@/hooks/usePlaylist');
 jest.mock('@/hooks/useAudioPlayer');
@@ -397,7 +426,7 @@ describe('Player Component', () => {
       expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/^artist \*/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/cover/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/^audio file url/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/audio.*file/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /add|submit/i })).toBeInTheDocument();
     });
 
@@ -415,10 +444,13 @@ describe('Player Component', () => {
       await user.type(screen.getByLabelText(/title/i), 'New Song');
       await user.type(screen.getByLabelText(/^artist \*/i), 'New Artist');
       await user.type(screen.getByLabelText(/cover/i), '/new-cover.jpg');
-      await user.type(screen.getByLabelText(/^audio file url/i), '/new-song.mp3');
+      await user.type(screen.getByLabelText(/audio.*file/i), '/new-song.mp3');
 
       // Submit
       await user.click(screen.getByRole('button', { name: /add|submit/i }));
+
+      // Give a moment for the async code to run
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(addSongMock).toHaveBeenCalledWith({
         id: expect.any(String), // ID gets generated
@@ -630,8 +662,11 @@ describe('Player Component', () => {
       await user.type(screen.getByLabelText(/title/i), 'Added Song');
       await user.type(screen.getByLabelText(/^artist \*/i), 'Added Artist');
       await user.type(screen.getByLabelText(/cover/i), '/added-cover.jpg');
-      await user.type(screen.getByLabelText(/^audio file url/i), '/added-song.mp3');
+      await user.type(screen.getByLabelText(/audio.*file/i), '/added-song.mp3');
       await user.click(screen.getByRole('button', { name: /add|submit/i }));
+
+      // Give a moment for the async code to run
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(addSongMock).toHaveBeenCalled();
     });
