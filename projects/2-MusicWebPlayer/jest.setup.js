@@ -1,6 +1,22 @@
 // Setup file for Jest with React Testing Library
 require('@testing-library/jest-dom');
 
+// Setup fake-indexeddb for IndexedDB testing
+require('fake-indexeddb/auto');
+
+// Polyfill for structuredClone if not available (Node < 17)
+if (typeof global.structuredClone === 'undefined') {
+  global.structuredClone = (obj) => JSON.parse(JSON.stringify(obj));
+}
+
+// Mock URL.createObjectURL and revokeObjectURL for testing
+if (typeof global.URL.createObjectURL === 'undefined') {
+  global.URL.createObjectURL = jest.fn(() => 'blob:mock-url-' + Math.random());
+}
+if (typeof global.URL.revokeObjectURL === 'undefined') {
+  global.URL.revokeObjectURL = jest.fn();
+}
+
 // Mock HTMLMediaElement (Audio API)
 window.HTMLMediaElement.prototype.load = jest.fn();
 window.HTMLMediaElement.prototype.play = jest.fn(() => Promise.resolve());

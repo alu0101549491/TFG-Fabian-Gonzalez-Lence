@@ -434,4 +434,243 @@ describe('AddSongForm Component', () => {
       });
     });
   });
+
+  describe('File Upload Functionality', () => {
+    it('should accept cover image file upload', async () => {
+      const user = userEvent.setup();
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      const coverFile = new File(['cover image'], 'cover.jpg', { type: 'image/jpeg' });
+      const coverFileInput = document.getElementById('cover-file-input') as HTMLInputElement;
+
+      await user.upload(coverFileInput, coverFile);
+
+      expect(coverFileInput.files).toHaveLength(1);
+      expect(coverFileInput.files![0]).toBe(coverFile);
+    });
+
+    it('should accept audio file upload', async () => {
+      const user = userEvent.setup();
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      const audioFile = new File(['audio data'], 'song.mp3', { type: 'audio/mp3' });
+      const audioFileInput = document.getElementById('audio-file-input') as HTMLInputElement;
+
+      await user.upload(audioFileInput, audioFile);
+
+      expect(audioFileInput.files).toHaveLength(1);
+      expect(audioFileInput.files![0]).toBe(audioFile);
+    });
+
+    it('should submit form with uploaded files instead of URLs', async () => {
+      const user = userEvent.setup();
+      const { IndexedDBStorage } = require('@/utils/indexed-db-storage');
+      
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      // Fill in text fields
+      await user.type(screen.getByLabelText(/title/i), 'File Upload Song');
+      await user.type(screen.getByLabelText(/artist/i), 'File Upload Artist');
+
+      // Upload files
+      const coverFile = new File(['cover'], 'cover.jpg', { type: 'image/jpeg' });
+      const audioFile = new File(['audio'], 'song.mp3', { type: 'audio/mp3' });
+
+      const coverFileInput = document.getElementById('cover-file-input') as HTMLInputElement;
+      const audioFileInput = document.getElementById('audio-file-input') as HTMLInputElement;
+
+      await user.upload(coverFileInput, coverFile);
+      await user.upload(audioFileInput, audioFile);
+
+      // Submit form
+      await user.click(screen.getByRole('button', { name: /add song/i }));
+
+      // Give a moment for async operations
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // IndexedDB should have been called to store both files
+      expect(IndexedDBStorage.storeFile).toHaveBeenCalledTimes(2);
+      expect(IndexedDBStorage.storeFile).toHaveBeenCalledWith(coverFile, expect.any(String));
+      expect(IndexedDBStorage.storeFile).toHaveBeenCalledWith(audioFile, expect.any(String));
+
+      // Callback should be called with indexed-db:// URLs
+      expect(mockOnAddSong).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'File Upload Song',
+          artist: 'File Upload Artist',
+          cover: expect.stringContaining('indexed-db://'),
+          url: expect.stringContaining('indexed-db://')
+        })
+      );
+    });
+
+    it('should clear cover file when clear button is clicked', async () => {
+      const user = userEvent.setup();
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      // Upload a file
+      const coverFile = new File(['cover'], 'cover.jpg', { type: 'image/jpeg' });
+      const coverFileInput = document.getElementById('cover-file-input') as HTMLInputElement;
+      await user.upload(coverFileInput, coverFile);
+
+      // File should be uploaded
+      expect(coverFileInput.files).toHaveLength(1);
+
+      // Find and click clear button
+      const clearButtons = screen.getAllByRole('button', { name: /clear|remove/i });
+      if (clearButtons.length > 0) {
+        await user.click(clearButtons[0]);
+        
+        // File should be cleared
+        expect(coverFileInput.files).toHaveLength(0);
+      }
+    });
+
+    it('should clear audio file when clear button is clicked', async () => {
+      const user = userEvent.setup();
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      // Upload a file
+      const audioFile = new File(['audio'], 'song.mp3', { type: 'audio/mp3' });
+      const audioFileInput = document.getElementById('audio-file-input') as HTMLInputElement;
+      await user.upload(audioFileInput, audioFile);
+
+      // File should be uploaded
+      expect(audioFileInput.files).toHaveLength(1);
+
+      // Find and click clear button
+      const clearButtons = screen.getAllByRole('button', { name: /clear|remove/i });
+      if (clearButtons.length > 1) {
+        await user.click(clearButtons[1]);
+        
+        // File should be cleared
+        expect(audioFileInput.files).toHaveLength(0);
+      }
+    });
+
+    it('should submit with mixed URL and file inputs', async () => {
+      const user = userEvent.setup();
+      const { IndexedDBStorage } = require('@/utils/indexed-db-storage');
+      
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      // Fill in text fields
+      await user.type(screen.getByLabelText(/title/i), 'Mixed Input Song');
+      await user.type(screen.getByLabelText(/artist/i), 'Mixed Input Artist');
+
+      // Use URL for cover
+      await user.type(screen.getByLabelText(/cover/i), '/covers/cover.jpg');
+
+      // Use file for audio
+      const audioFile = new File(['audio'], 'song.mp3', { type: 'audio/mp3' });
+      const audioFileInput = document.getElementById('audio-file-input') as HTMLInputElement;
+      await user.upload(audioFileInput, audioFile);
+
+      // Submit form
+      await user.click(screen.getByRole('button', { name: /add song/i }));
+
+      // Give a moment for async operations
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Only audio file should be stored
+      expect(IndexedDBStorage.storeFile).toHaveBeenCalledTimes(1);
+      expect(IndexedDBStorage.storeFile).toHaveBeenCalledWith(audioFile, expect.any(String));
+
+      // Callback should be called with URL for cover and indexed-db for audio
+      expect(mockOnAddSong).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cover: '/covers/cover.jpg',
+          url: expect.stringContaining('indexed-db://')
+        })
+      );
+    });
+
+    it('should reject invalid cover file type', async () => {
+      const user = userEvent.setup();
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      // Try to upload non-image file
+      const textFile = new File(['text'], 'document.txt', { type: 'text/plain' });
+      const coverFileInput = document.getElementById('cover-file-input') as HTMLInputElement;
+
+      await user.upload(coverFileInput, textFile);
+
+      // File name should not be displayed (file was rejected)
+      await waitFor(() => {
+        expect(screen.queryByText('document.txt')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should reject invalid audio file type', async () => {
+      const user = userEvent.setup();
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      // Try to upload non-audio file
+      const textFile = new File(['text'], 'document.txt', { type: 'text/plain' });
+      const audioFileInput = document.getElementById('audio-file-input') as HTMLInputElement;
+
+      await user.upload(audioFileInput, textFile);
+
+      // File name should not be displayed (file was rejected)
+      await waitFor(() => {
+        expect(screen.queryByText('document.txt')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should disable file input when URL is entered', async () => {
+      const user = userEvent.setup();
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      // Enter URL first
+      const coverInput = screen.getByLabelText(/cover/i) as HTMLInputElement;
+      await user.type(coverInput, 'https://example.com/cover.jpg');
+
+      // File input should be disabled
+      const coverFileInput = document.getElementById('cover-file-input') as HTMLInputElement;
+      expect(coverFileInput.disabled).toBe(true);
+    });
+
+    it('should display filename after file upload', async () => {
+      const user = userEvent.setup();
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      const coverFile = new File(['cover'], 'my-cover-image.jpg', { type: 'image/jpeg' });
+      const coverFileInput = document.getElementById('cover-file-input') as HTMLInputElement;
+
+      await user.upload(coverFileInput, coverFile);
+
+      // Should display the filename somewhere
+      await waitFor(() => {
+        expect(screen.getByText(/my-cover-image\.jpg/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should reset file inputs after successful submission', async () => {
+      const user = userEvent.setup();
+      render(<AddSongForm onAddSong={mockOnAddSong} />);
+
+      // Fill form with files
+      await user.type(screen.getByLabelText(/title/i), 'Test');
+      await user.type(screen.getByLabelText(/artist/i), 'Artist');
+
+      const coverFile = new File(['cover'], 'cover.jpg', { type: 'image/jpeg' });
+      const audioFile = new File(['audio'], 'song.mp3', { type: 'audio/mp3' });
+
+      const coverFileInput = document.getElementById('cover-file-input') as HTMLInputElement;
+      const audioFileInput = document.getElementById('audio-file-input') as HTMLInputElement;
+
+      await user.upload(coverFileInput, coverFile);
+      await user.upload(audioFileInput, audioFile);
+
+      // Submit
+      await user.click(screen.getByRole('button', { name: /add song/i }));
+
+      // Give a moment for async operations
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // File inputs should be cleared
+      expect(coverFileInput.files).toHaveLength(0);
+      expect(audioFileInput.files).toHaveLength(0);
+    });
+  });
 });
