@@ -16,6 +16,7 @@
 import React from 'react';
 import styles from '../styles/TrackInfo.module.css';
 import { getBaseUrl } from '../utils/env';
+import { useResourceLoader } from '@hooks/useResourceLoader';
 
 /**
  * Props for the TrackInfo component.
@@ -53,6 +54,9 @@ const DEFAULT_COVER = `${getBaseUrl()}covers/default-cover.jpg`;
  */
 export const TrackInfo: React.FC<TrackInfoProps> = React.memo(
   ({ title, artist, cover }) => {
+    // Load resource from IndexedDB if needed
+    const { url: resolvedCover, isLoading } = useResourceLoader(cover);
+
     /**
      * Handles image loading errors by setting a fallback image.
      * @param e The image error event
@@ -65,17 +69,21 @@ export const TrackInfo: React.FC<TrackInfoProps> = React.memo(
     // Handle empty or missing props with fallback values
     const displayTitle = title || 'Unknown Title';
     const displayArtist = artist || 'Unknown Artist';
-    const displayCover = cover || DEFAULT_COVER;
+    const displayCover = resolvedCover || DEFAULT_COVER;
 
     return (
       <div className={styles['track-info']}>
-        <img
-          src={displayCover}
-          alt={`${displayTitle} by ${displayArtist} album cover`}
-          className={styles['track-info__cover']}
-          onError={handleImageError}
-          loading="lazy"
-        />
+        {isLoading ? (
+          <div className={styles['track-info__cover-loading']}>Loading...</div>
+        ) : (
+          <img
+            src={displayCover}
+            alt={`${displayTitle} by ${displayArtist} album cover`}
+            className={styles['track-info__cover']}
+            onError={handleImageError}
+            loading="lazy"
+          />
+        )}
         <div className={styles['track-info__details']}>
           <h2
             className={styles['track-info__title']}

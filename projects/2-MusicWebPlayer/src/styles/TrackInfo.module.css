@@ -16,6 +16,20 @@
   /* Responsive: 200px on mobile */
 }
 
+.track-info__cover-loading {
+  /* Loading placeholder for cover */
+  width: 300px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-surface);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
 .track-info__details {
   /* Text container styles */
   display: flex;
@@ -47,7 +61,8 @@
     text-align: center;
   }
   
-  .track-info__cover {
+  .track-info__cover,
+  .track-info__cover-loading {
     width: 200px;
     height: 200px;
   }

@@ -16,6 +16,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Song } from '../types/song';
 import { AudioValidator } from '@utils/audio-validator';
+import { IndexedDBStorage } from '@utils/indexed-db-storage';
 import styles from '@styles/AddSongForm.module.css';
 
 /**
@@ -39,6 +40,8 @@ interface AddSongFormState {
   artist: string;
   cover: string;
   url: string;
+  coverFile: File | null;
+  audioFile: File | null;
 }
 
 /**
@@ -64,7 +67,9 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
     title: '',
     artist: '',
     cover: '',
-    url: ''
+    url: '',
+    coverFile: null,
+    audioFile: null
   });
 
   // Error state
@@ -72,6 +77,10 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
   const [globalErrors, setGlobalErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  
+  // Refs for file inputs
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
+  const audioFileInputRef = useRef<HTMLInputElement>(null);
 
   const successTimerRef = useRef<number | null>(null);
 
@@ -97,6 +106,94 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
   };
 
   /**
+   * Handles cover image file selection.
+   * @param event File input change event
+   */
+  const handleCoverFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setFieldErrors(prev => ({
+          ...prev,
+          cover: 'Please select a valid image file (JPG, PNG, GIF, WebP, SVG)'
+        }));
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        coverFile: file,
+        cover: '' // Clear URL field when file is selected
+      }));
+
+      // Clear any previous errors
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.cover;
+        return newErrors;
+      });
+    }
+  };
+
+  /**
+   * Handles audio file selection.
+   * @param event File input change event
+   */
+  const handleAudioFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('audio/')) {
+        setFieldErrors(prev => ({
+          ...prev,
+          url: 'Please select a valid audio file (MP3, WAV, OGG, M4A)'
+        }));
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        audioFile: file,
+        url: '' // Clear URL field when file is selected
+      }));
+
+      // Clear any previous errors
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.url;
+        return newErrors;
+      });
+    }
+  };
+
+  /**
+   * Clears the selected cover file.
+   */
+  const handleClearCoverFile = (): void => {
+    setFormData(prev => ({
+      ...prev,
+      coverFile: null
+    }));
+    if (coverFileInputRef.current) {
+      coverFileInputRef.current.value = '';
+    }
+  };
+
+  /**
+   * Clears the selected audio file.
+   */
+  const handleClearAudioFile = (): void => {
+    setFormData(prev => ({
+      ...prev,
+      audioFile: null
+    }));
+    if (audioFileInputRef.current) {
+      audioFileInputRef.current.value = '';
+    }
+  };
+
+  /**
    * Validates the form data before submission.
    * @returns true if form is valid, false otherwise
    */
@@ -105,40 +202,64 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
     setGlobalErrors([]);
     setFieldErrors({});
 
-    // Create song object for validation
-    const songToValidate: Song = {
-      id: 'temp', // Temporary ID for validation
-      title: formData.title.trim(),
-      artist: formData.artist.trim(),
-      cover: formData.cover.trim(),
-      url: formData.url.trim()
-    };
+    const errors: string[] = [];
+    const newFieldErrors: FieldErrors = {};
 
-    // Validate using AudioValidator
-    const validationResult = AudioValidator.validateSong(songToValidate);
+    // Validate title
+    if (!formData.title.trim()) {
+      newFieldErrors.title = 'Title is required';
+    }
 
-    if (!validationResult.isValid) {
-      // Parse errors and map to fields
-      const newFieldErrors: FieldErrors = {};
-      const otherErrors: string[] = [];
+    // Validate artist
+    if (!formData.artist.trim()) {
+      newFieldErrors.artist = 'Artist is required';
+    }
 
-      validationResult.errors.forEach(error => {
-        if (error.includes('Title')) {
-          newFieldErrors.title = error;
-        } else if (error.includes('Artist')) {
-          newFieldErrors.artist = error;
-        } else if (error.includes('Cover')) {
-          newFieldErrors.cover = error;
-        } else if (error.includes('Audio') || error.includes('URL')) {
-          newFieldErrors.url = error;
-        } else {
-          // Add to global errors if not field-specific
-          otherErrors.push(error);
-        }
-      });
+    // Validate cover (either URL or file)
+    if (!formData.cover.trim() && !formData.coverFile) {
+      newFieldErrors.cover = 'Cover image URL or file is required';
+    } else if (formData.cover.trim()) {
+      // Validate URL if provided
+      const songToValidate: Song = {
+        id: 'temp',
+        title: 'temp',
+        artist: 'temp',
+        cover: formData.cover.trim(),
+        url: 'temp'
+      };
+      const coverValidation = AudioValidator.validateSong(songToValidate);
+      const coverError = coverValidation.errors.find(e => e.includes('Cover'));
+      if (coverError) {
+        newFieldErrors.cover = coverError;
+      }
+    }
 
-      setGlobalErrors(otherErrors);
+    // Validate audio (either URL or file)
+    if (!formData.url.trim() && !formData.audioFile) {
+      newFieldErrors.url = 'Audio file URL or file is required';
+    } else if (formData.url.trim()) {
+      // Validate URL if provided
+      const songToValidate: Song = {
+        id: 'temp',
+        title: 'temp',
+        artist: 'temp',
+        cover: 'temp',
+        url: formData.url.trim()
+      };
+      const urlValidation = AudioValidator.validateSong(songToValidate);
+      const urlError = urlValidation.errors.find(e => e.includes('Audio') || e.includes('URL'));
+      if (urlError) {
+        newFieldErrors.url = urlError;
+      }
+    }
+
+    if (Object.keys(newFieldErrors).length > 0) {
       setFieldErrors(newFieldErrors);
+      return false;
+    }
+
+    if (errors.length > 0) {
+      setGlobalErrors(errors);
       return false;
     }
 
@@ -161,17 +282,27 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
       title: '',
       artist: '',
       cover: '',
-      url: ''
+      url: '',
+      coverFile: null,
+      audioFile: null
     });
     setFieldErrors({});
     setGlobalErrors([]);
+    
+    // Clear file inputs
+    if (coverFileInputRef.current) {
+      coverFileInputRef.current.value = '';
+    }
+    if (audioFileInputRef.current) {
+      audioFileInputRef.current.value = '';
+    }
   };
 
   /**
    * Handles form submission.
    * @param event Form submit event
    */
-  const handleSubmit = (event: React.FormEvent): void => {
+  const handleSubmit = async (event: React.FormEvent): Promise<void> => {
     event.preventDefault();
 
     if (!validateForm()) {
@@ -180,24 +311,47 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
 
     setIsSubmitting(true);
 
-    // Create new song object
-    const newSong: Song = {
-      id: generateId(),
-      title: formData.title.trim(),
-      artist: formData.artist.trim(),
-      cover: formData.cover.trim(),
-      url: formData.url.trim()
-    };
+    try {
+      let coverUrl = formData.cover.trim();
+      let audioUrl = formData.url.trim();
 
-    // Call parent callback
-    props.onAddSong(newSong);
+      // Store cover file if uploaded
+      if (formData.coverFile) {
+        const coverId = `cover-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+        await IndexedDBStorage.storeFile(formData.coverFile, coverId);
+        coverUrl = `indexed-db://${coverId}`;
+      }
 
-    // Reset form and show success
-    resetForm();
-    setSubmitSuccess(true);
-    setIsSubmitting(false);
+      // Store audio file if uploaded
+      if (formData.audioFile) {
+        const audioId = `audio-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+        await IndexedDBStorage.storeFile(formData.audioFile, audioId);
+        audioUrl = `indexed-db://${audioId}`;
+      }
 
-    successTimerRef.current = window.setTimeout(() => setSubmitSuccess(false), 3000);
+      // Create new song object
+      const newSong: Song = {
+        id: generateId(),
+        title: formData.title.trim(),
+        artist: formData.artist.trim(),
+        cover: coverUrl,
+        url: audioUrl
+      };
+
+      // Call parent callback
+      props.onAddSong(newSong);
+
+      // Reset form and show success
+      resetForm();
+      setSubmitSuccess(true);
+
+      successTimerRef.current = window.setTimeout(() => setSubmitSuccess(false), 3000);
+    } catch (error) {
+      console.error('Failed to add song:', error);
+      setGlobalErrors(['Failed to save files. Please try again.']);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Cleanup timer on unmount
@@ -276,20 +430,57 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
       {/* Cover URL input */}
       <div className={styles['add-song-form__field']}>
         <label htmlFor="song-cover" className={styles['add-song-form__label']}>
-          Cover Image URL *
+          Cover Image *
         </label>
-        <input
-          type="url"
-          id="song-cover"
-          name="cover"
-          value={formData.cover}
-          onChange={(e) => handleInputChange('cover', e.target.value)}
-          className={`${styles['add-song-form__input']} ${fieldErrors.cover ? styles['add-song-form__input--error'] : ''}`}
-          placeholder="https://example.com/cover.jpg"
-          required
-          aria-invalid={!!fieldErrors.cover}
-          aria-describedby={fieldErrors.cover ? "cover-error" : undefined}
-        />
+        <div className={styles['add-song-form__input-row']}>
+          <div className={styles['add-song-form__input-wrapper']}>
+            <input
+              type="url"
+              id="song-cover"
+              name="cover"
+              value={formData.cover}
+              onChange={(e) => handleInputChange('cover', e.target.value)}
+              className={`${styles['add-song-form__input']} ${fieldErrors.cover ? styles['add-song-form__input--error'] : ''}`}
+              placeholder="Enter image URL"
+              disabled={!!formData.coverFile}
+              aria-invalid={!!fieldErrors.cover}
+              aria-describedby={fieldErrors.cover ? "cover-error" : undefined}
+            />
+          </div>
+          <span className={styles['add-song-form__separator']}>or</span>
+          <div className={styles['add-song-form__file-button-wrapper']}>
+            <input
+              type="file"
+              ref={coverFileInputRef}
+              accept="image/*"
+              onChange={handleCoverFileChange}
+              className={styles['add-song-form__file-input']}
+              id="cover-file-input"
+              disabled={!!formData.cover.trim()}
+            />
+            <label 
+              htmlFor="cover-file-input" 
+              className={`${styles['add-song-form__file-label']} ${formData.cover.trim() ? styles['add-song-form__file-label--disabled'] : ''}`}
+            >
+              📁 Upload File
+            </label>
+          </div>
+        </div>
+        {formData.coverFile && (
+          <div className={styles['add-song-form__file-info']}>
+            <span className={styles['add-song-form__file-name']}>
+              ✓ {formData.coverFile.name}
+            </span>
+            <button
+              type="button"
+              onClick={handleClearCoverFile}
+              className={styles['add-song-form__file-clear']}
+              aria-label="Clear cover file"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {fieldErrors.cover && (
           <span id="cover-error" className={styles['add-song-form__error-message']} role="alert">
             {fieldErrors.cover}
@@ -300,20 +491,57 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
       {/* Audio URL input */}
       <div className={styles['add-song-form__field']}>
         <label htmlFor="song-url" className={styles['add-song-form__label']}>
-          Audio File URL *
+          Audio File *
         </label>
-        <input
-          type="url"
-          id="song-url"
-          name="url"
-          value={formData.url}
-          onChange={(e) => handleInputChange('url', e.target.value)}
-          className={`${styles['add-song-form__input']} ${fieldErrors.url ? styles['add-song-form__input--error'] : ''}`}
-          placeholder="https://example.com/song.mp3"
-          required
-          aria-invalid={!!fieldErrors.url}
-          aria-describedby={fieldErrors.url ? "url-error" : undefined}
-        />
+        <div className={styles['add-song-form__input-row']}>
+          <div className={styles['add-song-form__input-wrapper']}>
+            <input
+              type="url"
+              id="song-url"
+              name="url"
+              value={formData.url}
+              onChange={(e) => handleInputChange('url', e.target.value)}
+              className={`${styles['add-song-form__input']} ${fieldErrors.url ? styles['add-song-form__input--error'] : ''}`}
+              placeholder="Enter audio URL"
+              disabled={!!formData.audioFile}
+              aria-invalid={!!fieldErrors.url}
+              aria-describedby={fieldErrors.url ? "url-error" : undefined}
+            />
+          </div>
+          <span className={styles['add-song-form__separator']}>or</span>
+          <div className={styles['add-song-form__file-button-wrapper']}>
+            <input
+              type="file"
+              ref={audioFileInputRef}
+              accept="audio/*"
+              onChange={handleAudioFileChange}
+              className={styles['add-song-form__file-input']}
+              id="audio-file-input"
+              disabled={!!formData.url.trim()}
+            />
+            <label 
+              htmlFor="audio-file-input" 
+              className={`${styles['add-song-form__file-label']} ${formData.url.trim() ? styles['add-song-form__file-label--disabled'] : ''}`}
+            >
+              🎵 Upload File
+            </label>
+          </div>
+        </div>
+        {formData.audioFile && (
+          <div className={styles['add-song-form__file-info']}>
+            <span className={styles['add-song-form__file-name']}>
+              ✓ {formData.audioFile.name}
+            </span>
+            <button
+              type="button"
+              onClick={handleClearAudioFile}
+              className={styles['add-song-form__file-clear']}
+              aria-label="Clear audio file"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {fieldErrors.url && (
           <span id="url-error" className={styles['add-song-form__error-message']} role="alert">
             {fieldErrors.url}
