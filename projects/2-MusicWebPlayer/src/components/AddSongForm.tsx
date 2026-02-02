@@ -89,7 +89,7 @@ export const AddSongForm: React.FC<AddSongFormProps> = (props) => {
    * @param field Which field to update
    * @param value New value for the field
    */
-  const handleInputChange = (field: keyof AddSongFormState, value: string): void => {
+  const handleInputChange = (field: 'title' | 'artist' | 'cover' | 'url', value: string): void => {
     setFormData(prev => ({
       ...prev,
       [field]: value
