@@ -1,0 +1,11 @@
+/**
+ * Enumeration of notification types
+ */
+export enum NotificationType {
+  NEW_MESSAGE = 'NEW_MESSAGE',
+  NEW_TASK = 'NEW_TASK',
+  TASK_STATUS_CHANGE = 'TASK_STATUS_CHANGE',
+  FILE_RECEIVED = 'FILE_RECEIVED',
+  PROJECT_ASSIGNED = 'PROJECT_ASSIGNED',
+  PROJECT_FINALIZED = 'PROJECT_FINALIZED',
+}
