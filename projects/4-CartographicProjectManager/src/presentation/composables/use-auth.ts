@@ -6,7 +6,9 @@
  */
 
 import {computed} from 'vue';
+import {useRouter} from 'vue-router';
 import {useAuthStore} from '../stores/auth.store';
+import {UserRole} from '../../domain/enumerations/user-role';
 
 /**
  * Composable that wraps the auth store and provides
@@ -14,11 +16,17 @@ import {useAuthStore} from '../stores/auth.store';
  */
 export function useAuth() {
   const authStore = useAuthStore();
+  const router = useRouter();
 
   const isAuthenticated = computed(() => authStore.isAuthenticated);
   const isAdmin = computed(() => authStore.isAdmin);
-  const currentUserId = computed(() => authStore.userId);
-  const currentUserRole = computed(() => authStore.userRole);
+  const isClient = computed(() => authStore.isClient);
+  const isSpecialUser = computed(() => authStore.isSpecialUser);
+  const currentUser = computed(() => authStore.user);
+  const currentUserId = computed(() => authStore.currentUserId);
+  const currentUserRole = computed(() => authStore.currentUserRole);
+  const isLoading = computed(() => authStore.isLoading);
+  const error = computed(() => authStore.error);
 
   /**
    * Attempts to log in with the provided credentials.
@@ -27,6 +35,15 @@ export function useAuth() {
    */
   async function login(username: string, password: string): Promise<void> {
     await authStore.login(username, password);
+    
+    // Redirect to intended route or dashboard
+    const intendedRoute = sessionStorage.getItem('intended_route');
+    if (intendedRoute) {
+      sessionStorage.removeItem('intended_route');
+      await router.push(intendedRoute);
+    } else {
+      await router.push({name: 'Dashboard'});
+    }
   }
 
   /**
@@ -34,14 +51,63 @@ export function useAuth() {
    */
   async function logout(): Promise<void> {
     await authStore.logout();
+    await router.push({name: 'Login'});
   }
 
+  /**
+   * Check if user has specific permission.
+   */
+  function hasPermission(permission: string): boolean {
+    if (isAdmin.value) return true;
+    // Add more complex permission logic here
+    return false;
+  }
+
+  /**
+   * Check if  user can create projects.
+   */
+  const canCreateProject = computed(() => isAdmin.value);
+
+  /**
+   * Check if user can edit a project.
+   */
+  const canEditProject = computed(() => isAdmin.value);
+
+  /**
+   * Check if user can finalize a project.
+   */
+  const canFinalizeProject = computed(() => isAdmin.value);
+
+  /**
+   * Check if user can create tasks.
+   */
+  const canCreateTask = computed(() => isAdmin.value || isClient.value);
+
+  /**
+   * Check if user can access backup.
+   */
+  const canAccessBackup = computed(() => isAdmin.value);
+
   return {
+    // State
     isAuthenticated,
     isAdmin,
+    isClient,
+    isSpecialUser,
+    currentUser,
     currentUserId,
     currentUserRole,
+    isLoading,
+    error,
+    // Actions
     login,
     logout,
+    hasPermission,
+    // Permissions
+    canCreateProject,
+    canEditProject,
+    canFinalizeProject,
+    canCreateTask,
+    canAccessBackup,
   };
 }
