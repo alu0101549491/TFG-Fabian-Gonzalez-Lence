@@ -63,13 +63,13 @@ export interface PermissionProps {
  * ```
  */
 export class Permission {
-  readonly id: string;
-  readonly userId: string;
-  readonly projectId: string;
+  public readonly id: string;
+  public readonly userId: string;
+  public readonly projectId: string;
   private rightsValue: Set<AccessRight>;
   private sectionAccessValue: string[];
-  readonly grantedBy: string;
-  readonly grantedAt: Date;
+  public readonly grantedBy: string;
+  public readonly grantedAt: Date;
   private updatedAtValue: Date;
 
   /**
@@ -78,7 +78,7 @@ export class Permission {
    * @param props - Permission properties
    * @throws {Error} If required fields are missing
    */
-  constructor(props: PermissionProps) {
+  public constructor(props: PermissionProps) {
     this.validateProps(props);
 
     this.id = props.id;
@@ -111,15 +111,15 @@ export class Permission {
 
   // Getters
 
-  get rights(): Set<AccessRight> {
+  public get rights(): Set<AccessRight> {
     return new Set(this.rightsValue);
   }
 
-  get sectionAccess(): string[] {
+  public get sectionAccess(): string[] {
     return [...this.sectionAccessValue];
   }
 
-  get updatedAt(): Date {
+  public get updatedAt(): Date {
     return this.updatedAtValue;
   }
 
@@ -137,7 +137,7 @@ export class Permission {
    *
    * @param right - Right to grant
    */
-  grantRight(right: AccessRight): void {
+  public grantRight(right: AccessRight): void {
     this.rightsValue.add(right);
     this.touchUpdatedAt();
   }
@@ -147,7 +147,7 @@ export class Permission {
    *
    * @param right - Right to revoke
    */
-  revokeRight(right: AccessRight): void {
+  public revokeRight(right: AccessRight): void {
     this.rightsValue.delete(right);
     this.touchUpdatedAt();
   }
@@ -158,49 +158,49 @@ export class Permission {
    * @param right - Right to check
    * @returns True if right is granted
    */
-  hasRight(right: AccessRight): boolean {
+  public hasRight(right: AccessRight): boolean {
     return this.rightsValue.has(right);
   }
 
   /**
    * Checks VIEW right.
    */
-  canView(): boolean {
+  public canView(): boolean {
     return this.hasRight(AccessRight.VIEW);
   }
 
   /**
    * Checks DOWNLOAD right.
    */
-  canDownload(): boolean {
+  public canDownload(): boolean {
     return this.hasRight(AccessRight.DOWNLOAD);
   }
 
   /**
    * Checks EDIT right.
    */
-  canEdit(): boolean {
+  public canEdit(): boolean {
     return this.hasRight(AccessRight.EDIT);
   }
 
   /**
    * Checks DELETE right.
    */
-  canDelete(): boolean {
+  public canDelete(): boolean {
     return this.hasRight(AccessRight.DELETE);
   }
 
   /**
    * Checks UPLOAD right.
    */
-  canUpload(): boolean {
+  public canUpload(): boolean {
     return this.hasRight(AccessRight.UPLOAD);
   }
 
   /**
    * Checks SEND_MESSAGE right.
    */
-  canSendMessage(): boolean {
+  public canSendMessage(): boolean {
     return this.hasRight(AccessRight.SEND_MESSAGE);
   }
 
@@ -209,7 +209,7 @@ export class Permission {
    *
    * @param section - Section name
    */
-  grantSectionAccess(section: string): void {
+  public grantSectionAccess(section: string): void {
     if (!this.sectionAccessValue.includes(section)) {
       this.sectionAccessValue.push(section);
       this.touchUpdatedAt();
@@ -221,7 +221,7 @@ export class Permission {
    *
    * @param section - Section name
    */
-  revokeSectionAccess(section: string): void {
+  public revokeSectionAccess(section: string): void {
     const index = this.sectionAccessValue.indexOf(section);
     if (index !== -1) {
       this.sectionAccessValue.splice(index, 1);
@@ -235,7 +235,7 @@ export class Permission {
    * @param section - Section to check
    * @returns True if has access (empty sectionAccess = all access)
    */
-  canAccessSection(section: string): boolean {
+  public canAccessSection(section: string): boolean {
     // Empty array means all sections accessible
     if (this.sectionAccessValue.length === 0) {
       return true;
@@ -253,7 +253,7 @@ export class Permission {
    * @param grantedBy - Admin granting permission
    * @returns New Permission
    */
-  static createViewOnly(
+  public static createViewOnly(
     userId: string,
     projectId: string,
     grantedBy: string
@@ -276,7 +276,7 @@ export class Permission {
    * @param grantedBy - Admin granting permission
    * @returns New Permission
    */
-  static createFullAccess(
+  public static createFullAccess(
     userId: string,
     projectId: string,
     grantedBy: string
@@ -294,7 +294,7 @@ export class Permission {
   /**
    * Serializes the permission entity.
    */
-  toJSON(): object {
+  public toJSON(): object {
     return {
       id: this.id,
       userId: this.userId,

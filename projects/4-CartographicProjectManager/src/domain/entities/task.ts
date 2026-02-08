@@ -74,9 +74,9 @@ export interface TaskProps {
  * ```
  */
 export class Task {
-  readonly id: string;
-  readonly projectId: string;
-  readonly creatorId: string;
+  public readonly id: string;
+  public readonly projectId: string;
+  public readonly creatorId: string;
   private assigneeIdValue: string;
   private descriptionValue: string;
   private statusValue: TaskStatus;
@@ -84,7 +84,7 @@ export class Task {
   private dueDateValue: Date;
   private fileIdsValue: string[];
   private commentsValue: string | null;
-  readonly createdAt: Date;
+  public readonly createdAt: Date;
   private updatedAtValue: Date;
   private completedAtValue: Date | null;
   private confirmedAtValue: Date | null;
@@ -95,7 +95,7 @@ export class Task {
    * @param props - Task properties
    * @throws {Error} If required fields are missing or invalid
    */
-  constructor(props: TaskProps) {
+  public constructor(props: TaskProps) {
     this.validateProps(props);
 
     this.id = props.id;
@@ -140,11 +140,11 @@ export class Task {
 
   // Getters and Setters
 
-  get assigneeId(): string {
+  public get assigneeId(): string {
     return this.assigneeIdValue;
   }
 
-  set assigneeId(value: string) {
+  public set assigneeId(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Assignee ID cannot be empty');
     }
@@ -152,11 +152,11 @@ export class Task {
     this.touchUpdatedAt();
   }
 
-  get description(): string {
+  public get description(): string {
     return this.descriptionValue;
   }
 
-  set description(value: string) {
+  public set description(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Description cannot be empty');
     }
@@ -164,50 +164,50 @@ export class Task {
     this.touchUpdatedAt();
   }
 
-  get status(): TaskStatus {
+  public get status(): TaskStatus {
     return this.statusValue;
   }
 
-  get priority(): TaskPriority {
+  public get priority(): TaskPriority {
     return this.priorityValue;
   }
 
-  set priority(value: TaskPriority) {
+  public set priority(value: TaskPriority) {
     this.priorityValue = value;
     this.touchUpdatedAt();
   }
 
-  get dueDate(): Date {
+  public get dueDate(): Date {
     return this.dueDateValue;
   }
 
-  set dueDate(value: Date) {
+  public set dueDate(value: Date) {
     this.dueDateValue = value;
     this.touchUpdatedAt();
   }
 
-  get fileIds(): string[] {
+  public get fileIds(): string[] {
     return [...this.fileIdsValue];
   }
 
-  get comments(): string | null {
+  public get comments(): string | null {
     return this.commentsValue;
   }
 
-  set comments(value: string | null) {
+  public set comments(value: string | null) {
     this.commentsValue = value;
     this.touchUpdatedAt();
   }
 
-  get updatedAt(): Date {
+  public get updatedAt(): Date {
     return this.updatedAtValue;
   }
 
-  get completedAt(): Date | null {
+  public get completedAt(): Date | null {
     return this.completedAtValue;
   }
 
-  get confirmedAt(): Date | null {
+  public get confirmedAt(): Date | null {
     return this.confirmedAtValue;
   }
 
@@ -227,7 +227,7 @@ export class Task {
    * @param userId - User making the change (reserved for future audit trail)
    * @throws {Error} If transition is invalid
    */
-  changeStatus(newStatus: TaskStatus, userId: string): void {
+  public changeStatus(newStatus: TaskStatus, userId: string): void {
     void userId; // Reserved for future audit trail implementation
     
     if (!isValidTaskStatusTransition(this.statusValue, newStatus)) {
@@ -246,7 +246,7 @@ export class Task {
    * @param newStatus - Target status
    * @returns True if transition is valid
    */
-  isValidStatusTransition(newStatus: TaskStatus): boolean {
+  public isValidStatusTransition(newStatus: TaskStatus): boolean {
     return isValidTaskStatusTransition(this.statusValue, newStatus);
   }
 
@@ -256,7 +256,7 @@ export class Task {
    * @param userId - User marking as performed (must be assignee)
    * @throws {Error} If user is not assignee or status invalid
    */
-  markAsPerformed(userId: string): void {
+  public markAsPerformed(userId: string): void {
     if (userId !== this.assigneeIdValue) {
       throw new Error('Only the assignee can mark the task as performed');
     }
@@ -276,7 +276,7 @@ export class Task {
    * @param userId - User confirming (must be task creator)
    * @throws {Error} If user cannot confirm
    */
-  confirm(userId: string): void {
+  public confirm(userId: string): void {
     if (!this.canBeConfirmedBy(userId)) {
       throw new Error('Only the task creator can confirm completion');
     }
@@ -296,7 +296,7 @@ export class Task {
    * @param userId - User ID to check
    * @returns True if user is the creator and status is PERFORMED
    */
-  canBeConfirmedBy(userId: string): boolean {
+  public canBeConfirmedBy(userId: string): boolean {
     return userId === this.creatorId && this.statusValue === TaskStatus.PERFORMED;
   }
 
@@ -307,7 +307,7 @@ export class Task {
    * @param userRole - User's role
    * @returns True if user can modify
    */
-  canBeModifiedBy(userId: string, userRole: UserRole): boolean {
+  public canBeModifiedBy(userId: string, userRole: UserRole): boolean {
     // Administrators can modify any task
     if (userRole === UserRole.ADMINISTRATOR) {
       return true;
@@ -329,7 +329,7 @@ export class Task {
    * @param userRole - User's role
    * @returns True if user can delete
    */
-  canBeDeletedBy(userId: string, userRole: UserRole): boolean {
+  public canBeDeletedBy(userId: string, userRole: UserRole): boolean {
     // Administrators can delete any task
     if (userRole === UserRole.ADMINISTRATOR) {
       return true;
@@ -350,7 +350,7 @@ export class Task {
    * @param fileId - File ID to attach
    * @throws {Error} If file already attached
    */
-  attachFile(fileId: string): void {
+  public attachFile(fileId: string): void {
     if (!fileId || fileId.trim() === '') {
       throw new Error('File ID is required');
     }
@@ -369,7 +369,7 @@ export class Task {
    * @param fileId - File ID to remove
    * @throws {Error} If file not attached
    */
-  removeFile(fileId: string): void {
+  public removeFile(fileId: string): void {
     const index = this.fileIdsValue.indexOf(fileId);
     if (index === -1) {
       throw new Error('File not attached to this task');
@@ -384,7 +384,7 @@ export class Task {
    *
    * @returns True if overdue and not completed
    */
-  isOverdue(): boolean {
+  public isOverdue(): boolean {
     const now = new Date();
     return now > this.dueDateValue && this.statusValue !== TaskStatus.COMPLETED;
   }
@@ -394,7 +394,7 @@ export class Task {
    *
    * @returns True if status is not COMPLETED
    */
-  isPending(): boolean {
+  public isPending(): boolean {
     return this.statusValue !== TaskStatus.COMPLETED;
   }
 
@@ -403,7 +403,7 @@ export class Task {
    *
    * @returns Plain object representation
    */
-  toJSON(): object {
+  public toJSON(): object {
     return {
       id: this.id,
       projectId: this.projectId,

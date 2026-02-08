@@ -80,10 +80,10 @@ export class GeoCoordinates {
   private static readonly MAX_LONGITUDE = 180;
 
   /** Latitude coordinate (Y axis) in decimal degrees */
-  readonly latitude: number;
+  public readonly latitude: number;
 
   /** Longitude coordinate (X axis) in decimal degrees */
-  readonly longitude: number;
+  public readonly longitude: number;
 
   /**
    * Creates a new GeoCoordinates instance.
@@ -93,7 +93,7 @@ export class GeoCoordinates {
    * @throws {Error} If latitude or longitude are not valid numbers
    * @throws {Error} If coordinates are outside valid ranges
    */
-  constructor(latitude: number, longitude: number) {
+  public constructor(latitude: number, longitude: number) {
     // Validate input types
     if (typeof latitude !== 'number' || typeof longitude !== 'number') {
       throw new Error('Latitude and longitude must be numbers');
@@ -135,7 +135,7 @@ export class GeoCoordinates {
    *
    * @returns The Y coordinate (latitude) in decimal degrees
    */
-  getY(): number {
+  public getY(): number {
     return this.latitude;
   }
 
@@ -145,7 +145,7 @@ export class GeoCoordinates {
    *
    * @returns The X coordinate (longitude) in decimal degrees
    */
-  getX(): number {
+  public getX(): number {
     return this.longitude;
   }
 
@@ -156,7 +156,7 @@ export class GeoCoordinates {
    *
    * @returns True if latitude is in [-90, 90] and longitude is in [-180, 180]
    */
-  isValid(): boolean {
+  public isValid(): boolean {
     return (
       Number.isFinite(this.latitude) &&
       Number.isFinite(this.longitude) &&
@@ -174,7 +174,7 @@ export class GeoCoordinates {
    * @param other - The other GeoCoordinates to compare with (or null/undefined)
    * @returns True if both latitude and longitude match within tolerance
    */
-  equals(other: GeoCoordinates | null | undefined): boolean {
+  public equals(other: GeoCoordinates | null | undefined): boolean {
     if (!other || !(other instanceof GeoCoordinates)) {
       return false;
     }
@@ -192,7 +192,7 @@ export class GeoCoordinates {
    * @param useXY - If true, uses X/Y notation instead of Lat/Lng
    * @returns Formatted string representation
    */
-  toString(useXY: boolean = false): string {
+  public toString(useXY: boolean = false): string {
     if (useXY) {
       return `X: ${this.longitude.toFixed(4)}, Y: ${this.latitude.toFixed(4)}`;
     }
@@ -205,7 +205,7 @@ export class GeoCoordinates {
    *
    * @returns Array with [latitude, longitude]
    */
-  toArray(): [number, number] {
+  public toArray(): [number, number] {
     return [this.latitude, this.longitude];
   }
 
@@ -214,7 +214,7 @@ export class GeoCoordinates {
    *
    * @returns Object with latitude and longitude properties
    */
-  toJSON(): GeoCoordinatesProps {
+  public toJSON(): GeoCoordinatesProps {
     return {
       latitude: this.latitude,
       longitude: this.longitude,
@@ -237,7 +237,7 @@ export class GeoCoordinates {
    * const distance = madrid.distanceTo(barcelona); // approximately 504 km
    * ```
    */
-  distanceTo(other: GeoCoordinates): number {
+  public distanceTo(other: GeoCoordinates): number {
     if (!other || !(other instanceof GeoCoordinates)) {
       throw new Error('Cannot calculate distance to null or invalid coordinate');
     }
@@ -273,7 +273,7 @@ export class GeoCoordinates {
    * const coords = GeoCoordinates.fromArray([40.4168, -3.7038]);
    * ```
    */
-  static fromArray(coords: [number, number]): GeoCoordinates {
+  public static fromArray(coords: [number, number]): GeoCoordinates {
     if (!Array.isArray(coords)) {
       throw new Error('Input must be an array');
     }
@@ -302,7 +302,7 @@ export class GeoCoordinates {
    * const coords2 = GeoCoordinates.fromObject({ x: -3.7038, y: 40.4168 });
    * ```
    */
-  static fromObject(
+  public static fromObject(
     obj: GeoCoordinatesProps | GeoCoordinatesXY
   ): GeoCoordinates {
     if (!obj || typeof obj !== 'object') {
