@@ -77,10 +77,10 @@ export interface ProjectProps {
  * ```
  */
 export class Project {
-  readonly id: string;
-  readonly code: string;
+  public readonly id: string;
+  public readonly code: string;
   private nameValue: string;
-  readonly year: number;
+  public readonly year: number;
   private clientIdValue: string;
   private typeValue: ProjectType;
   private coordinatesValue: GeoCoordinates | null;
@@ -89,7 +89,7 @@ export class Project {
   private statusValue: ProjectStatus;
   private dropboxFolderIdValue: string;
   private specialUserIdsValue: string[];
-  readonly createdAt: Date;
+  public readonly createdAt: Date;
   private updatedAtValue: Date;
   private finalizedAtValue: Date | null;
 
@@ -99,7 +99,7 @@ export class Project {
    * @param props - Project properties
    * @throws {Error} If required fields are missing or invalid
    */
-  constructor(props: ProjectProps) {
+  public constructor(props: ProjectProps) {
     this.validateProps(props);
 
     this.id = props.id;
@@ -169,11 +169,11 @@ export class Project {
 
   // Getters and Setters for mutable properties
 
-  get name(): string {
+  public get name(): string {
     return this.nameValue;
   }
 
-  set name(value: string) {
+  public set name(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Project name cannot be empty');
     }
@@ -181,11 +181,11 @@ export class Project {
     this.touchUpdatedAt();
   }
 
-  get clientId(): string {
+  public get clientId(): string {
     return this.clientIdValue;
   }
 
-  set clientId(value: string) {
+  public set clientId(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Client ID cannot be empty');
     }
@@ -193,29 +193,29 @@ export class Project {
     this.touchUpdatedAt();
   }
 
-  get type(): ProjectType {
+  public get type(): ProjectType {
     return this.typeValue;
   }
 
-  set type(value: ProjectType) {
+  public set type(value: ProjectType) {
     this.typeValue = value;
     this.touchUpdatedAt();
   }
 
-  get coordinates(): GeoCoordinates | null {
+  public get coordinates(): GeoCoordinates | null {
     return this.coordinatesValue;
   }
 
-  set coordinates(value: GeoCoordinates | null) {
+  public set coordinates(value: GeoCoordinates | null) {
     this.coordinatesValue = value;
     this.touchUpdatedAt();
   }
 
-  get contractDate(): Date {
+  public get contractDate(): Date {
     return this.contractDateValue;
   }
 
-  set contractDate(value: Date) {
+  public set contractDate(value: Date) {
     if (value > this.deliveryDateValue) {
       throw new Error('Contract date must be before delivery date');
     }
@@ -223,11 +223,11 @@ export class Project {
     this.touchUpdatedAt();
   }
 
-  get deliveryDate(): Date {
+  public get deliveryDate(): Date {
     return this.deliveryDateValue;
   }
 
-  set deliveryDate(value: Date) {
+  public set deliveryDate(value: Date) {
     if (value < this.contractDateValue) {
       throw new Error('Delivery date must be after contract date');
     }
@@ -235,20 +235,20 @@ export class Project {
     this.touchUpdatedAt();
   }
 
-  get status(): ProjectStatus {
+  public get status(): ProjectStatus {
     return this.statusValue;
   }
 
-  set status(value: ProjectStatus) {
+  public set status(value: ProjectStatus) {
     this.statusValue = value;
     this.touchUpdatedAt();
   }
 
-  get dropboxFolderId(): string {
+  public get dropboxFolderId(): string {
     return this.dropboxFolderIdValue;
   }
 
-  set dropboxFolderId(value: string) {
+  public set dropboxFolderId(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Dropbox folder ID cannot be empty');
     }
@@ -256,16 +256,16 @@ export class Project {
     this.touchUpdatedAt();
   }
 
-  get specialUserIds(): string[] {
+  public get specialUserIds(): string[] {
     // Return copy to prevent external modification
     return [...this.specialUserIdsValue];
   }
 
-  get updatedAt(): Date {
+  public get updatedAt(): Date {
     return this.updatedAtValue;
   }
 
-  get finalizedAt(): Date | null {
+  public get finalizedAt(): Date | null {
     return this.finalizedAtValue;
   }
 
@@ -284,7 +284,7 @@ export class Project {
    * @param clientId - The ID of the client to assign
    * @throws {Error} If clientId is empty
    */
-  assignToClient(clientId: string): void {
+  public assignToClient(clientId: string): void {
     if (!clientId || clientId.trim() === '') {
       throw new Error('Client ID is required');
     }
@@ -298,7 +298,7 @@ export class Project {
    * @param userId - The ID of the special user to add
    * @throws {Error} If userId is empty or already exists
    */
-  addSpecialUser(userId: string): void {
+  public addSpecialUser(userId: string): void {
     if (!userId || userId.trim() === '') {
       throw new Error('User ID is required');
     }
@@ -317,7 +317,7 @@ export class Project {
    * @param userId - The ID of the special user to remove
    * @throws {Error} If userId doesn't exist
    */
-  removeSpecialUser(userId: string): void {
+  public removeSpecialUser(userId: string): void {
     const index = this.specialUserIdsValue.indexOf(userId);
     if (index === -1) {
       throw new Error('Special user not found in this project');
@@ -333,7 +333,7 @@ export class Project {
    * @param userId - The ID of the user to check
    * @returns True if user is in specialUserIds
    */
-  hasSpecialUser(userId: string): boolean {
+  public hasSpecialUser(userId: string): boolean {
     return this.specialUserIdsValue.includes(userId);
   }
 
@@ -342,7 +342,7 @@ export class Project {
    *
    * @throws {Error} If project cannot be finalized
    */
-  finalize(): void {
+  public finalize(): void {
     if (!this.canBeFinalized()) {
       throw new Error('Project cannot be finalized in current state');
     }
@@ -357,7 +357,7 @@ export class Project {
    *
    * @returns True if the project can be finalized
    */
-  canBeFinalized(): boolean {
+  public canBeFinalized(): boolean {
     // Project can be finalized if not already finalized
     return this.statusValue !== ProjectStatus.FINALIZED;
   }
@@ -374,7 +374,7 @@ export class Project {
    * @param userRole - The role of the user
    * @returns True if the user can access this project
    */
-  isAccessibleBy(userId: string, userRole: UserRole): boolean {
+  public isAccessibleBy(userId: string, userRole: UserRole): boolean {
     // Administrators always have access
     if (userRole === UserRole.ADMINISTRATOR) {
       return true;
@@ -398,7 +398,7 @@ export class Project {
    *
    * @returns True if project status is not FINALIZED
    */
-  isActive(): boolean {
+  public isActive(): boolean {
     return this.statusValue !== ProjectStatus.FINALIZED;
   }
 
@@ -407,7 +407,7 @@ export class Project {
    *
    * @returns True if current date is past delivery date and project not finalized
    */
-  isOverdue(): boolean {
+  public isOverdue(): boolean {
     const now = new Date();
     return now > this.deliveryDateValue && this.statusValue !== ProjectStatus.FINALIZED;
   }
@@ -417,7 +417,7 @@ export class Project {
    *
    * @returns Number of days (positive if in future, negative if past)
    */
-  daysUntilDelivery(): number {
+  public daysUntilDelivery(): number {
     const now = new Date();
     const msPerDay = 1000 * 60 * 60 * 24;
     const diffMs = this.deliveryDateValue.getTime() - now.getTime();
@@ -429,7 +429,7 @@ export class Project {
    *
    * @returns Plain object representation suitable for API responses
    */
-  toJSON(): object {
+  public toJSON(): object {
     return {
       id: this.id,
       code: this.code,

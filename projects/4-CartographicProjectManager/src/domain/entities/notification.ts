@@ -51,13 +51,13 @@ export interface NotificationProps {
  * ```
  */
 export class Notification {
-  readonly id: string;
-  readonly userId: string;
-  readonly type: NotificationType;
-  readonly title: string;
-  readonly message: string;
-  readonly relatedEntityId: string | null;
-  readonly createdAt: Date;
+  public readonly id: string;
+  public readonly userId: string;
+  public readonly type: NotificationType;
+  public readonly title: string;
+  public readonly message: string;
+  public readonly relatedEntityId: string | null;
+  public readonly createdAt: Date;
   private isReadValue: boolean;
   private sentViaWhatsAppValue: boolean;
 
@@ -67,7 +67,7 @@ export class Notification {
    * @param props - Notification properties
    * @throws {Error} If required fields are missing
    */
-  constructor(props: NotificationProps) {
+  public constructor(props: NotificationProps) {
     this.validateProps(props);
 
     this.id = props.id;
@@ -104,11 +104,11 @@ export class Notification {
 
   // Getters
 
-  get isRead(): boolean {
+  public get isRead(): boolean {
     return this.isReadValue;
   }
 
-  get sentViaWhatsApp(): boolean {
+  public get sentViaWhatsApp(): boolean {
     return this.sentViaWhatsAppValue;
   }
 
@@ -117,14 +117,14 @@ export class Notification {
   /**
    * Marks the notification as read.
    */
-  markAsRead(): void {
+  public markAsRead(): void {
     this.isReadValue = true;
   }
 
   /**
    * Records WhatsApp delivery.
    */
-  markAsSentViaWhatsApp(): void {
+  public markAsSentViaWhatsApp(): void {
     this.sentViaWhatsAppValue = true;
   }
 
@@ -134,7 +134,7 @@ export class Notification {
    * @param user - User receiving notification
    * @returns True if user has WhatsApp enabled
    */
-  shouldSendViaWhatsApp(user: User):  boolean {
+  public shouldSendViaWhatsApp(user: User):  boolean {
     return user.whatsappEnabled && user.phone !== null;
   }
 
@@ -148,7 +148,7 @@ export class Notification {
    * @param taskId - Task ID
    * @returns New Notification
    */
-  static createForNewTask(
+  public static createForNewTask(
     userId: string,
     taskDescription: string,
     taskId: string
@@ -167,7 +167,7 @@ export class Notification {
   /**
    * Creates notification for new message.
    */
-  static createForNewMessage(
+  public static createForNewMessage(
     userId: string,
     projectName: string,
     projectId: string
@@ -186,7 +186,7 @@ export class Notification {
   /**
    * Creates notification for task status change.
    */
-  static createForTaskStatusChange(
+  public static createForTaskStatusChange(
     userId: string,
     taskDescription: string,
     newStatus: TaskStatus,
@@ -206,7 +206,7 @@ export class Notification {
   /**
    * Creates notification for project assignment.
    */
-  static createForProjectAssigned(
+  public static createForProjectAssigned(
     userId: string,
     projectCode: string,
     projectId: string
@@ -225,7 +225,7 @@ export class Notification {
   /**
    * Serializes the notification entity.
    */
-  toJSON(): object {
+  public toJSON(): object {
     return {
       id: this.id,
       userId: this.userId,

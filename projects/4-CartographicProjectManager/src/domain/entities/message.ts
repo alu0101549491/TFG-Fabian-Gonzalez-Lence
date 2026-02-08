@@ -53,12 +53,12 @@ export interface MessageProps {
  * ```
  */
 export class Message {
-  readonly id: string;
-  readonly projectId: string;
-  readonly senderId: string;
+  public readonly id: string;
+  public readonly projectId: string;
+  public readonly senderId: string;
   private contentValue: string;
-  readonly type: MessageType;
-  readonly sentAt: Date;
+  public readonly type: MessageType;
+  public readonly sentAt: Date;
   private fileIdsValue: string[];
   private readByUserIdsValue: string[];
 
@@ -68,7 +68,7 @@ export class Message {
    * @param props - Message properties
    * @throws {Error} If required fields are missing
    */
-  constructor(props: MessageProps) {
+  public constructor(props: MessageProps) {
     this.validateProps(props);
 
     this.id = props.id;
@@ -101,22 +101,22 @@ export class Message {
 
   // Getters
 
-  get content(): string {
+  public get content(): string {
     return this.contentValue;
   }
 
-  set content(value: string) {
+  public set content(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Content cannot be empty');
     }
     this.contentValue = value;
   }
 
-  get fileIds(): string[] {
+  public get fileIds(): string[] {
     return [...this.fileIdsValue];
   }
 
-  get readByUserIds(): string[] {
+  public get readByUserIds(): string[] {
     return [...this.readByUserIdsValue];
   }
 
@@ -128,7 +128,7 @@ export class Message {
    * @param userId - User who read the message
    * @throws {Error} If userId already in read list
    */
-  markAsRead(userId: string): void {
+  public markAsRead(userId: string): void {
     if (!userId || userId.trim() === '') {
       throw new Error('User ID is required');
     }
@@ -147,7 +147,7 @@ export class Message {
    * @param userId - User ID to check
    * @returns True if user has read the message
    */
-  isReadBy(userId: string): boolean {
+  public isReadBy(userId: string): boolean {
     return this.readByUserIdsValue.includes(userId);
   }
 
@@ -157,7 +157,7 @@ export class Message {
    * @param fileId - File ID to attach
    * @throws {Error} If file already attached
    */
-  attachFile(fileId: string): void {
+  public attachFile(fileId: string): void {
     if (!fileId || fileId.trim() === '') {
       throw new Error('File ID is required');
     }
@@ -174,7 +174,7 @@ export class Message {
    *
    * @returns True if message type is SYSTEM
    */
-  isSystemMessage(): boolean {
+  public isSystemMessage(): boolean {
     return this.type === 'SYSTEM';
   }
 
@@ -185,7 +185,7 @@ export class Message {
    * @param content - Message content
    * @returns New Message instance
    */
-  static createSystemMessage(projectId: string, content: string): Message {
+  public static createSystemMessage(projectId: string, content: string): Message {
     const id = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     return new Message({
       id,
@@ -201,7 +201,7 @@ export class Message {
    *
    * @returns Plain object representation
    */
-  toJSON(): object {
+  public toJSON(): object {
     return {
       id: this.id,
       projectId: this.projectId,

@@ -45,13 +45,13 @@ export interface TaskHistoryProps {
  * ```
  */
 export class TaskHistory {
-  readonly id: string;
-  readonly taskId: string;
-  readonly userId: string;
-  readonly action: string;
-  readonly previousValue: string | null;
-  readonly newValue: string | null;
-  readonly timestamp: Date;
+  public readonly id: string;
+  public readonly taskId: string;
+  public readonly userId: string;
+  public readonly action: string;
+  public readonly previousValue: string | null;
+  public readonly newValue: string | null;
+  public readonly timestamp: Date;
 
   /**
    * Creates a new TaskHistory entity (immutable).
@@ -59,7 +59,7 @@ export class TaskHistory {
    * @param props - Task history properties
    * @throws {Error} If required fields are missing
    */
-  constructor(props: TaskHistoryProps) {
+  public constructor(props: TaskHistoryProps) {
     this.validateProps(props);
 
     this.id = props.id;
@@ -100,7 +100,7 @@ export class TaskHistory {
    * @param newStatus - New status
    * @returns New TaskHistory instance
    */
-  static createStatusChange(
+  public static createStatusChange(
     taskId: string,
     userId: string,
     previousStatus: TaskStatus,
@@ -126,7 +126,7 @@ export class TaskHistory {
    * @param newAssignee - New assignee ID
    * @returns New TaskHistory instance
    */
-  static createAssigneeChange(
+  public static createAssigneeChange(
     taskId: string,
     userId: string,
     previousAssignee: string,
@@ -148,7 +148,7 @@ export class TaskHistory {
    *
    * @returns Plain object representation
    */
-  toJSON(): object {
+  public toJSON(): object {
     return {
       id: this.id,
       taskId: this.taskId,

@@ -56,16 +56,16 @@ export interface FileProps {
  * ```
  */
 export class File {
-  readonly id: string;
-  readonly name: string;
-  readonly dropboxPath: string;
-  readonly type: FileType;
-  readonly sizeInBytes: number;
-  readonly uploadedBy: string;
-  readonly uploadedAt: Date;
-  readonly projectId: string;
-  readonly taskId: string | null;
-  readonly messageId: string | null;
+  public readonly id: string;
+  public readonly name: string;
+  public readonly dropboxPath: string;
+  public readonly type: FileType;
+  public readonly sizeInBytes: number;
+  public readonly uploadedBy: string;
+  public readonly uploadedAt: Date;
+  public readonly projectId: string;
+  public readonly taskId: string | null;
+  public readonly messageId: string | null;
 
   /**
    * Creates a new File entity.
@@ -73,7 +73,7 @@ export class File {
    * @param props - File properties
    * @throws {Error} If required fields are missing or invalid
    */
-  constructor(props: FileProps) {
+  public constructor(props: FileProps) {
     this.validateProps(props);
 
     this.id = props.id;
@@ -122,7 +122,7 @@ export class File {
    *
    * @returns Lowercase extension (e.g., 'pdf', 'kml')
    */
-  getExtension(): string {
+  public getExtension(): string {
     const parts = this.name.split('.');
     return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
   }
@@ -132,7 +132,7 @@ export class File {
    *
    * @returns True if file type is valid
    */
-  isValidFormat(): boolean {
+  public isValidFormat(): boolean {
     return isValidFileType(this.type);
   }
 
@@ -142,21 +142,21 @@ export class File {
    * @param maxBytes - Maximum allowed size
    * @returns True if within limit
    */
-  isWithinSizeLimit(maxBytes: number): boolean {
+  public isWithinSizeLimit(maxBytes: number): boolean {
     return this.sizeInBytes <= maxBytes;
   }
 
   /**
    * Checks if file is an image.
    */
-  isImage(): boolean {
+  public isImage(): boolean {
     return this.type === FileType.IMAGE;
   }
 
   /**
    * Checks if file is a document.
    */
-  isDocument(): boolean {
+  public isDocument(): boolean {
     return (
       this.type === FileType.PDF ||
       this.type === FileType.DOCUMENT
@@ -166,7 +166,7 @@ export class File {
   /**
    * Checks if file is cartographic.
    */
-  isCartographic(): boolean {
+  public isCartographic(): boolean {
     return (
       this.type === FileType.KML ||
       this.type === FileType.SHP ||
@@ -177,7 +177,7 @@ export class File {
   /**
    * Checks if file is a spreadsheet.
    */
-  isSpreadsheet(): boolean {
+  public isSpreadsheet(): boolean {
     return this.type === FileType.SPREADSHEET;
   }
 
@@ -186,7 +186,7 @@ export class File {
    *
    * @returns Human-readable size (e.g., '2.5 MB', '500 KB')
    */
-  getHumanReadableSize(): string {
+  public getHumanReadableSize(): string {
     const bytes = this.sizeInBytes;
 
     if (bytes < 1024) {
@@ -207,7 +207,7 @@ export class File {
    * @returns Determined FileType
    * @throws {Error} If file type cannot be determined
    */
-  static determineFileType(filename: string): FileType {
+  public static determineFileType(filename: string): FileType {
     const ext = filename.split('.').pop()?.toLowerCase();
     if (!ext) {
       throw new Error('Cannot determine file type: no extension found');
@@ -224,7 +224,7 @@ export class File {
   /**
    * Serializes the file entity.
    */
-  toJSON(): object {
+  public toJSON(): object {
     return {
       id: this.id,
       name: this.name,

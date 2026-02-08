@@ -59,14 +59,14 @@ export interface UserProps {
  * ```
  */
 export class User {
-  readonly id: string;
+  public readonly id: string;
   private usernameValue: string;
   private emailValue: string;
   private readonly passwordHash: string;
   private roleValue: UserRole;
   private phoneValue: string | null;
   private whatsappEnabledValue: boolean;
-  readonly createdAt: Date;
+  public readonly createdAt: Date;
   private lastLoginValue: Date | null;
 
   /**
@@ -75,7 +75,7 @@ export class User {
    * @param props - User properties
    * @throws {Error} If required fields are missing or invalid
    */
-  constructor(props: UserProps) {
+  public constructor(props: UserProps) {
     this.validateProps(props);
 
     this.id = props.id;
@@ -125,22 +125,22 @@ export class User {
 
   // Getters and Setters for mutable properties
 
-  get username(): string {
+  public get username(): string {
     return this.usernameValue;
   }
 
-  set username(value: string) {
+  public set username(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Username cannot be empty');
     }
     this.usernameValue = value;
   }
 
-  get email(): string {
+  public get email(): string {
     return this.emailValue;
   }
 
-  set email(value: string) {
+  public set email(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Email cannot be empty');
     }
@@ -151,35 +151,35 @@ export class User {
     this.emailValue = value;
   }
 
-  get role(): UserRole {
+  public get role(): UserRole {
     return this.roleValue;
   }
 
-  set role(value: UserRole) {
+  public set role(value: UserRole) {
     this.roleValue = value;
   }
 
-  get phone(): string | null {
+  public get phone(): string | null {
     return this.phoneValue;
   }
 
-  set phone(value: string | null) {
+  public set phone(value: string | null) {
     this.phoneValue = value;
   }
 
-  get whatsappEnabled(): boolean {
+  public get whatsappEnabled(): boolean {
     return this.whatsappEnabledValue;
   }
 
-  set whatsappEnabled(value: boolean) {
+  public set whatsappEnabled(value: boolean) {
     this.whatsappEnabledValue = value;
   }
 
-  get lastLogin(): Date | null {
+  public get lastLogin(): Date | null {
     return this.lastLoginValue;
   }
 
-  set lastLogin(value: Date | null) {
+  public set lastLogin(value: Date | null) {
     this.lastLoginValue = value;
   }
 
@@ -195,7 +195,7 @@ export class User {
    * @param password - The plaintext password to verify
    * @returns True if the password matches (to be implemented in service layer)
    */
-  authenticate(password: string): boolean {
+  public authenticate(password: string): boolean {
     // Domain entities should not contain cryptographic logic
     // This method signature exists for domain modeling
     // Actual implementation will be in the authentication service
@@ -209,7 +209,7 @@ export class User {
    *
    * @returns True if user is an administrator
    */
-  isAdmin(): boolean {
+  public isAdmin(): boolean {
     return this.roleValue === UserRole.ADMINISTRATOR;
   }
 
@@ -218,7 +218,7 @@ export class User {
    *
    * @returns True if user is a client
    */
-  isClient(): boolean {
+  public isClient(): boolean {
     return this.roleValue === UserRole.CLIENT;
   }
 
@@ -227,14 +227,14 @@ export class User {
    *
    * @returns True if user is a special user
    */
-  isSpecialUser(): boolean {
+  public isSpecialUser(): boolean {
     return this.roleValue === UserRole.SPECIAL_USER;
   }
 
   /**
    * Updates the last login timestamp to the current time.
    */
-  updateLastLogin(): void {
+  public updateLastLogin(): void {
     this.lastLoginValue = new Date();
   }
 
@@ -244,7 +244,7 @@ export class User {
    * @param phone - Phone number for WhatsApp notifications
    * @throws {Error} If phone number is empty
    */
-  enableWhatsApp(phone: string): void {
+  public enableWhatsApp(phone: string): void {
     if (!phone || phone.trim() === '') {
       throw new Error('Phone number is required to enable WhatsApp notifications');
     }
@@ -255,7 +255,7 @@ export class User {
   /**
    * Disables WhatsApp notifications.
    */
-  disableWhatsApp(): void {
+  public disableWhatsApp(): void {
     this.whatsappEnabledValue = false;
   }
 
@@ -265,7 +265,7 @@ export class User {
    *
    * @returns Plain object representation suitable for API responses
    */
-  toJSON(): object {
+  public toJSON(): object {
     return {
       id: this.id,
       username: this.usernameValue,
