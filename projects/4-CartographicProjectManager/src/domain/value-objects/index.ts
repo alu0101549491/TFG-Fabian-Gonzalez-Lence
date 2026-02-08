@@ -4,4 +4,8 @@
  * @category Domain
  */
 
-export {GeoCoordinates} from './geo-coordinates';
+export {
+  GeoCoordinates,
+  type GeoCoordinatesProps,
+  type GeoCoordinatesXY,
+} from './geo-coordinates';

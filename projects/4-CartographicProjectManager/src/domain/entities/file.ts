@@ -5,82 +5,279 @@
  * @category Domain
  */
 
-import {FileType} from '../enumerations/file-type';
+import {FileType, getFileTypeFromExtension, isValidFileType} from '../enumerations/file-type';
+
+/**
+ * Properties for creating a File entity.
+ */
+export interface FileProps {
+  /** Unique identifier */
+  id: string;
+  /** Original filename */
+  name: string;
+  /** Path in Dropbox storage */
+  dropboxPath: string;
+  /** File category */
+  type: FileType;
+  /** File size in bytes */
+  sizeInBytes: number;
+  /** User who uploaded */
+  uploadedBy: string;
+  /** Parent project */
+  projectId: string;
+  /** Associated task (if any) */
+  taskId?: string | null;
+  /** Associated message (if any) */
+  messageId?: string | null;
+  /** Upload timestamp */
+  uploadedAt?: Date;
+}
 
 /**
  * Represents an uploaded file stored in Dropbox.
- * Files can be attached to tasks and messages.
+ *
+ * Files track metadata for Dropbox-stored documents and can be
+ * attached to tasks and messages.
+ *
+ * @example
+ * ```typescript
+ * const file = new File({
+ *   id: 'file_001',
+ *   name: 'plans.pdf',
+ *   dropboxPath: '/projects/CART-2025-001/plans.pdf',
+ *   type: FileType.PDF,
+ *   sizeInBytes: 2048000,
+ *   uploadedBy: 'user_001',
+ *   projectId: 'proj_001'
+ * });
+ *
+ * console.log(file.getHumanReadableSize()); // '2.0 MB'
+ * console.log(file.isDocument()); // true
+ * ```
  */
 export class File {
-  private readonly id: string;
-  private readonly name: string;
-  private readonly dropboxPath: string;
-  private readonly type: FileType;
-  private readonly sizeInBytes: number;
-  private readonly uploadedBy: string;
-  private readonly uploadedAt: Date;
+  private readonly _id: string;
+  private readonly _name: string;
+  private readonly _dropboxPath: string;
+  private readonly _type: FileType;
+  private readonly _sizeInBytes: number;
+  private readonly _uploadedBy: string;
+  private readonly _uploadedAt: Date;
+  private readonly _projectId: string;
+  private readonly _taskId: string | null;
+  private readonly _messageId: string | null;
 
-  constructor(
-    id: string,
-    name: string,
-    dropboxPath: string,
-    type: FileType,
-    sizeInBytes: number,
-    uploadedBy: string,
-    uploadedAt: Date,
-  ) {
-    this.id = id;
-    this.name = name;
-    this.dropboxPath = dropboxPath;
-    this.type = type;
-    this.sizeInBytes = sizeInBytes;
-    this.uploadedBy = uploadedBy;
-    this.uploadedAt = uploadedAt;
+  /**
+   * Creates a new File entity.
+   *
+   * @param props - File properties
+   * @throws {Error} If required fields are missing or invalid
+   */
+  constructor(props: FileProps) {
+    this.validateProps(props);
+
+    this._id = props.id;
+    this._name = props.name;
+    this._dropboxPath = props.dropboxPath;
+    this._type = props.type;
+    this._sizeInBytes = props.sizeInBytes;
+    this._uploadedBy = props.uploadedBy;
+    this._uploadedAt = props.uploadedAt ?? new Date();
+    this._projectId = props.projectId;
+    this._taskId = props.taskId ?? null;
+    this._messageId = props.messageId ?? null;
   }
 
   /**
-   * Validates that the file format is one of the accepted types.
-   * @returns True if the file format is valid.
+   * Validates file properties.
+   */
+  private validateProps(props: FileProps): void {
+    if (!props.id || props.id.trim() === '') {
+      throw new Error('File ID is required');
+    }
+    if (!props.name || props.name.trim() === '') {
+      throw new Error('File name is required');
+    }
+    if (!props.dropboxPath || props.dropboxPath.trim() === '') {
+      throw new Error('Dropbox path is required');
+    }
+    if (!props.type) {
+      throw new Error('File type is required');
+    }
+    if (props.sizeInBytes < 0) {
+      throw new Error('File size cannot be negative');
+    }
+    if (!props.uploadedBy || props.uploadedBy.trim() === '') {
+      throw new Error('Upload user is required');
+    }
+    if (!props.projectId || props.projectId.trim() === '') {
+      throw new Error('Project ID is required');
+    }
+  }
+
+  // Getters
+
+  get id(): string {
+    return this._id;
+  }
+
+  get name(): string {
+    return this._name;
+  }
+
+  get dropboxPath(): string {
+    return this._dropboxPath;
+  }
+
+  get type(): FileType {
+    return this._type;
+  }
+
+  get sizeInBytes(): number {
+    return this._sizeInBytes;
+  }
+
+  get uploadedBy(): string {
+    return this._uploadedBy;
+  }
+
+  get uploadedAt(): Date {
+    return this._uploadedAt;
+  }
+
+  get projectId(): string {
+    return this._projectId;
+  }
+
+  get taskId(): string | null {
+    return this._taskId;
+  }
+
+  get messageId(): string | null {
+    return this._messageId;
+  }
+
+  // Business Logic Methods
+
+  /**
+   * Extracts file extension.
+   *
+   * @returns Lowercase extension (e.g., 'pdf', 'kml')
+   */
+  getExtension(): string {
+    const parts = this._name.split('.');
+    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+  }
+
+  /**
+   * Validates that the file format is accepted.
+   *
+   * @returns True if file type is valid
    */
   isValidFormat(): boolean {
-    // TODO: Implement format validation logic
-    throw new Error('Method not implemented.');
+    return isValidFileType(this._type);
   }
 
   /**
-   * Checks if the file size is within the allowed upload limit.
-   * @returns True if the file is within the size limit.
+   * Checks if file size is within limit.
+   *
+   * @param maxBytes - Maximum allowed size
+   * @returns True if within limit
    */
-  isWithinSizeLimit(): boolean {
-    // TODO: Implement size limit check
-    throw new Error('Method not implemented.');
+  isWithinSizeLimit(maxBytes: number): boolean {
+    return this._sizeInBytes <= maxBytes;
   }
 
-  getId(): string {
-    return this.id;
+  /**
+   * Checks if file is an image.
+   */
+  isImage(): boolean {
+    return this._type === FileType.IMAGE;
   }
 
-  getName(): string {
-    return this.name;
+  /**
+   * Checks if file is a document.
+   */
+  isDocument(): boolean {
+    return (
+      this._type === FileType.PDF ||
+      this._type === FileType.DOCUMENT
+    );
   }
 
-  getDropboxPath(): string {
-    return this.dropboxPath;
+  /**
+   * Checks if file is cartographic.
+   */
+  isCartographic(): boolean {
+    return (
+      this._type === FileType.KML ||
+      this._type === FileType.SHP ||
+      this._type === FileType.CAD
+    );
   }
 
-  getType(): FileType {
-    return this.type;
+  /**
+   * Checks if file is a spreadsheet.
+   */
+  isSpreadsheet(): boolean {
+    return this._type === FileType.SPREADSHEET;
   }
 
-  getSizeInBytes(): number {
-    return this.sizeInBytes;
+  /**
+   * Formats size for display.
+   *
+   * @returns Human-readable size (e.g., '2.5 MB', '500 KB')
+   */
+  getHumanReadableSize(): string {
+    const bytes = this._sizeInBytes;
+
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    } else if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    } else if (bytes < 1024 * 1024 * 1024) {
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    } else {
+      return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    }
   }
 
-  getUploadedBy(): string {
-    return this.uploadedBy;
+  /**
+   * Determines FileType from filename.
+   *
+   * @param filename - File name with extension
+   * @returns Determined FileType
+   * @throws {Error} If file type cannot be determined
+   */
+  static determineFileType(filename: string): FileType {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    if (!ext) {
+      throw new Error('Cannot determine file type: no extension found');
+    }
+
+    const fileType = getFileTypeFromExtension(ext);
+    if (!fileType) {
+      throw new Error(`Unsupported file extension: ${ext}`);
+    }
+
+    return fileType;
   }
 
-  getUploadedAt(): Date {
-    return this.uploadedAt;
+  /**
+   * Serializes the file entity.
+   */
+  toJSON(): object {
+    return {
+      id: this._id,
+      name: this._name,
+      dropboxPath: this._dropboxPath,
+      type: this._type,
+      sizeInBytes: this._sizeInBytes,
+      uploadedBy: this._uploadedBy,
+      uploadedAt: this._uploadedAt.toISOString(),
+      projectId: this._projectId,
+      taskId: this._taskId,
+      messageId: this._messageId,
+    };
   }
 }

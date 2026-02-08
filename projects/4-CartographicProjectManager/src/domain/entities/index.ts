@@ -4,11 +4,26 @@
  * @category Domain
  */
 
-export {User} from './user';
-export {Project} from './project';
-export {Task} from './task';
-export {TaskHistory} from './task-history';
-export {Message} from './message';
-export {Notification} from './notification';
-export {File} from './file';
-export {Permission} from './permission';
+// User Entity
+export {User, type UserProps} from './user';
+
+// Project Entity
+export {Project, type ProjectProps} from './project';
+
+// Task Entity
+export {Task, type TaskProps} from './task';
+
+// TaskHistory Entity
+export {TaskHistory, type TaskHistoryProps} from './task-history';
+
+// Message Entity
+export {Message, type MessageProps, type MessageType} from './message';
+
+// Notification Entity
+export {Notification, type NotificationProps} from './notification';
+
+// File Entity
+export {File, type FileProps} from './file';
+
+// Permission Entity
+export {Permission, type PermissionProps, PROJECT_SECTIONS} from './permission';
