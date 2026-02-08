@@ -63,14 +63,14 @@ export interface PermissionProps {
  * ```
  */
 export class Permission {
-  private readonly _id: string;
-  private readonly _userId: string;
-  private readonly _projectId: string;
-  private _rights: Set<AccessRight>;
-  private _sectionAccess: string[];
-  private readonly _grantedBy: string;
-  private readonly _grantedAt: Date;
-  private _updatedAt: Date;
+  readonly id: string;
+  readonly userId: string;
+  readonly projectId: string;
+  private rightsValue: Set<AccessRight>;
+  private sectionAccessValue: string[];
+  readonly grantedBy: string;
+  readonly grantedAt: Date;
+  private updatedAtValue: Date;
 
   /**
    * Creates a new Permission entity.
@@ -81,14 +81,14 @@ export class Permission {
   constructor(props: PermissionProps) {
     this.validateProps(props);
 
-    this._id = props.id;
-    this._userId = props.userId;
-    this._projectId = props.projectId;
-    this._rights = new Set(props.rights);
-    this._sectionAccess = props.sectionAccess ?? [];
-    this._grantedBy = props.grantedBy;
-    this._grantedAt = props.grantedAt ?? new Date();
-    this._updatedAt = props.updatedAt ?? new Date();
+    this.id = props.id;
+    this.userId = props.userId;
+    this.projectId = props.projectId;
+    this.rightsValue = new Set(props.rights);
+    this.sectionAccessValue = props.sectionAccess ?? [];
+    this.grantedBy = props.grantedBy;
+    this.grantedAt = props.grantedAt ?? new Date();
+    this.updatedAtValue = props.updatedAt ?? new Date();
   }
 
   /**
@@ -111,36 +111,16 @@ export class Permission {
 
   // Getters
 
-  get id(): string {
-    return this._id;
-  }
-
-  get userId(): string {
-    return this._userId;
-  }
-
-  get projectId(): string {
-    return this._projectId;
-  }
-
   get rights(): Set<AccessRight> {
-    return new Set(this._rights);
+    return new Set(this.rightsValue);
   }
 
   get sectionAccess(): string[] {
-    return [...this._sectionAccess];
-  }
-
-  get grantedBy(): string {
-    return this._grantedBy;
-  }
-
-  get grantedAt(): Date {
-    return this._grantedAt;
+    return [...this.sectionAccessValue];
   }
 
   get updatedAt(): Date {
-    return this._updatedAt;
+    return this.updatedAtValue;
   }
 
   // Business Logic Methods
@@ -149,7 +129,7 @@ export class Permission {
    * Updates the updatedAt timestamp.
    */
   private touchUpdatedAt(): void {
-    this._updatedAt = new Date();
+    this.updatedAtValue = new Date();
   }
 
   /**
@@ -158,7 +138,7 @@ export class Permission {
    * @param right - Right to grant
    */
   grantRight(right: AccessRight): void {
-    this._rights.add(right);
+    this.rightsValue.add(right);
     this.touchUpdatedAt();
   }
 
@@ -168,7 +148,7 @@ export class Permission {
    * @param right - Right to revoke
    */
   revokeRight(right: AccessRight): void {
-    this._rights.delete(right);
+    this.rightsValue.delete(right);
     this.touchUpdatedAt();
   }
 
@@ -179,7 +159,7 @@ export class Permission {
    * @returns True if right is granted
    */
   hasRight(right: AccessRight): boolean {
-    return this._rights.has(right);
+    return this.rightsValue.has(right);
   }
 
   /**
@@ -230,8 +210,8 @@ export class Permission {
    * @param section - Section name
    */
   grantSectionAccess(section: string): void {
-    if (!this._sectionAccess.includes(section)) {
-      this._sectionAccess.push(section);
+    if (!this.sectionAccessValue.includes(section)) {
+      this.sectionAccessValue.push(section);
       this.touchUpdatedAt();
     }
   }
@@ -242,9 +222,9 @@ export class Permission {
    * @param section - Section name
    */
   revokeSectionAccess(section: string): void {
-    const index = this._sectionAccess.indexOf(section);
+    const index = this.sectionAccessValue.indexOf(section);
     if (index !== -1) {
-      this._sectionAccess.splice(index, 1);
+      this.sectionAccessValue.splice(index, 1);
       this.touchUpdatedAt();
     }
   }
@@ -257,10 +237,10 @@ export class Permission {
    */
   canAccessSection(section: string): boolean {
     // Empty array means all sections accessible
-    if (this._sectionAccess.length === 0) {
+    if (this.sectionAccessValue.length === 0) {
       return true;
     }
-    return this._sectionAccess.includes(section);
+    return this.sectionAccessValue.includes(section);
   }
 
   // Factory Methods
@@ -316,14 +296,14 @@ export class Permission {
    */
   toJSON(): object {
     return {
-      id: this._id,
-      userId: this._userId,
-      projectId: this._projectId,
-      rights: Array.from(this._rights),
-      sectionAccess: [...this._sectionAccess],
-      grantedBy: this._grantedBy,
-      grantedAt: this._grantedAt.toISOString(),
-      updatedAt: this._updatedAt.toISOString(),
+      id: this.id,
+      userId: this.userId,
+      projectId: this.projectId,
+      rights: Array.from(this.rightsValue),
+      sectionAccess: [...this.sectionAccessValue],
+      grantedBy: this.grantedBy,
+      grantedAt: this.grantedAt.toISOString(),
+      updatedAt: this.updatedAtValue.toISOString(),
     };
   }
 }

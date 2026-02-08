@@ -79,8 +79,11 @@ export class GeoCoordinates {
   /** Maximum valid longitude value */
   private static readonly MAX_LONGITUDE = 180;
 
-  private readonly _latitude: number;
-  private readonly _longitude: number;
+  /** Latitude coordinate (Y axis) in decimal degrees */
+  readonly latitude: number;
+
+  /** Longitude coordinate (X axis) in decimal degrees */
+  readonly longitude: number;
 
   /**
    * Creates a new GeoCoordinates instance.
@@ -122,26 +125,8 @@ export class GeoCoordinates {
       );
     }
 
-    this._latitude = latitude;
-    this._longitude = longitude;
-  }
-
-  /**
-   * Gets the latitude value (Y coordinate).
-   *
-   * @returns The latitude coordinate in decimal degrees
-   */
-  get latitude(): number {
-    return this._latitude;
-  }
-
-  /**
-   * Gets the longitude value (X coordinate).
-   *
-   * @returns The longitude coordinate in decimal degrees
-   */
-  get longitude(): number {
-    return this._longitude;
+    this.latitude = latitude;
+    this.longitude = longitude;
   }
 
   /**
@@ -151,7 +136,7 @@ export class GeoCoordinates {
    * @returns The Y coordinate (latitude) in decimal degrees
    */
   getY(): number {
-    return this._latitude;
+    return this.latitude;
   }
 
   /**
@@ -161,7 +146,7 @@ export class GeoCoordinates {
    * @returns The X coordinate (longitude) in decimal degrees
    */
   getX(): number {
-    return this._longitude;
+    return this.longitude;
   }
 
   /**
@@ -173,12 +158,12 @@ export class GeoCoordinates {
    */
   isValid(): boolean {
     return (
-      Number.isFinite(this._latitude) &&
-      Number.isFinite(this._longitude) &&
-      this._latitude >= GeoCoordinates.MIN_LATITUDE &&
-      this._latitude <= GeoCoordinates.MAX_LATITUDE &&
-      this._longitude >= GeoCoordinates.MIN_LONGITUDE &&
-      this._longitude <= GeoCoordinates.MAX_LONGITUDE
+      Number.isFinite(this.latitude) &&
+      Number.isFinite(this.longitude) &&
+      this.latitude >= GeoCoordinates.MIN_LATITUDE &&
+      this.latitude <= GeoCoordinates.MAX_LATITUDE &&
+      this.longitude >= GeoCoordinates.MIN_LONGITUDE &&
+      this.longitude <= GeoCoordinates.MAX_LONGITUDE
     );
   }
 
@@ -195,8 +180,8 @@ export class GeoCoordinates {
     }
 
     return (
-      Math.abs(this._latitude - other._latitude) < GeoCoordinates.EPSILON &&
-      Math.abs(this._longitude - other._longitude) < GeoCoordinates.EPSILON
+      Math.abs(this.latitude - other.latitude) < GeoCoordinates.EPSILON &&
+      Math.abs(this.longitude - other.longitude) < GeoCoordinates.EPSILON
     );
   }
 
@@ -209,9 +194,9 @@ export class GeoCoordinates {
    */
   toString(useXY: boolean = false): string {
     if (useXY) {
-      return `X: ${this._longitude.toFixed(4)}, Y: ${this._latitude.toFixed(4)}`;
+      return `X: ${this.longitude.toFixed(4)}, Y: ${this.latitude.toFixed(4)}`;
     }
-    return `Lat: ${this._latitude.toFixed(4)}, Lng: ${this._longitude.toFixed(4)}`;
+    return `Lat: ${this.latitude.toFixed(4)}, Lng: ${this.longitude.toFixed(4)}`;
   }
 
   /**
@@ -221,7 +206,7 @@ export class GeoCoordinates {
    * @returns Array with [latitude, longitude]
    */
   toArray(): [number, number] {
-    return [this._latitude, this._longitude];
+    return [this.latitude, this.longitude];
   }
 
   /**
@@ -231,8 +216,8 @@ export class GeoCoordinates {
    */
   toJSON(): GeoCoordinatesProps {
     return {
-      latitude: this._latitude,
-      longitude: this._longitude,
+      latitude: this.latitude,
+      longitude: this.longitude,
     };
   }
 
@@ -258,10 +243,10 @@ export class GeoCoordinates {
     }
 
     // Convert degrees to radians
-    const lat1Rad = this.toRadians(this._latitude);
-    const lat2Rad = this.toRadians(other._latitude);
-    const deltaLatRad = this.toRadians(other._latitude - this._latitude);
-    const deltaLngRad = this.toRadians(other._longitude - this._longitude);
+    const lat1Rad = this.toRadians(this.latitude);
+    const lat2Rad = this.toRadians(other.latitude);
+    const deltaLatRad = this.toRadians(other.latitude - this.latitude);
+    const deltaLngRad = this.toRadians(other.longitude - this.longitude);
 
     // Haversine formula
     const a =

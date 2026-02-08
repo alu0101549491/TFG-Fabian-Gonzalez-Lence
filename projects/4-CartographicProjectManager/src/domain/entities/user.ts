@@ -59,15 +59,15 @@ export interface UserProps {
  * ```
  */
 export class User {
-  private readonly _id: string;
-  private _username: string;
-  private _email: string;
-  private readonly _passwordHash: string;
-  private _role: UserRole;
-  private _phone: string | null;
-  private _whatsappEnabled: boolean;
-  private readonly _createdAt: Date;
-  private _lastLogin: Date | null;
+  readonly id: string;
+  private usernameValue: string;
+  private emailValue: string;
+  private readonly passwordHash: string;
+  private roleValue: UserRole;
+  private phoneValue: string | null;
+  private whatsappEnabledValue: boolean;
+  readonly createdAt: Date;
+  private lastLoginValue: Date | null;
 
   /**
    * Creates a new User entity.
@@ -78,15 +78,15 @@ export class User {
   constructor(props: UserProps) {
     this.validateProps(props);
 
-    this._id = props.id;
-    this._username = props.username;
-    this._email = props.email;
-    this._passwordHash = props.passwordHash;
-    this._role = props.role;
-    this._phone = props.phone ?? null;
-    this._whatsappEnabled = props.whatsappEnabled ?? false;
-    this._createdAt = props.createdAt ?? new Date();
-    this._lastLogin = props.lastLogin ?? null;
+    this.id = props.id;
+    this.usernameValue = props.username;
+    this.emailValue = props.email;
+    this.passwordHash = props.passwordHash;
+    this.roleValue = props.role;
+    this.phoneValue = props.phone ?? null;
+    this.whatsappEnabledValue = props.whatsappEnabled ?? false;
+    this.createdAt = props.createdAt ?? new Date();
+    this.lastLoginValue = props.lastLogin ?? null;
   }
 
   /**
@@ -123,25 +123,21 @@ export class User {
     }
   }
 
-  // Getters
-
-  get id(): string {
-    return this._id;
-  }
+  // Getters and Setters for mutable properties
 
   get username(): string {
-    return this._username;
+    return this.usernameValue;
   }
 
   set username(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Username cannot be empty');
     }
-    this._username = value;
+    this.usernameValue = value;
   }
 
   get email(): string {
-    return this._email;
+    return this.emailValue;
   }
 
   set email(value: string) {
@@ -152,43 +148,39 @@ export class User {
     if (!emailRegex.test(value)) {
       throw new Error('Invalid email format');
     }
-    this._email = value;
+    this.emailValue = value;
   }
 
   get role(): UserRole {
-    return this._role;
+    return this.roleValue;
   }
 
   set role(value: UserRole) {
-    this._role = value;
+    this.roleValue = value;
   }
 
   get phone(): string | null {
-    return this._phone;
+    return this.phoneValue;
   }
 
   set phone(value: string | null) {
-    this._phone = value;
+    this.phoneValue = value;
   }
 
   get whatsappEnabled(): boolean {
-    return this._whatsappEnabled;
+    return this.whatsappEnabledValue;
   }
 
   set whatsappEnabled(value: boolean) {
-    this._whatsappEnabled = value;
-  }
-
-  get createdAt(): Date {
-    return this._createdAt;
+    this.whatsappEnabledValue = value;
   }
 
   get lastLogin(): Date | null {
-    return this._lastLogin;
+    return this.lastLoginValue;
   }
 
   set lastLogin(value: Date | null) {
-    this._lastLogin = value;
+    this.lastLoginValue = value;
   }
 
   // Business Logic Methods
@@ -218,7 +210,7 @@ export class User {
    * @returns True if user is an administrator
    */
   isAdmin(): boolean {
-    return this._role === UserRole.ADMINISTRATOR;
+    return this.roleValue === UserRole.ADMINISTRATOR;
   }
 
   /**
@@ -227,7 +219,7 @@ export class User {
    * @returns True if user is a client
    */
   isClient(): boolean {
-    return this._role === UserRole.CLIENT;
+    return this.roleValue === UserRole.CLIENT;
   }
 
   /**
@@ -236,14 +228,14 @@ export class User {
    * @returns True if user is a special user
    */
   isSpecialUser(): boolean {
-    return this._role === UserRole.SPECIAL_USER;
+    return this.roleValue === UserRole.SPECIAL_USER;
   }
 
   /**
    * Updates the last login timestamp to the current time.
    */
   updateLastLogin(): void {
-    this._lastLogin = new Date();
+    this.lastLoginValue = new Date();
   }
 
   /**
@@ -256,15 +248,15 @@ export class User {
     if (!phone || phone.trim() === '') {
       throw new Error('Phone number is required to enable WhatsApp notifications');
     }
-    this._phone = phone;
-    this._whatsappEnabled = true;
+    this.phoneValue = phone;
+    this.whatsappEnabledValue = true;
   }
 
   /**
    * Disables WhatsApp notifications.
    */
   disableWhatsApp(): void {
-    this._whatsappEnabled = false;
+    this.whatsappEnabledValue = false;
   }
 
   /**
@@ -275,14 +267,14 @@ export class User {
    */
   toJSON(): object {
     return {
-      id: this._id,
-      username: this._username,
-      email: this._email,
-      role: this._role,
-      phone: this._phone,
-      whatsappEnabled: this._whatsappEnabled,
-      createdAt: this._createdAt.toISOString(),
-      lastLogin: this._lastLogin ? this._lastLogin.toISOString() : null,
+      id: this.id,
+      username: this.usernameValue,
+      email: this.emailValue,
+      role: this.roleValue,
+      phone: this.phoneValue,
+      whatsappEnabled: this.whatsappEnabledValue,
+      createdAt: this.createdAt.toISOString(),
+      lastLogin: this.lastLoginValue ? this.lastLoginValue.toISOString() : null,
     };
   }
 }
