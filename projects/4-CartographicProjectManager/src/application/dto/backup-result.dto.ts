@@ -5,53 +5,198 @@
  */
 
 /**
- * Represents the result of a backup operation.
+ * Backup operation status.
  */
-export interface BackupResult {
-  /** Whether the backup was successful. */
-  success: boolean;
-  /** Unique identifier for the created backup. */
-  backupId?: string;
-  /** Timestamp of the backup creation. */
-  createdAt?: Date;
-  /** Size of the backup in bytes. */
-  sizeInBytes?: number;
-  /** Error message on failure. */
-  errorMessage?: string;
+export enum BackupStatus {
+  /** Backup is queued */
+  PENDING = 'PENDING',
+  /** Backup is in progress */
+  IN_PROGRESS = 'IN_PROGRESS',
+  /** Backup completed successfully */
+  COMPLETED = 'COMPLETED',
+  /** Backup failed */
+  FAILED = 'FAILED',
 }
 
 /**
- * Represents the result of a restore operation.
+ * Types of backups.
  */
-export interface RestoreResult {
-  /** Whether the restore was successful. */
-  success: boolean;
-  /** Timestamp of the restore completion. */
-  restoredAt?: Date;
-  /** Error message on failure. */
-  errorMessage?: string;
+export enum BackupType {
+  /** Complete database backup */
+  FULL = 'FULL',
+  /** Only changes since last backup */
+  INCREMENTAL = 'INCREMENTAL',
+  /** User-initiated backup */
+  MANUAL = 'MANUAL',
+  /** Automatically scheduled backup */
+  SCHEDULED = 'SCHEDULED',
 }
 
 /**
- * Represents a backup entry for listing purposes.
+ * Backup error codes for programmatic error handling.
  */
-export interface Backup {
-  /** Unique identifier. */
-  id: string;
-  /** Creation timestamp. */
-  createdAt: Date;
-  /** Size in bytes. */
-  sizeInBytes: number;
-  /** Description or label. */
-  description: string;
+export enum BackupErrorCode {
+  /** Insufficient storage space */
+  STORAGE_FULL = 'STORAGE_FULL',
+  /** Database connection or query error */
+  DATABASE_ERROR = 'DATABASE_ERROR',
+  /** User doesn't have permission */
+  PERMISSION_DENIED = 'PERMISSION_DENIED',
+  /** Another backup is already running */
+  BACKUP_IN_PROGRESS = 'BACKUP_IN_PROGRESS',
+  /** Backup with given ID not found */
+  BACKUP_NOT_FOUND = 'BACKUP_NOT_FOUND',
+  /** Restore operation failed */
+  RESTORE_FAILED = 'RESTORE_FAILED',
+  /** Backup file is corrupted or invalid */
+  INVALID_BACKUP = 'INVALID_BACKUP',
 }
 
 /**
- * Represents a backup schedule configuration.
+ * Record counts for backup metadata.
  */
-export interface Schedule {
-  /** Cron expression or interval descriptor. */
-  cronExpression: string;
-  /** Whether the schedule is active. */
-  enabled: boolean;
+export interface BackupRecordCounts {
+  /** Number of user records */
+  readonly users: number;
+  /** Number of project records */
+  readonly projects: number;
+  /** Number of task records */
+  readonly tasks: number;
+  /** Number of message records */
+  readonly messages: number;
+  /** Number of file records */
+  readonly files: number;
+  /** Number of notification records */
+  readonly notifications: number;
+}
+
+/**
+ * Backup creation result.
+ */
+export interface BackupResultDto {
+  /** Whether backup was successful */
+  readonly success: boolean;
+  /** Current backup status */
+  readonly status: BackupStatus;
+
+  /** Unique backup identifier */
+  readonly backupId?: string;
+  /** Type of backup performed */
+  readonly type: BackupType;
+  /** When backup was created */
+  readonly timestamp?: Date;
+  /** Backup file size in bytes */
+  readonly sizeInBytes?: number;
+  /** Human-readable file size (e.g., "45.2 MB") */
+  readonly humanReadableSize?: string;
+  /** Record counts per entity type */
+  readonly recordCounts?: BackupRecordCounts;
+
+  /** Error message (if failed) */
+  readonly error?: string;
+  /** Programmatic error code (if failed) */
+  readonly errorCode?: BackupErrorCode;
+}
+
+/**
+ * Backup metadata for listing backups.
+ */
+export interface BackupInfoDto {
+  /** Unique backup identifier */
+  readonly id: string;
+  /** Type of backup */
+  readonly type: BackupType;
+  /** Current status */
+  readonly status: BackupStatus;
+  /** Creation timestamp */
+  readonly timestamp: Date;
+  /** File size in bytes */
+  readonly sizeInBytes: number;
+  /** Human-readable file size */
+  readonly humanReadableSize: string;
+  /** User who created backup (null for scheduled) */
+  readonly createdBy: string | null;
+  /** Optional description or notes */
+  readonly description?: string;
+}
+
+/**
+ * Backup list response.
+ */
+export interface BackupListResponseDto {
+  /** Array of available backups */
+  readonly backups: BackupInfoDto[];
+  /** Total number of backups */
+  readonly total: number;
+  /** Total storage used by backups (bytes) */
+  readonly storageUsed: number;
+  /** Maximum storage allowed (bytes) */
+  readonly storageLimit: number;
+}
+
+/**
+ * Request to restore from a backup.
+ */
+export interface RestoreBackupDto {
+  /** ID of the backup to restore from */
+  readonly backupId: string;
+  /** Safety confirmation (must be true) */
+  readonly confirmRestore: boolean;
+}
+
+/**
+ * Restore operation result.
+ */
+export interface RestoreResultDto {
+  /** Whether restore was successful */
+  readonly success: boolean;
+  /** Current restore status */
+  readonly status: BackupStatus;
+  /** Backup ID that was restored */
+  readonly backupId: string;
+  /** When restore completed */
+  readonly restoredAt?: Date;
+  /** Records restored per entity type */
+  readonly recordsRestored?: BackupRecordCounts;
+  /** Error message (if failed) */
+  readonly error?: string;
+  /** Programmatic error code (if failed) */
+  readonly errorCode?: BackupErrorCode;
+}
+
+/**
+ * Backup schedule frequency.
+ */
+export type BackupFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY';
+
+/**
+ * Backup schedule configuration.
+ */
+export interface BackupScheduleDto {
+  /** Whether automatic backups are enabled */
+  readonly enabled: boolean;
+  /** How often to create backups */
+  readonly frequency: BackupFrequency;
+  /** Time of day in HH:mm format (24-hour) */
+  readonly time: string;
+  /** Day of week (0-6, Sunday=0) for weekly backups */
+  readonly dayOfWeek?: number;
+  /** Day of month (1-31) for monthly backups */
+  readonly dayOfMonth?: number;
+  /** How many days to keep old backups */
+  readonly retentionDays: number;
+}
+
+/**
+ * Storage usage information for backups.
+ */
+export interface StorageUsageDto {
+  /** Used storage in bytes */
+  readonly usedBytes: number;
+  /** Storage limit in bytes */
+  readonly limitBytes: number;
+  /** Usage percentage (0-100) */
+  readonly usedPercentage: number;
+  /** Number of backups stored */
+  readonly backupCount: number;
 }
