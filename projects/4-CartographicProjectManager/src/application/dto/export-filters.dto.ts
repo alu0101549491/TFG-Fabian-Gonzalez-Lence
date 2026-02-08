@@ -1,26 +1,100 @@
 /**
  * @module application/dto/export-filters
- * @description Data Transfer Object for data export filtering.
+ * @description Data Transfer Objects for export filtering.
  * @category Application
  */
 
-import {ProjectStatus} from '@domain/enumerations/project-status';
-import {TaskStatus} from '@domain/enumerations/task-status';
+import {ProjectType} from '../../domain/enumerations/project-type';
+import {ProjectStatus} from '../../domain/enumerations/project-status';
+import {TaskStatus} from '../../domain/enumerations/task-status';
+import {TaskPriority} from '../../domain/enumerations/task-priority';
 
 /**
- * Filters for exporting project and task data.
+ * Supported export formats.
  */
-export interface ExportFilters {
-  /** Filter by date range start. */
-  dateFrom?: Date;
-  /** Filter by date range end. */
-  dateTo?: Date;
-  /** Filter by project status. */
-  projectStatus?: ProjectStatus;
-  /** Filter by task status. */
-  taskStatus?: TaskStatus;
-  /** Filter by client ID. */
-  clientId?: string;
-  /** Export format (csv, pdf). */
-  format: 'csv' | 'pdf';
+export enum ExportFormat {
+  /** Comma-separated values */
+  CSV = 'CSV',
+  /** Portable Document Format */
+  PDF = 'PDF',
+  /** Microsoft Excel format */
+  EXCEL = 'EXCEL',
 }
+
+/**
+ * Data types that can be exported.
+ */
+export enum ExportDataType {
+  /** Export project list */
+  PROJECTS = 'PROJECTS',
+  /** Export task list */
+  TASKS = 'TASKS',
+  /** Export message history */
+  MESSAGES = 'MESSAGES',
+  /** Export complete project report with all related data */
+  FULL_REPORT = 'FULL_REPORT',
+}
+
+/**
+ * Filter criteria for export operations.
+ */
+export interface ExportFiltersDto {
+  /** Type of data to export */
+  readonly dataType: ExportDataType;
+  /** Output format */
+  readonly format: ExportFormat;
+
+  /** Filter by date range start */
+  readonly startDate?: Date;
+  /** Filter by date range end */
+  readonly endDate?: Date;
+
+  /** Filter specific projects (by ID) */
+  readonly projectIds?: string[];
+  /** Filter by client ID */
+  readonly clientId?: string;
+  /** Filter by project type */
+  readonly projectType?: ProjectType;
+  /** Filter by project status */
+  readonly projectStatus?: ProjectStatus;
+
+  /** Filter by task status (when exporting tasks) */
+  readonly taskStatus?: TaskStatus;
+  /** Filter by task priority (when exporting tasks) */
+  readonly taskPriority?: TaskPriority;
+  /** Filter by task assignee (when exporting tasks) */
+  readonly assigneeId?: string;
+
+  /** Whether to include finalized projects */
+  readonly includeFinalized?: boolean;
+  /** Whether to include file metadata in export */
+  readonly includeAttachments?: boolean;
+}
+
+/**
+ * Pre-defined export filter preset.
+ */
+export interface ExportPresetDto {
+  /** Unique preset identifier */
+  readonly id: string;
+  /** Preset name */
+  readonly name: string;
+  /** Preset description */
+  readonly description: string;
+  /** Pre-configured filters */
+  readonly filters: ExportFiltersDto;
+}
+
+/**
+ * Common export preset identifiers.
+ */
+export const EXPORT_PRESETS = {
+  /** All active (non-finalized) projects */
+  ALL_ACTIVE_PROJECTS: 'all_active_projects',
+  /** Tasks from current month */
+  CURRENT_MONTH_TASKS: 'current_month_tasks',
+  /** All overdue tasks */
+  OVERDUE_TASKS: 'overdue_tasks',
+  /** Projects for a specific client */
+  CLIENT_PROJECTS: 'client_projects',
+} as const;

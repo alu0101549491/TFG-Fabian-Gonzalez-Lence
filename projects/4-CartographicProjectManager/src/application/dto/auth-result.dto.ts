@@ -1,33 +1,147 @@
 /**
  * @module application/dto/auth-result
- * @description Data Transfer Object for authentication operation results.
+ * @description Data Transfer Objects for authentication operations.
  * @category Application
  */
 
+import {UserRole} from '../../domain/enumerations/user-role';
+
 /**
- * Represents the result of an authentication attempt.
+ * Authentication error codes for programmatic error handling.
  */
-export interface AuthResult {
-  /** Whether the authentication was successful. */
-  success: boolean;
-  /** The session token issued on successful authentication. */
-  token?: string;
-  /** The authenticated user's ID. */
-  userId?: string;
-  /** The authenticated user's role. */
-  role?: string;
-  /** Error message on failed authentication. */
-  errorMessage?: string;
+export enum AuthErrorCode {
+  /** Invalid email or password provided */
+  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
+  /** Account is locked due to too many failed attempts */
+  ACCOUNT_LOCKED = 'ACCOUNT_LOCKED',
+  /** Account has been disabled by administrator */
+  ACCOUNT_DISABLED = 'ACCOUNT_DISABLED',
+  /** Session has expired and must be renewed */
+  SESSION_EXPIRED = 'SESSION_EXPIRED',
+  /** Provided token is invalid or malformed */
+  TOKEN_INVALID = 'TOKEN_INVALID',
+  /** Token has expired */
+  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
 }
 
 /**
- * Represents a session token with its metadata.
+ * User information returned after authentication (excludes sensitive data like password hash).
  */
-export interface SessionToken {
-  /** The token string. */
-  token: string;
-  /** Token expiration date. */
-  expiresAt: Date;
-  /** The user ID associated with this session. */
-  userId: string;
+export interface UserDto {
+  /** Unique user identifier */
+  readonly id: string;
+  /** Unique username */
+  readonly username: string;
+  /** User email address */
+  readonly email: string;
+  /** User role in the system */
+  readonly role: UserRole;
+  /** Phone number (optional) */
+  readonly phone: string | null;
+  /** Whether WhatsApp notifications are enabled */
+  readonly whatsappEnabled: boolean;
+  /** Account creation timestamp */
+  readonly createdAt: Date;
+  /** Last successful login timestamp */
+  readonly lastLogin: Date | null;
+}
+
+/**
+ * Login credentials for authentication request.
+ */
+export interface LoginCredentialsDto {
+  /** User email address */
+  readonly email: string;
+  /** User password (plain text, will be hashed) */
+  readonly password: string;
+  /** Whether to extend session duration */
+  readonly rememberMe?: boolean;
+}
+
+/**
+ * Result of an authentication attempt.
+ */
+export interface AuthResultDto {
+  /** Whether authentication was successful */
+  readonly success: boolean;
+  /** JWT access token (for API requests) */
+  readonly accessToken: string | null;
+  /** JWT refresh token (for renewing access token) */
+  readonly refreshToken: string | null;
+  /** Token expiration timestamp */
+  readonly expiresAt: Date | null;
+  /** Authenticated user information */
+  readonly user: UserDto | null;
+  /** Human-readable error message (if failed) */
+  readonly error: string | null;
+  /** Programmatic error code (if failed) */
+  readonly errorCode: AuthErrorCode | null;
+}
+
+/**
+ * Token refresh request.
+ */
+export interface RefreshTokenDto {
+  /** The refresh token to exchange for new access token */
+  readonly refreshToken: string;
+}
+
+/**
+ * Session information extracted from token.
+ */
+export interface SessionDto {
+  /** User ID from the session */
+  readonly userId: string;
+  /** User role from the session */
+  readonly role: UserRole;
+  /** Session expiration timestamp */
+  readonly expiresAt: Date;
+  /** Whether the session is still valid */
+  readonly isValid: boolean;
+}
+
+/**
+ * Creates a successful authentication result.
+ * @param accessToken - JWT access token
+ * @param refreshToken - JWT refresh token
+ * @param expiresAt - Token expiration timestamp
+ * @param user - Authenticated user information
+ * @returns A successful AuthResultDto
+ */
+export function createSuccessAuthResult(
+  accessToken: string,
+  refreshToken: string,
+  expiresAt: Date,
+  user: UserDto,
+): AuthResultDto {
+  return {
+    success: true,
+    accessToken,
+    refreshToken,
+    expiresAt,
+    user,
+    error: null,
+    errorCode: null,
+  };
+}
+
+/**
+ * Creates a failed authentication result.
+ * @param error - Human-readable error message
+ * @param errorCode - Programmatic error code
+ * @returns A failed AuthResultDto
+ */
+export function createFailedAuthResult(
+  error: string,
+  errorCode: AuthErrorCode,
+): AuthResultDto {
+  return {
+    success: false,
+    accessToken: null,
+    refreshToken: null,
+    expiresAt: null,
+    user: null,
+    error,
+    errorCode,
+  };
 }

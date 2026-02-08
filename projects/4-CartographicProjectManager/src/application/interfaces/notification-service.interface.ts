@@ -1,40 +1,165 @@
 /**
  * @module application/interfaces/notification-service
- * @description Interface for the Notification Service.
- * Defines the contract for in-app and WhatsApp notification delivery.
+ * @description Service interface for in-app and WhatsApp notification delivery.
  * @category Application
  */
 
-import {type Notification} from '@domain/entities/notification';
+import {
+  type NotificationDto,
+  type NotificationFilterDto,
+  type NotificationListResponseDto,
+  type NotificationPreferencesDto,
+} from '../dto';
+import {NotificationType} from '../../domain/enumerations/notification-type';
 
 /**
- * Contract for notification operations.
- * Handles sending, retrieving, and managing notification delivery.
+ * Service interface for notification operations.
+ * Handles sending, retrieving, and managing notifications through
+ * multiple channels including in-app and WhatsApp delivery.
  */
 export interface INotificationService {
   /**
-   * Sends a notification to a user.
-   * May also trigger WhatsApp delivery if configured.
-   * @param notification - The notification to send.
+   * Sends a notification to a specific user.
+   * @param userId - The unique identifier of the recipient user
+   * @param type - The type of notification
+   * @param title - The notification title
+   * @param message - The notification message content
+   * @param relatedEntityId - Optional ID of related entity (project, task, etc.)
+   * @returns Promise that resolves when notification is sent
+   * @throws {NotFoundError} If user doesn't exist
+   * @throws {ValidationError} If notification data is invalid
    */
-  sendNotification(notification: Notification): Promise<void>;
+  sendNotification(
+    userId: string,
+    type: NotificationType,
+    title: string,
+    message: string,
+    relatedEntityId?: string,
+  ): Promise<void>;
 
   /**
-   * Retrieves all notifications for a specific user.
-   * @param userId - The user's unique ID.
-   * @returns Array of notifications, ordered by creation date.
+   * Sends the same notification to multiple users.
+   * @param userIds - Array of unique identifiers of recipient users
+   * @param type - The type of notification
+   * @param title - The notification title
+   * @param message - The notification message content
+   * @param relatedEntityId - Optional ID of related entity (project, task, etc.)
+   * @returns Promise that resolves when all notifications are sent
+   * @throws {ValidationError} If notification data is invalid
    */
-  getNotificationsByUser(userId: string): Promise<Notification[]>;
+  sendBulkNotifications(
+    userIds: string[],
+    type: NotificationType,
+    title: string,
+    message: string,
+    relatedEntityId?: string,
+  ): Promise<void>;
 
   /**
-   * Marks a notification as read.
-   * @param notificationId - The notification's unique ID.
+   * Retrieves all notifications for a specific user with optional filtering.
+   * @param userId - The unique identifier of the user
+   * @param filters - Optional filters for notification list (read status, type, pagination)
+   * @returns Paginated list of notifications ordered by creation date
+   * @throws {NotFoundError} If user doesn't exist
    */
-  markAsRead(notificationId: string): Promise<void>;
+  getNotificationsByUser(
+    userId: string,
+    filters?: NotificationFilterDto,
+  ): Promise<NotificationListResponseDto>;
 
   /**
-   * Sends a notification via WhatsApp.
-   * @param notification - The notification to send via WhatsApp.
+   * Retrieves all unread notifications for a user.
+   * @param userId - The unique identifier of the user
+   * @returns Array of unread notifications
+   * @throws {NotFoundError} If user doesn't exist
    */
-  sendViaWhatsApp(notification: Notification): Promise<void>;
+  getUnreadNotifications(userId: string): Promise<NotificationDto[]>;
+
+  /**
+   * Gets the count of unread notifications for a user.
+   * @param userId - The unique identifier of the user
+   * @returns The number of unread notifications
+   * @throws {NotFoundError} If user doesn't exist
+   */
+  getUnreadCount(userId: string): Promise<number>;
+
+  /**
+   * Marks a specific notification as read.
+   * @param notificationId - The unique identifier of the notification
+   * @param userId - The unique identifier of the user
+   * @returns Promise that resolves when notification is marked as read
+   * @throws {NotFoundError} If notification doesn't exist
+   * @throws {UnauthorizedError} If notification doesn't belong to user
+   */
+  markAsRead(notificationId: string, userId: string): Promise<void>;
+
+  /**
+   * Marks all notifications as read for a user.
+   * @param userId - The unique identifier of the user
+   * @returns Promise that resolves when all notifications are marked as read
+   * @throws {NotFoundError} If user doesn't exist
+   */
+  markAllAsRead(userId: string): Promise<void>;
+
+  /**
+   * Deletes a specific notification.
+   * @param notificationId - The unique identifier of the notification
+   * @param userId - The unique identifier of the user
+   * @returns Promise that resolves when notification is deleted
+   * @throws {NotFoundError} If notification doesn't exist
+   * @throws {UnauthorizedError} If notification doesn't belong to user
+   */
+  deleteNotification(notificationId: string, userId: string): Promise<void>;
+
+  /**
+   * Deletes old notifications older than a specified number of days.
+   * @param olderThanDays - Number of days to use as threshold
+   * @returns The number of notifications deleted
+   */
+  deleteOldNotifications(olderThanDays: number): Promise<number>;
+
+  /**
+   * Sends a notification via WhatsApp to a user.
+   * @param userId - The unique identifier of the user
+   * @param message - The message content to send
+   * @returns True if message was sent successfully, false otherwise
+   * @throws {NotFoundError} If user doesn't exist
+   * @throws {ValidationError} If user doesn't have WhatsApp configured
+   */
+  sendViaWhatsApp(userId: string, message: string): Promise<boolean>;
+
+  /**
+   * Determines if a notification should be sent via WhatsApp based on user preferences.
+   * @param userId - The unique identifier of the user
+   * @param notificationType - The type of notification to check
+   * @returns True if WhatsApp should be used for this notification type
+   * @throws {NotFoundError} If user doesn't exist
+   */
+  shouldSendWhatsApp(
+    userId: string,
+    notificationType: NotificationType,
+  ): Promise<boolean>;
+
+  /**
+   * Retrieves notification preferences for a user.
+   * @param userId - The unique identifier of the user
+   * @returns The user's notification preferences
+   * @throws {NotFoundError} If user doesn't exist
+   */
+  getUserNotificationPreferences(
+    userId: string,
+  ): Promise<NotificationPreferencesDto>;
+
+  /**
+   * Updates notification preferences for a user.
+   * @param userId - The unique identifier of the user
+   * @param preferences - The new notification preferences
+   * @returns Promise that resolves when preferences are updated
+   * @throws {NotFoundError} If user doesn't exist
+   * @throws {ValidationError} If preferences are invalid
+   */
+  updateUserNotificationPreferences(
+    userId: string,
+    preferences: NotificationPreferencesDto,
+  ): Promise<void>;
 }
