@@ -5,63 +5,325 @@
  * @category Domain
  */
 
-import {AccessRight} from '../enumerations/access-right';
+import {
+  AccessRight,
+  READ_ONLY_ACCESS_RIGHTS,
+  ALL_ACCESS_RIGHTS,
+} from '../enumerations/access-right';
 
 /**
- * Represents the set of permissions granted to a user for a specific project.
- * Used to control fine-grained access to project resources.
+ * Project sections that can have access control.
+ */
+export const PROJECT_SECTIONS = [
+  'REPORT_AND_ANNEXES',
+  'PLANS',
+  'SPECIFICATIONS',
+  'BUDGET',
+] as const;
+
+/**
+ * Properties for creating a Permission entity.
+ */
+export interface PermissionProps {
+  /** Unique identifier */
+  id: string;
+  /** Special user ID */
+  userId: string;
+  /** Project ID */
+  projectId: string;
+  /** Granted access rights */
+  rights: Set<AccessRight>;
+  /** Specific sections accessible */
+  sectionAccess?: string[];
+  /** Admin who granted permissions */
+  grantedBy: string;
+  /** When permissions were set */
+  grantedAt?: Date;
+  /** Last modification */
+  updatedAt?: Date;
+}
+
+/**
+ * Represents permissions granted to a special user for a project.
+ *
+ * Permissions provide fine-grained access control with:
+ * - Specific access rights (VIEW, DOWNLOAD, EDIT, DELETE, UPLOAD, SEND_MESSAGE)
+ * - Section-level access control
+ *
+ * @example
+ * ```typescript
+ * const permission = Permission.createViewOnly(
+ *   'special_user_001',
+ *   'proj_001',
+ *   'admin_001'
+ * );
+ *
+ * permission.grantRight(AccessRight.DOWNLOAD);
+ * console.log(permission.canDownload()); // true
+ * ```
  */
 export class Permission {
-  private readonly userId: string;
-  private readonly projectId: string;
-  private rights: Set<AccessRight>;
+  private readonly _id: string;
+  private readonly _userId: string;
+  private readonly _projectId: string;
+  private _rights: Set<AccessRight>;
+  private _sectionAccess: string[];
+  private readonly _grantedBy: string;
+  private readonly _grantedAt: Date;
+  private _updatedAt: Date;
 
-  constructor(
-    userId: string,
-    projectId: string,
-    rights: Set<AccessRight>,
-  ) {
-    this.userId = userId;
-    this.projectId = projectId;
-    this.rights = rights;
+  /**
+   * Creates a new Permission entity.
+   *
+   * @param props - Permission properties
+   * @throws {Error} If required fields are missing
+   */
+  constructor(props: PermissionProps) {
+    this.validateProps(props);
+
+    this._id = props.id;
+    this._userId = props.userId;
+    this._projectId = props.projectId;
+    this._rights = new Set(props.rights);
+    this._sectionAccess = props.sectionAccess ?? [];
+    this._grantedBy = props.grantedBy;
+    this._grantedAt = props.grantedAt ?? new Date();
+    this._updatedAt = props.updatedAt ?? new Date();
   }
 
   /**
-   * Checks if the permission includes view access.
-   * @returns True if the user can view the project.
+   * Validates permission properties.
+   */
+  private validateProps(props: PermissionProps): void {
+    if (!props.id || props.id.trim() === '') {
+      throw new Error('Permission ID is required');
+    }
+    if (!props.userId || props.userId.trim() === '') {
+      throw new Error('User ID is required');
+    }
+    if (!props.projectId || props.projectId.trim() === '') {
+      throw new Error('Project ID is required');
+    }
+    if (!props.grantedBy || props.grantedBy.trim() === '') {
+      throw new Error('Granted by (admin) is required');
+    }
+  }
+
+  // Getters
+
+  get id(): string {
+    return this._id;
+  }
+
+  get userId(): string {
+    return this._userId;
+  }
+
+  get projectId(): string {
+    return this._projectId;
+  }
+
+  get rights(): Set<AccessRight> {
+    return new Set(this._rights);
+  }
+
+  get sectionAccess(): string[] {
+    return [...this._sectionAccess];
+  }
+
+  get grantedBy(): string {
+    return this._grantedBy;
+  }
+
+  get grantedAt(): Date {
+    return this._grantedAt;
+  }
+
+  get updatedAt(): Date {
+    return this._updatedAt;
+  }
+
+  // Business Logic Methods
+
+  /**
+   * Updates the updatedAt timestamp.
+   */
+  private touchUpdatedAt(): void {
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Grants an access right.
+   *
+   * @param right - Right to grant
+   */
+  grantRight(right: AccessRight): void {
+    this._rights.add(right);
+    this.touchUpdatedAt();
+  }
+
+  /**
+   * Revokes an access right.
+   *
+   * @param right - Right to revoke
+   */
+  revokeRight(right: AccessRight): void {
+    this._rights.delete(right);
+    this.touchUpdatedAt();
+  }
+
+  /**
+   * Checks if permission includes specific right.
+   *
+   * @param right - Right to check
+   * @returns True if right is granted
+   */
+  hasRight(right: AccessRight): boolean {
+    return this._rights.has(right);
+  }
+
+  /**
+   * Checks VIEW right.
    */
   canView(): boolean {
-    // TODO: Implement view permission check
-    throw new Error('Method not implemented.');
+    return this.hasRight(AccessRight.VIEW);
   }
 
   /**
-   * Checks if the permission includes download access.
-   * @returns True if the user can download files from the project.
+   * Checks DOWNLOAD right.
    */
   canDownload(): boolean {
-    // TODO: Implement download permission check
-    throw new Error('Method not implemented.');
+    return this.hasRight(AccessRight.DOWNLOAD);
   }
 
   /**
-   * Checks if the permission includes edit access.
-   * @returns True if the user can edit project data.
+   * Checks EDIT right.
    */
   canEdit(): boolean {
-    // TODO: Implement edit permission check
-    throw new Error('Method not implemented.');
+    return this.hasRight(AccessRight.EDIT);
   }
 
-  getUserId(): string {
-    return this.userId;
+  /**
+   * Checks DELETE right.
+   */
+  canDelete(): boolean {
+    return this.hasRight(AccessRight.DELETE);
   }
 
-  getProjectId(): string {
-    return this.projectId;
+  /**
+   * Checks UPLOAD right.
+   */
+  canUpload(): boolean {
+    return this.hasRight(AccessRight.UPLOAD);
   }
 
-  getRights(): Set<AccessRight> {
-    return new Set(this.rights);
+  /**
+   * Checks SEND_MESSAGE right.
+   */
+  canSendMessage(): boolean {
+    return this.hasRight(AccessRight.SEND_MESSAGE);
+  }
+
+  /**
+   * Grants access to a section.
+   *
+   * @param section - Section name
+   */
+  grantSectionAccess(section: string): void {
+    if (!this._sectionAccess.includes(section)) {
+      this._sectionAccess.push(section);
+      this.touchUpdatedAt();
+    }
+  }
+
+  /**
+   * Revokes access to a section.
+   *
+   * @param section - Section name
+   */
+  revokeSectionAccess(section: string): void {
+    const index = this._sectionAccess.indexOf(section);
+    if (index !== -1) {
+      this._sectionAccess.splice(index, 1);
+      this.touchUpdatedAt();
+    }
+  }
+
+  /**
+   * Checks if can access specific section.
+   *
+   * @param section - Section to check
+   * @returns True if has access (empty sectionAccess = all access)
+   */
+  canAccessSection(section: string): boolean {
+    // Empty array means all sections accessible
+    if (this._sectionAccess.length === 0) {
+      return true;
+    }
+    return this._sectionAccess.includes(section);
+  }
+
+  // Factory Methods
+
+  /**
+   * Creates view-only permission.
+   *
+   * @param userId - User ID
+   * @param projectId - Project ID
+   * @param grantedBy - Admin granting permission
+   * @returns New Permission
+   */
+  static createViewOnly(
+    userId: string,
+    projectId: string,
+    grantedBy: string
+  ): Permission {
+    const id = `perm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return new Permission({
+      id,
+      userId,
+      projectId,
+      rights: new Set(READ_ONLY_ACCESS_RIGHTS),
+      grantedBy,
+    });
+  }
+
+  /**
+   * Creates full access permission.
+   *
+   * @param userId - User ID
+   * @param projectId - Project ID
+   * @param grantedBy - Admin granting permission
+   * @returns New Permission
+   */
+  static createFullAccess(
+    userId: string,
+    projectId: string,
+    grantedBy: string
+  ): Permission {
+    const id = `perm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return new Permission({
+      id,
+      userId,
+      projectId,
+      rights: new Set(ALL_ACCESS_RIGHTS),
+      grantedBy,
+    });
+  }
+
+  /**
+   * Serializes the permission entity.
+   */
+  toJSON(): object {
+    return {
+      id: this._id,
+      userId: this._userId,
+      projectId: this._projectId,
+      rights: Array.from(this._rights),
+      sectionAccess: [...this._sectionAccess],
+      grantedBy: this._grantedBy,
+      grantedAt: this._grantedAt.toISOString(),
+      updatedAt: this._updatedAt.toISOString(),
+    };
   }
 }

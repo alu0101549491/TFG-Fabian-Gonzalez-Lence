@@ -21,3 +21,61 @@ export enum NotificationType {
   /** A project has been finalized. */
   PROJECT_FINALIZED = 'PROJECT_FINALIZED',
 }
+
+/**
+ * Human-readable display names for notification types.
+ */
+export const NotificationTypeDisplayName: Record<NotificationType, string> = {
+  [NotificationType.NEW_MESSAGE]: 'New Message',
+  [NotificationType.NEW_TASK]: 'New Task',
+  [NotificationType.TASK_STATUS_CHANGE]: 'Task Status Changed',
+  [NotificationType.FILE_RECEIVED]: 'File Received',
+  [NotificationType.PROJECT_ASSIGNED]: 'Project Assigned',
+  [NotificationType.PROJECT_FINALIZED]: 'Project Finalized',
+};
+
+/**
+ * Message templates for notification types.
+ * Use placeholders like {projectName}, {taskDescription}, {status}, {fileName}, {projectCode}.
+ */
+export const NotificationTypeMessageTemplate: Record<NotificationType, string> =
+  {
+    [NotificationType.NEW_MESSAGE]: 'New message in {projectName}',
+    [NotificationType.NEW_TASK]: 'New task: {taskDescription}',
+    [NotificationType.TASK_STATUS_CHANGE]:
+      "Task '{taskDescription}' changed to {status}",
+    [NotificationType.FILE_RECEIVED]: 'New file: {fileName}',
+    [NotificationType.PROJECT_ASSIGNED]:
+      "You've been assigned to project {projectCode}",
+    [NotificationType.PROJECT_FINALIZED]:
+      'Project {projectCode} has been finalized',
+  };
+
+/**
+ * Icon identifiers for notification types (for UI rendering).
+ */
+export const NotificationTypeIcon: Record<NotificationType, string> = {
+  [NotificationType.NEW_MESSAGE]: 'message',
+  [NotificationType.NEW_TASK]: 'task',
+  [NotificationType.TASK_STATUS_CHANGE]: 'update',
+  [NotificationType.FILE_RECEIVED]: 'file',
+  [NotificationType.PROJECT_ASSIGNED]: 'project',
+  [NotificationType.PROJECT_FINALIZED]: 'check',
+};
+
+/**
+ * Type guard to check if a value is a valid NotificationType.
+ *
+ * @param value - The value to check
+ * @returns True if the value is a valid NotificationType
+ */
+export function isValidNotificationType(
+  value: unknown
+): value is NotificationType {
+  return Object.values(NotificationType).includes(value as NotificationType);
+}
+
+/**
+ * Array of all notification types for iteration.
+ */
+export const ALL_NOTIFICATION_TYPES = Object.values(NotificationType);

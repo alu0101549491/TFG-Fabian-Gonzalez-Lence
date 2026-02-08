@@ -7,91 +7,282 @@
  */
 
 import {UserRole} from '../enumerations/user-role';
-import {type Permission} from './permission';
-import {type Project} from './project';
+
+/**
+ * Properties for creating a User entity.
+ */
+export interface UserProps {
+  /** Unique identifier for the user */
+  id: string;
+  /** Display name of the user */
+  username: string;
+  /** User's email address (used for login) */
+  email: string;
+  /** Hashed password (bcrypt) - never exposed in API */
+  passwordHash: string;
+  /** User's role in the system */
+  role: UserRole;
+  /** Phone number for WhatsApp notifications */
+  phone?: string | null;
+  /** Whether WhatsApp notifications are enabled */
+  whatsappEnabled?: boolean;
+  /** Account creation timestamp */
+  createdAt?: Date;
+  /** Last successful login timestamp */
+  lastLogin?: Date | null;
+}
 
 /**
  * Represents a user in the Cartographic Project Manager system.
- * Users are identified by a unique ID and can have one of three roles.
+ *
+ * Users are characterized by their role:
+ * - ADMINISTRATOR: Full system control, project creation, user management
+ * - CLIENT: Access to assigned projects, can create tasks for admin
+ * - SPECIAL_USER: Configurable permissions per project
+ *
+ * This entity encapsulates user identity, authentication data, and
+ * role-based access control.
+ *
+ * @example
+ * ```typescript
+ * const admin = new User({
+ *   id: 'user_001',
+ *   username: 'John Admin',
+ *   email: 'john@example.com',
+ *   passwordHash: '$2b$10$...',
+ *   role: UserRole.ADMINISTRATOR
+ * });
+ *
+ * if (admin.isAdmin()) {
+ *   // Full access granted
+ * }
+ * ```
  */
 export class User {
-  private readonly id: string;
-  private readonly username: string;
-  private readonly email: string;
-  private readonly passwordHash: string;
-  private readonly role: UserRole;
-  private readonly createdAt: Date;
-  private lastLogin: Date;
+  private readonly _id: string;
+  private _username: string;
+  private _email: string;
+  private readonly _passwordHash: string;
+  private _role: UserRole;
+  private _phone: string | null;
+  private _whatsappEnabled: boolean;
+  private readonly _createdAt: Date;
+  private _lastLogin: Date | null;
 
-  constructor(
-    id: string,
-    username: string,
-    email: string,
-    passwordHash: string,
-    role: UserRole,
-    createdAt: Date,
-    lastLogin: Date,
-  ) {
-    this.id = id;
-    this.username = username;
-    this.email = email;
-    this.passwordHash = passwordHash;
-    this.role = role;
-    this.createdAt = createdAt;
-    this.lastLogin = lastLogin;
+  /**
+   * Creates a new User entity.
+   *
+   * @param props - User properties
+   * @throws {Error} If required fields are missing or invalid
+   */
+  constructor(props: UserProps) {
+    this.validateProps(props);
+
+    this._id = props.id;
+    this._username = props.username;
+    this._email = props.email;
+    this._passwordHash = props.passwordHash;
+    this._role = props.role;
+    this._phone = props.phone ?? null;
+    this._whatsappEnabled = props.whatsappEnabled ?? false;
+    this._createdAt = props.createdAt ?? new Date();
+    this._lastLogin = props.lastLogin ?? null;
   }
 
   /**
-   * Authenticates a user by verifying the provided password against
-   * the stored password hash.
-   * @param password - The plaintext password to verify.
-   * @returns True if the password matches the stored hash.
+   * Validates user properties.
+   *
+   * @param props - Properties to validate
+   * @throws {Error} If validation fails
+   */
+  private validateProps(props: UserProps): void {
+    if (!props.id || props.id.trim() === '') {
+      throw new Error('User ID is required');
+    }
+
+    if (!props.username || props.username.trim() === '') {
+      throw new Error('Username is required');
+    }
+
+    if (!props.email || props.email.trim() === '') {
+      throw new Error('Email is required');
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(props.email)) {
+      throw new Error('Invalid email format');
+    }
+
+    if (!props.passwordHash || props.passwordHash.trim() === '') {
+      throw new Error('Password hash is required');
+    }
+
+    if (!props.role) {
+      throw new Error('User role is required');
+    }
+  }
+
+  // Getters
+
+  get id(): string {
+    return this._id;
+  }
+
+  get username(): string {
+    return this._username;
+  }
+
+  set username(value: string) {
+    if (!value || value.trim() === '') {
+      throw new Error('Username cannot be empty');
+    }
+    this._username = value;
+  }
+
+  get email(): string {
+    return this._email;
+  }
+
+  set email(value: string) {
+    if (!value || value.trim() === '') {
+      throw new Error('Email cannot be empty');
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      throw new Error('Invalid email format');
+    }
+    this._email = value;
+  }
+
+  get role(): UserRole {
+    return this._role;
+  }
+
+  set role(value: UserRole) {
+    this._role = value;
+  }
+
+  get phone(): string | null {
+    return this._phone;
+  }
+
+  set phone(value: string | null) {
+    this._phone = value;
+  }
+
+  get whatsappEnabled(): boolean {
+    return this._whatsappEnabled;
+  }
+
+  set whatsappEnabled(value: boolean) {
+    this._whatsappEnabled = value;
+  }
+
+  get createdAt(): Date {
+    return this._createdAt;
+  }
+
+  get lastLogin(): Date | null {
+    return this._lastLogin;
+  }
+
+  set lastLogin(value: Date | null) {
+    this._lastLogin = value;
+  }
+
+  // Business Logic Methods
+
+  /**
+   * Authenticates a user by verifying the provided password.
+   *
+   * Note: This is a domain interface method. Actual password hashing
+   * and verification should be delegated to an authentication service
+   * in the application layer using bcrypt or similar.
+   *
+   * @param password - The plaintext password to verify
+   * @returns True if the password matches (to be implemented in service layer)
    */
   authenticate(password: string): boolean {
-    // TODO: Implement password verification logic
-    throw new Error('Method not implemented.');
+    // Domain entities should not contain cryptographic logic
+    // This method signature exists for domain modeling
+    // Actual implementation will be in the authentication service
+    throw new Error(
+      'Password authentication must be implemented in the application service layer'
+    );
   }
 
   /**
-   * Checks if the user has a specific permission.
-   * @param permission - The permission to check.
-   * @returns True if the user has the specified permission.
+   * Checks if the user has Administrator role.
+   *
+   * @returns True if user is an administrator
    */
-  hasPermission(permission: Permission): boolean {
-    // TODO: Implement permission check logic
-    throw new Error('Method not implemented.');
+  isAdmin(): boolean {
+    return this._role === UserRole.ADMINISTRATOR;
   }
 
   /**
-   * Retrieves the list of projects assigned to this user.
-   * @returns Array of projects the user has access to.
+   * Checks if the user has Client role.
+   *
+   * @returns True if user is a client
    */
-  getAssignedProjects(): Project[] {
-    // TODO: Implement project retrieval logic
-    throw new Error('Method not implemented.');
+  isClient(): boolean {
+    return this._role === UserRole.CLIENT;
   }
 
-  getId(): string {
-    return this.id;
+  /**
+   * Checks if the user has Special User role.
+   *
+   * @returns True if user is a special user
+   */
+  isSpecialUser(): boolean {
+    return this._role === UserRole.SPECIAL_USER;
   }
 
-  getUsername(): string {
-    return this.username;
+  /**
+   * Updates the last login timestamp to the current time.
+   */
+  updateLastLogin(): void {
+    this._lastLogin = new Date();
   }
 
-  getEmail(): string {
-    return this.email;
+  /**
+   * Enables WhatsApp notifications with the provided phone number.
+   *
+   * @param phone - Phone number for WhatsApp notifications
+   * @throws {Error} If phone number is empty
+   */
+  enableWhatsApp(phone: string): void {
+    if (!phone || phone.trim() === '') {
+      throw new Error('Phone number is required to enable WhatsApp notifications');
+    }
+    this._phone = phone;
+    this._whatsappEnabled = true;
   }
 
-  getRole(): UserRole {
-    return this.role;
+  /**
+   * Disables WhatsApp notifications.
+   */
+  disableWhatsApp(): void {
+    this._whatsappEnabled = false;
   }
 
-  getCreatedAt(): Date {
-    return this.createdAt;
-  }
-
-  getLastLogin(): Date {
-    return this.lastLogin;
+  /**
+   * Serializes the user entity to a plain object.
+   * Excludes sensitive data like password hash.
+   *
+   * @returns Plain object representation suitable for API responses
+   */
+  toJSON(): object {
+    return {
+      id: this._id,
+      username: this._username,
+      email: this._email,
+      role: this._role,
+      phone: this._phone,
+      whatsappEnabled: this._whatsappEnabled,
+      createdAt: this._createdAt.toISOString(),
+      lastLogin: this._lastLogin ? this._lastLogin.toISOString() : null,
+    };
   }
 }
