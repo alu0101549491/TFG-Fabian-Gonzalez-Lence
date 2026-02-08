@@ -45,13 +45,13 @@ export interface TaskHistoryProps {
  * ```
  */
 export class TaskHistory {
-  private readonly _id: string;
-  private readonly _taskId: string;
-  private readonly _userId: string;
-  private readonly _action: string;
-  private readonly _previousValue: string | null;
-  private readonly _newValue: string | null;
-  private readonly _timestamp: Date;
+  readonly id: string;
+  readonly taskId: string;
+  readonly userId: string;
+  readonly action: string;
+  readonly previousValue: string | null;
+  readonly newValue: string | null;
+  readonly timestamp: Date;
 
   /**
    * Creates a new TaskHistory entity (immutable).
@@ -62,13 +62,13 @@ export class TaskHistory {
   constructor(props: TaskHistoryProps) {
     this.validateProps(props);
 
-    this._id = props.id;
-    this._taskId = props.taskId;
-    this._userId = props.userId;
-    this._action = props.action;
-    this._previousValue = props.previousValue ?? null;
-    this._newValue = props.newValue ?? null;
-    this._timestamp = props.timestamp ?? new Date();
+    this.id = props.id;
+    this.taskId = props.taskId;
+    this.userId = props.userId;
+    this.action = props.action;
+    this.previousValue = props.previousValue ?? null;
+    this.newValue = props.newValue ?? null;
+    this.timestamp = props.timestamp ?? new Date();
   }
 
   /**
@@ -87,36 +87,6 @@ export class TaskHistory {
     if (!props.action || props.action.trim() === '') {
       throw new Error('Action is required');
     }
-  }
-
-  // Getters (all readonly)
-
-  get id(): string {
-    return this._id;
-  }
-
-  get taskId(): string {
-    return this._taskId;
-  }
-
-  get userId(): string {
-    return this._userId;
-  }
-
-  get action(): string {
-    return this._action;
-  }
-
-  get previousValue(): string | null {
-    return this._previousValue;
-  }
-
-  get newValue(): string | null {
-    return this._newValue;
-  }
-
-  get timestamp(): Date {
-    return this._timestamp;
   }
 
   // Factory Methods
@@ -180,13 +150,13 @@ export class TaskHistory {
    */
   toJSON(): object {
     return {
-      id: this._id,
-      taskId: this._taskId,
-      userId: this._userId,
-      action: this._action,
-      previousValue: this._previousValue,
-      newValue: this._newValue,
-      timestamp: this._timestamp.toISOString(),
+      id: this.id,
+      taskId: this.taskId,
+      userId: this.userId,
+      action: this.action,
+      previousValue: this.previousValue,
+      newValue: this.newValue,
+      timestamp: this.timestamp.toISOString(),
     };
   }
 }

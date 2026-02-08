@@ -53,14 +53,14 @@ export interface MessageProps {
  * ```
  */
 export class Message {
-  private readonly _id: string;
-  private readonly _projectId: string;
-  private readonly _senderId: string;
-  private _content: string;
-  private readonly _type: MessageType;
-  private readonly _sentAt: Date;
-  private _fileIds: string[];
-  private _readByUserIds: string[];
+  readonly id: string;
+  readonly projectId: string;
+  readonly senderId: string;
+  private contentValue: string;
+  readonly type: MessageType;
+  readonly sentAt: Date;
+  private fileIdsValue: string[];
+  private readByUserIdsValue: string[];
 
   /**
    * Creates a new Message entity.
@@ -71,14 +71,14 @@ export class Message {
   constructor(props: MessageProps) {
     this.validateProps(props);
 
-    this._id = props.id;
-    this._projectId = props.projectId;
-    this._senderId = props.senderId;
-    this._content = props.content;
-    this._type = props.type ?? 'NORMAL';
-    this._fileIds = props.fileIds ?? [];
-    this._readByUserIds = props.readByUserIds ?? [];
-    this._sentAt = props.sentAt ?? new Date();
+    this.id = props.id;
+    this.projectId = props.projectId;
+    this.senderId = props.senderId;
+    this.contentValue = props.content;
+    this.type = props.type ?? 'NORMAL';
+    this.fileIdsValue = props.fileIds ?? [];
+    this.readByUserIdsValue = props.readByUserIds ?? [];
+    this.sentAt = props.sentAt ?? new Date();
   }
 
   /**
@@ -101,43 +101,23 @@ export class Message {
 
   // Getters
 
-  get id(): string {
-    return this._id;
-  }
-
-  get projectId(): string {
-    return this._projectId;
-  }
-
-  get senderId(): string {
-    return this._senderId;
-  }
-
   get content(): string {
-    return this._content;
+    return this.contentValue;
   }
 
   set content(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Content cannot be empty');
     }
-    this._content = value;
-  }
-
-  get type(): MessageType {
-    return this._type;
-  }
-
-  get sentAt(): Date {
-    return this._sentAt;
+    this.contentValue = value;
   }
 
   get fileIds(): string[] {
-    return [...this._fileIds];
+    return [...this.fileIdsValue];
   }
 
   get readByUserIds(): string[] {
-    return [...this._readByUserIds];
+    return [...this.readByUserIdsValue];
   }
 
   // Business Logic Methods
@@ -153,12 +133,12 @@ export class Message {
       throw new Error('User ID is required');
     }
 
-    if (this._readByUserIds.includes(userId)) {
+    if (this.readByUserIdsValue.includes(userId)) {
       // Already marked as read, silently return
       return;
     }
 
-    this._readByUserIds.push(userId);
+    this.readByUserIdsValue.push(userId);
   }
 
   /**
@@ -168,7 +148,7 @@ export class Message {
    * @returns True if user has read the message
    */
   isReadBy(userId: string): boolean {
-    return this._readByUserIds.includes(userId);
+    return this.readByUserIdsValue.includes(userId);
   }
 
   /**
@@ -182,11 +162,11 @@ export class Message {
       throw new Error('File ID is required');
     }
 
-    if (this._fileIds.includes(fileId)) {
+    if (this.fileIdsValue.includes(fileId)) {
       throw new Error('File already attached to this message');
     }
 
-    this._fileIds.push(fileId);
+    this.fileIdsValue.push(fileId);
   }
 
   /**
@@ -195,7 +175,7 @@ export class Message {
    * @returns True if message type is SYSTEM
    */
   isSystemMessage(): boolean {
-    return this._type === 'SYSTEM';
+    return this.type === 'SYSTEM';
   }
 
   /**
@@ -223,14 +203,14 @@ export class Message {
    */
   toJSON(): object {
     return {
-      id: this._id,
-      projectId: this._projectId,
-      senderId: this._senderId,
-      content: this._content,
-      type: this._type,
-      sentAt: this._sentAt.toISOString(),
-      fileIds: [...this._fileIds],
-      readByUserIds: [...this._readByUserIds],
+      id: this.id,
+      projectId: this.projectId,
+      senderId: this.senderId,
+      content: this.contentValue,
+      type: this.type,
+      sentAt: this.sentAt.toISOString(),
+      fileIds: [...this.fileIdsValue],
+      readByUserIds: [...this.readByUserIdsValue],
     };
   }
 }

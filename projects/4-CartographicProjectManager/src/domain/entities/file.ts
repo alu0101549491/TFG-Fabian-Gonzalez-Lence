@@ -56,16 +56,16 @@ export interface FileProps {
  * ```
  */
 export class File {
-  private readonly _id: string;
-  private readonly _name: string;
-  private readonly _dropboxPath: string;
-  private readonly _type: FileType;
-  private readonly _sizeInBytes: number;
-  private readonly _uploadedBy: string;
-  private readonly _uploadedAt: Date;
-  private readonly _projectId: string;
-  private readonly _taskId: string | null;
-  private readonly _messageId: string | null;
+  readonly id: string;
+  readonly name: string;
+  readonly dropboxPath: string;
+  readonly type: FileType;
+  readonly sizeInBytes: number;
+  readonly uploadedBy: string;
+  readonly uploadedAt: Date;
+  readonly projectId: string;
+  readonly taskId: string | null;
+  readonly messageId: string | null;
 
   /**
    * Creates a new File entity.
@@ -76,16 +76,16 @@ export class File {
   constructor(props: FileProps) {
     this.validateProps(props);
 
-    this._id = props.id;
-    this._name = props.name;
-    this._dropboxPath = props.dropboxPath;
-    this._type = props.type;
-    this._sizeInBytes = props.sizeInBytes;
-    this._uploadedBy = props.uploadedBy;
-    this._uploadedAt = props.uploadedAt ?? new Date();
-    this._projectId = props.projectId;
-    this._taskId = props.taskId ?? null;
-    this._messageId = props.messageId ?? null;
+    this.id = props.id;
+    this.name = props.name;
+    this.dropboxPath = props.dropboxPath;
+    this.type = props.type;
+    this.sizeInBytes = props.sizeInBytes;
+    this.uploadedBy = props.uploadedBy;
+    this.uploadedAt = props.uploadedAt ?? new Date();
+    this.projectId = props.projectId;
+    this.taskId = props.taskId ?? null;
+    this.messageId = props.messageId ?? null;
   }
 
   /**
@@ -115,48 +115,6 @@ export class File {
     }
   }
 
-  // Getters
-
-  get id(): string {
-    return this._id;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get dropboxPath(): string {
-    return this._dropboxPath;
-  }
-
-  get type(): FileType {
-    return this._type;
-  }
-
-  get sizeInBytes(): number {
-    return this._sizeInBytes;
-  }
-
-  get uploadedBy(): string {
-    return this._uploadedBy;
-  }
-
-  get uploadedAt(): Date {
-    return this._uploadedAt;
-  }
-
-  get projectId(): string {
-    return this._projectId;
-  }
-
-  get taskId(): string | null {
-    return this._taskId;
-  }
-
-  get messageId(): string | null {
-    return this._messageId;
-  }
-
   // Business Logic Methods
 
   /**
@@ -165,7 +123,7 @@ export class File {
    * @returns Lowercase extension (e.g., 'pdf', 'kml')
    */
   getExtension(): string {
-    const parts = this._name.split('.');
+    const parts = this.name.split('.');
     return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
   }
 
@@ -175,7 +133,7 @@ export class File {
    * @returns True if file type is valid
    */
   isValidFormat(): boolean {
-    return isValidFileType(this._type);
+    return isValidFileType(this.type);
   }
 
   /**
@@ -185,14 +143,14 @@ export class File {
    * @returns True if within limit
    */
   isWithinSizeLimit(maxBytes: number): boolean {
-    return this._sizeInBytes <= maxBytes;
+    return this.sizeInBytes <= maxBytes;
   }
 
   /**
    * Checks if file is an image.
    */
   isImage(): boolean {
-    return this._type === FileType.IMAGE;
+    return this.type === FileType.IMAGE;
   }
 
   /**
@@ -200,8 +158,8 @@ export class File {
    */
   isDocument(): boolean {
     return (
-      this._type === FileType.PDF ||
-      this._type === FileType.DOCUMENT
+      this.type === FileType.PDF ||
+      this.type === FileType.DOCUMENT
     );
   }
 
@@ -210,9 +168,9 @@ export class File {
    */
   isCartographic(): boolean {
     return (
-      this._type === FileType.KML ||
-      this._type === FileType.SHP ||
-      this._type === FileType.CAD
+      this.type === FileType.KML ||
+      this.type === FileType.SHP ||
+      this.type === FileType.CAD
     );
   }
 
@@ -220,7 +178,7 @@ export class File {
    * Checks if file is a spreadsheet.
    */
   isSpreadsheet(): boolean {
-    return this._type === FileType.SPREADSHEET;
+    return this.type === FileType.SPREADSHEET;
   }
 
   /**
@@ -229,7 +187,7 @@ export class File {
    * @returns Human-readable size (e.g., '2.5 MB', '500 KB')
    */
   getHumanReadableSize(): string {
-    const bytes = this._sizeInBytes;
+    const bytes = this.sizeInBytes;
 
     if (bytes < 1024) {
       return `${bytes} B`;
@@ -268,16 +226,16 @@ export class File {
    */
   toJSON(): object {
     return {
-      id: this._id,
-      name: this._name,
-      dropboxPath: this._dropboxPath,
-      type: this._type,
-      sizeInBytes: this._sizeInBytes,
-      uploadedBy: this._uploadedBy,
-      uploadedAt: this._uploadedAt.toISOString(),
-      projectId: this._projectId,
-      taskId: this._taskId,
-      messageId: this._messageId,
+      id: this.id,
+      name: this.name,
+      dropboxPath: this.dropboxPath,
+      type: this.type,
+      sizeInBytes: this.sizeInBytes,
+      uploadedBy: this.uploadedBy,
+      uploadedAt: this.uploadedAt.toISOString(),
+      projectId: this.projectId,
+      taskId: this.taskId,
+      messageId: this.messageId,
     };
   }
 }

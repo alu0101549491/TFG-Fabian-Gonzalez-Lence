@@ -77,21 +77,21 @@ export interface ProjectProps {
  * ```
  */
 export class Project {
-  private readonly _id: string;
-  private readonly _code: string;
-  private _name: string;
-  private readonly _year: number;
-  private _clientId: string;
-  private _type: ProjectType;
-  private _coordinates: GeoCoordinates | null;
-  private _contractDate: Date;
-  private _deliveryDate: Date;
-  private _status: ProjectStatus;
-  private _dropboxFolderId: string;
-  private _specialUserIds: string[];
-  private readonly _createdAt: Date;
-  private _updatedAt: Date;
-  private _finalizedAt: Date | null;
+  readonly id: string;
+  readonly code: string;
+  private nameValue: string;
+  readonly year: number;
+  private clientIdValue: string;
+  private typeValue: ProjectType;
+  private coordinatesValue: GeoCoordinates | null;
+  private contractDateValue: Date;
+  private deliveryDateValue: Date;
+  private statusValue: ProjectStatus;
+  private dropboxFolderIdValue: string;
+  private specialUserIdsValue: string[];
+  readonly createdAt: Date;
+  private updatedAtValue: Date;
+  private finalizedAtValue: Date | null;
 
   /**
    * Creates a new Project entity.
@@ -102,21 +102,21 @@ export class Project {
   constructor(props: ProjectProps) {
     this.validateProps(props);
 
-    this._id = props.id;
-    this._code = props.code;
-    this._name = props.name;
-    this._year = props.year;
-    this._clientId = props.clientId;
-    this._type = props.type;
-    this._coordinates = props.coordinates ?? null;
-    this._contractDate = props.contractDate;
-    this._deliveryDate = props.deliveryDate;
-    this._status = props.status ?? ProjectStatus.ACTIVE;
-    this._dropboxFolderId = props.dropboxFolderId;
-    this._specialUserIds = props.specialUserIds ?? [];
-    this._createdAt = props.createdAt ?? new Date();
-    this._updatedAt = props.updatedAt ?? new Date();
-    this._finalizedAt = props.finalizedAt ?? null;
+    this.id = props.id;
+    this.code = props.code;
+    this.nameValue = props.name;
+    this.year = props.year;
+    this.clientIdValue = props.clientId;
+    this.typeValue = props.type;
+    this.coordinatesValue = props.coordinates ?? null;
+    this.contractDateValue = props.contractDate;
+    this.deliveryDateValue = props.deliveryDate;
+    this.statusValue = props.status ?? ProjectStatus.ACTIVE;
+    this.dropboxFolderIdValue = props.dropboxFolderId;
+    this.specialUserIdsValue = props.specialUserIds ?? [];
+    this.createdAt = props.createdAt ?? new Date();
+    this.updatedAtValue = props.updatedAt ?? new Date();
+    this.finalizedAtValue = props.finalizedAt ?? null;
   }
 
   /**
@@ -167,122 +167,106 @@ export class Project {
     }
   }
 
-  // Getters
-
-  get id(): string {
-    return this._id;
-  }
-
-  get code(): string {
-    return this._code;
-  }
+  // Getters and Setters for mutable properties
 
   get name(): string {
-    return this._name;
+    return this.nameValue;
   }
 
   set name(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Project name cannot be empty');
     }
-    this._name = value;
+    this.nameValue = value;
     this.touchUpdatedAt();
   }
 
-  get year(): number {
-    return this._year;
-  }
-
   get clientId(): string {
-    return this._clientId;
+    return this.clientIdValue;
   }
 
   set clientId(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Client ID cannot be empty');
     }
-    this._clientId = value;
+    this.clientIdValue = value;
     this.touchUpdatedAt();
   }
 
   get type(): ProjectType {
-    return this._type;
+    return this.typeValue;
   }
 
   set type(value: ProjectType) {
-    this._type = value;
+    this.typeValue = value;
     this.touchUpdatedAt();
   }
 
   get coordinates(): GeoCoordinates | null {
-    return this._coordinates;
+    return this.coordinatesValue;
   }
 
   set coordinates(value: GeoCoordinates | null) {
-    this._coordinates = value;
+    this.coordinatesValue = value;
     this.touchUpdatedAt();
   }
 
   get contractDate(): Date {
-    return this._contractDate;
+    return this.contractDateValue;
   }
 
   set contractDate(value: Date) {
-    if (value > this._deliveryDate) {
+    if (value > this.deliveryDateValue) {
       throw new Error('Contract date must be before delivery date');
     }
-    this._contractDate = value;
+    this.contractDateValue = value;
     this.touchUpdatedAt();
   }
 
   get deliveryDate(): Date {
-    return this._deliveryDate;
+    return this.deliveryDateValue;
   }
 
   set deliveryDate(value: Date) {
-    if (value < this._contractDate) {
+    if (value < this.contractDateValue) {
       throw new Error('Delivery date must be after contract date');
     }
-    this._deliveryDate = value;
+    this.deliveryDateValue = value;
     this.touchUpdatedAt();
   }
 
   get status(): ProjectStatus {
-    return this._status;
+    return this.statusValue;
   }
 
   set status(value: ProjectStatus) {
-    this._status = value;
+    this.statusValue = value;
     this.touchUpdatedAt();
   }
 
   get dropboxFolderId(): string {
-    return this._dropboxFolderId;
+    return this.dropboxFolderIdValue;
   }
 
   set dropboxFolderId(value: string) {
     if (!value || value.trim() === '') {
       throw new Error('Dropbox folder ID cannot be empty');
     }
-    this._dropboxFolderId = value;
+    this.dropboxFolderIdValue = value;
     this.touchUpdatedAt();
   }
 
   get specialUserIds(): string[] {
     // Return copy to prevent external modification
-    return [...this._specialUserIds];
-  }
-
-  get createdAt(): Date {
-    return this._createdAt;
+    return [...this.specialUserIdsValue];
   }
 
   get updatedAt(): Date {
-    return this._updatedAt;
+    return this.updatedAtValue;
   }
 
   get finalizedAt(): Date | null {
-    return this._finalizedAt;
+    return this.finalizedAtValue;
   }
 
   // Business Logic Methods
@@ -291,7 +275,7 @@ export class Project {
    * Updates the updatedAt timestamp to the current time.
    */
   private touchUpdatedAt(): void {
-    this._updatedAt = new Date();
+    this.updatedAtValue = new Date();
   }
 
   /**
@@ -304,7 +288,7 @@ export class Project {
     if (!clientId || clientId.trim() === '') {
       throw new Error('Client ID is required');
     }
-    this._clientId = clientId;
+    this.clientIdValue = clientId;
     this.touchUpdatedAt();
   }
 
@@ -319,11 +303,11 @@ export class Project {
       throw new Error('User ID is required');
     }
 
-    if (this._specialUserIds.includes(userId)) {
+    if (this.specialUserIdsValue.includes(userId)) {
       throw new Error('Special user already added to this project');
     }
 
-    this._specialUserIds.push(userId);
+    this.specialUserIdsValue.push(userId);
     this.touchUpdatedAt();
   }
 
@@ -334,12 +318,12 @@ export class Project {
    * @throws {Error} If userId doesn't exist
    */
   removeSpecialUser(userId: string): void {
-    const index = this._specialUserIds.indexOf(userId);
+    const index = this.specialUserIdsValue.indexOf(userId);
     if (index === -1) {
       throw new Error('Special user not found in this project');
     }
 
-    this._specialUserIds.splice(index, 1);
+    this.specialUserIdsValue.splice(index, 1);
     this.touchUpdatedAt();
   }
 
@@ -350,7 +334,7 @@ export class Project {
    * @returns True if user is in specialUserIds
    */
   hasSpecialUser(userId: string): boolean {
-    return this._specialUserIds.includes(userId);
+    return this.specialUserIdsValue.includes(userId);
   }
 
   /**
@@ -363,8 +347,8 @@ export class Project {
       throw new Error('Project cannot be finalized in current state');
     }
 
-    this._status = ProjectStatus.FINALIZED;
-    this._finalizedAt = new Date();
+    this.statusValue = ProjectStatus.FINALIZED;
+    this.finalizedAtValue = new Date();
     this.touchUpdatedAt();
   }
 
@@ -375,7 +359,7 @@ export class Project {
    */
   canBeFinalized(): boolean {
     // Project can be finalized if not already finalized
-    return this._status !== ProjectStatus.FINALIZED;
+    return this.statusValue !== ProjectStatus.FINALIZED;
   }
 
   /**
@@ -398,12 +382,12 @@ export class Project {
 
     // Clients have access if they are the assigned client
     if (userRole === UserRole.CLIENT) {
-      return this._clientId === userId;
+      return this.clientIdValue === userId;
     }
 
     // Special users have access if they are in the special users list
     if (userRole === UserRole.SPECIAL_USER) {
-      return this._specialUserIds.includes(userId);
+      return this.specialUserIdsValue.includes(userId);
     }
 
     return false;
@@ -415,7 +399,7 @@ export class Project {
    * @returns True if project status is not FINALIZED
    */
   isActive(): boolean {
-    return this._status !== ProjectStatus.FINALIZED;
+    return this.statusValue !== ProjectStatus.FINALIZED;
   }
 
   /**
@@ -425,7 +409,7 @@ export class Project {
    */
   isOverdue(): boolean {
     const now = new Date();
-    return now > this._deliveryDate && this._status !== ProjectStatus.FINALIZED;
+    return now > this.deliveryDateValue && this.statusValue !== ProjectStatus.FINALIZED;
   }
 
   /**
@@ -436,7 +420,7 @@ export class Project {
   daysUntilDelivery(): number {
     const now = new Date();
     const msPerDay = 1000 * 60 * 60 * 24;
-    const diffMs = this._deliveryDate.getTime() - now.getTime();
+    const diffMs = this.deliveryDateValue.getTime() - now.getTime();
     return Math.ceil(diffMs / msPerDay);
   }
 
@@ -447,21 +431,21 @@ export class Project {
    */
   toJSON(): object {
     return {
-      id: this._id,
-      code: this._code,
-      name: this._name,
-      year: this._year,
-      clientId: this._clientId,
-      type: this._type,
-      coordinates: this._coordinates ? this._coordinates.toJSON() : null,
-      contractDate: this._contractDate.toISOString(),
-      deliveryDate: this._deliveryDate.toISOString(),
-      status: this._status,
-      dropboxFolderId: this._dropboxFolderId,
-      specialUserIds: [...this._specialUserIds],
-      createdAt: this._createdAt.toISOString(),
-      updatedAt: this._updatedAt.toISOString(),
-      finalizedAt: this._finalizedAt ? this._finalizedAt.toISOString() : null,
+      id: this.id,
+      code: this.code,
+      name: this.nameValue,
+      year: this.year,
+      clientId: this.clientIdValue,
+      type: this.typeValue,
+      coordinates: this.coordinatesValue ? this.coordinatesValue.toJSON() : null,
+      contractDate: this.contractDateValue.toISOString(),
+      deliveryDate: this.deliveryDateValue.toISOString(),
+      status: this.statusValue,
+      dropboxFolderId: this.dropboxFolderIdValue,
+      specialUserIds: [...this.specialUserIdsValue],
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAtValue.toISOString(),
+      finalizedAt: this.finalizedAtValue ? this.finalizedAtValue.toISOString() : null,
     };
   }
 }

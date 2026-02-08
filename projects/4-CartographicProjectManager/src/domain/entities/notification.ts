@@ -5,7 +5,7 @@
  * @category Domain
  */
 
-import {NotificationType, NotificationTypeMessageTemplate} from '../enumerations/notification-type';
+import {NotificationType} from '../enumerations/notification-type';
 import {TaskStatus} from '../enumerations/task-status';
 import {type User} from './user';
 
@@ -51,15 +51,15 @@ export interface NotificationProps {
  * ```
  */
 export class Notification {
-  private readonly _id: string;
-  private readonly _userId: string;
-  private readonly _type: NotificationType;
-  private readonly _title: string;
-  private readonly _message: string;
-  private readonly _relatedEntityId: string | null;
-  private readonly _createdAt: Date;
-  private _isRead: boolean;
-  private _sentViaWhatsApp: boolean;
+  readonly id: string;
+  readonly userId: string;
+  readonly type: NotificationType;
+  readonly title: string;
+  readonly message: string;
+  readonly relatedEntityId: string | null;
+  readonly createdAt: Date;
+  private isReadValue: boolean;
+  private sentViaWhatsAppValue: boolean;
 
   /**
    * Creates a new Notification entity.
@@ -70,15 +70,15 @@ export class Notification {
   constructor(props: NotificationProps) {
     this.validateProps(props);
 
-    this._id = props.id;
-    this._userId = props.userId;
-    this._type = props.type;
-    this._title = props.title;
-    this._message = props.message;
-    this._relatedEntityId = props.relatedEntityId ?? null;
-    this._isRead = props.isRead ?? false;
-    this._sentViaWhatsApp = props.sentViaWhatsApp ?? false;
-    this._createdAt = props.createdAt ?? new Date();
+    this.id = props.id;
+    this.userId = props.userId;
+    this.type = props.type;
+    this.title = props.title;
+    this.message = props.message;
+    this.relatedEntityId = props.relatedEntityId ?? null;
+    this.isReadValue = props.isRead ?? false;
+    this.sentViaWhatsAppValue = props.sentViaWhatsApp ?? false;
+    this.createdAt = props.createdAt ?? new Date();
   }
 
   /**
@@ -104,40 +104,12 @@ export class Notification {
 
   // Getters
 
-  get id(): string {
-    return this._id;
-  }
-
-  get userId(): string {
-    return this._userId;
-  }
-
-  get type(): NotificationType {
-    return this._type;
-  }
-
-  get title(): string {
-    return this._title;
-  }
-
-  get message(): string {
-    return this._message;
-  }
-
-  get relatedEntityId(): string | null {
-    return this._relatedEntityId;
-  }
-
-  get createdAt(): Date {
-    return this._createdAt;
-  }
-
   get isRead(): boolean {
-    return this._isRead;
+    return this.isReadValue;
   }
 
   get sentViaWhatsApp(): boolean {
-    return this._sentViaWhatsApp;
+    return this.sentViaWhatsAppValue;
   }
 
   // Business Logic Methods
@@ -146,14 +118,14 @@ export class Notification {
    * Marks the notification as read.
    */
   markAsRead(): void {
-    this._isRead = true;
+    this.isReadValue = true;
   }
 
   /**
    * Records WhatsApp delivery.
    */
   markAsSentViaWhatsApp(): void {
-    this._sentViaWhatsApp = true;
+    this.sentViaWhatsAppValue = true;
   }
 
   /**
@@ -255,15 +227,15 @@ export class Notification {
    */
   toJSON(): object {
     return {
-      id: this._id,
-      userId: this._userId,
-      type: this._type,
-      title: this._title,
-      message: this._message,
-      relatedEntityId: this._relatedEntityId,
-      createdAt: this._createdAt.toISOString(),
-      isRead: this._isRead,
-      sentViaWhatsApp: this._sentViaWhatsApp,
+      id: this.id,
+      userId: this.userId,
+      type: this.type,
+      title: this.title,
+      message: this.message,
+      relatedEntityId: this.relatedEntityId,
+      createdAt: this.createdAt.toISOString(),
+      isRead: this.isReadValue,
+      sentViaWhatsApp: this.sentViaWhatsAppValue,
     };
   }
 }
