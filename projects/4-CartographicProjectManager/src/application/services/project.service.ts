@@ -1,102 +1,748 @@
 /**
- * @module application/services/project-service
- * @description Concrete implementation of the Project Service.
- * Manages project lifecycle operations including creation (with Dropbox
- * folder generation), assignment, and finalization.
+ * @module application/services/project
+ * @description Service implementation for project lifecycle management.
  * @category Application
  */
 
-import {type IProjectService} from '../interfaces/project-service.interface';
-import {type IProjectRepository} from '@domain/repositories/project-repository.interface';
-import {type IUserRepository} from '@domain/repositories/user-repository.interface';
-import {type INotificationService} from '../interfaces/notification-service.interface';
-import {type IAuthorizationService} from '../interfaces/authorization-service.interface';
-import {type Project} from '@domain/entities/project';
-import {type Permission} from '@domain/entities/permission';
-import {type ProjectData} from '../dto/project-data.dto';
-import {type ProjectDetails} from '../dto/project-details.dto';
+import {
+  type CreateProjectDto,
+  type UpdateProjectDto,
+  type ProjectDto,
+  type ProjectDetailsDto,
+  type ProjectSummaryDto,
+  type ProjectFilterDto,
+  type ProjectListResponseDto,
+  type CalendarProjectDto,
+  type ParticipantDto,
+  type ProjectPermissionsDto,
+  type ValidationResultDto,
+  ValidationErrorCode,
+  validResult,
+  invalidResult,
+  createError,
+} from '../dto';
+import {IProjectService} from '../interfaces/project-service.interface';
+import {
+  type IProjectRepository,
+  type IUserRepository,
+  type ITaskRepository,
+  type IMessageRepository,
+  type IFileRepository,
+  type IPermissionRepository,
+} from '../../domain/repositories';
+import {INotificationService} from '../interfaces/notification-service.interface';
+import {IAuthorizationService} from '../interfaces/authorization-service.interface';
+import {UnauthorizedError, NotFoundError, ValidationError, BusinessRuleError, ConflictError} from './common/errors';
+import {generateId} from './common/utils';
+import {Project} from '../../domain/entities/project';
+import {Permission} from '../../domain/entities/permission';
+import {UserRole} from '../../domain/enumerations/user-role';
+import {ProjectStatus} from '../../domain/enumerations/project-status';
+import {AccessRight} from '../../domain/enumerations/access-right';
+import {NotificationType} from '../../domain/enumerations/notification-type';
+import {GeoCoordinates} from '../../domain/value-objects/geo-coordinates';
 
 /**
- * Placeholder interface for Dropbox external service.
+ * Placeholder interface for Dropbox service.
  */
 interface IDropboxService {
   createProjectFolder(projectCode: string): Promise<string>;
+  deleteProjectFolder(folderId: string): Promise<void>;
 }
 
 /**
- * Implementation of the project management service.
- * Coordinates project repository, Dropbox integration, notifications,
- * and authorization checks.
+ * Implementation of project management operations.
  */
 export class ProjectService implements IProjectService {
-  private readonly projectRepository: IProjectRepository;
-  private readonly userRepository: IUserRepository;
-  private readonly dropboxService: IDropboxService;
-  private readonly notificationService: INotificationService;
-  private readonly authorizationService: IAuthorizationService;
-
   constructor(
-    projectRepository: IProjectRepository,
-    userRepository: IUserRepository,
-    dropboxService: IDropboxService,
-    notificationService: INotificationService,
-    authorizationService: IAuthorizationService,
-  ) {
-    this.projectRepository = projectRepository;
-    this.userRepository = userRepository;
-    this.dropboxService = dropboxService;
-    this.notificationService = notificationService;
-    this.authorizationService = authorizationService;
+    private readonly projectRepository: IProjectRepository,
+    private readonly userRepository: IUserRepository,
+    private readonly taskRepository: ITaskRepository,
+    private readonly messageRepository: IMessageRepository,
+    private readonly fileRepository: IFileRepository,
+    private readonly permissionRepository: IPermissionRepository,
+    private readonly notificationService: INotificationService,
+    private readonly authorizationService: IAuthorizationService,
+    private readonly dropboxService: IDropboxService
+  ) {}
+
+  /**
+   * Creates a new cartographic project.
+   */
+  async createProject(data: CreateProjectDto, creatorId: string): Promise<ProjectDto> {
+    // Validate
+    const validation = await this.validateProjectData(data);
+    if (!validation.isValid) {
+      throw new ValidationError('Invalid project data', validation.errors || []);
+    }
+
+    // Check unique code
+    const codeExists = await this.checkProjectCodeExists(data.code);
+    if (codeExists) {
+      throw new ConflictError(`Project code ${data.code} already exists`);
+    }
+
+    // Get creator
+    const creator = await this.userRepository.findById(creatorId);
+    if (!creator) {
+      throw new NotFoundError(`User ${creatorId} not found`);
+    }
+
+    // Create Dropbox folder
+    let dropboxFolderId: string | undefined;
+    try {
+      dropboxFolderId = await this.dropboxService.createProjectFolder(data.code);
+    } catch (error) {
+      console.error('Failed to create Dropbox folder:', error);
+      // Continue without Dropbox folder
+    }
+
+    // Create project entity
+    const project = new Project({
+      id: generateId(),
+      year: data.year,
+      code: data.code,
+      name: data.name,
+      type: data.type,
+      clientId: data.clientId,
+      coordinates: data.coordinateX && data.coordinateY ? new GeoCoordinates(data.coordinateY, data.coordinateX) : null,
+      contractDate: data.contractDate,
+      deliveryDate: data.deliveryDate,
+      status: ProjectStatus.ACTIVE,
+      dropboxFolderId: dropboxFolderId || '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await this.projectRepository.save(project);
+
+    // Assign client if specified
+    if (data.clientId) {
+      await this.assignProjectToClient(project.id, data.clientId, creatorId);
+    }
+
+    // Notify
+    await this.notificationService.sendNotification(
+      creatorId,
+      NotificationType.PROJECT_ASSIGNED,
+      'Project Created',
+      `Project ${project.name} has been created`,
+      project.id
+    );
+
+    return await this.mapToDto(project);
   }
 
-  async createProject(projectData: ProjectData): Promise<Project> {
-    // TODO: Implement project creation
-    // 1. Validate project data
-    // 2. Create Dropbox folder
-    // 3. Persist project entity
-    // 4. Send notification to assigned client
-    throw new Error('Method not implemented.');
+  /**
+   * Updates an existing project.
+   */
+  async updateProject(data: UpdateProjectDto, userId: string): Promise<ProjectDto> {
+    const canModify = await this.authorizationService.canModifyProject(userId, data.id);
+    if (!canModify) {
+      throw new UnauthorizedError('You do not have permission to modify this project');
+    }
+
+    const project = await this.projectRepository.findById(data.id);
+    if (!project) {
+      throw new NotFoundError(`Project ${data.id} not found`);
+    }
+
+    // Update fields
+    if (data.name !== undefined) project.name = data.name;
+    if (data.type !== undefined) project.type = data.type;
+    if (data.clientId !== undefined) project.clientId = data.clientId;
+    if (data.contractDate !== undefined) project.contractDate = data.contractDate;
+    if (data.deliveryDate !== undefined) project.deliveryDate = data.deliveryDate;
+    if (data.dropboxFolderId !== undefined) project.dropboxFolderId = data.dropboxFolderId;
+    if (data.status !== undefined) project.status = data.status;
+    if (data.coordinateX !== undefined || data.coordinateY !== undefined) {
+      if (data.coordinateX && data.coordinateY) {
+        project.coordinates = new GeoCoordinates(data.coordinateY, data.coordinateX);
+      }
+    }
+
+    await this.projectRepository.save(project);
+
+    return await this.mapToDto(project);
   }
 
-  async assignProjectToClient(
-    projectId: string,
-    clientId: string,
-  ): Promise<void> {
-    // TODO: Implement project-to-client assignment
-    // 1. Validate project and client exist
-    // 2. Update project entity
-    // 3. Create permissions for client
-    // 4. Send notification
-    throw new Error('Method not implemented.');
+  /**
+   * Deletes a project and all associated data.
+   */
+  async deleteProject(projectId: string, userId: string): Promise<void> {
+    const canDelete = await this.authorizationService.canDeleteProject(userId, projectId);
+    if (!canDelete) {
+      throw new UnauthorizedError('You do not have permission to delete this project');
+    }
+
+    const project = await this.projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError(`Project ${projectId} not found`);
+    }
+
+    if (project.status === ProjectStatus.FINALIZED) {
+      throw new BusinessRuleError('Cannot delete a finalized project');
+    }
+
+    // Delete Dropbox folder
+    if (project.dropboxFolderId) {
+      try {
+        await this.dropboxService.deleteProjectFolder(project.dropboxFolderId);
+      } catch (error) {
+        console.error('Failed to delete Dropbox folder:', error);
+      }
+    }
+
+    await this.projectRepository.delete(projectId);
   }
 
-  async addSpecialUserToProject(
+  /**
+   * Retrieves detailed information about a specific project.
+   */
+  async getProjectById(projectId: string, userId: string): Promise<ProjectDetailsDto> {
+    const canAccess = await this.authorizationService.canAccessProject(userId, projectId);
+    if (!canAccess) {
+      throw new UnauthorizedError('You do not have permission to access this project');
+    }
+
+    const project = await this.projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError(`Project ${projectId} not found`);
+    }
+
+    return this.mapToDetailsDto(project, userId);
+  }
+
+  /**
+   * Retrieves summary information about a specific project.
+   */
+  async getProjectSummary(projectId: string, userId: string): Promise<ProjectSummaryDto> {
+    const canAccess = await this.authorizationService.canAccessProject(userId, projectId);
+    if (!canAccess) {
+      throw new UnauthorizedError('You do not have permission to access this project');
+    }
+
+    const project = await this.projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError(`Project ${projectId} not found`);
+    }
+
+    return await this.mapToSummaryDto(project);
+  }
+
+  /**
+   * Retrieves all projects accessible by a specific user with optional filtering.
+   */
+  async getProjectsByUser(userId: string, filters?: ProjectFilterDto): Promise<ProjectListResponseDto> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundError(`User ${userId} not found`);
+    }
+
+    let projects: Project[];
+
+    if (user.role === UserRole.ADMINISTRATOR) {
+      projects = await this.projectRepository.findAll();
+    } else if (user.role === UserRole.CLIENT) {
+      projects = await this.projectRepository.findByClientId(userId);
+    } else {
+      // Special User - find projects via permissions
+      const permissions = await this.permissionRepository.findByUserId(userId);
+      const projectIds = [...new Set(permissions.map((p: Permission) => p.projectId))];
+      // Fetch projects individually since findByIds doesn't exist
+      const projectPromises = projectIds.map(id => this.projectRepository.findById(id));
+      const projectResults = await Promise.all(projectPromises);
+      projects = projectResults.filter((p): p is Project => p !== null);
+    }
+
+    const summaries = await Promise.all(projects.map((p: Project) => this.mapToSummaryDto(p)));
+
+    return {
+      projects: summaries,
+      total: summaries.length,
+      page: filters?.page || 1,
+      limit: filters?.limit || summaries.length,
+      totalPages: 1,
+    };
+  }
+
+  /**
+   * Retrieves all projects in the system with optional filtering (admin only).
+   */
+  async getAllProjects(filters?: ProjectFilterDto): Promise<ProjectListResponseDto> {
+    const projects = await this.projectRepository.findAll();
+    const summaries = await Promise.all(projects.map(p => this.mapToSummaryDto(p)));
+
+    const limit = filters?.limit || 20;
+    const totalPages = Math.ceil(summaries.length / limit);
+
+    return {
+      projects: summaries,
+      total: summaries.length,
+      page: filters?.page || 1,
+      limit,
+      totalPages,
+    };
+  }
+
+  /**
+   * Retrieves active (non-finalized) projects for a user.
+   */
+  async getActiveProjects(userId: string): Promise<ProjectSummaryDto[]> {
+    const filters: ProjectFilterDto = {
+      status: ProjectStatus.ACTIVE,
+    };
+
+    const result = await this.getProjectsByUser(userId, filters);
+    return result.projects;
+  }
+
+  /**
+   * Retrieves projects within a date range for calendar display.
+   */
+  async getProjectsForCalendar(
+    userId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<CalendarProjectDto[]> {
+    if (startDate >= endDate) {
+      throw new ValidationError('Invalid date range', [
+        createError('dateRange', 'Start date must be before end date', ValidationErrorCode.DATE_RANGE_INVALID),
+      ]);
+    }
+
+    const filters: ProjectFilterDto = {
+      startDate,
+      endDate,
+    };
+
+    const result = await this.getProjectsByUser(userId, filters);
+    
+    return result.projects.map(p => ({
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      deliveryDate: p.deliveryDate,
+      status: p.status,
+      hasPendingTasks: p.hasPendingTasks,
+      statusColor: this.getStatusColor(p.status),
+    }));
+  }
+
+  /**
+   * Assigns a project to a client user.
+   */
+  async assignProjectToClient(projectId: string, clientId: string, adminId: string): Promise<void> {
+    const isAdmin = await this.authorizationService.isAdmin(adminId);
+    if (!isAdmin) {
+      throw new UnauthorizedError('Only admins can assign projects to clients');
+    }
+
+    const project = await this.projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError(`Project ${projectId} not found`);
+    }
+
+    const client = await this.userRepository.findById(clientId);
+    if (!client) {
+      throw new NotFoundError(`Client ${clientId} not found`);
+    }
+
+    if (client.role !== UserRole.CLIENT) {
+      throw new ValidationError('User is not a client', [
+        createError('clientId', 'User must have CLIENT role', ValidationErrorCode.INVALID_TYPE),
+      ]);
+    }
+
+    project.clientId = clientId;
+    await this.projectRepository.save(project);
+
+    // Notify client
+    await this.notificationService.sendNotification(
+      clientId,
+      NotificationType.PROJECT_ASSIGNED,
+      'Project Assigned',
+      `You have been assigned to project ${project.name}`,
+      projectId
+    );
+  }
+
+  /**
+   * Adds a special user to a project with specific permissions.
+   */
+  async addSpecialUser(
     projectId: string,
     userId: string,
-    permissions: Set<Permission>,
+    permissions: AccessRight[],
+    adminId: string
   ): Promise<void> {
-    // TODO: Implement special user addition
-    throw new Error('Method not implemented.');
+    const isAdmin = await this.authorizationService.isAdmin(adminId);
+    if (!isAdmin) {
+      throw new UnauthorizedError('Only admins can add special users');
+    }
+
+    const project = await this.projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError(`Project ${projectId} not found`);
+    }
+
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundError(`User ${userId} not found`);
+    }
+
+    // Check if already has permissions
+    const existing = await this.permissionRepository.findByUserAndProject(userId, projectId);
+    if (existing && Array.isArray(existing) && existing.length > 0) {
+      throw new ConflictError('User already has permissions for this project');
+    }
+
+    // Create permission with all specified rights
+    const permission = new Permission({
+      id: generateId(),
+      userId,
+      projectId,
+      rights: new Set(permissions),
+      grantedBy: adminId,
+      grantedAt: new Date(),
+    });
+    await this.permissionRepository.save(permission);
+
+    // Notify user
+    await this.notificationService.sendNotification(
+      userId,
+      NotificationType.PROJECT_ASSIGNED,
+      'Added to Project',
+      `You have been added to project ${project.name}`,
+      projectId
+    );
   }
 
-  async getProjectsByUser(userId: string): Promise<Project[]> {
-    // TODO: Implement user-based project retrieval
-    throw new Error('Method not implemented.');
+  /**
+   * Removes a special user from a project.
+   */
+  async removeSpecialUser(projectId: string, userId: string, adminId: string): Promise<void> {
+    const isAdmin = await this.authorizationService.isAdmin(adminId);
+    if (!isAdmin) {
+      throw new UnauthorizedError('Only admins can remove special users');
+    }
+
+    const permissions = await this.permissionRepository.findByUserAndProject(userId, projectId);
+    
+    if (permissions && Array.isArray(permissions) && permissions.length > 0) {
+      for (const permission of permissions) {
+        await this.permissionRepository.delete(permission.id);
+      }
+    }
   }
 
-  async finalizeProject(projectId: string): Promise<void> {
-    // TODO: Implement project finalization
-    // 1. Check if project can be finalized
-    // 2. Update project status
-    // 3. Send notification to all participants
-    throw new Error('Method not implemented.');
-  }
-
-  async getProjectDetails(
+  /**
+   * Updates permissions for a special user in a project.
+   */
+  async updateSpecialUserPermissions(
     projectId: string,
     userId: string,
-  ): Promise<ProjectDetails> {
-    // TODO: Implement project details retrieval
-    throw new Error('Method not implemented.');
+    permissions: AccessRight[],
+    adminId: string
+  ): Promise<void> {
+    // Remove old permissions
+    await this.removeSpecialUser(projectId, userId, adminId);
+    
+    // Add new permissions
+    await this.addSpecialUser(projectId, userId, permissions, adminId);
+  }
+
+  /**
+   * Retrieves all participants (client and special users) of a project.
+   */
+  async getProjectParticipants(projectId: string, userId: string): Promise<ParticipantDto[]> {
+    const canAccess = await this.authorizationService.canAccessProject(userId, projectId);
+    if (!canAccess) {
+      throw new UnauthorizedError('You do not have permission to access this project');
+    }
+
+    const project = await this.projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError(`Project ${projectId} not found`);
+    }
+
+    const participants: ParticipantDto[] = [];
+
+    // Add client
+    if (project.clientId) {
+      const client = await this.userRepository.findById(project.clientId);
+      if (client) {
+        participants.push({
+          userId: client.id,
+          username: client.username,
+          email: client.email,
+          role: client.role,
+          participantType: 'client',
+          permissions: [AccessRight.VIEW],
+          joinedAt: project.createdAt,
+        });
+      }
+    }
+
+    // Add special users
+    const permissions = await this.permissionRepository.findByProjectId(projectId);
+    const userPermissions = new Map<string, Set<AccessRight>>();
+    
+    for (const perm of permissions) {
+      if (!userPermissions.has(perm.userId)) {
+        userPermissions.set(perm.userId, new Set());
+      }
+      // Permission.rights is a Set<AccessRight>
+      perm.rights.forEach(right => userPermissions.get(perm.userId)!.add(right));
+    }
+
+    for (const [uid, permsSet] of userPermissions.entries()) {
+      const user = await this.userRepository.findById(uid);
+      if (user) {
+        participants.push({
+          userId: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          participantType: 'special_user',
+          permissions: Array.from(permsSet),
+          joinedAt: project.createdAt,
+        });
+      }
+    }
+
+    return participants;
+  }
+
+  /**
+   * Finalizes a project, marking it as completed.
+   */
+  async finalizeProject(projectId: string, adminId: string): Promise<void> {
+    const canFinalize = await this.authorizationService.canFinalizeProject(adminId, projectId);
+    if (!canFinalize) {
+      throw new UnauthorizedError('Only admins can finalize projects');
+    }
+
+    const project = await this.projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError(`Project ${projectId} not found`);
+    }
+
+    // Check no pending tasks
+    const pendingCount = await this.taskRepository.countPendingByProjectId(projectId);
+    if (pendingCount > 0) {
+      throw new BusinessRuleError(`Cannot finalize project with ${pendingCount} pending tasks`);
+    }
+
+    project.status = ProjectStatus.FINALIZED;
+
+    await this.projectRepository.save(project);
+
+    // Notify all participants
+    const participants = await this.getProjectParticipants(projectId, adminId);
+    for (const participant of participants) {
+      await this.notificationService.sendNotification(
+        participant.userId,
+        NotificationType.PROJECT_FINALIZED,
+        'Project Finalized',
+        `Project ${project.name} has been completed`,
+        projectId
+      );
+    }
+  }
+
+  /**
+   * Reopens a finalized project.
+   */
+  async reopenProject(projectId: string, adminId: string): Promise<void> {
+    const isAdmin = await this.authorizationService.isAdmin(adminId);
+    if (!isAdmin) {
+      throw new UnauthorizedError('Only admins can reopen projects');
+    }
+
+    const project = await this.projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError(`Project ${projectId} not found`);
+    }
+
+    if (project.status !== ProjectStatus.FINALIZED) {
+      throw new BusinessRuleError('Project is not finalized');
+    }
+
+    project.status = ProjectStatus.ACTIVE;
+
+    await this.projectRepository.save(project);
+  }
+
+  /**
+   * Checks if a project code already exists in the system.
+   */
+  async checkProjectCodeExists(code: string): Promise<boolean> {
+    const project = await this.projectRepository.findByCode(code);
+    return project !== null;
+  }
+
+  /**
+   * Validates project data before creation or update.
+   */
+  async validateProjectData(
+    data: CreateProjectDto | UpdateProjectDto
+  ): Promise<ValidationResultDto> {
+    const errors = [];
+
+    if ('code' in data && (!data.code || data.code.trim().length === 0)) {
+      errors.push(createError('code', 'Project code is required', ValidationErrorCode.REQUIRED));
+    }
+
+    if ('name' in data && (!data.name || data.name.trim().length === 0)) {
+      errors.push(createError('name', 'Project name is required', ValidationErrorCode.REQUIRED));
+    }
+
+    if ('contractDate' in data && 'deliveryDate' in data) {
+      if (data.deliveryDate && data.contractDate && data.deliveryDate < data.contractDate) {
+        errors.push(
+          createError('deliveryDate', 'Delivery date must be after contract date', ValidationErrorCode.DATE_RANGE_INVALID)
+        );
+      }
+    }
+
+    return errors.length > 0 ? invalidResult(errors) : validResult();
+  }
+
+  /**
+   * Gets status color for UI display.
+   */
+  private getStatusColor(status: ProjectStatus): 'red' | 'green' | 'yellow' | 'gray' {
+    switch (status) {
+      case ProjectStatus.ACTIVE:
+        return 'green';
+      case ProjectStatus.IN_PROGRESS:
+        return 'yellow';
+      case ProjectStatus.PENDING_REVIEW:
+        return 'yellow';
+      case ProjectStatus.FINALIZED:
+        return 'gray';
+      default:
+        return 'gray';
+    }
+  }
+
+  /**
+   * Maps project entity to DTO.
+   */
+  private async mapToDto(project: Project): Promise<ProjectDto> {
+    // Get client name
+    const client = await this.userRepository.findById(project.clientId);
+    const clientName = client ? client.username : 'Unknown';
+
+    return {
+      id: project.id,
+      code: project.code,
+      name: project.name,
+      year: project.year,
+      type: project.type,
+      clientId: project.clientId,
+      clientName,
+      coordinateX: project.coordinates?.longitude ?? null,
+      coordinateY: project.coordinates?.latitude ?? null,
+      contractDate: project.contractDate,
+      deliveryDate: project.deliveryDate,
+      status: project.status,
+      dropboxFolderId: project.dropboxFolderId,
+      dropboxFolderUrl: `https://www.dropbox.com/home${project.dropboxFolderId}`,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+      finalizedAt: project.finalizedAt,
+    };
+  }
+
+  /**
+   * Maps project to summary DTO.
+   */
+  private async mapToSummaryDto(project: Project): Promise<ProjectSummaryDto> {
+    // Get client name
+    const client = await this.userRepository.findById(project.clientId);
+    const clientName = client ? client.username : 'Unknown';
+
+    // Get pending tasks count
+    const pendingTasksCount = await this.taskRepository.countPendingByProjectId(project.id);
+    
+    // Get unread messages count (placeholder - needs implementation)
+    const unreadMessagesCount = 0;
+    
+    // Count participants
+    const participantCount = 1 + project.specialUserIds.length; // client + special users
+    
+    // Calculate delivery status
+    const daysUntilDelivery = Math.ceil((project.deliveryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const isOverdue = daysUntilDelivery < 0;
+
+    return {
+      id: project.id,
+      code: project.code,
+      name: project.name,
+      clientId: project.clientId,
+      clientName,
+      type: project.type,
+      deliveryDate: project.deliveryDate,
+      status: project.status,
+      hasPendingTasks: pendingTasksCount > 0,
+      pendingTasksCount,
+      unreadMessagesCount,
+      participantCount,
+      statusColor: this.getStatusColor(project.status),
+      isOverdue,
+      daysUntilDelivery,
+    };
+  }
+
+  /**
+   * Maps project to detailed DTO with related data.
+   */
+  private async mapToDetailsDto(project: Project, userId: string): Promise<ProjectDetailsDto> {
+    // Get tasks, messages, files counts
+    const tasks = await this.taskRepository.findByProjectId(project.id);
+    const messages = await this.messageRepository.countByProjectId(project.id);
+    const files = await this.fileRepository.countByProjectId(project.id);
+    const participants = await this.getProjectParticipants(project.id, userId);
+    const accessRights = await this.authorizationService.getProjectPermissions(userId, project.id);
+    const projectDto = await this.mapToDto(project);
+
+    // Convert Set<AccessRight> to ProjectPermissionsDto
+    const userPermissions = this.convertToProjectPermissions(accessRights);
+
+    // This needs to be refactored to match ProjectDetailsDto structure
+    // For now, return a simplified version
+    return {
+      project: projectDto,
+      tasks: [],
+      taskStats: { total: tasks.length, pending: 0, inProgress: 0, completed: 0, overdue: 0 },
+      recentMessages: [],
+      unreadMessagesCount: 0,
+      totalMessagesCount: messages,
+      participants,
+      sections: [],
+      totalFilesCount: files,
+      currentUserPermissions: userPermissions,
+      statusColor: this.getStatusColor(project.status),
+      isOverdue: project.deliveryDate < new Date(),
+      daysUntilDelivery: Math.ceil((project.deliveryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+    } as ProjectDetailsDto;
+  }
+
+  /**
+   * Converts a Set of AccessRights to ProjectPermissionsDto.
+   */
+  private convertToProjectPermissions(accessRights: Set<AccessRight>): ProjectPermissionsDto {
+    return {
+      canEdit: accessRights.has(AccessRight.EDIT),
+      canDelete: accessRights.has(AccessRight.DELETE),
+      canFinalize: accessRights.has(AccessRight.EDIT), // Finalize requires edit permission
+      canCreateTask: accessRights.has(AccessRight.EDIT),
+      canSendMessage: accessRights.has(AccessRight.SEND_MESSAGE),
+      canUploadFile: accessRights.has(AccessRight.UPLOAD),
+      canDownloadFile: accessRights.has(AccessRight.DOWNLOAD),
+      canManageParticipants: accessRights.has(AccessRight.EDIT) && accessRights.has(AccessRight.DELETE),
+    };
   }
 }
