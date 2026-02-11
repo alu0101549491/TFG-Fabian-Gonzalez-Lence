@@ -1,44 +1,359 @@
 /**
- * @module infrastructure/repositories/project-repository
- * @description Concrete implementation of the IProjectRepository interface.
- * Uses Axios HTTP client to communicate with the backend API.
- * @category Infrastructure
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file src/infrastructure/repositories/project.repository.ts
+ * @desc Project repository implementation using HTTP API backend communication
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
-import {type IProjectRepository} from '@domain/repositories/project-repository.interface';
-import {type Project} from '@domain/entities/project';
+import {httpClient, type ApiResponse} from '../http';
+import {Project} from '../../domain/entities/project';
+import {GeoCoordinates} from '../../domain/value-objects/geo-coordinates';
+import {type ProjectStatus} from '../../domain/enumerations/project-status';
+import {type ProjectType} from '../../domain/enumerations/project-type';
+import {type IProjectRepository} from '../../domain/repositories/project-repository.interface';
 
 /**
- * HTTP-based implementation of the Project repository.
+ * API response type for project data from backend
+ */
+interface ProjectApiResponse {
+  id: string;
+  code: string;
+  name: string;
+  year: number;
+  clientId: string;
+  type: string;
+  coordinateX: number | null;
+  coordinateY: number | null;
+  contractDate: string;
+  deliveryDate: string;
+  status: string;
+  dropboxFolderId: string;
+  specialUserIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  finalizedAt: string | null;
+}
+
+/**
+ * Project repository implementation using HTTP API.
+ *
+ * Handles cartographic project data operations including CRUD,
+ * filtering by status/type/year, and specialized queries.
+ *
+ * @example
+ * ```typescript
+ * const repository = new ProjectRepository();
+ * const projects = await repository.findByClientId('client_123');
+ * ```
  */
 export class ProjectRepository implements IProjectRepository {
-  async findById(id: string): Promise<Project | null> {
-    // TODO: Implement API call GET /api/projects/:id
-    throw new Error('Method not implemented.');
+  private readonly baseUrl = '/projects';
+
+  /**
+   * Find project by unique identifier
+   *
+   * @param id - Project ID
+   * @returns Project entity or null if not found
+   */
+  public async findById(id: string): Promise<Project | null> {
+    try {
+      const response = await httpClient.get<ProjectApiResponse>(
+        `${this.baseUrl}/${id}`,
+      );
+      return this.mapToEntity(response.data);
+    } catch (error) {
+      if (this.isNotFoundError(error)) {
+        return null;
+      }
+      throw error;
+    }
   }
 
-  async save(project: Project): Promise<Project> {
-    // TODO: Implement API call POST /api/projects
-    throw new Error('Method not implemented.');
+  /**
+   * Find project by unique code
+   *
+   * @param code - Project code (e.g., CART-2025-001)
+   * @returns Project entity or null if not found
+   */
+  public async findByCode(code: string): Promise<Project | null> {
+    try {
+      const response = await httpClient.get<ProjectApiResponse>(
+        `${this.baseUrl}/code/${encodeURIComponent(code)}`,
+      );
+      return this.mapToEntity(response.data);
+    } catch (error) {
+      if (this.isNotFoundError(error)) {
+        return null;
+      }
+      throw error;
+    }
   }
 
-  async update(project: Project): Promise<Project> {
-    // TODO: Implement API call PUT /api/projects/:id
-    throw new Error('Method not implemented.');
+  /**
+   * Create new project
+   *
+   * @param project - Project entity to persist
+   * @returns Created project with generated fields
+   */
+  public async save(project: Project): Promise<Project> {
+    const response = await httpClient.post<ProjectApiResponse>(
+      this.baseUrl,
+      this.mapToApiRequest(project),
+    );
+    return this.mapToEntity(response.data);
   }
 
-  async findByClientId(clientId: string): Promise<Project[]> {
-    // TODO: Implement API call GET /api/projects?clientId=:clientId
-    throw new Error('Method not implemented.');
+  /**
+   * Update existing project
+   *
+   * @param project - Project entity with updated data
+   * @returns Updated project entity
+   */
+  public async update(project: Project): Promise<Project> {
+    const response = await httpClient.put<ProjectApiResponse>(
+      `${this.baseUrl}/${project.id}`,
+      this.mapToApiRequest(project),
+    );
+    return this.mapToEntity(response.data);
   }
 
-  async findBySpecialUserId(userId: string): Promise<Project[]> {
-    // TODO: Implement API call GET /api/projects?specialUserId=:userId
-    throw new Error('Method not implemented.');
+  /**
+   * Delete project by ID
+   *
+   * @param id - Project ID to delete
+   */
+  public async delete(id: string): Promise<void> {
+    await httpClient.delete(`${this.baseUrl}/${id}`);
   }
 
-  async findAll(): Promise<Project[]> {
-    // TODO: Implement API call GET /api/projects
-    throw new Error('Method not implemented.');
+  /**
+   * Find all projects assigned to specific client
+   *
+   * @param clientId - Client user ID
+   * @returns Array of client's projects
+   */
+  public async findByClientId(clientId: string): Promise<Project[]> {
+    const response = await httpClient.get<ProjectApiResponse[]>(
+      `${this.baseUrl}?clientId=${clientId}`,
+    );
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Find projects accessible by special user
+   *
+   * @param userId - Special user ID
+   * @returns Array of accessible projects
+   */
+  public async findBySpecialUserId(userId: string): Promise<Project[]> {
+    const response = await httpClient.get<ProjectApiResponse[]>(
+      `${this.baseUrl}?specialUserId=${userId}`,
+    );
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Find projects by status
+   *
+   * @param status - Project status filter
+   * @returns Array of projects with specified status
+   */
+  public async findByStatus(status: ProjectStatus): Promise<Project[]> {
+    const response = await httpClient.get<ProjectApiResponse[]>(
+      `${this.baseUrl}?status=${status}`,
+    );
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Find projects by year
+   *
+   * @param year - Project year (YYYY)
+   * @returns Array of projects from specified year
+   */
+  public async findByYear(year: number): Promise<Project[]> {
+    const response = await httpClient.get<ProjectApiResponse[]>(
+      `${this.baseUrl}?year=${year}`,
+    );
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Find projects by type
+   *
+   * @param type - Project type filter
+   * @returns Array of projects with specified type
+   */
+  public async findByType(type: ProjectType): Promise<Project[]> {
+    const response = await httpClient.get<ProjectApiResponse[]>(
+      `${this.baseUrl}?type=${type}`,
+    );
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Find all projects in system
+   *
+   * @returns Array of all projects
+   */
+  public async findAll(): Promise<Project[]> {
+    const response = await httpClient.get<ProjectApiResponse[]>(
+      this.baseUrl,
+    );
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Find all active (non-archived) projects
+   *
+   * @returns Array of active projects
+   */
+  public async findAllActive(): Promise<Project[]> {
+    const response = await httpClient.get<ProjectApiResponse[]>(
+      `${this.baseUrl}?active=true`,
+    );
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Find all projects ordered by delivery date
+   *
+   * @param ascending - Sort direction (default true)
+   * @returns Array of projects sorted by delivery date
+   */
+  public async findAllOrderedByDeliveryDate(
+    ascending = true,
+  ): Promise<Project[]> {
+    const response = await httpClient.get<ProjectApiResponse[]>(
+      `${this.baseUrl}?sortBy=deliveryDate&order=${ascending ? 'asc' : 'desc'}`,
+    );
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Find projects with delivery dates in range
+   *
+   * @param startDate - Range start date
+   * @param endDate - Range end date
+   * @returns Array of projects within date range
+   */
+  public async findByDeliveryDateRange(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<Project[]> {
+    const response = await httpClient.get<ProjectApiResponse[]>(
+      `${this.baseUrl}?deliveryDateStart=${startDate.toISOString()}&deliveryDateEnd=${endDate.toISOString()}`,
+    );
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Check if project exists by code
+   *
+   * @param code - Project code to check
+   * @returns True if project exists
+   */
+  public async existsByCode(code: string): Promise<boolean> {
+    const project = await this.findByCode(code);
+    return project !== null;
+  }
+
+  /**
+   * Count projects assigned to client
+   *
+   * @param clientId - Client user ID
+   * @returns Number of client's projects
+   */
+  public async countByClientId(clientId: string): Promise<number> {
+    const response = await httpClient.get<{count: number}>(
+      `${this.baseUrl}/count?clientId=${clientId}`,
+    );
+    return response.data.count;
+  }
+
+  /**
+   * Count projects by status
+   *
+   * @param status - Project status filter
+   * @returns Number of projects with status
+   */
+  public async countByStatus(status: ProjectStatus): Promise<number> {
+    const response = await httpClient.get<{count: number}>(
+      `${this.baseUrl}/count?status=${status}`,
+    );
+    return response.data.count;
+  }
+
+  /**
+   * Map API response to Project entity
+   *
+   * @param data - API response data
+   * @returns Project domain entity
+   */
+  private mapToEntity(data: ProjectApiResponse): Project {
+    return new Project({
+      id: data.id,
+      code: data.code,
+      name: data.name,
+      year: data.year,
+      clientId: data.clientId,
+      type: data.type as ProjectType,
+      coordinates:
+        data.coordinateX !== null && data.coordinateY !== null
+          ? new GeoCoordinates(data.coordinateY, data.coordinateX)
+          : null,
+      contractDate: new Date(data.contractDate),
+      deliveryDate: new Date(data.deliveryDate),
+      status: data.status as ProjectStatus,
+      dropboxFolderId: data.dropboxFolderId,
+      specialUserIds: data.specialUserIds || [],
+      createdAt: new Date(data.createdAt),
+      updatedAt: new Date(data.updatedAt),
+      finalizedAt: data.finalizedAt ? new Date(data.finalizedAt) : null,
+    });
+  }
+
+  /**
+   * Map Project entity to API request payload
+   *
+   * @param project - Project domain entity
+   * @returns API request payload
+   */
+  private mapToApiRequest(project: Project): Record<string, unknown> {
+    return {
+      id: project.id,
+      code: project.code,
+      name: project.name,
+      year: project.year,
+      clientId: project.clientId,
+      type: project.type,
+      coordinateX: project.coordinates?.longitude || null,
+      coordinateY: project.coordinates?.latitude || null,
+      contractDate: project.contractDate.toISOString(),
+      deliveryDate: project.deliveryDate.toISOString(),
+      status: project.status,
+      dropboxFolderId: project.dropboxFolderId,
+      specialUserIds: project.specialUserIds,
+      createdAt: project.createdAt.toISOString(),
+      updatedAt: project.updatedAt.toISOString(),
+      finalizedAt: project.finalizedAt?.toISOString() || null,
+    };
+  }
+
+  /**
+   * Check if error is 404 Not Found
+   *
+   * @param error - Error object
+   * @returns True if 404 error
+   */
+  private isNotFoundError(error: unknown): boolean {
+    return (error as {status?: number})?.status === 404;
   }
 }
