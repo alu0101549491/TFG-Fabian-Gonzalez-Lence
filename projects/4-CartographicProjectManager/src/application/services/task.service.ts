@@ -1,7 +1,15 @@
 /**
- * @module application/services/task
- * @description Service implementation for task lifecycle management within projects.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/services/task.service.ts
+ * @desc Service implementation for task lifecycle management within projects.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {
@@ -62,7 +70,7 @@ export class TaskService implements ITaskService {
   /**
    * Creates a new task within a project.
    */
-  async createTask(data: CreateTaskDto, creatorId: string): Promise<TaskDto> {
+  public async createTask(data: CreateTaskDto, creatorId: string): Promise<TaskDto> {
     // Validate
     const validation = await this.validateTaskData(data);
     if (!validation.isValid) {
@@ -132,7 +140,7 @@ export class TaskService implements ITaskService {
   /**
    * Updates an existing task.
    */
-  async updateTask(data: UpdateTaskDto, userId: string): Promise<TaskDto> {
+  public async updateTask(data: UpdateTaskDto, userId: string): Promise<TaskDto> {
     const canModify = await this.authorizationService.canModifyTask(userId, data.id);
     if (!canModify) {
       throw new UnauthorizedError('You do not have permission to modify this task');
@@ -162,7 +170,7 @@ export class TaskService implements ITaskService {
   /**
    * Deletes a task.
    */
-  async deleteTask(taskId: string, userId: string): Promise<void> {
+  public async deleteTask(taskId: string, userId: string): Promise<void> {
     const canDelete = await this.authorizationService.canDeleteTask(userId, taskId);
     if (!canDelete) {
       throw new UnauthorizedError('You do not have permission to delete this task');
@@ -186,7 +194,7 @@ export class TaskService implements ITaskService {
   /**
    * Retrieves a specific task by its ID.
    */
-  async getTaskById(taskId: string, userId: string): Promise<TaskDto> {
+  public async getTaskById(taskId: string, userId: string): Promise<TaskDto> {
     const task = await this.taskRepository.findById(taskId);
     if (!task) {
       throw new NotFoundError(`Task ${taskId} not found`);
@@ -203,7 +211,7 @@ export class TaskService implements ITaskService {
   /**
    * Retrieves all tasks for a specific project with optional filtering.
    */
-  async getTasksByProject(
+  public async getTasksByProject(
     projectId: string,
     userId: string,
     filters?: TaskFilterDto
@@ -227,7 +235,7 @@ export class TaskService implements ITaskService {
   /**
    * Retrieves all tasks assigned to a specific user with optional filtering.
    */
-  async getTasksByAssignee(
+  public async getTasksByAssignee(
     assigneeId: string,
     filters?: TaskFilterDto
   ): Promise<TaskListResponseDto> {
@@ -250,7 +258,7 @@ export class TaskService implements ITaskService {
   /**
    * Retrieves all tasks created by a specific user with optional filtering.
    */
-  async getTasksByCreator(
+  public async getTasksByCreator(
     creatorId: string,
     filters?: TaskFilterDto
   ): Promise<TaskListResponseDto> {
@@ -273,7 +281,7 @@ export class TaskService implements ITaskService {
   /**
    * Retrieves all overdue tasks for a user.
    */
-  async getOverdueTasks(userId: string): Promise<TaskSummaryDto[]> {
+  public async getOverdueTasks(userId: string): Promise<TaskSummaryDto[]> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundError(`User ${userId} not found`);
@@ -291,7 +299,7 @@ export class TaskService implements ITaskService {
   /**
    * Gets the count of pending (not completed/confirmed) tasks in a project.
    */
-  async getPendingTasksCount(projectId: string): Promise<number> {
+  public async getPendingTasksCount(projectId: string): Promise<number> {
     const project = await this.projectRepository.findById(projectId);
     if (!project) {
       throw new NotFoundError(`Project ${projectId} not found`);
@@ -303,7 +311,7 @@ export class TaskService implements ITaskService {
   /**
    * Changes the status of a task through its lifecycle.
    */
-  async changeTaskStatus(data: ChangeTaskStatusDto, userId: string): Promise<TaskDto> {
+  public async changeTaskStatus(data: ChangeTaskStatusDto, userId: string): Promise<TaskDto> {
     const canChange = await this.authorizationService.canChangeTaskStatus(
       userId,
       data.taskId,
@@ -362,7 +370,7 @@ export class TaskService implements ITaskService {
   /**
    * Confirms task completion by the project client.
    */
-  async confirmTask(data: ConfirmTaskDto, userId: string): Promise<TaskDto> {
+  public async confirmTask(data: ConfirmTaskDto, userId: string): Promise<TaskDto> {
     const canConfirm = await this.authorizationService.canConfirmTask(userId, data.taskId);
     if (!canConfirm) {
       throw new UnauthorizedError('Only the project client can confirm tasks');
@@ -410,7 +418,7 @@ export class TaskService implements ITaskService {
   /**
    * Attaches a file to a task.
    */
-  async attachFileToTask(taskId: string, fileId: string, userId: string): Promise<void> {
+  public async attachFileToTask(taskId: string, fileId: string, userId: string): Promise<void> {
     const canModify = await this.authorizationService.canModifyTask(userId, taskId);
     if (!canModify) {
       throw new UnauthorizedError('You do not have permission to modify this task');
@@ -434,7 +442,7 @@ export class TaskService implements ITaskService {
   /**
    * Removes a file attachment from a task.
    */
-  async removeFileFromTask(taskId: string, fileId: string, userId: string): Promise<void> {
+  public async removeFileFromTask(taskId: string, fileId: string, userId: string): Promise<void> {
     const canModify = await this.authorizationService.canModifyTask(userId, taskId);
     if (!canModify) {
       throw new UnauthorizedError('You do not have permission to modify this task');
@@ -448,7 +456,7 @@ export class TaskService implements ITaskService {
   /**
    * Retrieves the history of changes for a specific task.
    */
-  async getTaskHistory(taskId: string, userId: string): Promise<TaskHistoryEntryDto[]> {
+  public async getTaskHistory(taskId: string, userId: string): Promise<TaskHistoryEntryDto[]> {
     const task = await this.taskRepository.findById(taskId);
     if (!task) {
       throw new NotFoundError(`Task ${taskId} not found`);
@@ -476,7 +484,7 @@ export class TaskService implements ITaskService {
   /**
    * Gets the valid status transitions available for a task based on its current state.
    */
-  async getValidStatusTransitions(taskId: string, userId: string): Promise<TaskStatus[]> {
+  public async getValidStatusTransitions(taskId: string, userId: string): Promise<TaskStatus[]> {
     const task = await this.taskRepository.findById(taskId);
     if (!task) {
       throw new NotFoundError(`Task ${taskId} not found`);
@@ -493,7 +501,7 @@ export class TaskService implements ITaskService {
   /**
    * Validates task data before creation or update.
    */
-  async validateTaskData(
+  public async validateTaskData(
     data: CreateTaskDto | UpdateTaskDto
   ): Promise<ValidationResultDto> {
     const errors = [];

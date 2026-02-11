@@ -1,8 +1,15 @@
 /**
- * @module domain/entities/file
- * @description Entity representing a file managed through the Dropbox integration.
- * Supports cartographic file formats (KML, SHP) as well as standard documents.
- * @category Domain
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file domain/entities/file.ts
+ * @desc Entity representing a file managed through the Dropbox integration. Supports cartographic file formats (KML, SHP) as well as standard documents.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {FileType, getFileTypeFromExtension, isValidFileType} from '../enumerations/file-type';

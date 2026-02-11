@@ -1,8 +1,15 @@
 /**
- * @module domain/enumerations/user-role
- * @description Enumeration defining the possible roles a user can have
- * in the Cartographic Project Manager system.
- * @category Domain
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file domain/enumerations/user-role.ts
+ * @desc Enumeration defining the possible roles a user can have in the Cartographic Project Manager system.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

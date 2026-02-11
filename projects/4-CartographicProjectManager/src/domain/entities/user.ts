@@ -1,9 +1,15 @@
 /**
- * @module domain/entities/user
- * @description Entity representing a system user (Administrator, Client, or Special User).
- * Core domain entity that participates in authentication, authorization, and
- * project collaboration.
- * @category Domain
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file domain/entities/user.ts
+ * @desc Entity representing a system user (Administrator, Client, or Special User). Core domain entity that participates in authentication, authorization, and project collaboration.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {UserRole} from '../enumerations/user-role';

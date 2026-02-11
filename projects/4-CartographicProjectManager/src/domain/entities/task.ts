@@ -1,9 +1,15 @@
 /**
- * @module domain/entities/task
- * @description Entity representing a task within a cartographic project.
- * Tasks can be created by both administrators and clients, support
- * bidirectional assignment, and track status through a defined lifecycle.
- * @category Domain
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file domain/entities/task.ts
+ * @desc Entity representing a task within a cartographic project. Tasks can be created by both administrators and clients, support bidirectional assignment, and track status through a defined lifecycle.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {TaskStatus, isValidTaskStatusTransition} from '../enumerations/task-status';

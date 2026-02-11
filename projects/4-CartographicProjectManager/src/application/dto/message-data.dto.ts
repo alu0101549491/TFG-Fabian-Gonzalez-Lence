@@ -1,7 +1,15 @@
 /**
- * @module application/dto/message-data
- * @description Data Transfer Objects for message operations.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/dto/message-data.dto.ts
+ * @desc Data Transfer Objects for message operations.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {UserRole} from '../../domain/enumerations/user-role';

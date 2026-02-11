@@ -1,7 +1,15 @@
 /**
- * @module application/services/file
- * @description Service implementation for file management via Dropbox.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/services/file.service.ts
+ * @desc Service implementation for file management via Dropbox.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {
@@ -62,7 +70,7 @@ export class FileService implements IFileService {
   /**
    * Uploads a single file to a project.
    */
-  async uploadFile(data: UploadFileDto, userId: string): Promise<FileUploadResultDto> {
+  public async uploadFile(data: UploadFileDto, userId: string): Promise<FileUploadResultDto> {
     // Check permissions
     const canUpload = await this.authorizationService.canUploadFile(userId, data.projectId);
     if (!canUpload) {
@@ -146,7 +154,7 @@ export class FileService implements IFileService {
   /**
    * Uploads multiple files in batch.
    */
-  async uploadBatch(data: BatchUploadDto, userId: string): Promise<BatchUploadResultDto> {
+  public async uploadBatch(data: BatchUploadDto, userId: string): Promise<BatchUploadResultDto> {
     const results: FileUploadResultDto[] = [];
     
     for (const fileData of data.files) {
@@ -173,14 +181,14 @@ export class FileService implements IFileService {
   /**
    * Uploads multiple files to the project's storage in a batch.
    */
-  async uploadMultipleFiles(data: BatchUploadDto, userId: string): Promise<BatchUploadResultDto> {
+  public async uploadMultipleFiles(data: BatchUploadDto, userId: string): Promise<BatchUploadResultDto> {
     return this.uploadBatch(data, userId);
   }
 
   /**
    * Downloads a file.
    */
-  async downloadFile(fileId: string, userId: string): Promise<FileDownloadResultDto> {
+  public async downloadFile(fileId: string, userId: string): Promise<FileDownloadResultDto> {
     const canDownload = await this.authorizationService.canDownloadFile(userId, fileId);
     if (!canDownload) {
       return {
@@ -229,7 +237,7 @@ export class FileService implements IFileService {
   /**
    * Deletes a file.
    */
-  async deleteFile(fileId: string, userId: string): Promise<void> {
+  public async deleteFile(fileId: string, userId: string): Promise<void> {
     const canDelete = await this.authorizationService.canDeleteFile(userId, fileId);
     if (!canDelete) {
       throw new UnauthorizedError('You do not have permission to delete this file');
@@ -254,7 +262,7 @@ export class FileService implements IFileService {
   /**
    * Retrieves a specific file by ID.
    */
-  async getFileById(fileId: string, userId: string): Promise<FileDto> {
+  public async getFileById(fileId: string, userId: string): Promise<FileDto> {
     const canDownload = await this.authorizationService.canDownloadFile(userId, fileId);
     if (!canDownload) {
       throw new UnauthorizedError('You do not have permission to access this file');
@@ -271,7 +279,7 @@ export class FileService implements IFileService {
   /**
    * Retrieves all files for a project with optional filtering.
    */
-  async getFilesByProject(
+  public async getFilesByProject(
     projectId: string,
     userId: string,
     _filters?: FileFilterDto
@@ -288,7 +296,7 @@ export class FileService implements IFileService {
   /**
    * Retrieves files by section within a project.
    */
-  async getFilesBySection(
+  public async getFilesBySection(
     projectId: string,
     section: ProjectSection,
     userId: string
@@ -315,7 +323,7 @@ export class FileService implements IFileService {
   /**
    * Retrieves all files attached to a specific task.
    */
-  async getFilesByTask(taskId: string, userId: string): Promise<FileDto[]> {
+  public async getFilesByTask(taskId: string, userId: string): Promise<FileDto[]> {
     // Check if user can access the task's project
     const files = await this.fileRepository.findByTaskId(taskId);
     if (files.length === 0) {
@@ -334,7 +342,7 @@ export class FileService implements IFileService {
   /**
    * Retrieves all files attached to a specific message.
    */
-  async getFilesByMessage(messageId: string, userId: string): Promise<FileDto[]> {
+  public async getFilesByMessage(messageId: string, userId: string): Promise<FileDto[]> {
     // Check if user can access the message's project
     const files = await this.fileRepository.findByMessageId(messageId);
     if (files.length === 0) {
@@ -353,7 +361,7 @@ export class FileService implements IFileService {
   /**
    * Generates a temporary download URL for a file.
    */
-  async generateDownloadUrl(
+  public async generateDownloadUrl(
     fileId: string,
     userId: string,
     expiresInSeconds: number = 3600
@@ -374,7 +382,7 @@ export class FileService implements IFileService {
   /**
    * Generates a preview URL for a file (if supported format).
    */
-  async generatePreviewUrl(fileId: string, userId: string): Promise<string | null> {
+  public async generatePreviewUrl(fileId: string, userId: string): Promise<string | null> {
     const canDownload = await this.authorizationService.canDownloadFile(userId, fileId);
     if (!canDownload) {
       throw new UnauthorizedError('You do not have permission to access this file');
@@ -396,21 +404,21 @@ export class FileService implements IFileService {
   /**
    * Gets the maximum file size limit in bytes.
    */
-  getFileSizeLimit(): number {
+  public getFileSizeLimit(): number {
     return this.MAX_FILE_SIZE;
   }
 
   /**
    * Gets the list of supported file formats.
    */
-  getSupportedFormats(): string[] {
+  public getSupportedFormats(): string[] {
     return Array.from(this.ALLOWED_EXTENSIONS);
   }
 
   /**
    * Moves a file to a different section within the same project.
    */
-  async moveFile(
+  public async moveFile(
     fileId: string,
     _newSection: ProjectSection,
     userId: string
@@ -541,7 +549,7 @@ export class FileService implements IFileService {
   /**
    * Validates a file before upload.
    */
-  async validateFile(data: UploadFileDto): Promise<ValidationResultDto> {
+  public async validateFile(data: UploadFileDto): Promise<ValidationResultDto> {
     const errors: ValidationErrorDto[] = [];
 
     // Calculate file size from content

@@ -1,9 +1,15 @@
 /**
- * @module domain/entities/message
- * @description Entity representing a message sent within a project's internal chat.
- * Supports bidirectional communication between admin and clients with
- * file attachments and read tracking.
- * @category Domain
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file domain/entities/message.ts
+ * @desc Entity representing a message sent within a project's internal chat. Supports bidirectional communication between admin and clients with file attachments and read tracking.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

@@ -1,7 +1,15 @@
 /**
- * @module application/services/authorization
- * @description Service implementation for authorization and permission checks.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/services/authorization.service.ts
+ * @desc Service implementation for authorization and permission checks.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
@@ -33,7 +41,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can access a specific project.
    */
-  async canAccessProject(userId: string, projectId: string): Promise<boolean> {
+  public async canAccessProject(userId: string, projectId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -58,7 +66,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can modify a specific project.
    */
-  async canModifyProject(userId: string, projectId: string): Promise<boolean> {
+  public async canModifyProject(userId: string, projectId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -82,7 +90,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can delete a specific project.
    */
-  async canDeleteProject(userId: string, projectId: string): Promise<boolean> {
+  public async canDeleteProject(userId: string, projectId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -99,7 +107,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can finalize a specific project.
    */
-  async canFinalizeProject(userId: string, projectId: string): Promise<boolean> {
+  public async canFinalizeProject(userId: string, projectId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -110,7 +118,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can create tasks in a specific project.
    */
-  async canCreateTaskInProject(userId: string, projectId: string): Promise<boolean> {
+  public async canCreateTaskInProject(userId: string, projectId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -129,7 +137,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can assign a task to another user.
    */
-  async canAssignTaskTo(
+  public async canAssignTaskTo(
     userId: string,
     projectId: string,
     assigneeId: string
@@ -154,7 +162,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can modify a specific task.
    */
-  async canModifyTask(userId: string, taskId: string): Promise<boolean> {
+  public async canModifyTask(userId: string, taskId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -173,7 +181,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can delete a specific task.
    */
-  async canDeleteTask(userId: string, taskId: string): Promise<boolean> {
+  public async canDeleteTask(userId: string, taskId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -190,7 +198,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can change a task to a specific status.
    */
-  async canChangeTaskStatus(
+  public async canChangeTaskStatus(
     userId: string,
     taskId: string,
     newStatus: TaskStatus
@@ -213,7 +221,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can confirm a specific task.
    */
-  async canConfirmTask(userId: string, taskId: string): Promise<boolean> {
+  public async canConfirmTask(userId: string, taskId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -236,7 +244,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can access messages in a project.
    */
-  async canAccessMessages(userId: string, projectId: string): Promise<boolean> {
+  public async canAccessMessages(userId: string, projectId: string): Promise<boolean> {
     // Same as project access
     return this.canAccessProject(userId, projectId);
   }
@@ -244,7 +252,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can send messages in a project.
    */
-  async canSendMessage(userId: string, projectId: string): Promise<boolean> {
+  public async canSendMessage(userId: string, projectId: string): Promise<boolean> {
     // Same as project access
     return this.canAccessProject(userId, projectId);
   }
@@ -252,7 +260,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can upload files to a project.
    */
-  async canUploadFile(userId: string, projectId: string): Promise<boolean> {
+  public async canUploadFile(userId: string, projectId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -276,7 +284,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can download a specific file.
    */
-  async canDownloadFile(userId: string, fileId: string): Promise<boolean> {
+  public async canDownloadFile(userId: string, fileId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -290,7 +298,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can delete a specific file.
    */
-  async canDeleteFile(userId: string, fileId: string): Promise<boolean> {
+  public async canDeleteFile(userId: string, fileId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -309,7 +317,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can manage project participants.
    */
-  async canManageProjectParticipants(
+  public async canManageProjectParticipants(
     userId: string,
     projectId: string
   ): Promise<boolean> {
@@ -323,7 +331,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can export data from the system.
    */
-  async canExportData(userId: string): Promise<boolean> {
+  public async canExportData(userId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -334,7 +342,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user can manage system backups.
    */
-  async canManageBackups(userId: string): Promise<boolean> {
+  public async canManageBackups(userId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -345,7 +353,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Gets the complete set of permissions a user has for a project.
    */
-  async getProjectPermissions(
+  public async getProjectPermissions(
     userId: string,
     projectId: string
   ): Promise<Set<AccessRight>> {
@@ -381,7 +389,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Gets the role of a specific user in the system.
    */
-  async getUserRole(userId: string): Promise<UserRole> {
+  public async getUserRole(userId: string): Promise<UserRole> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -391,7 +399,7 @@ export class AuthorizationService implements IAuthorizationService {
   /**
    * Checks if a user has administrator privileges.
    */
-  async isAdmin(userId: string): Promise<boolean> {
+  public async isAdmin(userId: string): Promise<boolean> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
