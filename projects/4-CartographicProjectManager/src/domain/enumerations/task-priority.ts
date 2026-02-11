@@ -1,7 +1,15 @@
 /**
- * @module domain/enumerations/task-priority
- * @description Enumeration defining the priority levels for tasks.
- * @category Domain
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file domain/enumerations/task-priority.ts
+ * @desc Enumeration defining the priority levels for tasks.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

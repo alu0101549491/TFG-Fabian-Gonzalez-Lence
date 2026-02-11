@@ -1,8 +1,15 @@
 /**
- * @module domain/entities/permission
- * @description Entity representing the permissions a user has for a specific project.
- * Encapsulates access rights (View, Download, Edit, Delete) per user-project pair.
- * @category Domain
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file domain/entities/permission.ts
+ * @desc Entity representing the permissions a user has for a specific project. Encapsulates access rights (View, Download, Edit, Delete) per user-project pair.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {

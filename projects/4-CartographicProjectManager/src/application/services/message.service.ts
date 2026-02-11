@@ -1,7 +1,15 @@
 /**
- * @module application/services/message
- * @description Service implementation for project messaging.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/services/message.service.ts
+ * @desc Service implementation for project messaging.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {
@@ -49,7 +57,7 @@ export class MessageService implements IMessageService {
   /**
    * Creates and sends a new message in a project.
    */
-  async createMessage(data: CreateMessageDto, senderId: string): Promise<MessageDto> {
+  public async createMessage(data: CreateMessageDto, senderId: string): Promise<MessageDto> {
     // Validate content length
     if (data.content.length > this.MAX_CONTENT_LENGTH) {
       throw new ValidationError('Message content too long', [
@@ -169,7 +177,7 @@ export class MessageService implements IMessageService {
   /**
    * Marks specific messages as read by a user.
    */
-  async markMessagesAsRead(data: MarkMessagesReadDto, userId: string): Promise<void> {
+  public async markMessagesAsRead(data: MarkMessagesReadDto, userId: string): Promise<void> {
     for (const messageId of data.messageIds) {
       // Check if message exists
       const message = await this.messageRepository.findById(messageId);
@@ -197,7 +205,7 @@ export class MessageService implements IMessageService {
   /**
    * Marks all messages in a project as read for a user.
    */
-  async markAllMessagesAsRead(projectId: string, userId: string): Promise<void> {
+  public async markAllMessagesAsRead(projectId: string, userId: string): Promise<void> {
     const canAccess = await this.authorizationService.canAccessMessages(userId, projectId);
     if (!canAccess) {
       throw new UnauthorizedError('You do not have permission to access messages in this project');
@@ -222,7 +230,7 @@ export class MessageService implements IMessageService {
   /**
    * Gets the count of unread messages in a project for a user.
    */
-  async getUnreadCount(projectId: string, userId: string): Promise<number> {
+  public async getUnreadCount(projectId: string, userId: string): Promise<number> {
     const canAccess = await this.authorizationService.canAccessMessages(userId, projectId);
     if (!canAccess) {
       throw new UnauthorizedError('You do not have permission to access messages in this project');

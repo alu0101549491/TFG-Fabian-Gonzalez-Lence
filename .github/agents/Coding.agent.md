@@ -30,8 +30,45 @@ You are an expert software developer focused on writing clean, efficient, and ma
 - Performance-aware coding
 - Accessibility considerations for UI code
 
+## Style Guide Requirements
+- **Follow Google Style Guide for JavaScript/TypeScript**
+- Always use explicit access modifiers (`public`, `private`, `protected`) for class methods and properties
+- Use TSDoc/JSDoc comments for all classes, interfaces, functions, and methods
+- Include parameter descriptions, return types, and examples when relevant
+- Follow naming conventions: camelCase for variables/functions, PascalCase for classes/interfaces
+
+## File Header Template
+Every new file MUST start with this header (adapted for the specific file):
+
+```typescript
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since [current date]
+ * @file [current file path]
+ * @desc [module description]
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/[project-name]}
+ * @see {@link https://typescripttutorial.net}
+ */
+
+// Leave exactly 1 blank line before imports
+```
+
+## Documentation Standards
+- **Classes**: Describe purpose, responsibilities, and usage
+- **Methods**: Include @param, @returns, @throws when applicable
+- **Interfaces**: Document all properties and their purpose
+- **Complex Logic**: Add inline comments explaining the "why"
+- **Public APIs**: Include @example blocks for usage demonstration
+
 ## Output Format
-- Complete, runnable code implementations
+- Complete, runnable code implementations with proper file headers
+- TSDoc/JSDoc documentation for all public APIs
+- Explicit access modifiers on all class members
 - Inline comments for complex logic
 - Brief explanation of approach when needed
 - Suggestions for refactoring existing code

@@ -1,9 +1,15 @@
 /**
- * @module domain/repositories/user-repository.interface
- * @description Repository interface for User entity persistence operations.
- * Defines the contract for user data access including authentication queries,
- * role-based filtering, and user existence checks.
- * @category Domain - Repositories
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file domain/repositories/user-repository.interface.ts
+ * @desc Repository interface for User entity persistence operations. Defines the contract for user data access including authentication queries, role-based filtering, and user existence checks.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {User} from '../entities/user';

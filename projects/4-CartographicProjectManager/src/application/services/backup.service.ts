@@ -1,7 +1,15 @@
 /**
- * @module application/services/backup
- * @description Service implementation for system backup and restore operations.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/services/backup.service.ts
+ * @desc Service implementation for system backup and restore operations.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {
@@ -79,7 +87,7 @@ export class BackupService implements IBackupService {
   /**
    * Creates a manual backup of the system.
    */
-  async createBackup(userId: string): Promise<BackupResultDto> {
+  public async createBackup(userId: string): Promise<BackupResultDto> {
     // Check permissions
     const canManage = await this.authorizationService.canManageBackups(userId);
     if (!canManage) {
@@ -184,7 +192,7 @@ export class BackupService implements IBackupService {
   /**
    * Restores the system from a backup.
    */
-  async restoreBackup(data: RestoreBackupDto, userId: string): Promise<RestoreResultDto> {
+  public async restoreBackup(data: RestoreBackupDto, userId: string): Promise<RestoreResultDto> {
     // Check permissions
     const canManage = await this.authorizationService.canManageBackups(userId);
     if (!canManage) {
@@ -266,7 +274,7 @@ export class BackupService implements IBackupService {
   /**
    * Retrieves a list of all backups.
    */
-  async listBackups(userId: string): Promise<BackupListResponseDto> {
+  public async listBackups(userId: string): Promise<BackupListResponseDto> {
     const canManage = await this.authorizationService.canManageBackups(userId);
     if (!canManage) {
       throw new UnauthorizedError('You do not have permission to view backups');
@@ -292,7 +300,7 @@ export class BackupService implements IBackupService {
   /**
    * Retrieves information about a specific backup.
    */
-  async getBackupInfo(backupId: string, userId: string): Promise<BackupInfoDto> {
+  public async getBackupInfo(backupId: string, userId: string): Promise<BackupInfoDto> {
     const canManage = await this.authorizationService.canManageBackups(userId);
     if (!canManage) {
       throw new UnauthorizedError('You do not have permission to view backup information');
@@ -318,7 +326,7 @@ export class BackupService implements IBackupService {
   /**
    * Deletes a backup.
    */
-  async deleteBackup(backupId: string, userId: string): Promise<void> {
+  public async deleteBackup(backupId: string, userId: string): Promise<void> {
     const canManage = await this.authorizationService.canManageBackups(userId);
     if (!canManage) {
       throw new UnauthorizedError('You do not have permission to delete backups');
@@ -342,7 +350,7 @@ export class BackupService implements IBackupService {
   /**
    * Configures automatic backup schedule.
    */
-  async scheduleBackup(schedule: BackupScheduleDto, userId: string): Promise<void> {
+  public async scheduleBackup(schedule: BackupScheduleDto, userId: string): Promise<void> {
     const canManage = await this.authorizationService.canManageBackups(userId);
     if (!canManage) {
       throw new UnauthorizedError('You do not have permission to schedule backups');
@@ -357,7 +365,7 @@ export class BackupService implements IBackupService {
   /**
    * Retrieves current backup schedule.
    */
-  async getBackupSchedule(userId: string): Promise<BackupScheduleDto | null> {
+  public async getBackupSchedule(userId: string): Promise<BackupScheduleDto | null> {
     const canManage = await this.authorizationService.canManageBackups(userId);
     if (!canManage) {
       throw new UnauthorizedError('You do not have permission to view backup schedule');
@@ -369,7 +377,7 @@ export class BackupService implements IBackupService {
   /**
    * Disables automatic backups.
    */
-  async disableAutoBackup(userId: string): Promise<void> {
+  public async disableAutoBackup(userId: string): Promise<void> {
     const canManage = await this.authorizationService.canManageBackups(userId);
     if (!canManage) {
       throw new UnauthorizedError('You do not have permission to modify backup schedule');
@@ -382,7 +390,7 @@ export class BackupService implements IBackupService {
   /**
    * Gets storage usage statistics.
    */
-  async getStorageUsage(userId: string): Promise<StorageUsageDto> {
+  public async getStorageUsage(userId: string): Promise<StorageUsageDto> {
     const canManage = await this.authorizationService.canManageBackups(userId);
     if (!canManage) {
       throw new UnauthorizedError('You do not have permission to view storage usage');

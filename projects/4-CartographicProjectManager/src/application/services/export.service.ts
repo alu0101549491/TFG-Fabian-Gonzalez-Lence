@@ -1,7 +1,15 @@
 /**
- * @module application/services/export
- * @description Service implementation for data export functionality.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/services/export.service.ts
+ * @desc Service implementation for data export functionality.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {
@@ -200,7 +208,7 @@ export class ExportService implements IExportService {
   /**
    * Gets the status of an ongoing export operation.
    */
-  async getExportProgress(exportId: string, userId: string): Promise<ExportProgressDto> {
+  public async getExportProgress(exportId: string, userId: string): Promise<ExportProgressDto> {
     const canExport = await this.authorizationService.canExportData(userId);
     if (!canExport) {
       throw new UnauthorizedError('You do not have permission to view export progress');
@@ -217,7 +225,7 @@ export class ExportService implements IExportService {
   /**
    * Retrieves information about a completed export.
    */
-  async getExportInfo(exportId: string, userId: string): Promise<ExportInfoDto> {
+  public async getExportInfo(exportId: string, userId: string): Promise<ExportInfoDto> {
     const canExport = await this.authorizationService.canExportData(userId);
     if (!canExport) {
       throw new UnauthorizedError('You do not have permission to view export information');
@@ -239,7 +247,7 @@ export class ExportService implements IExportService {
   /**
    * Lists all available export presets.
    */
-  async getExportPresets(userId: string): Promise<ExportFiltersDto[]> {
+  public async getExportPresets(userId: string): Promise<ExportFiltersDto[]> {
     const canExport = await this.authorizationService.canExportData(userId);
     if (!canExport) {
       throw new UnauthorizedError('You do not have permission to access export presets');
@@ -269,7 +277,7 @@ export class ExportService implements IExportService {
   /**
    * Cancels an ongoing export operation.
    */
-  async cancelExport(exportId: string, userId: string): Promise<void> {
+  public async cancelExport(exportId: string, userId: string): Promise<void> {
     const canExport = await this.authorizationService.canExportData(userId);
     if (!canExport) {
       throw new UnauthorizedError('You do not have permission to cancel exports');
@@ -320,7 +328,7 @@ export class ExportService implements IExportService {
   /**
    * Deletes a completed export file.
    */
-  async deleteExport(exportId: string, userId: string): Promise<void> {
+  public async deleteExport(exportId: string, userId: string): Promise<void> {
     const canExport = await this.authorizationService.canExportData(userId);
     if (!canExport) {
       throw new UnauthorizedError('You do not have permission to delete exports');
@@ -333,7 +341,7 @@ export class ExportService implements IExportService {
   /**
    * Gets available export formats for a data type.
    */
-  async getAvailableFormats(dataType: ExportDataType, userId: string): Promise<ExportFormat[]> {
+  public async getAvailableFormats(dataType: ExportDataType, userId: string): Promise<ExportFormat[]> {
     const canExport = await this.authorizationService.canExportData(userId);
     if (!canExport) {
       throw new UnauthorizedError('You do not have permission to access export formats');

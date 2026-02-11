@@ -1,7 +1,15 @@
 /**
- * @module application/services/common/errors
- * @description Custom error classes for application layer.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/services/common/errors.ts
+ * @desc Custom error classes for application layer.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

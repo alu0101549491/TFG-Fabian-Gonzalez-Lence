@@ -1,8 +1,15 @@
 /**
- * @module domain/entities/project
- * @description Entity representing a cartographic project.
- * Central aggregate root that connects tasks, messages, files, and users.
- * @category Domain
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file domain/entities/project.ts
+ * @desc Entity representing a cartographic project. Central aggregate root that connects tasks, messages, files, and users.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {ProjectType} from '../enumerations/project-type';

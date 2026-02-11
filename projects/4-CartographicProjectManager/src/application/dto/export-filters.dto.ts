@@ -1,7 +1,15 @@
 /**
- * @module application/dto/export-filters
- * @description Data Transfer Objects for export filtering.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/dto/export-filters.dto.ts
+ * @desc Data Transfer Objects for export filtering.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {ProjectType} from '../../domain/enumerations/project-type';

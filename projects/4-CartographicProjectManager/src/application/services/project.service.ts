@@ -1,7 +1,15 @@
 /**
- * @module application/services/project
- * @description Service implementation for project lifecycle management.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/services/project.service.ts
+ * @desc Service implementation for project lifecycle management.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {
@@ -69,7 +77,7 @@ export class ProjectService implements IProjectService {
   /**
    * Creates a new cartographic project.
    */
-  async createProject(data: CreateProjectDto, creatorId: string): Promise<ProjectDto> {
+  public async createProject(data: CreateProjectDto, creatorId: string): Promise<ProjectDto> {
     // Validate
     const validation = await this.validateProjectData(data);
     if (!validation.isValid) {
@@ -136,7 +144,7 @@ export class ProjectService implements IProjectService {
   /**
    * Updates an existing project.
    */
-  async updateProject(data: UpdateProjectDto, userId: string): Promise<ProjectDto> {
+  public async updateProject(data: UpdateProjectDto, userId: string): Promise<ProjectDto> {
     const canModify = await this.authorizationService.canModifyProject(userId, data.id);
     if (!canModify) {
       throw new UnauthorizedError('You do not have permission to modify this project');
@@ -169,7 +177,7 @@ export class ProjectService implements IProjectService {
   /**
    * Deletes a project and all associated data.
    */
-  async deleteProject(projectId: string, userId: string): Promise<void> {
+  public async deleteProject(projectId: string, userId: string): Promise<void> {
     const canDelete = await this.authorizationService.canDeleteProject(userId, projectId);
     if (!canDelete) {
       throw new UnauthorizedError('You do not have permission to delete this project');
@@ -199,7 +207,7 @@ export class ProjectService implements IProjectService {
   /**
    * Retrieves detailed information about a specific project.
    */
-  async getProjectById(projectId: string, userId: string): Promise<ProjectDetailsDto> {
+  public async getProjectById(projectId: string, userId: string): Promise<ProjectDetailsDto> {
     const canAccess = await this.authorizationService.canAccessProject(userId, projectId);
     if (!canAccess) {
       throw new UnauthorizedError('You do not have permission to access this project');
@@ -216,7 +224,7 @@ export class ProjectService implements IProjectService {
   /**
    * Retrieves summary information about a specific project.
    */
-  async getProjectSummary(projectId: string, userId: string): Promise<ProjectSummaryDto> {
+  public async getProjectSummary(projectId: string, userId: string): Promise<ProjectSummaryDto> {
     const canAccess = await this.authorizationService.canAccessProject(userId, projectId);
     if (!canAccess) {
       throw new UnauthorizedError('You do not have permission to access this project');
@@ -233,7 +241,7 @@ export class ProjectService implements IProjectService {
   /**
    * Retrieves all projects accessible by a specific user with optional filtering.
    */
-  async getProjectsByUser(userId: string, filters?: ProjectFilterDto): Promise<ProjectListResponseDto> {
+  public async getProjectsByUser(userId: string, filters?: ProjectFilterDto): Promise<ProjectListResponseDto> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundError(`User ${userId} not found`);
@@ -269,7 +277,7 @@ export class ProjectService implements IProjectService {
   /**
    * Retrieves all projects in the system with optional filtering (admin only).
    */
-  async getAllProjects(filters?: ProjectFilterDto): Promise<ProjectListResponseDto> {
+  public async getAllProjects(filters?: ProjectFilterDto): Promise<ProjectListResponseDto> {
     const projects = await this.projectRepository.findAll();
     const summaries = await Promise.all(projects.map(p => this.mapToSummaryDto(p)));
 
@@ -288,7 +296,7 @@ export class ProjectService implements IProjectService {
   /**
    * Retrieves active (non-finalized) projects for a user.
    */
-  async getActiveProjects(userId: string): Promise<ProjectSummaryDto[]> {
+  public async getActiveProjects(userId: string): Promise<ProjectSummaryDto[]> {
     const filters: ProjectFilterDto = {
       status: ProjectStatus.ACTIVE,
     };
@@ -300,7 +308,7 @@ export class ProjectService implements IProjectService {
   /**
    * Retrieves projects within a date range for calendar display.
    */
-  async getProjectsForCalendar(
+  public async getProjectsForCalendar(
     userId: string,
     startDate: Date,
     endDate: Date
@@ -332,7 +340,7 @@ export class ProjectService implements IProjectService {
   /**
    * Assigns a project to a client user.
    */
-  async assignProjectToClient(projectId: string, clientId: string, adminId: string): Promise<void> {
+  public async assignProjectToClient(projectId: string, clientId: string, adminId: string): Promise<void> {
     const isAdmin = await this.authorizationService.isAdmin(adminId);
     if (!isAdmin) {
       throw new UnauthorizedError('Only admins can assign projects to clients');
@@ -370,7 +378,7 @@ export class ProjectService implements IProjectService {
   /**
    * Adds a special user to a project with specific permissions.
    */
-  async addSpecialUser(
+  public async addSpecialUser(
     projectId: string,
     userId: string,
     permissions: AccessRight[],
@@ -421,7 +429,7 @@ export class ProjectService implements IProjectService {
   /**
    * Removes a special user from a project.
    */
-  async removeSpecialUser(projectId: string, userId: string, adminId: string): Promise<void> {
+  public async removeSpecialUser(projectId: string, userId: string, adminId: string): Promise<void> {
     const isAdmin = await this.authorizationService.isAdmin(adminId);
     if (!isAdmin) {
       throw new UnauthorizedError('Only admins can remove special users');
@@ -439,7 +447,7 @@ export class ProjectService implements IProjectService {
   /**
    * Updates permissions for a special user in a project.
    */
-  async updateSpecialUserPermissions(
+  public async updateSpecialUserPermissions(
     projectId: string,
     userId: string,
     permissions: AccessRight[],
@@ -455,7 +463,7 @@ export class ProjectService implements IProjectService {
   /**
    * Retrieves all participants (client and special users) of a project.
    */
-  async getProjectParticipants(projectId: string, userId: string): Promise<ParticipantDto[]> {
+  public async getProjectParticipants(projectId: string, userId: string): Promise<ParticipantDto[]> {
     const canAccess = await this.authorizationService.canAccessProject(userId, projectId);
     if (!canAccess) {
       throw new UnauthorizedError('You do not have permission to access this project');
@@ -517,7 +525,7 @@ export class ProjectService implements IProjectService {
   /**
    * Finalizes a project, marking it as completed.
    */
-  async finalizeProject(projectId: string, adminId: string): Promise<void> {
+  public async finalizeProject(projectId: string, adminId: string): Promise<void> {
     const canFinalize = await this.authorizationService.canFinalizeProject(adminId, projectId);
     if (!canFinalize) {
       throw new UnauthorizedError('Only admins can finalize projects');
@@ -554,7 +562,7 @@ export class ProjectService implements IProjectService {
   /**
    * Reopens a finalized project.
    */
-  async reopenProject(projectId: string, adminId: string): Promise<void> {
+  public async reopenProject(projectId: string, adminId: string): Promise<void> {
     const isAdmin = await this.authorizationService.isAdmin(adminId);
     if (!isAdmin) {
       throw new UnauthorizedError('Only admins can reopen projects');
@@ -577,7 +585,7 @@ export class ProjectService implements IProjectService {
   /**
    * Checks if a project code already exists in the system.
    */
-  async checkProjectCodeExists(code: string): Promise<boolean> {
+  public async checkProjectCodeExists(code: string): Promise<boolean> {
     const project = await this.projectRepository.findByCode(code);
     return project !== null;
   }
@@ -585,7 +593,7 @@ export class ProjectService implements IProjectService {
   /**
    * Validates project data before creation or update.
    */
-  async validateProjectData(
+  public async validateProjectData(
     data: CreateProjectDto | UpdateProjectDto
   ): Promise<ValidationResultDto> {
     const errors = [];

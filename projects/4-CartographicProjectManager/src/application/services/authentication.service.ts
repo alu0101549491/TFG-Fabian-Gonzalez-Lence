@@ -1,7 +1,15 @@
 /**
- * @module application/services/authentication
- * @description Service implementation for user authentication and session management.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/services/authentication.service.ts
+ * @desc Service implementation for user authentication and session management.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {
@@ -49,7 +57,7 @@ export class AuthenticationService implements IAuthenticationService {
   /**
    * Authenticates a user with their credentials.
    */
-  async login(credentials: LoginCredentialsDto): Promise<AuthResultDto> {
+  public async login(credentials: LoginCredentialsDto): Promise<AuthResultDto> {
     const {usernameOrEmail, password} = credentials;
 
     // Check if account is locked
@@ -122,7 +130,7 @@ export class AuthenticationService implements IAuthenticationService {
   /**
    * Terminates the authenticated session for a user.
    */
-  async logout(userId: string): Promise<void> {
+  public async logout(userId: string): Promise<void> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundError(`User with ID ${userId} not found`);
@@ -139,7 +147,7 @@ export class AuthenticationService implements IAuthenticationService {
   /**
    * Validates an existing session token.
    */
-  async validateSession(token: string): Promise<SessionDto> {
+  public async validateSession(token: string): Promise<SessionDto> {
     const session = this.activeSessions.get(token);
     
     if (!session) {
@@ -164,7 +172,7 @@ export class AuthenticationService implements IAuthenticationService {
   /**
    * Refreshes an existing session using a refresh token.
    */
-  async refreshSession(refreshToken: string): Promise<AuthResultDto> {
+  public async refreshSession(refreshToken: string): Promise<AuthResultDto> {
     // TODO: Implement JWT refresh token verification
     // For now, find session by refresh token
     let foundSession: SessionDto | null = null;
@@ -222,7 +230,7 @@ export class AuthenticationService implements IAuthenticationService {
   /**
    * Changes a user's password after validating the old password.
    */
-  async changePassword(
+  public async changePassword(
     userId: string,
     oldPassword: string,
     newPassword: string
@@ -259,7 +267,7 @@ export class AuthenticationService implements IAuthenticationService {
   /**
    * Initiates a password reset process by sending a reset link.
    */
-  async requestPasswordReset(email: string): Promise<void> {
+  public async requestPasswordReset(email: string): Promise<void> {
     const user = await this.userRepository.findByUsernameOrEmail(email);
     if (!user) {
       throw new NotFoundError(`No account found with email ${email}`);
@@ -282,7 +290,7 @@ export class AuthenticationService implements IAuthenticationService {
   /**
    * Resets a user's password using a valid reset token.
    */
-  async resetPassword(
+  public async resetPassword(
     token: string,
     newPassword: string
   ): Promise<ValidationResultDto> {
@@ -331,7 +339,7 @@ export class AuthenticationService implements IAuthenticationService {
   /**
    * Retrieves the number of failed login attempts for an account.
    */
-  async getFailedLoginAttempts(email: string): Promise<number> {
+  public async getFailedLoginAttempts(email: string): Promise<number> {
     const user = await this.userRepository.findByUsernameOrEmail(email);
     if (!user) {
       throw new NotFoundError(`No account found with email ${email}`);
@@ -343,7 +351,7 @@ export class AuthenticationService implements IAuthenticationService {
   /**
    * Clears failed login attempts for an account.
    */
-  async clearFailedLoginAttempts(email: string): Promise<void> {
+  public async clearFailedLoginAttempts(email: string): Promise<void> {
     const user = await this.userRepository.findByUsernameOrEmail(email);
     if (!user) {
       throw new NotFoundError(`No account found with email ${email}`);

@@ -1,7 +1,15 @@
 /**
- * @module application/services/notification
- * @description Service implementation for notifications and WhatsApp integration.
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file application/services/notification.service.ts
+ * @desc Service implementation for notifications and WhatsApp integration.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {
@@ -58,7 +66,7 @@ export class NotificationService implements INotificationService {
   /**
    * Sends a notification to a user.
    */
-  async sendNotification(data: CreateNotificationData): Promise<NotificationDto> {
+  public async sendNotification(data: CreateNotificationData): Promise<NotificationDto> {
     // Verify recipient exists
     const recipient = await this.userRepository.findById(data.recipientId);
     if (!recipient) {
@@ -149,7 +157,7 @@ export class NotificationService implements INotificationService {
   /**
    * Retrieves unread notifications for a user.
    */
-  async getUnreadNotifications(userId: string): Promise<NotificationDto[]> {
+  public async getUnreadNotifications(userId: string): Promise<NotificationDto[]> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundError(`User ${userId} not found`);
@@ -162,7 +170,7 @@ export class NotificationService implements INotificationService {
   /**
    * Gets count of unread notifications for a user.
    */
-  async getUnreadCount(userId: string): Promise<number> {
+  public async getUnreadCount(userId: string): Promise<number> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundError(`User ${userId} not found`);
@@ -174,7 +182,7 @@ export class NotificationService implements INotificationService {
   /**
    * Marks a notification as read.
    */
-  async markAsRead(notificationId: string, userId: string): Promise<void> {
+  public async markAsRead(notificationId: string, userId: string): Promise<void> {
     const notification = await this.notificationRepository.findById(notificationId);
     if (!notification) {
       throw new NotFoundError(`Notification ${notificationId} not found`);
@@ -193,7 +201,7 @@ export class NotificationService implements INotificationService {
   /**
    * Marks multiple notifications as read.
    */
-  async markMultipleAsRead(notificationIds: string[], userId: string): Promise<void> {
+  public async markMultipleAsRead(notificationIds: string[], userId: string): Promise<void> {
     for (const id of notificationIds) {
       try {
         await this.markAsRead(id, userId);
@@ -206,7 +214,7 @@ export class NotificationService implements INotificationService {
   /**
    * Marks all notifications as read for a user.
    */
-  async markAllAsRead(userId: string): Promise<void> {
+  public async markAllAsRead(userId: string): Promise<void> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundError(`User ${userId} not found`);
@@ -218,7 +226,7 @@ export class NotificationService implements INotificationService {
   /**
    * Deletes a notification.
    */
-  async deleteNotification(notificationId: string, userId: string): Promise<void> {
+  public async deleteNotification(notificationId: string, userId: string): Promise<void> {
     const notification = await this.notificationRepository.findById(notificationId);
     if (!notification) {
       throw new NotFoundError(`Notification ${notificationId} not found`);
@@ -234,7 +242,7 @@ export class NotificationService implements INotificationService {
   /**
    * Deletes all read notifications for a user.
    */
-  async deleteAllRead(userId: string): Promise<void> {
+  public async deleteAllRead(userId: string): Promise<void> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundError(`User ${userId} not found`);
@@ -246,7 +254,7 @@ export class NotificationService implements INotificationService {
   /**
    * Gets notification preferences for a user.
    */
-  async getUserPreferences(userId: string): Promise<NotificationPreferencesDto> {
+  public async getUserPreferences(userId: string): Promise<NotificationPreferencesDto> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundError(`User ${userId} not found`);
@@ -283,7 +291,7 @@ export class NotificationService implements INotificationService {
   /**
    * Retrieves a specific notification.
    */
-  async getNotificationById(notificationId: string, userId: string): Promise<NotificationDto> {
+  public async getNotificationById(notificationId: string, userId: string): Promise<NotificationDto> {
     const notification = await this.notificationRepository.findById(notificationId);
     if (!notification) {
       throw new NotFoundError(`Notification ${notificationId} not found`);
