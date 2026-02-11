@@ -1,41 +1,241 @@
 /**
- * @module infrastructure/repositories/user-repository
- * @description Concrete implementation of the IUserRepository interface.
- * Uses Axios HTTP client to communicate with the backend API.
- * @category Infrastructure
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 11, 2026
+ * @file src/infrastructure/repositories/user.repository.ts
+ * @desc User repository implementation using HTTP API backend communication
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
-import {type IUserRepository} from '@domain/repositories/user-repository.interface';
-import {type User} from '@domain/entities/user';
-import {type UserRole} from '@domain/enumerations/user-role';
+import {httpClient, type ApiResponse, type ApiError} from '../http';
+import {User} from '../../domain/entities/user';
+import {type UserRole} from '../../domain/enumerations/user-role';
+import {type IUserRepository} from '../../domain/repositories/user-repository.interface';
 
 /**
- * HTTP-based implementation of the User repository.
- * Communicates with the backend REST API via Axios.
+ * API response type for user data from backend
+ */
+interface UserApiResponse {
+  id: string;
+  username: string;
+  email: string;
+  passwordHash: string;
+  role: string;
+  phone: string | null;
+  whatsappEnabled: boolean;
+  createdAt: string;
+  lastLogin: string | null;
+}
+
+/**
+ * User repository implementation using HTTP API.
+ *
+ * Handles communication with the backend REST API for user-related
+ * data operations. Maps API responses to domain User entities.
+ *
+ * @example
+ * ```typescript
+ * const repository = new UserRepository();
+ * const user = await repository.findById('user_001');
+ * ```
  */
 export class UserRepository implements IUserRepository {
-  async findById(id: string): Promise<User | null> {
-    // TODO: Implement API call GET /api/users/:id
-    throw new Error('Method not implemented.');
+  private readonly baseUrl = '/users';
+
+  /**
+   * Find user by unique identifier
+   *
+   * @param id - User ID
+   * @returns User entity or null if not found
+   */
+  public async findById(id: string): Promise<User | null> {
+    try {
+      const response = await httpClient.get<UserApiResponse>(
+        `${this.baseUrl}/${id}`,
+      );
+      return this.mapToEntity(response.data);
+    } catch (error) {
+      if (this.isNotFoundError(error)) {
+        return null;
+      }
+      throw error;
+    }
   }
 
-  async findByUsername(username: string): Promise<User | null> {
-    // TODO: Implement API call GET /api/users?username=:username
-    throw new Error('Method not implemented.');
+  /**
+   * Find user by email address
+   *
+   * @param email - User email
+   * @returns User entity or null if not found
+   */
+  public async findByEmail(email: string): Promise<User | null> {
+    try {
+      const response = await httpClient.get<UserApiResponse>(
+        `${this.baseUrl}/email/${encodeURIComponent(email)}`,
+      );
+      return this.mapToEntity(response.data);
+    } catch (error) {
+      if (this.isNotFoundError(error)) {
+        return null;
+      }
+      throw error;
+    }
   }
 
-  async save(user: User): Promise<User> {
-    // TODO: Implement API call POST /api/users
-    throw new Error('Method not implemented.');
+  /**
+   * Find user by username
+   *
+   * @param username - Username to search
+   * @returns User entity or null if not found
+   */
+  public async findByUsername(username: string): Promise<User | null> {
+    try {
+      const response = await httpClient.get<UserApiResponse>(
+        `${this.baseUrl}/username/${encodeURIComponent(username)}`,
+      );
+      return this.mapToEntity(response.data);
+    } catch (error) {
+      if (this.isNotFoundError(error)) {
+        return null;
+      }
+      throw error;
+    }
   }
 
-  async update(user: User): Promise<User> {
-    // TODO: Implement API call PUT /api/users/:id
-    throw new Error('Method not implemented.');
+  /**
+   * Create new user
+   *
+   * @param user - User entity to persist
+   * @returns Created user with generated ID
+   */
+  public async save(user: User): Promise<User> {
+    const response = await httpClient.post<UserApiResponse>(
+      this.baseUrl,
+      this.mapToApiRequest(user),
+    );
+    return this.mapToEntity(response.data);
   }
 
-  async findByRole(role: UserRole): Promise<User[]> {
-    // TODO: Implement API call GET /api/users?role=:role
-    throw new Error('Method not implemented.');
+  /**
+   * Update existing user
+   *
+   * @param user - User entity with updated data
+   * @returns Updated user entity
+   */
+  public async update(user: User): Promise<User> {
+    const response = await httpClient.put<UserApiResponse>(
+      `${this.baseUrl}/${user.id}`,
+      this.mapToApiRequest(user),
+    );
+    return this.mapToEntity(response.data);
+  }
+
+  /**
+   * Delete user by ID
+   *
+   * @param id - User ID to delete
+   */
+  public async delete(id: string): Promise<void> {
+    await httpClient.delete(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Find all users by role
+   *
+   * @param role - User role filter
+   * @returns Array of users with specified role
+   */
+  public async findByRole(role: UserRole): Promise<User[]> {
+    const response = await httpClient.get<UserApiResponse[]>(
+      `${this.baseUrl}?role=${role}`,
+    );
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Find all users in the system
+   *
+   * @returns Array of all users
+   */
+  public async findAll(): Promise<User[]> {
+    const response = await httpClient.get<UserApiResponse[]>(this.baseUrl);
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Check if user exists by email
+   *
+   * @param email - Email to check
+   * @returns True if user exists
+   */
+  public async existsByEmail(email: string): Promise<boolean> {
+    const user = await this.findByEmail(email);
+    return user !== null;
+  }
+
+  /**
+   * Check if user exists by username
+   *
+   * @param username - Username to check
+   * @returns True if user exists
+   */
+  public async existsByUsername(username: string): Promise<boolean> {
+    const user = await this.findByUsername(username);
+    return user !== null;
+  }
+
+  /**
+   * Map API response to User entity
+   *
+   * @param data - API response data
+   * @returns User domain entity
+   */
+  private mapToEntity(data: UserApiResponse): User {
+    return new User({
+      id: data.id,
+      username: data.username,
+      email: data.email,
+      passwordHash: data.passwordHash,
+      role: data.role as UserRole,
+      phone: data.phone,
+      whatsappEnabled: data.whatsappEnabled,
+      createdAt: new Date(data.createdAt),
+      lastLogin: data.lastLogin ? new Date(data.lastLogin) : null,
+    });
+  }
+
+  /**
+   * Map User entity to API request payload
+   *
+   * @param user - User domain entity
+   * @returns API request payload
+   */
+  private mapToApiRequest(user: User): Record<string, unknown> {
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      passwordHash: user.passwordHash,
+      role: user.role,
+      phone: user.phone,
+      whatsappEnabled: user.whatsappEnabled,
+      createdAt: user.createdAt.toISOString(),
+      lastLogin: user.lastLogin?.toISOString() || null,
+    };
+  }
+
+  /**
+   * Check if error is 404 Not Found
+   *
+   * @param error - Error object
+   * @returns True if 404 error
+   */
+  private isNotFoundError(error: unknown): boolean {
+    return (error as {status?: number})?.status === 404;
   }
 }
