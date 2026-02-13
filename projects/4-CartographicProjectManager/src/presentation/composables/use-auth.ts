@@ -1,113 +1,233 @@
 /**
- * @module presentation/composables/use-auth
- * @description Composable for authentication-related logic.
- * Provides reactive authentication state and methods to Vue components.
- * @category Presentation
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 13, 2026
+ * @file src/presentation/composables/use-auth.ts
+ * @desc Composable for authentication logic with permissions and role checks
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://vuejs.org/guide/reusability/composables.html}
  */
 
-import {computed} from 'vue';
+import {computed, type ComputedRef} from 'vue';
 import {useRouter} from 'vue-router';
 import {useAuthStore} from '../stores/auth.store';
+import type {UserDto, LoginCredentialsDto} from '../../application/dto';
 import {UserRole} from '../../domain/enumerations/user-role';
+import {AuthErrorCode} from '../../application/dto/auth-result.dto';
+import {ROUTES} from '../../shared/constants';
 
 /**
- * Composable that wraps the auth store and provides
- * authentication utilities to components.
+ * Result of login operation
  */
-export function useAuth() {
-  const authStore = useAuthStore();
+export interface LoginResult {
+  /** Whether login was successful */
+  success: boolean;
+  /** Error message if failed */
+  error?: string;
+  /** Error code if failed */
+  errorCode?: AuthErrorCode;
+}
+
+/**
+ * Return interface for useAuth composable
+ */
+export interface UseAuthReturn {
+  // Reactive State
+  user: ComputedRef<UserDto | null>;
+  isAuthenticated: ComputedRef<boolean>;
+  isLoading: ComputedRef<boolean>;
+  error: ComputedRef<string | null>;
+  
+  // User Info
+  userId: ComputedRef<string | null>;
+  username: ComputedRef<string>;
+  userEmail: ComputedRef<string>;
+  userRole: ComputedRef<UserRole | null>;
+  
+  // Role Checks
+  isAdmin: ComputedRef<boolean>;
+  isClient: ComputedRef<boolean>;
+  isSpecialUser: ComputedRef<boolean>;
+  
+  // Actions
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<LoginResult>;
+  logout: () => Promise<void>;
+  refreshSession: () => Promise<boolean>;
+  
+  // Permission Checks
+  canCreateProject: ComputedRef<boolean>;
+  canExportData: ComputedRef<boolean>;
+  canManageBackups: ComputedRef<boolean>;
+  
+  // Utilities
+  clearError: () => void;
+  requireAuth: () => boolean;
+}
+
+/**
+ * Composable for authentication logic
+ *
+ * Provides reactive authentication state, login/logout operations,
+ * role checks, and permission utilities for Vue components.
+ *
+ * @returns Authentication state and methods
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useAuth } from '@/presentation/composables';
+ * 
+ * const { isAuthenticated, user, login, logout } = useAuth();
+ * 
+ * async function handleLogin() {
+ *   const result = await login(email.value, password.value);
+ *   if (!result.success) {
+ *     console.error(result.error);
+ *   }
+ * }
+ * </script>
+ * ```
+ */
+export function useAuth(): UseAuthReturn {
+  const store = useAuthStore();
   const router = useRouter();
 
-  const isAuthenticated = computed(() => authStore.isAuthenticated);
-  const isAdmin = computed(() => authStore.isAdmin);
-  const isClient = computed(() => authStore.isClient);
-  const isSpecialUser = computed(() => authStore.isSpecialUser);
-  const currentUser = computed(() => authStore.user);
-  const currentUserId = computed(() => authStore.currentUserId);
-  const currentUserRole = computed(() => authStore.currentUserRole);
-  const isLoading = computed(() => authStore.isLoading);
-  const error = computed(() => authStore.error);
+  // Reactive State (computed from store)
+  const user = computed(() => store.user);
+  const isAuthenticated = computed(() => store.isAuthenticated);
+  const isLoading = computed(() => store.isLoading);
+  const error = computed(() => store.error);
+
+  // User Info
+  const userId = computed(() => store.userId);
+  const username = computed(() => store.user?.username ?? '');
+  const userEmail = computed(() => store.user?.email ?? '');
+  const userRole = computed(() => store.user?.role ?? null);
+
+  // Role Checks
+  const isAdmin = computed(() => store.isAdmin);
+  const isClient = computed(() => store.isClient);
+  const isSpecialUser = computed(() => store.isSpecialUser);
 
   /**
-   * Attempts to log in with the provided credentials.
-   * @param username - The user's username.
-   * @param password - The user's password.
+   * Attempts to log in with the provided credentials
+   *
+   * @param email - User's email address
+   * @param password - User's password
+   * @param rememberMe - Whether to extend session duration
+   * @returns Login result with success status and error if failed
    */
-  async function login(username: string, password: string): Promise<void> {
-    await authStore.login(username, password);
-    
-    // Redirect to intended route or dashboard
-    const intendedRoute = sessionStorage.getItem('intended_route');
-    if (intendedRoute) {
-      sessionStorage.removeItem('intended_route');
-      await router.push(intendedRoute);
-    } else {
-      await router.push({name: 'Dashboard'});
+  async function login(
+    email: string,
+    password: string,
+    rememberMe = false
+  ): Promise<LoginResult> {
+    const credentials: LoginCredentialsDto = {
+      email,
+      password,
+      rememberMe,
+    };
+
+    const success = await store.login(credentials);
+
+    if (success) {
+      // Redirect to intended route or dashboard
+      const intendedRoute = sessionStorage.getItem('intended_route');
+      if (intendedRoute) {
+        sessionStorage.removeItem('intended_route');
+        await router.push(intendedRoute);
+      } else {
+        await router.push(ROUTES.DASHBOARD);
+      }
+
+      return {success: true};
     }
+
+    return {
+      success: false,
+      error: store.error ?? 'Login failed',
+      errorCode: store.errorCode ?? undefined,
+    };
   }
 
   /**
-   * Logs out the current user.
+   * Logs out the current user and redirects to login page
    */
   async function logout(): Promise<void> {
-    await authStore.logout();
-    await router.push({name: 'Login'});
+    await store.logout();
+    await router.push(ROUTES.LOGIN);
   }
 
   /**
-   * Check if user has specific permission.
+   * Refreshes the current session using refresh token
+   *
+   * @returns True if refresh successful, false otherwise
    */
-  function hasPermission(permission: string): boolean {
-    if (isAdmin.value) return true;
-    // Add more complex permission logic here
-    return false;
+  async function refreshSession(): Promise<boolean> {
+    return store.refreshSession();
   }
 
-  /**
-   * Check if  user can create projects.
-   */
+  // Permission Checks
   const canCreateProject = computed(() => isAdmin.value);
+  const canExportData = computed(() => isAdmin.value);
+  const canManageBackups = computed(() => isAdmin.value);
 
   /**
-   * Check if user can edit a project.
+   * Clears error state
    */
-  const canEditProject = computed(() => isAdmin.value);
+  function clearError(): void {
+    store.clearError();
+  }
 
   /**
-   * Check if user can finalize a project.
+   * Checks if user is authenticated, redirects to login if not
+   *
+   * @returns True if authenticated, false otherwise
    */
-  const canFinalizeProject = computed(() => isAdmin.value);
-
-  /**
-   * Check if user can create tasks.
-   */
-  const canCreateTask = computed(() => isAdmin.value || isClient.value);
-
-  /**
-   * Check if user can access backup.
-   */
-  const canAccessBackup = computed(() => isAdmin.value);
+  function requireAuth(): boolean {
+    if (!isAuthenticated.value) {
+      // Save intended route for redirect after login
+      sessionStorage.setItem('intended_route', router.currentRoute.value.fullPath);
+      router.push(ROUTES.LOGIN);
+      return false;
+    }
+    return true;
+  }
 
   return {
     // State
+    user,
     isAuthenticated,
+    isLoading,
+    error,
+
+    // User Info
+    userId,
+    username,
+    userEmail,
+    userRole,
+
+    // Role Checks
     isAdmin,
     isClient,
     isSpecialUser,
-    currentUser,
-    currentUserId,
-    currentUserRole,
-    isLoading,
-    error,
+
     // Actions
     login,
     logout,
-    hasPermission,
-    // Permissions
+    refreshSession,
+
+    // Permission Checks
     canCreateProject,
-    canEditProject,
-    canFinalizeProject,
-    canCreateTask,
-    canAccessBackup,
+    canExportData,
+    canManageBackups,
+
+    // Utilities
+    clearError,
+    requireAuth,
   };
 }
