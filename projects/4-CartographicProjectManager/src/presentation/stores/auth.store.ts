@@ -1,201 +1,336 @@
 /**
- * @module presentation/stores/auth-store
- * @description Pinia store for authentication state management.
- * Manages user session, login/logout flows, and token lifecycle.
- * @category Presentation
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 13, 2026
+ * @file src/presentation/stores/auth.store.ts
+ * @desc Pinia store for authentication state management with session persistence
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://pinia.vuejs.org}
  */
 
 import {defineStore} from 'pinia';
 import {ref, computed} from 'vue';
-import type {User} from '../../domain/entities/user';
+import type {UserDto, LoginCredentialsDto, AuthResultDto} from '../../application/dto';
 import {UserRole} from '../../domain/enumerations/user-role';
+import {AuthErrorCode} from '../../application/dto/auth-result.dto';
+import {STORAGE_KEYS, AUTH} from '../../shared/constants';
 
 /**
- * Authentication store.
- * Uses the Composition API (setup) syntax for Pinia stores.
+ * Authentication store using Composition API.
+ * Manages user session, tokens, and authentication state with localStorage persistence.
  */
 export const useAuthStore = defineStore('auth', () => {
   // State
-  const token = ref<string | null>(localStorage.getItem('auth_token'));
-  const user = ref<User | null>(null);
+  const user = ref<UserDto | null>(null);
+  const accessToken = ref<string | null>(null);
+  const refreshToken = ref<string | null>(null);
+  const expiresAt = ref<Date | null>(null);
   const isLoading = ref(false);
+  const isInitialized = ref(false);
   const error = ref<string | null>(null);
-  const failedAttempts = ref(0);
-  const isLocked = ref(false);
+  const errorCode = ref<AuthErrorCode | null>(null);
 
   // Getters
-  const isAuthenticated = computed(() => Boolean(token.value && user.value));
-  const isAdmin = computed(() => user.value?.getRole() === UserRole.ADMINISTRATOR);
-  const isClient = computed(() => user.value?.getRole() === UserRole.CLIENT);
-  const isSpecialUser = computed(() => user.value?.getRole() === UserRole.SPECIAL_USER);
-  const currentUserId = computed(() => user.value?.getId() ?? null);
-  const currentUserRole = computed(() => user.value?.getRole() ?? null);
+  const isAuthenticated = computed(() => !!accessToken.value && !!user.value);
+  const userId = computed(() => user.value?.id ?? null);
+  const username = computed(() => user.value?.username ?? '');
+  const userEmail = computed(() => user.value?.email ?? '');
+  const userRole = computed(() => user.value?.role ?? null);
+  const isAdmin = computed(() => user.value?.role === UserRole.ADMINISTRATOR);
+  const isClient = computed(() => user.value?.role === UserRole.CLIENT);
+  const isSpecialUser = computed(() => user.value?.role === UserRole.SPECIAL_USER);
+  const isSessionValid = computed(() => {
+    if (!expiresAt.value) return false;
+    return new Date() < new Date(expiresAt.value);
+  });
+  const tokenExpiresIn = computed(() => {
+    if (!expiresAt.value) return 0;
+    const diff = new Date(expiresAt.value).getTime() - Date.now();
+    return Math.max(0, Math.floor(diff / 60000)); // Minutes
+  });
 
   // Actions
 
   /**
-   * Authenticates the user with credentials.
-   * @param username - The user's username or email.
-   * @param password - The user's password (currently unused in mock).
+   * Authenticates user with credentials
+   *
+   * @param credentials - Login credentials (username/email and password)
+   * @returns True if login successful, false otherwise
+   *
+   * @example
+   * ```typescript
+   * const success = await authStore.login({
+   *   usernameOrEmail: 'admin',
+   *   password: 'password123'
+   * });
+   * ```
    */
-  async function login(username: string, _password: string): Promise<void> {
-    if (isLocked.value) {
-      throw new Error('Account is locked after 5 failed attempts. Please try again later.');
-    }
-
+  async function login(credentials: LoginCredentialsDto): Promise<boolean> {
     isLoading.value = true;
     error.value = null;
+    errorCode.value = null;
 
     try {
-      // Mock authentication - Replace with actual service call
-      // const authService = new AuthenticationService();
-      // const result = await authService.login({username, password});
+      // TODO: Replace with actual service call
+      // const result = await authService.login(credentials);
       
-      // Simulate API call
+      // Mock successful login
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Mock success
-      const mockToken = `mock_token_${Date.now()}`;
-      const mockUser: any = {
-        getId: () => '1',
-        getUsername: () => username,
-        getEmail: () => `${username}@example.com`,
-        getRole: () => UserRole.ADMINISTRATOR,
-        getCreatedAt: () => new Date(),
-        getLastLogin: () => new Date(),
+      const mockResult: AuthResultDto = {
+        success: true,
+        accessToken: `access_${Date.now()}`,
+        refreshToken: `refresh_${Date.now()}`,
+        expiresAt: new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000),
+        user: {
+          id: '1',
+          username: credentials.email.split('@')[0],
+          email: credentials.email,
+          role: UserRole.ADMINISTRATOR,
+          phone: null,
+          whatsappEnabled: false,
+          createdAt: new Date(),
+          lastLogin: new Date(),
+        },
+        error: null,
+        errorCode: null,
       };
 
-      token.value = mockToken;
-      user.value = mockUser;
-      failedAttempts.value = 0;
-      
-      // Store token in localStorage
-      localStorage.setItem('auth_token', mockToken);
-      localStorage.setItem('user_data', JSON.stringify({
-        id: mockUser.getId(),
-        username: mockUser.getUsername(),
-        email: mockUser.getEmail(),
-        role: mockUser.getRole(),
-      }));
-      
-    } catch (err: any) {
-      failedAttempts.value++;
-      if (failedAttempts.value >= 5) {
-        isLocked.value = true;
-        error.value = 'Account locked after 5 failed attempts.';
+      if (mockResult.success && mockResult.user && mockResult.accessToken) {
+        user.value = mockResult.user;
+        accessToken.value = mockResult.accessToken;
+        refreshToken.value = mockResult.refreshToken;
+        expiresAt.value = mockResult.expiresAt;
+        
+        saveToStorage();
+        return true;
       } else {
-        error.value = err.message || 'Invalid credentials';
+        error.value = mockResult.error ?? 'Login failed';
+        return false;
       }
-      throw err;
+    } catch (err: any) {
+      error.value = err.message || 'An unexpected error occurred';
+      errorCode.value = err.code || null;
+      return false;
     } finally {
       isLoading.value = false;
     }
   }
 
   /**
-   * Logs out the current user and clears session data.
+   * Logs out current user and clears all session data
    */
   async function logout(): Promise<void> {
     isLoading.value = true;
+    
     try {
-      // Call logout service
-      // await authService.logout();
+      if (userId.value) {
+        // TODO: Call logout service
+        // await authService.logout(userId.value);
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
       
-      // Clear state
-      token.value = null;
-      user.value = null;
-      error.value = null;
-      
-      // Clear localStorage
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_data');
-      
+      clearAuth();
     } catch (err: any) {
       console.error('Logout error:', err);
+      // Clear anyway
+      clearAuth();
     } finally {
       isLoading.value = false;
     }
   }
 
   /**
-   * Checks and refreshes the current session.
+   * Refreshes the access token using refresh token
    */
-  async function checkSession(): Promise<boolean> {
-    const storedToken = localStorage.getItem('auth_token');
-    const storedUserData = localStorage.getItem('user_data');
+  async function refreshSession(): Promise<boolean> {
+    if (!refreshToken.value) return false;
     
-    if (!storedToken || !storedUserData) {
-      return false;
-    }
-
     try {
-      token.value = storedToken;
-      const userData = JSON.parse(storedUserData);
+      // TODO: Call refresh service
+      // const result = await authService.refreshSession(refreshToken.value);
       
-      // Mock user object reconstruction
-      user.value = {
-        getId: () => userData.id,
-        getUsername: () => userData.username,
-        getEmail: () => userData.email,
-        getRole: () => userData.role,
-        getCreatedAt: () => new Date(),
-        getLastLogin: () => new Date(),
-      } as any;
+      // Mock refresh
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      return true;
+      const mockResult: AuthResultDto = {
+        success: true,
+        accessToken: `access_${Date.now()}`,
+        refreshToken: refreshToken.value,
+        expiresAt: new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000),
+        user: user.value,
+        error: null,
+        errorCode: null,
+      };
+      
+      if (mockResult.success && mockResult.accessToken) {
+        accessToken.value = mockResult.accessToken;
+        expiresAt.value = mockResult.expiresAt;
+        saveToStorage();
+        return true;
+      }
+      
+      return false;
     } catch (err) {
-      console.error('Session check error:', err);
-      await logout();
+      console.error('Session refresh error:', err);
       return false;
     }
   }
 
   /**
-   * Update last login time for current user.
+   * Validates current session with backend
    */
-  function updateLastLogin(): void {
-    if (user.value) {
-      // In a real implementation, this would call an API
-      console.log('Last login updated');
+  async function validateSession(): Promise<boolean> {
+    if (!accessToken.value) return false;
+    
+    try {
+      // TODO: Call validation service
+      // const session = await authService.validateSession(accessToken.value);
+      // return session.isValid;
+      
+      return isSessionValid.value;
+    } catch (err) {
+      return false;
     }
   }
 
   /**
-   * Clear error message.
+   * Initializes auth store on app start, loads from storage
+   */
+  async function initialize(): Promise<void> {
+    if (isInitialized.value) return;
+    
+    loadFromStorage();
+    
+    if (accessToken.value) {
+      const valid = await validateSession();
+      if (!valid) {
+        clearAuth();
+      }
+    }
+    
+    isInitialized.value = true;
+  }
+
+  /**
+   * Clears all authentication state
+   */
+  function clearAuth(): void {
+    user.value = null;
+    accessToken.value = null;
+    refreshToken.value = null;
+    expiresAt.value = null;
+    error.value = null;
+    errorCode.value = null;
+    clearStorage();
+  }
+
+  /**
+   * Saves auth state to localStorage
+   */
+  function saveToStorage(): void {
+    try {
+      if (accessToken.value) {
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken.value);
+      }
+      if (refreshToken.value) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken.value);
+      }
+      if (user.value) {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user.value));
+      }
+    } catch (err) {
+      console.error('Failed to save to storage:', err);
+    }
+  }
+
+  /**
+   * Loads auth state from localStorage
+   */
+  function loadFromStorage(): void {
+    try {
+      const storedToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      const storedRefresh = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+      
+      if (storedToken && storedUser) {
+        accessToken.value = storedToken;
+        refreshToken.value = storedRefresh;
+        user.value = JSON.parse(storedUser);
+        
+        // Estimate expiration (will be validated)
+        const expiryMs = AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000;
+        expiresAt.value = new Date(Date.now() + expiryMs);
+      }
+    } catch (err) {
+      console.error('Failed to load from storage:', err);
+      clearStorage();
+    }
+  }
+
+  /**
+   * Clears all auth data from localStorage
+   */
+  function clearStorage(): void {
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+  }
+
+  /**
+   * Sets error state
+   */
+  function setError(message: string, code?: AuthErrorCode): void {
+    error.value = message;
+    errorCode.value = code ?? null;
+  }
+
+  /**
+   * Clears error state
    */
   function clearError(): void {
     error.value = null;
-  }
-
-  /**
-   * Unlock account (admin function or after timeout).
-   */
-  function unlockAccount(): void {
-    isLocked.value = false;
-    failedAttempts.value = 0;
+    errorCode.value = null;
   }
 
   return {
     // State
-    token,
     user,
+    accessToken,
+    refreshToken,
+    expiresAt,
     isLoading,
+    isInitialized,
     error,
-    failedAttempts,
-    isLocked,
+    errorCode,
+    
     // Getters
     isAuthenticated,
+    userId,
+    username,
+    userEmail,
+    userRole,
     isAdmin,
     isClient,
     isSpecialUser,
-    currentUserId,
-    currentUserRole,
+    isSessionValid,
+    tokenExpiresIn,
+    
     // Actions
     login,
     logout,
-    checkSession,
-    updateLastLogin,
+    refreshSession,
+    validateSession,
+    initialize,
+    clearAuth,
+    saveToStorage,
+    loadFromStorage,
+    clearStorage,
+    setError,
     clearError,
-    unlockAccount,
   };
 });

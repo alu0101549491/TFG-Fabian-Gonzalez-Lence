@@ -1,34 +1,59 @@
 /**
- * @module presentation/stores/project-store
- * @description Pinia store for project state management.
- * Manages the list of projects, active project details, and project operations.
- * @category Presentation
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 13, 2026
+ * @file src/presentation/stores/project.store.ts
+ * @desc Pinia store for project state management with filtering and calendar support
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://pinia.vuejs.org}
  */
 
 import {defineStore} from 'pinia';
 import {ref, computed} from 'vue';
-import type {Project} from '../../domain/entities/project';
-import type {ProjectData} from '../../application/dto/project-data.dto';
-import type {ProjectDetails} from '../../application/dto/project-details.dto';
+import type {
+  ProjectSummaryDto,
+  ProjectDetailsDto,
+  ProjectFilterDto,
+  ProjectListResponseDto,
+  CalendarProjectDto,
+  CreateProjectDto,
+  UpdateProjectDto,
+} from '../../application/dto';
 import {ProjectStatus} from '../../domain/enumerations/project-status';
-import { ProjectType } from '../../domain/enumerations/project-type';
+import {ProjectType} from '../../domain/enumerations/project-type';
+import {useAuthStore} from './auth.store';
 
 /**
- * Project store.
- * Manages project data, active project selection, and CRUD operations.
+ * Project store using Composition API.
+ * Manages project lists, current project details, filtering, and calendar view.
  */
 export const useProjectStore = defineStore('project', () => {
+  const authStore = useAuthStore();
+  
   // State
-  const projects = ref<any[]>([]);
-  const activeProject = ref<any | null>(null);
-  const isLoading = ref(false);
-  const error = ref<string | null>(null);
+  const projects = ref<ProjectSummaryDto[]>([]);
+  const currentProject = ref<ProjectDetailsDto | null>(null);
+  const calendarProjects = ref<CalendarProjectDto[]>([]);
+  const pagination = ref({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+  });
+  const filters = ref<ProjectFilterDto>({});
   const searchQuery = ref('');
   const statusFilter = ref<ProjectStatus | null>(null);
   const clientFilter = ref<string | null>(null);
+  const isLoading = ref(false);
+  const isLoadingDetails = ref(false);
+  const error = ref<string | null>(null);
 
   // Getters
-  const projectCount = computed(() => projects.value.length);
+  const projectCount = computed(() => pagination.value.total);
   
   const activeProjects = computed(() =>
     projects.value.filter((p) => p.status !== ProjectStatus.FINALIZED),
@@ -37,6 +62,27 @@ export const useProjectStore = defineStore('project', () => {
   const finalizedProjects = computed(() =>
     projects.value.filter((p) => p.status === ProjectStatus.FINALIZED),
   );
+
+  const overdueProjects = computed(() =>
+    projects.value.filter((p) => p.isOverdue),
+  );
+
+  const hasCurrentProject = computed(() => !!currentProject.value);
+  
+  const currentProjectId = computed(() => currentProject.value?.project.id ?? null);
+  
+  const currentProjectTasks = computed(() => currentProject.value?.tasks ?? []);
+  
+  const currentProjectMessages = computed(() => currentProject.value?.recentMessages ?? []);
+  
+  const currentProjectParticipants = computed(() => currentProject.value?.participants ?? []);
+  
+  const currentProjectStats = computed(() => currentProject.value?.taskStats ?? {
+    total: 0,
+    pending: 0,
+    completed: 0,
+    overdue: 0,
+  });
 
   const filteredProjects = computed(() => {
     let filtered = projects.value;
@@ -56,7 +102,8 @@ export const useProjectStore = defineStore('project', () => {
       const query = searchQuery.value.toLowerCase();
       filtered = filtered.filter(p =>
         p.code.toLowerCase().includes(query) ||
-        p.name.toLowerCase().includes(query)
+        p.name.toLowerCase().includes(query) ||
+        p.clientName.toLowerCase().includes(query)
       );
     }
 
@@ -72,21 +119,56 @@ export const useProjectStore = defineStore('project', () => {
     });
   });
 
+  const projectsWithPendingTasks = computed(() =>
+    projects.value.filter(p => p.hasPendingTasks).length
+  );
+
+  const calendarProjectsByDate = computed(() => {
+    const grouped = new Map<string, CalendarProjectDto[]>();
+    
+    calendarProjects.value.forEach(project => {
+      const dateKey = project.deliveryDate.toISOString().split('T')[0];
+      const existing = grouped.get(dateKey) ?? [];
+      grouped.set(dateKey, [...existing, project]);
+    });
+    
+    return grouped;
+  });
+
   // Actions
 
   /**
-   * Fetches all projects accessible by the current user.
+   * Fetches all projects accessible by current user
+   *
+   * @param newFilters - Optional filters to apply
+   *
+   * @example
+   * ```typescript
+   * await projectStore.fetchProjects({ status: ProjectStatus.ACTIVE });
+   * ```
    */
-  async function fetchProjects(): Promise<void> {
+  async function fetchProjects(newFilters?: ProjectFilterDto): Promise<void> {
+    if (!authStore.userId) return;
+
     isLoading.value = true;
     error.value = null;
 
     try {
-      // Mock API call - Replace with actual service
+      if (newFilters) {
+        filters.value = {...filters.value, ...newFilters};
+      }
+
+      // TODO: Replace with actual service call
+      // const response = await projectService.getProjectsByUser(
+      //   authStore.userId,
+      //   filters.value
+      // );
+      
+      // Mock API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Mock data
-      projects.value = [
+      const mockProjects: ProjectSummaryDto[] = [
         {
           id: '1',
           code: 'CART-2025-001',
@@ -94,11 +176,14 @@ export const useProjectStore = defineStore('project', () => {
           clientId: 'client1',
           clientName: 'John Pérez',
           type: ProjectType.RESIDENTIAL,
-          contractDate: new Date('2025-01-01'),
           deliveryDate: new Date('2025-12-15'),
           status: ProjectStatus.ACTIVE,
+          hasPendingTasks: true,
           pendingTasksCount: 2,
           unreadMessagesCount: 3,
+          statusColor: 'green',
+          isOverdue: false,
+          daysUntilDelivery: 300,
         },
         {
           id: '2',
@@ -107,13 +192,24 @@ export const useProjectStore = defineStore('project', () => {
           clientId: 'client2',
           clientName: 'Mary López',
           type: ProjectType.COMMERCIAL,
-          contractDate: new Date('2025-02-01'),
           deliveryDate: new Date('2026-01-20'),
-          status: ProjectStatus.IN_PROGRESS,
+          status: ProjectStatus.PENDING,
+          hasPendingTasks: false,
           pendingTasksCount: 0,
           unreadMessagesCount: 0,
+          statusColor: 'red',
+          isOverdue: false,
+          daysUntilDelivery: 336,
         },
-      ] as any;
+      ];
+
+      projects.value = mockProjects;
+      pagination.value = {
+        total: mockProjects.length,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      };
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch projects';
       throw err;
@@ -123,180 +219,361 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   /**
-   * Fetches detailed information for a specific project.
-   * @param projectId - The project's unique ID.
+   * Fetches detailed information for a specific project
+   *
+   * @param projectId - The project's unique ID
    */
-  async function fetchProjectDetails(projectId: string): Promise<void> {
-    isLoading.value = true;
+  async function fetchProjectById(projectId: string): Promise<void> {
+    if (!authStore.userId) return;
+
+    isLoadingDetails.value = true;
     error.value = null;
 
     try {
+      // TODO: Replace with actual service call
+      // currentProject.value = await projectService.getProjectById(
+      //   projectId,
+      //   authStore.userId
+      // );
+      
       // Mock API call
       await new Promise(resolve => setTimeout(resolve, 300));
       
       const project = projects.value.find(p => p.id === projectId);
       if (project) {
-        activeProject.value = project as any;
+        currentProject.value = {
+          project: project as any,
+          tasks: [],
+          taskStats: { total: 0, pending: 0, completed: 0, overdue: 0 },
+          recentMessages: [],
+          unreadMessagesCount: project.unreadMessagesCount,
+          participants: [],
+          sections: [],
+          currentUserPermissions: {
+            canEdit: true,
+            canDelete: authStore.isAdmin,
+          },
+        };
       } else {
         throw new Error('Project not found');
       }
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch project details';
+      currentProject.value = null;
       throw err;
     } finally {
-      isLoading.value = false;
+      isLoadingDetails.value = false;
     }
   }
 
   /**
-   * Creates a new project (admin only).
-   * @param projectData - Data for the new project.
+   * Fetches projects for calendar view within date range
    */
-  async function createProject(projectData: Partial<ProjectData>): Promise<string> {
+  async function fetchCalendarProjects(startDate: Date, endDate: Date): Promise<void> {
+    if (!authStore.userId) return;
+
+    try {
+      // TODO: Replace with actual service call
+      // calendarProjects.value = await projectService.getProjectsForCalendar(
+      //   authStore.userId,
+      //   startDate,
+      //   endDate
+      // );
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Mock calendar projects from projects list
+      calendarProjects.value = projects.value.map(p => ({
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        deliveryDate: p.deliveryDate,
+        status: p.status,
+        statusColor: p.statusColor,
+      }));
+    } catch (err: any) {
+      console.error('Failed to fetch calendar projects:', err);
+    }
+  }
+
+  /**
+   * Refreshes current project details
+   */
+  async function refreshCurrentProject(): Promise<void> {
+    if (currentProjectId.value) {
+      await fetchProjectById(currentProjectId.value);
+    }
+  }
+
+  /**
+   * Creates a new project (admin only)
+   */
+  async function createProject(data: CreateProjectDto): Promise<string | null> {
+    if (!authStore.userId) return null;
+
     isLoading.value = true;
     error.value = null;
 
     try {
-      // Mock API call
+      // TODO: Replace with actual service call
+      // const project = await projectService.createProject(data, authStore.userId);
+      
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const newProject: ProjectData = {
+      const newProject: ProjectSummaryDto = {
         id: `project_${Date.now()}`,
-        code: projectData.code || `CART-${new Date().getFullYear()}-${String(projects.value.length + 1).padStart(3, '0')}`,
-        name: projectData.name || 'New Project',
-        clientId: projectData.clientId || '',
-        clientName: projectData.clientName || '',
-        type: projectData.type || ProjectType.RESIDENTIAL,
-        contractDate: projectData.contractDate || new Date(),
-        deliveryDate: projectData.deliveryDate || new Date(),
+        code: data.code || `CART-${new Date().getFullYear()}-${String(projects.value.length + 1).padStart(3, '0')}`,
+        name: data.name,
+        clientId: data.clientId,
+        clientName: 'Client Name',
+        type: data.type,
+        deliveryDate: data.deliveryDate,
         status: ProjectStatus.ACTIVE,
+        hasPendingTasks: false,
         pendingTasksCount: 0,
         unreadMessagesCount: 0,
-      } as any;
+        statusColor: 'green',
+        isOverdue: false,
+        daysUntilDelivery: 0,
+      };
 
       projects.value.unshift(newProject);
+      pagination.value.total++;
+      
       return newProject.id;
     } catch (err: any) {
       error.value = err.message || 'Failed to create project';
-      throw err;
+      return null;
     } finally {
       isLoading.value = false;
     }
   }
 
   /**
-   * Updates an existing project.
-   * @param projectId - The project's unique ID.
-   * @param updates - Partial project data to update.
+   * Updates an existing project
    */
-  async function updateProject(projectId: string, updates: Partial<ProjectData>): Promise<void> {
+  async function updateProject(data: UpdateProjectDto): Promise<boolean> {
+    if (!authStore.userId) return false;
+
     isLoading.value = true;
     error.value = null;
 
     try {
-      // Mock API call
+      // TODO: Replace with actual service call
+      // await projectService.updateProject(data, authStore.userId);
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const index = projects.value.findIndex(p => p.id === data.projectId);
+      if (index !== -1) {
+        projects.value[index] = {...projects.value[index], ...data as any};
+        
+        if (currentProject.value?.project.id === data.projectId) {
+          currentProject.value.project = {...currentProject.value.project, ...data as any};
+        }
+      }
+      
+      return true;
+    } catch (err: any) {
+      error.value = err.message || 'Failed to update project';
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * Deletes a project (admin only)
+   */
+  async function deleteProject(projectId: string): Promise<boolean> {
+    if (!authStore.userId) return false;
+
+    try {
+      // TODO: Replace with actual service call
+      // await projectService.deleteProject(projectId, authStore.userId);
+      
       await new Promise(resolve => setTimeout(resolve, 300));
       
       const index = projects.value.findIndex(p => p.id === projectId);
       if (index !== -1) {
-        projects.value[index] = {...projects.value[index], ...updates};
-        if (activeProject.value?.id === projectId) {
-          activeProject.value = {...activeProject.value, ...updates} as any;
-        }
+        projects.value.splice(index, 1);
+        pagination.value.total--;
       }
+      
+      if (currentProjectId.value === projectId) {
+        currentProject.value = null;
+      }
+      
+      return true;
     } catch (err: any) {
-      error.value = err.message || 'Failed to update project';
-      throw err;
-    } finally {
-      isLoading.value = false;
+      error.value = err.message || 'Failed to delete project';
+      return false;
     }
   }
 
   /**
-   * Finalizes a project (admin only).
-   * @param projectId - The project's unique ID.
+   * Finalizes a project (admin only)
    */
-  async function finalizeProject(projectId: string): Promise<void> {
+  async function finalizeProject(projectId: string): Promise<boolean> {
+    if (!authStore.userId) return false;
+
     isLoading.value = true;
     error.value = null;
 
     try {
-      // Mock API call
+      // TODO: Replace with actual service call
+      // await projectService.finalizeProject(projectId, authStore.userId);
+      
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      await updateProject(projectId, {
+      return await updateProject({
+        projectId,
         status: ProjectStatus.FINALIZED,
-      });
+      } as UpdateProjectDto);
     } catch (err: any) {
       error.value = err.message || 'Failed to finalize project';
-      throw err;
+      return false;
     } finally {
       isLoading.value = false;
     }
   }
 
   /**
-   * Set search query for filtering projects.
+   * Sets search query for filtering
    */
   function setSearchQuery(query: string): void {
     searchQuery.value = query;
   }
 
   /**
-   * Set status filter.
+   * Sets status filter
    */
   function setStatusFilter(status: ProjectStatus | null): void {
     statusFilter.value = status;
   }
 
   /**
-   * Set client filter.
+   * Sets client filter
    */
   function setClientFilter(clientId: string | null): void {
     clientFilter.value = clientId;
   }
 
   /**
-   * Clear all filters.
+   * Sets page number
    */
-  function clearFilters(): void {
-    searchQuery.value = '';
-    statusFilter.value = null;
-    clientFilter.value = null;
+  function setPage(page: number): void {
+    pagination.value.page = page;
   }
 
   /**
-   * Clear active project.
+   * Sets custom filters
    */
-  function clearActiveProject(): void {
-    activeProject.value = null;
+  function setFilters(newFilters: Partial<ProjectFilterDto>): void {
+    filters.value = {...filters.value, ...newFilters};
+  }
+
+  /**
+   * Resets all filters
+   */
+  function resetFilters(): void {
+    searchQuery.value = '';
+    statusFilter.value = null;
+    clientFilter.value = null;
+    filters.value = {};
+  }
+
+  /**
+   * Handles real-time project updated event
+   */
+  function handleProjectUpdated(payload: any): void {
+    const index = projects.value.findIndex(p => p.id === payload.id);
+    if (index !== -1) {
+      projects.value[index] = {...projects.value[index], ...payload};
+    }
+    
+    if (currentProject.value?.project.id === payload.id) {
+      currentProject.value.project = {...currentProject.value.project, ...payload};
+    }
+  }
+
+  /**
+   * Handles real-time project finalized event
+   */
+  function handleProjectFinalized(payload: {projectId: string}): void {
+    const index = projects.value.findIndex(p => p.id === payload.projectId);
+    if (index !== -1) {
+      projects.value[index].status = ProjectStatus.FINALIZED;
+      projects.value[index].statusColor = 'gray';
+    }
+    
+    if (currentProject.value?.project.id === payload.projectId) {
+      currentProject.value.project.status = ProjectStatus.FINALIZED;
+    }
+  }
+
+  /**
+   * Clears current project
+   */
+  function clearCurrentProject(): void {
+    currentProject.value = null;
+  }
+
+  /**
+   * Clears error state
+   */
+  function clearError(): void {
+    error.value = null;
   }
 
   return {
     // State
     projects,
-    activeProject,
-    isLoading,
-    error,
+    currentProject,
+    calendarProjects,
+    pagination,
+    filters,
     searchQuery,
     statusFilter,
     clientFilter,
+    isLoading,
+    isLoadingDetails,
+    error,
+    
     // Getters
     projectCount,
     activeProjects,
     finalizedProjects,
+    overdueProjects,
+    hasCurrentProject,
+    currentProjectId,
+    currentProjectTasks,
+    currentProjectMessages,
+    currentProjectParticipants,
+    currentProjectStats,
     filteredProjects,
     projectsDueThisWeek,
+    projectsWithPendingTasks,
+    calendarProjectsByDate,
+    
     // Actions
     fetchProjects,
-    fetchProjectDetails,
+    fetchProjectById,
+    fetchCalendarProjects,
+    refreshCurrentProject,
     createProject,
     updateProject,
+    deleteProject,
     finalizeProject,
     setSearchQuery,
     setStatusFilter,
     setClientFilter,
-    clearFilters,
-    clearActiveProject,
+    setPage,
+    setFilters,
+    resetFilters,
+    handleProjectUpdated,
+    handleProjectFinalized,
+    clearCurrentProject,
+    clearError,
   };
 });
