@@ -1,220 +1,446 @@
 <!--
-  @module presentation/views/BackupView
-  @description Backup management page (admin only).
-  Allows creating manual backups, viewing history,
-  and configuring automatic backup schedules.
-  @category Presentation
+  University of La Laguna
+  School of Engineering and Technology
+  Degree in Computer Engineering
+  Final Degree Project (TFG)
+
+  @author Fabián González Lence <alu0101549491@ull.edu.es>
+  @since 2025-01-08
+  @file src/presentation/views/BackupView.vue
+  @desc Admin-only backup management view with manual backup creation,
+        automatic schedule configuration, history, and export options.
+  @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+  @see {@link https://vuejs.org/guide/components/registration.html}
 -->
+
 <template>
   <div class="backup-view">
-    <div class="container">
-      <div class="backup-header">
-        <h1>Backup Management</h1>
-        <button @click="handleCreateBackup" class="btn btn-primary">
-          Create Backup Now
-        </button>
-      </div>
+    <!-- Access Control -->
+    <div v-if="!isAdmin" class="access-denied">
+      <div class="denied-icon">🔒</div>
+      <h2>Access Denied</h2>
+      <p>This page is only accessible to administrators.</p>
+      <router-link to="/" class="button-primary">
+        Go to Dashboard
+      </router-link>
+    </div>
 
-      <div class="backup-sections">
-        <!-- Automatic Backup Configuration -->
-        <div class="section-card">
-          <h2>Automatic Backup Schedule</h2>
-          <div class="schedule-config">
-            <div class="config-row">
-              <label class="config-label">Frequency</label>
-              <select v-model="scheduleConfig.frequency" class="config-input">
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-            </div>
-            <div class="config-row">
-              <label class="config-label">Time</label>
-              <input v-model="scheduleConfig.time" type="time" class="config-input" />
-            </div>
-            <div class="config-row">
-              <label class="config-label">Retention Days</label>
-              <input 
-                v-model.number="scheduleConfig.retentionDays" 
-                type="number" 
-                min="1"
-                max="365"
-                class="config-input" 
-              />
-            </div>
-            <div class="config-row">
-              <label class="config-label">Enabled</label>
-              <input v-model="scheduleConfig.enabled" type="checkbox" />
-            </div>
-            <button @click="saveScheduleConfig" class="btn btn-primary btn-sm">
-              Save Configuration
-            </button>
+    <template v-else>
+      <LoadingSpinner v-if="isLoading" />
+
+      <template v-else>
+        <!-- Backup Header -->
+        <header class="backup-header">
+          <div class="header-content">
+            <h1>Backup Management</h1>
+            <p class="backup-subtitle">
+              Manage system backups, exports, and data synchronization
+            </p>
           </div>
-        </div>
+          <button
+            @click="handleCreateBackup"
+            class="button-primary"
+            :disabled="isCreatingBackup"
+          >
+            {{ isCreatingBackup ? 'Creating...' : '+ Create Backup' }}
+          </button>
+        </header>
 
         <!-- Backup Statistics -->
-        <div class="section-card stats-card">
-          <h2>Backup Statistics</h2>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-value">{{ backupHistory.length }}</span>
-              <span class="stat-label">Total Backups</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ lastBackupDate }}</span>
-              <span class="stat-label">Last Backup</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ totalBackupSize }}</span>
-              <span class="stat-label">Total Size</span>
+        <section class="stats-section" aria-label="Backup statistics">
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ backupHistory.length }}</div>
+              <div class="stat-label">Total Backups</div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Backup History Table -->
-      <div class="section-card">
-        <div class="table-header">
-          <h2>Backup History</h2>
-          <div class="table-actions">
-            <input 
-              v-model="searchQuery"
-              type="search" 
-              placeholder="Search backups..." 
-              class="search-input"
-            />
+          <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ lastBackupDate }}</div>
+              <div class="stat-label">Last Backup</div>
+            </div>
           </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">💾</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ totalBackupSize }}</div>
+              <div class="stat-label">Total Size</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">☁️</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ dropboxStatus }}</div>
+              <div class="stat-label">Dropbox Sync</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="backup-grid">
+          <!-- Backup Schedule Configuration -->
+          <section class="backup-section schedule-section">
+            <h2>Automatic Backup Schedule</h2>
+            <form @submit.prevent="handleSaveSchedule" class="schedule-form">
+              <div class="form-group">
+                <label for="frequency">Frequency</label>
+                <select
+                  id="frequency"
+                  v-model="scheduleConfig.frequency"
+                  class="form-select"
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="backup-time">Backup Time</label>
+                <input
+                  id="backup-time"
+                  v-model="scheduleConfig.time"
+                  type="time"
+                  class="form-input"
+                  :disabled="scheduleConfig.frequency === 'disabled'"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="retention">Retention Period (days)</label>
+                <input
+                  id="retention"
+                  v-model.number="scheduleConfig.retentionDays"
+                  type="number"
+                  min="1"
+                  max="365"
+                  class="form-input"
+                />
+                <p class="form-help">
+                  Backups older than this will be automatically deleted
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                class="button-primary"
+                :disabled="isSavingSchedule"
+              >
+                {{ isSavingSchedule ? 'Saving...' : 'Save Schedule' }}
+              </button>
+            </form>
+          </section>
+
+          <!-- Export Options -->
+          <section class="backup-section export-section">
+            <h2>Data Export</h2>
+            <p class="section-description">
+              Export project data in various formats
+            </p>
+
+            <div class="export-options">
+              <button
+                @click="handleExport('json')"
+                class="export-button"
+                :disabled="isExporting"
+              >
+                <span class="export-icon">📄</span>
+                <span class="export-label">Export as JSON</span>
+                <span class="export-description">Complete data export</span>
+              </button>
+
+              <button
+                @click="handleExport('csv')"
+                class="export-button"
+                :disabled="isExporting"
+              >
+                <span class="export-icon">📊</span>
+                <span class="export-label">Export as CSV</span>
+                <span class="export-description">Spreadsheet format</span>
+              </button>
+
+              <button
+                @click="handleExport('pdf')"
+                class="export-button"
+                :disabled="isExporting"
+              >
+                <span class="export-icon">📋</span>
+                <span class="export-label">Export as PDF</span>
+                <span class="export-description">Project reports</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Dropbox Synchronization -->
+          <section class="backup-section dropbox-section">
+            <h2>Dropbox Synchronization</h2>
+            <p class="section-description">
+              Status: <strong :class="dropboxStatusClass">{{ dropboxStatus }}</strong>
+            </p>
+
+            <div v-if="dropboxConnected" class="dropbox-info">
+              <p>Last sync: {{ lastDropboxSync }}</p>
+              <div class="dropbox-actions">
+                <button
+                  @click="handleDropboxSync"
+                  class="button-secondary"
+                  :disabled="isSyncing"
+                >
+                  {{ isSyncing ? 'Syncing...' : 'Sync Now' }}
+                </button>
+                <button
+                  @click="handleDropboxDisconnect"
+                  class="button-ghost"
+                >
+                  Disconnect
+                </button>
+              </div>
+            </div>
+
+            <div v-else class="dropbox-connect">
+              <p>Connect your Dropbox account to automatically sync backups</p>
+              <button
+                @click="handleDropboxConnect"
+                class="button-primary"
+              >
+                Connect Dropbox
+              </button>
+            </div>
+          </section>
         </div>
 
-        <div v-if="filteredBackups.length > 0" class="table-wrapper">
-          <table class="backup-table">
-            <thead>
-              <tr>
-                <th>Date & Time</th>
-                <th>Type</th>
-                <th>Size</th>
-                <th>Status</th>
-                <th>Description</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="backup in filteredBackups" :key="backup.id">
-                <td>{{ formatDateTime(backup.timestamp) }}</td>
-                <td>
-                  <span class="type-badge" :class="'type-' + backup.type">
-                    {{ backup.type }}
-                  </span>
-                </td>
-                <td>{{ formatSize(backup.size) }}</td>
-                <td>
-                  <span class="status-badge" :class="'status-' + backup.status.toLowerCase()">
-                    {{ backup.status }}
-                  </span>
-                </td>
-                <td>{{ backup.description || 'N/A' }}</td>
-                <td>
-                  <div class="action-buttons">
-                    <button 
-                      @click="handleRestore(backup.id)" 
-                      class="btn btn-ghost btn-sm"
-                      title="Restore"
-                    >
-                      Restore
-                    </button>
-                    <button 
-                      @click="handleDownload(backup.id)" 
-                      class="btn btn-ghost btn-sm"
-                      title="Download"
-                    >
-                      Download
-                    </button>
-                    <button 
-                      @click="handleDelete(backup.id)" 
-                      class="btn btn-ghost btn-sm text-error"
-                      title="Delete"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <!-- Backup History -->
+        <section class="backup-section history-section">
+          <div class="section-header">
+            <h2>Backup History</h2>
+            <div class="section-actions">
+              <input
+                v-model="searchQuery"
+                type="search"
+                placeholder="Search backups..."
+                class="search-input"
+                aria-label="Search backups"
+              />
+            </div>
+          </div>
 
-        <div v-else class="empty-state">
-          <p>No backups found.</p>
-        </div>
-      </div>
-    </div>
+          <div v-if="filteredBackups.length > 0" class="backup-table-wrapper">
+            <table class="backup-table">
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Type</th>
+                  <th>Size</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="backup in filteredBackups" :key="backup.id">
+                  <td>{{ formatBackupDate(backup.createdAt) }}</td>
+                  <td>
+                    <span :class="['backup-type', `type-${backup.type}`]">
+                      {{ formatBackupType(backup.type) }}
+                    </span>
+                  </td>
+                  <td>{{ formatFileSize(backup.size) }}</td>
+                  <td>
+                    <span :class="['backup-status', `status-${backup.status}`]">
+                      {{ formatBackupStatus(backup.status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <button
+                        @click="handleDownloadBackup(backup)"
+                        class="action-button"
+                        title="Download"
+                        :disabled="backup.status !== 'completed'"
+                      >
+                        ⬇
+                      </button>
+                      <button
+                        @click="handleRestoreBackup(backup)"
+                        class="action-button"
+                        title="Restore"
+                        :disabled="backup.status !== 'completed'"
+                      >
+                        ↺
+                      </button>
+                      <button
+                        @click="handleDeleteBackup(backup)"
+                        class="action-button action-delete"
+                        title="Delete"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div v-else class="empty-state">
+            <p>{{ searchQuery ? 'No backups match your search.' : 'No backup history available.' }}</p>
+          </div>
+        </section>
+
+        <!-- Restore Confirmation Modal -->
+        <Teleport to="body">
+          <div
+            v-if="showRestoreModal"
+            class="modal-overlay"
+            @click.self="showRestoreModal = false"
+          >
+            <div class="modal-content modal-small" role="dialog" aria-labelledby="restore-title">
+              <div class="modal-header">
+                <h2 id="restore-title">Confirm Restore</h2>
+                <button
+                  @click="showRestoreModal = false"
+                  class="button-icon"
+                  aria-label="Close modal"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="modal-body">
+                <p class="text-warning">
+                  ⚠️ Warning: This will replace all current data with the backup data.
+                </p>
+                <p>
+                  Are you sure you want to restore from:
+                  <strong>{{ backupToRestore?.createdAt ? formatBackupDate(backupToRestore.createdAt) : '' }}</strong>?
+                </p>
+              </div>
+              <div class="modal-footer">
+                <button
+                  @click="showRestoreModal = false"
+                  class="button-ghost"
+                >
+                  Cancel
+                </button>
+                <button
+                  @click="handleRestoreConfirm"
+                  class="button-danger"
+                  :disabled="isRestoring"
+                >
+                  {{ isRestoring ? 'Restoring...' : 'Restore Backup' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Teleport>
+      </template>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import {ref, computed, onMounted} from 'vue';
+import {useAuth} from '../composables/use-auth';
+import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 
+// Types
+interface BackupRecord {
+  id: string;
+  createdAt: Date;
+  type: 'manual' | 'automatic';
+  size: number;
+  status: 'pending' | 'completed' | 'failed';
+  dropboxPath?: string;
+}
+
+interface ScheduleConfig {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'disabled';
+  time: string;
+  retentionDays: number;
+}
+
+// Composables
+const {isAdmin} = useAuth();
+
+// Local State
+const isLoading = ref(false);
+const isCreatingBackup = ref(false);
+const isSavingSchedule = ref(false);
+const isExporting = ref(false);
+const isSyncing = ref(false);
+const isRestoring = ref(false);
 const searchQuery = ref('');
+const showRestoreModal = ref(false);
+const backupToRestore = ref<BackupRecord | null>(null);
 
-const scheduleConfig = ref({
-  frequency: 'daily' as 'daily' | 'weekly' | 'monthly',
+const scheduleConfig = ref<ScheduleConfig>({
+  frequency: 'weekly',
   time: '02:00',
   retentionDays: 30,
-  enabled: true,
 });
 
-const backupHistory = ref([
+const backupHistory = ref<BackupRecord[]>([
   {
     id: '1',
-    timestamp: new Date(Date.now() - 86400000),
-    type: 'auto',
-    size: 52428800,
-    status: 'COMPLETED',
-    description: 'Scheduled daily backup',
+    createdAt: new Date('2025-01-07T02:00:00'),
+    type: 'automatic',
+    size: 52428800, // 50 MB
+    status: 'completed',
   },
   {
     id: '2',
-    timestamp: new Date(Date.now() - 172800000),
+    createdAt: new Date('2025-01-05T14:30:00'),
     type: 'manual',
-    size: 48234500,
-    status: 'COMPLETED',
-    description: 'Manual backup before system update',
-  },
-  {
-    id: '3',
-    timestamp: new Date(Date.now() - 259200000),
-    type: 'auto',
-    size: 51200000,
-    status: 'COMPLETED',
-    description: 'Scheduled daily backup',
+    size: 48234496, // 46 MB
+    status: 'completed',
   },
 ]);
 
-const filteredBackups = computed(() => {
-  if (!searchQuery.value) return backupHistory.value;
-  
-  const query = searchQuery.value.toLowerCase();
-  return backupHistory.value.filter(backup => 
-    backup.type.toLowerCase().includes(query) ||
-    backup.status.toLowerCase().includes(query) ||
-    backup.description?.toLowerCase().includes(query)
-  );
-});
+const dropboxConnected = ref(false);
+const lastDropboxSync = ref('Never');
 
+// Computed Properties
 const lastBackupDate = computed(() => {
   if (backupHistory.value.length === 0) return 'Never';
   const latest = backupHistory.value[0];
-  return formatDateTime(latest.timestamp);
+  return formatBackupDate(latest.createdAt);
 });
 
 const totalBackupSize = computed(() => {
-  const total = backupHistory.value.reduce((sum, backup) => sum + backup.size, 0);
-  return formatSize(total);
+  const totalBytes = backupHistory.value.reduce((sum, b) => sum + b.size, 0);
+  return formatFileSize(totalBytes);
 });
 
-function formatDateTime(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleString('en-US', {
+const dropboxStatus = computed(() => dropboxConnected.value ? 'Connected' : 'Not Connected');
+
+const dropboxStatusClass = computed(() =>
+  dropboxConnected.value ? 'status-connected' : 'status-disconnected'
+);
+
+const filteredBackups = computed(() => {
+  if (!searchQuery.value) return backupHistory.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return backupHistory.value.filter((backup) =>
+    formatBackupDate(backup.createdAt).toLowerCase().includes(query) ||
+    backup.type.toLowerCase().includes(query) ||
+    backup.status.toLowerCase().includes(query)
+  );
+});
+
+// Methods
+/**
+ * Format backup date for display
+ *
+ * @param {Date} date - Backup creation date
+ * @returns {string} Formatted date string
+ */
+function formatBackupDate(date: Date): string {
+  return new Date(date).toLocaleString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -223,150 +449,446 @@ function formatDateTime(date: Date | string): string {
   });
 }
 
-function formatSize(bytes: number): string {
+/**
+ * Format backup type for display
+ *
+ * @param {string} type - Backup type
+ * @returns {string} Formatted type
+ */
+function formatBackupType(type: string): string {
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+/**
+ * Format backup status for display
+ *
+ * @param {string} status - Backup status
+ * @returns {string} Formatted status
+ */
+function formatBackupStatus(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+/**
+ * Format file size for display
+ *
+ * @param {number} bytes - Size in bytes
+ * @returns {string} Formatted size
+ */
+function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
 }
 
-function handleCreateBackup() {
-  if (confirm('Create a new backup now?')) {
-    alert('Creating backup... (This is a demo)');
+/**
+ * Handle manual backup creation
+ */
+async function handleCreateBackup(): Promise<void> {
+  isCreatingBackup.value = true;
+  try {
+    // Simulate backup creation
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    
+    const newBackup: BackupRecord = {
+      id: Date.now().toString(),
+      createdAt: new Date(),
+      type: 'manual',
+      size: Math.floor(Math.random() * 100000000) + 40000000,
+      status: 'completed',
+    };
+    
+    backupHistory.value.unshift(newBackup);
+    alert('Backup created successfully!');
+  } catch (error) {
+    console.error('Failed to create backup:', error);
+    alert('Failed to create backup');
+  } finally {
+    isCreatingBackup.value = false;
   }
 }
 
-function saveScheduleConfig() {
-  alert('Backup schedule configuration saved! (This is a demo)');
-}
-
-function handleRestore(backupId: string) {
-  if (confirm('Are you sure you want to restore from this backup? Current data will be replaced.')) {
-    alert(`Restoring backup ${backupId}... (This is a demo)`);
+/**
+ * Handle schedule configuration save
+ */
+async function handleSaveSchedule(): Promise<void> {
+  isSavingSchedule.value = true;
+  try {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    alert('Schedule configuration saved successfully!');
+  } catch (error) {
+    console.error('Failed to save schedule:', error);
+    alert('Failed to save schedule');
+  } finally {
+    isSavingSchedule.value = false;
   }
 }
 
-function handleDownload(backupId: string) {
-  alert(`Downloading backup ${backupId}... (This is a demo)`);
-}
-
-function handleDelete(backupId: string) {
-  if (confirm('Are you sure you want to delete this backup? This action cannot be undone.')) {
-    backupHistory.value = backupHistory.value.filter(b => b.id !== backupId);
+/**
+ * Handle data export
+ *
+ * @param {string} format - Export format (json, csv, pdf)
+ */
+async function handleExport(format: string): Promise<void> {
+  isExporting.value = true;
+  try {
+    // Simulate export
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    alert(`Data exported as ${format.toUpperCase()} successfully!`);
+  } catch (error) {
+    console.error(`Failed to export as ${format}:`, error);
+    alert(`Failed to export as ${format}`);
+  } finally {
+    isExporting.value = false;
   }
 }
 
-onMounted(() => {
-  // Load backup configuration and history
+/**
+ * Handle Dropbox connection
+ */
+async function handleDropboxConnect(): Promise<void> {
+  try {
+    // Simulate OAuth flow
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    dropboxConnected.value = true;
+    lastDropboxSync.value = new Date().toLocaleString();
+    alert('Dropbox connected successfully!');
+  } catch (error) {
+    console.error('Failed to connect Dropbox:', error);
+    alert('Failed to connect Dropbox');
+  }
+}
+
+/**
+ * Handle Dropbox disconnection
+ */
+function handleDropboxDisconnect(): void {
+  dropboxConnected.value = false;
+  lastDropboxSync.value = 'Never';
+  alert('Dropbox disconnected');
+}
+
+/**
+ * Handle Dropbox sync
+ */
+async function handleDropboxSync(): Promise<void> {
+  isSyncing.value = true;
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    lastDropboxSync.value = new Date().toLocaleString();
+    alert('Synced to Dropbox successfully!');
+  } catch (error) {
+    console.error('Failed to sync to Dropbox:', error);
+    alert('Failed to sync to Dropbox');
+  } finally {
+    isSyncing.value = false;
+  }
+}
+
+/**
+ * Handle backup download
+ *
+ * @param {BackupRecord} backup - Backup to download
+ */
+function handleDownloadBackup(backup: BackupRecord): void {
+  alert(`Downloading backup from ${formatBackupDate(backup.createdAt)}`);
+  // Implement actual download logic
+}
+
+/**
+ * Start backup restore flow
+ *
+ * @param {BackupRecord} backup - Backup to restore
+ */
+function handleRestoreBackup(backup: BackupRecord): void {
+  backupToRestore.value = backup;
+  showRestoreModal.value = true;
+}
+
+/**
+ * Confirm and execute backup restore
+ */
+async function handleRestoreConfirm(): Promise<void> {
+  if (!backupToRestore.value) return;
+
+  isRestoring.value = true;
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    showRestoreModal.value = false;
+    alert('Backup restored successfully! The application will reload.');
+    window.location.reload();
+  } catch (error) {
+    console.error('Failed to restore backup:', error);
+    alert('Failed to restore backup');
+  } finally {
+    isRestoring.value = false;
+  }
+}
+
+/**
+ * Handle backup deletion
+ *
+ * @param {BackupRecord} backup - Backup to delete
+ */
+async function handleDeleteBackup(backup: BackupRecord): Promise<void> {
+  if (!confirm(`Delete backup from ${formatBackupDate(backup.createdAt)}?`)) {
+    return;
+  }
+
+  try {
+    backupHistory.value = backupHistory.value.filter((b) => b.id !== backup.id);
+    alert('Backup deleted successfully');
+  } catch (error) {
+    console.error('Failed to delete backup:', error);
+    alert('Failed to delete backup');
+  }
+}
+
+// Lifecycle
+onMounted(async () => {
+  if (!isAdmin.value) return;
+
+  isLoading.value = true;
+  try {
+    // Load backup history and configuration
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  } catch (error) {
+    console.error('Failed to load backup data:', error);
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
 
 <style scoped>
 .backup-view {
-  min-height: 100vh;
-  background: var(--color-bg-secondary);
-  padding: var(--spacing-8) 0;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-6);
 }
 
+/* Access Denied */
+.access-denied {
+  text-align: center;
+  padding: var(--spacing-16);
+}
+
+.denied-icon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-4);
+  opacity: 0.5;
+}
+
+.access-denied h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-3);
+}
+
+.access-denied p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-6);
+}
+
+/* Header */
 .backup-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-6);
-}
-
-.backup-header h1 {
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
-}
-
-.backup-sections {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: var(--spacing-6);
-  margin-bottom: var(--spacing-6);
-}
-
-.section-card {
-  background: white;
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-6);
-  box-shadow: var(--shadow-md);
-}
-
-.section-card h2 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-4);
-}
-
-.schedule-config {
-  display: flex;
-  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-8);
   gap: var(--spacing-4);
 }
 
-.config-row {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
+.header-content h1 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-2);
 }
 
-.config-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  min-width: 120px;
-}
-
-.config-input {
-  flex: 1;
-  padding: var(--spacing-2) var(--spacing-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+.backup-subtitle {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-base);
 }
 
-.stats-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.stats-grid {
-  display: flex;
-  flex-direction: column;
+/* Statistics */
+.stats-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--spacing-4);
-  flex: 1;
+  margin-bottom: var(--spacing-8);
 }
 
-.stat-item {
+.stat-card {
   display: flex;
-  flex-direction: column;
-  padding: var(--spacing-4);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  line-height: 1;
 }
 
 .stat-value {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-primary);
-  margin-bottom: var(--spacing-1);
+  line-height: 1.2;
 }
 
 .stat-label {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  margin-top: var(--spacing-1);
 }
 
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.status-connected {
+  color: var(--color-success);
+}
+
+.status-disconnected {
+  color: var(--color-text-muted);
+}
+
+/* Grid Layout */
+.backup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
+}
+
+/* Section Cards */
+.backup-section {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+}
+
+.backup-section h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
   margin-bottom: var(--spacing-4);
 }
 
-.table-actions {
+.section-description {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-5);
+  line-height: 1.6;
+}
+
+/* Schedule Form */
+.schedule-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.form-group label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.form-input,
+.form-select {
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+}
+
+.form-help {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-1);
+}
+
+/* Export Options */
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.export-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--spacing-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-all);
+  text-align: left;
+}
+
+.export-button:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.export-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.export-icon {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-2);
+}
+
+.export-label {
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-1);
+}
+
+.export-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Dropbox Section */
+.dropbox-info,
+.dropbox-connect {
+  margin-top: var(--spacing-4);
+}
+
+.dropbox-actions {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-4);
+}
+
+/* History Section */
+.history-section {
+  grid-column: 1 / -1;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-5);
+}
+
+.section-actions {
   display: flex;
   gap: var(--spacing-3);
 }
@@ -379,119 +901,206 @@ onMounted(() => {
   min-width: 250px;
 }
 
-.table-wrapper {
+/* Backup Table */
+.backup-table-wrapper {
   overflow-x: auto;
 }
 
 .backup-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--font-size-sm);
 }
 
-.backup-table thead {
-  background: var(--color-bg-secondary);
+.backup-table th,
+.backup-table td {
+  padding: var(--spacing-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .backup-table th {
-  text-align: left;
-  padding: var(--spacing-3) var(--spacing-4);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
-  border-bottom: 2px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.backup-table tbody tr {
-  border-bottom: 1px solid var(--color-border);
-  transition: var(--transition-fast);
-}
-
-.backup-table tbody tr:hover {
-  background: var(--color-bg-secondary);
-}
-
-.backup-table td {
-  padding: var(--spacing-3) var(--spacing-4);
-}
-
-.type-badge,
-.status-badge {
+.backup-type,
+.backup-status {
   display: inline-block;
-  padding: 4px 8px;
-  border-radius: var(--radius-md);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
 }
 
-.type-badge.type-auto {
+.type-manual {
   background: var(--color-primary-light);
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
 }
 
-.type-badge.type-manual {
-  background: var(--color-accent);
-  color: var(--color-secondary);
+.type-automatic {
+  background: var(--color-gray-200);
+  color: var(--color-gray-700);
 }
 
-.status-badge.status-completed {
+.status-completed {
   background: var(--color-success-light);
-  color: var(--color-success);
+  color: var(--color-success-dark);
 }
 
-.status-badge.status-failed {
-  background: #ffebee;
-  color: var(--color-error);
+.status-pending {
+  background: var(--color-warning-light);
+  color: var(--color-warning-dark);
 }
 
-.action-buttons {
+.status-failed {
+  background: var(--color-error-light);
+  color: var(--color-error-dark);
+}
+
+.table-actions {
   display: flex;
   gap: var(--spacing-2);
 }
 
-.text-error {
-  color: var(--color-error);
+.action-button {
+  padding: var(--spacing-2);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-all);
+  font-size: var(--font-size-base);
 }
 
-.text-error:hover {
-  background: #ffebee;
+.action-button:hover:not(:disabled) {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.action-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.action-delete:hover:not(:disabled) {
+  background: var(--color-error-light);
+  color: var(--color-error);
 }
 
 .empty-state {
   text-align: center;
-  padding: var(--spacing-12) var(--spacing-4);
+  padding: var(--spacing-12);
+  color: var(--color-text-muted);
 }
 
-.empty-state p {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-secondary);
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--spacing-4);
 }
 
-@media (max-width: 1023px) {
-  .backup-sections {
-    grid-template-columns: 1fr;
+.modal-content {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  max-width: 500px;
+  width: 100%;
+}
+
+.modal-small {
+  max-width: 450px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.modal-body {
+  padding: var(--spacing-6);
+}
+
+.modal-body p {
+  margin-bottom: var(--spacing-4);
+  line-height: 1.6;
+}
+
+.text-warning {
+  color: var(--color-warning);
+  font-weight: var(--font-weight-medium);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  padding: var(--spacing-6);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .backup-view {
+    padding: var(--spacing-4);
   }
-}
 
-@media (max-width: 767px) {
   .backup-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-4);
+    align-items: stretch;
   }
-  
-  .table-header {
+
+  .backup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .section-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: var(--spacing-3);
   }
-  
+
   .search-input {
     width: 100%;
+    min-width: 0;
   }
-  
-  .action-buttons {
+
+  .backup-table {
+    font-size: var(--font-size-sm);
+  }
+
+  .dropbox-actions {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-section {
+    grid-template-columns: 1fr;
+  }
+
+  .header-content h1 {
+    font-size: var(--font-size-2xl);
   }
 }
 </style>

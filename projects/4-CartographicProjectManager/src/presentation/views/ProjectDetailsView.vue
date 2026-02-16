@@ -1,580 +1,858 @@
 <!--
-  @module presentation/views/ProjectDetailsView
-  @description Detailed project view with tabs for tasks, messages,
-  and files. Central workspace for project collaboration.
-  @category Presentation
+  University of La Laguna
+  School of Engineering and Technology
+  Degree in Computer Engineering
+  Final Degree Project (TFG)
+
+  @author Fabián González Lence <alu0101549491@ull.edu.es>
+  @since 2025-01-08
+  @file src/presentation/views/ProjectDetailsView.vue
+  @desc Detailed project workspace view with tabbed interface for tasks, messages,
+        and files. Provides comprehensive project management functionality.
+  @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+  @see {@link https://vuejs.org/guide/components/registration.html}
 -->
+
 <template>
   <div class="project-details-view">
     <LoadingSpinner v-if="isLoading" />
-    
-    <div v-else-if="activeProject" class="container">
-      <!-- Project Header -->
-      <div class="project-header">
-        <button @click="goBack" class="back-btn">← Back</button>
-        
-        <div class="header-content">
-          <div class="header-main">
-            <div class="project-code-badge">{{ activeProject.code }}</div>
-            <h1 class="project-title">{{ activeProject.name }}</h1>
-            <div 
-              class="status-badge"
-              :class="'status-' + activeProject.status.toLowerCase()"
-            >
-              {{ activeProject.status }}
-            </div>
-          </div>
-          
-          <p class="project-description">{{ activeProject.description }}</p>
-          
-          <div class="project-meta-grid">
-            <div class="meta-item">
-              <span class="meta-label">Client</span>
-              <span class="meta-value">{{ activeProject.clientId }}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Type</span>
-              <span class="meta-value">{{ formatType(activeProject.type) }}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Created</span>
-              <span class="meta-value">{{ formatDate(activeProject.createdAt) }}</span>
-            </div>
-            <div v-if="activeProject.deadline" class="meta-item">
-              <span class="meta-label">Deadline</span>
-              <span class="meta-value" :class="{'text-warning': isNearDeadline(activeProject.deadline)}">
-                {{ formatDate(activeProject.deadline) }}
-              </span>
-            </div>
-          </div>
 
-          <div v-if="isAdmin && activeProject.status === 'ACTIVE'" class="header-actions">
-            <button @click="handleFinalizeProject" class="btn btn-primary">
-              Finalize Project
-            </button>
-          </div>
-        </div>
-      </div>
+    <template v-else-if="currentProject">
+      <!-- Project Header with Summary -->
+      <header class="project-header">
+        <button
+          @click="goBack"
+          class="button-ghost button-icon-left"
+          aria-label="Go back to projects list"
+        >
+          ← Back
+        </button>
+
+        <ProjectSummary
+          :project="currentProject"
+          :show-actions="canManageProjects"
+          @edit="showEditModal = true"
+          @finalize="handleFinalize"
+        />
+      </header>
 
       <!-- Tab Navigation -->
-      <div class="tabs-nav">
-        <button 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          class="tab-btn"
-          :class="{active: activeTab === tab.id}"
+      <nav class="tabs-nav" role="tablist">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          :class="['tab-button', {active: activeTab === tab.key}]"
+          :aria-selected="activeTab === tab.key"
+          :aria-controls="`${tab.key}-panel`"
+          role="tab"
+          @click="activeTab = tab.key"
         >
           {{ tab.label }}
-          <span v-if="tab.badge" class="tab-badge">{{ tab.badge }}</span>
+          <span v-if="tab.badge > 0" class="tab-badge">{{ tab.badge }}</span>
         </button>
-      </div>
+      </nav>
 
-      <!-- Tab Content -->
+      <!-- Tab Panels -->
       <div class="tab-content">
+        <!-- Overview Tab -->
+        <section
+          v-show="activeTab === 'overview'"
+          id="overview-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="overview-tab"
+        >
+          <div class="overview-grid">
+            <!-- Project Information -->
+            <div class="info-card">
+              <h2>Project Details</h2>
+              <dl class="info-list">
+                <div class="info-item">
+                  <dt>Project Code</dt>
+                  <dd class="code-value">{{ currentProject.code }}</dd>
+                </div>
+                <div class="info-item">
+                  <dt>Type</dt>
+                  <dd>{{ formatProjectType(currentProject.type) }}</dd>
+                </div>
+                <div class="info-item">
+                  <dt>Client</dt>
+                  <dd>{{ currentProject.clientName }}</dd>
+                </div>
+                <div class="info-item">
+                  <dt>Delivery Date</dt>
+                  <dd>{{ formatDate(currentProject.deliveryDate) }}</dd>
+                </div>
+                <div class="info-item">
+                  <dt>Status</dt>
+                  <dd>
+                    <span :class="['status-badge', `status-${currentProject.status}`]">
+                      {{ formatStatus(currentProject.status) }}
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <!-- Description -->
+            <div class="info-card">
+              <h2>Description</h2>
+              <p class="project-description">
+                {{ currentProject.description || 'No description provided.' }}
+              </p>
+            </div>
+
+            <!-- Statistics -->
+            <div class="info-card">
+              <h2>Statistics</h2>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <div class="stat-value">{{ taskStats.total }}</div>
+                  <div class="stat-label">Total Tasks</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value stat-completed">{{ taskStats.completed }}</div>
+                  <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value stat-pending">{{ taskStats.pending }}</div>
+                  <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">{{ messageCount }}</div>
+                  <div class="stat-label">Messages</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="info-card">
+              <h2>Recent Activity</h2>
+              <TaskHistory :project-id="currentProject.id" :limit="5" />
+            </div>
+          </div>
+        </section>
+
         <!-- Tasks Tab -->
-        <div v-if="activeTab === 'tasks'" class="tasks-panel">
+        <section
+          v-show="activeTab === 'tasks'"
+          id="tasks-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="tasks-tab"
+        >
           <div class="panel-header">
             <h2>Tasks</h2>
             <div class="panel-actions">
-              <select v-model="taskStatusFilter" class="filter-select">
-                <option value="">All Status</option>
-                <option value="PENDING">Pending</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
+              <select
+                v-model="taskStatusFilter"
+                class="filter-select"
+                aria-label="Filter tasks by status"
+              >
+                <option value="">All Tasks</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
               </select>
-              <button @click="showCreateTask = true" class="btn btn-primary btn-sm">
+              <button
+                v-if="canManageProjects"
+                @click="showCreateTaskModal = true"
+                class="button-primary button-sm"
+              >
                 + New Task
               </button>
             </div>
           </div>
 
-          <div v-if="tasks.length > 0" class="tasks-list">
-            <div 
-              v-for="task in tasks" 
-              :key="task.id"
-              class="task-card"
-            >
-              <div class="task-header">
-                <h3 class="task-title">{{ task.title }}</h3>
-                <div 
-                  class="priority-badge"
-                  :class="'priority-' + task.priority.toLowerCase()"
-                >
-                  {{ task.priority }}
-                </div>
-              </div>
-              <p v-if="task.description" class="task-description">{{ task.description }}</p>
-              <div class="task-footer">
-                <div 
-                  class="task-status"
-                  :class="'status-' + task.status.toLowerCase()"
-                >
-                  {{ formatTaskStatus(task.status) }}
-                </div>
-                <div v-if="task.dueDate" class="task-due">
-                  Due: {{ formatDate(task.dueDate) }}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div v-else class="empty-state">
-            <p>No tasks yet. Create one to get started!</p>
-          </div>
-        </div>
+          <TaskList
+            :tasks="filteredTasks"
+            :project-id="currentProject.id"
+            :show-project-info="false"
+            :loading="tasksLoading"
+            @task-click="handleTaskClick"
+            @task-update="handleTaskUpdate"
+            @task-delete="handleTaskDelete"
+          />
+        </section>
 
         <!-- Messages Tab -->
-        <div v-if="activeTab === 'messages'" class="messages-panel">
+        <section
+          v-show="activeTab === 'messages'"
+          id="messages-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="messages-tab"
+        >
           <div class="messages-container">
-            <div v-if="messages.length > 0" class="messages-list">
-              <div 
-                v-for="message in messages" 
-                :key="message.id"
-                class="message-item"
-                :class="{'message-own': message.senderId === currentUserId}"
-              >
-                <div class="message-avatar">
-                  {{ getInitials(message.senderId) }}
-                </div>
-                <div class="message-content">
-                  <div class="message-header">
-                    <span class="message-sender">{{ message.senderId }}</span>
-                    <span class="message-time">{{ formatMessageTime(message.timestamp) }}</span>
-                  </div>
-                  <p class="message-text">{{ message.content }}</p>
-                  <div v-if="message.attachments?.length" class="message-attachments">
-                    <div v-for="(file, idx) in message.attachments" :key="idx" class="attachment-item">
-                      📎 {{ file }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="empty-state">
-              <p>No messages yet. Start the conversation!</p>
-            </div>
+            <MessageList
+              :messages="projectMessages"
+              :loading="messagesLoading"
+              :current-user-id="currentUserId"
+            />
+            <MessageInput
+              :project-id="currentProject.id"
+              :disabled="currentProject.status === 'finalized'"
+              @message-sent="handleMessageSent"
+            />
           </div>
-
-          <div class="message-input-box">
-            <textarea 
-              v-model="newMessage"
-              placeholder="Type a message..."
-              class="message-textarea"
-              @keydown.enter.ctrl="handleSendMessage"
-            ></textarea>
-            <button 
-              @click="handleSendMessage" 
-              :disabled="!newMessage.trim()"
-              class="btn btn-primary"
-            >
-              Send
-            </button>
-          </div>
-        </div>
+        </section>
 
         <!-- Files Tab -->
-        <div v-if="activeTab === 'files'" class="files-panel">
+        <section
+          v-show="activeTab === 'files'"
+          id="files-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="files-tab"
+        >
           <div class="panel-header">
-            <h2>Files</h2>
-            <button class="btn btn-primary btn-sm">
-              + Upload File
-            </button>
+            <h2>Project Files</h2>
+            <p class="panel-subtitle">Upload and manage project documentation</p>
           </div>
-          <div class="empty-state">
-            <p>File management coming soon...</p>
+
+          <FileUploader
+            v-if="canManageProjects && currentProject.status !== 'finalized'"
+            :project-id="currentProject.id"
+            :max-file-size="10 * 1024 * 1024"
+            :accepted-types="['.pdf', '.dwg', '.dxf', '.shp', '.jpg', '.png']"
+            @upload-complete="handleFileUpload"
+          />
+
+          <FileList
+            :files="projectFiles"
+            :loading="filesLoading"
+            :show-actions="canManageProjects"
+            @download="handleFileDownload"
+            @delete="handleFileDelete"
+          />
+        </section>
+      </div>
+
+      <!-- Edit Project Modal -->
+      <Teleport to="body">
+        <div
+          v-if="showEditModal"
+          class="modal-overlay"
+          @click.self="showEditModal = false"
+        >
+          <div class="modal-content" role="dialog" aria-labelledby="edit-project-title">
+            <div class="modal-header">
+              <h2 id="edit-project-title">Edit Project</h2>
+              <button
+                @click="showEditModal = false"
+                class="button-icon"
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+            <ProjectForm
+              :project="currentProject"
+              @submit="handleProjectUpdate"
+              @cancel="showEditModal = false"
+            />
           </div>
         </div>
-      </div>
-    </div>
+      </Teleport>
 
-    <div v-else class="container">
-      <div class="error-state">
-        <p>Project not found.</p>
-        <button @click="goBack" class="btn btn-primary">Go Back</button>
-      </div>
-    </div>
-
-    <!-- Create Task Modal -->
-    <div v-if="showCreateTask" class="modal-overlay" @click="showCreateTask = false">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h2>Create New Task</h2>
-          <button @click="showCreateTask = false" class="close-btn">✕</button>
+      <!-- Create Task Modal -->
+      <Teleport to="body">
+        <div
+          v-if="showCreateTaskModal"
+          class="modal-overlay"
+          @click.self="showCreateTaskModal = false"
+        >
+          <div class="modal-content" role="dialog" aria-labelledby="create-task-title">
+            <div class="modal-header">
+              <h2 id="create-task-title">Create New Task</h2>
+              <button
+                @click="showCreateTaskModal = false"
+                class="button-icon"
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+            <TaskForm
+              :project-id="currentProject.id"
+              @submit="handleTaskCreate"
+              @cancel="showCreateTaskModal = false"
+            />
+          </div>
         </div>
-        <form @submit.prevent="handleCreateTask" class="task-form">
-          <div class="form-group">
-            <label>Task Title *</label>
-            <input v-model="newTask.title" required class="form-input" />
+      </Teleport>
+
+      <!-- Finalize Confirmation Modal -->
+      <Teleport to="body">
+        <div
+          v-if="showFinalizeModal"
+          class="modal-overlay"
+          @click.self="showFinalizeModal = false"
+        >
+          <div class="modal-content modal-small" role="dialog" aria-labelledby="finalize-title">
+            <div class="modal-header">
+              <h2 id="finalize-title">Finalize Project</h2>
+              <button
+                @click="showFinalizeModal = false"
+                class="button-icon"
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+            <div class="modal-body">
+              <p>Are you sure you want to finalize this project?</p>
+              <p class="text-warning">
+                Once finalized, no further modifications can be made.
+              </p>
+              <ul class="checklist">
+                <li :class="{complete: taskStats.pending === 0}">
+                  {{ taskStats.pending === 0 ? '✓' : '○' }} All tasks completed
+                </li>
+                <li :class="{complete: projectFiles.length > 0}">
+                  {{ projectFiles.length > 0 ? '✓' : '○' }} Files uploaded
+                </li>
+              </ul>
+            </div>
+            <div class="modal-footer">
+              <button
+                @click="showFinalizeModal = false"
+                class="button-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                @click="handleFinalizeConfirm"
+                class="button-primary"
+                :disabled="isFinalizing"
+              >
+                {{ isFinalizing ? 'Finalizing...' : 'Finalize Project' }}
+              </button>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Description</label>
-            <textarea v-model="newTask.description" class="form-input" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Priority *</label>
-            <select v-model="newTask.priority" required class="form-input">
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Due Date</label>
-            <input v-model="newTask.dueDate" type="date" class="form-input" />
-          </div>
-          <div class="modal-actions">
-            <button type="button" @click="showCreateTask = false" class="btn btn-ghost">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">Create Task</button>
-          </div>
-        </form>
-      </div>
+        </div>
+      </Teleport>
+    </template>
+
+    <!-- Error State -->
+    <div v-else class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h2>Project not found</h2>
+      <p>The requested project could not be loaded.</p>
+      <button @click="goBack" class="button-primary">
+        Go Back
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useProjects } from '../composables/use-projects';
-import { useTasks } from '../composables/use-tasks';
-import { useMessages } from '../composables/use-messages';
-import { useAuth } from '../composables/use-auth';
+import {ref, computed, onMounted, watch} from 'vue';
+import {useRouter, useRoute} from 'vue-router';
+import {useAuth} from '../composables/use-auth';
+import {useProjects} from '../composables/use-projects';
+import {useTasks} from '../composables/use-tasks';
+import {useMessages} from '../composables/use-messages';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
+import ProjectSummary from '../components/project/ProjectSummary.vue';
+import ProjectForm from '../components/project/ProjectForm.vue';
+import TaskList from '../components/task/TaskList.vue';
+import TaskForm from '../components/task/TaskForm.vue';
+import TaskHistory from '../components/task/TaskHistory.vue';
+import MessageList from '../components/message/MessageList.vue';
+import MessageInput from '../components/message/MessageInput.vue';
+import FileList from '../components/file/FileList.vue';
+import FileUploader from '../components/file/FileUploader.vue';
+import type {Project, UpdateProjectInput} from '@/shared/models/project.model';
+import type {Task, CreateTaskInput, UpdateTaskInput} from '@/shared/models/task.model';
+import type {Message} from '@/shared/models/message.model';
+import type {FileMetadata} from '@/shared/models/file.model';
 
-const props = defineProps<{
-  id: string;
-}>();
-
+// Composables
 const router = useRouter();
-const { isAdmin, currentUserId } = useAuth();
-const { 
-  activeProject,
-  isLoading: projectsLoading, 
-  loadProjectDetails,
+const route = useRoute();
+const {user, canManageProjects} = useAuth();
+const {
+  currentProject,
+  isLoading,
+  loadProject,
+  updateProject,
   finalizeProject,
 } = useProjects();
 
 const {
-  tasks,
+  tasks: projectTasks,
   isLoading: tasksLoading,
-  loadTasks,
+  loadTasksByProject,
+  createTask,
+  updateTask,
+  deleteTask,
 } = useTasks();
 
 const {
-  messages,
+  messages: projectMessages,
   isLoading: messagesLoading,
-  loadMessages,
-  send,
+  loadMessagesByProject,
 } = useMessages();
 
-const activeTab = ref<'tasks' | 'messages' | 'files'>('tasks');
+// Local State
+const activeTab = ref<'overview' | 'tasks' | 'messages' | 'files'>('overview');
 const taskStatusFilter = ref('');
-const showCreateTask = ref(false);
-const newTask = ref({
-  title: '',
-  description: '',
-  priority: 'MEDIUM' as any,
-  dueDate: '',
-});
-const newMessage = ref('');
+const showEditModal = ref(false);
+const showCreateTaskModal = ref(false);
+const showFinalizeModal = ref(false);
+const isFinalizing = ref(false);
 
-const isLoading = computed(() => 
-  projectsLoading.value || tasksLoading.value || messagesLoading.value
-);
+// Mock file state (replace with actual file management composable)
+const projectFiles = ref<FileMetadata[]>([]);
+const filesLoading = ref(false);
+
+// Computed Properties
+const projectId = computed(() => route.params.id as string);
+const currentUserId = computed(() => user.value?.id || '');
+
+const filteredTasks = computed(() => {
+  if (!taskStatusFilter.value) return projectTasks.value;
+  return projectTasks.value.filter((t) => t.status === taskStatusFilter.value);
+});
+
+const taskStats = computed(() => {
+  const total = projectTasks.value.length;
+  const completed = projectTasks.value.filter((t) => t.status === 'completed').length;
+  const pending = total - completed;
+  return {total, completed, pending};
+});
+
+const messageCount = computed(() => projectMessages.value.length);
 
 const tabs = computed(() => [
-  { id: 'tasks', label: 'Tasks', badge: tasks.value.length },
-  { id: 'messages', label: 'Messages', badge: messages.value.length },
-  { id: 'files', label: 'Files', badge: null },
+  {key: 'overview', label: 'Overview', badge: 0},
+  {key: 'tasks', label: 'Tasks', badge: taskStats.value.pending},
+  {key: 'messages', label: 'Messages', badge: projectMessages.value.filter((m) => !m.read).length},
+  {key: 'files', label: 'Files', badge: projectFiles.value.length},
 ]);
 
 // Methods
-function goBack() {
-  router.push('/projects');
+/**
+ * Navigate back to projects list
+ */
+function goBack(): void {
+  router.push({name: 'ProjectList'});
 }
 
-function formatDate(date: Date | string | null): string {
-  if (!date) return 'N/A';
+/**
+ * Format project type for display
+ *
+ * @param {string} type - Project type enum
+ * @returns {string} Formatted type
+ */
+function formatProjectType(type: string): string {
+  const types: Record<string, string> = {
+    TOPOGRAPHY: 'Topography',
+    CARTOGRAPHY: 'Cartography',
+    GIS: 'GIS',
+    CADASTRE: 'Cadastre',
+    OTHER: 'Other',
+  };
+  return types[type] || type;
+}
+
+/**
+ * Format status for display
+ *
+ * @param {string} status - Project status
+ * @returns {string} Formatted status
+ */
+function formatStatus(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+}
+
+/**
+ * Format date for display
+ *
+ * @param {Date | string} date - Date to format
+ * @returns {string} Formatted date
+ */
+function formatDate(date: Date | string): string {
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
-    month: 'short',
+    month: 'long',
     day: 'numeric',
   });
 }
 
-function formatType(type: string): string {
-  return type.charAt(0) + type.slice(1).toLowerCase();
-}
-
-function formatTaskStatus(status: string): string {
-  return status.replace('_', ' ');
-}
-
-function formatMessageTime(timestamp: Date | string): string {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString('en-US', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  });
-}
-
-function isNearDeadline(deadline: Date | string): boolean {
-  const daysUntil = Math.ceil(
-    (new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  );
-  return daysUntil <= 7 && daysUntil >= 0;
-}
-
-function getInitials(userId: string): string {
-  return userId.substring(0, 2).toUpperCase();
-}
-
-async function handleCreateTask() {
+/**
+ * Handle project update
+ *
+ * @param {UpdateProjectInput} projectData - Updated project data
+ */
+async function handleProjectUpdate(projectData: UpdateProjectInput): Promise<void> {
   try {
-    // Prepare task data for API call
-    const _taskData = {
-      projectId: props.id,
-      ...newTask.value,
-      dueDate: newTask.value.dueDate ? new Date(newTask.value.dueDate) : null,
-    };
-    // await createTask(taskData);
-    showCreateTask.value = false;
-    newTask.value = {
-      title: '',
-      description: '',
-      priority: 'MEDIUM',
-      dueDate: '',
-    };
-  } catch (err) {
-    console.error('Failed to create task:', err);
+    await updateProject(projectId.value, projectData);
+    showEditModal.value = false;
+  } catch (error) {
+    console.error('Failed to update project:', error);
   }
 }
 
-async function handleSendMessage() {
-  if (!newMessage.value.trim()) return;
-  
+/**
+ * Handle finalize button click
+ */
+function handleFinalize(): void {
+  showFinalizeModal.value = true;
+}
+
+/**
+ * Confirm project finalization
+ */
+async function handleFinalizeConfirm(): Promise<void> {
+  isFinalizing.value = true;
   try {
-    await send({
-      projectId: props.id,
-      content: newMessage.value,
-      attachments: [],
-    });
-    newMessage.value = '';
-  } catch (err) {
-    console.error('Failed to send message:', err);
+    await finalizeProject(projectId.value);
+    showFinalizeModal.value = false;
+  } catch (error) {
+    console.error('Failed to finalize project:', error);
+  } finally {
+    isFinalizing.value = false;
   }
 }
 
-async function handleFinalizeProject() {
-  if (confirm('Are you sure you want to finalize this project? This action cannot be undone.')) {
-    try {
-      await finalizeProject(props.id);
-    } catch (err) {
-      console.error('Failed to finalize project:', err);
-    }
+/**
+ * Handle task creation
+ *
+ * @param {CreateTaskInput} taskData - New task data
+ */
+async function handleTaskCreate(taskData: CreateTaskInput): Promise<void> {
+  try {
+    await createTask(taskData);
+    showCreateTaskModal.value = false;
+  } catch (error) {
+    console.error('Failed to create task:', error);
   }
 }
+
+/**
+ * Handle task click
+ *
+ * @param {Task} task - Clicked task
+ */
+function handleTaskClick(task: Task): void {
+  // Could open task details modal or navigate to task page
+  console.log('Task clicked:', task);
+}
+
+/**
+ * Handle task update
+ *
+ * @param {UpdateTaskInput} taskData - Updated task data
+ */
+async function handleTaskUpdate(taskData: UpdateTaskInput): Promise<void> {
+  try {
+    await updateTask(taskData);
+  } catch (error) {
+    console.error('Failed to update task:', error);
+  }
+}
+
+/**
+ * Handle task deletion
+ *
+ * @param {string} taskId - Task identifier
+ */
+async function handleTaskDelete(taskId: string): Promise<void> {
+  try {
+    await deleteTask(taskId);
+  } catch (error) {
+    console.error('Failed to delete task:', error);
+  }
+}
+
+/**
+ * Handle message sent
+ */
+function handleMessageSent(): void {
+  // Message is automatically added via composable
+}
+
+/**
+ * Handle file upload
+ *
+ * @param {FileMetadata} file - Uploaded file metadata
+ */
+function handleFileUpload(file: FileMetadata): void {
+  projectFiles.value.push(file);
+}
+
+/**
+ * Handle file download
+ *
+ * @param {FileMetadata} file - File to download
+ */
+function handleFileDownload(file: FileMetadata): void {
+  window.open(file.url, '_blank');
+}
+
+/**
+ * Handle file deletion
+ *
+ * @param {string} fileId - File identifier
+ */
+async function handleFileDelete(fileId: string): Promise<void> {
+  try {
+    projectFiles.value = projectFiles.value.filter((f) => f.id !== fileId);
+  } catch (error) {
+    console.error('Failed to delete file:', error);
+  }
+}
+
+// Load initial data
+async function loadProjectData(): Promise<void> {
+  try {
+    await Promise.all([
+      loadProject(projectId.value),
+      loadTasksByProject(projectId.value),
+      loadMessagesByProject(projectId.value),
+    ]);
+  } catch (error) {
+    console.error('Failed to load project data:', error);
+  }
+}
+
+// Watchers
+watch(() => route.params.id, async (newId) => {
+  if (newId) {
+    await loadProjectData();
+  }
+});
+
+watch(() => route.query.tab, (tab) => {
+  if (tab && ['overview', 'tasks', 'messages', 'files'].includes(tab as string)) {
+    activeTab.value = tab as any;
+  }
+});
 
 // Lifecycle
 onMounted(async () => {
-  await loadProjectDetails(props.id);
-  await loadTasks(props.id);
-  await loadMessages(props.id);
-});
+  await loadProjectData();
 
-watch(() => props.id, async (newId) => {
-  await loadProjectDetails(newId);
-  await loadTasks(newId);
-  await loadMessages(newId);
+  // Set initial tab from query param
+  if (route.query.tab) {
+    const tab = route.query.tab as string;
+    if (['overview', 'tasks', 'messages', 'files'].includes(tab)) {
+      activeTab.value = tab as any;
+    }
+  }
 });
 </script>
 
 <style scoped>
 .project-details-view {
-  min-height: 100vh;
-  background: var(--color-bg-secondary);
-  padding: var(--spacing-8) 0;
-}
-
-.back-btn {
-  background: none;
-  border: none;
-  font-size: var(--font-size-base);
-  color: var(--color-primary);
-  cursor: pointer;
-  padding: var(--spacing-2);
-  margin-bottom: var(--spacing-4);
-  font-weight: var(--font-weight-medium);
-}
-
-.back-btn:hover {
-  text-decoration: underline;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-6);
 }
 
 .project-header {
-  background: white;
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-6);
   margin-bottom: var(--spacing-6);
-  box-shadow: var(--shadow-md);
 }
 
-.header-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-4);
+.project-header .button-ghost {
+  margin-bottom: var(--spacing-4);
 }
 
-.header-main {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-4);
-  flex-wrap: wrap;
-}
-
-.project-code-badge {
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  padding: var(--spacing-2) var(--spacing-3);
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  border-radius: var(--radius-md);
-}
-
-.project-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  flex: 1;
-}
-
-.status-badge {
-  padding: var(--spacing-2) var(--spacing-4);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-}
-
-.status-badge.status-active {
-  background: var(--color-success-light);
-  color: var(--color-success);
-}
-
-.status-badge.status-finalized {
-  background: var(--color-text-tertiary);
-  color: white;
-}
-
-.project-description {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-}
-
-.project-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--spacing-4);
-  padding: var(--spacing-4);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
-}
-
-.meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-1);
-}
-
-.meta-label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.meta-value {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.text-warning {
-  color: var(--color-warning);
-}
-
-.header-actions {
-  display: flex;
-  gap: var(--spacing-3);
-}
-
-/* Tabs */
 .tabs-nav {
   display: flex;
   gap: var(--spacing-2);
-  margin-bottom: var(--spacing-6);
   border-bottom: 2px solid var(--color-border);
+  margin-bottom: var(--spacing-6);
+  overflow-x: auto;
 }
 
-.tab-btn {
-  background: none;
+.tab-button {
+  padding: var(--spacing-3) var(--spacing-5);
+  background: transparent;
   border: none;
-  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 2px solid transparent;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  transition: var(--transition-fast);
-  position: relative;
+  transition: var(--transition-all);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: -2px;
 }
 
-.tab-btn:hover {
+.tab-button:hover {
   color: var(--color-primary);
+  background: var(--color-bg-hover);
 }
 
-.tab-btn.active {
+.tab-button.active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--spacing-2);
+  background: var(--color-primary);
+  color: white;
   font-size: var(--font-size-xs);
-  padding: 2px 6px;
-  background: var(--color-primary-light);
-  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
   border-radius: var(--radius-full);
-  margin-left: var(--spacing-2);
 }
 
-/* Tab Content */
 .tab-content {
-  background: white;
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-6);
-  box-shadow: var(--shadow-md);
   min-height: 400px;
 }
 
-.panel-header {
+.tab-panel {
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Overview Tab */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-6);
+}
+
+.info-card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+}
+
+.info-card h2 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-4);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.info-list {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.info-item {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--spacing-3);
+}
+
+.info-item dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.info-item dd {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.code-value {
+  font-family: var(--font-family-mono);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.status-active {
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+}
+
+.status-finalized {
+  background: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.project-description {
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  display: block;
+  margin-bottom: var(--spacing-1);
+}
+
+.stat-completed {
+  color: var(--color-success);
+}
+
+.stat-pending {
+  color: var(--color-warning);
+}
+
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Panel Header */
+.panel-header {
   margin-bottom: var(--spacing-6);
 }
 
 .panel-header h2 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-2);
+}
+
+.panel-subtitle {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-4);
 }
 
 .panel-actions {
   display: flex;
   gap: var(--spacing-3);
+  align-items: center;
 }
 
 .filter-select {
@@ -582,230 +860,47 @@ watch(() => props.id, async (newId) => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
+  background: var(--color-bg-primary);
 }
 
-/* Tasks */
-.tasks-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-4);
-}
-
-.task-card {
-  padding: var(--spacing-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  transition: var(--transition-fast);
-}
-
-.task-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.task-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  margin-bottom: var(--spacing-2);
-}
-
-.task-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.priority-badge {
-  padding: 4px 8px;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-}
-
-.priority-badge.priority-low {
-  background: #e0e0e0;
-  color: #666;
-}
-
-.priority-badge.priority-medium {
-  background: var(--color-warning-light);
-  color: var(--color-warning);
-}
-
-.priority-badge.priority-high {
-  background: #ffebee;
-  color: var(--color-error);
-}
-
-.priority-badge.priority-critical {
-  background: var(--color-error);
-  color: white;
-}
-
-.task-description {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-3);
-}
-
-.task-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: var(--font-size-sm);
-}
-
-.task-status {
-  padding: 4px 8px;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-medium);
-}
-
-.task-status.status-pending {
-  background: #f5f5f5;
-  color: #666;
-}
-
-.task-status.status-in_progress {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-.task-status.status-completed {
-  background: var(--color-success-light);
-  color: var(--color-success);
-}
-
-.task-due {
-  color: var(--color-text-tertiary);
-}
-
-/* Messages */
-.messages-panel {
+/* Messages Container */
+.messages-container {
   display: flex;
   flex-direction: column;
   height: 600px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
-.messages-container {
-  flex: 1;
-  overflow-y: auto;
+/* Error State */
+.error-state {
+  text-align: center;
+  padding: var(--spacing-16);
+}
+
+.error-icon {
+  font-size: 4rem;
   margin-bottom: var(--spacing-4);
 }
 
-.messages-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-4);
-}
-
-.message-item {
-  display: flex;
-  gap: var(--spacing-3);
-}
-
-.message-item.message-own {
-  flex-direction: row-reverse;
-}
-
-.message-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.error-state h2 {
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
-  flex-shrink: 0;
+  margin-bottom: var(--spacing-3);
 }
 
-.message-content {
-  flex: 1;
-  max-width: 70%;
-}
-
-.message-item.message-own .message-content {
-  text-align: right;
-}
-
-.message-header {
-  display: flex;
-  gap: var(--spacing-2);
-  margin-bottom: var(--spacing-1);
-  font-size: var(--font-size-sm);
-}
-
-.message-sender {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.message-time {
-  color: var(--color-text-tertiary);
-}
-
-.message-text {
-  padding: var(--spacing-3);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-}
-
-.message-item.message-own .message-text {
-  background: var(--color-primary);
-  color: white;
-}
-
-.message-attachments {
-  margin-top: var(--spacing-2);
-  font-size: var(--font-size-xs);
-}
-
-.attachment-item {
-  padding: var(--spacing-1);
-  color: var(--color-primary);
-}
-
-.message-input-box {
-  display: flex;
-  gap: var(--spacing-3);
-  padding-top: var(--spacing-4);
-  border-top: 1px solid var(--color-border);
-}
-
-.message-textarea {
-  flex: 1;
-  padding: var(--spacing-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
-  resize: vertical;
-  min-height: 60px;
-}
-
-.empty-state,
-.error-state {
-  text-align: center;
-  padding: var(--spacing-12) var(--spacing-4);
-}
-
-.empty-state p,
 .error-state p {
-  font-size: var(--font-size-lg);
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-6);
 }
 
-/* Modal */
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: var(--color-bg-overlay);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -814,13 +909,17 @@ watch(() => props.id, async (newId) => {
 }
 
 .modal-content {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+.modal-small {
+  max-width: 450px;
 }
 
 .modal-header {
@@ -836,66 +935,81 @@ watch(() => props.id, async (newId) => {
   font-weight: var(--font-weight-semibold);
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  font-size: var(--font-size-2xl);
-  cursor: pointer;
-  padding: var(--spacing-2);
-}
-
-.task-form {
+.modal-body {
   padding: var(--spacing-6);
 }
 
-.form-group {
+.modal-body p {
   margin-bottom: var(--spacing-4);
+  line-height: 1.6;
 }
 
-.form-group label {
-  display: block;
-  font-size: var(--font-size-sm);
+.text-warning {
+  color: var(--color-warning);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-2);
 }
 
-.form-input {
-  width: 100%;
-  padding: var(--spacing-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
+.checklist {
+  list-style: none;
+  padding: 0;
+  margin-top: var(--spacing-4);
 }
 
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
+.checklist li {
+  padding: var(--spacing-2) 0;
+  color: var(--color-text-secondary);
 }
 
-.modal-actions {
+.checklist li.complete {
+  color: var(--color-success);
+  font-weight: var(--font-weight-medium);
+}
+
+.modal-footer {
   display: flex;
-  gap: var(--spacing-3);
   justify-content: flex-end;
-  margin-top: var(--spacing-6);
+  gap: var(--spacing-3);
+  padding: var(--spacing-6);
+  border-top: 1px solid var(--color-border);
 }
 
-@media (max-width: 767px) {
-  .header-main {
-    flex-direction: column;
-    align-items: flex-start;
+/* Responsive Design */
+@media (max-width: 768px) {
+  .project-details-view {
+    padding: var(--spacing-4);
   }
-  
-  .project-meta-grid {
+
+  .overview-grid {
     grid-template-columns: 1fr;
   }
 
-  .tabs-nav {
-    overflow-x: auto;
+  .info-item {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-1);
   }
 
-  .message-content {
-    max-width: 85%;
+  .tabs-nav {
+    gap: 0;
+  }
+
+  .tab-button {
+    flex: 1;
+    justify-content: center;
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-sm);
+  }
+
+  .panel-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-select {
+    width: 100%;
+  }
+
+  .messages-container {
+    height: 500px;
   }
 }
 </style>

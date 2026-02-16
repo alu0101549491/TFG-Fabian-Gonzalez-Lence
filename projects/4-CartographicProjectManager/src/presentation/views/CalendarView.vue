@@ -1,409 +1,361 @@
 <!--
-  @module presentation/views/CalendarView
-  @description Calendar view displaying project delivery dates
-  with color-coded status indicators.
-  @category Presentation
+  University of La Laguna
+  School of Engineering and Technology
+  Degree in Computer Engineering
+  Final Degree Project (TFG)
+
+  @author Fabián González Lence <alu0101549491@ull.edu.es>
+  @since 2025-01-08
+  @file src/presentation/views/CalendarView.vue
+  @desc Full-page calendar view displaying project delivery dates with
+        interactive month navigation and project details.
+  @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+  @see {@link https://vuejs.org/guide/components/registration.html}
 -->
+
 <template>
   <div class="calendar-view">
-    <div class="container">
-      <div class="calendar-header">
-        <h1>Calendar</h1>
-        <div class="month-navigation">
-          <button @click="previousMonth" class="nav-btn">‹</button>
-          <span class="current-month">{{ currentMonthName }} {{ currentYear }}</span>
-          <button @click="nextMonth" class="nav-btn">›</button>
-        </div>
+    <LoadingSpinner v-if="isLoading" />
+
+    <template v-else>
+      <!-- Calendar Header -->
+      <header class="calendar-header">
+        <h1>Project Calendar</h1>
+        <p class="calendar-subtitle">
+          View all project delivery dates and deadlines
+        </p>
+      </header>
+
+      <!-- Calendar Widget (Full Mode) -->
+      <div class="calendar-container">
+        <CalendarWidget
+          :projects="calendarProjects"
+          :mode="'full'"
+          @project-click="handleProjectClick"
+          @month-change="handleMonthChange"
+          @date-click="handleDateClick"
+        />
       </div>
 
-      <div class="calendar-legend">
-        <div class="legend-item">
-          <div class="legend-color" style="background: var(--color-success)"></div>
-          <span>Active Projects</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: var(--color-warning)"></div>
-          <span>Deadline Soon</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: var(--color-text-tertiary)"></div>
-          <span>Finalized</span>
-        </div>
-      </div>
-
-      <div class="calendar-grid">
-        <div v-for="day in weekDays" :key="day" class="calendar-header-cell">
-          {{ day }}
-        </div>
-        
-        <div
-          v-for="(day, index) in calendarDays"
-          :key="index"
-          class="calendar-day"
-          :class="{
-            'other-month': !day.isCurrentMonth,
-            'today': day.isToday,
-            'has-events': day.projects.length > 0,
-          }"
-          @click="selectDay(day)"
-        >
-          <div class="day-number">{{ day.date }}</div>
-          <div v-if="day.projects.length > 0" class="day-events">
-            <div 
-              v-for="project in day.projects.slice(0, 2)" 
-              :key="project.id"
-              class="event-dot"
-              :style="{background: getProjectColor(project)}"
-              :title="project.name"
-            ></div>
-            <span v-if="day.projects.length > 2" class="more-events">
-              +{{ day.projects.length - 2 }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="selectedDay && selectedDay.projects.length > 0" class="selected-day-panel">
-        <h2>{{ formatSelectedDate(selectedDay) }}</h2>
-        <div class="projects-list">
-          <div 
-            v-for="project in selectedDay.projects" 
-            :key="project.id"
-            class="project-item"
-            @click="navigateToProject(project.id)"
+      <!-- Selected Date Details -->
+      <div v-if="selectedDate && projectsOnDate.length > 0" class="date-details">
+        <div class="details-header">
+          <h2>{{ formatSelectedDate }}</h2>
+          <button
+            @click="selectedDate = null"
+            class="button-ghost button-sm"
+            aria-label="Clear selection"
           >
-            <div class="project-indicator" :style="{background: getProjectColor(project)}"></div>
-            <div class="project-info">
-              <h3>{{ project.name }}</h3>
-              <p>{{ project.code }} - {{ project.status }}</p>
-            </div>
-          </div>
+            Clear
+          </button>
+        </div>
+
+        <div class="projects-on-date">
+          <ProjectCard
+            v-for="project in projectsOnDate"
+            :key="project.id"
+            :project="project"
+            @click="goToProject(project.id)"
+          />
         </div>
       </div>
 
-      <div v-else-if="selectedDay" class="empty-state">
-        <p>No projects scheduled for this day.</p>
+      <!-- Calendar Legend -->
+      <aside class="calendar-legend" aria-label="Calendar legend">
+        <h3>Legend</h3>
+        <div class="legend-items">
+          <div class="legend-item">
+            <div class="legend-indicator" style="background-color: var(--color-success)"></div>
+            <span>Active Projects</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-indicator" style="background-color: var(--color-warning)"></div>
+            <span>Due Soon (≤ 7 days)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-indicator" style="background-color: var(--color-error)"></div>
+            <span>Overdue</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-indicator" style="background-color: var(--color-gray-400)"></div>
+            <span>Finalized</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- No Projects State -->
+      <div v-if="calendarProjects.length === 0" class="empty-state">
+        <div class="empty-icon">📅</div>
+        <h2>No Projects Scheduled</h2>
+        <p>There are no projects with delivery dates in the current period.</p>
+        <router-link to="/projects" class="button-primary">
+          View All Projects
+        </router-link>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useProjects } from '../composables/use-projects';
+import {ref, computed, onMounted} from 'vue';
+import {useRouter} from 'vue-router';
+import {useProjects} from '../composables/use-projects';
+import LoadingSpinner from '../components/common/LoadingSpinner.vue';
+import CalendarWidget from '../components/calendar/CalendarWidget.vue';
+import ProjectCard from '../components/project/ProjectCard.vue';
+import type {Project} from '@/shared/models/project.model';
 
+// Composables
 const router = useRouter();
-const { projects, loadProjects } = useProjects();
+const {
+  calendarProjects,
+  isLoading,
+  loadCalendarProjects,
+} = useProjects();
 
-const currentDate = ref(new Date());
-const selectedDay = ref<any>(null);
+// Local State
+const selectedDate = ref<Date | null>(null);
 
-const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-const currentYear = computed(() => currentDate.value.getFullYear());
-const currentMonth = computed(() => currentDate.value.getMonth());
-
-const currentMonthName = computed(() => {
-  return currentDate.value.toLocaleDateString('en-US', { month: 'long' });
-});
-
-const calendarDays = computed(() => {
-  const year = currentYear.value;
-  const month = currentMonth.value;
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const startDate = new Date(firstDay);
-  startDate.setDate(startDate.getDate() - startDate.getDay());
-  
-  const days = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  for (let i = 0; i < 42; i++) {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + i);
-    
-    const dayProjects = projects.value.filter(project => {
-      if (!project.deadline) return false;
-      const deadline = new Date(project.deadline);
-      return (
-        deadline.getFullYear() === date.getFullYear() &&
-        deadline.getMonth() === date.getMonth() &&
-        deadline.getDate() === date.getDate()
-      );
-    });
-    
-    days.push({
-      date: date.getDate(),
-      fullDate: new Date(date),
-      isCurrentMonth: date.getMonth() === month,
-      isToday: date.getTime() === today.getTime(),
-      projects: dayProjects,
-    });
-  }
-  
-  return days;
-});
-
-function previousMonth() {
-  currentDate.value = new Date(currentYear.value, currentMonth.value - 1, 1);
-  selectedDay.value = null;
-}
-
-function nextMonth() {
-  currentDate.value = new Date(currentYear.value, currentMonth.value + 1, 1);
-  selectedDay.value = null;
-}
-
-function selectDay(day: any) {
-  selectedDay.value = day;
-}
-
-function getProjectColor(project: any): string {
-  if (project.status === 'FINALIZED') {
-    return 'var(--color-text-tertiary)';
-  }
-  
-  if (project.deadline) {
-    const daysUntil = Math.ceil(
-      (new Date(project.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    );
-    if (daysUntil <= 7 && daysUntil >= 0) {
-      return 'var(--color-warning)';
-    }
-  }
-  
-  return 'var(--color-success)';
-}
-
-function formatSelectedDate(day: any): string {
-  return day.fullDate.toLocaleDateString('en-US', {
+// Computed Properties
+const formatSelectedDate = computed(() => {
+  if (!selectedDate.value) return '';
+  return selectedDate.value.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
+});
+
+const projectsOnDate = computed(() => {
+  if (!selectedDate.value) return [];
+
+  const targetDate = new Date(selectedDate.value);
+  targetDate.setHours(0, 0, 0, 0);
+
+  return calendarProjects.value.filter((project) => {
+    const deliveryDate = new Date(project.deliveryDate);
+    deliveryDate.setHours(0, 0, 0, 0);
+    return deliveryDate.getTime() === targetDate.getTime();
+  });
+});
+
+// Methods
+/**
+ * Navigate to project details page
+ *
+ * @param {string} projectId - Project identifier
+ */
+function goToProject(projectId: string): void {
+  router.push({name: 'ProjectDetails', params: {id: projectId}});
 }
 
-function navigateToProject(projectId: string) {
-  router.push(`/projects/${projectId}`);
+/**
+ * Handle project click event from calendar
+ *
+ * @param {string} projectId - Clicked project identifier
+ */
+function handleProjectClick(projectId: string): void {
+  goToProject(projectId);
 }
 
+/**
+ * Handle month change event from calendar
+ *
+ * @param {Date} date - New month date
+ */
+async function handleMonthChange(date: Date): Promise<void> {
+  try {
+    await loadCalendarProjects(date.getFullYear(), date.getMonth() + 1);
+  } catch (error) {
+    console.error('Failed to load calendar projects for new month:', error);
+  }
+}
+
+/**
+ * Handle date click event from calendar
+ *
+ * @param {Date} date - Clicked date
+ */
+function handleDateClick(date: Date): void {
+  selectedDate.value = date;
+}
+
+// Lifecycle
 onMounted(async () => {
-  await loadProjects();
+  const today = new Date();
+  try {
+    await loadCalendarProjects(today.getFullYear(), today.getMonth() + 1);
+  } catch (error) {
+    console.error('Failed to load calendar projects:', error);
+  }
 });
 </script>
 
 <style scoped>
 .calendar-view {
-  min-height: 100vh;
-  background: var(--color-bg-secondary);
-  padding: var(--spacing-8) 0;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-6);
 }
 
 .calendar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
 }
 
 .calendar-header h1 {
   font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-2);
 }
 
-.month-navigation {
+.calendar-subtitle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+.calendar-container {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
+}
+
+.date-details {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
+}
+
+.details-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  margin-bottom: var(--spacing-5);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.details-header h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.projects-on-date {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--spacing-4);
 }
 
-.nav-btn {
-  background: white;
+.calendar-legend {
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  width: 36px;
-  height: 36px;
-  font-size: var(--font-size-xl);
-  cursor: pointer;
-  transition: var(--transition-fast);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5);
 }
 
-.nav-btn:hover {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
-}
-
-.current-month {
+.calendar-legend h3 {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  min-width: 180px;
-  text-align: center;
+  margin-bottom: var(--spacing-4);
 }
 
-.calendar-legend {
+.legend-items {
   display: flex;
-  gap: var(--spacing-6);
-  margin-bottom: var(--spacing-6);
-  padding: var(--spacing-4);
-  background: white;
-  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  font-size: var(--font-size-sm);
 }
 
-.legend-color {
+.legend-indicator {
   width: 16px;
   height: 16px;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
 }
 
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: var(--color-border);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  margin-bottom: var(--spacing-6);
-}
-
-.calendar-header-cell {
-  background: var(--color-primary);
-  color: white;
-  padding: var(--spacing-3);
-  text-align: center;
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-}
-
-.calendar-day {
-  background: white;
-  min-height: 100px;
-  padding: var(--spacing-2);
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.calendar-day:hover {
-  background: var(--color-primary-light);
-}
-
-.calendar-day.other-month {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-tertiary);
-}
-
-.calendar-day.today {
-  background: var(--color-accent);
-}
-
-.day-number {
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-2);
-}
-
-.day-events {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.event-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.more-events {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-}
-
-.selected-day-panel {
-  background: white;
-  border-radius: var(--radius-md);
-  padding: var(--spacing-6);
-  box-shadow: var(--shadow-md);
-}
-
-.selected-day-panel h2 {
-  font-size: var(--font-size-xl);
-  margin-bottom: var(--spacing-4);
-}
-
-.projects-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-3);
-}
-
-.project-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-  padding: var(--spacing-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.project-item:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-light);
-}
-
-.project-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.project-info h3 {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-1);
-}
-
-.project-info p {
+.legend-item span {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
 .empty-state {
   text-align: center;
-  padding: var(--spacing-8);
-  background: white;
-  border-radius: var(--radius-md);
+  padding: var(--spacing-16) var(--spacing-6);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-4);
+  opacity: 0.5;
+}
+
+.empty-state h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-3);
+  color: var(--color-text-primary);
 }
 
 .empty-state p {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-6);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-@media (max-width: 767px) {
-  .calendar-header {
+/* Responsive Design */
+@media (max-width: 768px) {
+  .calendar-view {
+    padding: var(--spacing-4);
+  }
+
+  .calendar-header h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .calendar-container {
+    padding: var(--spacing-4);
+  }
+
+  .date-details {
+    padding: var(--spacing-4);
+  }
+
+  .details-header {
     flex-direction: column;
-    gap: var(--spacing-4);
+    align-items: flex-start;
+    gap: var(--spacing-3);
   }
-  
-  .calendar-legend {
-    flex-wrap: wrap;
+
+  .projects-on-date {
+    grid-template-columns: 1fr;
   }
-  
-  .calendar-day {
-    min-height: 80px;
-    font-size: var(--font-size-sm);
+
+  .legend-items {
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-header h1 {
+    font-size: var(--font-size-xl);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
   }
 }
 </style>
