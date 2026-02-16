@@ -1,207 +1,191 @@
 <!--
-  @module presentation/views/NotificationsView
-  @description Notifications list page showing all user notifications
-  with read/unread status and filtering.
-  @category Presentation
+  University of La Laguna
+  School of Engineering and Technology
+  Degree in Computer Engineering
+  Final Degree Project (TFG)
+
+  @author Fabián González Lence <alu0101549491@ull.edu.es>
+  @since 2025-01-08
+  @file src/presentation/views/NotificationsView.vue
+  @desc Full notifications list view with filtering, marking as read,
+        and infinite scroll support.
+  @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+  @see {@link https://vuejs.org/guide/components/registration.html}
 -->
+
 <template>
   <div class="notifications-view">
-    <div class="container">
-      <div class="notifications-header">
-        <h1>Notifications</h1>
+    <LoadingSpinner v-if="isLoading && notifications.length === 0" />
+
+    <template v-else>
+      <!-- Notifications Header -->
+      <header class="notifications-header">
+        <div class="header-content">
+          <h1>Notifications</h1>
+          <p class="notifications-subtitle">
+            {{ unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!' }}
+          </p>
+        </div>
         <div class="header-actions">
-          <button 
-            v-if="hasUnread" 
-            @click="handleMarkAllAsRead" 
-            class="btn btn-ghost"
+          <button
+            v-if="unreadCount > 0"
+            @click="handleMarkAllAsRead"
+            class="button-ghost button-sm"
+            aria-label="Mark all as read"
           >
-            Mark all as read
-          </button>
-          <button 
-            @click="handleClearAll" 
-            class="btn btn-ghost"
-          >
-            Clear all
+            Mark All as Read
           </button>
         </div>
+      </header>
+
+      <!-- Notification List -->
+      <div class="notifications-container">
+        <NotificationList
+          :notifications="notifications"
+          :unread-count="unreadCount"
+          :loading="isLoading"
+          :has-more="hasMore"
+          :show-filters="true"
+          :show-load-more="true"
+          @notification-click="handleNotificationClick"
+          @mark-read="handleMarkAsRead"
+          @mark-all-read="handleMarkAllAsRead"
+          @delete="handleDelete"
+          @load-more="handleLoadMore"
+        />
       </div>
 
-      <div class="notifications-filters">
-        <button
-          v-for="filter in filters"
-          :key="filter.value"
-          @click="currentFilter = filter.value"
-          class="filter-btn"
-          :class="{active: currentFilter === filter.value}"
-        >
-          {{ filter.label }}
-          <span v-if="filter.count" class="count-badge">{{ filter.count }}</span>
-        </button>
+      <!-- Empty State -->
+      <div v-if="notifications.length === 0" class="empty-state">
+        <div class="empty-icon">🔔</div>
+        <h2>No Notifications</h2>
+        <p>You're all caught up! New notifications will appear here.</p>
       </div>
-
-      <LoadingSpinner v-if="isLoading" />
-
-      <div v-else-if="displayedNotifications.length > 0" class="notifications-list">
-        <div
-          v-for="notification in displayedNotifications"
-          :key="notification.id"
-          class="notification-item"
-          :class="{
-            'unread': !notification.isRead,
-            ['type-' + notification.type.toLowerCase()]: true,
-          }"
-        >
-          <div class="notification-icon">{{ getNotificationIcon(notification.type) }}</div>
-          
-          <div class="notification-content">
-            <h3 class="notification-title">{{ notification.title }}</h3>
-            <p class="notification-message">{{ notification.message }}</p>
-            <div class="notification-time">{{ formatTime(notification.timestamp) }}</div>
-          </div>
-
-          <div class="notification-actions">
-            <button 
-              v-if="!notification.isRead"
-              @click="handleMarkAsRead(notification.id)" 
-              class="action-btn"
-              title="Mark as read"
-            >
-              ✓
-            </button>
-            <button 
-              @click="handleDelete(notification.id)" 
-              class="action-btn delete-btn"
-              title="Delete"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div v-else class="empty-state">
-        <p>{{ currentFilter ? 'No notifications of this type.' : 'No notifications yet.' }}</p>
-      </div>
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useNotifications } from '../composables/use-notifications';
+import {onMounted} from 'vue';
+import {useNotifications} from '../composables/use-notifications';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
+import NotificationList from '../components/notification/NotificationList.vue';
+import type {NotificationDto} from '@/application/dto';
 
+// Composables
 const {
   notifications,
   unreadCount,
-  hasUnread,
   isLoading,
-  loadNotifications,
+  hasMore,
+  fetchNotifications,
+  loadMore,
   markAsRead,
   markAllAsRead,
+  navigateToRelatedEntity,
 } = useNotifications();
 
-const currentFilter = ref<string>('');
+// Computed Properties (none needed - all from composable)
 
-const filters = computed(() => [
-  { label: 'All', value: '', count: null },
-  { label: 'Unread', value: 'unread', count: unreadCount.value },
-  { label: 'Projects', value: 'project', count: null },
-  { label: 'Tasks', value: 'task', count: null },
-  { label: 'Messages', value: 'message', count: null },
-]);
-
-const displayedNotifications = computed(() => {
-  let filtered = notifications.value;
-  
-  if (currentFilter.value === 'unread') {
-    filtered = filtered.filter(n => !n.isRead);
-  } else if (currentFilter.value) {
-    filtered = filtered.filter(n => 
-      n.type.toLowerCase().includes(currentFilter.value)
-    );
+// Methods
+/**
+ * Handle notification click - navigate to related content
+ *
+ * @param {NotificationDto} notification - Clicked notification
+ */
+function handleNotificationClick(notification: NotificationDto): void {
+  // Mark as read when clicked
+  if (!notification.isRead) {
+    handleMarkAsRead(notification.id);
   }
-  
-  return filtered.sort((a, b) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
-});
 
-function getNotificationIcon(type: string): string {
-  const iconMap: Record<string, string> = {
-    PROJECT_CREATED: '📁',
-    PROJECT_UPDATED: '✏️',
-    PROJECT_FINALIZED: '✅',
-    TASK_ASSIGNED: '📋',
-    TASK_COMPLETED: '✔️',
-    MESSAGE_RECEIVED: '💬',
-    DEADLINE_APPROACHING: '⏰',
-    BACKUP_COMPLETED: '💾',
-    SYSTEM: '⚙️',
-  };
-  return iconMap[type] || '🔔';
+  // Navigate to related entity
+  navigateToRelatedEntity(notification);
 }
 
-function formatTime(timestamp: Date | string): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-  
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-  });
-}
-
-async function handleMarkAsRead(id: string) {
-  await markAsRead(id);
-}
-
-async function handleMarkAllAsRead() {
-  await markAllAsRead();
-}
-
-async function handleDelete(id: string) {
-  // await deleteNotification(id);
-}
-
-async function handleClearAll() {
-  if (confirm('Are you sure you want to clear all notifications?')) {
-    // await clearAll();
+/**
+ * Mark single notification as read
+ *
+ * @param {string} notificationId - Notification identifier
+ */
+async function handleMarkAsRead(notificationId: string): Promise<void> {
+  try {
+    await markAsRead(notificationId);
+  } catch (error) {
+    console.error('Failed to mark notification as read:', error);
   }
 }
 
+/**
+ * Mark all notifications as read
+ */
+async function handleMarkAllAsRead(): Promise<void> {
+  try {
+    await markAllAsRead();
+  } catch (error) {
+    console.error('Failed to mark all notifications as read:', error);
+  }
+}
+
+/**
+ * Delete notification (placeholder - not in composable)
+ *
+ * @param {string} notificationId - Notification identifier
+ */
+async function handleDelete(notificationId: string): Promise<void> {
+  try {
+    console.log('Delete notification:', notificationId);
+    // TODO: Implement when delete functionality is added to composable
+  } catch (error) {
+    console.error('Failed to delete notification:', error);
+  }
+}
+
+/**
+ * Load more notifications (infinite scroll)
+ */
+async function handleLoadMore(): Promise<void> {
+  try {
+    await loadMore();
+  } catch (error) {
+    console.error('Failed to load more notifications:', error);
+  }
+}
+
+// Lifecycle
 onMounted(async () => {
-  await loadNotifications();
+  try {
+    await fetchNotifications();
+  } catch (error) {
+    console.error('Failed to load notifications:', error);
+  }
 });
 </script>
 
 <style scoped>
 .notifications-view {
-  min-height: 100vh;
-  background: var(--color-bg-secondary);
-  padding: var(--spacing-8) 0;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-6);
 }
 
 .notifications-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-6);
+  align-items: flex-start;
+  margin-bottom: var(--spacing-8);
+  gap: var(--spacing-4);
 }
 
-.notifications-header h1 {
+.header-content h1 {
   font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-2);
+}
+
+.notifications-subtitle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
 }
 
 .header-actions {
@@ -209,156 +193,70 @@ onMounted(async () => {
   gap: var(--spacing-3);
 }
 
-.notifications-filters {
-  display: flex;
-  gap: var(--spacing-2);
-  margin-bottom: var(--spacing-6);
-  flex-wrap: wrap;
-}
-
-.filter-btn {
-  padding: var(--spacing-2) var(--spacing-4);
-  background: white;
+.notifications-container {
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: var(--transition-fast);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-}
-
-.filter-btn:hover {
-  border-color: var(--color-primary);
-}
-
-.filter-btn.active {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-.count-badge {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  padding: 2px 6px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-}
-
-.filter-btn.active .count-badge {
-  background: white;
-}
-
-.notifications-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-3);
-}
-
-.notification-item {
-  display: flex;
-  gap: var(--spacing-4);
-  padding: var(--spacing-4);
-  background: white;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  border-left: 4px solid var(--color-border);
-  transition: var(--transition-fast);
-}
-
-.notification-item.unread {
-  border-left-color: var(--color-primary);
-  background: var(--color-accent);
-}
-
-.notification-item:hover {
-  box-shadow: var(--shadow-md);
-}
-
-.notification-icon {
-  font-size: var(--font-size-2xl);
-  flex-shrink: 0;
-}
-
-.notification-content {
-  flex: 1;
-}
-
-.notification-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-1);
-  color: var(--color-text-primary);
-}
-
-.notification-message {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-2);
-  line-height: 1.5;
-}
-
-.notification-time {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-}
-
-.notification-actions {
-  display: flex;
-  gap: var(--spacing-2);
-  flex-shrink: 0;
-}
-
-.action-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: var(--transition-fast);
-  font-size: var(--font-size-base);
-}
-
-.action-btn:hover {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-.action-btn.delete-btn:hover {
-  background: #ffebee;
-  color: var(--color-error);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .empty-state {
   text-align: center;
-  padding: var(--spacing-12) var(--spacing-4);
-  background: white;
-  border-radius: var(--radius-md);
+  padding: var(--spacing-16) var(--spacing-6);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-4);
+  opacity: 0.5;
+}
+
+.empty-state h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-3);
+  color: var(--color-text-primary);
 }
 
 .empty-state p {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   color: var(--color-text-secondary);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-@media (max-width: 767px) {
+/* Responsive Design */
+@media (max-width: 768px) {
+  .notifications-view {
+    padding: var(--spacing-4);
+  }
+
   .notifications-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-4);
+    align-items: stretch;
   }
-  
-  .notification-item {
-    flex-direction: column;
+
+  .header-content h1 {
+    font-size: var(--font-size-2xl);
   }
-  
-  .notification-actions {
-    flex-direction: row;
-    align-self: flex-end;
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content h1 {
+    font-size: var(--font-size-xl);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
   }
 }
 </style>

@@ -3,7 +3,7 @@
   School of Engineering and Technology
   Degree in Computer Engineering
   Final Degree Project (TFG)
- 
+
   @author Fabián González Lence <alu0101549491@ull.edu.es>
   @since February 16, 2026
   @file src/presentation/views/LoginView.vue
@@ -14,7 +14,7 @@
 <template>
   <div class="login-view">
     <div class="login-container">
-      <!-- Logo and Branding -->
+      <!-- Logo -->
       <div class="login-header">
         <div class="login-logo">
           <MapIcon class="login-logo-icon" />
@@ -33,7 +33,7 @@
           <span>{{ error }}</span>
         </div>
 
-        <!-- Email Input -->
+        <!-- Email -->
         <div class="login-field">
           <label for="email" class="login-label">Email</label>
           <div class="login-input-wrapper">
@@ -51,7 +51,7 @@
           </div>
         </div>
 
-        <!-- Password Input -->
+        <!-- Password -->
         <div class="login-field">
           <label for="password" class="login-label">Password</label>
           <div class="login-input-wrapper">
@@ -81,30 +81,20 @@
         <!-- Remember Me -->
         <div class="login-options">
           <label class="login-remember">
-            <input
-              v-model="form.rememberMe"
-              type="checkbox"
-              class="login-checkbox"
-            />
+            <input v-model="form.rememberMe" type="checkbox" class="login-checkbox" />
             <span>Remember me</span>
           </label>
         </div>
 
-        <!-- Submit Button -->
-        <button
-          type="submit"
-          class="login-submit"
-          :disabled="isLoading || !isFormValid"
-        >
+        <!-- Submit -->
+        <button type="submit" class="login-submit" :disabled="isLoading || !isFormValid">
           <LoadingSpinner v-if="isLoading" size="sm" color="white" />
           <span>{{ isLoading ? 'Signing in...' : 'Sign In' }}</span>
         </button>
       </form>
 
       <!-- Footer -->
-      <p class="login-footer">
-        © {{ currentYear }} Cartographic Project Manager
-      </p>
+      <p class="login-footer">© {{ currentYear }} Cartographic Project Manager</p>
     </div>
   </div>
 </template>
@@ -127,7 +117,6 @@ const router = useRouter();
 const route = useRoute();
 const {login, isLoading} = useAuth();
 
-// State
 const form = reactive({
   email: '',
   password: '',
@@ -135,29 +124,18 @@ const form = reactive({
 });
 const showPassword = ref(false);
 const error = ref<string | null>(null);
-
 const currentYear = new Date().getFullYear();
 
-const isFormValid = computed(() => {
-  return form.email.trim() !== '' && form.password.trim() !== '';
-});
+const isFormValid = computed(() => form.email.trim() !== '' && form.password.trim() !== '');
 
 async function handleLogin() {
   error.value = null;
-
   try {
-    await login({
-      email: form.email,
-      password: form.password,
-      rememberMe: form.rememberMe,
-    });
-
-    // Redirect to intended page or dashboard
+    await login({email: form.email, password: form.password, rememberMe: form.rememberMe});
     const redirect = (route.query.redirect as string) || '/';
     router.push(redirect);
   } catch (err: any) {
-    error.value =
-      err.message || 'Invalid email or password. Please try again.';
+    error.value = err.message || 'Invalid email or password. Please try again.';
   }
 }
 </script>
@@ -168,123 +146,204 @@ async function handleLogin() {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
   padding: var(--spacing-4);
 }
 
 .login-container {
   width: 100%;
   max-width: 420px;
-  background: var(--color-bg-primary);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-2xl);
-  padding: var(--spacing-8);
 }
 
 .login-header {
   text-align: center;
   margin-bottom: var(--spacing-8);
+  color: white;
 }
 
-.logo {
-  display: inline-block;
-  margin-bottom: var(--spacing-4);
+.login-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-3);
 }
 
-.login-header h1 {
+.login-logo-icon {
+  width: 64px;
+  height: 64px;
+}
+
+.login-title {
   font-size: var(--font-size-2xl);
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-2);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-1);
 }
 
-.subtitle {
-  color: var(--color-text-secondary);
+.login-subtitle {
   font-size: var(--font-size-sm);
+  opacity: 0.8;
   margin: 0;
 }
 
 .login-form {
-  margin-bottom: var(--spacing-6);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-8);
+  box-shadow: var(--shadow-xl);
 }
 
-.error-message {
-  background-color: #FEE2E2;
-  color: var(--color-text-error);
-  padding: var(--spacing-3) var(--spacing-4);
+.login-form-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-6);
+  text-align: center;
+}
+
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  background-color: var(--color-error-50);
+  color: var(--color-error-700);
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-4);
   font-size: var(--font-size-sm);
 }
 
-.form-group {
+.login-error-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.login-field {
   margin-bottom: var(--spacing-4);
 }
 
-.form-group label {
+.login-label {
   display: block;
-  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-1);
 }
 
-.password-input {
+.login-input-wrapper {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
-.password-input input {
-  padding-right: var(--spacing-12);
-}
-
-.toggle-password {
+.login-input-icon {
   position: absolute;
-  right: var(--spacing-3);
-  top: 50%;
-  transform: translateY(-50%);
+  left: var(--spacing-3);
+  width: 18px;
+  height: 18px;
+  color: var(--color-gray-400);
+  pointer-events: none;
+}
+
+.login-input {
+  width: 100%;
+  height: var(--height-input);
+  padding: 0 var(--spacing-10) 0 var(--spacing-10);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.login-input:disabled {
+  background-color: var(--color-gray-100);
+  cursor: not-allowed;
+}
+
+.login-password-toggle {
+  position: absolute;
+  right: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--color-gray-400);
   background: none;
   border: none;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  padding: var(--spacing-2);
-  font-size: var(--font-size-lg);
 }
 
-.toggle-password:hover {
-  opacity: 0.7;
+.login-password-toggle:hover {
+  color: var(--color-gray-600);
 }
 
-.checkbox-group label {
+.login-password-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.login-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-6);
+}
+
+.login-remember {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
 
-.checkbox-group input[type="checkbox"] {
-  width: auto;
-  margin: 0;
+.login-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary-600);
 }
 
-.submit-button {
+.login-submit {
   width: 100%;
-  margin-top: var(--spacing-4);
+  height: var(--height-button-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: white;
+  background-color: var(--color-primary-600);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.login-submit:hover:not(:disabled) {
+  background-color: var(--color-primary-700);
+}
+
+.login-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .login-footer {
   text-align: center;
-  padding-top: var(--spacing-4);
-  border-top: 1px solid var(--color-border);
-}
-
-.login-footer p {
-  color: var(--color-text-muted);
   font-size: var(--font-size-xs);
-  margin: 0;
-}
-
-@media (max-width: 480px) {
-  .login-container {
-    padding: var(--spacing-6);
-  }
-
-  .login-header h1 {
-    font-size: var(--font-size-xl);
-  }
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: var(--spacing-6);
 }
 </style>
