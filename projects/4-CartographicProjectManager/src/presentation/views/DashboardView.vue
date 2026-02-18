@@ -164,6 +164,7 @@
             :max-items="5"
             @notification-click="handleNotificationClick"
             @mark-read="handleMarkAsRead"
+            @mark-all-read="handleMarkAllAsRead"
           />
         </section>
 
@@ -238,7 +239,7 @@ const {
   projectsDueThisWeek,
   calendarProjects,
   isLoading,
-  loadProjects,
+  fetchProjects,
   createProject,
   loadCalendarProjects,
 } = useProjects();
@@ -247,8 +248,9 @@ const {
   notifications,
   unreadCount,
   isLoading: notificationsLoading,
-  loadNotifications,
+  fetchNotifications,
   markAsRead,
+  markAllAsRead,
 } = useNotifications();
 
 // Local State
@@ -261,10 +263,7 @@ const stats = computed(() => ({
     (sum, p) => sum + (p.pendingTasksCount || 0),
     0
   ),
-  unreadMessages: activeProjects.value.reduce(
-    (sum, p) => sum + (p.unreadMessagesCount || 0),
-    0
-  ),
+  unreadMessages: unreadCount.value, // Use notification unread count
   overdueProjects: activeProjects.value.filter((p) => {
     const deliveryDate = new Date(p.deliveryDate);
     const today = new Date();
@@ -436,6 +435,17 @@ async function handleMarkAsRead(notificationId: string): Promise<void> {
 }
 
 /**
+ * Mark all notifications as read
+ */
+async function handleMarkAllAsRead(): Promise<void> {
+  try {
+    await markAllAsRead();
+  } catch (error) {
+    console.error('Failed to mark all notifications as read:', error);
+  }
+}
+
+/**
  * Handle month change in calendar widget
  *
  * @param {Date} date - New month date
@@ -468,10 +478,15 @@ async function handleCreateProject(projectData: CreateProjectInput): Promise<voi
 // Lifecycle
 onMounted(async () => {
   try {
+    // Get date range for calendar projects (current month)
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
     await Promise.all([
-      loadProjects(),
-      loadNotifications(),
-      loadCalendarProjects(new Date().getFullYear(), new Date().getMonth() + 1),
+      fetchProjects(),
+      fetchNotifications(),
+      loadCalendarProjects(startOfMonth, endOfMonth),
     ]);
   } catch (error) {
     console.error('Failed to load dashboard data:', error);
@@ -793,5 +808,4 @@ onMounted(async () => {
     font-size: var(--font-size-2xl);
   }
 }
-</style>
 </style>

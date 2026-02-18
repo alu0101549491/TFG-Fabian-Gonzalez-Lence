@@ -30,6 +30,14 @@ export enum AuthErrorCode {
   TOKEN_INVALID = 'TOKEN_INVALID',
   /** Token has expired */
   TOKEN_EXPIRED = 'TOKEN_EXPIRED',
+  /** Email already registered */
+  EMAIL_ALREADY_EXISTS = 'EMAIL_ALREADY_EXISTS',
+  /** Username already taken */
+  USERNAME_ALREADY_EXISTS = 'USERNAME_ALREADY_EXISTS',
+  /** Password does not meet requirements */
+  INVALID_PASSWORD = 'INVALID_PASSWORD',
+  /** Invalid email format */
+  INVALID_EMAIL = 'INVALID_EMAIL',
 }
 
 /**
@@ -64,6 +72,24 @@ export interface LoginCredentialsDto {
   readonly password: string;
   /** Whether to extend session duration */
   readonly rememberMe?: boolean;
+}
+
+/**
+ * Registration credentials for new user account creation.
+ */
+export interface RegisterCredentialsDto {
+  /** Desired username */
+  readonly username: string;
+  /** User email address */
+  readonly email: string;
+  /** User password (min 8 characters) */
+  readonly password: string;
+  /** Password confirmation */
+  readonly confirmPassword: string;
+  /** Phone number (optional) */
+  readonly phone?: string | null;
+  /** Whether to enable WhatsApp notifications */
+  readonly whatsappEnabled?: boolean;
 }
 
 /**
