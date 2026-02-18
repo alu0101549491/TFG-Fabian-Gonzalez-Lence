@@ -309,6 +309,62 @@ export function isToday(date: Date | string): boolean {
 }
 
 /**
+ * Check if two dates are on the same day
+ *
+ * @param date1 - First date
+ * @param date2 - Second date
+ * @returns True if dates are on the same day
+ *
+ * @example
+ * ```typescript
+ * isSameDay(new Date(2025, 5, 15, 10, 0), new Date(2025, 5, 15, 18, 30));
+ * // true
+ * ```
+ */
+export function isSameDay(
+  date1: Date | string,
+  date2: Date | string,
+): boolean {
+  const parsed1 = parseDate(date1);
+  const parsed2 = parseDate(date2);
+
+  if (!parsed1 || !parsed2) return false;
+
+  return (
+    parsed1.getDate() === parsed2.getDate() &&
+    parsed1.getMonth() === parsed2.getMonth() &&
+    parsed1.getFullYear() === parsed2.getFullYear()
+  );
+}
+
+/**
+ * Check if a date is in the current week
+ *
+ * @param date - Date to check
+ * @returns True if date is in current week
+ *
+ * @example
+ * ```typescript
+ * isThisWeek(new Date());
+ * // true
+ * ```
+ */
+export function isThisWeek(date: Date | string): boolean {
+  const parsed = parseDate(date);
+  if (!parsed) return false;
+
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+  return parsed >= startOfWeek && parsed < endOfWeek;
+}
+
+/**
  * Check if a date is overdue
  *
  * @param dueDate - Due date
@@ -1392,29 +1448,5 @@ export async function retryWithBackoff<T>(
  */
 export function generateUuid(): string {
   // TODO: Implement UUID generation
-  throw new Error('Not implemented.');
-}
-
-/**
- * Formats a file size in bytes to a human-readable string.
- * @param bytes - File size in bytes.
- * @returns Formatted size string (e.g. '2.5 MB').
- */
-export function formatFileSize(bytes: number): string {
-  // TODO: Implement file size formatting
-  throw new Error('Not implemented.');
-}
-
-/**
- * Debounces a function call.
- * @param fn - The function to debounce.
- * @param delayMs - Delay in milliseconds.
- * @returns Debounced function.
- */
-export function debounce<T extends (...args: unknown[]) => void>(
-  fn: T,
-  delayMs: number,
-): (...args: Parameters<T>) => void {
-  // TODO: Implement debounce
   throw new Error('Not implemented.');
 }

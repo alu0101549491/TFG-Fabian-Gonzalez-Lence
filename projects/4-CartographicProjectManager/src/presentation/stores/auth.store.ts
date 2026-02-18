@@ -14,10 +14,41 @@
 
 import {defineStore} from 'pinia';
 import {ref, computed} from 'vue';
-import type {UserDto, LoginCredentialsDto, AuthResultDto} from '../../application/dto';
+import type {UserDto, LoginCredentialsDto, RegisterCredentialsDto, AuthResultDto} from '../../application/dto';
 import {UserRole} from '../../domain/enumerations/user-role';
 import {AuthErrorCode} from '../../application/dto/auth-result.dto';
 import {STORAGE_KEYS, AUTH} from '../../shared/constants';
+
+// Mock user database for development (module-level so it persists across login/register)
+const MOCK_USERS = [
+  {
+    id: '1',
+    username: 'admin',
+    email: 'admin@cartographic.com',
+    password: 'admin123',
+    role: UserRole.ADMINISTRATOR,
+    phone: '+34 123 456 789',
+    whatsappEnabled: true,
+  },
+  {
+    id: '2',
+    username: 'client',
+    email: 'client@example.com',
+    password: 'client123',
+    role: UserRole.CLIENT,
+    phone: '+34 987 654 321',
+    whatsappEnabled: false,
+  },
+  {
+    id: '3',
+    username: 'special',
+    email: 'special@cartographic.com',
+    password: 'special123',
+    role: UserRole.SPECIAL_USER,
+    phone: null,
+    whatsappEnabled: false,
+  },
+];
 
 /**
  * Authentication store using Composition API.
@@ -78,21 +109,37 @@ export const useAuthStore = defineStore('auth', () => {
       // TODO: Replace with actual service call
       // const result = await authService.login(credentials);
       
-      // Mock successful login
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
+      // Validate credentials
+      const mockUser = MOCK_USERS.find(u => u.email === credentials.email);
+      
+      if (!mockUser) {
+        error.value = 'Invalid email or password';
+        errorCode.value = AuthErrorCode.INVALID_CREDENTIALS;
+        return false;
+      }
+      
+      if (mockUser.password !== credentials.password) {
+        error.value = 'Invalid email or password';
+        errorCode.value = AuthErrorCode.INVALID_CREDENTIALS;
+        return false;
+      }
+      
+      // Successful authentication
       const mockResult: AuthResultDto = {
         success: true,
         accessToken: `access_${Date.now()}`,
         refreshToken: `refresh_${Date.now()}`,
         expiresAt: new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000),
         user: {
-          id: '1',
-          username: credentials.email.split('@')[0],
-          email: credentials.email,
-          role: UserRole.ADMINISTRATOR,
-          phone: null,
-          whatsappEnabled: false,
+          id: mockUser.id,
+          username: mockUser.username,
+          email: mockUser.email,
+          role: mockUser.role,
+          phone: mockUser.phone,
+          whatsappEnabled: mockUser.whatsappEnabled,
           createdAt: new Date(),
           lastLogin: new Date(),
         },
@@ -114,6 +161,97 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (err: any) {
       error.value = err.message || 'An unexpected error occurred';
+      errorCode.value = err.code || null;
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * Registers a new user account
+   *
+   * @param credentials - Registration credentials
+   * @returns True if registration successful, false otherwise
+   */
+  async function register(credentials: RegisterCredentialsDto): Promise<boolean> {
+    isLoading.value = true;
+    error.value = null;
+    errorCode.value = null;
+
+    try {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Validation
+      if (credentials.password !== credentials.confirmPassword) {
+        error.value = 'Passwords do not match';
+        errorCode.value = AuthErrorCode.INVALID_PASSWORD;
+        return false;
+      }
+
+      if (credentials.password.length < AUTH.PASSWORD_MIN_LENGTH) {
+        error.value = `Password must be at least ${AUTH.PASSWORD_MIN_LENGTH} characters`;
+        errorCode.value = AuthErrorCode.INVALID_PASSWORD;
+        return false;
+      }
+
+      // Check if email already exists
+      if (MOCK_USERS.some(u => u.email === credentials.email)) {
+        error.value = 'Email already registered';
+        errorCode.value = AuthErrorCode.EMAIL_ALREADY_EXISTS;
+        return false;
+      }
+
+      // Check if username already exists
+      if (MOCK_USERS.some(u => u.username === credentials.username)) {
+        error.value = 'Username already taken';
+        errorCode.value = AuthErrorCode.USERNAME_ALREADY_EXISTS;
+        return false;
+      }
+
+      // Create new user
+      const newUser = {
+        id: `${MOCK_USERS.length + 1}`,
+        username: credentials.username,
+        email: credentials.email,
+        password: credentials.password,
+        role: UserRole.CLIENT, // New users default to CLIENT role
+        phone: credentials.phone || null,
+        whatsappEnabled: credentials.whatsappEnabled || false,
+      };
+
+      MOCK_USERS.push(newUser);
+
+      // Auto-login after successful registration
+      const mockResult: AuthResultDto = {
+        success: true,
+        accessToken: `access_${Date.now()}`,
+        refreshToken: `refresh_${Date.now()}`,
+        expiresAt: new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000),
+        user: {
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          role: newUser.role,
+          phone: newUser.phone,
+          whatsappEnabled: newUser.whatsappEnabled,
+          createdAt: new Date(),
+          lastLogin: new Date(),
+        },
+        error: null,
+        errorCode: null,
+      };
+
+      user.value = mockResult.user;
+      accessToken.value = mockResult.accessToken;
+      refreshToken.value = mockResult.refreshToken;
+      expiresAt.value = mockResult.expiresAt;
+
+      saveToStorage();
+      return true;
+    } catch (err: any) {
+      error.value = err.message || 'Registration failed';
       errorCode.value = err.code || null;
       return false;
     } finally {
@@ -322,6 +460,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     // Actions
     login,
+    register,
     logout,
     refreshSession,
     validateSession,

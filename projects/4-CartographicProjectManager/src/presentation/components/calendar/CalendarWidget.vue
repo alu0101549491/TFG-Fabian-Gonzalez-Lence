@@ -1,4 +1,4 @@
-/**
+<!--
  * University of La Laguna
  * School of Engineering and Technology
  * Degree in Computer Engineering
@@ -10,7 +10,7 @@
  * @desc Calendar widget showing project delivery dates with status indicators
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
- */
+-->
 
 <template>
   <div :class="['calendar-widget', `calendar-widget-${mode}`]">

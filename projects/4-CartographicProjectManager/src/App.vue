@@ -124,8 +124,8 @@ import {useRouter, useRoute} from 'vue-router';
 import {storeToRefs} from 'pinia';
 import {useAuthStore} from '@/presentation/stores/auth.store';
 import {useNotificationStore} from '@/presentation/stores/notification.store';
-import AppHeader from '@/presentation/components/common/AppHeader.vue';
-import AppSidebar from '@/presentation/components/common/AppSidebar.vue';
+import AppHeader from '@/presentation/components/layout/AppHeader.vue';
+import AppSidebar from '@/presentation/components/layout/AppSidebar.vue';
 import LoadingSpinner from '@/presentation/components/common/LoadingSpinner.vue';
 
 /**
