@@ -516,6 +516,7 @@ function handleSubmit(): void {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-5);
+  width: 100%;
   max-width: 600px;
 }
 
@@ -524,6 +525,7 @@ function handleSubmit(): void {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   margin: 0 0 var(--spacing-2);
+  display: none; /* Hidden as title is in modal header */
 }
 
 .project-form-row {

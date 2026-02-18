@@ -1,6 +1,6 @@
 # Git Changes Summary
 
-Generated on: February 16, 2026
+Generated on: February 18, 2026
 
 ## Overview
 
@@ -8,7 +8,59 @@ This document contains all the git changes made to the Cartographic Project Mana
 
 ---
 
-## Changed Files
+## Latest Changes (February 18, 2026)
+
+### Bug Fixes and Enhancements
+
+#### 1. Fixed Client Selection Dropdown in Project Creation Modal
+
+**Files Modified:**
+- `src/presentation/components/project/ProjectForm.vue`
+- `src/presentation/views/ProjectListView.vue`
+- `src/presentation/views/DashboardView.vue`
+
+**Changes:**
+
+**ProjectForm.vue**:
+- Added `width: 100%` to `.project-form` to ensure proper modal width
+- Hidden `.project-form-title` with `display: none` since title is shown in modal header
+
+**ProjectListView.vue**:
+- Added `clients` ref to store available client data
+- Created `fetchClients()` function with mock client data
+- Added `modal-body` wrapper around `ProjectForm` component for consistent padding
+- Passed `:clients="clients"` prop to ProjectForm
+- Updated `onMounted()` to fetch clients alongside projects using `Promise.all()`
+
+**DashboardView.vue**:
+- Added `clients` ref to store available client data
+- Created `fetchClients()` function with mock client data
+- Added `modal-body` wrapper around `ProjectForm` component for consistent padding
+- Passed `:clients="clients"` prop to ProjectForm
+- Updated `onMounted()` to fetch clients alongside projects and notifications
+
+**Mock Client Data:**
+```typescript
+[
+  {id: 'client-1', name: 'John Perez'},
+  {id: 'client-2', name: 'Maria Garcia'},
+  {id: 'client-3', name: 'Carlos Hernandez'},
+  {id: 'client-4', name: 'Ana Rodriguez'},
+]
+```
+
+**Issue Resolved:**
+- Client dropdown was empty because the `clients` prop was not being passed to the ProjectForm component
+- Modal styling was inconsistent (form touching edges) due to missing wrapper div
+
+**Backend Note:**
+- Backend API is NOT implemented yet
+- Application expects backend at `http://localhost:3000/api/v1` (configurable via `VITE_API_BASE_URL`)
+- TODO comment added for replacing mock data with actual API call: `userRepository.findByRole(UserRole.CLIENT)`
+
+---
+
+## Changed Files (February 16, 2026)
 
 ### 1. Package Dependencies
 
