@@ -15,7 +15,7 @@
 import {computed, type ComputedRef} from 'vue';
 import {useRouter} from 'vue-router';
 import {useAuthStore} from '../stores/auth.store';
-import type {UserDto, LoginCredentialsDto} from '../../application/dto';
+import type {UserDto, LoginCredentialsDto, RegisterCredentialsDto} from '../../application/dto';
 import {UserRole} from '../../domain/enumerations/user-role';
 import {AuthErrorCode} from '../../application/dto/auth-result.dto';
 import {ROUTES} from '../../shared/constants';
@@ -25,6 +25,18 @@ import {ROUTES} from '../../shared/constants';
  */
 export interface LoginResult {
   /** Whether login was successful */
+  success: boolean;
+  /** Error message if failed */
+  error?: string;
+  /** Error code if failed */
+  errorCode?: AuthErrorCode;
+}
+
+/**
+ * Result of registration operation
+ */
+export interface RegisterResult {
+  /** Whether registration was successful */
   success: boolean;
   /** Error message if failed */
   error?: string;
@@ -55,6 +67,7 @@ export interface UseAuthReturn {
   
   // Actions
   login: (email: string, password: string, rememberMe?: boolean) => Promise<LoginResult>;
+  register: (credentials: RegisterCredentialsDto) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
   
@@ -135,11 +148,12 @@ export function useAuth(): UseAuthReturn {
     const success = await store.login(credentials);
 
     if (success) {
-      // Redirect to intended route or dashboard
-      const intendedRoute = sessionStorage.getItem('intended_route');
-      if (intendedRoute) {
-        sessionStorage.removeItem('intended_route');
-        await router.push(intendedRoute);
+      // Check for redirect in query parameters (from router guard)
+      const currentRoute = router.currentRoute.value;
+      const redirect = currentRoute.query.redirect as string;
+      
+      if (redirect && redirect !== '/login') {
+        await router.push(redirect);
       } else {
         await router.push(ROUTES.DASHBOARD);
       }
@@ -160,6 +174,28 @@ export function useAuth(): UseAuthReturn {
   async function logout(): Promise<void> {
     await store.logout();
     await router.push(ROUTES.LOGIN);
+  }
+
+  /**
+   * Registers a new user account
+   *
+   * @param credentials - Registration credentials
+   * @returns Registration result with success status and error if failed
+   */
+  async function register(credentials: RegisterCredentialsDto): Promise<RegisterResult> {
+    const success = await store.register(credentials);
+
+    if (success) {
+      // Redirect to dashboard after successful registration
+      await router.push(ROUTES.DASHBOARD);
+      return {success: true};
+    }
+
+    return {
+      success: false,
+      error: store.error ?? 'Registration failed',
+      errorCode: store.errorCode ?? undefined,
+    };
   }
 
   /**
@@ -218,6 +254,7 @@ export function useAuth(): UseAuthReturn {
 
     // Actions
     login,
+    register,
     logout,
     refreshSession,
 

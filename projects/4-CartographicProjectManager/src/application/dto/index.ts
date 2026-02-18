@@ -8,6 +8,7 @@
 export type {
   UserDto,
   LoginCredentialsDto,
+  RegisterCredentialsDto,
   AuthResultDto,
   RefreshTokenDto,
   SessionDto,

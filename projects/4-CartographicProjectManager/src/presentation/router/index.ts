@@ -114,6 +114,18 @@ const routes: RouteRecordRaw[] = [
     },
   },
 
+  {
+    path: '/register',
+    name: 'register',
+    component: () => import('../views/RegisterView.vue'),
+    meta: {
+      requiresAuth: false,
+      guestOnly: true,
+      title: 'Register',
+      layout: 'auth',
+    },
+  },
+
   // ==========================================
   // AUTHENTICATED ROUTES
   // ==========================================
@@ -135,7 +147,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/projects',
     name: 'projects',
-    component: () => import('../views/ProjectsView.vue'),
+    component: () => import('../views/ProjectListView.vue'),
     meta: {
       requiresAuth: true,
       title: 'Projects',

@@ -23,6 +23,8 @@ import {NotificationType} from '../../domain/enumerations/notification-type';
 import {useAuthStore} from './auth.store';
 import {isSameDay, isThisWeek, formatDate} from '../../shared/utils';
 
+const STORAGE_KEY = 'cpm_notifications';
+
 /**
  * Notification store using Composition API.
  * Manages user notifications with pagination and type filtering.
@@ -75,6 +77,43 @@ export const useNotificationStore = defineStore('notification', () => {
     return grouped;
   });
 
+  // Helper functions
+  
+  /**
+   * Load notifications from localStorage
+   */
+  function loadFromStorage(): void {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.notifications) {
+          // Convert date strings back to Date objects
+          notifications.value = data.notifications.map((n: any) => ({
+            ...n,
+            createdAt: new Date(n.createdAt),
+          }));
+          unreadCount.value = notifications.value.filter(n => !n.isRead).length;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load notifications from storage:', err);
+    }
+  }
+
+  /**
+   * Save notifications to localStorage
+   */
+  function saveToStorage(): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        notifications: notifications.value,
+      }));
+    } catch (err) {
+      console.error('Failed to save notifications to storage:', err);
+    }
+  }
+
   // Actions
 
   /**
@@ -109,39 +148,52 @@ export const useNotificationStore = defineStore('notification', () => {
       // Mock API call
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Mock data
-      const mockNotifications: NotificationDto[] = [
-        {
-          id: '1',
-          userId: authStore.userId,
-          type: NotificationType.NEW_MESSAGE,
-          title: 'New Message',
-          message: 'You have a new message in Project CART-2025-001',
-          relatedEntityId: '1',
-          createdAt: new Date('2025-02-07T10:00:00'),
-          isRead: false,
-        },
-        {
-          id: '2',
-          userId: authStore.userId,
-          type: NotificationType.NEW_TASK,
-          title: 'Task Assigned',
-          message: 'A new task has been assigned to you',
-          relatedEntityId: '1',
-          createdAt: new Date('2025-02-06T15:30:00'),
-          isRead: false,
-        },
-        {
-          id: '3',
-          userId: authStore.userId,
-          type: NotificationType.TASK_STATUS_CHANGE,
-          title: 'Task Completed',
-          message: 'Task "Complete survey" has been marked as completed',
-          relatedEntityId: '2',
-          createdAt: new Date('2025-02-05T09:15:00'),
-          isRead: true,
-        },
-      ];
+      // Try to load from storage first
+      const stored = localStorage.getItem(STORAGE_KEY);
+      let mockNotifications: NotificationDto[];
+      
+      if (stored && !loadMore) {
+        // Use stored notifications
+        const data = JSON.parse(stored);
+        mockNotifications = data.notifications.map((n: any) => ({
+          ...n,
+          createdAt: new Date(n.createdAt),
+        }));
+      } else {
+        // Generate initial mock data only if no storage
+        mockNotifications = [
+          {
+            id: '1',
+            userId: authStore.userId,
+            type: NotificationType.NEW_MESSAGE,
+            title: 'New Message',
+            message: 'You have a new message in Project CART-2025-001',
+            relatedEntityId: '1',
+            createdAt: new Date('2025-02-07T10:00:00'),
+            isRead: false,
+          },
+          {
+            id: '2',
+            userId: authStore.userId,
+            type: NotificationType.NEW_TASK,
+            title: 'Task Assigned',
+            message: 'A new task has been assigned to you',
+            relatedEntityId: '1',
+            createdAt: new Date('2025-02-06T15:30:00'),
+            isRead: false,
+          },
+          {
+            id: '3',
+            userId: authStore.userId,
+            type: NotificationType.TASK_STATUS_CHANGE,
+            title: 'Task Completed',
+            message: 'Task "Complete survey" has been marked as completed',
+            relatedEntityId: '2',
+            createdAt: new Date('2025-02-05T09:15:00'),
+            isRead: true,
+          },
+        ];
+      }
 
       if (loadMore) {
         notifications.value = [...notifications.value, ...mockNotifications];
@@ -158,6 +210,9 @@ export const useNotificationStore = defineStore('notification', () => {
       
       // Update unread count
       unreadCount.value = notifications.value.filter(n => !n.isRead).length;
+      
+      // Save to storage
+      saveToStorage();
       
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch notifications';
@@ -201,8 +256,14 @@ export const useNotificationStore = defineStore('notification', () => {
       
       const notification = notifications.value.find(n => n.id === notificationId);
       if (notification && !notification.isRead) {
-        notification.isRead = true;
+        // Update notifications reactively
+        notifications.value = notifications.value.map(n => 
+          n.id === notificationId ? { ...n, isRead: true } : n
+        );
         unreadCount.value = Math.max(0, unreadCount.value - 1);
+        
+        // Save to storage
+        saveToStorage();
       }
     } catch (err: any) {
       error.value = err.message || 'Failed to mark notification as read';
@@ -224,8 +285,15 @@ export const useNotificationStore = defineStore('notification', () => {
       
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      notifications.value.forEach(n => n.isRead = true);
+      // Update notifications reactively
+      notifications.value = notifications.value.map(n => ({
+        ...n,
+        isRead: true
+      }));
       unreadCount.value = 0;
+      
+      // Save to storage
+      saveToStorage();
     } catch (err: any) {
       error.value = err.message || 'Failed to mark all as read';
       throw err;
