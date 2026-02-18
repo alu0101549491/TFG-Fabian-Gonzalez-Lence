@@ -1,0 +1,18 @@
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 18, 2026
+ * @file src/infrastructure/index.ts
+ * @desc Infrastructure layer module exports
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
+ */
+
+export * from './database/index.js';
+export * from './repositories/index.js';
+export * from './auth/index.js';
+export * from './websocket/index.js';

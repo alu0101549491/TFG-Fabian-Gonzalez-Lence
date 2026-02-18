@@ -1,0 +1,346 @@
+// University of La Laguna
+// School of Engineering and Technology
+// Degree in Computer Engineering
+// Final Degree Project (TFG)
+// 
+// @author Fabián González Lence <alu0101549491@ull.edu.es>
+// @since February 18, 2026
+// @file prisma/schema.prisma
+// @desc Database schema for Cartographic Project Manager using Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMERATIONS
+// ============================================
+
+enum UserRole {
+  ADMINISTRATOR
+  CLIENT
+  SPECIAL_USER
+}
+
+enum ProjectStatus {
+  ACTIVE
+  IN_PROGRESS
+  PENDING_REVIEW
+  FINALIZED
+}
+
+enum ProjectType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  PUBLIC
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  PARTIAL
+  PERFORMED
+  COMPLETED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationType {
+  NEW_MESSAGE
+  NEW_TASK
+  TASK_STATUS_CHANGE
+  FILE_RECEIVED
+  PROJECT_ASSIGNED
+  PROJECT_FINALIZED
+}
+
+enum FileType {
+  PDF
+  KML
+  SHP
+  IMAGE
+  DOCUMENT
+  SPREADSHEET
+  CAD
+  COMPRESSED
+}
+
+enum AccessRight {
+  VIEW
+  DOWNLOAD
+  EDIT
+  DELETE
+  UPLOAD
+  SEND_MESSAGE
+}
+
+// ============================================
+// USER MODEL
+// ============================================
+
+model User {
+  id               String    @id @default(uuid())
+  username         String    @unique
+  email            String    @unique
+  passwordHash     String
+  role             UserRole  @default(CLIENT)
+  phone            String?
+  whatsappEnabled  Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  lastLogin        DateTime?
+  
+  // Relations
+  clientProjects   Project[]      @relation("ClientProjects")
+  specialUserProjects ProjectSpecialUser[]
+  createdTasks     Task[]         @relation("CreatedTasks")
+  assignedTasks    Task[]         @relation("AssignedTasks")
+  messages         Message[]
+  notifications    Notification[]
+  uploadedFiles    File[]
+  permissions      Permission[]
+
+  @@index([email])
+  @@index([username])
+  @@index([role])
+  @@map("users")
+}
+
+// ============================================
+// PROJECT MODEL
+// ============================================
+
+model Project {
+  id               String        @id @default(uuid())
+  code             String        @unique
+  name             String
+  year             Int
+  clientId         String
+  type             ProjectType
+  coordinateX      Float?
+  coordinateY      Float?
+  contractDate     DateTime
+  deliveryDate     DateTime
+  status           ProjectStatus @default(ACTIVE)
+  dropboxFolderId  String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  finalizedAt      DateTime?
+  
+  // Relations
+  client           User          @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
+  specialUsers     ProjectSpecialUser[]
+  tasks            Task[]
+  messages         Message[]
+  files            File[]
+  notifications    Notification[]
+  
+  @@index([code])
+  @@index([clientId])
+  @@index([status])
+  @@index([year])
+  @@index([type])
+  @@index([deliveryDate])
+  @@map("projects")
+}
+
+// ============================================
+// PROJECT SPECIAL USERS (MANY-TO-MANY)
+// ============================================
+
+model ProjectSpecialUser {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  addedAt   DateTime @default(now())
+  
+  // Relations
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_special_users")
+}
+
+// ============================================
+// TASK MODEL
+// ============================================
+
+model Task {
+  id          String        @id @default(uuid())
+  projectId   String
+  creatorId   String
+  assigneeId  String
+  description String
+  status      TaskStatus    @default(PENDING)
+  priority    TaskPriority  @default(MEDIUM)
+  dueDate     DateTime
+  comments    String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  completedAt DateTime?
+  confirmedAt DateTime?
+  
+  // Relations
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator     User          @relation("CreatedTasks", fields: [creatorId], references: [id], onDelete: Cascade)
+  assignee    User          @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: Cascade)
+  files       TaskFile[]
+  history     TaskHistory[]
+  
+  @@index([projectId])
+  @@index([creatorId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@map("tasks")
+}
+
+// ============================================
+// TASK FILES (MANY-TO-MANY)
+// ============================================
+
+model TaskFile {
+  id       String   @id @default(uuid())
+  taskId   String
+  fileId   String
+  addedAt  DateTime @default(now())
+  
+  // Relations
+  task     Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  file     File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  
+  @@unique([taskId, fileId])
+  @@index([taskId])
+  @@index([fileId])
+  @@map("task_files")
+}
+
+// ============================================
+// TASK HISTORY MODEL
+// ============================================
+
+model TaskHistory {
+  id           String     @id @default(uuid())
+  taskId       String
+  changedBy    String
+  previousStatus TaskStatus?
+  newStatus    TaskStatus
+  notes        String?
+  changedAt    DateTime   @default(now())
+  
+  // Relations
+  task         Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  @@index([taskId])
+  @@index([changedAt])
+  @@map("task_history")
+}
+
+// ============================================
+// MESSAGE MODEL
+// ============================================
+
+model Message {
+  id         String   @id @default(uuid())
+  projectId  String
+  senderId   String
+  content    String
+  sentAt     DateTime @default(now())
+  
+  // Relations
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sender     User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([senderId])
+  @@index([sentAt])
+  @@map("messages")
+}
+
+// ============================================
+// NOTIFICATION MODEL
+// ============================================
+
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String
+  type       NotificationType
+  title      String
+  message    String
+  projectId  String?
+  isRead     Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+  readAt     DateTime?
+  
+  // Relations
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project    Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================
+// FILE MODEL
+// ============================================
+
+model File {
+  id            String   @id @default(uuid())
+  projectId     String
+  uploadedBy    String
+  filename      String
+  originalName  String
+  type          FileType
+  size          Int
+  mimeType      String
+  dropboxPath   String
+  uploadedAt    DateTime @default(now())
+  
+  // Relations
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploader      User     @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  taskFiles     TaskFile[]
+  
+  @@index([projectId])
+  @@index([uploadedBy])
+  @@index([type])
+  @@index([uploadedAt])
+  @@map("files")
+}
+
+// ============================================
+// PERMISSION MODEL
+// ============================================
+
+model Permission {
+  id         String      @id @default(uuid())
+  userId     String
+  projectId  String
+  rights     AccessRight[]
+  grantedAt  DateTime    @default(now())
+  grantedBy  String
+  
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, projectId])
+  @@index([userId])
+  @@index([projectId])
+  @@map("permissions")
+}
