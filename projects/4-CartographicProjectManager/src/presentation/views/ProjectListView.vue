@@ -166,11 +166,14 @@
                 ×
               </button>
             </div>
-            <ProjectForm
-              :project="editingProject"
-              @submit="handleProjectSubmit"
-              @cancel="closeModals"
-            />
+            <div class="modal-body">
+              <ProjectForm
+                :project="editingProject"
+                :clients="clients"
+                @submit="handleProjectSubmit"
+                @cancel="closeModals"
+              />
+            </div>
           </div>
         </div>
       </Teleport>
@@ -248,13 +251,13 @@ const searchQuery = ref('');
 const statusFilter = ref('');
 const typeFilter = ref('');
 const sortBy = ref<'updatedAt' | 'createdAt' | 'deliveryDate' | 'code' | 'name'>('updatedAt');
-
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
 const editingProject = ref<Project | null>(null);
 const projectToDelete = ref<Project | null>(null);
 const isDeleting = ref(false);
+const clients = ref<Array<{id: string; name: string}>>([]);
 
 // Computed Properties
 const activeCount = computed(() => activeProjects.value.length);
@@ -328,6 +331,28 @@ const emptyStateMessage = computed(() => {
 });
 
 // Methods
+/**
+ * Fetch available clients for project assignment
+ */
+async function fetchClients(): Promise<void> {
+  try {
+    // TODO: Replace with actual API call when backend is ready
+    // const clientUsers = await userRepository.findByRole(UserRole.CLIENT);
+    // clients.value = clientUsers.map(u => ({id: u.id, name: u.username}));
+    
+    // Mock data for development
+    clients.value = [
+      {id: 'client-1', name: 'John Perez'},
+      {id: 'client-2', name: 'Maria Garcia'},
+      {id: 'client-3', name: 'Carlos Hernandez'},
+      {id: 'client-4', name: 'Ana Rodriguez'},
+    ];
+  } catch (error) {
+    console.error('Failed to fetch clients:', error);
+    clients.value = [];
+  }
+}
+
 /**
  * Navigate to project details page
  *
@@ -421,7 +446,10 @@ async function handleDeleteConfirm(): Promise<void> {
 // Lifecycle
 onMounted(async () => {
   try {
-    await fetchProjects();
+    await Promise.all([
+      fetchProjects(),
+      fetchClients(),
+    ]);
   } catch (error) {
     console.error('Failed to load projects:', error);
   }

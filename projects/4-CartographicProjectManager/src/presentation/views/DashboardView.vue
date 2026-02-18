@@ -204,11 +204,14 @@
                 ×
               </button>
             </div>
-            <ProjectForm
-              :project="null"
-              @submit="handleCreateProject"
-              @cancel="showCreateModal = false"
-            />
+            <div class="modal-body">
+              <ProjectForm
+                :project="null"
+                :clients="clients"
+                @submit="handleCreateProject"
+                @cancel="showCreateModal = false"
+              />
+            </div>
           </div>
         </div>
       </Teleport>
@@ -255,6 +258,7 @@ const {
 
 // Local State
 const showCreateModal = ref(false);
+const clients = ref<Array<{id: string; name: string}>>([]);
 
 // Computed Properties
 const stats = computed(() => ({
@@ -459,6 +463,28 @@ async function handleMonthChange(date: Date): Promise<void> {
 }
 
 /**
+ * Fetch available clients for project assignment
+ */
+async function fetchClients(): Promise<void> {
+  try {
+    // TODO: Replace with actual API call when backend is ready
+    // const clientUsers = await userRepository.findByRole(UserRole.CLIENT);
+    // clients.value = clientUsers.map(u => ({id: u.id, name: u.username}));
+    
+    // Mock data for development
+    clients.value = [
+      {id: 'client-1', name: 'John Perez'},
+      {id: 'client-2', name: 'Maria Garcia'},
+      {id: 'client-3', name: 'Carlos Hernandez'},
+      {id: 'client-4', name: 'Ana Rodriguez'},
+    ];
+  } catch (error) {
+    console.error('Failed to fetch clients:', error);
+    clients.value = [];
+  }
+}
+
+/**
  * Handle project creation
  *
  * @param {CreateProjectInput} projectData - New project data
@@ -486,6 +512,7 @@ onMounted(async () => {
     await Promise.all([
       fetchProjects(),
       fetchNotifications(),
+      fetchClients(),
       loadCalendarProjects(startOfMonth, endOfMonth),
     ]);
   } catch (error) {
