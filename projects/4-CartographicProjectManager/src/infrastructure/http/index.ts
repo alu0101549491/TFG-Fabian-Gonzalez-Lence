@@ -11,6 +11,9 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  */
 
+// Import AxiosClient for local use
+import {AxiosClient} from './axios.client';
+
 // Export types
 export type {
   RequestConfig,
@@ -24,7 +27,7 @@ export type {
 } from './axios.client';
 
 // Export class
-export { AxiosClient } from './axios.client';
+export {AxiosClient} from './axios.client';
 
 /**
  * Singleton HTTP client instance for application-wide use

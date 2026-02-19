@@ -35,6 +35,8 @@ export interface ProjectDto {
   readonly year: number;
   /** Project type */
   readonly type: ProjectType;
+  /** Project description (optional) */
+  readonly description: string | null;
   /** Client user ID */
   readonly clientId: string;
   /** Client name (denormalized) */

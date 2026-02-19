@@ -73,6 +73,7 @@ export interface UseAuthReturn {
   
   // Permission Checks
   canCreateProject: ComputedRef<boolean>;
+  canManageProjects: ComputedRef<boolean>;
   canExportData: ComputedRef<boolean>;
   canManageBackups: ComputedRef<boolean>;
   
@@ -209,6 +210,7 @@ export function useAuth(): UseAuthReturn {
 
   // Permission Checks
   const canCreateProject = computed(() => isAdmin.value);
+  const canManageProjects = computed(() => isAdmin.value);
   const canExportData = computed(() => isAdmin.value);
   const canManageBackups = computed(() => isAdmin.value);
 
@@ -260,6 +262,7 @@ export function useAuth(): UseAuthReturn {
 
     // Permission Checks
     canCreateProject,
+    canManageProjects,
     canExportData,
     canManageBackups,
 

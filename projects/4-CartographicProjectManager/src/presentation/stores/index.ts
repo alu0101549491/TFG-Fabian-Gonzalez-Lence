@@ -12,6 +12,13 @@
  * @see {@link https://pinia.vuejs.org}
  */
 
+// Import all stores for use in this file
+import {useAuthStore} from './auth.store';
+import {useProjectStore} from './project.store';
+import {useTaskStore} from './task.store';
+import {useMessageStore} from './message.store';
+import {useNotificationStore} from './notification.store';
+
 // Export all stores
 export {useAuthStore} from './auth.store';
 export {useProjectStore} from './project.store';

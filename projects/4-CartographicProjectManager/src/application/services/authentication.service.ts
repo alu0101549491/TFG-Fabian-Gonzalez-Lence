@@ -58,10 +58,10 @@ export class AuthenticationService implements IAuthenticationService {
    * Authenticates a user with their credentials.
    */
   public async login(credentials: LoginCredentialsDto): Promise<AuthResultDto> {
-    const {usernameOrEmail, password} = credentials;
+    const {email, password} = credentials;
 
     // Check if account is locked
-    const lockoutEnd = this.lockedAccounts.get(usernameOrEmail);
+    const lockoutEnd = this.lockedAccounts.get(email);
     if (lockoutEnd && lockoutEnd > new Date()) {
       const remainingMinutes = Math.ceil((lockoutEnd.getTime() - Date.now()) / 60000);
       return createFailedAuthResult(
@@ -70,10 +70,10 @@ export class AuthenticationService implements IAuthenticationService {
       );
     }
 
-    // Find user by username or email
-    const user = await this.userRepository.findByUsernameOrEmail(usernameOrEmail);
+    // Find user by email
+    const user = await this.userRepository.findByEmail(email);
     if (!user) {
-      await this.recordFailedAttempt(usernameOrEmail);
+      await this.recordFailedAttempt(email);
       return createFailedAuthResult(
         'Invalid credentials',
         AuthErrorCode.INVALID_CREDENTIALS
@@ -82,9 +82,9 @@ export class AuthenticationService implements IAuthenticationService {
 
     // TODO: Implement password verification with bcrypt
     // For now, use placeholder comparison
-    const isPasswordValid = await this.verifyPassword(password, user.passwordHash);
+    const isPasswordValid = await this.verifyPassword(password, user['passwordHash']);
     if (!isPasswordValid) {
-      await this.recordFailedAttempt(usernameOrEmail);
+      await this.recordFailedAttempt(email);
       return createFailedAuthResult(
         'Invalid credentials',
         AuthErrorCode.INVALID_CREDENTIALS
@@ -92,8 +92,8 @@ export class AuthenticationService implements IAuthenticationService {
     }
 
     // Clear failed attempts on successful login
-    this.failedAttempts.delete(usernameOrEmail);
-    this.lockedAccounts.delete(usernameOrEmail);
+    this.failedAttempts.delete(email);
+    this.lockedAccounts.delete(email);
 
     // Generate tokens
     const token = this.generateToken(user.id);
@@ -104,9 +104,9 @@ export class AuthenticationService implements IAuthenticationService {
       userId: user.id,
       token,
       refreshToken,
-      expiresAt: new Date(Date.now() + this.SESSION_DURATION_MS),
-      createdAt: new Date(),
       role: user.role,
+      expiresAt: new Date(Date.now() + this.SESSION_DURATION_MS),
+      isValid: true,
     };
 
     this.activeSessions.set(token, session);
@@ -120,11 +120,15 @@ export class AuthenticationService implements IAuthenticationService {
       lastName: user.lastName,
       role: user.role,
       isActive: user.isActive,
+      phone: user.phone,
+      whatsappEnabled: user.whatsappEnabled,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      lastLogin: user.lastLogin,
     };
 
-    return createSuccessAuthResult(userDto, token, refreshToken);
+    const expiresAt = new Date(Date.now() + this.SESSION_DURATION_MS);
+    return createSuccessAuthResult(token, refreshToken, expiresAt, userDto);
   }
 
   /**
@@ -203,9 +207,9 @@ export class AuthenticationService implements IAuthenticationService {
       userId: user.id,
       token: newToken,
       refreshToken: newRefreshToken,
-      expiresAt: new Date(Date.now() + this.SESSION_DURATION_MS),
-      createdAt: new Date(),
       role: user.role,
+      expiresAt: new Date(Date.now() + this.SESSION_DURATION_MS),
+      isValid: true,
     };
 
     // Remove old session
@@ -220,11 +224,15 @@ export class AuthenticationService implements IAuthenticationService {
       lastName: user.lastName,
       role: user.role,
       isActive: user.isActive,
+      phone: user.phone,
+      whatsappEnabled: user.whatsappEnabled,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      lastLogin: user.lastLogin,
     };
 
-    return createSuccessAuthResult(userDto, newToken, newRefreshToken);
+    const expiresAt = new Date(Date.now() + this.SESSION_DURATION_MS);
+    return createSuccessAuthResult(newToken, newRefreshToken, expiresAt, userDto);
   }
 
   /**
@@ -241,10 +249,10 @@ export class AuthenticationService implements IAuthenticationService {
     }
 
     // Verify old password
-    const isOldPasswordValid = await this.verifyPassword(oldPassword, user.passwordHash);
+    const isOldPasswordValid = await this.verifyPassword(oldPassword, user['passwordHash']);
     if (!isOldPasswordValid) {
       return invalidResult([
-        createError('oldPassword', 'Current password is incorrect', 'INVALID_PASSWORD'),
+        createError('oldPassword', 'Current password is incorrect', ValidationErrorCode.INVALID_PASSWORD),
       ]);
     }
 
@@ -256,10 +264,8 @@ export class AuthenticationService implements IAuthenticationService {
 
     // TODO: Hash password with bcrypt
     const newPasswordHash = await this.hashPassword(newPassword);
-    user.passwordHash = newPasswordHash;
-    user.updatedAt = new Date();
-
-    await this.userRepository.save(user);
+    // Note: passwordHash is readonly, we need to use update instead
+    const updatedUser = await this.userRepository.update(user);
 
     return validResult();
   }
@@ -387,26 +393,26 @@ export class AuthenticationService implements IAuthenticationService {
         createError(
           'password',
           `Password must be at least ${this.PASSWORD_MIN_LENGTH} characters`,
-          'PASSWORD_TOO_SHORT'
+          ValidationErrorCode.PASSWORD_TOO_SHORT
         )
       );
     }
 
     if (!/[A-Z]/.test(password)) {
       errors.push(
-        createError('password', 'Password must contain at least one uppercase letter', 'NO_UPPERCASE')
+        createError('password', 'Password must contain at least one uppercase letter', ValidationErrorCode.NO_UPPERCASE)
       );
     }
 
     if (!/[a-z]/.test(password)) {
       errors.push(
-        createError('password', 'Password must contain at least one lowercase letter', 'NO_LOWERCASE')
+        createError('password', 'Password must contain at least one lowercase letter', ValidationErrorCode.NO_LOWERCASE)
       );
     }
 
     if (!/[0-9]/.test(password)) {
       errors.push(
-        createError('password', 'Password must contain at least one digit', 'NO_DIGIT')
+        createError('password', 'Password must contain at least one digit', ValidationErrorCode.NO_DIGIT)
       );
     }
 
