@@ -116,6 +116,10 @@ export interface ProjectSummaryDto {
   readonly isOverdue: boolean;
   /** Days remaining until delivery (negative if overdue) */
   readonly daysUntilDelivery: number;
+  /** Project creation timestamp */
+  readonly createdAt: Date;
+  /** Last update timestamp */
+  readonly updatedAt: Date;
 }
 
 /**

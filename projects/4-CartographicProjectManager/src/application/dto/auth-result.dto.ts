@@ -50,14 +50,22 @@ export interface UserDto {
   readonly username: string;
   /** User email address */
   readonly email: string;
+  /** User's first name */
+  readonly firstName: string;
+  /** User's last name */
+  readonly lastName: string;
   /** User role in the system */
   readonly role: UserRole;
+  /** Whether account is active */
+  readonly isActive: boolean;
   /** Phone number (optional) */
   readonly phone: string | null;
   /** Whether WhatsApp notifications are enabled */
   readonly whatsappEnabled: boolean;
   /** Account creation timestamp */
   readonly createdAt: Date;
+  /** Last update timestamp */
+  readonly updatedAt: Date;
   /** Last successful login timestamp */
   readonly lastLogin: Date | null;
 }
@@ -128,6 +136,10 @@ export interface SessionDto {
   readonly userId: string;
   /** User role from the session */
   readonly role: UserRole;
+  /** JWT access token */
+  readonly token: string;
+  /** JWT refresh token */
+  readonly refreshToken: string;
   /** Session expiration timestamp */
   readonly expiresAt: Date;
   /** Whether the session is still valid */

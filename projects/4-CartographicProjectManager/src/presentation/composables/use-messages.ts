@@ -51,6 +51,7 @@ export interface UseMessagesReturn {
 
   // Fetch Actions
   fetchMessages: (projectId: string) => Promise<void>;
+  loadMessagesByProject: (projectId: string) => Promise<void>;
   loadMore: () => Promise<void>;
   refreshMessages: () => Promise<void>;
   fetchUnreadCounts: () => Promise<void>;
@@ -254,6 +255,7 @@ export function useMessages(): UseMessagesReturn {
 
     // Fetch Actions
     fetchMessages,
+    loadMessagesByProject: fetchMessages,
     loadMore,
     refreshMessages,
     fetchUnreadCounts,

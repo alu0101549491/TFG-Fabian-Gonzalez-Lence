@@ -95,6 +95,7 @@ export interface UseTasksReturn {
 
   // Fetch Actions
   fetchTasks: (projectId: string, filters?: TaskFilterDto) => Promise<void>;
+  loadTasksByProject: (projectId: string) => Promise<void>;
   refreshTasks: () => Promise<void>;
   fetchTaskHistory: (taskId: string) => Promise<void>;
 
@@ -465,6 +466,7 @@ export function useTasks(): UseTasksReturn {
 
     // Actions
     fetchTasks,
+    loadTasksByProject: fetchTasks,
     refreshTasks,
     fetchTaskHistory,
     createTask,

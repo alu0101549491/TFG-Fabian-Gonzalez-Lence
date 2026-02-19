@@ -17,6 +17,8 @@ import {createApp} from 'vue';
 import {createPinia} from 'pinia';
 import router from '@/presentation/router';
 import App from '@/App.vue';
+import {httpClient} from '@/infrastructure/http';
+import {TokenStorage} from '@/infrastructure/persistence/token.storage';
 
 // Global styles
 import '@/presentation/styles/variables.css';
@@ -45,6 +47,20 @@ app.use(pinia);
 
 // Register Vue Router
 app.use(router);
+
+// ============================================================================
+// HTTP Client Configuration
+// ============================================================================
+
+/**
+ * Configure HTTP client with token storage for authenticated requests
+ */
+const tokenStorage = new TokenStorage();
+httpClient.setTokenStorage(tokenStorage);
+
+if (import.meta.env.DEV) {
+  console.log('🔐 HTTP client configured with token storage');
+}
 
 // ============================================================================
 // Global Error Handling

@@ -29,7 +29,7 @@
         </button>
 
         <ProjectSummary
-          :project="currentProject"
+          :projectDetails="currentProject"
           :show-actions="canManageProjects"
           @edit="showEditModal = true"
           @finalize="handleFinalize"
@@ -69,25 +69,25 @@
               <dl class="info-list">
                 <div class="info-item">
                   <dt>Project Code</dt>
-                  <dd class="code-value">{{ currentProject.code }}</dd>
+                  <dd class="code-value">{{ currentProject.project.code }}</dd>
                 </div>
                 <div class="info-item">
                   <dt>Type</dt>
-                  <dd>{{ formatProjectType(currentProject.type) }}</dd>
+                  <dd>{{ formatProjectType(currentProject.project.type) }}</dd>
                 </div>
                 <div class="info-item">
                   <dt>Client</dt>
-                  <dd>{{ currentProject.clientName }}</dd>
+                  <dd>{{ currentProject.project.clientName }}</dd>
                 </div>
                 <div class="info-item">
                   <dt>Delivery Date</dt>
-                  <dd>{{ formatDate(currentProject.deliveryDate) }}</dd>
+                  <dd>{{ formatDate(currentProject.project.deliveryDate) }}</dd>
                 </div>
                 <div class="info-item">
                   <dt>Status</dt>
                   <dd>
-                    <span :class="['status-badge', `status-${currentProject.status}`]">
-                      {{ formatStatus(currentProject.status) }}
+                    <span :class="['status-badge', `status-${currentProject.project.status}`]">
+                      {{ formatStatus(currentProject.project.status) }}
                     </span>
                   </dd>
                 </div>
@@ -98,7 +98,7 @@
             <div class="info-card">
               <h2>Description</h2>
               <p class="project-description">
-                {{ currentProject.description || 'No description provided.' }}
+                {{ currentProject.project.description || 'No description provided.' }}
               </p>
             </div>
 
@@ -128,7 +128,7 @@
             <!-- Recent Activity -->
             <div class="info-card">
               <h2>Recent Activity</h2>
-              <TaskHistory :project-id="currentProject.id" :limit="5" />
+              <TaskHistory :history="currentProject.tasks.slice(0, 5).map(t => ({}))" :loading="isLoading" />
             </div>
           </div>
         </section>
@@ -150,8 +150,8 @@
                 aria-label="Filter tasks by status"
               >
                 <option value="">All Tasks</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
+                <option :value="TaskStatus.PENDING">Pending</option>
+                <option :value="TaskStatus.COMPLETED">Completed</option>
               </select>
               <button
                 v-if="canManageProjects"
@@ -165,7 +165,7 @@
 
           <TaskList
             :tasks="filteredTasks"
-            :project-id="currentProject.id"
+            :project-id="currentProject.project.id"
             :show-project-info="false"
             :loading="tasksLoading"
             @task-click="handleTaskClick"
@@ -189,8 +189,8 @@
               :current-user-id="currentUserId"
             />
             <MessageInput
-              :project-id="currentProject.id"
-              :disabled="currentProject.status === 'finalized'"
+              :project-id="currentProject.project.id"
+              :disabled="currentProject.project.status === 'finalized'"
               @message-sent="handleMessageSent"
             />
           </div>
@@ -210,8 +210,9 @@
           </div>
 
           <FileUploader
-            v-if="canManageProjects && currentProject.status !== 'finalized'"
-            :project-id="currentProject.id"
+            v-if="canManageProjects && currentProject.project.status !== 'finalized'"
+            :project-id="currentProject.project.id"
+            :sections="currentProject.sections.map(s => s.name)"
             :max-file-size="10 * 1024 * 1024"
             :accepted-types="['.pdf', '.dwg', '.dxf', '.shp', '.jpg', '.png']"
             @upload-complete="handleFileUpload"
@@ -246,8 +247,8 @@
               </button>
             </div>
             <ProjectForm
-              :project="currentProject"
-              @submit="handleProjectUpdate"
+              :project="currentProject.project"
+              @submit="(data: any) => handleProjectUpdate(data as UpdateProjectDto)"
               @cancel="showEditModal = false"
             />
           </div>
@@ -273,7 +274,8 @@
               </button>
             </div>
             <TaskForm
-              :project-id="currentProject.id"
+              :project-id="currentProject.project.id"
+              :assignees="currentProject.participants.map(p => ({ id: p.userId, name: p.username, role: p.role }))" 
               @submit="handleTaskCreate"
               @cancel="showCreateTaskModal = false"
             />
@@ -362,10 +364,10 @@ import MessageList from '../components/message/MessageList.vue';
 import MessageInput from '../components/message/MessageInput.vue';
 import FileList from '../components/file/FileList.vue';
 import FileUploader from '../components/file/FileUploader.vue';
-import type {Project, UpdateProjectInput} from '@/shared/models/project.model';
-import type {Task, CreateTaskInput, UpdateTaskInput} from '@/shared/models/task.model';
-import type {Message} from '@/shared/models/message.model';
-import type {FileMetadata} from '@/shared/models/file.model';
+import type {UpdateProjectDto, FileSummaryDto} from '@/application/dto';
+import {TaskStatus} from '@/domain/enumerations/task-status';
+import type {CreateTaskDto, UpdateTaskDto, TaskDto, TaskSummaryDto} from '@/application/dto/task-data.dto';
+import type {MessageDto} from '@/application/dto/message-data.dto';
 
 // Composables
 const router = useRouter();
@@ -395,7 +397,7 @@ const {
 } = useMessages();
 
 // Local State
-const activeTab = ref<'overview' | 'tasks' | 'messages' | 'files'>('overview');
+const activeTab = ref<'tasks' | 'files' | 'messages' | 'overview'>('overview');
 const taskStatusFilter = ref('');
 const showEditModal = ref(false);
 const showCreateTaskModal = ref(false);
@@ -403,7 +405,7 @@ const showFinalizeModal = ref(false);
 const isFinalizing = ref(false);
 
 // Mock file state (replace with actual file management composable)
-const projectFiles = ref<FileMetadata[]>([]);
+const projectFiles = ref<FileSummaryDto[]>([]);
 const filesLoading = ref(false);
 
 // Computed Properties
@@ -417,7 +419,7 @@ const filteredTasks = computed(() => {
 
 const taskStats = computed(() => {
   const total = projectTasks.value.length;
-  const completed = projectTasks.value.filter((t) => t.status === 'completed').length;
+  const completed = projectTasks.value.filter((t) => t.status === TaskStatus.COMPLETED).length;
   const pending = total - completed;
   return {total, completed, pending};
 });
@@ -427,7 +429,7 @@ const messageCount = computed(() => projectMessages.value.length);
 const tabs = computed(() => [
   {key: 'overview', label: 'Overview', badge: 0},
   {key: 'tasks', label: 'Tasks', badge: taskStats.value.pending},
-  {key: 'messages', label: 'Messages', badge: projectMessages.value.filter((m) => !m.read).length},
+  {key: 'messages', label: 'Messages', badge: projectMessages.value.filter((m) => !m.isRead).length},
   {key: 'files', label: 'Files', badge: projectFiles.value.length},
 ]);
 
@@ -483,11 +485,15 @@ function formatDate(date: Date | string): string {
 /**
  * Handle project update
  *
- * @param {UpdateProjectInput} projectData - Updated project data
+ * @param {UpdateProjectDto} projectData - Updated project data
  */
-async function handleProjectUpdate(projectData: UpdateProjectInput): Promise<void> {
+async function handleProjectUpdate(projectData: UpdateProjectDto): Promise<void> {
   try {
-    await updateProject(projectId.value, projectData);
+    const updateData: UpdateProjectDto = {
+      ...projectData,
+      id: projectId.value,
+    };
+    await updateProject(updateData);
     showEditModal.value = false;
   } catch (error) {
     console.error('Failed to update project:', error);
@@ -519,9 +525,9 @@ async function handleFinalizeConfirm(): Promise<void> {
 /**
  * Handle task creation
  *
- * @param {CreateTaskInput} taskData - New task data
+ * @param {CreateTaskDto} taskData - New task data
  */
-async function handleTaskCreate(taskData: CreateTaskInput): Promise<void> {
+async function handleTaskCreate(taskData: CreateTaskDto): Promise<void> {
   try {
     await createTask(taskData);
     showCreateTaskModal.value = false;
@@ -533,9 +539,9 @@ async function handleTaskCreate(taskData: CreateTaskInput): Promise<void> {
 /**
  * Handle task click
  *
- * @param {Task} task - Clicked task
+ * @param {TaskDto} task - Clicked task
  */
-function handleTaskClick(task: Task): void {
+function handleTaskClick(task: TaskDto): void {
   // Could open task details modal or navigate to task page
   console.log('Task clicked:', task);
 }
@@ -543,9 +549,9 @@ function handleTaskClick(task: Task): void {
 /**
  * Handle task update
  *
- * @param {UpdateTaskInput} taskData - Updated task data
+ * @param {UpdateTaskDto} taskData - Updated task data
  */
-async function handleTaskUpdate(taskData: UpdateTaskInput): Promise<void> {
+async function handleTaskUpdate(taskData: UpdateTaskDto): Promise<void> {
   try {
     await updateTask(taskData);
   } catch (error) {
@@ -576,19 +582,19 @@ function handleMessageSent(): void {
 /**
  * Handle file upload
  *
- * @param {FileMetadata} file - Uploaded file metadata
+ * @param {FileSummaryDto} file - Uploaded file metadata
  */
-function handleFileUpload(file: FileMetadata): void {
+function handleFileUpload(file: FileSummaryDto): void {
   projectFiles.value.push(file);
 }
 
 /**
  * Handle file download
  *
- * @param {FileMetadata} file - File to download
+ * @param {FileSummaryDto} file - File to download
  */
-function handleFileDownload(file: FileMetadata): void {
-  window.open(file.url, '_blank');
+function handleFileDownload(file: FileSummaryDto): void {
+  window.open(file.downloadUrl, '_blank');
 }
 
 /**

@@ -11,3 +11,4 @@ export * from './repositories';
 export * from './external-services';
 export * from './websocket';
 export * from './http';
+export * from './persistence/token.storage';

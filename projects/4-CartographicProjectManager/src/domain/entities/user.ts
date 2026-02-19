@@ -24,16 +24,24 @@ export interface UserProps {
   username: string;
   /** User's email address (used for login) */
   email: string;
+  /** User's first name */
+  firstName?: string;
+  /** User's last name */
+  lastName?: string;
   /** Hashed password (bcrypt) - never exposed in API */
   passwordHash: string;
   /** User's role in the system */
   role: UserRole;
+  /** Whether account is active */
+  isActive?: boolean;
   /** Phone number for WhatsApp notifications */
   phone?: string | null;
   /** Whether WhatsApp notifications are enabled */
   whatsappEnabled?: boolean;
   /** Account creation timestamp */
   createdAt?: Date;
+  /** Last update timestamp */
+  updatedAt?: Date;
   /** Last successful login timestamp */
   lastLogin?: Date | null;
 }
@@ -67,12 +75,16 @@ export interface UserProps {
 export class User {
   public readonly id: string;
   private usernameValue: string;
+  private firstNameValue: string;
+  private lastNameValue: string;
   private emailValue: string;
   private readonly passwordHash: string;
   private roleValue: UserRole;
+  private isActiveValue: boolean;
   private phoneValue: string | null;
   private whatsappEnabledValue: boolean;
   public readonly createdAt: Date;
+  private updatedAtValue: Date;
   private lastLoginValue: Date | null;
 
   /**
@@ -86,12 +98,16 @@ export class User {
 
     this.id = props.id;
     this.usernameValue = props.username;
+    this.firstNameValue = props.firstName ?? '';
+    this.lastNameValue = props.lastName ?? '';
     this.emailValue = props.email;
     this.passwordHash = props.passwordHash;
     this.roleValue = props.role;
+    this.isActiveValue = props.isActive ?? true;
     this.phoneValue = props.phone ?? null;
     this.whatsappEnabledValue = props.whatsappEnabled ?? false;
     this.createdAt = props.createdAt ?? new Date();
+    this.updatedAtValue = props.updatedAt ?? new Date();
     this.lastLoginValue = props.lastLogin ?? null;
   }
 
@@ -142,6 +158,22 @@ export class User {
     this.usernameValue = value;
   }
 
+  public get firstName(): string {
+    return this.firstNameValue;
+  }
+
+  public set firstName(value: string) {
+    this.firstNameValue = value;
+  }
+
+  public get lastName(): string {
+    return this.lastNameValue;
+  }
+
+  public set lastName(value: string) {
+    this.lastNameValue = value;
+  }
+
   public get email(): string {
     return this.emailValue;
   }
@@ -179,6 +211,22 @@ export class User {
 
   public set whatsappEnabled(value: boolean) {
     this.whatsappEnabledValue = value;
+  }
+
+  public get isActive(): boolean {
+    return this.isActiveValue;
+  }
+
+  public set isActive(value: boolean) {
+    this.isActiveValue = value;
+  }
+
+  public get updatedAt(): Date {
+    return this.updatedAtValue;
+  }
+
+  public set updatedAt(value: Date) {
+    this.updatedAtValue = value;
   }
 
   public get lastLogin(): Date | null {
@@ -275,11 +323,15 @@ export class User {
     return {
       id: this.id,
       username: this.usernameValue,
+      firstName: this.firstNameValue,
+      lastName: this.lastNameValue,
       email: this.emailValue,
       role: this.roleValue,
+      isActive: this.isActiveValue,
       phone: this.phoneValue,
       whatsappEnabled: this.whatsappEnabledValue,
       createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAtValue.toISOString(),
       lastLogin: this.lastLoginValue ? this.lastLoginValue.toISOString() : null,
     };
   }

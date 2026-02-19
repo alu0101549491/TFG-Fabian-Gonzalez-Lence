@@ -63,6 +63,17 @@ export enum ValidationErrorCode {
   PERMISSION_DENIED = 'PERMISSION_DENIED',
   /** Operation is not allowed in current state */
   OPERATION_NOT_ALLOWED = 'OPERATION_NOT_ALLOWED',
+  
+  /** Password validation errors */
+  PASSWORD_TOO_SHORT = 'PASSWORD_TOO_SHORT',
+  /** Password requires uppercase letter */
+  NO_UPPERCASE = 'NO_UPPERCASE',
+  /** Password requires lowercase letter */
+  NO_LOWERCASE = 'NO_LOWERCASE',
+  /** Password requires digit */
+  NO_DIGIT = 'NO_DIGIT',
+  /** Password is invalid */
+  INVALID_PASSWORD = 'INVALID_PASSWORD',
 }
 
 /**
