@@ -230,8 +230,8 @@ import ProjectCard from '../components/project/ProjectCard.vue';
 import ProjectForm from '../components/project/ProjectForm.vue';
 import NotificationList from '../components/notification/NotificationList.vue';
 import CalendarWidget from '../components/calendar/CalendarWidget.vue';
-import type {Project, CreateProjectInput} from '@/shared/models/project.model';
-import type {Notification} from '@/shared/models/notification.model';
+import type {CreateProjectDto} from '@/application/dto';
+import type {NotificationDto} from '@/application/dto/notification-data.dto';
 
 // Composables
 const router = useRouter();

@@ -112,7 +112,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
     // Only admins can finalize projects
-    return user.role === UserRole.ADMIN;
+    return user.role === UserRole.ADMINISTRATOR;
   }
 
   /**
@@ -126,7 +126,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (!project) throw new NotFoundError(`Project ${projectId} not found`);
 
     // Admin can create tasks in any project
-    if (user.role === UserRole.ADMIN) return true;
+    if (user.role === UserRole.ADMINISTRATOR) return true;
 
     // Client can create tasks in assigned projects
     if (user.role === UserRole.CLIENT && project.clientId === userId) return true;
@@ -149,11 +149,11 @@ export class AuthorizationService implements IAuthorizationService {
     if (!assignee) throw new NotFoundError(`Assignee ${assigneeId} not found`);
 
     // Admin can assign to anyone
-    if (user.role === UserRole.ADMIN) return true;
+    if (user.role === UserRole.ADMINISTRATOR) return true;
 
     // Client can only assign to admin
     if (user.role === UserRole.CLIENT) {
-      return assignee.role === UserRole.ADMIN;
+      return assignee.role === UserRole.ADMINISTRATOR;
     }
 
     return false;
@@ -170,7 +170,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (!task) throw new NotFoundError(`Task ${taskId} not found`);
 
     // Admin can modify all tasks
-    if (user.role === UserRole.ADMIN) return true;
+    if (user.role === UserRole.ADMINISTRATOR) return true;
 
     // Task creator and assignee can modify
     if (task.creatorId === userId || task.assigneeId === userId) return true;
@@ -189,7 +189,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (!task) throw new NotFoundError(`Task ${taskId} not found`);
 
     // Only admin and task creator can delete
-    if (user.role === UserRole.ADMIN) return true;
+    if (user.role === UserRole.ADMINISTRATOR) return true;
     if (task.creatorId === userId) return true;
 
     return false;
@@ -210,7 +210,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (!task) throw new NotFoundError(`Task ${taskId} not found`);
 
     // Admin can change to any status
-    if (user.role === UserRole.ADMIN) return true;
+    if (user.role === UserRole.ADMINISTRATOR) return true;
 
     // Assignee can change status of assigned tasks
     if (task.assigneeId === userId) return true;
@@ -236,7 +236,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (project.clientId === userId) return true;
 
     // Admin can also confirm
-    if (user.role === UserRole.ADMIN) return true;
+    if (user.role === UserRole.ADMINISTRATOR) return true;
 
     return false;
   }
@@ -268,17 +268,14 @@ export class AuthorizationService implements IAuthorizationService {
     if (!project) throw new NotFoundError(`Project ${projectId} not found`);
 
     // Admin can upload to any project
-    if (user.role === UserRole.ADMIN) return true;
+    if (user.role === UserRole.ADMINISTRATOR) return true;
 
     // Client can upload to assigned projects
     if (user.role === UserRole.CLIENT && project.clientId === userId) return true;
 
-    // Special User needs WRITE permission
-    const permissions = await this.permissionRepository.findByUserAndProject(userId, projectId);
-    return permissions.some(p => 
-      p.accessRight === AccessRight.WRITE || 
-      p.accessRight === AccessRight.DELETE
-    );
+    // Special User needs UPLOAD permission
+    const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
+    return permission ? permission.canUpload() : false;
   }
 
   /**
@@ -306,7 +303,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (!file) throw new NotFoundError(`File ${fileId} not found`);
 
     // Admin can delete any file
-    if (user.role === UserRole.ADMIN) return true;
+    if (user.role === UserRole.ADMINISTRATOR) return true;
 
     // File uploader can delete their own files
     if (file.uploadedById === userId) return true;
@@ -325,7 +322,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
     // Only admins can manage participants
-    return user.role === UserRole.ADMIN;
+    return user.role === UserRole.ADMINISTRATOR;
   }
 
   /**
@@ -336,7 +333,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
     // Only admins can export data
-    return user.role === UserRole.ADMIN;
+    return user.role === UserRole.ADMINISTRATOR;
   }
 
   /**
@@ -347,7 +344,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
     // Only admins can manage backups
-    return user.role === UserRole.ADMIN;
+    return user.role === UserRole.ADMINISTRATOR;
   }
 
   /**
@@ -366,22 +363,28 @@ export class AuthorizationService implements IAuthorizationService {
     const rights = new Set<AccessRight>();
 
     // Admin has all rights
-    if (user.role === UserRole.ADMIN) {
-      rights.add(AccessRight.READ);
-      rights.add(AccessRight.WRITE);
+    if (user.role === UserRole.ADMINISTRATOR) {
+      rights.add(AccessRight.VIEW);
+      rights.add(AccessRight.DOWNLOAD);
+      rights.add(AccessRight.EDIT);
       rights.add(AccessRight.DELETE);
+      rights.add(AccessRight.UPLOAD);
+      rights.add(AccessRight.SEND_MESSAGE);
       return rights;
     }
 
-    // Client has read access to assigned projects
+    // Client has view and download access to assigned projects
     if (user.role === UserRole.CLIENT && project.clientId === userId) {
-      rights.add(AccessRight.READ);
+      rights.add(AccessRight.VIEW);
+      rights.add(AccessRight.DOWNLOAD);
       return rights;
     }
 
     // Special User gets rights from permissions
-    const permissions = await this.permissionRepository.findByUserAndProject(userId, projectId);
-    permissions.forEach(p => rights.add(p.accessRight));
+    const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
+    if (permission) {
+      return permission.rights;
+    }
 
     return rights;
   }
@@ -403,6 +406,6 @@ export class AuthorizationService implements IAuthorizationService {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
-    return user.role === UserRole.ADMIN;
+    return user.role === UserRole.ADMINISTRATOR;
   }
 }

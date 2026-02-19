@@ -168,7 +168,7 @@
             </div>
             <div class="modal-body">
               <ProjectForm
-                :project="editingProject"
+                :project="editingProject ?? undefined"
                 :clients="clients"
                 @submit="handleProjectSubmit"
                 @cancel="closeModals"
@@ -223,14 +223,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from 'vue';
+import {ref, computed, onMounted} from 'vue';
 import {useRouter} from 'vue-router';
 import {useAuth} from '../composables/use-auth';
 import {useProjects} from '../composables/use-projects';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import ProjectCard from '../components/project/ProjectCard.vue';
 import ProjectForm from '../components/project/ProjectForm.vue';
-import type {Project, CreateProjectInput, UpdateProjectInput} from '@/shared/models/project.model';
+import type {ProjectSummaryDto, CreateProjectDto, UpdateProjectDto} from '@/application/dto';
 
 // Composables
 const router = useRouter();
@@ -254,8 +254,8 @@ const sortBy = ref<'updatedAt' | 'createdAt' | 'deliveryDate' | 'code' | 'name'>
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
-const editingProject = ref<Project | null>(null);
-const projectToDelete = ref<Project | null>(null);
+const editingProject = ref<ProjectSummaryDto | null>(null);
+const projectToDelete = ref<ProjectSummaryDto | null>(null);
 const isDeleting = ref(false);
 const clients = ref<Array<{id: string; name: string}>>([]);
 
@@ -384,9 +384,9 @@ function closeModals(): void {
 /**
  * Handle edit project action
  *
- * @param {Project} project - Project to edit
+ * @param {ProjectSummaryDto} project - Project to edit
  */
-function handleEditProject(project: Project): void {
+function handleEditProject(project: ProjectSummaryDto): void {
   editingProject.value = project;
   showEditModal.value = true;
 }
@@ -394,18 +394,22 @@ function handleEditProject(project: Project): void {
 /**
  * Handle project form submission (create or update)
  *
- * @param {CreateProjectInput | UpdateProjectInput} projectData - Project data
+ * @param {CreateProjectDto | UpdateProjectDto} projectData - Project data
  */
 async function handleProjectSubmit(
-  projectData: CreateProjectInput | UpdateProjectInput
+  projectData: CreateProjectDto | UpdateProjectDto
 ): Promise<void> {
   try {
     if (showEditModal.value && editingProject.value) {
-      await updateProject(editingProject.value.id, projectData as UpdateProjectInput);
+      const updateData: UpdateProjectDto = {
+        id: editingProject.value.id,
+        ...projectData,
+      };
+      await updateProject(updateData);
     } else {
-      const newProject = await createProject(projectData as CreateProjectInput);
-      if (newProject?.id) {
-        goToProject(newProject.id);
+      const result = await createProject(projectData as CreateProjectDto);
+      if (result?.success && result.project?.id) {
+        goToProject(result.project.id);
         return;
       }
     }
@@ -418,9 +422,9 @@ async function handleProjectSubmit(
 /**
  * Start delete project flow
  *
- * @param {Project} project - Project to delete
+ * @param {ProjectSummaryDto} project - Project to delete
  */
-function handleDeleteStart(project: Project): void {
+function handleDeleteStart(project: ProjectSummaryDto): void {
   projectToDelete.value = project;
   showDeleteModal.value = true;
 }

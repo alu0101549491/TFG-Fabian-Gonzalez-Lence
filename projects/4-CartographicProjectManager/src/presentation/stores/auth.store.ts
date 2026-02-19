@@ -18,37 +18,10 @@ import type {UserDto, LoginCredentialsDto, RegisterCredentialsDto, AuthResultDto
 import {UserRole} from '../../domain/enumerations/user-role';
 import {AuthErrorCode} from '../../application/dto/auth-result.dto';
 import {STORAGE_KEYS, AUTH} from '../../shared/constants';
+import {AuthRepository} from '../../infrastructure/repositories/auth.repository';
 
-// Mock user database for development (module-level so it persists across login/register)
-const MOCK_USERS = [
-  {
-    id: '1',
-    username: 'admin',
-    email: 'admin@cartographic.com',
-    password: 'admin123',
-    role: UserRole.ADMINISTRATOR,
-    phone: '+34 123 456 789',
-    whatsappEnabled: true,
-  },
-  {
-    id: '2',
-    username: 'client',
-    email: 'client@example.com',
-    password: 'client123',
-    role: UserRole.CLIENT,
-    phone: '+34 987 654 321',
-    whatsappEnabled: false,
-  },
-  {
-    id: '3',
-    username: 'special',
-    email: 'special@cartographic.com',
-    password: 'special123',
-    role: UserRole.SPECIAL_USER,
-    phone: null,
-    whatsappEnabled: false,
-  },
-];
+// Initialize authentication repository
+const authRepository = new AuthRepository();
 
 /**
  * Authentication store using Composition API.
@@ -106,62 +79,48 @@ export const useAuthStore = defineStore('auth', () => {
     errorCode.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // const result = await authService.login(credentials);
+      const response = await authRepository.login(credentials);
       
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Validate credentials
-      const mockUser = MOCK_USERS.find(u => u.email === credentials.email);
-      
-      if (!mockUser) {
-        error.value = 'Invalid email or password';
-        errorCode.value = AuthErrorCode.INVALID_CREDENTIALS;
-        return false;
-      }
-      
-      if (mockUser.password !== credentials.password) {
-        error.value = 'Invalid email or password';
-        errorCode.value = AuthErrorCode.INVALID_CREDENTIALS;
-        return false;
-      }
-      
-      // Successful authentication
-      const mockResult: AuthResultDto = {
-        success: true,
-        accessToken: `access_${Date.now()}`,
-        refreshToken: `refresh_${Date.now()}`,
-        expiresAt: new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000),
-        user: {
-          id: mockUser.id,
-          username: mockUser.username,
-          email: mockUser.email,
-          role: mockUser.role,
-          phone: mockUser.phone,
-          whatsappEnabled: mockUser.whatsappEnabled,
-          createdAt: new Date(),
-          lastLogin: new Date(),
-        },
-        error: null,
-        errorCode: null,
-      };
-
-      if (mockResult.success && mockResult.user && mockResult.accessToken) {
-        user.value = mockResult.user;
-        accessToken.value = mockResult.accessToken;
-        refreshToken.value = mockResult.refreshToken;
-        expiresAt.value = mockResult.expiresAt;
+      if (response.success && response.data) {
+        // Map backend response to UserDto
+        user.value = {
+          id: response.data.user.id,
+          username: response.data.user.username,
+          email: response.data.user.email,
+          role: response.data.user.role,
+          phone: response.data.user.phone,
+          whatsappEnabled: response.data.user.whatsappEnabled,
+          createdAt: new Date(response.data.user.createdAt),
+          lastLogin: response.data.user.lastLogin ? new Date(response.data.user.lastLogin) : null,
+        };
+        
+        accessToken.value = response.data.accessToken;
+        refreshToken.value = response.data.refreshToken;
+        
+        // Calculate expiration (JWT tokens typically expire in 7 days for access token)
+        expiresAt.value = new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
         
         saveToStorage();
         return true;
       } else {
-        error.value = mockResult.error ?? 'Login failed';
+        error.value = response.message || 'Login failed';
+        errorCode.value = AuthErrorCode.INVALID_CREDENTIALS;
         return false;
       }
     } catch (err: any) {
-      error.value = err.message || 'An unexpected error occurred';
-      errorCode.value = err.code || null;
+      console.error('Login error:', err);
+      
+      if (err.response?.status === 401) {
+        error.value = 'Invalid email or password';
+        errorCode.value = AuthErrorCode.INVALID_CREDENTIALS;
+      } else if (err.response?.status === 403) {
+        error.value = 'Account is locked or inactive';
+        errorCode.value = AuthErrorCode.ACCOUNT_LOCKED;
+      } else {
+        error.value = err.response?.data?.message || err.message || 'An unexpected error occurred';
+        errorCode.value = err.code || null;
+      }
+      
       return false;
     } finally {
       isLoading.value = false;
@@ -180,10 +139,7 @@ export const useAuthStore = defineStore('auth', () => {
     errorCode.value = null;
 
     try {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Validation
+      // Client-side validation
       if (credentials.password !== credentials.confirmPassword) {
         error.value = 'Passwords do not match';
         errorCode.value = AuthErrorCode.INVALID_PASSWORD;
@@ -196,63 +152,53 @@ export const useAuthStore = defineStore('auth', () => {
         return false;
       }
 
-      // Check if email already exists
-      if (MOCK_USERS.some(u => u.email === credentials.email)) {
-        error.value = 'Email already registered';
-        errorCode.value = AuthErrorCode.EMAIL_ALREADY_EXISTS;
+      const response = await authRepository.register(credentials);
+      
+      if (response.success && response.data) {
+        // Auto-login after successful registration
+        user.value = {
+          id: response.data.user.id,
+          username: response.data.user.username,
+          email: response.data.user.email,
+          role: response.data.user.role,
+          phone: response.data.user.phone,
+          whatsappEnabled: response.data.user.whatsappEnabled,
+          createdAt: new Date(response.data.user.createdAt),
+          lastLogin: response.data.user.lastLogin ? new Date(response.data.user.lastLogin) : null,
+        };
+        
+        accessToken.value = response.data.accessToken;
+        refreshToken.value = response.data.refreshToken;
+        expiresAt.value = new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
+
+        saveToStorage();
+        return true;
+      } else {
+        error.value = response.message || 'Registration failed';
         return false;
       }
-
-      // Check if username already exists
-      if (MOCK_USERS.some(u => u.username === credentials.username)) {
-        error.value = 'Username already taken';
-        errorCode.value = AuthErrorCode.USERNAME_ALREADY_EXISTS;
-        return false;
-      }
-
-      // Create new user
-      const newUser = {
-        id: `${MOCK_USERS.length + 1}`,
-        username: credentials.username,
-        email: credentials.email,
-        password: credentials.password,
-        role: UserRole.CLIENT, // New users default to CLIENT role
-        phone: credentials.phone || null,
-        whatsappEnabled: credentials.whatsappEnabled || false,
-      };
-
-      MOCK_USERS.push(newUser);
-
-      // Auto-login after successful registration
-      const mockResult: AuthResultDto = {
-        success: true,
-        accessToken: `access_${Date.now()}`,
-        refreshToken: `refresh_${Date.now()}`,
-        expiresAt: new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000),
-        user: {
-          id: newUser.id,
-          username: newUser.username,
-          email: newUser.email,
-          role: newUser.role,
-          phone: newUser.phone,
-          whatsappEnabled: newUser.whatsappEnabled,
-          createdAt: new Date(),
-          lastLogin: new Date(),
-        },
-        error: null,
-        errorCode: null,
-      };
-
-      user.value = mockResult.user;
-      accessToken.value = mockResult.accessToken;
-      refreshToken.value = mockResult.refreshToken;
-      expiresAt.value = mockResult.expiresAt;
-
-      saveToStorage();
-      return true;
     } catch (err: any) {
-      error.value = err.message || 'Registration failed';
-      errorCode.value = err.code || null;
+      console.error('Registration error:', err);
+      
+      if (err.response?.status === 409) {
+        const message = err.response?.data?.message || '';
+        if (message.toLowerCase().includes('email')) {
+          error.value = 'Email already registered';
+          errorCode.value = AuthErrorCode.EMAIL_ALREADY_EXISTS;
+        } else if (message.toLowerCase().includes('username')) {
+          error.value = 'Username already taken';
+          errorCode.value = AuthErrorCode.USERNAME_ALREADY_EXISTS;
+        } else {
+          error.value = message;
+        }
+      } else if (err.response?.status === 400) {
+        error.value = err.response?.data?.message || 'Invalid registration data';
+        errorCode.value = AuthErrorCode.INVALID_PASSWORD;
+      } else {
+        error.value = err.response?.data?.message || err.message || 'Registration failed';
+      }
+      
+      errorCode.value = errorCode.value || err.code || null;
       return false;
     } finally {
       isLoading.value = false;
@@ -266,16 +212,14 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true;
     
     try {
-      if (userId.value) {
-        // TODO: Call logout service
-        // await authService.logout(userId.value);
-        await new Promise(resolve => setTimeout(resolve, 200));
+      if (accessToken.value) {
+        await authRepository.logout(accessToken.value);
       }
       
       clearAuth();
     } catch (err: any) {
       console.error('Logout error:', err);
-      // Clear anyway
+      // Clear anyway even if API call fails
       clearAuth();
     } finally {
       isLoading.value = false;
@@ -289,25 +233,12 @@ export const useAuthStore = defineStore('auth', () => {
     if (!refreshToken.value) return false;
     
     try {
-      // TODO: Call refresh service
-      // const result = await authService.refreshSession(refreshToken.value);
+      const response = await authRepository.refreshToken(refreshToken.value);
       
-      // Mock refresh
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const mockResult: AuthResultDto = {
-        success: true,
-        accessToken: `access_${Date.now()}`,
-        refreshToken: refreshToken.value,
-        expiresAt: new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000),
-        user: user.value,
-        error: null,
-        errorCode: null,
-      };
-      
-      if (mockResult.success && mockResult.accessToken) {
-        accessToken.value = mockResult.accessToken;
-        expiresAt.value = mockResult.expiresAt;
+      if (response.success && response.data) {
+        accessToken.value = response.data.accessToken;
+        refreshToken.value = response.data.refreshToken;
+        expiresAt.value = new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
         saveToStorage();
         return true;
       }
@@ -326,10 +257,8 @@ export const useAuthStore = defineStore('auth', () => {
     if (!accessToken.value) return false;
     
     try {
-      // TODO: Call validation service
-      // const session = await authService.validateSession(accessToken.value);
-      // return session.isValid;
-      
+      // For now, just check expiration locally
+      // In the future, you could add an API endpoint to validate the token
       return isSessionValid.value;
     } catch (err) {
       return false;

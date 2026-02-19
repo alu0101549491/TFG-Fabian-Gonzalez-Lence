@@ -21,6 +21,7 @@ export {MessageRepository} from './message.repository';
 export {NotificationRepository} from './notification.repository';
 export {FileRepository} from './file.repository';
 export {PermissionRepository} from './permission.repository';
+export {AuthRepository} from './auth.repository';
 
 // Import for type re-exports
 import type {IUserRepository} from '../../domain/repositories/user-repository.interface';

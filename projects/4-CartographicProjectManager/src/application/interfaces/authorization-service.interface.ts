@@ -223,7 +223,3 @@ export interface IAuthorizationService {
    */
   isAdmin(userId: string): Promise<boolean>;
 }
-   * @returns The permission set for the user-project pair.
-   */
-  getPermissions(userId: string, projectId: string): Promise<Set<Permission>>;
-}

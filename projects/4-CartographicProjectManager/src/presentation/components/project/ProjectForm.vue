@@ -253,7 +253,7 @@
 
 <script setup lang="ts">
 import {reactive, computed, watch, onMounted} from 'vue';
-import type {ProjectDto, CreateProjectDto, UpdateProjectDto} from '@/application/dto';
+import type {ProjectDto, ProjectSummaryDto, CreateProjectDto, UpdateProjectDto} from '@/application/dto';
 import {ProjectType} from '@/domain/enumerations';
 
 /**
@@ -261,7 +261,7 @@ import {ProjectType} from '@/domain/enumerations';
  */
 export interface ProjectFormProps {
   /** Project to edit (undefined for create mode) */
-  project?: ProjectDto;
+  project?: ProjectDto | ProjectSummaryDto;
   /** Form submission loading state */
   loading?: boolean;
   /** Available clients for selection (required for create mode) */
@@ -337,13 +337,13 @@ onMounted(() => {
   if (props.project) {
     form.code = props.project.code;
     form.name = props.project.name;
-    form.year = props.project.year;
+    form.year = 'year' in props.project ? props.project.year : new Date().getFullYear();
     form.clientId = props.project.clientId;
     form.type = props.project.type;
-    form.contractDate = formatDateForInput(props.project.contractDate);
+    form.contractDate = 'contractDate' in props.project ? formatDateForInput(props.project.contractDate) : '';
     form.deliveryDate = formatDateForInput(props.project.deliveryDate);
-    form.coordinateX = props.project.coordinateX;
-    form.coordinateY = props.project.coordinateY;
+    form.coordinateX = 'coordinateX' in props.project ? props.project.coordinateX : null;
+    form.coordinateY = 'coordinateY' in props.project ? props.project.coordinateY : null;
   } else if (props.initialClientId) {
     form.clientId = props.initialClientId;
   }
