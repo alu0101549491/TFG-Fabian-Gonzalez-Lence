@@ -53,6 +53,9 @@ export interface UseNotificationsReturn {
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
 
+  // Delete Actions
+  deleteNotification: (notificationId: string) => Promise<void>;
+
   // Navigation
   navigateToRelatedEntity: (notification: NotificationDto) => void;
 
@@ -145,6 +148,15 @@ export function useNotifications(): UseNotificationsReturn {
    */
   async function markAllAsRead(): Promise<void> {
     await store.markAllAsRead();
+  }
+
+  /**
+   * Deletes a notification
+   *
+   * @param notificationId - Notification unique identifier
+   */
+  async function deleteNotification(notificationId: string): Promise<void> {
+    await store.deleteNotification(notificationId);
   }
 
   /**
@@ -280,6 +292,9 @@ export function useNotifications(): UseNotificationsReturn {
     // Read Actions
     markAsRead,
     markAllAsRead,
+
+    // Delete Actions
+    deleteNotification,
 
     // Navigation
     navigateToRelatedEntity,

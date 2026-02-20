@@ -80,8 +80,9 @@ export class AuthenticationService implements IAuthenticationService {
       );
     }
 
-    // TODO: Implement password verification with bcrypt
-    // For now, use placeholder comparison
+    // Verify password against hash
+    // NOTE: Actual bcrypt verification happens on backend API
+    // This is a placeholder for local/mock authentication
     const isPasswordValid = await this.verifyPassword(password, user['passwordHash']);
     if (!isPasswordValid) {
       await this.recordFailedAttempt(email);
@@ -95,7 +96,9 @@ export class AuthenticationService implements IAuthenticationService {
     this.failedAttempts.delete(email);
     this.lockedAccounts.delete(email);
 
-    // Generate tokens
+    // Generate session and refresh tokens
+    // NOTE: Actual JWT generation happens on backend API
+    // These are placeholders for local/mock authentication
     const token = this.generateToken(user.id);
     const refreshToken = this.generateToken(user.id, true);
 
@@ -262,7 +265,9 @@ export class AuthenticationService implements IAuthenticationService {
       return validation;
     }
 
-    // TODO: Hash password with bcrypt
+      // Hash the new password
+      // NOTE: Actual bcrypt hashing happens on backend API
+      // This is a placeholder for local/mock authentication
     const newPasswordHash = await this.hashPassword(newPassword);
     // Note: passwordHash is readonly, we need to use update instead
     const updatedUser = await this.userRepository.update(user);
@@ -288,7 +293,8 @@ export class AuthenticationService implements IAuthenticationService {
       expiry,
     });
 
-    // TODO: Send email with reset link
+    // NOTE: Send password reset email via backend API
+    // Backend email service would handle this (e.g., using nodemailer, SendGrid, etc.)
     // await emailService.sendPasswordResetEmail(user.email, resetToken);
     console.log(`Password reset token for ${email}: ${resetToken}`);
   }
@@ -421,7 +427,8 @@ export class AuthenticationService implements IAuthenticationService {
 
   /**
    * Generates a session or refresh token.
-   * TODO: Implement with JWT library
+   * NOTE: Actual JWT generation with jsonwebtoken library happens on backend.
+   * Backend implementation: backend/src/infrastructure/auth/jwt.service.ts
    */
   private generateToken(userId: string, isRefresh = false): string {
     const type = isRefresh ? 'refresh' : 'access';
@@ -430,7 +437,8 @@ export class AuthenticationService implements IAuthenticationService {
 
   /**
    * Verifies a password against its hash.
-   * TODO: Implement with bcrypt
+   * NOTE: Actual bcrypt verification with bcrypt.compare() happens on backend.
+   * Backend implementation: backend/src/infrastructure/auth/password.service.ts
    */
   private async verifyPassword(password: string, hash: string): Promise<boolean> {
     // Placeholder: In production, use bcrypt.compare(password, hash)
@@ -439,7 +447,8 @@ export class AuthenticationService implements IAuthenticationService {
 
   /**
    * Hashes a password.
-   * TODO: Implement with bcrypt
+   * NOTE: Actual bcrypt hashing with bcrypt.hash() happens on backend.
+   * Backend implementation: backend/src/infrastructure/auth/password.service.ts
    */
   private async hashPassword(password: string): Promise<string> {
     // Placeholder: In production, use bcrypt.hash(password, saltRounds)

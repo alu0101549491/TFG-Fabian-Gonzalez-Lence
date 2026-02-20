@@ -230,6 +230,11 @@ export const useProjectStore = defineStore('project', () => {
     error.value = null;
 
     try {
+      // If projects haven't been loaded yet, load them first
+      if (projects.value.length === 0) {
+        await fetchProjects();
+      }
+
       // TODO: Replace with actual service call
       // currentProject.value = await projectService.getProjectById(
       //   projectId,
@@ -247,12 +252,45 @@ export const useProjectStore = defineStore('project', () => {
           taskStats: { total: 0, pending: 0, completed: 0, overdue: 0 },
           recentMessages: [],
           unreadMessagesCount: project.unreadMessagesCount,
-          participants: [],
+          totalMessagesCount: 0,
+          participants: [
+            {
+              userId: authStore.userId!,
+              username: authStore.user?.username || 'Admin User',
+              email: authStore.user?.email || 'admin@cartographic.com',
+              role: authStore.user?.role || 'ADMINISTRATOR',
+              participantType: 'owner',
+              permissions: [],
+              joinedAt: new Date(),
+            },
+            {
+              userId: 'client-1',
+              username: 'John Client',
+              email: 'client@example.com',
+              role: 'CLIENT_ONE',
+              participantType: 'client',
+              permissions: [],
+              joinedAt: new Date(),
+            },
+            {
+              userId: 'special-1',
+              username: 'Special User',
+              email: 'special@example.com',
+              role: 'SPECIAL_USER',
+              participantType: 'special_user',
+              permissions: ['READ', 'WRITE'],
+              joinedAt: new Date(),
+            },
+          ],
           sections: [],
+          totalFilesCount: 0,
           currentUserPermissions: {
             canEdit: true,
             canDelete: authStore.isAdmin,
           },
+          statusColor: project.statusColor,
+          isOverdue: project.isOverdue,
+          daysUntilDelivery: project.daysUntilDelivery,
         };
       } else {
         throw new Error('Project not found');

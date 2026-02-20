@@ -16,6 +16,16 @@ import {httpClient, type ApiResponse, type ApiError} from '../http';
 import {User} from '../../domain/entities/user';
 import {type UserRole} from '../../domain/enumerations/user-role';
 import {type IUserRepository} from '../../domain/repositories/user-repository.interface';
+import type {
+  UserDataDto,
+  UserSummaryDto,
+  CreateUserDto,
+  UpdateUserDto,
+  UserFilterDto,
+  CreateUserResultDto,
+  UpdateUserResultDto,
+  DeleteUserResultDto,
+} from '../../application/dto/user-data.dto';
 
 /**
  * API response type for user data from backend
@@ -237,5 +247,159 @@ export class UserRepository implements IUserRepository {
    */
   private isNotFoundError(error: unknown): boolean {
     return (error as {status?: number})?.status === 404;
+  }
+
+  // ============================================
+  // DTO-based methods for UI management
+  // ============================================
+
+  /**
+   * Get all users as DTOs with optional filtering
+   *
+   * @param filters - Optional filter criteria
+   * @returns Array of user summary DTOs
+   */
+  public async getAllUsers(filters?: UserFilterDto): Promise<UserSummaryDto[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.role) params.append('role', filters.role);
+      if (filters?.search) params.append('search', filters.search);
+      if (filters?.activeOnly) params.append('activeOnly', 'true');
+
+      const queryString = params.toString();
+      const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
+
+      const response = await httpClient.get<{success: boolean; data: UserApiResponse[]}>(url);
+      
+      return response.data.data.map((user) => this.mapToSummaryDto(user));
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user by ID as DTO
+   *
+   * @param id - User ID
+   * @returns User data DTO or null
+   */
+  public async getUserById(id: string): Promise<UserDataDto | null> {
+    try {
+      const response = await httpClient.get<{success: boolean; data: UserApiResponse}>(
+        `${this.baseUrl}/${id}`,
+      );
+      return this.mapToDataDto(response.data.data);
+    } catch (error) {
+      if (this.isNotFoundError(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Create new user from DTO
+   *
+   * @param userData - User creation data
+   * @returns Creation result
+   */
+  public async createUser(userData: CreateUserDto): Promise<CreateUserResultDto> {
+    try {
+      const response = await httpClient.post<{success: boolean; data: UserApiResponse}>(
+        this.baseUrl,
+        userData,
+      );
+
+      return {
+        success: true,
+        user: this.mapToDataDto(response.data.data),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Failed to create user',
+      };
+    }
+  }
+
+  /**
+   * Update user from DTO
+   *
+   * @param id - User ID
+   * @param userData - Updated user data
+   * @returns Update result
+   */
+  public async updateUser(id: string, userData: UpdateUserDto): Promise<UpdateUserResultDto> {
+    try {
+      const response = await httpClient.put<{success: boolean; data: UserApiResponse}>(
+        `${this.baseUrl}/${id}`,
+        userData,
+      );
+
+      return {
+        success: true,
+        user: this.mapToDataDto(response.data.data),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Failed to update user',
+      };
+    }
+  }
+
+  /**
+   * Delete user by ID
+   *
+   * @param id - User ID
+   * @returns Deletion result
+   */
+  public async deleteUser(id: string): Promise<DeleteUserResultDto> {
+    try {
+      await httpClient.delete(`${this.baseUrl}/${id}`);
+      return {success: true};
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Failed to delete user',
+      };
+    }
+  }
+
+  /**
+   * Map API response to UserDataDto
+   *
+   * @param data - API response
+   * @returns User data DTO
+   */
+  private mapToDataDto(data: UserApiResponse): UserDataDto {
+    return {
+      id: data.id,
+      username: data.username,
+      email: data.email,
+      role: data.role as UserRole,
+      phone: data.phone,
+      whatsappEnabled: data.whatsappEnabled,
+      createdAt: new Date(data.createdAt),
+      lastLogin: data.lastLogin ? new Date(data.lastLogin) : null,
+    };
+  }
+
+  /**
+   * Map API response to UserSummaryDto
+   *
+   * @param data - API response
+   * @returns User summary DTO
+   */
+  private mapToSummaryDto(data: UserApiResponse): UserSummaryDto {
+    return {
+      id: data.id,
+      username: data.username,
+      email: data.email,
+      role: data.role as UserRole,
+      phone: data.phone,
+      lastLogin: data.lastLogin ? new Date(data.lastLogin) : null,
+    };
   }
 }
