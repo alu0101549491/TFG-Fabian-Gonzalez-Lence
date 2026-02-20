@@ -103,6 +103,19 @@ export type {
   NotificationPreferencesDto,
 } from './notification-data.dto';
 
+// User Management DTOs
+export type {
+  UserDataDto,
+  UserSummaryDto,
+  CreateUserDto,
+  UpdateUserDto,
+  UserFilterDto,
+  UserListResponseDto,
+  CreateUserResultDto,
+  UpdateUserResultDto,
+  DeleteUserResultDto,
+} from './user-data.dto';
+
 // Export DTOs
 export type {
   ExportFiltersDto,

@@ -35,7 +35,7 @@
       <!-- Sender info -->
       <div v-if="showSender && !isOwnMessage" class="message-sender">
         <span class="message-sender-name">{{ message.senderName }}</span>
-        <span :class="['message-sender-role', `message-sender-role-${message.senderRole.toLowerCase()}`]">
+        <span v-if="message.senderRole" :class="['message-sender-role', `message-sender-role-${message.senderRole.toLowerCase()}`]">
           {{ roleLabel }}
         </span>
       </div>

@@ -212,6 +212,21 @@ const routes: RouteRecordRaw[] = [
   },
 
   {
+    path: '/users',
+    name: 'users',
+    component: () => import('../views/UserManagementView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'User Management',
+      roles: [UserRole.ADMINISTRATOR],
+      showInNav: true,
+      icon: 'users',
+      navOrder: 5,
+      layout: 'default',
+    },
+  },
+
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('../views/SettingsView.vue'),
@@ -220,7 +235,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Settings',
       showInNav: true,
       icon: 'settings',
-      navOrder: 5,
+      navOrder: 6,
       layout: 'default',
     },
   },

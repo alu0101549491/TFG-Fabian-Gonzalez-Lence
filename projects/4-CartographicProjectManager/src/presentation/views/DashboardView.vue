@@ -254,6 +254,7 @@ const {
   fetchNotifications,
   markAsRead,
   markAllAsRead,
+  deleteNotification,
 } = useNotifications();
 
 // Local State
@@ -262,28 +263,28 @@ const clients = ref<Array<{id: string; name: string}>>([]);
 
 // Computed Properties
 const stats = computed(() => ({
-  totalProjects: activeProjects.value.length,
-  pendingTasks: activeProjects.value.reduce(
+  totalProjects: activeProjects.value?.length || 0,
+  pendingTasks: activeProjects.value?.reduce(
     (sum, p) => sum + (p.pendingTasksCount || 0),
     0
-  ),
+  ) || 0,
   unreadMessages: unreadCount.value, // Use notification unread count
-  overdueProjects: activeProjects.value.filter((p) => {
+  overdueProjects: activeProjects.value?.filter((p) => {
     const deliveryDate = new Date(p.deliveryDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return deliveryDate < today && p.status !== 'finalized';
-  }).length,
+  }).length || 0,
 }));
 
 const recentProjects = computed(() =>
-  [...activeProjects.value]
+  (activeProjects.value ? [...activeProjects.value] : [])
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 4)
 );
 
 const upcomingDeadlines = computed(() =>
-  [...activeProjects.value]
+  (activeProjects.value ? [...activeProjects.value] : [])
     .filter((p) => {
       const deliveryDate = new Date(p.deliveryDate);
       const today = new Date();
@@ -304,7 +305,7 @@ const recentNotifications = computed(() =>
  * @param {string} projectId - Project identifier
  */
 function goToProject(projectId: string): void {
-  router.push({name: 'ProjectDetails', params: {id: projectId}});
+  router.push({name: 'project-details', params: {id: projectId}});
 }
 
 /**
@@ -404,7 +405,7 @@ function handleNotificationClick(notification: Notification): void {
       );
       if (project) {
         router.push({
-          name: 'ProjectDetails',
+          name: 'project-details',
           params: {id: project.id},
           query: {tab: 'tasks'},
         });
@@ -416,7 +417,7 @@ function handleNotificationClick(notification: Notification): void {
       );
       if (project) {
         router.push({
-          name: 'ProjectDetails',
+          name: 'project-details',
           params: {id: project.id},
           query: {tab: 'messages'},
         });
@@ -504,17 +505,30 @@ async function handleCreateProject(projectData: CreateProjectInput): Promise<voi
 // Lifecycle
 onMounted(async () => {
   try {
+    console.log('📊 Loading dashboard data...');
+    
     // Get date range for calendar projects (current month)
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     
     await Promise.all([
-      fetchProjects(),
-      fetchNotifications(),
+      fetchProjects().catch(err => {
+        console.warn('Failed to fetch projects:', err.message);
+        return null;
+      }),
+      fetchNotifications().catch(err => {
+        console.warn('Failed to fetch notifications:', err.message);
+        return null;
+      }),
       fetchClients(),
-      loadCalendarProjects(startOfMonth, endOfMonth),
+      loadCalendarProjects(startOfMonth, endOfMonth).catch(err => {
+        console.warn('Failed to load calendar projects:', err.message);
+        return null;
+      }),
     ]);
+    
+    console.log('✅ Dashboard data loaded');
   } catch (error) {
     console.error('Failed to load dashboard data:', error);
   }

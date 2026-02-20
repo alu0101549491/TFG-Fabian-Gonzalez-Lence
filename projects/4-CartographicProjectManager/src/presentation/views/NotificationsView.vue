@@ -82,6 +82,7 @@ const {
   loadMore,
   markAsRead,
   markAllAsRead,
+  deleteNotification,
   navigateToRelatedEntity,
 } = useNotifications();
 
@@ -134,8 +135,7 @@ async function handleMarkAllAsRead(): Promise<void> {
  */
 async function handleDelete(notificationId: string): Promise<void> {
   try {
-    console.log('Delete notification:', notificationId);
-    // TODO: Implement when delete functionality is added to composable
+    await deleteNotification(notificationId);
   } catch (error) {
     console.error('Failed to delete notification:', error);
   }
