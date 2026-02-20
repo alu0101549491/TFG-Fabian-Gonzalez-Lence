@@ -167,10 +167,12 @@
             :tasks="filteredTasks"
             :project-id="currentProject.project.id"
             :show-project-info="false"
+            :show-create-button="canManageProjects"
             :loading="tasksLoading"
             @task-click="handleTaskClick"
             @task-update="handleTaskUpdate"
             @task-delete="handleTaskDelete"
+            @create="showCreateTaskModal = true"
           />
         </section>
 
@@ -275,7 +277,7 @@
             </div>
             <TaskForm
               :project-id="currentProject.project.id"
-              :assignees="currentProject.participants.map(p => ({ id: p.userId, name: p.username, role: p.role }))" 
+              :assignees="availableAssignees" 
               @submit="handleTaskCreate"
               @cancel="showCreateTaskModal = false"
             />
@@ -433,12 +435,23 @@ const tabs = computed(() => [
   {key: 'files', label: 'Files', badge: projectFiles.value.length},
 ]);
 
+const availableAssignees = computed(() => {
+  if (!currentProject.value?.participants) {
+    return [];
+  }
+  return currentProject.value.participants.map(p => ({
+    id: p.userId,
+    name: p.username,
+    role: p.role
+  }));
+});
+
 // Methods
 /**
  * Navigate back to projects list
  */
 function goBack(): void {
-  router.push({name: 'ProjectList'});
+  router.push({name: 'projects'});
 }
 
 /**
@@ -464,7 +477,8 @@ function formatProjectType(type: string): string {
  * @param {string} status - Project status
  * @returns {string} Formatted status
  */
-function formatStatus(status: string): string {
+function formatStatus(status: string | undefined): string {
+  if (!status) return '';
   return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
 }
 
@@ -945,6 +959,10 @@ onMounted(async () => {
   padding: var(--spacing-6);
 }
 
+.modal-content > form {
+  padding: var(--spacing-6);
+}
+
 .modal-body p {
   margin-bottom: var(--spacing-4);
   line-height: 1.6;
@@ -977,6 +995,87 @@ onMounted(async () => {
   gap: var(--spacing-3);
   padding: var(--spacing-6);
   border-top: 1px solid var(--color-border);
+}
+
+/* Button Styles */
+.button-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: white;
+  background-color: var(--color-primary-600);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.button-primary:hover {
+  background-color: var(--color-primary-700);
+}
+
+.button-primary:active {
+  background-color: var(--color-primary-800);
+}
+
+.button-primary:disabled {
+  background-color: var(--color-gray-300);
+  cursor: not-allowed;
+}
+
+.button-sm {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-xs);
+}
+
+.button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.button-icon:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-gray-100);
+}
+
+.button-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.button-ghost:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-gray-50);
+  border-color: var(--color-text-secondary);
+}
+
+.button-icon-left svg,
+.button-icon-left i {
+  margin-right: var(--spacing-2);
 }
 
 /* Responsive Design */

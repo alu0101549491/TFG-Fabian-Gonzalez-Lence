@@ -172,9 +172,11 @@ export const useAuthStore = defineStore('auth', () => {
         expiresAt.value = new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
 
         saveToStorage();
+        console.log('✅ Registration successful, tokens saved to storage');
         return true;
       } else {
         error.value = response.message || 'Registration failed';
+        console.error('❌ Registration failed:', response.message);
         return false;
       }
     } catch (err: any) {

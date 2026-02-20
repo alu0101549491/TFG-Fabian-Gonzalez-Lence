@@ -359,7 +359,7 @@ async function fetchClients(): Promise<void> {
  * @param {string} projectId - Project identifier
  */
 function goToProject(projectId: string): void {
-  router.push({name: 'ProjectDetails', params: {id: projectId}});
+  router.push({name: 'project-details', params: {id: projectId}});
 }
 
 /**

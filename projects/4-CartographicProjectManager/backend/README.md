@@ -2,6 +2,27 @@
 
 Backend REST API server for the Cartographic Project Manager application, built with Node.js, Express, TypeScript, PostgreSQL, and Socket.io.
 
+> **📚 NEW: Comprehensive Documentation Available!**
+>
+> - **[Backend Implementation Guide](../docs/BACKEND-IMPLEMENTATION.md)** - Complete feature reference, authentication details, and integration guide
+> - **[Implementation Summary](../docs/IMPLEMENTATION-SUMMARY.md)** - What's been implemented and how to use it
+> - **[Quick Start](#-quick-start)** - Get running in 5 minutes
+>
+> **✅ Status**: Production-ready with bcrypt password hashing, JWT authentication, and complete API
+
+---
+
+## 🚀 Quick Start
+
+**The fastest way to get started:**
+
+```bash
+./setup.sh  # Automated setup
+npm run dev # Start server
+```
+
+**OR manually:**
+
 ## 🏗️ Architecture
 
 This backend follows **Clean Architecture** principles with clear separation of concerns:
