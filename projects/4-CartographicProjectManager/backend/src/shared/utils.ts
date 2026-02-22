@@ -13,7 +13,7 @@
  */
 
 import type {Response} from 'express';
-import type {ApiResponse, PaginatedResponse, ValidationError} from './types.js';
+import type {ApiResponse, PaginatedResponse, ValidationErrorDetail} from './types.js';
 import {HTTP_STATUS} from './constants.js';
 
 /**
@@ -28,7 +28,7 @@ export function sendSuccess<T>(
   res: Response,
   data: T,
   message?: string,
-  statusCode = HTTP_STATUS.OK
+  statusCode: number = HTTP_STATUS.OK
 ): void {
   const response: ApiResponse<T> = {
     success: true,
@@ -49,8 +49,8 @@ export function sendSuccess<T>(
 export function sendError(
   res: Response,
   message: string,
-  statusCode = HTTP_STATUS.INTERNAL_SERVER_ERROR,
-  errors?: ValidationError[]
+  statusCode: number = HTTP_STATUS.INTERNAL_SERVER_ERROR,
+  errors?: ValidationErrorDetail[]
 ): void {
   const response: ApiResponse = {
     success: false,

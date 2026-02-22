@@ -21,6 +21,8 @@ import type {
 } from '../../application/dto';
 import {NotificationType} from '../../domain/enumerations/notification-type';
 import {useAuthStore} from './auth.store';
+import {NotificationRepository} from '../../infrastructure/repositories/notification.repository';
+import type {Notification} from '../../domain/entities/notification';
 import {isSameDay, isThisWeek, formatDate} from '../../shared/utils';
 
 const STORAGE_KEY = 'cpm_notifications';
@@ -31,6 +33,24 @@ const STORAGE_KEY = 'cpm_notifications';
  */
 export const useNotificationStore = defineStore('notification', () => {
   const authStore = useAuthStore();
+  const notificationRepository = new NotificationRepository();
+  
+  /**
+   * Helper function to map Notification entity to NotificationDto
+   */
+  function mapEntityToDto(notification: Notification): NotificationDto {
+    return {
+      id: notification.id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      relatedEntityId: notification.relatedEntityId,
+      isRead: notification.isRead,
+      createdAt: notification.createdAt,
+      readAt: notification.readAt,
+    };
+  }
   
   // State
   const notifications = ref<NotificationDto[]>([]);
@@ -139,70 +159,18 @@ export const useNotificationStore = defineStore('notification', () => {
     try {
       const page = loadMore ? pagination.value.page + 1 : 1;
 
-      // TODO: Replace with actual service call
-      // const response = await notificationService.getNotificationsByUser(
-      //   authStore.userId,
-      //   { page, limit: 20 }
-      // );
-      
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Try to load from storage first
-      const stored = localStorage.getItem(STORAGE_KEY);
-      let mockNotifications: NotificationDto[];
-      
-      if (stored && !loadMore) {
-        // Use stored notifications
-        const data = JSON.parse(stored);
-        mockNotifications = data.notifications.map((n: any) => ({
-          ...n,
-          createdAt: new Date(n.createdAt),
-        }));
-      } else {
-        // Generate initial mock data only if no storage
-        mockNotifications = [
-          {
-            id: '1',
-            userId: authStore.userId,
-            type: NotificationType.NEW_MESSAGE,
-            title: 'New Message',
-            message: 'You have a new message in Project CART-2025-001',
-            relatedEntityId: '1',
-            createdAt: new Date('2025-02-07T10:00:00'),
-            isRead: false,
-          },
-          {
-            id: '2',
-            userId: authStore.userId,
-            type: NotificationType.NEW_TASK,
-            title: 'Task Assigned',
-            message: 'A new task has been assigned to you',
-            relatedEntityId: '1',
-            createdAt: new Date('2025-02-06T15:30:00'),
-            isRead: false,
-          },
-          {
-            id: '3',
-            userId: authStore.userId,
-            type: NotificationType.TASK_STATUS_CHANGE,
-            title: 'Task Completed',
-            message: 'Task "Complete survey" has been marked as completed',
-            relatedEntityId: '2',
-            createdAt: new Date('2025-02-05T09:15:00'),
-            isRead: true,
-          },
-        ];
-      }
+      // Fetch notifications from backend
+      const notificationEntities = await notificationRepository.findByUserId(authStore.userId);
+     const fetchedNotifications = notificationEntities.map(mapEntityToDto);
 
       if (loadMore) {
-        notifications.value = [...notifications.value, ...mockNotifications];
+        notifications.value = [...notifications.value, ...fetchedNotifications];
       } else {
-        notifications.value = mockNotifications;
+        notifications.value = fetchedNotifications;
       }
       
       pagination.value = {
-        total: mockNotifications.length,
+        total: fetchedNotifications.length,
         page: page,
         limit: 20,
         hasMore: false,
@@ -229,13 +197,7 @@ export const useNotificationStore = defineStore('notification', () => {
     if (!authStore.userId) return;
 
     try {
-      // TODO: Replace with actual service call
-      // unreadCount.value = await notificationService.getUnreadCount(authStore.userId);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Mock: Count unread from local state
-      unreadCount.value = notifications.value.filter(n => !n.isRead).length;
+      unreadCount.value = await notificationRepository.countUnreadByUserId(authStore.userId);
     } catch (err: any) {
       // Silent fail for count fetch
       console.error('Failed to fetch unread count:', err);
@@ -249,10 +211,7 @@ export const useNotificationStore = defineStore('notification', () => {
     if (!authStore.userId) return;
 
     try {
-      // TODO: Replace with actual service call
-      // await notificationService.markAsRead(notificationId, authStore.userId);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await notificationRepository.markAsRead(notificationId);
       
       const notification = notifications.value.find(n => n.id === notificationId);
       if (notification && !notification.isRead) {
@@ -280,10 +239,11 @@ export const useNotificationStore = defineStore('notification', () => {
     error.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // await notificationService.markAllAsRead(authStore.userId);
-      
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Mark all as read in backend
+      const notificationEntities = await notificationRepository.findUnreadByUserId(authStore.userId);
+      for (const entity of notificationEntities) {
+        await notificationRepository.markAsRead(entity.id);
+      }
       
       // Update notifications reactively
       notifications.value = notifications.value.map(n => ({
@@ -307,10 +267,7 @@ export const useNotificationStore = defineStore('notification', () => {
    */
   async function deleteNotification(notificationId: string): Promise<void> {
     try {
-      // TODO: Replace with actual service call
-      // await notificationService.deleteNotification(notificationId);
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await notificationRepository.delete(notificationId);
       
       const index = notifications.value.findIndex(n => n.id === notificationId);
       if (index !== -1) {

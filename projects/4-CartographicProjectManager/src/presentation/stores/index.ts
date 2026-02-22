@@ -76,9 +76,12 @@ export function setupStoreWebSocketListeners(socketHandler?: any) {
   const messageStore = useMessageStore();
   const notificationStore = useNotificationStore();
   
-  // TODO: Replace with actual WebSocket connection manager when implemented
+  // FUTURE ENHANCEMENT: WebSocket real-time updates
+  // Currently, the system uses HTTP polling for updates, which works fine.
+  // WebSocket support can be added later for real-time notifications.
+  // When implemented, pass a WebSocket connection manager instance as socketHandler.
   if (!socketHandler) {
-    console.warn('WebSocket handler not provided. Real-time updates disabled.');
+    console.info('WebSocket real-time updates not configured. Using HTTP polling.');
     return;
   }
   

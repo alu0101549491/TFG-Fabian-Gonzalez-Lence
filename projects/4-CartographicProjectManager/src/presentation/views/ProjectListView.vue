@@ -231,6 +231,8 @@ import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import ProjectCard from '../components/project/ProjectCard.vue';
 import ProjectForm from '../components/project/ProjectForm.vue';
 import type {ProjectSummaryDto, CreateProjectDto, UpdateProjectDto} from '@/application/dto';
+import {UserRepository} from '@/infrastructure/repositories/user.repository';
+import {UserRole} from '@/domain/enumerations/user-role';
 
 // Composables
 const router = useRouter();
@@ -336,17 +338,9 @@ const emptyStateMessage = computed(() => {
  */
 async function fetchClients(): Promise<void> {
   try {
-    // TODO: Replace with actual API call when backend is ready
-    // const clientUsers = await userRepository.findByRole(UserRole.CLIENT);
-    // clients.value = clientUsers.map(u => ({id: u.id, name: u.username}));
-    
-    // Mock data for development
-    clients.value = [
-      {id: 'client-1', name: 'John Perez'},
-      {id: 'client-2', name: 'Maria Garcia'},
-      {id: 'client-3', name: 'Carlos Hernandez'},
-      {id: 'client-4', name: 'Ana Rodriguez'},
-    ];
+    const userRepository = new UserRepository();
+    const clientUsers = await userRepository.findByRole(UserRole.CLIENT);
+    clients.value = clientUsers.map(u => ({id: u.id, name: u.username}));
   } catch (error) {
     console.error('Failed to fetch clients:', error);
     clients.value = [];

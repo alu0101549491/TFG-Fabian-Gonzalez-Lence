@@ -232,6 +232,8 @@ import NotificationList from '../components/notification/NotificationList.vue';
 import CalendarWidget from '../components/calendar/CalendarWidget.vue';
 import type {CreateProjectDto} from '@/application/dto';
 import type {NotificationDto} from '@/application/dto/notification-data.dto';
+import {UserRepository} from '@/infrastructure/repositories/user.repository';
+import {UserRole} from '@/domain/enumerations/user-role';
 
 // Composables
 const router = useRouter();
@@ -468,17 +470,9 @@ async function handleMonthChange(date: Date): Promise<void> {
  */
 async function fetchClients(): Promise<void> {
   try {
-    // TODO: Replace with actual API call when backend is ready
-    // const clientUsers = await userRepository.findByRole(UserRole.CLIENT);
-    // clients.value = clientUsers.map(u => ({id: u.id, name: u.username}));
-    
-    // Mock data for development
-    clients.value = [
-      {id: 'client-1', name: 'John Perez'},
-      {id: 'client-2', name: 'Maria Garcia'},
-      {id: 'client-3', name: 'Carlos Hernandez'},
-      {id: 'client-4', name: 'Ana Rodriguez'},
-    ];
+    const userRepository = new UserRepository();
+    const clientUsers = await userRepository.findByRole(UserRole.CLIENT);
+    clients.value = clientUsers.map(u => ({id: u.id, name: u.username}));
   } catch (error) {
     console.error('Failed to fetch clients:', error);
     clients.value = [];

@@ -23,6 +23,7 @@ import {
 } from 'vue-router';
 import {useAuthStore} from '../stores';
 import {UserRole} from '../../domain/enumerations/user-role';
+import {ProjectRepository} from '../../infrastructure/repositories/project.repository';
 
 // ============================================
 // ROUTE META INTERFACE EXTENSION
@@ -375,21 +376,34 @@ router.beforeEach(async (
     const projectId = to.params.id as string;
 
     if (projectId && authStore.userId) {
-      // TODO: Replace with actual authorization service check
-      // For now, assume access is granted
-      // const authorizationService = useAuthorizationService();
-      // const canAccess = await authorizationService.canAccessProject(
-      //   authStore.userId,
-      //   projectId
-      // );
-      //
-      // if (!canAccess) {
-      //   console.warn(`Access denied: User cannot access project ${projectId}`);
-      //   return next({ name: 'forbidden' });
-      // }
-
-      // Temporary: Allow all authenticated users
-      // This will be replaced when authorization service is integrated
+      try {
+        const projectRepository = new ProjectRepository();
+        
+        // Admin has access to all projects
+        if (authStore.isAdmin) {
+          // Allow admin access
+        } else {
+          // Fetch project with participants to verify access
+          const projectData = await projectRepository.getProjectWithParticipants(projectId);
+          
+          // Check if user is client
+          const isClient = projectData.client?.id === authStore.userId;
+          
+          // Check if user is a special user participant
+          const isSpecialUser = projectData.specialUsers?.some(
+            su => su.userId === authStore.userId
+          );
+          
+          if (!isClient && !isSpecialUser) {
+            console.warn(`Access denied: User ${authStore.userId} cannot access project ${projectId}`);
+            return next({ name: 'forbidden' });
+          }
+        }
+      } catch (error: any) {
+        console.error('Failed to verify project access:', error);
+        // If project doesn't exist or error occurs, redirect to projects list
+        return next({ name: 'projects' });
+      }
     }
   }
 

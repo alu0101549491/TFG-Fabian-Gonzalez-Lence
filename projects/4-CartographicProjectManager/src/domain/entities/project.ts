@@ -41,8 +41,8 @@ export interface ProjectProps {
   deliveryDate: Date;
   /** Current project status */
   status?: ProjectStatus;
-  /** Dropbox folder path or ID */
-  dropboxFolderId: string;
+  /** Dropbox folder path or ID (optional, can be set later) */
+  dropboxFolderId?: string;
   /** List of linked special user IDs */
   specialUserIds?: string[];
   /** Record creation timestamp */
@@ -167,10 +167,6 @@ export class Project {
 
     if (props.deliveryDate < props.contractDate) {
       throw new Error('Delivery date must be after or equal to contract date');
-    }
-
-    if (!props.dropboxFolderId || props.dropboxFolderId.trim() === '') {
-      throw new Error('Dropbox folder ID is required');
     }
   }
 

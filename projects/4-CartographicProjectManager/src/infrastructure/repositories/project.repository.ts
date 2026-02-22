@@ -18,6 +18,29 @@ import {GeoCoordinates} from '../../domain/value-objects/geo-coordinates';
 import {type ProjectStatus} from '../../domain/enumerations/project-status';
 import {type ProjectType} from '../../domain/enumerations/project-type';
 import {type IProjectRepository} from '../../domain/repositories/project-repository.interface';
+import type {CreateProjectDto} from '../../application/dto/project-data.dto';
+
+/**
+ * User data from backend API
+ */
+interface UserApiResponse {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Special user project relation from backend API
+ */
+interface SpecialUserProjectApiResponse {
+  projectId: string;
+  userId: string;
+  accessRights: string[];
+  user: UserApiResponse;
+}
 
 /**
  * API response type for project data from backend
@@ -39,6 +62,8 @@ interface ProjectApiResponse {
   createdAt: string;
   updatedAt: string;
   finalizedAt: string | null;
+  client?: UserApiResponse;
+  specialUsers?: SpecialUserProjectApiResponse[];
 }
 
 /**
@@ -77,6 +102,26 @@ export class ProjectRepository implements IProjectRepository {
   }
 
   /**
+   * Get project with full participant details (client and special users)
+   *
+   * @param id - Project ID
+   * @returns Project API response with client and specialUsers or null if not found
+   */
+  public async getProjectWithParticipants(id: string): Promise<ProjectApiResponse | null> {
+    try {
+      const response = await httpClient.get<ProjectApiResponse>(
+        `${this.baseUrl}/${id}`,
+      );
+      return response.data;
+    } catch (error) {
+      if (this.isNotFoundError(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Find project by unique code
    *
    * @param code - Project code (e.g., CART-2025-001)
@@ -106,6 +151,33 @@ export class ProjectRepository implements IProjectRepository {
     const response = await httpClient.post<ProjectApiResponse>(
       this.baseUrl,
       this.mapToApiRequest(project),
+    );
+    return this.mapToEntity(response.data);
+  }
+
+  /**
+   * Create new project from DTO (without entity)
+   *
+   * @param data - Project creation data
+   * @returns Created project entity
+   */
+  public async createFromDto(data: CreateProjectDto): Promise<Project> {
+    const payload = {
+      year: data.year,
+      code: data.code,
+      name: data.name,
+      clientId: data.clientId,
+      type: data.type,
+      coordinateX: data.coordinateX,
+      coordinateY: data.coordinateY,
+      contractDate: data.contractDate.toISOString(),
+      deliveryDate: data.deliveryDate.toISOString(),
+      dropboxFolderId: data.dropboxFolderId || '',
+    };
+
+    const response = await httpClient.post<ProjectApiResponse>(
+      this.baseUrl,
+      payload,
     );
     return this.mapToEntity(response.data);
   }

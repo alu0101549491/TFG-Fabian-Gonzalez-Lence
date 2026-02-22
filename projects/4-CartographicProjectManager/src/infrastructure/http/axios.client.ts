@@ -105,7 +105,23 @@ export interface DownloadProgress {
 }
 
 /**
- * Generic API response wrapper
+ * Backend API response format
+ *
+ * @template T The type of data contained in the response
+ */
+interface BackendApiResponse<T> {
+  /** Success flag */
+  success: boolean;
+  /** Response data payload */
+  data?: T;
+  /** Optional response message */
+  message?: string;
+  /** Validation errors (if any) */
+  errors?: Array<{field: string; message: string}>;
+}
+
+/**
+ * Generic API response wrapper (frontend format)
  *
  * @template T The type of data contained in the response
  */
@@ -500,8 +516,12 @@ export class AxiosClient {
     url: string,
     config?: RequestConfig,
   ): Promise<ApiResponse<T>> {
-    const response = await this.axiosInstance.get<T>(url, config);
-    return response as unknown as ApiResponse<T>;
+    const response = await this.axiosInstance.get<BackendApiResponse<T>>(url, config);
+    return {
+      data: response.data.data as T,
+      status: response.status,
+      message: response.data.message,
+    };
   }
 
   /**
@@ -518,8 +538,12 @@ export class AxiosClient {
     data?: unknown,
     config?: RequestConfig,
   ): Promise<ApiResponse<T>> {
-    const response = await this.axiosInstance.post<T>(url, data, config);
-    return response as unknown as ApiResponse<T>;
+    const response = await this.axiosInstance.post<BackendApiResponse<T>>(url, data, config);
+    return {
+      data: response.data.data as T,
+      status: response.status,
+      message: response.data.message,
+    };
   }
 
   /**
@@ -536,8 +560,12 @@ export class AxiosClient {
     data?: unknown,
     config?: RequestConfig,
   ): Promise<ApiResponse<T>> {
-    const response = await this.axiosInstance.put<T>(url, data, config);
-    return response as unknown as ApiResponse<T>;
+    const response = await this.axiosInstance.put<BackendApiResponse<T>>(url, data, config);
+    return {
+      data: response.data.data as T,
+      status: response.status,
+      message: response.data.message,
+    };
   }
 
   /**
@@ -554,8 +582,12 @@ export class AxiosClient {
     data?: unknown,
     config?: RequestConfig,
   ): Promise<ApiResponse<T>> {
-    const response = await this.axiosInstance.patch<T>(url, data, config);
-    return response as unknown as ApiResponse<T>;
+    const response = await this.axiosInstance.patch<BackendApiResponse<T>>(url, data, config);
+    return {
+      data: response.data.data as T,
+      status: response.status,
+      message: response.data.message,
+    };
   }
 
   /**
@@ -570,8 +602,12 @@ export class AxiosClient {
     url: string,
     config?: RequestConfig,
   ): Promise<ApiResponse<T>> {
-    const response = await this.axiosInstance.delete<T>(url, config);
-    return response as unknown as ApiResponse<T>;
+    const response = await this.axiosInstance.delete<BackendApiResponse<T>>(url, config);
+    return {
+      data: response.data.data as T,
+      status: response.status,
+      message: response.data.message,
+    };
   }
 
   /**

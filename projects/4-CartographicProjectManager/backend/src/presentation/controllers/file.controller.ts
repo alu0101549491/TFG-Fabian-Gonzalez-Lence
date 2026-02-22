@@ -25,7 +25,7 @@ export class FileController {
 
   public async getByProjectId(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const files = await this.fileRepository.findByProjectId(req.params.projectId);
+      const files = await this.fileRepository.findByProjectId(req.params.projectId as string);
       sendSuccess(res, files);
     } catch (error) {
       next(error);
@@ -34,7 +34,7 @@ export class FileController {
 
   public async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const file = await this.fileRepository.findById(req.params.id);
+      const file = await this.fileRepository.findById(req.params.id as string);
       sendSuccess(res, file);
     } catch (error) {
       next(error);
@@ -52,7 +52,7 @@ export class FileController {
 
   public async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await this.fileRepository.delete(req.params.id);
+      await this.fileRepository.delete(req.params.id as string);
       sendSuccess(res, null, 'File deleted successfully', HTTP_STATUS.NO_CONTENT);
     } catch (error) {
       next(error);

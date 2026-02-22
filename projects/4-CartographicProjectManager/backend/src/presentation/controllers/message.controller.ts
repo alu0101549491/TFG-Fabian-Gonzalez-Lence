@@ -26,7 +26,7 @@ export class MessageController {
 
   public async getByProjectId(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const messages = await this.messageRepository.findByProjectId(req.params.projectId);
+      const messages = await this.messageRepository.findByProjectId(req.params.projectId as string);
       sendSuccess(res, messages);
     } catch (error) {
       next(error);
@@ -41,6 +41,18 @@ export class MessageController {
       emitToProject(message.projectId, 'message:received', message);
       
       sendSuccess(res, message, 'Message sent successfully', HTTP_STATUS.CREATED);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async getUnreadCount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const projectId = req.params.projectId as string;
+      const {userId} = req.query;
+      if (!userId) throw new Error('userId query parameter is required');
+      const count = await this.messageRepository.countUnreadByProjectAndUser(projectId, userId as string);
+      sendSuccess(res, {count});
     } catch (error) {
       next(error);
     }

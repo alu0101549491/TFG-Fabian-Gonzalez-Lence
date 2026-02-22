@@ -56,7 +56,7 @@ export class AuthService {
       email: data.email,
       passwordHash,
       role: data.role as any,
-      phone: data.phone,
+      phone: data.phone ?? null,
       whatsappEnabled: false,
     });
 
