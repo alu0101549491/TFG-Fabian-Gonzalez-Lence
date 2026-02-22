@@ -28,6 +28,9 @@ import {TaskStatus} from '../../domain/enumerations/task-status';
 import {TaskPriority} from '../../domain/enumerations/task-priority';
 import {useAuthStore} from './auth.store';
 import {useProjectStore} from './project.store';
+import {TaskRepository} from '../../infrastructure/repositories/task.repository';
+import {ProjectRepository} from '../../infrastructure/repositories/project.repository';
+import type {Task} from '../../domain/entities/task';
 
 /**
  * Task store using Composition API.
@@ -36,6 +39,8 @@ import {useProjectStore} from './project.store';
 export const useTaskStore = defineStore('task', () => {
   const authStore = useAuthStore();
   const projectStore = useProjectStore();
+  const taskRepository = new TaskRepository();
+  const projectRepository = new ProjectRepository();
   
   // State
   const tasksByProject = ref<Map<string, TaskDto[]>>(new Map());
@@ -54,6 +59,66 @@ export const useTaskStore = defineStore('task', () => {
   const isLoadingHistory = ref(false);
   const isSaving = ref(false);
   const error = ref<string | null>(null);
+
+  /**
+   * Helper function to map Task entity to TaskDto
+   */
+  function mapEntityToDto(
+    task: Task, 
+    projectCode?: string, 
+    projectName?: string
+  ): TaskDto {
+    const now = new Date();
+    const isOverdue = task.dueDate < now && task.status !== TaskStatus.COMPLETED;
+    
+    return {
+      id: task.id,
+      projectId: task.projectId,
+      projectCode: projectCode ?? 'Unknown',
+      projectName: projectName ?? 'Unknown',
+      description: task.description,
+      creatorId: task.creatorId,
+      creatorName: 'Unknown', // Will be fetched from backend
+      assigneeId: task.assigneeId,
+      assigneeName: 'Unknown', // Will be fetched from backend
+      status: task.status,
+      priority: task.priority,
+      dueDate: task.dueDate,
+      comments: task.comments || null,
+      fileIds: task.fileIds,
+      files: [],
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+      completedAt: task.completedAt || null,
+      confirmedAt: task.confirmedAt || null,
+      isOverdue,
+      canModify: authStore.isAdmin || task.creatorId === authStore.userId,
+      canDelete: authStore.isAdmin,
+      canConfirm: authStore.isAdmin,
+      canChangeStatus: true,
+      allowedStatusTransitions: getValidTransitions(task.status),
+    };
+  }
+
+  /**
+   *  Helper to get valid status transitions
+   */
+  function getValidTransitions(currentStatus: TaskStatus): TaskStatus[] {
+    switch (currentStatus) {
+      case TaskStatus.PENDING:
+        return [TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED];
+      case TaskStatus.IN_PROGRESS:
+        return [TaskStatus.DONE, TaskStatus.CANCELLED];
+      case TaskStatus.DONE:
+        return [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS];
+      case TaskStatus.COMPLETED:
+        return [];
+      case TaskStatus.CANCELLED:
+        return [TaskStatus.PENDING];
+      default:
+        return [];
+    }
+  }
 
   // Getters
   const getTasksForProject = computed(() => (projectId: string) => {
@@ -144,54 +209,27 @@ export const useTaskStore = defineStore('task', () => {
         filters.value = {...filters.value, ...newFilters};
       }
 
-      // TODO: Replace with actual service call
-      // const response = await taskService.getTasksByProject(
-      //   projectId,
-      //   authStore.userId,
-      //   filters.value
-      // );
-      
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Mock data
-      const mockTasks: TaskDto[] = [
-        {
-          id: '1',
-          projectId,
-          description: 'Complete topographic survey',
-          assigneeId: 'admin1',
-          assigneeName: 'Administrator',
-          status: TaskStatus.IN_PROGRESS,
-          priority: TaskPriority.HIGH,
-          dueDate: new Date('2025-03-15'),
-          isOverdue: false,
-          canModify: true,
-          canConfirm: false,
-          allowedStatusTransitions: [TaskStatus.COMPLETED],
-        },
-        {
-          id: '2',
-          projectId,
-          description: 'Review boundary analysis',
-          assigneeId: 'client1',
-          assigneeName: 'Client One',
-          status: TaskStatus.PENDING,
-          priority: TaskPriority.MEDIUM,
-          dueDate: new Date('2025-03-20'),
-          isOverdue: false,
-          canModify: true,
-          canConfirm: false,
-          allowedStatusTransitions: [TaskStatus.IN_PROGRESS],
-        },
-      ];
+      // Fetch project info for task mapping
+      let projectCode = 'Unknown';
+      let projectName = 'Unknown';
+      try {
+        const project = await projectRepository.findById(projectId);
+        projectCode = project.code;
+        projectName = project.name;
+      } catch (err) {
+        console.warn(`Failed to fetch project info for ${projectId}:`, err);
+      }
 
-      tasksByProject.value.set(projectId, mockTasks);
+      // Fetch tasks from backend
+      const taskEntities = await taskRepository.findByProjectId(projectId);
+      const tasks = taskEntities.map(task => mapEntityToDto(task, projectCode, projectName));
+
+      tasksByProject.value.set(projectId, tasks);
       pagination.value = {
-        total: mockTasks.length,
+        total: tasks.length,
         page: 1,
         limit: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(tasks.length / 20),
       };
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch tasks';
@@ -211,19 +249,11 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null;
 
     try {
-      // TODO: Call service
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Find task in store
-      for (const tasks of tasksByProject.value.values()) {
-        const task = tasks.find(t => t.id === taskId);
-        if (task) {
-          currentTask.value = task;
-          return;
-        }
+      const taskEntity = await taskRepository.findById(taskId);
+      if (!taskEntity) {
+        throw new Error('Task not found');
       }
-      
-      throw new Error('Task not found');
+      currentTask.value = mapEntityToDto(taskEntity);
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch task';
       throw err;
@@ -234,6 +264,7 @@ export const useTaskStore = defineStore('task', () => {
 
   /**
    * Fetches task history entries
+   * Note: Currently returns empty array. Requires backend endpoint for task audit log.
    */
   async function fetchTaskHistory(taskId: string): Promise<void> {
     if (!authStore.userId) return;
@@ -241,9 +272,8 @@ export const useTaskStore = defineStore('task', () => {
     isLoadingHistory.value = true;
 
     try {
-      // TODO: Call service
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
+      // Note: Requires backend implementation of GET /api/tasks/:id/history
+      // For now, return empty history
       taskHistory.value = [];
     } catch (err: any) {
       console.error('Failed to fetch task history:', err);
@@ -262,25 +292,22 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // const task = await taskService.createTask(data, authStore.userId);
-      
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const newTask: TaskDto = {
-        id: `task_${Date.now()}`,
+      // Create task entity (backend will generate ID and timestamps)
+      const taskEntity = new Task({
+        id: `temp_${Date.now()}`, // Temporary ID
         projectId: data.projectId,
-        description: data.description,
+        creatorId: authStore.userId,
         assigneeId: data.assigneeId,
-        assigneeName: 'Assignee Name',
-        status: TaskStatus.PENDING,
+        description: data.description,
         priority: data.priority,
         dueDate: data.dueDate,
-        isOverdue: false,
-        canModify: true,
-        canConfirm: false,
-        allowedStatusTransitions: [TaskStatus.IN_PROGRESS],
-      };
+        comments: data.comments || null,
+        status: TaskStatus.PENDING,
+        fileIds: data.fileIds || [],
+      });
+
+      const savedTask = await taskRepository.save(taskEntity);
+      const newTask = mapEntityToDto(savedTask);
 
       const tasks = tasksByProject.value.get(data.projectId) ?? [];
       tasksByProject.value.set(data.projectId, [...tasks, newTask]);
@@ -305,20 +332,30 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // const task = await taskService.updateTask(data, authStore.userId);
+      // Fetch current task
+      const taskEntity = await taskRepository.findById(data.id);
+      if (!taskEntity) {
+        throw new Error('Task not found');
+      }
+
+      // Update fields
+      if (data.description) taskEntity.description = data.description;
+      if (data.assigneeId) taskEntity.assigneeId = data.assigneeId;
+      if (data.priority) taskEntity.priority = data.priority;
+      if (data.dueDate) taskEntity.dueDate = data.dueDate;
+      if (data.comments !== undefined) taskEntity.comments = data.comments;
+
+      const updatedEntity = await taskRepository.update(taskEntity);
+      const updatedTask = mapEntityToDto(updatedEntity);
       
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Find and update task
+      // Update local state
       for (const [projectId, tasks] of tasksByProject.value.entries()) {
-        const index = tasks.findIndex(t => t.id === data.taskId);
+        const index = tasks.findIndex(t => t.id === data.id);
         if (index !== -1) {
-          const updatedTask = {...tasks[index], ...data as any};
           tasks[index] = updatedTask;
           tasksByProject.value.set(projectId, [...tasks]);
           
-          if (currentTask.value?.id === data.taskId) {
+          if (currentTask.value?.id === data.id) {
             currentTask.value = updatedTask;
           }
           
@@ -326,7 +363,7 @@ export const useTaskStore = defineStore('task', () => {
         }
       }
       
-      throw new Error('Task not found');
+      return updatedTask;
     } catch (err: any) {
       error.value = err.message || 'Failed to update task';
       return null;
@@ -345,12 +382,9 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // await taskService.deleteTask(taskId, authStore.userId);
+      await taskRepository.delete(taskId);
       
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Find and remove task
+      // Remove from local state
       for (const [projectId, tasks] of tasksByProject.value.entries()) {
         const index = tasks.findIndex(t => t.id === taskId);
         if (index !== -1) {
@@ -389,30 +423,36 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // const task = await taskService.changeTaskStatus(
-      //   { taskId, newStatus, comment },
-      //   authStore.userId
-      // );
+      // Fetch and update task
+      const taskEntity = await taskRepository.findById(taskId);
+      if (!taskEntity) {
+        throw new Error('Task not found');
+      }
+
+      taskEntity.status = newStatus;
+      if (comment) {
+        taskEntity.comments = comment;
+      }
+
+      const updatedEntity = await taskRepository.update(taskEntity);
+      const updatedTask = mapEntityToDto(updatedEntity);
       
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Update task status
+      // Update local state
       for (const [projectId, tasks] of tasksByProject.value.entries()) {
         const index = tasks.findIndex(t => t.id === taskId);
         if (index !== -1) {
-          tasks[index].status = newStatus;
+          tasks[index] = updatedTask;
           tasksByProject.value.set(projectId, [...tasks]);
           
           if (currentTask.value?.id === taskId) {
-            currentTask.value.status = newStatus;
+            currentTask.value = updatedTask;
           }
           
           return true;
         }
       }
       
-      return false;
+      return true;
     } catch (err: any) {
       error.value = err.message || 'Failed to change task status';
       return false;
@@ -435,34 +475,41 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // const task = await taskService.confirmTask(
-      //   { taskId, confirmed, feedback },
-      //   authStore.userId
-      // );
+      // Fetch and update task
+      const taskEntity = await taskRepository.findById(taskId);
+      if (!taskEntity) {
+        throw new Error('Task not found');
+      }
+
+      if (confirmed) {
+        taskEntity.status = TaskStatus.COMPLETED;
+        taskEntity.confirmedAt = new Date();
+      } else {
+        taskEntity.status = TaskStatus.IN_PROGRESS;
+        if (feedback) {
+          taskEntity.comments = feedback;
+        }
+      }
+
+      const updatedEntity = await taskRepository.update(taskEntity);
+      const updatedTask = mapEntityToDto(updatedEntity);
       
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Update task
+      // Update local state
       for (const [projectId, tasks] of tasksByProject.value.entries()) {
         const index = tasks.findIndex(t => t.id === taskId);
         if (index !== -1) {
-          if (confirmed) {
-            tasks[index].status = TaskStatus.COMPLETED;
-          } else {
-            tasks[index].status = TaskStatus.IN_PROGRESS;
-          }
+          tasks[index] = updatedTask;
           tasksByProject.value.set(projectId, [...tasks]);
           
           if (currentTask.value?.id === taskId) {
-            currentTask.value = tasks[index];
+            currentTask.value = updatedTask;
           }
           
           return true;
         }
       }
       
-      return false;
+      return true;
     } catch (err: any) {
       error.value = err.message || 'Failed to confirm task';
       return false;

@@ -508,9 +508,12 @@ import {ref, computed, onMounted} from 'vue';
 import {useRouter} from 'vue-router';
 import {useAuth} from '../composables/use-auth';
 import {UserRole} from '../../domain/enumerations/user-role';
+import {UserRepository} from '../../infrastructure/repositories/user.repository';
+import {User} from '../../domain/entities/user';
 
 const router = useRouter();
 const {user, isAdmin, isClient, isSpecialUser, logout} = useAuth();
+const userRepository = new UserRepository();
 
 // State
 const isUpdating = ref(false);
@@ -607,8 +610,24 @@ async function handleAccountUpdate(): Promise<void> {
 
   isUpdating.value = true;
   try {
-    // TODO: Call API to update account
-    // await userRepository.updateUser(user.value.id, {...});
+    if (!user.value) return;
+
+    // Fetch current user entity
+    const currentUser = await userRepository.getUserById(user.value.id);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // Create updated user entity
+    const updatedUser = new User({
+      ...currentUser,
+      username: accountForm.value.username,
+      email: accountForm.value.email,
+      phone: accountForm.value.phone || undefined,
+    });
+
+    // Update in backend
+    await userRepository.updateUser(user.value.id, updatedUser);
     
     showSuccess('Account information updated successfully');
     accountForm.value.currentPassword = '';
@@ -624,7 +643,23 @@ async function handleAccountUpdate(): Promise<void> {
 async function handleNotificationUpdate(): Promise<void> {
   isUpdating.value = true;
   try {
-    // TODO: Call API to update notification preferences
+    if (!user.value) return;
+
+    // Fetch current user entity
+    const currentUser = await userRepository.getUserById(user.value.id);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // Create updated user entity with notification preferences
+    const updatedUser = new User({
+      ...currentUser,
+      whatsappEnabled: notificationForm.value.whatsappEnabled,
+    });
+
+    // Update in backend
+    await userRepository.updateUser(user.value.id, updatedUser);
+    
     showSuccess('Notification preferences saved');
   } catch (error: any) {
     showError(error.message || 'Failed to save preferences');
@@ -636,7 +671,10 @@ async function handleNotificationUpdate(): Promise<void> {
 async function handleClientSettingsUpdate(): Promise<void> {
   isUpdating.value = true;
   try {
-    // TODO: Save client-specific settings
+    // Note: Client-specific settings (defaultProjectView, autoDownloadReports, showCompletedProjects)
+    // are UI preferences that should be stored in localStorage or a separate user preferences table.
+    // For now, we just show success message.
+    localStorage.setItem('clientSettings', JSON.stringify(clientForm.value));
     showSuccess('Client preferences saved');
   } catch (error: any) {
     showError(error.message || 'Failed to save settings');
@@ -648,7 +686,10 @@ async function handleClientSettingsUpdate(): Promise<void> {
 async function handleSpecialUserSettingsUpdate(): Promise<void> {
   isUpdating.value = true;
   try {
-    // TODO: Save special user settings
+    // Note: Special user settings (defaultTaskView, showOnlyMyTasks, enableQuickComments)
+    // are UI preferences that should be stored in localStorage or a separate user preferences table.
+    // For now, we store them in localStorage.
+    localStorage.setItem('specialUserSettings', JSON.stringify(specialUserForm.value));
     showSuccess('Collaboration preferences saved');
   } catch (error: any) {
     showError(error.message || 'Failed to save preferences');
@@ -660,7 +701,10 @@ async function handleSpecialUserSettingsUpdate(): Promise<void> {
 async function handleAdminSettingsUpdate(): Promise<void> {
   isUpdating.value = true;
   try {
-    // TODO: Save admin settings
+    // Note: Admin settings (autoBackupEnabled, debugModeEnabled) are system-level settings
+    // that should be stored in a separate system configuration table.
+    // For now, we store them in localStorage.
+    localStorage.setItem('adminSettings', JSON.stringify(adminForm.value));
     showSuccess('Admin settings saved');
   } catch (error: any) {
     showError(error.message || 'Failed to save settings');
@@ -676,8 +720,10 @@ async function handleAccountDelete(): Promise<void> {
 
   isDeleting.value = true;
   try {
-    // TODO: Call API to delete account
-    // await userRepository.deleteUser(user.value.id);
+    if (!user.value) return;
+
+    // Delete user account
+    await userRepository.deleteUser(user.value.id);
     
     showSuccess('Account deleted. Logging out...');
     setTimeout(async () => {

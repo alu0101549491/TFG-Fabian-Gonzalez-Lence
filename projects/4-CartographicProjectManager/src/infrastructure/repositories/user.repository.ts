@@ -12,7 +12,7 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {httpClient, type ApiResponse, type ApiError} from '../http';
+import {httpClient} from '../http';
 import {User} from '../../domain/entities/user';
 import {type UserRole} from '../../domain/enumerations/user-role';
 import {type IUserRepository} from '../../domain/repositories/user-repository.interface';
@@ -34,7 +34,7 @@ interface UserApiResponse {
   id: string;
   username: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string; // Optional - backend removes it for security
   role: string;
   phone: string | null;
   whatsappEnabled: boolean;
@@ -210,7 +210,8 @@ export class UserRepository implements IUserRepository {
       id: data.id,
       username: data.username,
       email: data.email,
-      passwordHash: data.passwordHash,
+      // Backend removes passwordHash for security, use placeholder for read operations
+      passwordHash: data.passwordHash || '[REDACTED]',
       role: data.role as UserRole,
       phone: data.phone,
       whatsappEnabled: data.whatsappEnabled,
@@ -221,7 +222,8 @@ export class UserRepository implements IUserRepository {
 
   /**
    * Map User entity to API request payload
-   *
+   * 
+   * @deprecated This method should not be used. Use DTOs instead.
    * @param user - User domain entity
    * @returns API request payload
    */
@@ -230,7 +232,7 @@ export class UserRepository implements IUserRepository {
       id: user.id,
       username: user.username,
       email: user.email,
-      passwordHash: user.passwordHash,
+      // passwordHash is private and should never be sent in update requests
       role: user.role,
       phone: user.phone,
       whatsappEnabled: user.whatsappEnabled,
@@ -269,9 +271,9 @@ export class UserRepository implements IUserRepository {
       const queryString = params.toString();
       const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
 
-      const response = await httpClient.get<{success: boolean; data: UserApiResponse[]}>(url);
+      const response = await httpClient.get<UserApiResponse[]>(url);
       
-      return response.data.data.map((user) => this.mapToSummaryDto(user));
+      return response.data.map((user) => this.mapToSummaryDto(user));
     } catch (error) {
       console.error('Failed to fetch users:', error);
       throw error;
@@ -286,10 +288,10 @@ export class UserRepository implements IUserRepository {
    */
   public async getUserById(id: string): Promise<UserDataDto | null> {
     try {
-      const response = await httpClient.get<{success: boolean; data: UserApiResponse}>(
+      const response = await httpClient.get<UserApiResponse>(
         `${this.baseUrl}/${id}`,
       );
-      return this.mapToDataDto(response.data.data);
+      return this.mapToDataDto(response.data);
     } catch (error) {
       if (this.isNotFoundError(error)) {
         return null;
@@ -306,14 +308,14 @@ export class UserRepository implements IUserRepository {
    */
   public async createUser(userData: CreateUserDto): Promise<CreateUserResultDto> {
     try {
-      const response = await httpClient.post<{success: boolean; data: UserApiResponse}>(
+      const response = await httpClient.post<UserApiResponse>(
         this.baseUrl,
         userData,
       );
 
       return {
         success: true,
-        user: this.mapToDataDto(response.data.data),
+        user: this.mapToDataDto(response.data),
       };
     } catch (error: any) {
       return {
@@ -332,14 +334,14 @@ export class UserRepository implements IUserRepository {
    */
   public async updateUser(id: string, userData: UpdateUserDto): Promise<UpdateUserResultDto> {
     try {
-      const response = await httpClient.put<{success: boolean; data: UserApiResponse}>(
+      const response = await httpClient.put<UserApiResponse>(
         `${this.baseUrl}/${id}`,
         userData,
       );
 
       return {
         success: true,
-        user: this.mapToDataDto(response.data.data),
+        user: this.mapToDataDto(response.data),
       };
     } catch (error: any) {
       return {

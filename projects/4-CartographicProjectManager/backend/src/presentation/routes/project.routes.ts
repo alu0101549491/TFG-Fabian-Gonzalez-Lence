@@ -13,10 +13,14 @@
 
 import {Router} from 'express';
 import {ProjectController} from '../controllers/project.controller.js';
+import {TaskController} from '../controllers/task.controller.js';
+import {MessageController} from '../controllers/message.controller.js';
 import {authenticate} from '@infrastructure/auth/auth.middleware.js';
 
 export const projectRoutes = Router();
 const controller = new ProjectController();
+const taskController = new TaskController();
+const messageController = new MessageController();
 
 projectRoutes.get('/', authenticate, controller.getAll.bind(controller));
 projectRoutes.get('/:id', authenticate, controller.getById.bind(controller));
@@ -24,3 +28,13 @@ projectRoutes.get('/code/:code', authenticate, controller.getByCode.bind(control
 projectRoutes.post('/', authenticate, controller.create.bind(controller));
 projectRoutes.put('/:id', authenticate, controller.update.bind(controller));
 projectRoutes.delete('/:id', authenticate, controller.delete.bind(controller));
+
+// Sub-resources
+projectRoutes.get('/:id/tasks', authenticate, (req, res, next) => {
+  req.query.projectId = req.params.id;
+  return taskController.getAll(req, res, next);
+});
+projectRoutes.get('/:id/messages/unread/count', authenticate, (req, res, next) => {
+  req.params.projectId = req.params.id;
+  return messageController.getUnreadCount(req, res, next);
+});

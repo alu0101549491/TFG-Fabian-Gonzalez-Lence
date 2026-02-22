@@ -21,13 +21,13 @@ export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
-  errors?: ValidationError[];
+  errors?: ValidationErrorDetail[];
 }
 
 /**
  * Validation error detail
  */
-export interface ValidationError {
+export interface ValidationErrorDetail {
   field: string;
   message: string;
   value?: unknown;

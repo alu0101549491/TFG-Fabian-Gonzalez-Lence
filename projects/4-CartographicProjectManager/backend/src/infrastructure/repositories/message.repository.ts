@@ -67,4 +67,18 @@ export class MessageRepository implements IMessageRepository {
       throw new DatabaseError('Failed to delete message');
     }
   }
+
+  /**
+   * Count unread messages for user in project.
+   * NOTE: Returns 0 as read tracking is not yet implemented in database.
+   * To implement: add readByUserIds String[] field to Message model or create MessageRead table.
+   */
+  public async countUnreadByProjectAndUser(projectId: string, userId: string): Promise<number> {
+    // TODO: Implement read tracking
+    // For now, return 0 as the Message table doesn't have readByUserIds field
+    // To implement properly, either:
+    // 1. Add readByUserIds String[] @default([]) to Message model
+    // 2. Create a separate MessageRead table with userId and messageId
+    return 0;
+  }
 }

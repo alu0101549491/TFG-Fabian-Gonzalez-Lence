@@ -40,7 +40,7 @@ export class TaskController {
 
   public async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const task = await this.taskRepository.findById(req.params.id);
+      const task = await this.taskRepository.findById(req.params.id as string);
       if (!task) throw new NotFoundError(ERROR_MESSAGES.TASK_NOT_FOUND);
       sendSuccess(res, task);
     } catch (error) {
@@ -59,7 +59,7 @@ export class TaskController {
 
   public async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const task = await this.taskRepository.update(req.params.id, req.body);
+      const task = await this.taskRepository.update(req.params.id as string, req.body);
       sendSuccess(res, task, 'Task updated successfully');
     } catch (error) {
       next(error);
@@ -68,7 +68,7 @@ export class TaskController {
 
   public async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await this.taskRepository.delete(req.params.id);
+      await this.taskRepository.delete(req.params.id as string);
       sendSuccess(res, null, 'Task deleted successfully', HTTP_STATUS.NO_CONTENT);
     } catch (error) {
       next(error);

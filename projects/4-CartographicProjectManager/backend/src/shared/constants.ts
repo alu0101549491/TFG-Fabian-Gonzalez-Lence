@@ -51,7 +51,7 @@ export const JWT = {
   REFRESH_SECRET:
     process.env.JWT_REFRESH_SECRET || 'default-refresh-secret',
   REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
-} as const;
+};
 
 /**
  * ============================================

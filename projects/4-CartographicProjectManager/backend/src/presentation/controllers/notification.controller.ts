@@ -25,7 +25,7 @@ export class NotificationController {
 
   public async getByUserId(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const notifications = await this.notificationRepository.findByUserId(req.params.userId);
+      const notifications = await this.notificationRepository.findByUserId(req.params.userId as string);
       sendSuccess(res, notifications);
     } catch (error) {
       next(error);
@@ -34,7 +34,7 @@ export class NotificationController {
 
   public async markAsRead(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const notification = await this.notificationRepository.markAsRead(req.params.id);
+      const notification = await this.notificationRepository.markAsRead(req.params.id as string);
       sendSuccess(res, notification);
     } catch (error) {
       next(error);
@@ -43,7 +43,7 @@ export class NotificationController {
 
   public async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await this.notificationRepository.delete(req.params.id);
+      await this.notificationRepository.delete(req.params.id as string);
       sendSuccess(res, null, 'Notification deleted', HTTP_STATUS.NO_CONTENT);
     } catch (error) {
       next(error);

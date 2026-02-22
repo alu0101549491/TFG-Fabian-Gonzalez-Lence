@@ -63,7 +63,7 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const user = await this.userRepository.findById(req.params.id);
+      const user = await this.userRepository.findById(req.params.id as string);
       
       if (!user) {
         throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -86,7 +86,7 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const user = await this.userRepository.findByEmail(decodeURIComponent(req.params.email));
+      const user = await this.userRepository.findByEmail(decodeURIComponent(req.params.email as string));
       
       if (!user) {
         throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -109,7 +109,7 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const user = await this.userRepository.findByUsername(decodeURIComponent(req.params.username));
+      const user = await this.userRepository.findByUsername(decodeURIComponent(req.params.username as string));
       
       if (!user) {
         throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -150,7 +150,7 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const user = await this.userRepository.update(req.params.id, req.body);
+      const user = await this.userRepository.update(req.params.id as string, req.body);
       const {passwordHash, ...userWithoutPassword} = user;
       sendSuccess(res, userWithoutPassword, 'User updated successfully');
     } catch (error) {
@@ -168,7 +168,7 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      await this.userRepository.delete(req.params.id);
+      await this.userRepository.delete(req.params.id as string);
       sendSuccess(res, null, 'User deleted successfully', HTTP_STATUS.NO_CONTENT);
     } catch (error) {
       next(error);
