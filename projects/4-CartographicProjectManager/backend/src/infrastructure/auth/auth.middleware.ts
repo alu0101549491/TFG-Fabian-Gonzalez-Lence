@@ -105,3 +105,37 @@ export function optionalAuth(
     next();
   }
 }
+
+/**
+ * Middleware to authorize resource owner or administrator
+ * Checks if the user is accessing their own resource (via :id param) or is an admin
+ *
+ * @param req - Express request
+ * @param res - Express response
+ * @param next - Next middleware function
+ */
+export function authorizeOwnerOrAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  try {
+    const user = (req as AuthenticatedRequest).user;
+
+    if (!user) {
+      throw new UnauthorizedError('User not authenticated');
+    }
+
+    const resourceId = req.params.id;
+    const isOwner = resourceId === user.id;
+    const isAdmin = user.role === 'ADMINISTRATOR';
+
+    if (!isOwner && !isAdmin) {
+      throw new ForbiddenError('Insufficient permissions');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
