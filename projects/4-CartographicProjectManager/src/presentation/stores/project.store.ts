@@ -30,7 +30,7 @@ import {ProjectRepository} from '../../infrastructure/repositories/project.repos
 import {UserRepository} from '../../infrastructure/repositories/user.repository';
 import {TaskRepository} from '../../infrastructure/repositories/task.repository';
 import {MessageRepository} from '../../infrastructure/repositories/message.repository';
-import type {Project} from '../../domain/entities/project';
+import {Project} from '../../domain/entities/project';
 import {TaskStatus} from '../../domain/enumerations/task-status';
 
 /**
@@ -426,38 +426,88 @@ export const useProjectStore = defineStore('project', () => {
    * Updates an existing project
    */
   async function updateProject(data: UpdateProjectDto): Promise<boolean> {
-    if (!authStore.userId) return false;
+    console.log('[ProjectStore] updateProject called with data:', data);
+    
+    if (!authStore.userId) {
+      console.error('[ProjectStore] Cannot update - user not authenticated');
+      return false;
+    }
 
     isLoading.value = true;
     error.value = null;
 
     try {
       // Fetch current project entity
-      const currentProjectEntity = await projectRepository.findById(data.projectId);
+      console.log(`[ProjectStore] Fetching current project entity for ${data.id}...`);
+      const currentProjectEntity = await projectRepository.findById(data.id);
       
-      // Update only the fields provided in the DTO
-      const updatedProject = new Project({
-        ...currentProjectEntity,
+      if (!currentProjectEntity) {
+        throw new Error(`Project with id ${data.id} not found`);
+      }
+      
+      console.log('[ProjectStore] Current project entity:', currentProjectEntity);
+      
+      // Build props object from current entity using getters
+      const projectProps = {
+        id: currentProjectEntity.id,
+        code: currentProjectEntity.code,
+        name: currentProjectEntity.name,
+        year: currentProjectEntity.year,
+        clientId: currentProjectEntity.clientId,
+        type: currentProjectEntity.type,
+        coordinates: currentProjectEntity.coordinates,
+        contractDate: currentProjectEntity.contractDate,
+        deliveryDate: currentProjectEntity.deliveryDate,
+        status: currentProjectEntity.status,
+        dropboxFolderId: currentProjectEntity.dropboxFolderId,
+        specialUserIds: currentProjectEntity.specialUserIds,
+        createdAt: currentProjectEntity.createdAt,
+        updatedAt: currentProjectEntity.updatedAt,
+        finalizedAt: currentProjectEntity.finalizedAt,
+      };
+      
+      // Merge with update data
+      const updatedProps = {
+        ...projectProps,
         ...data,
-        id: data.projectId, // Ensure ID is preserved
-      });
+        id: data.id, // Ensure ID is preserved
+      };
+      
+      console.log('[ProjectStore] Merged props for new Project:', updatedProps);
+      console.log('[ProjectStore] updatedProps.name:', updatedProps.name);
+      console.log('[ProjectStore] updatedProps.status:', updatedProps.status);
+      
+      const updatedProject = new Project(updatedProps);
+      console.log('[ProjectStore] Updated project object:', updatedProject);
 
       // Save to backend
+      console.log('[ProjectStore] Sending update to backend...');
       const savedProject = await projectRepository.update(updatedProject);
+      console.log('[ProjectStore] Backend response:', savedProject);
       
       // Update local state
-      const index = projects.value.findIndex(p => p.id === data.projectId);
+      const index = projects.value.findIndex(p => p.id === data.id);
+      console.log(`[ProjectStore] Updating local state at index ${index}...`);
       if (index !== -1) {
         projects.value[index] = await mapProjectToSummaryDto(savedProject);
+        console.log('[ProjectStore] Local state updated');
       }
       
       // Update current project if it's the one being edited
-      if (currentProject.value?.project.id === data.projectId) {
-        await fetchProjectById(data.projectId);
+      if (currentProject.value?.project.id === data.id) {
+        console.log('[ProjectStore] Refreshing current project view...');
+        await fetchProjectById(data.id);
       }
       
+      console.log('✅ [ProjectStore] Project updated successfully');
       return true;
     } catch (err: any) {
+      console.error('❌ [ProjectStore] Error updating project:', err);
+      console.error('[ProjectStore] Error details:', {
+        message: err.message,
+        stack: err.stack,
+        data: data
+      });
       error.value = err.message || 'Failed to update project';
       return false;
     } finally {
@@ -469,24 +519,38 @@ export const useProjectStore = defineStore('project', () => {
    * Deletes a project (admin only)
    */
   async function deleteProject(projectId: string): Promise<boolean> {
-    if (!authStore.userId) return false;
+    if (!authStore.userId) {
+      console.error('Cannot delete project: User not authenticated');
+      error.value = 'User not authenticated';
+      return false;
+    }
 
     try {
+      console.log(`[ProjectStore] Deleting project ${projectId}...`);
+      
       await projectRepository.delete(projectId);
+      console.log(`[ProjectStore] Project ${projectId} deleted from backend`);
       
       const index = projects.value.findIndex(p => p.id === projectId);
       if (index !== -1) {
         projects.value.splice(index, 1);
         pagination.value.total--;
+        console.log(`[ProjectStore] Project removed from local state (index: ${index})`);
+      } else {
+        console.warn(`[ProjectStore] Project ${projectId} not found in local state`);
       }
       
       if (currentProjectId.value === projectId) {
         currentProject.value = null;
+        console.log(`[ProjectStore] Cleared current project`);
       }
       
+      error.value = null;
       return true;
     } catch (err: any) {
-      error.value = err.message || 'Failed to delete project';
+      const errorMessage = err.message || 'Failed to delete project';
+      console.error(`[ProjectStore] Error deleting project:`, err);
+      error.value = errorMessage;
       return false;
     }
   }
@@ -495,17 +559,31 @@ export const useProjectStore = defineStore('project', () => {
    * Finalizes a project (admin only)
    */
   async function finalizeProject(projectId: string): Promise<boolean> {
-    if (!authStore.userId) return false;
+    console.log(`[ProjectStore] Attempting to finalize project: ${projectId}`);
+    
+    if (!authStore.userId) {
+      console.error('[ProjectStore] Cannot finalize - user not authenticated');
+      return false;
+    }
 
     isLoading.value = true;
     error.value = null;
 
     try {
-      return await updateProject({
-        projectId,
+      const result = await updateProject({
+        id: projectId,
         status: ProjectStatus.FINALIZED,
       } as UpdateProjectDto);
+      
+      if (result) {
+        console.log(`✅ [ProjectStore] Project ${projectId} finalized successfully`);
+      } else {
+        console.error(`❌ [ProjectStore] Failed to finalize project ${projectId}`);
+      }
+      
+      return result;
     } catch (err: any) {
+      console.error('[ProjectStore] Exception while finalizing project:', err);
       error.value = err.message || 'Failed to finalize project';
       return false;
     } finally {

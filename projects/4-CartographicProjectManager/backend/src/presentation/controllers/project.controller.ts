@@ -145,9 +145,12 @@ export class ProjectController {
     next: NextFunction
   ): Promise<void> {
     try {
+      console.log(`[ProjectController] UPDATE request for project ${req.params.id} with data:`, req.body);
       const project = await this.projectRepository.update(req.params.id as string, req.body);
+      console.log(`[ProjectController] Project ${req.params.id} updated successfully`);
       sendSuccess(res, project, 'Project updated successfully');
     } catch (error) {
+      console.error('[ProjectController] Error updating project:', error);
       next(error);
     }
   }
@@ -162,9 +165,15 @@ export class ProjectController {
     next: NextFunction
   ): Promise<void> {
     try {
-      await this.projectRepository.delete(req.params.id as string);
-      sendSuccess(res, null, 'Project deleted successfully', HTTP_STATUS.NO_CONTENT);
+      const projectId = req.params.id as string;
+      console.log(`[ProjectController] DELETE request for project: ${projectId}`);
+      
+      await this.projectRepository.delete(projectId);
+      console.log(`[ProjectController] Project ${projectId} deleted successfully`);
+      
+      sendSuccess(res, null, 'Project deleted successfully');
     } catch (error) {
+      console.error('[ProjectController] Error deleting project:', error);
       next(error);
     }
   }

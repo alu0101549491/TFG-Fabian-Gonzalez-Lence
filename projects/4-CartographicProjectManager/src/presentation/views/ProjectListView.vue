@@ -436,12 +436,27 @@ async function handleDeleteConfirm(): Promise<void> {
   if (!projectToDelete.value) return;
 
   isDeleting.value = true;
+  const projectCode = projectToDelete.value.code;
+  
   try {
-    await deleteProject(projectToDelete.value.id);
-    showDeleteModal.value = false;
-    projectToDelete.value = null;
-  } catch (error) {
-    console.error('Failed to delete project:', error);
+    console.log(`Attempting to delete project: ${projectCode} (${projectToDelete.value.id})`);
+    const result = await deleteProject(projectToDelete.value.id);
+    
+    if (result.success) {
+      console.log(`✅ Project ${projectCode} deleted successfully`);
+      showDeleteModal.value = false;
+      projectToDelete.value = null;
+      
+      // Refresh project list to ensure UI is up to date
+      await fetchProjects();
+      console.log('Project list refreshed');
+    } else {
+      console.error(`❌ Failed to delete project ${projectCode}:`, result.error);
+      alert(`Failed to delete project: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error: any) {
+    console.error('Exception while deleting project:', error);
+    alert(`Error deleting project: ${error.message || 'Unknown error'}`);
   } finally {
     isDeleting.value = false;
   }

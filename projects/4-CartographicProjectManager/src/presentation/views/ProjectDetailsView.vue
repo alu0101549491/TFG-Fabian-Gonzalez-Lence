@@ -33,6 +33,7 @@
           :show-actions="canManageProjects"
           @edit="showEditModal = true"
           @finalize="handleFinalize"
+          @delete="handleDeleteStart"
         />
       </header>
 
@@ -285,6 +286,52 @@
         </div>
       </Teleport>
 
+      <!-- Delete Confirmation Modal -->
+      <Teleport to="body">
+        <div
+          v-if="showDeleteModal"
+          class="modal-overlay modal-overlay-danger"
+          @click.self="showDeleteModal = false"
+        >
+          <div class="modal-content modal-small" role="dialog" aria-labelledby="delete-title">
+            <div class="modal-header">
+              <h2 id="delete-title">⚠️ Confirm Delete</h2>
+              <button
+                @click="showDeleteModal = false"
+                class="button-icon"
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+            <div class="modal-body">
+              <p class="modal-warning-text">
+                Are you sure you want to delete project <strong>{{ currentProject?.project.code }}</strong>?
+              </p>
+              <p class="modal-detail-text">
+                This action cannot be undone. All associated tasks, messages, and files will be permanently deleted.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button
+                @click="showDeleteModal = false"
+                class="button-secondary"
+                :disabled="isDeleting"
+              >
+                Cancel
+              </button>
+              <button
+                @click="handleDeleteConfirm"
+                class="button-danger"
+                :disabled="isDeleting"
+              >
+                {{ isDeleting ? 'Deleting...' : 'Delete Project' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+
       <!-- Finalize Confirmation Modal -->
       <Teleport to="body">
         <div
@@ -382,6 +429,7 @@ const {
   loadProject,
   updateProject,
   finalizeProject,
+  deleteProject,
 } = useProjects();
 
 const {
@@ -412,7 +460,9 @@ const taskStatusFilter = ref('');
 const showEditModal = ref(false);
 const showCreateTaskModal = ref(false);
 const showFinalizeModal = ref(false);
+const showDeleteModal = ref(false);
 const isFinalizing = ref(false);
+const isDeleting = ref(false);
 
 // Computed Properties
 const projectId = computed(() => route.params.id as string);
@@ -529,14 +579,65 @@ function handleFinalize(): void {
  * Confirm project finalization
  */
 async function handleFinalizeConfirm(): Promise<void> {
+  if (!currentProject.value) return;
+
   isFinalizing.value = true;
+  const projectCode = currentProject.value.project.code;
+  
   try {
-    await finalizeProject(projectId.value);
-    showFinalizeModal.value = false;
-  } catch (error) {
-    console.error('Failed to finalize project:', error);
+    console.log(`Attempting to finalize project: ${projectCode} (${projectId.value})`);
+    const result = await finalizeProject(projectId.value);
+    
+    if (result) {
+      console.log(`✅ Project ${projectCode} finalized successfully`);
+      showFinalizeModal.value = false;
+    } else {
+      console.error(`❌ Failed to finalize project ${projectCode}`);
+      alert('Failed to finalize project. Please try again.');
+    }
+  } catch (error: any) {
+    console.error('Exception while finalizing project:', error);
+    alert(`Error finalizing project: ${error.message || 'Unknown error'}`);
   } finally {
     isFinalizing.value = false;
+  }
+}
+
+/**
+ * Start delete project flow
+ */
+function handleDeleteStart(): void {
+  showDeleteModal.value = true;
+}
+
+/**
+ * Confirm and execute project deletion
+ */
+async function handleDeleteConfirm(): Promise<void> {
+  if (!currentProject.value) return;
+
+  isDeleting.value = true;
+  const projectCode = currentProject.value.project.code;
+  
+  try {
+    console.log(`Attempting to delete project: ${projectCode} (${projectId.value})`);
+    const result = await deleteProject(projectId.value);
+    
+    if (result.success) {
+      console.log(`✅ Project ${projectCode} deleted successfully`);
+      showDeleteModal.value = false;
+      
+      // Navigate back to projects list
+      router.push({name: 'projects'});
+    } else {
+      console.error(`❌ Failed to delete project ${projectCode}:`, result.error);
+      alert(`Failed to delete project: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error: any) {
+    console.error('Exception while deleting project:', error);
+    alert(`Error deleting project: ${error.message || 'Unknown error'}`);
+  } finally {
+    isDeleting.value = false;
   }
 }
 
@@ -951,6 +1052,81 @@ onMounted(async () => {
 
 .modal-small {
   max-width: 450px;
+}
+
+/* Danger Modal Styles */
+.modal-overlay-danger {
+  background: rgba(127, 29, 29, 0.5);
+}
+
+.modal-warning-text {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-3);
+}
+
+.modal-detail-text {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-6);
+}
+
+.button-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: white;
+  background-color: #dc2626;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.button-danger:hover {
+  background-color: #b91c1c;
+}
+
+.button-danger:active {
+  background-color: #991b1b;
+}
+
+.button-danger:disabled {
+  background-color: var(--color-gray-300);
+  color: var(--color-gray-500);
+  cursor: not-allowed;
+}
+
+.button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.button-secondary:hover {
+  background-color: var(--color-gray-100);
+  border-color: var(--color-text-secondary);
+}
+
+.button-secondary:disabled {
+  color: var(--color-gray-400);
+  border-color: var(--color-gray-200);
+  cursor: not-allowed;
 }
 
 .modal-header {
