@@ -1,0 +1,5 @@
+---
+name: Changes
+description: This prompt is designed to generate a detailed description of the changes made in the codebase at the CHANGES.md file, including the rationale behind the changes and their potential impact on the project. It helps maintain a clear and informative commit history, making it easier for other developers to understand the context and purpose of each change.
+---
+Generate a detailed description of the changes made in the codebase, including the rationale behind the changes and their potential impact on the project. The description should be clear, informative, and provide enough context for other developers to understand the purpose of the changes without needing to review the code in detail. This description will be added to the CHANGES.md file to maintain a comprehensive record of all modifications made to the project.
