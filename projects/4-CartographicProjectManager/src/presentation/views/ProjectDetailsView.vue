@@ -375,7 +375,7 @@ import type {MessageDto} from '@/application/dto/message-data.dto';
 // Composables
 const router = useRouter();
 const route = useRoute();
-const {user, canManageProjects} = useAuth();
+const {user, canManageProjects, isAuthenticated} = useAuth();
 const {
   currentProject,
   isLoading,
@@ -630,6 +630,12 @@ async function handleFileDelete(fileId: string): Promise<void> {
 
 // Load initial data
 async function loadProjectData(): Promise<void> {
+  // Skip if user is not authenticated (e.g., during logout)
+  if (!isAuthenticated.value) {
+    console.log('Skipping project details load - user not authenticated');
+    return;
+  }
+  
   try {
     await Promise.all([
       loadProject(projectId.value),

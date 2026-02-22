@@ -15,12 +15,14 @@ import {Router} from 'express';
 import {ProjectController} from '../controllers/project.controller.js';
 import {TaskController} from '../controllers/task.controller.js';
 import {MessageController} from '../controllers/message.controller.js';
+import {FileController} from '../controllers/file.controller.js';
 import {authenticate} from '@infrastructure/auth/auth.middleware.js';
 
 export const projectRoutes = Router();
 const controller = new ProjectController();
 const taskController = new TaskController();
 const messageController = new MessageController();
+const fileController = new FileController();
 
 projectRoutes.get('/', authenticate, controller.getAll.bind(controller));
 projectRoutes.get('/:id', authenticate, controller.getById.bind(controller));
@@ -37,4 +39,12 @@ projectRoutes.get('/:id/tasks', authenticate, (req, res, next) => {
 projectRoutes.get('/:id/messages/unread/count', authenticate, (req, res, next) => {
   req.params.projectId = req.params.id;
   return messageController.getUnreadCount(req, res, next);
+});
+projectRoutes.get('/:id/messages', authenticate, (req, res, next) => {
+  req.params.projectId = req.params.id;
+  return messageController.getByProjectId(req, res, next);
+});
+projectRoutes.get('/:id/files', authenticate, (req, res, next) => {
+  req.params.projectId = req.params.id;
+  return fileController.getByProjectId(req, res, next);
 });

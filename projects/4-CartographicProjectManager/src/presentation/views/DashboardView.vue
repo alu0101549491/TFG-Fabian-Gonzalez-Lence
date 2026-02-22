@@ -237,7 +237,7 @@ import {UserRole} from '@/domain/enumerations/user-role';
 
 // Composables
 const router = useRouter();
-const {canCreateProject} = useAuth();
+const {canCreateProject, isAuthenticated} = useAuth();
 const {
   projects,
   activeProjects,
@@ -469,6 +469,12 @@ async function handleMonthChange(date: Date): Promise<void> {
  * Fetch available clients for project assignment
  */
 async function fetchClients(): Promise<void> {
+  // Skip if user is not authenticated (e.g., during logout)
+  if (!isAuthenticated.value) {
+    console.log('Skipping client fetch - user not authenticated');
+    return;
+  }
+  
   try {
     const userRepository = new UserRepository();
     const clientUsers = await userRepository.findByRole(UserRole.CLIENT);
@@ -498,6 +504,12 @@ async function handleCreateProject(projectData: CreateProjectInput): Promise<voi
 
 // Lifecycle
 onMounted(async () => {
+  // Skip data loading if user is not authenticated (e.g., during logout)
+  if (!isAuthenticated.value) {
+    console.log('Skipping dashboard load - user not authenticated');
+    return;
+  }
+  
   try {
     console.log('📊 Loading dashboard data...');
     
