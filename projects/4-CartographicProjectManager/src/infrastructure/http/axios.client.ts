@@ -602,7 +602,21 @@ export class AxiosClient {
     url: string,
     config?: RequestConfig,
   ): Promise<ApiResponse<T>> {
+    console.log(`[AxiosClient] DELETE ${url}`);
     const response = await this.axiosInstance.delete<BackendApiResponse<T>>(url, config);
+    console.log(`[AxiosClient] DELETE response status: ${response.status}`, response.data);
+    
+    // Handle 204 No Content responses (empty body)
+    if (response.status === 204 || !response.data) {
+      console.log('[AxiosClient] Handling 204 No Content response');
+      return {
+        data: null as T,
+        status: response.status,
+        message: 'Successfully deleted',
+      };
+    }
+    
+    console.log('[AxiosClient] Returning structured response');
     return {
       data: response.data.data as T,
       status: response.status,

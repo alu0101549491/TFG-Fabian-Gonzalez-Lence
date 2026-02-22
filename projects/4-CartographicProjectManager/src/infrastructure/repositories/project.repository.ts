@@ -188,11 +188,42 @@ export class ProjectRepository implements IProjectRepository {
    * @param project - Project entity with updated data
    * @returns Updated project entity
    */
+  /**
+   * Update project
+   *
+   * @param project - Project entity to update
+   * @returns Updated project
+   */
   public async update(project: Project): Promise<Project> {
+    console.log(`[ProjectRepository] Sending PUT request to update project ${project.id}`, project);
+    
+    // Send only updatable fields to backend
+    const updatePayload: Record<string, unknown> = {
+      name: project.name,
+      type: project.type,
+      clientId: project.clientId,
+      contractDate: project.contractDate.toISOString(),
+      deliveryDate: project.deliveryDate.toISOString(),
+      status: project.status,
+      dropboxFolderId: project.dropboxFolderId,
+    };
+    
+    // Include optional fields only if they have values
+    if (project.coordinates) {
+      updatePayload.coordinateX = project.coordinates.longitude;
+      updatePayload.coordinateY = project.coordinates.latitude;
+    } else {
+      updatePayload.coordinateX = null;
+      updatePayload.coordinateY = null;
+    }
+    
+    console.log(`[ProjectRepository] Update payload:`, updatePayload);
+    
     const response = await httpClient.put<ProjectApiResponse>(
       `${this.baseUrl}/${project.id}`,
-      this.mapToApiRequest(project),
+      updatePayload,
     );
+    console.log(`[ProjectRepository] PUT response:`, response);
     return this.mapToEntity(response.data);
   }
 
@@ -202,7 +233,9 @@ export class ProjectRepository implements IProjectRepository {
    * @param id - Project ID to delete
    */
   public async delete(id: string): Promise<void> {
-    await httpClient.delete(`${this.baseUrl}/${id}`);
+    console.log(`[ProjectRepository] Sending DELETE request for project ${id}`);
+    const response = await httpClient.delete(`${this.baseUrl}/${id}`);
+    console.log(`[ProjectRepository] DELETE response:`, response);
   }
 
   /**
