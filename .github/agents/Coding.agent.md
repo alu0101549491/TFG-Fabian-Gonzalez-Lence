@@ -75,3 +75,4 @@ Every new file MUST start with this header (adapted for the specific file):
 - Multiple solutions when trade-offs exist
 
 Adhere to project's established patterns and match existing code style and conventions.
+Don't create commits if the user doesn't ask you to.
