@@ -12,7 +12,7 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import jwt from 'jsonwebtoken';
+import jwt, {type SignOptions} from 'jsonwebtoken';
 import {JWT} from '@shared/constants.js';
 import type {JwtPayload} from '@shared/types.js';
 import {UnauthorizedError} from '@shared/errors.js';
@@ -24,7 +24,7 @@ import {UnauthorizedError} from '@shared/errors.js';
  * @returns Signed JWT token
  */
 export function generateAccessToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT.SECRET, {expiresIn: JWT.EXPIRES_IN});
+  return jwt.sign(payload, JWT.SECRET, {expiresIn: JWT.EXPIRES_IN as any});
 }
 
 /**
@@ -34,9 +34,7 @@ export function generateAccessToken(payload: JwtPayload): string {
  * @returns Signed refresh token
  */
 export function generateRefreshToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT.REFRESH_SECRET, {
-    expiresIn: JWT.REFRESH_EXPIRES_IN,
-  });
+  return jwt.sign(payload, JWT.REFRESH_SECRET, {expiresIn: JWT.REFRESH_EXPIRES_IN as any});
 }
 
 /**

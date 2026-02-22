@@ -18,14 +18,20 @@ import type {
   ProjectSummaryDto,
   ProjectDetailsDto,
   ProjectFilterDto,
-  ProjectListResponseDto,
   CalendarProjectDto,
   CreateProjectDto,
   UpdateProjectDto,
+  ParticipantDto,
 } from '../../application/dto';
 import {ProjectStatus} from '../../domain/enumerations/project-status';
-import {ProjectType} from '../../domain/enumerations/project-type';
+import {AccessRight} from '../../domain/enumerations/access-right';
 import {useAuthStore} from './auth.store';
+import {ProjectRepository} from '../../infrastructure/repositories/project.repository';
+import {UserRepository} from '../../infrastructure/repositories/user.repository';
+import {TaskRepository} from '../../infrastructure/repositories/task.repository';
+import {MessageRepository} from '../../infrastructure/repositories/message.repository';
+import type {Project} from '../../domain/entities/project';
+import {TaskStatus} from '../../domain/enumerations/task-status';
 
 /**
  * Project store using Composition API.
@@ -33,6 +39,10 @@ import {useAuthStore} from './auth.store';
  */
 export const useProjectStore = defineStore('project', () => {
   const authStore = useAuthStore();
+  const projectRepository = new ProjectRepository();
+  const userRepository = new UserRepository();
+  const taskRepository = new TaskRepository();
+  const messageRepository = new MessageRepository();
   
   // State
   const projects = ref<ProjectSummaryDto[]>([]);
@@ -138,6 +148,69 @@ export const useProjectStore = defineStore('project', () => {
   // Actions
 
   /**
+   * Maps a Project entity to ProjectSummaryDto with denormalized data
+   */
+  async function mapProjectToSummaryDto(project: Project): Promise<ProjectSummaryDto> {
+    // Fetch client name
+    let clientName = 'Unknown Client';
+    try {
+      const client = await userRepository.getUserById(project.clientId);
+      clientName = client.username;
+    } catch (err) {
+      console.warn(`Failed to fetch client name for project ${project.id}:`, err);
+    }
+
+    // Fetch pending tasks count
+    let pendingTasksCount = 0;
+    let hasPendingTasks = false;
+    try {
+      const tasks = await taskRepository.findByProjectId(project.id);
+      const pendingTasks = tasks.filter(
+        t => t.status === TaskStatus.PENDING || t.status === TaskStatus.IN_PROGRESS
+      );
+      pendingTasksCount = pendingTasks.length;
+      hasPendingTasks = pendingTasksCount > 0;
+    } catch (err) {
+      console.warn(`Failed to fetch tasks for project ${project.id}:`, err);
+    }
+
+    // Fetch unread messages count
+    let unreadMessagesCount = 0;
+    try {
+      if (authStore.userId) {
+        unreadMessagesCount = await messageRepository.countUnreadByProjectAndUser(
+          project.id,
+          authStore.userId
+        );
+      }
+    } catch (err) {
+      console.warn(`Failed to fetch unread messages for project ${project.id}:`, err);
+    }
+
+    return {
+      id: project.id,
+      code: project.code,
+      name: project.name,
+      clientId: project.clientId,
+      clientName,
+      type: project.type,
+      deliveryDate: project.deliveryDate,
+      status: project.status,
+      hasPendingTasks,
+      pendingTasksCount,
+      unreadMessagesCount,
+      participantCount: project.specialUserIds.length + 1,
+      statusColor: project.status === ProjectStatus.ACTIVE ? 'green' : 'gray',
+      isOverdue: project.deliveryDate < new Date() && project.status !== ProjectStatus.FINALIZED,
+      daysUntilDelivery: Math.ceil(
+        (project.deliveryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      ),
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+    };
+  }
+
+  /**
    * Fetches all projects accessible by current user
    *
    * @param newFilters - Optional filters to apply
@@ -158,59 +231,32 @@ export const useProjectStore = defineStore('project', () => {
         filters.value = {...filters.value, ...newFilters};
       }
 
-      // TODO: Replace with actual service call
-      // const response = await projectService.getProjectsByUser(
-      //   authStore.userId,
-      //   filters.value
-      // );
+      // Fetch projects from backend
+      let projectEntities: Project[];
       
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mock data
-      const mockProjects: ProjectSummaryDto[] = [
-        {
-          id: '1',
-          code: 'CART-2025-001',
-          name: 'North Urbanization Project',
-          clientId: 'client1',
-          clientName: 'John Pérez',
-          type: ProjectType.RESIDENTIAL,
-          deliveryDate: new Date('2025-12-15'),
-          status: ProjectStatus.ACTIVE,
-          hasPendingTasks: true,
-          pendingTasksCount: 2,
-          unreadMessagesCount: 3,
-          statusColor: 'green',
-          isOverdue: false,
-          daysUntilDelivery: 300,
-        },
-        {
-          id: '2',
-          code: 'CART-2025-002',
-          name: 'South Topographic Survey',
-          clientId: 'client2',
-          clientName: 'Mary López',
-          type: ProjectType.COMMERCIAL,
-          deliveryDate: new Date('2026-01-20'),
-          status: ProjectStatus.PENDING,
-          hasPendingTasks: false,
-          pendingTasksCount: 0,
-          unreadMessagesCount: 0,
-          statusColor: 'red',
-          isOverdue: false,
-          daysUntilDelivery: 336,
-        },
-      ];
+      if (filters.value.status) {
+        projectEntities = await projectRepository.findByStatus(filters.value.status);
+      } else if (filters.value.clientId) {
+        projectEntities = await projectRepository.findByClientId(filters.value.clientId);
+      } else if (filters.value.year) {
+        projectEntities = await projectRepository.findByYear(filters.value.year);
+      } else {
+        projectEntities = await projectRepository.findAll();
+      }
 
-      projects.value = mockProjects;
+      // Map to DTOs with denormalized data
+      projects.value = await Promise.all(
+        projectEntities.map(project => mapProjectToSummaryDto(project))
+      );
+
       pagination.value = {
-        total: mockProjects.length,
+        total: projects.value.length,
         page: 1,
         limit: 10,
-        totalPages: 1,
+        totalPages: Math.ceil(projects.value.length / 10),
       };
     } catch (err: any) {
+      console.error('Failed to fetch projects:', err);
       error.value = err.message || 'Failed to fetch projects';
       throw err;
     } finally {
@@ -230,71 +276,79 @@ export const useProjectStore = defineStore('project', () => {
     error.value = null;
 
     try {
-      // If projects haven't been loaded yet, load them first
-      if (projects.value.length === 0) {
-        await fetchProjects();
-      }
-
-      // TODO: Replace with actual service call
-      // currentProject.value = await projectService.getProjectById(
-      //   projectId,
-      //   authStore.userId
-      // );
+      // Fetch project from backend (includes client and specialUsers)
+      const projectWithDetails = await projectRepository.getProjectWithParticipants(projectId);
       
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const project = projects.value.find(p => p.id === projectId);
-      if (project) {
-        currentProject.value = {
-          project: project as any,
-          tasks: [],
-          taskStats: { total: 0, pending: 0, completed: 0, overdue: 0 },
-          recentMessages: [],
-          unreadMessagesCount: project.unreadMessagesCount,
-          totalMessagesCount: 0,
-          participants: [
-            {
-              userId: authStore.userId!,
-              username: authStore.user?.username || 'Admin User',
-              email: authStore.user?.email || 'admin@cartographic.com',
-              role: authStore.user?.role || 'ADMINISTRATOR',
-              participantType: 'owner',
-              permissions: [],
-              joinedAt: new Date(),
-            },
-            {
-              userId: 'client-1',
-              username: 'John Client',
-              email: 'client@example.com',
-              role: 'CLIENT_ONE',
-              participantType: 'client',
-              permissions: [],
-              joinedAt: new Date(),
-            },
-            {
-              userId: 'special-1',
-              username: 'Special User',
-              email: 'special@example.com',
-              role: 'SPECIAL_USER',
-              participantType: 'special_user',
-              permissions: ['READ', 'WRITE'],
-              joinedAt: new Date(),
-            },
-          ],
-          sections: [],
-          totalFilesCount: 0,
-          currentUserPermissions: {
-            canEdit: true,
-            canDelete: authStore.isAdmin,
-          },
-          statusColor: project.statusColor,
-          isOverdue: project.isOverdue,
-          daysUntilDelivery: project.daysUntilDelivery,
-        };
-      } else {
+      if (!projectWithDetails) {
         throw new Error('Project not found');
       }
+
+      // Map participants from backend data
+      const participants: ParticipantDto[] = [];
+
+      // Add client as participant
+      if (projectWithDetails.client) {
+        participants.push({
+          userId: projectWithDetails.client.id,
+          username: projectWithDetails.client.username,
+          email: projectWithDetails.client.email,
+          role: projectWithDetails.client.role as any,
+          participantType: 'client',
+          permissions: [],
+          joinedAt: new Date(projectWithDetails.client.createdAt),
+        });
+      }
+
+      // Add special users as participants
+      if (projectWithDetails.specialUsers && Array.isArray(projectWithDetails.specialUsers)) {
+        projectWithDetails.specialUsers.forEach((su) => {
+          if (su.user) {
+            participants.push({
+              userId: su.user.id,
+              username: su.user.username,
+              email: su.user.email,
+              role: su.user.role as any,
+              participantType: 'special_user',
+              permissions: (su.accessRights || []).map((right) => right as AccessRight),
+              joinedAt: new Date(su.user.createdAt),
+            });
+          }
+        });
+      }
+
+      // Find project summary in local state for additional data
+      let projectSummary = projects.value.find(p => p.id === projectId);
+      
+      // If not found, fetch projects first
+      if (!projectSummary) {
+        await fetchProjects();
+        projectSummary = projects.value.find(p => p.id === projectId);
+      }
+
+      currentProject.value = {
+        project: projectSummary as any || projectWithDetails,
+        tasks: [],
+        taskStats: { total: 0, pending: 0, inProgress: 0, completed: 0, overdue: 0 },
+        recentMessages: [],
+        unreadMessagesCount: projectSummary?.unreadMessagesCount || 0,
+        totalMessagesCount: 0,
+        participants,
+        sections: [],
+        totalFilesCount: 0,
+        currentUserPermissions: {
+          canEdit: authStore.isAdmin,
+          canDelete: authStore.isAdmin,
+          canFinalize: authStore.isAdmin,
+          canCreateTask: true,
+          canSendMessage: true,
+          canUploadFile: true,
+          canDownloadFile: true,
+          canManageParticipants: authStore.isAdmin,
+        },
+        statusColor: projectSummary?.statusColor || 'gray',
+        isOverdue: projectSummary?.isOverdue || false,
+        daysUntilDelivery: projectSummary?.daysUntilDelivery || 0,
+      };
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch project details';
       currentProject.value = null;
@@ -311,24 +365,20 @@ export const useProjectStore = defineStore('project', () => {
     if (!authStore.userId) return;
 
     try {
-      // TODO: Replace with actual service call
-      // calendarProjects.value = await projectService.getProjectsForCalendar(
-      //   authStore.userId,
-      //   startDate,
-      //   endDate
-      // );
+      // Fetch all projects from backend
+      const projectEntities = await projectRepository.findAll();
       
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Mock calendar projects from projects list
-      calendarProjects.value = projects.value.map(p => ({
-        id: p.id,
-        code: p.code,
-        name: p.name,
-        deliveryDate: p.deliveryDate,
-        status: p.status,
-        statusColor: p.statusColor,
-      }));
+      // Filter by delivery date range and map to calendar DTOs
+      calendarProjects.value = projectEntities
+        .filter(p => p.deliveryDate >= startDate && p.deliveryDate <= endDate)
+        .map(p => ({
+          id: p.id,
+          code: p.code,
+          name: p.name,
+          deliveryDate: p.deliveryDate,
+          status: p.status,
+          statusColor: p.status === ProjectStatus.ACTIVE ? 'green' : 'gray',
+        }));
     } catch (err: any) {
       console.error('Failed to fetch calendar projects:', err);
     }
@@ -353,33 +403,18 @@ export const useProjectStore = defineStore('project', () => {
     error.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // const project = await projectService.createProject(data, authStore.userId);
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const newProject: ProjectSummaryDto = {
-        id: `project_${Date.now()}`,
-        code: data.code || `CART-${new Date().getFullYear()}-${String(projects.value.length + 1).padStart(3, '0')}`,
-        name: data.name,
-        clientId: data.clientId,
-        clientName: 'Client Name',
-        type: data.type,
-        deliveryDate: data.deliveryDate,
-        status: ProjectStatus.ACTIVE,
-        hasPendingTasks: false,
-        pendingTasksCount: 0,
-        unreadMessagesCount: 0,
-        statusColor: 'green',
-        isOverdue: false,
-        daysUntilDelivery: 0,
-      };
+      // Send data directly to backend via repository
+      const savedProject = await projectRepository.createFromDto(data);
 
-      projects.value.unshift(newProject);
+      // Add to local state with denormalized data
+      const newProjectSummary = await mapProjectToSummaryDto(savedProject);
+
+      projects.value.unshift(newProjectSummary);
       pagination.value.total++;
       
-      return newProject.id;
+      return savedProject.id;
     } catch (err: any) {
+      console.error('Failed to create project:', err);
       error.value = err.message || 'Failed to create project';
       return null;
     } finally {
@@ -397,18 +432,28 @@ export const useProjectStore = defineStore('project', () => {
     error.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // await projectService.updateProject(data, authStore.userId);
+      // Fetch current project entity
+      const currentProjectEntity = await projectRepository.findById(data.projectId);
       
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Update only the fields provided in the DTO
+      const updatedProject = new Project({
+        ...currentProjectEntity,
+        ...data,
+        id: data.projectId, // Ensure ID is preserved
+      });
+
+      // Save to backend
+      const savedProject = await projectRepository.update(updatedProject);
       
+      // Update local state
       const index = projects.value.findIndex(p => p.id === data.projectId);
       if (index !== -1) {
-        projects.value[index] = {...projects.value[index], ...data as any};
-        
-        if (currentProject.value?.project.id === data.projectId) {
-          currentProject.value.project = {...currentProject.value.project, ...data as any};
-        }
+        projects.value[index] = await mapProjectToSummaryDto(savedProject);
+      }
+      
+      // Update current project if it's the one being edited
+      if (currentProject.value?.project.id === data.projectId) {
+        await fetchProjectById(data.projectId);
       }
       
       return true;
@@ -427,10 +472,7 @@ export const useProjectStore = defineStore('project', () => {
     if (!authStore.userId) return false;
 
     try {
-      // TODO: Replace with actual service call
-      // await projectService.deleteProject(projectId, authStore.userId);
-      
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await projectRepository.delete(projectId);
       
       const index = projects.value.findIndex(p => p.id === projectId);
       if (index !== -1) {
@@ -459,11 +501,6 @@ export const useProjectStore = defineStore('project', () => {
     error.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // await projectService.finalizeProject(projectId, authStore.userId);
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       return await updateProject({
         projectId,
         status: ProjectStatus.FINALIZED,

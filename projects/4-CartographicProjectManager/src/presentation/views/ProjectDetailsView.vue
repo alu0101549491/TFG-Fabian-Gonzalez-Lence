@@ -356,6 +356,7 @@ import {useAuth} from '../composables/use-auth';
 import {useProjects} from '../composables/use-projects';
 import {useTasks} from '../composables/use-tasks';
 import {useMessages} from '../composables/use-messages';
+import {useFiles} from '../composables/use-files';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import ProjectSummary from '../components/project/ProjectSummary.vue';
 import ProjectForm from '../components/project/ProjectForm.vue';
@@ -398,6 +399,13 @@ const {
   loadMessagesByProject,
 } = useMessages();
 
+const {
+  files: projectFiles,
+  isLoading: filesLoading,
+  loadFilesByProject,
+  deleteFile,
+} = useFiles();
+
 // Local State
 const activeTab = ref<'tasks' | 'files' | 'messages' | 'overview'>('overview');
 const taskStatusFilter = ref('');
@@ -405,10 +413,6 @@ const showEditModal = ref(false);
 const showCreateTaskModal = ref(false);
 const showFinalizeModal = ref(false);
 const isFinalizing = ref(false);
-
-// Mock file state (replace with actual file management composable)
-const projectFiles = ref<FileSummaryDto[]>([]);
-const filesLoading = ref(false);
 
 // Computed Properties
 const projectId = computed(() => route.params.id as string);
@@ -631,6 +635,7 @@ async function loadProjectData(): Promise<void> {
       loadProject(projectId.value),
       loadTasksByProject(projectId.value),
       loadMessagesByProject(projectId.value),
+      loadFilesByProject(projectId.value),
     ]);
   } catch (error) {
     console.error('Failed to load project data:', error);

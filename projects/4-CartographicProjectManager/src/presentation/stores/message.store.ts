@@ -22,6 +22,8 @@ import type {
 } from '../../application/dto';
 import {useAuthStore} from './auth.store';
 import {useProjectStore} from './project.store';
+import {MessageRepository} from '../../infrastructure/repositories/message.repository';
+import type {Message} from '../../domain/entities/message';
 
 /**
  * Pagination information for message lists
@@ -40,6 +42,7 @@ interface PaginationInfo {
 export const useMessageStore = defineStore('message', () => {
   const authStore = useAuthStore();
   const projectStore = useProjectStore();
+  const messageRepository = new MessageRepository();
   
   // State
   const messagesByProject = ref<Map<string, MessageDto[]>>(new Map());
@@ -49,6 +52,27 @@ export const useMessageStore = defineStore('message', () => {
   const isLoading = ref(false);
   const isSending = ref(false);
   const error = ref<string | null>(null);
+
+  /**
+   * Helper function to map Message entity to MessageDto
+   */
+  function mapEntityToDto(message: Message): MessageDto {
+    return {
+      id: message.id,
+      projectId: message.projectId,
+      senderId: message.senderId,
+      senderName: 'User', // Will be populated by backend
+      senderRole: 'CLIENT' as any,
+      content: message.content,
+      sentAt: message.sentAt,
+      fileIds: message.fileIds,
+      files: [],
+      readByUserIds: message.readByUserIds,
+      isRead: authStore.userId ? message.readByUserIds.includes(authStore.userId) : false,
+      isSystemMessage: message.type === 'SYSTEM',
+      type: message.type as any,
+    };
+  }
 
   // Getters
   const getMessagesForProject = computed(() => (projectId: string) => {
@@ -116,44 +140,9 @@ export const useMessageStore = defineStore('message', () => {
     currentProjectId.value = projectId;
 
     try {
-      const pagination = paginationByProject.value.get(projectId);
-      const page = loadMore ? (pagination?.page ?? 0) + 1 : 1;
-
-      // TODO: Replace with actual service call
-      // const response = await messageService.getMessagesByProject(
-      //   projectId,
-      //   authStore.userId,
-      //   { page, limit: 20 }
-      // );
-      
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Mock data
-      const mockMessages: MessageDto[] = [
-        {
-          id: '1',
-          projectId,
-          senderId: 'client1',
-          senderName: 'John Pérez',
-          content: 'When can we schedule the site meeting?',
-          sentAt: new Date('2025-02-05T10:30:00'),
-          files: [],
-          isRead: true,
-          isSystemMessage: false,
-        },
-        {
-          id: '2',
-          projectId,
-          senderId: 'admin1',
-          senderName: 'Administrator',
-          content: 'How about next Monday at 10 AM?',
-          sentAt: new Date('2025-02-05T11:15:00'),
-          files: [],
-          isRead: false,
-          isSystemMessage: false,
-        },
-      ];
+      // Fetch messages from backend
+      const messageEntities = await messageRepository.findByProjectId(projectId);
+      const messages = messageEntities.map(mapEntityToDto);
 
       const existingMessages = loadMore 
         ? (messagesByProject.value.get(projectId) ?? [])
@@ -161,18 +150,18 @@ export const useMessageStore = defineStore('message', () => {
       
       messagesByProject.value.set(projectId, [
         ...existingMessages,
-        ...mockMessages,
+        ...messages,
       ]);
       
       paginationByProject.value.set(projectId, {
-        total: mockMessages.length,
-        page: page,
+        total: messages.length,
+        page: 1,
         limit: 20,
         hasMore: false,
       });
       
       // Update unread count
-      const unread = mockMessages.filter(m => !m.isRead).length;
+      const unread = messages.filter(m => !m.isRead).length;
       unreadCounts.value.set(projectId, unread);
       
     } catch (err: any) {
@@ -190,15 +179,11 @@ export const useMessageStore = defineStore('message', () => {
     if (!authStore.userId) return;
 
     try {
-      // TODO: Replace with actual service call
-      // const counts = await messageService.getUnreadCountsByUser(authStore.userId);
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Mock: Set unread counts
-      // counts.forEach(item => {
-      //   unreadCounts.value.set(item.projectId, item.unreadCount);
-      // });
+      // Iterate through all projects and get unread counts
+      for (const [projectId] of messagesByProject.value.entries()) {
+        const count = await messageRepository.countUnreadByProjectAndUser(projectId, authStore.userId);
+        unreadCounts.value.set(projectId, count);
+      }
     } catch (err: any) {
       console.error('Failed to fetch unread counts:', err);
     }
@@ -222,29 +207,23 @@ export const useMessageStore = defineStore('message', () => {
     error.value = null;
 
     try {
-      // TODO: Replace with actual service call
-      // const message = await messageService.sendMessage(
-      //   { projectId, content, fileIds },
-      //   authStore.userId
-      // );
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      const newMessage: MessageDto = {
-        id: `msg_${Date.now()}`,
+      // Create message using entity (backend will generate ID and sentAt)
+      const messageEntity = new Message({
+        id: `temp_${Date.now()}`, // Temporary ID, backend will replace
         projectId,
         senderId: authStore.userId,
-        senderName: authStore.username,
         content,
-        sentAt: new Date(),
-        files: [],
-        isRead: true,
-        isSystemMessage: false,
-      };
+        type: 'NORMAL',
+        fileIds: fileIds || [],
+        readByUserIds: [authStore.userId], // Sender has read it
+      });
 
-      // Add to local state (newest first)
+      const savedMessage = await messageRepository.save(messageEntity);
+      const newMessage = mapEntityToDto(savedMessage);
+
+      // Add to local state
       const messages = messagesByProject.value.get(projectId) ?? [];
-      messagesByProject.value.set(projectId, [newMessage, ...messages]);
+      messagesByProject.value.set(projectId, [...messages, newMessage]);
 
       return newMessage;
     } catch (err: any) {
@@ -265,11 +244,11 @@ export const useMessageStore = defineStore('message', () => {
     if (!pid) return;
 
     try {
-      // TODO: Replace with actual service call
-      // await messageService.markMessageAsRead(messageId, authStore.userId);
+      // Note: This marks individual message - backend endpoint may need adjustment
+      // For now, mark all messages in project as read
+      await messageRepository.markAsReadByProjectAndUser(pid, authStore.userId);
       
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      // Update local state
       const messages = messagesByProject.value.get(pid);
       if (messages) {
         const msg = messages.find(m => m.id === messageId);
@@ -296,11 +275,9 @@ export const useMessageStore = defineStore('message', () => {
     if (!pid) return;
 
     try {
-      // TODO: Replace with actual service call
-      // await messageService.markAllMessagesAsRead(pid, authStore.userId);
+      await messageRepository.markAsReadByProjectAndUser(pid, authStore.userId);
       
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
+      // Update local state
       const messages = messagesByProject.value.get(pid);
       if (messages) {
         messages.forEach(m => m.isRead = true);

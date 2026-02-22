@@ -18,6 +18,13 @@ import {authenticate} from '@infrastructure/auth/auth.middleware.js';
 export const notificationRoutes = Router();
 const controller = new NotificationController();
 
+// Support both query param and path param for userId
+notificationRoutes.get('/', authenticate, (req, res, next) => {
+  if (req.query.userId) {
+    req.params.userId = req.query.userId as string;
+  }
+  return controller.getByUserId(req, res, next);
+});
 notificationRoutes.get('/user/:userId', authenticate, controller.getByUserId.bind(controller));
 notificationRoutes.put('/:id/read', authenticate, controller.markAsRead.bind(controller));
 notificationRoutes.delete('/:id', authenticate, controller.delete.bind(controller));

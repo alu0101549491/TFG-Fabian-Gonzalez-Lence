@@ -71,7 +71,7 @@ export class ProjectController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const project = await this.projectRepository.findById(req.params.id);
+      const project = await this.projectRepository.findById(req.params.id as string);
       
       if (!project) {
         throw new NotFoundError(ERROR_MESSAGES.PROJECT_NOT_FOUND);
@@ -93,7 +93,7 @@ export class ProjectController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const project = await this.projectRepository.findByCode(decodeURIComponent(req.params.code));
+      const project = await this.projectRepository.findByCode(decodeURIComponent(req.params.code as string));
       
       if (!project) {
         throw new NotFoundError(ERROR_MESSAGES.PROJECT_NOT_FOUND);
@@ -145,7 +145,7 @@ export class ProjectController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const project = await this.projectRepository.update(req.params.id, req.body);
+      const project = await this.projectRepository.update(req.params.id as string, req.body);
       sendSuccess(res, project, 'Project updated successfully');
     } catch (error) {
       next(error);
@@ -162,7 +162,7 @@ export class ProjectController {
     next: NextFunction
   ): Promise<void> {
     try {
-      await this.projectRepository.delete(req.params.id);
+      await this.projectRepository.delete(req.params.id as string);
       sendSuccess(res, null, 'Project deleted successfully', HTTP_STATUS.NO_CONTENT);
     } catch (error) {
       next(error);
