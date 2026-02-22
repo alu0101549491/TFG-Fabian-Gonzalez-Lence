@@ -126,19 +126,43 @@ export class ProjectRepository implements IProjectRepository {
 
   public async update(id: string, data: Partial<Project>): Promise<Project> {
     try {
-      return await prisma.project.update({
+      // If status is being changed to FINALIZED, set finalizedAt to current date
+      const updateData: any = {...data};
+      
+      // Convert date strings to Date objects for Prisma
+      if (updateData.contractDate && typeof updateData.contractDate === 'string') {
+        updateData.contractDate = new Date(updateData.contractDate);
+      }
+      if (updateData.deliveryDate && typeof updateData.deliveryDate === 'string') {
+        updateData.deliveryDate = new Date(updateData.deliveryDate);
+      }
+      
+      if (updateData.status === 'FINALIZED' && !updateData.finalizedAt) {
+        console.log(`[Backend ProjectRepository] Setting finalizedAt for project ${id}`);
+        updateData.finalizedAt = new Date();
+      }
+      
+      console.log(`[Backend ProjectRepository] Updating project ${id} with data:`, updateData);
+      const result = await prisma.project.update({
         where: {id},
-        data,
+        data: updateData,
       });
+      console.log(`[Backend ProjectRepository] Project ${id} updated successfully. Status: ${result.status}, FinalizedAt: ${result.finalizedAt}`);
+      
+      return result;
     } catch (error) {
+      console.error(`[Backend ProjectRepository] Error updating project ${id}:`, error);
       throw new DatabaseError('Failed to update project');
     }
   }
 
   public async delete(id: string): Promise<void> {
     try {
-      await prisma.project.delete({where: {id}});
+      console.log(`[Backend ProjectRepository] Deleting project ${id} from database...`);
+      const result = await prisma.project.delete({where: {id}});
+      console.log(`[Backend ProjectRepository] Project deleted:`, result);
     } catch (error) {
+      console.error(`[Backend ProjectRepository] Error deleting project ${id}:`, error);
       throw new DatabaseError('Failed to delete project');
     }
   }
