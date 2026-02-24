@@ -217,17 +217,20 @@
             v-if="canManageCurrentProject && currentProject.project.status !== 'finalized'"
             :project-id="currentProject.project.id"
             :sections="currentProject.sections.map(s => s.name)"
-            :max-file-size="10 * 1024 * 1024"
-            :accepted-types="['.pdf', '.dwg', '.dxf', '.shp', '.jpg', '.png']"
-            @upload-complete="handleFileUpload"
+            :max-file-size="50 * 1024 * 1024"
+            :accepted-extensions="['.pdf', '.dwg', '.dxf', '.shp', '.jpg', '.png', '.doc', '.docx', '.zip']"
+            :uploading="isUploadingFiles"
+            :upload-progress="uploadProgress"
+            @upload="handleFileUpload"
           />
 
           <FileList
             :files="projectFiles"
             :loading="filesLoading"
-            :show-actions="canManageCurrentProject"
-            @download="handleFileDownload"
-            @delete="handleFileDelete"
+            :can-delete="canManageCurrentProject"
+            @file-download="handleFileDownload"
+            @file-delete="handleFileDelete"
+            @file-preview="handleFilePreview"
           />
         </section>
       </div>
@@ -577,6 +580,7 @@ const {
   files: projectFiles,
   isLoading: filesLoading,
   loadFilesByProject,
+  uploadFile: uploadFileToDropbox,
   deleteFile,
 } = useFiles();
 
@@ -592,6 +596,8 @@ const showFinalizeModal = ref(false);
 const showDeleteModal = ref(false);
 const isFinalizing = ref(false);
 const isDeleting = ref(false);
+const isUploadingFiles = ref(false);
+const uploadProgress = ref<Array<{fileId: string; status: string; progress: number; error?: string}>>([]);
 
 // Computed Properties
 const projectId = computed(() => route.params.id as string);
@@ -942,12 +948,67 @@ function handleMessageSent(): void {
 }
 
 /**
- * Handle file upload
+ * Handle file upload from FileUploader component
  *
- * @param {FileSummaryDto} file - Uploaded file metadata
+ * @param {Array<{file: File, section: string}>} uploads - Files to upload with their sections
  */
-function handleFileUpload(file: FileSummaryDto): void {
-  projectFiles.value.push(file);
+async function handleFileUpload(uploads: Array<{id: string; file: File; section: string}>): Promise<void> {
+  if (!currentProject.value) return;
+
+  isUploadingFiles.value = true;
+  uploadProgress.value = uploads.map((upload) => ({
+    fileId: upload.id,
+    status: 'pending',
+    progress: 0,
+  }));
+
+  let successCount = 0;
+
+  try {
+    // Upload files sequentially
+    for (let i = 0; i < uploads.length; i++) {
+      const {id, file, section} = uploads[i];
+      const progressItem = uploadProgress.value.find(p => p.fileId === id);
+      if (!progressItem) continue;
+
+      try {
+        progressItem.status = 'uploading';
+
+        const uploadedFile = await uploadFileToDropbox(
+          file,
+          currentProject.value.project.id,
+          section,
+          (progress) => {
+            progressItem.progress = progress;
+          }
+        );
+
+        if (uploadedFile) {
+          progressItem.status = 'completed';
+          progressItem.progress = 100;
+          successCount++;
+        } else {
+          progressItem.status = 'error';
+          progressItem.error = 'Upload failed';
+        }
+      } catch (error) {
+        console.error('Failed to upload file:', error);
+        progressItem.status = 'error';
+        progressItem.error = (error as Error).message || 'Upload failed';
+      }
+    }
+
+    // Reload files if at least one upload succeeded
+    if (successCount > 0 && currentProject.value) {
+      await loadFilesByProject(currentProject.value.project.id);
+    }
+  } finally {
+    isUploadingFiles.value = false;
+    // Clear progress after 3 seconds
+    setTimeout(() => {
+      uploadProgress.value = [];
+    }, 3000);
+  }
 }
 
 /**
@@ -955,20 +1016,94 @@ function handleFileUpload(file: FileSummaryDto): void {
  *
  * @param {FileSummaryDto} file - File to download
  */
-function handleFileDownload(file: FileSummaryDto): void {
-  window.open(file.downloadUrl, '_blank');
+async function handleFileDownload(file: FileSummaryDto): Promise<void> {
+  try {
+    // Get temporary download link from backend
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'}/files/${file.id}/download`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get download link');
+    }
+
+    const result = await response.json();
+    
+    // Backend returns: {success: true, data: {downloadUrl, filename, expiresAt}}
+    const downloadUrl = result.data?.data?.downloadUrl || result.data?.downloadUrl;
+    
+    if (downloadUrl) {
+      // Open Dropbox temporary link in new tab
+      window.open(downloadUrl, '_blank');
+    } else {
+      throw new Error('No download URL received');
+    }
+  } catch (error) {
+    console.error('Failed to download file:', error);
+    alert('Failed to download file. Please try again.');
+  }
 }
 
 /**
  * Handle file deletion
  *
- * @param {string} fileId - File identifier
+ * @param {FileSummaryDto} file - File to delete
  */
-async function handleFileDelete(fileId: string): Promise<void> {
+async function handleFileDelete(file: FileSummaryDto): Promise<void> {
+  if (!confirm(`Are you sure you want to delete "${file.name}"? This action cannot be undone.`)) {
+    return;
+  }
+
   try {
-    projectFiles.value = projectFiles.value.filter((f) => f.id !== fileId);
+    const success = await deleteFile(file.id);
+    
+    if (success) {
+      // Reload files to ensure consistency
+      if (currentProject.value) {
+        await loadFilesByProject(currentProject.value.project.id);
+      }
+    } else {
+      throw new Error('Failed to delete file');
+    }
   } catch (error) {
     console.error('Failed to delete file:', error);
+    alert('Failed to delete file. Please try again.');
+  }
+}
+
+/**
+ * Handle file preview
+ *
+ * @param {FileSummaryDto} file - File to preview
+ */
+async function handleFilePreview(file: FileSummaryDto): Promise<void> {
+  try {
+    // Get temporary download link from backend
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'}/files/${file.id}/download`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get preview link');
+    }
+
+    const result = await response.json();
+    const downloadUrl = result.data?.data?.downloadUrl || result.data?.downloadUrl;
+    
+    if (downloadUrl) {
+      // For images and PDFs, open in new tab for preview
+      // For other files, the Dropbox link will show appropriate preview or download
+      window.open(downloadUrl, '_blank');
+    } else {
+      throw new Error('No preview URL received');
+    }
+  } catch (error) {
+    console.error('Failed to preview file:', error);
+    alert('Failed to preview file. Please try again.');
   }
 }
 

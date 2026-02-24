@@ -23,7 +23,7 @@ CPM enables a cartographic company to manage projects, tasks, communications, an
 - **Project Management** — CRUD with status tracking (Pending → In Progress → Delivered → Completed).
 - **Task Management** — Creation, assignment, prioritization, and full history audit trail.
 - **Real-time Messaging** — Per-project chat with WebSocket notifications (< 5s delivery).
-- **File Management** — Upload, download, and Dropbox integration.
+- **File Management** — Upload, download, and **Dropbox cloud storage** integration with automatic folder organization.
 - **Calendar View** — Delivery dates and task deadlines at a glance.
 - **Backup & Restore** — Admin-only data backup through the UI.
 - **Data Export** — Filtered project data export.
@@ -175,4 +175,6 @@ src/
 ## Documentation
 
 - [Architecture Guide](docs/ARCHITECTURE.md)
+- [Dropbox Integration Setup](docs/DROPBOX-INTEGRATION.md)
+- [Dropbox Deployment Guide](docs/DROPBOX-DEPLOYMENT.md) - Production strategies
 - API docs: Run `npm run doc` → `docs/` directory

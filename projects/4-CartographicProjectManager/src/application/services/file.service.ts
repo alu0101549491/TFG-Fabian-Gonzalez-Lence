@@ -5,7 +5,7 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since February 11, 2026
+ * @since February 24, 2026
  * @file application/services/file.service.ts
  * @desc Service implementation for file management via Dropbox.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
@@ -37,16 +37,7 @@ import {UnauthorizedError, NotFoundError} from './common/errors';
 import {generateId, formatBytes, getFileExtension} from './common/utils';
 import {File} from '../../domain/entities/file';
 import {FileType} from '../../domain/enumerations/file-type';
-
-/**
- * Placeholder interface for Dropbox service.
- */
-interface IDropboxService {
-  uploadFile(projectCode: string, section: string, filename: string, content: ArrayBuffer | Blob): Promise<string>;
-  downloadFile(fileId: string): Promise<ArrayBuffer>;
-  deleteFile(fileId: string): Promise<void>;
-  generateTemporaryUrl(fileId: string, expiresIn: number): Promise<string>;
-}
+import {type IDropboxService} from '../../infrastructure/external-services';
 
 /**
  * Implementation of file management operations.
@@ -110,11 +101,13 @@ export class FileService implements IFileService {
         ? data.content.size 
         : data.content.byteLength;
 
+      // Build Dropbox path
+      const section = data.section || 'Messages';
+      const dropboxPath = `${this.dropboxService.getProjectFolderPath(project.code)}/${section}/${data.name}`;
+
       // Upload to Dropbox
-      const dropboxPath = await this.dropboxService.uploadFile(
-        project.code,
-        data.section || 'general',
-        data.name,
+      const dropboxMetadata = await this.dropboxService.uploadFile(
+        dropboxPath,
         data.content
       );
 
@@ -122,7 +115,7 @@ export class FileService implements IFileService {
       const file = new File({
         id: generateId(),
         name: data.name,
-        dropboxPath,
+        dropboxPath: dropboxMetadata.path,
         type: this.determineFileType(data.name),
         sizeInBytes: fileSize,
         uploadedBy: userId,

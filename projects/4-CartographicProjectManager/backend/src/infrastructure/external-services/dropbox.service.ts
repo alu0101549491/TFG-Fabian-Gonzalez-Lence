@@ -1,0 +1,431 @@
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since February 24, 2026
+ * @file backend/src/infrastructure/external-services/dropbox.service.ts
+ * @desc Dropbox API integration for file storage operations (Backend)
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://www.dropbox.com/developers/documentation/http/documentation}
+ */
+
+import {Dropbox} from 'dropbox';
+import type {files} from 'dropbox';
+
+/**
+ * Root folder path for all projects in Dropbox
+ */
+const ROOT_FOLDER = '/CartographicProjects';
+
+/**
+ * Maximum file size for simple upload (150MB)
+ */
+const MAX_SIMPLE_UPLOAD_SIZE = 150 * 1024 * 1024;
+
+/**
+ * Project folder sections that are auto-created
+ */
+const PROJECT_SECTIONS = [
+  'ReportAndAnnexes',
+  'Plans',
+  'Specifications',
+  'Budget',
+  'Tasks',
+  'Messages',
+] as const;
+
+/**
+ * Dropbox service configuration
+ */
+export interface DropboxConfig {
+  /** Dropbox access token for authentication */
+  accessToken: string;
+}
+
+/**
+ * Dropbox file metadata
+ */
+export interface DropboxFileMetadata {
+  /** File unique identifier */
+  id: string;
+  /** File name */
+  name: string;
+  /** Full path in Dropbox */
+  path: string;
+  /** File size in bytes */
+  size: number;
+  /** Whether this is a folder */
+  isFolder: boolean;
+  /** Last modification timestamp */
+  modifiedAt: Date;
+  /** Content hash for change detection */
+  contentHash?: string;
+}
+
+/**
+ * Temporary link response
+ */
+export interface TemporaryLinkResponse {
+  /** Temporary download URL */
+  link: string;
+  /** File metadata */
+  metadata: DropboxFileMetadata;
+  /** Link expiration timestamp */
+  expiresAt: Date;
+}
+
+/**
+ * Interface for Dropbox operations
+ */
+export interface IDropboxService {
+  /**
+   * Create complete project folder structure
+   * @param projectCode - Project code for folder name
+   * @returns Project folder path
+   */
+  createProjectFolder(projectCode: string): Promise<string>;
+
+  /**
+   * Upload file to Dropbox
+   * @param path - Destination file path
+   * @param content - File content as Buffer
+   * @returns File metadata
+   */
+  uploadFile(path: string, content: Buffer): Promise<DropboxFileMetadata>;
+
+  /**
+   * Download file from Dropbox
+   * @param path - File path to download
+   * @returns File content as Buffer
+   */
+  downloadFile(path: string): Promise<Buffer>;
+
+  /**
+   * Delete file
+   * @param path - File path to delete
+   */
+  deleteFile(path: string): Promise<void>;
+
+  /**
+   * Get temporary download link (valid for 4 hours)
+   * @param path - File path
+   * @returns Temporary link response
+   */
+  getTemporaryLink(path: string): Promise<TemporaryLinkResponse>;
+
+  /**
+   * Check if path exists
+   * @param path - Path to check
+   * @returns True if exists, false otherwise
+   */
+  pathExists(path: string): Promise<boolean>;
+
+  /**
+   * Get project folder path
+   * @param projectCode - Project code
+   * @returns Project folder path
+   */
+  getProjectFolderPath(projectCode: string): string;
+
+  /**
+   * Get section folder path within a project
+   * @param projectCode - Project code
+   * @param section - Section name
+   * @returns Section folder path
+   */
+  getSectionPath(projectCode: string, section: string): string;
+}
+
+/**
+ * Dropbox service implementation for file storage operations.
+ * Uses official Dropbox SDK for Node.js.
+ *
+ * @example
+ * ```typescript
+ * const dropboxService = new DropboxService({
+ *   accessToken: process.env.DROPBOX_ACCESS_TOKEN
+ * });
+ *
+ * // Create project folder structure
+ * const projectPath = await dropboxService.createProjectFolder('PROJ-001');
+ *
+ * // Upload file
+ * const metadata = await dropboxService.uploadFile(
+ *   `${projectPath}/Plans/design.pdf`,
+ *   fileBuffer
+ * );
+ * ```
+ */
+export class DropboxService implements IDropboxService {
+  /** Dropbox client instance */
+  private readonly client: Dropbox;
+
+  /** Upload timeout in milliseconds (5 minutes) */
+  private readonly UPLOAD_TIMEOUT = 5 * 60 * 1000;
+
+  /**
+   * Create Dropbox service instance
+   * @param config - Dropbox configuration
+   */
+  public constructor(config: DropboxConfig) {
+    this.client = new Dropbox({
+      accessToken: config.accessToken,
+      fetch: this.createFetchWithTimeout(),
+    });
+  }
+
+  /**
+   * Create custom fetch function with timeout configuration
+   * @returns Fetch function with timeout support
+   * @private
+   */
+  private createFetchWithTimeout() {
+    return async (url: RequestInfo | URL, init?: RequestInit) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.UPLOAD_TIMEOUT);
+
+      try {
+        const response = await fetch(url, {
+          ...init,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    };
+  }
+
+  /**
+   * Create complete project folder structure
+   * @param projectCode - Project code for folder name
+   * @returns Project folder path
+   */
+  public async createProjectFolder(projectCode: string): Promise<string> {
+    const projectPath = this.getProjectFolderPath(projectCode);
+
+    // Create main project folder
+    await this.createFolder(projectPath);
+
+    // Create all section folders
+    for (const section of PROJECT_SECTIONS) {
+      await this.createFolder(`${projectPath}/${section}`);
+    }
+
+    return projectPath;
+  }
+
+  /**
+   * Create a single folder
+   * @param path - Folder path to create
+   * @returns Folder path
+   */
+  private async createFolder(path: string): Promise<string> {
+    try {
+      await this.client.filesCreateFolderV2({
+        path,
+        autorename: false,
+      });
+      return path;
+    } catch (error: unknown) {
+      const err = error as {error?: {error?: {'.tag'?: string}}};
+      // Ignore if folder already exists
+      if (err.error?.error?.['.tag'] === 'path') {
+        return path;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Upload file to Dropbox
+   * @param path - Destination file path
+   * @param content - File content as Buffer
+   * @returns File metadata
+   */
+  public async uploadFile(
+    path: string,
+    content: Buffer,
+  ): Promise<DropboxFileMetadata> {
+    const size = content.length;
+
+    // Use simple upload for smaller files
+    if (size <= MAX_SIMPLE_UPLOAD_SIZE) {
+      const response = await this.client.filesUpload({
+        path,
+        contents: content,
+        mode: {'.tag': 'overwrite'},
+        autorename: false,
+        mute: false,
+      });
+
+      return this.mapToFileMetadata(response.result);
+    }
+
+    // Use upload session for large files
+    return this.uploadLargeFile(path, content);
+  }
+
+  /**
+   * Upload large file using chunked upload session
+   * @param path - Destination file path
+   * @param content - File content as Buffer
+   * @returns File metadata
+   */
+  private async uploadLargeFile(
+    path: string,
+    content: Buffer,
+  ): Promise<DropboxFileMetadata> {
+    const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
+    const totalSize = content.length;
+    let offset = 0;
+
+    // Start upload session
+    const startResponse = await this.client.filesUploadSessionStart({
+      contents: Buffer.alloc(0),
+      close: false,
+    });
+    const sessionId = startResponse.result.session_id;
+
+    // Upload chunks
+    while (offset < totalSize) {
+      const chunkSize = Math.min(CHUNK_SIZE, totalSize - offset);
+      const chunk = content.slice(offset, offset + chunkSize);
+      const isLastChunk = offset + chunkSize >= totalSize;
+
+      if (isLastChunk) {
+        // Finish upload session
+        const finishResponse = await this.client.filesUploadSessionFinish({
+          cursor: {
+            session_id: sessionId,
+            offset,
+          },
+          commit: {
+            path,
+            mode: {'.tag': 'overwrite'},
+            autorename: false,
+            mute: false,
+          },
+          contents: chunk,
+        });
+
+        return this.mapToFileMetadata(finishResponse.result);
+      } else {
+        // Append chunk
+        await this.client.filesUploadSessionAppendV2({
+          cursor: {
+            session_id: sessionId,
+            offset,
+          },
+          close: false,
+          contents: chunk,
+        });
+
+        offset += chunkSize;
+      }
+    }
+
+    throw new Error('Upload failed: unexpected end of loop');
+  }
+
+  /**
+   * Download file from Dropbox
+   * @param path - File path to download
+   * @returns File content as Buffer
+   */
+  public async downloadFile(path: string): Promise<Buffer> {
+    const response = await this.client.filesDownload({path});
+    const fileBlob = (response.result as files.FileMetadata & {fileBinary?: Buffer}).fileBinary;
+
+    if (!fileBlob) {
+      throw new Error('Failed to download file: no content received');
+    }
+
+    return fileBlob;
+  }
+
+  /**
+   * Delete file or folder
+   * @param path - File/folder path to delete
+   */
+  public async deleteFile(path: string): Promise<void> {
+    await this.client.filesDeleteV2({path});
+  }
+
+  /**
+   * Get temporary download link (valid for 4 hours)
+   * @param path - File path
+   * @returns Temporary link response
+   */
+  public async getTemporaryLink(path: string): Promise<TemporaryLinkResponse> {
+    const response = await this.client.filesGetTemporaryLink({path});
+
+    return {
+      link: response.result.link,
+      metadata: this.mapToFileMetadata(response.result.metadata),
+      expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours
+    };
+  }
+
+  /**
+   * Check if path exists
+   * @param path - Path to check
+   * @returns True if exists, false otherwise
+   */
+  public async pathExists(path: string): Promise<boolean> {
+    try {
+      await this.client.filesGetMetadata({path});
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get project folder path
+   * @param projectCode - Project code
+   * @returns Project folder path
+   */
+  public getProjectFolderPath(projectCode: string): string {
+    return `${ROOT_FOLDER}/${projectCode}`;
+  }
+
+  /**
+   * Get section folder path within a project
+   * @param projectCode - Project code
+   * @param section - Section name
+   * @returns Section folder path
+   */
+  public getSectionPath(projectCode: string, section: string): string {
+    return `${ROOT_FOLDER}/${projectCode}/${section}`;
+  }
+
+  /**
+   * Map Dropbox API response to internal metadata type
+   * @param entry - Dropbox API entry
+   * @returns File metadata
+   */
+  private mapToFileMetadata(
+    entry: files.FileMetadataReference | files.FileMetadata,
+  ): DropboxFileMetadata {
+    const fileEntry = entry as files.FileMetadata & {'.tag'?: string};
+    const isFolder = fileEntry['.tag'] === 'folder';
+
+    return {
+      id: fileEntry.id || '',
+      name: fileEntry.name,
+      path: fileEntry.path_display || fileEntry.path_lower || '',
+      size: fileEntry.size || 0,
+      isFolder,
+      modifiedAt: fileEntry.server_modified
+        ? new Date(fileEntry.server_modified)
+        : new Date(),
+      contentHash: fileEntry.content_hash,
+    };
+  }
+}
