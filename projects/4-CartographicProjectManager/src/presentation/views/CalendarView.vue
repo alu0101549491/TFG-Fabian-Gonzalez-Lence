@@ -30,8 +30,10 @@
       <div class="calendar-container">
         <CalendarWidget
           :projects="calendarProjects"
+          :tasks="calendarTasks"
           :mode="'full'"
           @project-click="handleProjectClick"
+          @task-click="handleTaskClick"
           @month-change="handleMonthChange"
           @date-click="handleDateClick"
         />
@@ -100,21 +102,49 @@
 import {ref, computed, onMounted} from 'vue';
 import {useRouter} from 'vue-router';
 import {useProjects} from '../composables/use-projects';
+import {useTaskStore, useProjectStore} from '../stores';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import CalendarWidget from '../components/calendar/CalendarWidget.vue';
 import ProjectCard from '../components/project/ProjectCard.vue';
 import type {Project} from '@/shared/models/project.model';
+import type {CalendarTaskDto, CalendarProjectDto} from '@/application/dto';
 
 // Composables
 const router = useRouter();
-const {
-  calendarProjects,
+const {   calendarProjects,
   isLoading,
   loadCalendarProjects,
 } = useProjects();
+const taskStore = useTaskStore();
+const projectStore = useProjectStore();
 
 // Local State
 const selectedDate = ref<Date | null>(null);
+
+// Computed - Convert all project tasks to CalendarTaskDto format
+const calendarTasks = computed<CalendarTaskDto[]>(() => {
+  const allTasks: CalendarTaskDto[] = [];
+  
+  // Get all tasks from all loaded projects
+  for (const [projectId, tasks] of taskStore.tasksByProject.entries()) {
+    for (const task of tasks) {
+      allTasks.push({
+        id: task.id,
+        description: task.description,
+        projectId: task.projectId,
+        projectCode: task.projectCode,
+        projectName: task.projectName,
+        dueDate: task.dueDate,
+        status: task.status,
+        priority: task.priority,
+        assigneeName: task.assigneeName,
+        isOverdue: task.isOverdue,
+      });
+    }
+  }
+  
+  return allTasks;
+});
 
 // Computed Properties
 const formatSelectedDate = computed(() => {
@@ -153,10 +183,24 @@ function goToProject(projectId: string): void {
 /**
  * Handle project click event from calendar
  *
- * @param {string} projectId - Clicked project identifier
+ * @param {CalendarProjectDto} project - Clicked project
  */
-function handleProjectClick(projectId: string): void {
-  goToProject(projectId);
+function handleProjectClick(project: CalendarProjectDto): void {
+  goToProject(project.id);
+}
+
+/**
+ * Handle task click event from calendar
+ *
+ * @param {CalendarTaskDto} task - Clicked task
+ */
+function handleTaskClick(task: CalendarTaskDto): void {
+  // Navigate to the project with query params to open the specific task
+  router.push({
+    name: 'project-details',
+    params: {id: task.projectId},
+    query: {tab: 'tasks', taskId: task.id},
+  });
 }
 
 /**
@@ -166,9 +210,31 @@ function handleProjectClick(projectId: string): void {
  */
 async function handleMonthChange(date: Date): Promise<void> {
   try {
-    await loadCalendarProjects(date.getFullYear(), date.getMonth() + 1);
+    // Get first day of the month
+    const startDate = new Date(date.getFullYear(), date.getMonth(), 1);
+    // Get last day of the month
+    const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    
+    console.log(`[CalendarView] Loading projects for ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`);
+    await loadCalendarProjects(startDate, endDate);
+    
+    // Load tasks for all projects in the calendar
+    await loadTasksForProjects();
   } catch (error) {
-    console.error('Failed to load calendar projects for new month:', error);
+    console.error('Failed to load calendar data for new month:', error);
+  }
+}
+
+/**
+ * Load tasks for all projects in calendar
+ */
+async function loadTasksForProjects(): Promise<void> {
+  for (const project of calendarProjects.value) {
+    try {
+      await taskStore.fetchTasksByProject(project.id);
+    } catch (error) {
+      console.warn(`Failed to load tasks for project ${project.code}:`, error);
+    }
   }
 }
 
@@ -184,10 +250,22 @@ function handleDateClick(date: Date): void {
 // Lifecycle
 onMounted(async () => {
   const today = new Date();
+  // Get first day of current month
+  const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+  // Get last day of current month
+  const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  
+  console.log(`[CalendarView] Initial load: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`);
+  
   try {
-    await loadCalendarProjects(today.getFullYear(), today.getMonth() + 1);
+    await loadCalendarProjects(startDate, endDate);
+    console.log(`[CalendarView] Loaded ${calendarProjects.value.length} projects`);
+    
+    // Load tasks for all projects
+    await loadTasksForProjects();
+    console.log(`[CalendarView] Loaded ${calendarTasks.value.length} tasks`);
   } catch (error) {
-    console.error('Failed to load calendar projects:', error);
+    console.error('Failed to load calendar data:', error);
   }
 });
 </script>
@@ -347,6 +425,36 @@ onMounted(async () => {
     flex-direction: column;
     gap: var(--spacing-3);
   }
+}
+
+/* Button Styles */
+.button-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: white;
+  background-color: var(--color-primary-600);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  text-decoration: none;
+}
+
+.button-primary:hover {
+  background-color: var(--color-primary-700);
+}
+
+.button-primary:active {
+  background-color: var(--color-primary-800);
+}
+
+.button-primary:disabled {
+  background-color: var(--color-gray-300);
+  cursor: not-allowed;
 }
 
 @media (max-width: 480px) {

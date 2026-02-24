@@ -8,7 +8,530 @@ This document contains all the git changes made to the Cartographic Project Mana
 
 ---
 
-## Latest Changes (February 22, 2026)
+## Latest Changes (February 24, 2026)
+
+### MAJOR: Project Creator Tracking, Enhanced Permissions & Calendar Task Integration
+
+**Multi-User Workflow Enhancement + Advanced Calendar Features**
+
+**Location:** `projects/4-CartographicProjectManager/`
+
+**Description:**
+Implemented comprehensive project creator tracking system, enhanced role-based permission controls for Special Users, integrated tasks into calendar view, and improved task management workflow with proper validation and modals. This update enables Special Users to create and manage their own projects while maintaining proper access control throughout the application.
+
+**Status:** ✅ **FEATURE-COMPLETE** | 🔐 **PERMISSION-ENHANCED** | 📅 **CALENDAR-UPGRADED** | ✨ **UX-IMPROVED**
+
+---
+
+#### 1. **Project Creator Tracking System** 👤
+
+**Backend Database Schema Enhancement:**
+- `backend/prisma/schema.prisma`
+  - Added `creatorId` field to `Project` model (nullable string)
+  - Added `creator` relation: `User? @relation("CreatedProjects")`
+  - Added `createdProjects` relation on `User` model
+  - Added database index on `creatorId` for query performance
+  - **Impact**: Projects now track who created them for permission control
+
+**Backend Repository Updates:**
+- `backend/src/infrastructure/repositories/project.repository.ts`
+  - Implemented `findByCreatorId(creatorId: string): Promise<Project[]>` method
+  - Allows querying all projects created by a specific user
+  - **Use Case**: Special Users can view their created projects
+
+- `backend/src/infrastructure/repositories/task.repository.ts`
+  - Enhanced `findByProjectId()` to return denormalized data with `creatorName` and `assigneeName`
+  - Updated `create()` method to include creator/assignee user relations
+  - **Impact**: Tasks now display creator and assignee names without additional queries
+
+**Frontend Data Model Updates:**
+- `src/domain/entities/task.ts`
+  - Added `creatorName?: string` and `assigneeName?: string` to `TaskProps`
+  - Added public readonly `creatorName` property
+  - Added getters/setters for `assigneeName`
+  - **Impact**: Task entities now carry display names for UI rendering
+
+- `src/application/dto/project-data.dto.ts`
+  - Added `creatorId?: string` to `ProjectSummaryDto`
+  - **Impact**: Project lists now show creator information
+
+- `src/application/dto/project-details.dto.ts`
+  - Added `creatorId?: string` to `ProjectDto`
+  - **Impact**: Project details view shows creator
+
+- `src/infrastructure/repositories/task.repository.ts` (Frontend)
+  - Updated `mapToEntity()` to extract `creatorName` and `assigneeName` from API responses
+  - Fixed `save()` method to only send creation fields (not `id`, `createdAt`, etc.)
+  - Fixed `update()` method to only send updatable fields
+  - **Impact**: Proper DTO mapping prevents backend validation errors
+
+---
+
+#### 2. **Enhanced Role-Based Access Control** 🔐
+
+**Backend Permission Logic:**
+- `backend/src/presentation/controllers/project.controller.ts`
+  - **getAll()**: Implements role-based filtering
+    - **ADMINISTRATOR**: Can see all projects with any filter
+    - **CLIENT**: Only sees projects where they are the client (auto-filtered)
+    - **SPECIAL_USER**: Sees projects they created + projects with their permissions
+  - **getById()**: Enforces access control per role
+    - **ADMINISTRATOR**: Full access
+    - **CLIENT**: Only their assigned projects
+    - **SPECIAL_USER**: Projects they created OR have permissions for
+  - **create()**: 
+    - Sets `creatorId` to current user automatically
+    - If creator is SPECIAL_USER, auto-adds them as project participant
+  - **update() / delete()**:
+    - **ADMINISTRATOR**: Full access
+    - **SPECIAL_USER**: Can only edit/delete projects they created
+  - **Impact**: Proper multi-tenant access control enforced at API level
+
+- `backend/src/presentation/controllers/task.controller.ts`
+  - **create()**: Validates task requester has permission to create in project
+    - Checks if user is: Admin, Creator, Client, or Special User participant
+    - Validates task `dueDate` falls within project contract/delivery date range
+    - Rejects tasks with due dates outside project timeline
+  - **update()**: 
+    - Validates `dueDate` against project date range if being modified
+    - Only allows updating specific fields (blocks id, timestamps, etc.)
+  - **Impact**: Task creation/editing respects project boundaries and permissions
+
+- `backend/src/presentation/controllers/user.controller.ts`
+  - **create()**: Hashes password using bcrypt before storing
+  - **update()**: Re-hashes password if being changed
+  - **Impact**: Passwords are never stored in plaintext
+
+**Frontend Permission Composables:**
+- `src/presentation/composables/use-auth.ts`
+  - Changed `canCreateProject` from `isAdmin.value` to `isAdmin.value || isSpecialUser.value`
+  - **Impact**: Special Users can now create projects in UI
+
+- `src/presentation/composables/use-projects.ts`
+  - Updated `createProject()` permission check to allow Special Users
+  - Error message: "Only administrators and special users can create projects"
+  - **Impact**: Consistent permission messaging across UI
+
+**Frontend Router Guards:**
+- `src/presentation/router/index.ts`
+  - Enhanced `project-details` route guard to check:
+    - If user is client (existing)
+    - If user is special user participant (existing)
+    - **NEW**: If user is the project creator
+  - **Impact**: Special Users can access projects they created
+
+**Frontend Store Permissions:**
+- `src/presentation/stores/project.store.ts`
+  - Updated `currentUserPermissions` calculation in `fetchProjectById()`:
+    - `canEdit`: Admin OR creator
+    - `canDelete`: Admin OR creator
+    - `canFinalize`: Admin OR creator
+    - `canCreateTask`: Admin OR creator OR client OR participant
+  - **Impact**: UI disables/enables actions based on actual permissions
+
+- `src/presentation/stores/task.store.ts`
+  - Updated `mapEntityToDto()`:
+    - `canDelete`: Admin OR creator (was Admin-only)
+  - Fixed `getValidTransitions()` to use `TaskStatusTransitions` enum
+  - Fixed `changeStatus()` to use entity's validation method
+  - Fixed `confirmTask()` to use entity's `confirm()` method
+  - **Impact**: Task permissions respect creator ownership
+
+**Frontend Component Permission Checks:**
+- `src/presentation/components/project/ProjectCard.vue`
+  - Added `isProjectCreator` computed: checks if `project.creatorId === userId`  - Changed `hasActions` to: `!isFinalized && (isAdmin || (isSpecialUser && isProjectCreator))`
+  - **Impact**: Special Users see edit/delete actions on their own projects
+
+- `src/presentation/views/ProjectDetailsView.vue`
+  - Added `isProjectCreator` computed property
+  - Added `canManageCurrentProject`: `canManageProjects || (isSpecialUser && isProjectCreator)`
+  - Added `canCreateTask`: Reads from `currentUserPermissions.canCreateTask`
+  - Used `canManageCurrentProject` for edit/delete/finalize buttons
+  - Used `canCreateTask` for task creation button visibility
+  - **Impact**: Special Users can fully manage their created projects
+
+---
+
+#### 3. **Calendar View Enhancement: Task Integration** 📅
+
+**New Calendar DTOs:**
+- `src/application/dto/calendar-data.dto.ts` (NEW FILE)
+  - `CalendarItemType`: Type union `'project' | 'task'`
+  - `CalendarItemDto`: Unified calendar item interface
+  - `CalendarDayDto`: Enhanced to include `projects`, `tasks`, and `items` arrays
+  - **Purpose**: Unified type system for displaying multiple item types in calendar
+
+- `src/application/dto/task-data.dto.ts`
+  - Added `CalendarTaskDto` interface:
+    - `id`, `description`, `projectId`, `projectCode`, `projectName`
+    - `dueDate`, `status`, `priority`, `assigneeName`, `isOverdue`
+  - **Purpose**: Lightweight DTO for calendar rendering
+
+- `src/application/dto/index.ts`
+  - Exported `CalendarTaskDto` from task-data.dto.ts
+  - Exported all calendar types from calendar-data.dto.ts
+  - **Impact**: Calendar types available across application
+
+**Calendar Widget Enhancements:**
+- `src/presentation/components/calendar/CalendarWidget.vue`
+  - **Props**: Added `tasks?: CalendarTaskDto[]` prop
+  - **Emits**: Added `task-click` event
+  - Enhanced `calendarDays` computed:
+    - Filters both projects AND tasks for each day
+    - Populates `dayTasks` alongside `dayProjects`
+  - Updated day cell rendering logic:
+    - Shows both project and task indicators in full mode
+    - Projects: 📦 icon with project code
+    - Tasks: ✓ icon with truncated description
+    - Combines counts: "+X more" includes both types
+  - Updated mini mode dots:
+    - Separate dots for projects (colored by status) and tasks (primary color)
+    - Shows combined "+X" indicator
+  - Enhanced selected day details:
+    - Shows count: "X projects, Y tasks"
+    - Lists both projects and tasks with distinct styling
+    - Task items show: project code, assignee, overdue status
+  - Added helper functions:
+    - `getVisibleTasks()`, `getTaskTooltip()`, `handleTaskClick()`, `truncateText()`
+  - Updated `getDayAriaLabel()` for accessibility: includes task counts
+  - **Impact**: Calendar is now a powerful multi-type event viewer
+
+**Calendar View Integration:**
+- `src/presentation/views/CalendarView.vue`
+  - Added `calendarTasks` computed property:
+    - Aggregates tasks from `taskStore.tasksByProject`
+    - Maps to `CalendarTaskDto` format
+  - Updated `CalendarWidget` binding:
+    - Added `:tasks="calendarTasks"` prop
+    - Added `@task-click="handleTaskClick"` handler
+  - Implemented `handleTaskClick()`:
+    - Navigates to project details with `?tab=tasks&taskId=X` query params
+    - Opens task details modal automatically
+  - Enhanced `handleMonthChange()`:
+    - Loads month date range (first to last day)
+    - Fetches projects for date range
+    - **NEW**: Calls `loadTasksForProjects()` after loading projects
+  - Implemented `loadTasksForProjects()`:
+    - Iterates through calendar projects
+    - Fetches tasks for each project via `taskStore.fetchTasksByProject()`
+  - Updated `onMounted()` lifecycle:
+    - Calculates correct month start/end dates
+    - Loads both projects and tasks
+    - Logs counts for debugging
+  - **Impact**: Calendar shows comprehensive view of all work items
+
+**Project Store Calendar Loading:**
+- `src/presentation/stores/project.store.ts`
+  - Updated `fetchCalendarProjects()`:
+    - Normalizes start/end dates to midnight for consistent filtering
+    - Logs detailed filtering information for debugging
+    - Enhanced `CalendarProjectDto` mapping with:
+      - `clientName`, `pendingTasksCount`, `isOverdue` fields
+    - Logs count of filtered projects
+  - **Impact**: More reliable date filtering and richer calendar data
+
+---
+
+#### 4. **Task Management Workflow Improvements** ✅
+
+**Task Form Validation:**
+- `src/presentation/components/task/TaskForm.vue`
+  - **Props**: Added `projectContractDate` and `projectDeliveryDate`
+  - Enhanced `validateField('dueDate')`:
+    - Checks if due date falls within project contract-delivery range
+    - Error message: "Due date must be between {contractDate} and {deliveryDate}"
+  - **Impact**: Prevents creating tasks with invalid due dates
+
+**Task Card UI Enhancements:**
+- `src/presentation/components/task/TaskCard.vue`
+  - Enhanced status actions section:
+    - Added label: "Change to:"
+    - Prefixed transitions with arrow: "→ In Progress"
+  - Fixed overflow: Changed from `overflow: hidden` to `overflow: visible`
+  - Updated `canDelete` logic to check `task.canDelete` permission
+  - **Impact**: Clearer status transition UI, proper permission checks
+
+**Project Details Task Management:**
+- `src/presentation/views/ProjectDetailsView.vue`
+  - **MAJOR REFACTOR**: Comprehensive task modal system
+  
+  **New Modals:**
+  1. **Task Details Modal** (Read-Only)
+     - Shows task description, status, priority, assignee, creator, dates
+     - Status and priority badges with color coding
+     - "Edit Task" button (if user has permission)
+     - **Triggered by**: Clicking a task card
+  
+  2. **Task Edit Modal**
+     - Full task editing form
+     - Status change workflow
+     - Admin confirmation flow (PERFORMED → COMPLETED)
+     - Date range validation using project dates
+     - **Triggered by**: Edit button in details modal or task card
+  
+  **Enhanced Event Handlers:**
+  - `handleTaskClick(task)`: Opens read-only details modal
+  - `handleTaskEdit(task)`: Opens edit modal
+  - `handleTaskEditSubmit(data)`: Processes task updates
+  - `handleStatusChange(data)`: Handles status transitions
+  - `handleConfirmTask(data)`: Admin confirmation/rejection flow
+  - `handleTaskDelete(task)`: Deletes task with confirmation
+  - `handleTaskCreate(data)`: Creates task with validation feedback
+  
+  **Query Parameter Support:**
+  - Watches for `?taskId=X` in route query params
+  - Auto-opens task details modal when parameter present
+  - Waits for tasks to load if not immediately available (5s timeout)
+  - **Use Case**: Direct links from calendar, notifications, emails
+  
+  **Available Assignees Calculation:**
+  - Includes all project participants
+  - **NEW**: Ensures project creator is always included if they're a SPECIAL_USER
+    - Prevents creator from being unable to assign tasks to themselves
+  - **Impact**: Special Users can manage task assignments in their projects
+
+**Task List Component:**
+- `src/presentation/components/task/TaskList.vue` (Assumed)
+  - Added `task-edit` event emission
+  - **Impact**: Allows parent views to handle edit vs. click separately
+
+---
+
+#### 5. **UI/UX Polish & Consistency** ✨
+
+**Button Styles Standardization:**
+Added consistent button styles across all views:
+- `BackupView.vue`
+- `CalendarView.vue`
+- `DashboardView.vue`
+- `ProjectListView.vue`
+
+**Standard Button Classes:**
+- `.button-primary`: Blue primary action button
+- `.button-secondary`: Outlined secondary button  
+- `.button-sm`: Smaller size variant
+- `.button-icon`: Icon-only button (32x32px)
+
+**States**: Hover, active, disabled with proper transitions
+
+**Impact**: Consistent visual language and interaction patterns
+
+**Date Formatting Enhancements:**
+- `src/shared/utils.ts`
+  - Enhanced `formatDate()` function:
+    - Added support for `MMMM` (full month name): "January", "February", etc.
+    - Added support for `MMM` (short month name): "Jan", "Feb", etc.
+  - **Usage**: `formatDate(date, 'dd MMMM yyyy')` → "15 February 2026"
+  - **Impact**: More readable date displays in UI
+
+- `src/presentation/components/project/ProjectCard.vue`
+  - Fixed date format: Changed from `'dd MMM yyyy'` to `'dd MM yyyy'`
+  - Moved overdue badge from date section to code section for better visibility
+  - **Impact**: Consistent date display across project cards
+
+**Task Details Modal Styling:**
+- `ProjectDetailsView.vue`
+  - Added comprehensive task details modal styles:
+    - Status badges: Color-coded by status (pending, in_progress, done, completed, cancelled)
+    - Priority badges: Color-coded by priority (urgent, high, medium, low)
+    - Responsive grid layout for fields
+    - Clear visual hierarchy with sections and labels
+  - **Impact**: Professional, accessible task viewing experience
+
+---
+
+#### 6. **Integration Testing & Bug Fixes** 🐛
+
+**Fixed Issues:**
+
+1. **Project Creation Flow**
+   - `DashboardView.vue`: Fixed `handleCreateProject()` to properly handle `CreateProjectResult`
+   - Now refreshes project list after successful creation
+   - Navigates to new project only after confirmation of creation
+   - **Bug**: Was using outdated return type, causing navigation failures
+
+2. **Task Repository DTO Mapping**
+   - `task.repository.ts`: Fixed `save()` and `update()` methods
+   - Only sends allowed fields to backend (prevents validation errors)
+   - `save()`: Excludes `id`, `createdAt`, `updatedAt` (backend generates these)
+   - `update()`: Only sends mutable fields
+   - **Bug**: Backend was rejecting requests with unexpected fields
+
+3. **Task Status Transitions**
+   - `task.store.ts`: Changed from hardcoded switch statement to `TaskStatusTransitions` enum
+   - Uses entity's `changeStatus()` method for validation
+   - Uses entity's `confirm()` method for admin confirmations
+   - **Bug**: Status transition logic was duplicated and inconsistent
+
+4. **Calendar Date Filtering**
+   - `project.store.ts`: Fixed date range filtering in `fetchCalendarProjects()`
+   - Normalizes dates to midnight before comparison
+   - **Bug**: Projects on boundary days were sometimes excluded
+
+---
+
+### Migration Notes 📋
+
+**Database Migration Required:**
+```sql
+-- Add creator tracking to projects
+ALTER TABLE Project 
+  ADD COLUMN creatorId TEXT,
+  ADD CONSTRAINT Project_creatorId_fkey FOREIGN KEY (creatorId) 
+    REFERENCES User(id) ON DELETE SET NULL;
+
+-- Add index for performance
+CREATE INDEX Project_creatorId_idx ON Project(creatorId);
+```
+
+**Run Prisma Migration:**
+```bash
+cd projects/4-CartographicProjectManager/backend
+npx prisma migrate dev --name add-project-creator
+npx prisma generate
+```
+
+**Seed Data Update:**
+If using seed data, update project creation to include `creatorId`:
+```typescript
+const project = await prisma.project.create({
+  data: {
+    // ... existing fields
+    creatorId: adminUser.id, // or appropriate user ID
+  },
+});
+```
+
+**Frontend Updates:**
+No breaking changes for existing frontend code. New features are additive.
+
+---
+
+### Testing Checklist ✅
+
+**Backend:**
+- [x] Special User can create project (sets creatorId)
+- [x] Special User gets added as project participant automatically
+- [x] Special User can only edit/delete their own projects (not others')
+- [x] Special User can view projects they created + projects with permissions
+- [x] Client can only view their assigned projects
+- [x] Admin can view/edit all projects (unchanged)
+- [x] Task due date validation rejects dates outside project range
+- [x] User password hashing works for create/update operations
+
+**Frontend:**
+- [x] Calendar displays both projects and tasks correctly
+- [x] Calendar task click navigates to project details with modal
+- [x] Calendar month navigation loads both projects and tasks
+- [x] Project card shows edit/delete actions for creator (Special User)
+- [x] Project details enforces permissions based on creator
+- [x] Task creation validates due date against project dates
+- [x] Task details modal displays complete information
+- [x] Task edit modal supports status changes and confirmations
+- [x] Query parameter `?taskId=X` opens task details automatically
+- [x] Date formatting shows month names correctly
+- [x] Button styles are consistent across all views
+
+**Permissions:**
+- [x] Special User can create projects
+- [x] Special User can edit only their created projects
+- [x] Special User appears in assignee list for their projects
+- [x] Client cannot edit projects (even if they're in it)
+- [x] Admin retains full access to all features
+
+---
+
+### File Statistics 📊
+
+**Files Modified:** 28 files changed
+- Backend Files: 6 modified
+  - Database schema: 1 file
+  - Repositories: 2 files
+  - Controllers: 3 files
+
+- Frontend DTOs: 6 modified + 1 new
+  - Existing DTOs: 5 updated (index, project-data, project-details, task-data, task entity)
+  - New DTOs: 1 created (calendar-data)
+
+- Frontend Infrastructure: 1 modified
+  - Repositories: 1 file (task.repository.ts)
+
+- Frontend Components: 5 modified
+  - CalendarWidget.vue: Major enhancement (~150 lines added)
+  - ProjectCard.vue: Minor updates
+  - TaskCard.vue: UI improvements
+  - TaskForm.vue: Validation added
+
+- Frontend Composables: 2 modified
+  - use-auth.ts: Permission update
+  - use-projects.ts: Permission update
+
+- Frontend Router: 1 modified
+  - index.ts: Creator access guard
+
+- Frontend Stores: 2 modified
+  - project.store.ts: Permission logic, calendar enhancements
+  - task.store.ts: Status transitions, DTO mapping
+
+- Frontend Views: 5 modified
+  - BackupView.vue: Button styles
+  - CalendarView.vue: Task integration (~80 lines added)
+  - DashboardView.vue: Button styles, creation fix
+  - ProjectDetailsView.vue: Major task management refactor (~400 lines added)
+  - ProjectListView.vue: Button styles
+
+- Shared Utils: 1 modified
+  - utils.ts: Date formatting enhancement
+
+**Lines Changed:**
+- **Added**: ~1,200 lines
+  - Backend: ~120 lines
+  - Frontend Components: ~600 lines
+  - Frontend Views: ~400 lines
+  - DTOs: ~80 lines
+- **Modified**: ~300 lines
+- **Deleted**: ~50 lines (refactored code)
+
+**Total Impact**: ~1,500 lines across 28 files
+
+---
+
+### Technical Debt Addressed 🔧
+
+1. ✅ **Permission System Scalability**: Now properly tracks project creators for fine-grained access control
+2. ✅ **Calendar Limitations**: Calendar now shows tasks alongside projects for comprehensive planning
+3. ✅ **Task Management UX**: Modal-based editing with proper validation and state management
+4. ✅ **Date Validation**: Task due dates now validated against project timelines
+5. ✅ **DTO Consistency**: Standardized task DTOs with denormalized display names
+6. ✅ **Button Styling**: Removed duplicate button definitions across views
+
+---
+
+### Known Issues & Limitations ⚠️
+
+1. **Calendar Performance**: Loading all tasks for all projects in a month could be slow with many projects
+   - **Mitigation**: Consider pagination or lazy loading in future
+   
+2. **Permission Caching**: Permission checks happen on every render
+   - **Mitigation**: Consider memoization for computed permissions
+   
+3. **Task Modal Nesting**: Modals are teleported to body to avoid z-index issues
+   - **Current Solution**: Works but could benefit from modal management system
+
+---
+
+### Future Enhancements 🚀
+
+1. **Activity Timeline**: Show creator/editor history for auditing
+2. **Bulk Task Operations**: Select multiple tasks for status changes
+3. **Calendar Filters**: Filter calendar by project type, priority, assignee
+4. **Notification System**: Notify creators when their projects are updated
+5. **Export Calendar**: PDF/iCal export for calendar view with tasks
+6. **Advanced Search**: Search across projects and tasks simultaneously
+
+---
+
+## Previous Changes (February 22, 2026)
 
 ### MAJOR: Backend TypeScript Fixes & Complete Frontend-Backend Integration
 

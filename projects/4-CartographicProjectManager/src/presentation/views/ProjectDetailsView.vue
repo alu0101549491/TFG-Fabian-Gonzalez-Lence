@@ -30,7 +30,7 @@
 
         <ProjectSummary
           :projectDetails="currentProject"
-          :show-actions="canManageProjects"
+          :show-actions="canManageCurrentProject"
           @edit="showEditModal = true"
           @finalize="handleFinalize"
           @delete="handleDeleteStart"
@@ -155,7 +155,7 @@
                 <option :value="TaskStatus.COMPLETED">Completed</option>
               </select>
               <button
-                v-if="canManageProjects"
+                v-if="canCreateTask"
                 @click="showCreateTaskModal = true"
                 class="button-primary button-sm"
               >
@@ -168,9 +168,10 @@
             :tasks="filteredTasks"
             :project-id="currentProject.project.id"
             :show-project-info="false"
-            :show-create-button="canManageProjects"
+            :show-create-button="canCreateTask"
             :loading="tasksLoading"
             @task-click="handleTaskClick"
+            @task-edit="handleTaskEdit"
             @task-update="handleTaskUpdate"
             @task-delete="handleTaskDelete"
             @create="showCreateTaskModal = true"
@@ -213,7 +214,7 @@
           </div>
 
           <FileUploader
-            v-if="canManageProjects && currentProject.project.status !== 'finalized'"
+            v-if="canManageCurrentProject && currentProject.project.status !== 'finalized'"
             :project-id="currentProject.project.id"
             :sections="currentProject.sections.map(s => s.name)"
             :max-file-size="10 * 1024 * 1024"
@@ -224,7 +225,7 @@
           <FileList
             :files="projectFiles"
             :loading="filesLoading"
-            :show-actions="canManageProjects"
+            :show-actions="canManageCurrentProject"
             @download="handleFileDownload"
             @delete="handleFileDelete"
           />
@@ -278,9 +279,132 @@
             </div>
             <TaskForm
               :project-id="currentProject.project.id"
-              :assignees="availableAssignees" 
+              :assignees="availableAssignees"
+              :project-contract-date="currentProject.project.contractDate"
+              :project-delivery-date="currentProject.project.deliveryDate"
               @submit="handleTaskCreate"
               @cancel="showCreateTaskModal = false"
+            />
+          </div>
+        </div>
+      </Teleport>
+
+      <!-- Task Details Modal (Read-only) -->
+      <Teleport to="body">
+        <div
+          v-if="showTaskDetailsModal && selectedTask"
+          class="modal-overlay"
+          @click.self="showTaskDetailsModal = false"
+        >
+          <div class="modal-content" role="dialog" aria-labelledby="task-details-title">
+            <div class="modal-header">
+              <h2 id="task-details-title">Task Details</h2>
+              <button
+                @click="showTaskDetailsModal = false"
+                class="button-icon"
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+            <div class="task-details">
+              <div class="task-details-section">
+                <h3>Description</h3>
+                <p>{{ selectedTask.description }}</p>
+              </div>
+
+              <div class="task-details-row">
+                <div class="task-details-field">
+                  <label>Status</label>
+                  <span :class="['task-status-badge', selectedTask.status.toLowerCase()]">
+                    {{ selectedTask.status }}
+                  </span>
+                </div>
+                <div class="task-details-field">
+                  <label>Priority</label>
+                  <span :class="['task-priority-badge', selectedTask.priority.toLowerCase()]">
+                    {{ selectedTask.priority }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="task-details-row">
+                <div class="task-details-field">
+                  <label>Assignee</label>
+                  <p>{{ selectedTask.assigneeName }}</p>
+                </div>
+                <div class="task-details-field">
+                  <label>Creator</label>
+                  <p>{{ selectedTask.creatorName }}</p>
+                </div>
+              </div>
+
+              <div class="task-details-row">
+                <div class="task-details-field">
+                  <label>Due Date</label>
+                  <p>{{ new Date(selectedTask.dueDate).toLocaleDateString() }}</p>
+                </div>
+                <div class="task-details-field">
+                  <label>Created</label>
+                  <p>{{ new Date(selectedTask.createdAt).toLocaleDateString() }}</p>
+                </div>
+              </div>
+
+              <div v-if="selectedTask.comments" class="task-details-section">
+                <h3>Comments</h3>
+                <p>{{ selectedTask.comments }}</p>
+              </div>
+
+              <div class="task-details-actions">
+                <button
+                  v-if="selectedTask.canModify"
+                  type="button"
+                  class="button-primary"
+                  @click="() => { showTaskDetailsModal = false; handleTaskEdit(selectedTask!); }"
+                >
+                  Edit Task
+                </button>
+                <button
+                  type="button"
+                  class="button-secondary"
+                  @click="showTaskDetailsModal = false"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+
+      <!-- Edit Task Modal -->
+      <Teleport to="body">
+        <div
+          v-if="showTaskEditModal && selectedTask"
+          class="modal-overlay"
+          @click.self="showTaskEditModal = false"
+        >
+          <div class="modal-content" role="dialog" aria-labelledby="edit-task-title">
+            <div class="modal-header">
+              <h2 id="edit-task-title">Edit Task</h2>
+              <button
+                @click="showTaskEditModal = false"
+                class="button-icon"
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+            <TaskForm
+              :task="selectedTask"
+              :assignees="availableAssignees"
+              :can-confirm="isAdmin"
+              :project-contract-date="currentProject.project.contractDate"
+              :project-delivery-date="currentProject.project.deliveryDate"
+              @submit="handleTaskEditSubmit"
+              @status-change="handleStatusChange"
+              @confirm="handleConfirmTask"
+              @cancel="showTaskEditModal = false"
             />
           </div>
         </div>
@@ -416,13 +540,13 @@ import FileList from '../components/file/FileList.vue';
 import FileUploader from '../components/file/FileUploader.vue';
 import type {UpdateProjectDto, FileSummaryDto} from '@/application/dto';
 import {TaskStatus} from '@/domain/enumerations/task-status';
-import type {CreateTaskDto, UpdateTaskDto, TaskDto, TaskSummaryDto} from '@/application/dto/task-data.dto';
+import type {CreateTaskDto, UpdateTaskDto, TaskDto, TaskSummaryDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto/task-data.dto';
 import type {MessageDto} from '@/application/dto/message-data.dto';
 
 // Composables
 const router = useRouter();
 const route = useRoute();
-const {user, canManageProjects, isAuthenticated} = useAuth();
+const {user, canManageProjects, isSpecialUser, userId, isAuthenticated, isAdmin} = useAuth();
 const {
   currentProject,
   isLoading,
@@ -439,6 +563,8 @@ const {
   createTask,
   updateTask,
   deleteTask,
+  changeStatus,
+  confirmTask,
 } = useTasks();
 
 const {
@@ -459,6 +585,9 @@ const activeTab = ref<'tasks' | 'files' | 'messages' | 'overview'>('overview');
 const taskStatusFilter = ref('');
 const showEditModal = ref(false);
 const showCreateTaskModal = ref(false);
+const showTaskDetailsModal = ref(false);
+const showTaskEditModal = ref(false);
+const selectedTask = ref<TaskDto | null>(null);
 const showFinalizeModal = ref(false);
 const showDeleteModal = ref(false);
 const isFinalizing = ref(false);
@@ -467,6 +596,18 @@ const isDeleting = ref(false);
 // Computed Properties
 const projectId = computed(() => route.params.id as string);
 const currentUserId = computed(() => user.value?.id || '');
+
+const isProjectCreator = computed(() => 
+  currentProject.value?.project?.creatorId === userId.value
+);
+
+const canManageCurrentProject = computed(() => 
+  canManageProjects.value || (isSpecialUser.value && isProjectCreator.value)
+);
+
+const canCreateTask = computed(() => 
+  currentProject.value?.currentUserPermissions?.canCreateTask ?? false
+);
 
 const filteredTasks = computed(() => {
   if (!taskStatusFilter.value) return projectTasks.value;
@@ -493,11 +634,27 @@ const availableAssignees = computed(() => {
   if (!currentProject.value?.participants) {
     return [];
   }
-  return currentProject.value.participants.map(p => ({
+  
+  const assignees = currentProject.value.participants.map(p => ({
     id: p.userId,
     name: p.username,
     role: p.role
   }));
+  
+  // Ensure creator is always in the list if they are a SPECIAL_USER
+  const creatorId = (currentProject.value.project as any).creatorId;
+  if (creatorId && isSpecialUser.value && creatorId === userId.value) {
+    const creatorExists = assignees.some(a => a.id === creatorId);
+    if (!creatorExists && user.value) {
+      assignees.push({
+        id: user.value.id,
+        name: user.value.name,
+        role: user.value.role
+      });
+    }
+  }
+  
+  return assignees;
 });
 
 // Methods
@@ -648,21 +805,65 @@ async function handleDeleteConfirm(): Promise<void> {
  */
 async function handleTaskCreate(taskData: CreateTaskDto): Promise<void> {
   try {
-    await createTask(taskData);
-    showCreateTaskModal.value = false;
+    const result = await createTask(taskData);
+    
+    if (result.success) {
+      showCreateTaskModal.value = false;
+      await loadTasksByProject(projectId.value);
+    } else {
+      alert(`Failed to create task: ${result.error || 'Unknown error'}`);
+    }
   } catch (error) {
-    console.error('Failed to create task:', error);
+    alert(`Error creating task: ${(error as Error).message || 'Unknown error'}`);
   }
 }
 
 /**
- * Handle task click
+ * Handle task click - shows read-only preview
  *
  * @param {TaskDto} task - Clicked task
  */
 function handleTaskClick(task: TaskDto): void {
-  // Could open task details modal or navigate to task page
-  console.log('Task clicked:', task);
+  selectedTask.value = task;
+  showTaskDetailsModal.value = true;
+}
+
+/**
+ * Handle task edit - opens edit modal
+ *
+ * @param {TaskDto} task - Task to edit
+ */
+function handleTaskEdit(task: TaskDto): void {
+  selectedTask.value = task;
+  showTaskEditModal.value = true;
+}
+
+/**
+ * Handle task edit submission
+ *
+ * @param {UpdateTaskDto} taskData - Updated task data
+ */
+async function handleTaskEditSubmit(taskData: any): Promise<void> {
+  try {
+    if (!selectedTask.value) return;
+    
+    const updateData: UpdateTaskDto = {
+      id: selectedTask.value.id,
+      ...taskData,
+    };
+    
+    const result = await updateTask(updateData);
+    
+    if (result.success) {
+      showTaskEditModal.value = false;
+      selectedTask.value = null;
+      await loadTasksByProject(projectId.value);
+    } else {
+      alert(`Failed to update task: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    alert(`Error updating task: ${(error as Error).message || 'Unknown error'}`);
+  }
 }
 
 /**
@@ -679,13 +880,55 @@ async function handleTaskUpdate(taskData: UpdateTaskDto): Promise<void> {
 }
 
 /**
+ * Handle task status change
+ *
+ * @param {ChangeTaskStatusDto} data - Status change data
+ */
+async function handleStatusChange(data: ChangeTaskStatusDto): Promise<void> {
+  try {
+    const success = await changeStatus(data.taskId, data.newStatus, data.comment);
+    
+    if (success) {
+      showTaskEditModal.value = false;
+      selectedTask.value = null;
+      await loadTasksByProject(projectId.value);
+    } else {
+      alert('Failed to change task status');
+    }
+  } catch (error) {
+    alert(`Error changing task status: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+/**
+ * Handle task confirmation (PERFORMED → COMPLETED)
+ *
+ * @param {ConfirmTaskDto} data - Confirmation data
+ */
+async function handleConfirmTask(data: ConfirmTaskDto): Promise<void> {
+  try {
+    const success = await confirmTask(data.taskId, data.confirmed, data.feedback);
+    
+    if (success) {
+      showTaskEditModal.value = false;
+      selectedTask.value = null;
+      await loadTasksByProject(projectId.value);
+    } else {
+      alert('Failed to confirm task');
+    }
+  } catch (error) {
+    alert(`Error confirming task: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+/**
  * Handle task deletion
  *
- * @param {string} taskId - Task identifier
+ * @param {TaskDto} task - Task to delete
  */
-async function handleTaskDelete(taskId: string): Promise<void> {
+async function handleTaskDelete(task: TaskDto): Promise<void> {
   try {
-    await deleteTask(taskId);
+    await deleteTask(task.id);
   } catch (error) {
     console.error('Failed to delete task:', error);
   }
@@ -771,6 +1014,40 @@ onMounted(async () => {
     const tab = route.query.tab as string;
     if (['overview', 'tasks', 'messages', 'files'].includes(tab)) {
       activeTab.value = tab as any;
+    }
+  }
+
+  // Open specific task if taskId is provided in query params
+  if (route.query.taskId) {
+    const taskId = route.query.taskId as string;
+    
+    // Function to try opening the task
+    const tryOpenTask = () => {
+      const task = projectTasks.value.find(t => t.id === taskId);
+      if (task) {
+        handleTaskClick(task);
+        return true;
+      }
+      return false;
+    };
+    
+    // Try immediately
+    if (!tryOpenTask()) {
+      // If not found, wait for tasks to load
+      const unwatch = watch(
+        () => projectTasks.value.length,
+        () => {
+          if (tryOpenTask()) {
+            unwatch(); // Stop watching once task is found
+          }
+        },
+        {immediate: true}
+      );
+      
+      // Stop trying after 5 seconds
+      setTimeout(() => {
+        unwatch();
+      }, 5000);
     }
   }
 });
@@ -1303,5 +1580,116 @@ onMounted(async () => {
   .messages-container {
     height: 500px;
   }
+}
+
+/* Task Details Modal */
+.task-details {
+  padding: var(--spacing-4);
+}
+
+.task-details-section {
+  margin-bottom: var(--spacing-4);
+}
+
+.task-details-section h3 {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  margin-bottom: var(--spacing-2);
+  color: var(--color-text-primary);
+}
+
+.task-details-section p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.task-details-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
+}
+
+.task-details-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.task-details-field label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.task-details-field p {
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.task-status-badge,
+.task-priority-badge {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.task-status-badge.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.task-status-badge.in_progress {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.task-status-badge.done {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.task-status-badge.completed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.task-status-badge.cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.task-priority-badge.urgent {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.task-priority-badge.high {
+  background-color: #fed7aa;
+  color: #9a3412;
+}
+
+.task-priority-badge.medium {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.task-priority-badge.low {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.task-details-actions {
+  display: flex;
+  gap: var(--spacing-2);
+  justify-content: flex-end;
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
 }
 </style>

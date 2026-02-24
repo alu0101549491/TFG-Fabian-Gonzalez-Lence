@@ -136,16 +136,18 @@
         <!-- Day number -->
         <span class="calendar-day-number">{{ day.date.getDate() }}</span>
 
-        <!-- Project indicators (full mode) -->
+        <!-- Project and Task indicators (full mode) -->
         <div
-          v-if="mode === 'full' && day.projects.length > 0"
-          class="calendar-day-projects"
+          v-if="mode === 'full' && (day.projects.length > 0 || day.tasks.length > 0)"
+          class="calendar-day-items"
         >
+          <!-- Projects -->
           <button
             v-for="project in getVisibleProjects(day.projects)"
-            :key="project.id"
+            :key="'p-' + project.id"
             type="button"
             :class="[
+              'calendar-item',
               'calendar-project',
               `calendar-project-${project.statusColor}`,
               {'calendar-project-overdue': project.isOverdue},
@@ -153,37 +155,69 @@
             :title="getProjectTooltip(project)"
             @click.stop="handleProjectClick(project)"
           >
-            <span class="calendar-project-name">{{ project.code }}</span>
+            <span class="calendar-item-icon">📦</span>
+            <span class="calendar-item-name">{{ project.code }}</span>
             <AlertCircleIcon
               v-if="project.isOverdue || project.hasPendingTasks"
-              class="calendar-project-warning"
+              class="calendar-item-warning"
+            />
+          </button>
+
+          <!-- Tasks -->
+          <button
+            v-for="task in getVisibleTasks(day.tasks)"
+            :key="'t-' + task.id"
+            type="button"
+            :class="[
+              'calendar-item',
+              'calendar-task',
+              `calendar-task-priority-${task.priority.toLowerCase()}`,
+              {'calendar-task-overdue': task.isOverdue},
+            ]"
+            :title="getTaskTooltip(task)"
+            @click.stop="handleTaskClick(task)"
+          >
+            <span class="calendar-item-icon">✓</span>
+            <span class="calendar-item-name">{{ truncateText(task.description, 20) }}</span>
+            <AlertCircleIcon
+              v-if="task.isOverdue"
+              class="calendar-item-warning"
             />
           </button>
 
           <!-- More indicator -->
           <span
-            v-if="day.projects.length > maxProjectsPerDay"
+            v-if="(day.projects.length + day.tasks.length) > maxProjectsPerDay"
             class="calendar-day-more"
           >
-            +{{ day.projects.length - maxProjectsPerDay }} more
+            +{{ (day.projects.length + day.tasks.length) - maxProjectsPerDay }} more
           </span>
         </div>
 
-        <!-- Project dots (mini mode) -->
+        <!-- Project and Task dots (mini mode) -->
         <div
-          v-if="mode === 'mini' && day.projects.length > 0"
+          v-if="mode === 'mini' && (day.projects.length > 0 || day.tasks.length > 0)"
           class="calendar-day-dots"
         >
+          <!-- Project dots -->
           <span
-            v-for="(project, index) in day.projects.slice(0, 3)"
-            :key="project.id"
-            :class="['calendar-dot', `calendar-dot-${project.statusColor}`]"
+            v-for="project in day.projects.slice(0, 2)"
+            :key="'p-' + project.id"
+            :class="['calendar-dot', 'calendar-dot-project', `calendar-dot-${project.statusColor}`]"
+            title="Project"
+          />
+          <!-- Task dots -->
+          <span
+            v-for="task in day.tasks.slice(0, Math.max(0, 3 - day.projects.length))"
+            :key="'t-' + task.id"
+            class="calendar-dot calendar-dot-task"
+            title="Task"
           />
           <span
-            v-if="day.projects.length > 3"
+            v-if="(day.projects.length + day.tasks.length) > 3"
             class="calendar-dot calendar-dot-more"
           >
-            +{{ day.projects.length - 3 }}
+            +{{ (day.projects.length + day.tasks.length) - 3 }}
           </span>
         </div>
       </div>
@@ -192,7 +226,7 @@
     <!-- Selected day details (full mode) -->
     <Transition name="slide-up">
       <div
-        v-if="mode === 'full' && selectedDay && selectedDay.projects.length > 0"
+        v-if="mode === 'full' && selectedDay && (selectedDay.projects.length > 0 || selectedDay.tasks.length > 0)"
         class="calendar-details"
       >
         <div class="calendar-details-header">
@@ -202,6 +236,8 @@
           <span class="calendar-details-count">
             {{ selectedDay.projects.length }} project{{
               selectedDay.projects.length !== 1 ? 's' : ''
+            }}, {{ selectedDay.tasks.length }} task{{
+              selectedDay.tasks.length !== 1 ? 's' : ''
             }}
           </span>
           <button
@@ -215,40 +251,70 @@
         </div>
 
         <div class="calendar-details-list">
+          <!-- Projects -->
           <div
             v-for="project in selectedDay.projects"
-            :key="project.id"
+            :key="'p-' + project.id"
             :class="[
+              'calendar-details-item',
               'calendar-details-project',
               `calendar-details-project-${project.statusColor}`,
             ]"
             @click="handleProjectClick(project)"
           >
-            <div class="calendar-details-project-main">
-              <span class="calendar-details-project-code">{{
-                project.code
-              }}</span>
-              <span class="calendar-details-project-name">{{
-                project.name
-              }}</span>
+            <div class="calendar-details-item-header">
+              <span class="calendar-details-item-icon">📦</span>
+              <span class="calendar-details-item-type">Project</span>
             </div>
-            <div class="calendar-details-project-meta">
-              <span class="calendar-details-project-client">{{
-                project.clientName
-              }}</span>
+            <div class="calendar-details-item-main">
+              <span class="calendar-details-item-code">{{ project.code }}</span>
+              <span class="calendar-details-item-name">{{ project.name }}</span>
+            </div>
+            <div class="calendar-details-item-meta">
               <span
                 v-if="project.isOverdue"
-                class="calendar-details-project-overdue"
+                class="calendar-details-item-overdue"
               >
                 Overdue
               </span>
               <span
                 v-else-if="project.hasPendingTasks"
-                class="calendar-details-project-tasks"
+                class="calendar-details-item-tasks"
               >
                 {{ project.pendingTasksCount }} pending task{{
                   project.pendingTasksCount !== 1 ? 's' : ''
                 }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Tasks -->
+          <div
+            v-for="task in selectedDay.tasks"
+            :key="'t-' + task.id"
+            :class="[
+              'calendar-details-item',
+              'calendar-details-task',
+              `calendar-details-task-priority-${task.priority.toLowerCase()}`,
+              {'calendar-details-task-overdue': task.isOverdue},
+            ]"
+            @click="handleTaskClick(task)"
+          >
+            <div class="calendar-details-item-header">
+              <span class="calendar-details-item-icon">✓</span>
+              <span class="calendar-details-item-type">Task</span>
+            </div>
+            <div class="calendar-details-item-main">
+              <span class="calendar-details-item-description">{{ task.description }}</span>
+            </div>
+            <div class="calendar-details-item-meta">
+              <span class="calendar-details-item-project">{{ task.projectCode }}</span>
+              <span class="calendar-details-item-assignee">{{ task.assigneeName }}</span>
+              <span
+                v-if="task.isOverdue"
+                class="calendar-details-item-overdue"
+              >
+                Overdue
               </span>
             </div>
           </div>
@@ -280,7 +346,11 @@
 
 <script setup lang="ts">
 import {ref, computed, watch, onMounted, onUnmounted} from 'vue';
-import type {CalendarProjectDto, CalendarDayDto} from '@/application/dto';
+import type {
+  CalendarProjectDto,
+  CalendarTaskDto,
+  CalendarDayDto,
+} from '@/application/dto';
 import {addDays, isSameDay} from '@/shared/utils';
 import LoadingSpinner from '@/presentation/components/common/LoadingSpinner.vue';
 import {
@@ -296,6 +366,8 @@ import {
 export interface CalendarWidgetProps {
   /** Projects with delivery dates for calendar display */
   projects?: CalendarProjectDto[];
+  /** Tasks with due dates for calendar display */
+  tasks?: CalendarTaskDto[];
   /** Initial date to display (defaults to today) */
   initialDate?: Date;
   /** Calendar display mode */
@@ -306,7 +378,7 @@ export interface CalendarWidgetProps {
   showNavigation?: boolean;
   /** Show today button */
   showTodayButton?: boolean;
-  /** Maximum projects to show per day cell */
+  /** Maximum items (projects + tasks) to show per day cell */
   maxProjectsPerDay?: number;
   /** First day of week (0 = Sunday, 1 = Monday) */
   firstDayOfWeek?: 0 | 1;
@@ -320,12 +392,14 @@ export interface CalendarWidgetProps {
 export interface CalendarWidgetEmits {
   (e: 'date-select', date: Date): void;
   (e: 'project-click', project: CalendarProjectDto): void;
+  (e: 'task-click', task: CalendarTaskDto): void;
   (e: 'month-change', date: Date): void;
   (e: 'day-click', day: CalendarDayDto): void;
 }
 
 const props = withDefaults(defineProps<CalendarWidgetProps>(), {
   projects: () => [],
+  tasks: () => [],
   mode: 'full',
   loading: false,
   showNavigation: true,
@@ -424,8 +498,6 @@ const calendarDays = computed<CalendarDayDto[]>(() => {
 
   // First day of the month
   const firstDay = new Date(year, month, 1);
-  // Last day of the month
-  const lastDay = new Date(year, month + 1, 0);
 
   // Find start of calendar (may include days from previous month)
   let startDay = new Date(firstDay);
@@ -447,9 +519,17 @@ const calendarDays = computed<CalendarDayDto[]>(() => {
       return isSameDay(deliveryDate, date);
     });
 
+    // Find tasks for this day
+    const dayTasks = props.tasks.filter((task) => {
+      const dueDate = new Date(task.dueDate);
+      return isSameDay(dueDate, date);
+    });
+
     days.push({
       date: new Date(date),
       projects: dayProjects,
+      tasks: dayTasks,
+      items: [], // Will be computed from projects and tasks
       isToday: checkIsToday(date),
       isCurrentMonth,
       isWeekend,
@@ -544,6 +624,32 @@ function getProjectTooltip(project: CalendarProjectDto): string {
   return tooltip;
 }
 
+function getVisibleTasks(tasks: CalendarTaskDto[]): CalendarTaskDto[] {
+  return tasks.slice(0, Math.max(0, props.maxProjectsPerDay));
+}
+
+function getTaskTooltip(task: CalendarTaskDto): string {
+  let tooltip = `Task: ${task.description}`;
+  tooltip += `\nProject: ${task.projectCode} - ${task.projectName}`;
+  tooltip += `\nAssigned to: ${task.assigneeName}`;
+  tooltip += `\nPriority: ${task.priority}`;
+
+  if (task.isOverdue) {
+    tooltip += '\n⚠️ Overdue';
+  }
+
+  return tooltip;
+}
+
+function handleTaskClick(task: CalendarTaskDto) {
+  emit('task-click', task);
+}
+
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
 function getDayAriaLabel(day: CalendarDayDto): string {
   const weekday = weekdayNamesFull[day.date.getDay()];
   const month = monthNames[day.date.getMonth()];
@@ -552,12 +658,21 @@ function getDayAriaLabel(day: CalendarDayDto): string {
   const dateStr = `${weekday}, ${month} ${dayNum}, ${year}`;
 
   const projectCount = day.projects.length;
+  const taskCount = day.tasks.length;
 
-  if (projectCount === 0) {
+  if (projectCount === 0 && taskCount === 0) {
     return dateStr;
   }
 
-  return `${dateStr}, ${projectCount} project${projectCount !== 1 ? 's' : ''} due`;
+  const parts = [];
+  if (projectCount > 0) {
+    parts.push(`${projectCount} project${projectCount !== 1 ? 's' : ''}`);
+  }
+  if (taskCount > 0) {
+    parts.push(`${taskCount} task${taskCount !== 1 ? 's' : ''}`);
+  }
+
+  return `${dateStr}, ${parts.join(', ')}`;
 }
 
 /**
@@ -596,6 +711,18 @@ watch(
       currentDate.value = new Date(newDate);
     }
   },
+);
+
+// Watch for projects changes
+watch(
+  () => props.projects,
+  (newProjects) => {
+    console.log(`[CalendarWidget] Projects updated: ${newProjects.length} projects`);
+    if (newProjects.length > 0) {
+      console.log('[CalendarWidget] Sample project:', newProjects[0]);
+    }
+  },
+  { deep: true, immediate: true }
 );
 </script>
 
@@ -837,8 +964,8 @@ watch(
   border-radius: var(--radius-full);
 }
 
-/* Projects in day cells (full mode) */
-.calendar-day-projects {
+/* Projects and Tasks in day cells (full mode) */
+.calendar-day-items {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -846,7 +973,8 @@ watch(
   overflow: hidden;
 }
 
-.calendar-project {
+/* Common item styles */
+.calendar-item {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
@@ -864,10 +992,27 @@ watch(
   transition: filter var(--duration-fast) ease;
 }
 
-.calendar-project:hover {
+.calendar-item:hover {
   filter: brightness(0.9);
 }
 
+.calendar-item-icon {
+  flex-shrink: 0;
+  font-size: 10px;
+}
+
+.calendar-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-item-warning {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* Project styles */
 .calendar-project-green {
   background-color: var(--color-success-500);
 }
@@ -881,15 +1026,22 @@ watch(
   background-color: var(--color-gray-400);
 }
 
-.calendar-project-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Task styles - priority based colors */
+.calendar-task-priority-low {
+  background-color: var(--color-info-500);
+}
+.calendar-task-priority-medium {
+  background-color: var(--color-primary-500);
+}
+.calendar-task-priority-high {
+  background-color: var(--color-warning-600);
+}
+.calendar-task-priority-urgent {
+  background-color: var(--color-error-600);
 }
 
-.calendar-project-warning {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
+.calendar-task-overdue {
+  background-color: var(--color-error-700);
 }
 
 .calendar-day-more {
@@ -898,7 +1050,7 @@ watch(
   padding: 2px;
 }
 
-/* Project dots (mini mode) */
+/* Dots (mini mode) */
 .calendar-day-dots {
   display: flex;
   align-items: center;
@@ -914,17 +1066,25 @@ watch(
   border-radius: var(--radius-full);
 }
 
-.calendar-dot-green {
+/* Project dots */
+.calendar-dot-project.calendar-dot-green {
   background-color: var(--color-success-500);
 }
-.calendar-dot-yellow {
+.calendar-dot-project.calendar-dot-yellow {
   background-color: var(--color-warning-500);
 }
-.calendar-dot-red {
+.calendar-dot-project.calendar-dot-red {
   background-color: var(--color-error-500);
 }
-.calendar-dot-gray {
+.calendar-dot-project.calendar-dot-gray {
   background-color: var(--color-gray-400);
+}
+
+/* Task dots */
+.calendar-dot-task {
+  background-color: var(--color-primary-500);
+  border: 1px solid white;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
 .calendar-dot-more {
@@ -990,7 +1150,8 @@ watch(
   overflow-y: auto;
 }
 
-.calendar-details-project {
+/* Common item styles in details */
+.calendar-details-item {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
@@ -1000,8 +1161,30 @@ watch(
   transition: background-color var(--duration-fast) ease;
 }
 
-.calendar-details-project:hover {
+.calendar-details-item:hover {
   background-color: var(--color-bg-primary);
+}
+
+.calendar-details-item-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.calendar-details-item-icon {
+  font-size: var(--font-size-xs);
+}
+
+.calendar-details-item-type {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+}
+
+/* Project specific styles */
+.calendar-details-project {
+  /* border-left color set by status */
 }
 
 .calendar-details-project-green {
@@ -1017,39 +1200,68 @@ watch(
   border-color: var(--color-gray-400);
 }
 
-.calendar-details-project-main {
+.calendar-details-item-main {
   display: flex;
-  align-items: baseline;
-  gap: var(--spacing-2);
+  flex-direction: column;
+  gap: 2px;
 }
 
-.calendar-details-project-code {
+.calendar-details-item-code {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
 }
 
-.calendar-details-project-name {
+.calendar-details-item-name {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
 
-.calendar-details-project-meta {
+.calendar-details-item-description {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.calendar-details-item-meta {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+  flex-wrap: wrap;
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
 
-.calendar-details-project-overdue {
+.calendar-details-item-project {
+  font-weight: var(--font-weight-medium);
+}
+
+.calendar-details-item-assignee {
+  /* Base styles */
+}
+
+.calendar-details-item-overdue,calendar-details-item-tasks {
   color: var(--color-error-600);
   font-weight: var(--font-weight-medium);
 }
 
-.calendar-details-project-tasks {
-  color: var(--color-warning-600);
+/* Task specific styles */
+.calendar-details-task-priority-low {
+  border-color: var(--color-info-500);
+}
+.calendar-details-task-priority-medium {
+  border-color: var(--color-primary-500);
+}
+.calendar-details-task-priority-high {
+  border-color: var(--color-warning-600);
+}
+.calendar-details-task-priority-urgent {
+  border-color: var(--color-error-600);
+}
+
+.calendar-details-task-overdue {
+  border-color: var(--color-error-700);
 }
 
 /* Legend */

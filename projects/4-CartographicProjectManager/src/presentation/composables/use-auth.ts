@@ -209,7 +209,7 @@ export function useAuth(): UseAuthReturn {
   }
 
   // Permission Checks
-  const canCreateProject = computed(() => isAdmin.value);
+  const canCreateProject = computed(() => isAdmin.value || isSpecialUser.value);
   const canManageProjects = computed(() => isAdmin.value);
   const canExportData = computed(() => isAdmin.value);
   const canManageBackups = computed(() => isAdmin.value);

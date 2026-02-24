@@ -48,12 +48,17 @@ export class TaskRepository implements ITaskRepository {
     }
   }
 
-  public async findByProjectId(projectId: string): Promise<Task[]> {
+  public async findByProjectId(projectId: string): Promise<any[]> {
     try {
-      return await prisma.task.findMany({
+      const tasks = await prisma.task.findMany({
         where: {projectId},
         include: {creator: true, assignee: true},
       });
+      return tasks.map(task => ({
+        ...task,
+        creatorName: task.creator.username,
+        assigneeName: task.assignee.username,
+      }));
     } catch (error) {
       throw new DatabaseError('Failed to find tasks by project ID');
     }
@@ -92,9 +97,17 @@ export class TaskRepository implements ITaskRepository {
     }
   }
 
-  public async create(data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completedAt' | 'confirmedAt'>): Promise<Task> {
+  public async create(data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completedAt' | 'confirmedAt'>): Promise<any> {
     try {
-      return await prisma.task.create({data});
+      const task = await prisma.task.create({
+        data,
+        include: {creator: true, assignee: true},
+      });
+      return {
+        ...task,
+        creatorName: task.creator.username,
+        assigneeName: task.assignee.username,
+      };
     } catch (error) {
       throw new DatabaseError('Failed to create task');
     }

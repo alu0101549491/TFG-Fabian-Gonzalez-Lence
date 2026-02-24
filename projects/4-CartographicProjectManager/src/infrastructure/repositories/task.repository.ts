@@ -25,7 +25,9 @@ interface TaskApiResponse {
   id: string;
   projectId: string;
   creatorId: string;
+  creatorName?: string;
   assigneeId: string;
+  assigneeName?: string;
   description: string;
   status: string;
   priority: string;
@@ -80,9 +82,21 @@ export class TaskRepository implements ITaskRepository {
    * @returns Created task with generated fields
    */
   public async save(task: Task): Promise<Task> {
+    // Don't send id, createdAt, updatedAt for creation (backend generates these)
+    const payload = {
+      projectId: task.projectId,
+      creatorId: task.creatorId,
+      assigneeId: task.assigneeId,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      dueDate: task.dueDate.toISOString(),
+      comments: task.comments,
+    };
+    
     const response = await httpClient.post<TaskApiResponse>(
       this.baseUrl,
-      this.mapToApiRequest(task),
+      payload,
     );
     return this.mapToEntity(response.data);
   }
@@ -94,9 +108,21 @@ export class TaskRepository implements ITaskRepository {
    * @returns Updated task entity
    */
   public async update(task: Task): Promise<Task> {
+    // Only send fields that can be updated (exclude id, createdAt, updatedAt)
+    const payload = {
+      assigneeId: task.assigneeId,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      dueDate: task.dueDate.toISOString(),
+      comments: task.comments,
+      completedAt: task.completedAt?.toISOString() || null,
+      confirmedAt: task.confirmedAt?.toISOString() || null,
+    };
+    
     const response = await httpClient.put<TaskApiResponse>(
       `${this.baseUrl}/${task.id}`,
-      this.mapToApiRequest(task),
+      payload,
     );
     return this.mapToEntity(response.data);
   }
@@ -310,7 +336,9 @@ export class TaskRepository implements ITaskRepository {
       id: data.id,
       projectId: data.projectId,
       creatorId: data.creatorId,
+      creatorName: data.creatorName,
       assigneeId: data.assigneeId,
+      assigneeName: data.assigneeName,
       description: data.description,
       status: data.status as TaskStatus,
       priority: data.priority as TaskPriority,
