@@ -82,6 +82,7 @@ export type {
   TaskHistoryEntryDto,
   TaskFilterDto,
   TaskListResponseDto,
+  CalendarTaskDto,
 } from './task-data.dto';
 
 // Message DTOs
@@ -143,3 +144,11 @@ export type {
   StorageUsageDto,
 } from './backup-result.dto';
 export {BackupStatus, BackupType, BackupErrorCode} from './backup-result.dto';
+
+// Calendar DTOs
+export type {
+  CalendarItemDto,
+  CalendarDayDto,
+  CalendarItemType,
+} from './calendar-data.dto';
+

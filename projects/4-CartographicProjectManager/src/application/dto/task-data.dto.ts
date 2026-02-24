@@ -205,6 +205,32 @@ export interface TaskListResponseDto {
 }
 
 /**
+ * Output DTO for calendar view showing tasks by due date.
+ */
+export interface CalendarTaskDto {
+  /** Unique task identifier */
+  readonly id: string;
+  /** Task description */
+  readonly description: string;
+  /** Parent project ID */
+  readonly projectId: string;
+  /** Parent project code */
+  readonly projectCode: string;
+  /** Parent project name */
+  readonly projectName: string;
+  /** Task due date */
+  readonly dueDate: Date;
+  /** Current task status */
+  readonly status: TaskStatus;
+  /** Task priority level */
+  readonly priority: TaskPriority;
+  /** Assignee name */
+  readonly assigneeName: string;
+  /** Whether task is overdue */
+  readonly isOverdue: boolean;
+}
+
+/**
  * Re-export TaskSummaryDto from project-details for consistency.
  */
 export type {TaskSummaryDto} from './project-details.dto';

@@ -14,6 +14,7 @@
 
 import type {Request, Response, NextFunction} from 'express';
 import {UserRepository} from '@infrastructure/repositories/user.repository.js';
+import {hashPassword} from '@infrastructure/auth/password.service.js';
 import {sendSuccess, sendError} from '@shared/utils.js';
 import {HTTP_STATUS, ERROR_MESSAGES} from '@shared/constants.js';
 import {NotFoundError} from '@shared/errors.js';
@@ -132,8 +133,17 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const user = await this.userRepository.create(req.body);      
-      const {passwordHash, ...userWithoutPassword} = user;
+      const {password, ...userData} = req.body;
+      
+      // Hash password before creating user
+      const passwordHash = await hashPassword(password);
+      
+      const user = await this.userRepository.create({
+        ...userData,
+        passwordHash
+      });
+      
+      const {passwordHash: _, ...userWithoutPassword} = user;
       sendSuccess(res, userWithoutPassword, 'User created successfully', HTTP_STATUS.CREATED);
     } catch (error) {
       next(error);
@@ -150,7 +160,14 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const user = await this.userRepository.update(req.params.id as string, req.body);
+      const {password, ...userData} = req.body;
+      
+      // Hash password if it's being updated
+      const updateData = password 
+        ? {...userData, passwordHash: await hashPassword(password)}
+        : userData;
+      
+      const user = await this.userRepository.update(req.params.id as string, updateData);
       const {passwordHash, ...userWithoutPassword} = user;
       sendSuccess(res, userWithoutPassword, 'User updated successfully');
     } catch (error) {

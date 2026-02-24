@@ -488,14 +488,19 @@ async function fetchClients(): Promise<void> {
 /**
  * Handle project creation
  *
- * @param {CreateProjectInput} projectData - New project data
+ * @param {CreateProjectDto} projectData - New project data
  */
-async function handleCreateProject(projectData: CreateProjectInput): Promise<void> {
+async function handleCreateProject(projectData: CreateProjectDto): Promise<void> {
   try {
-    const newProject = await createProject(projectData);
+    const result = await createProject(projectData);
     showCreateModal.value = false;
-    if (newProject?.id) {
-      goToProject(newProject.id);
+    
+    if (result.success && result.project?.id) {
+      // Refresh the project list to include the new project
+      await fetchProjects();
+      goToProject(result.project.id);
+    } else {
+      console.error('Failed to create project:', result.error);
     }
   } catch (error) {
     console.error('Failed to create project:', error);
@@ -790,6 +795,92 @@ onMounted(async () => {
 .modal-header h2 {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
+}
+
+/* Button Styles */
+.button-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: white;
+  background-color: var(--color-primary-600);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.button-primary:hover {
+  background-color: var(--color-primary-700);
+}
+
+.button-primary:active {
+  background-color: var(--color-primary-800);
+}
+
+.button-primary:disabled {
+  background-color: var(--color-gray-300);
+  cursor: not-allowed;
+}
+
+.button-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-600);
+  background-color: transparent;
+  border: 2px solid var(--color-primary-600);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.button-secondary:hover {
+  color: white;
+  background-color: var(--color-primary-600);
+}
+
+.button-secondary:active {
+  background-color: var(--color-primary-700);
+  border-color: var(--color-primary-700);
+}
+
+.button-secondary:disabled {
+  color: var(--color-gray-300);
+  border-color: var(--color-gray-300);
+  cursor: not-allowed;
+}
+
+.button-sm {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-xs);
+}
+
+.button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.button-icon:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-gray-100);
 }
 
 /* Responsive Design */

@@ -389,12 +389,15 @@ router.beforeEach(async (
           // Check if user is client
           const isClient = projectData.client?.id === authStore.userId;
           
+          // Check if user is the creator
+          const isCreator = (projectData as any).creatorId === authStore.userId;
+          
           // Check if user is a special user participant
           const isSpecialUser = projectData.specialUsers?.some(
             su => su.userId === authStore.userId
           );
           
-          if (!isClient && !isSpecialUser) {
+          if (!isClient && !isSpecialUser && !isCreator) {
             console.warn(`Access denied: User ${authStore.userId} cannot access project ${projectId}`);
             return next({ name: 'forbidden' });
           }

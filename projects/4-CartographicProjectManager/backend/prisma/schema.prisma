@@ -102,6 +102,7 @@ model User {
   
   // Relations
   clientProjects   Project[]      @relation("ClientProjects")
+  createdProjects  Project[]      @relation("CreatedProjects")
   specialUserProjects ProjectSpecialUser[]
   createdTasks     Task[]         @relation("CreatedTasks")
   assignedTasks    Task[]         @relation("AssignedTasks")
@@ -126,6 +127,7 @@ model Project {
   name             String
   year             Int
   clientId         String
+  creatorId        String?
   type             ProjectType
   coordinateX      Float?
   coordinateY      Float?
@@ -139,6 +141,7 @@ model Project {
   
   // Relations
   client           User          @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
+  creator          User?         @relation("CreatedProjects", fields: [creatorId], references: [id], onDelete: SetNull)
   specialUsers     ProjectSpecialUser[]
   tasks            Task[]
   messages         Message[]
@@ -147,6 +150,7 @@ model Project {
   
   @@index([code])
   @@index([clientId])
+  @@index([creatorId])
   @@index([status])
   @@index([year])
   @@index([type])
