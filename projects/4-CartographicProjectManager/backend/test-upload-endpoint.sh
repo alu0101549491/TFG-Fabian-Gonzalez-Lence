@@ -10,7 +10,7 @@ echo "1️⃣ Logging in..."
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@cartographic.com","password":"admin123"}' \
-  | jq -r '.accessToken')
+  | jq -r '.data.accessToken')
 
 if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
   echo "❌ Failed to login"
@@ -26,8 +26,8 @@ PROJECT=$(curl -s \
   -H "Authorization: Bearer $TOKEN" \
   http://localhost:3000/api/v1/projects)
 
-PROJECT_ID=$(echo $PROJECT | jq -r '.projects[0].id')
-PROJECT_CODE=$(echo $PROJECT | jq -r '.projects[0].code')
+PROJECT_ID=$(echo $PROJECT | jq -r '.data[0].id')
+PROJECT_CODE=$(echo $PROJECT | jq -r '.data[0].code')
 
 if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
   echo "❌ Failed to get project"
@@ -40,12 +40,74 @@ echo "✅ Project Code: $PROJECT_CODE"
 # 3. Crear archivo de prueba
 echo ""
 echo "3️⃣ Creating test file..."
-TEST_FILE="/tmp/test-upload-$(date +%s).txt"
-echo "Este es un archivo de prueba para Dropbox" > $TEST_FILE
-echo "Fecha: $(date)" >> $TEST_FILE
-echo "Proyecto: $PROJECT_CODE" >> $TEST_FILE
+TEST_FILE="/tmp/test-upload-$(date +%s).pdf"
+# Create a minimal valid PDF file
+cat > $TEST_FILE << 'EOF'
+%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Count 1
+/Kids [3 0 R]
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/Resources <<
+/Font <<
+/F1 4 0 R
+>>
+>>
+/MediaBox [0 0 612 792]
+/Contents 5 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+5 0 obj
+<<
+/Length 44
+>>
+stream
+BT
+/F1 12 Tf
+100 700 Td
+(Test File) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+0000000262 00000 n
+0000000341 00000 n
+trailer
+<<
+/Size 6
+/Root 1 0 R
+>>
+startxref
+434
+%%EOF
+EOF
 
-echo "✅ Test file created: $TEST_FILE"
+echo "✅ Test PDF file created: $TEST_FILE"
 
 # 4. Subir archivo
 echo ""
