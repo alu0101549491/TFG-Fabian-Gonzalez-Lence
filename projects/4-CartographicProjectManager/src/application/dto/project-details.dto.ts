@@ -41,6 +41,8 @@ export interface ProjectDto {
   readonly clientId: string;
   /** Client name (denormalized) */
   readonly clientName: string;
+  /** Creator user ID (who created the project) */
+  readonly creatorId?: string;
   /** Longitude coordinate */
   readonly coordinateX: number | null;
   /** Latitude coordinate */

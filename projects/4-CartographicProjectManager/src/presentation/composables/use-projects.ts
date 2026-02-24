@@ -141,7 +141,7 @@ export interface UseProjectsReturn {
  */
 export function useProjects(): UseProjectsReturn {
   const store = useProjectStore();
-  const {isAdmin} = useAuth();
+  const {isAdmin, isSpecialUser} = useAuth();
 
   // Local filter state
   const filters = ref<ProjectFilterDto>({});
@@ -207,8 +207,8 @@ export function useProjects(): UseProjectsReturn {
    * @returns Result with created project or error
    */
   async function createProject(data: CreateProjectDto): Promise<CreateProjectResult> {
-    if (!isAdmin.value) {
-      return {success: false, error: 'Only administrators can create projects'};
+    if (!isAdmin.value && !isSpecialUser.value) {
+      return {success: false, error: 'Only administrators and special users can create projects'};
     }
 
     const project = await store.createProject(data);

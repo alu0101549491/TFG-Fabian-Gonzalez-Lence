@@ -40,6 +40,7 @@
         <div class="project-card-code">
           <span class="project-card-code-text">{{ project.code }}</span>
           <span v-if="isFinalized" class="project-card-finalized-badge">Finalized</span>
+          <span v-if="project.isOverdue && !isFinalized" class="project-card-overdue-badge">Overdue</span>
         </div>
 
         <!-- Actions dropdown (shown if showActions and has permissions) -->
@@ -97,11 +98,8 @@
         >
           <span class="project-card-date-icon">📅</span>
           <span>{{ formattedDeliveryDate }}</span>
-          <span v-if="project.isOverdue && !isFinalized" class="project-card-overdue-badge">
-            Overdue
-          </span>
           <span
-            v-else-if="!isFinalized && project.daysUntilDelivery <= 7 && project.daysUntilDelivery >= 0"
+            v-if="!isFinalized && project.daysUntilDelivery <= 7 && project.daysUntilDelivery >= 0"
             class="project-card-days-left"
           >
             {{ project.daysUntilDelivery }} days left
@@ -174,7 +172,7 @@ const props = withDefaults(defineProps<ProjectCardProps>(), {
 
 const emit = defineEmits<ProjectCardEmits>();
 const router = useRouter();
-const {isAdmin} = useAuth();
+const {isAdmin, isSpecialUser, userId} = useAuth();
 
 // Actions menu state
 const actionsButtonRef = ref<HTMLElement | null>(null);
@@ -207,7 +205,13 @@ onUnmounted(() => {
 // Computed properties
 const isFinalized = computed(() => props.project.status === ProjectStatus.FINALIZED);
 
-const hasActions = computed(() => isAdmin.value && !isFinalized.value);
+const isProjectCreator = computed(() => 
+  props.project.creatorId === userId.value
+);
+
+const hasActions = computed(() => 
+  !isFinalized.value && (isAdmin.value || (isSpecialUser.value && isProjectCreator.value))
+);
 
 const statusLabel = computed(() => {
   const labels: Record<ProjectStatus, string> = {
@@ -230,7 +234,7 @@ const typeLabel = computed(() => {
 });
 
 const formattedDeliveryDate = computed(() => {
-  return formatDate(props.project.deliveryDate, 'dd MMM yyyy');
+  return formatDate(props.project.deliveryDate, 'dd MM yyyy');
 });
 
 /**

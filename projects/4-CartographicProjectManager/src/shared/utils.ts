@@ -107,11 +107,24 @@ export function formatDate(
   const parsedDate = parseDate(date);
   if (!parsedDate) return '';
 
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const monthNamesShort = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+
   const day = parsedDate.getDate().toString().padStart(2, '0');
   const month = (parsedDate.getMonth() + 1).toString().padStart(2, '0');
+  const monthShort = monthNamesShort[parsedDate.getMonth()];
+  const monthFull = monthNames[parsedDate.getMonth()];
   const year = parsedDate.getFullYear();
 
   return format
+    .replace('MMMM', monthFull)
+    .replace('MMM', monthShort)
     .replace('dd', day)
     .replace('MM', month)
     .replace('yyyy', year.toString());

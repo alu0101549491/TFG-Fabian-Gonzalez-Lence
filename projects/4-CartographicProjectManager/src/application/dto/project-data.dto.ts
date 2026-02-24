@@ -96,6 +96,8 @@ export interface ProjectSummaryDto {
   readonly clientId: string;
   /** Client name (denormalized for display) */
   readonly clientName: string;
+  /** Creator user ID (who created the project) */
+  readonly creatorId?: string;
   /** Project type */
   readonly type: ProjectType;
   /** Delivery deadline */
@@ -132,12 +134,18 @@ export interface CalendarProjectDto {
   readonly code: string;
   /** Project name */
   readonly name: string;
+  /** Client name */
+  readonly clientName?: string;
   /** Delivery deadline */
   readonly deliveryDate: Date;
   /** Current project status */
   readonly status: ProjectStatus;
   /** Whether project has pending tasks */
   readonly hasPendingTasks: boolean;
+  /** Number of pending tasks */
+  readonly pendingTasksCount?: number;
+  /** Whether project is overdue */
+  readonly isOverdue?: boolean;
   /** Status indicator color for UI */
   readonly statusColor: ProjectStatusColor;
 }

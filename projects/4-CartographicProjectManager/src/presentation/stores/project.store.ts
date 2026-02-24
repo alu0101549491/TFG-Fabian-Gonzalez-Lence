@@ -336,10 +336,13 @@ export const useProjectStore = defineStore('project', () => {
         sections: [],
         totalFilesCount: 0,
         currentUserPermissions: {
-          canEdit: authStore.isAdmin,
-          canDelete: authStore.isAdmin,
-          canFinalize: authStore.isAdmin,
-          canCreateTask: true,
+          canEdit: authStore.isAdmin || (projectWithDetails as any).creatorId === authStore.userId,
+          canDelete: authStore.isAdmin || (projectWithDetails as any).creatorId === authStore.userId,
+          canFinalize: authStore.isAdmin || (projectWithDetails as any).creatorId === authStore.userId,
+          canCreateTask: authStore.isAdmin 
+            || (projectWithDetails as any).creatorId === authStore.userId
+            || projectWithDetails.clientId === authStore.userId
+            || participants.some(p => p.userId === authStore.userId),
           canSendMessage: true,
           canUploadFile: true,
           canDownloadFile: true,
@@ -364,21 +367,44 @@ export const useProjectStore = defineStore('project', () => {
   async function fetchCalendarProjects(startDate: Date, endDate: Date): Promise<void> {
     if (!authStore.userId) return;
 
+    // Normalize dates to midnight for comparison
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    console.log(`[ProjectStore] fetchCalendarProjects: ${start.toISOString()} to ${end.toISOString()}`);
+
     try {
       // Fetch all projects from backend
       const projectEntities = await projectRepository.findAll();
+      console.log(`[ProjectStore] Found ${projectEntities.length} total projects`);
       
       // Filter by delivery date range and map to calendar DTOs
       calendarProjects.value = projectEntities
-        .filter(p => p.deliveryDate >= startDate && p.deliveryDate <= endDate)
+        .filter(p => {
+          const deliveryDate = new Date(p.deliveryDate);
+          deliveryDate.setHours(0, 0, 0, 0);
+          const inRange = deliveryDate >= start && deliveryDate <= end;
+          if (inRange) {
+            console.log(`[ProjectStore] ✅ Project ${p.code} delivery: ${deliveryDate.toLocaleDateString()} is in range`);
+          } else {
+            console.log(`[ProjectStore] ❌ Project ${p.code} delivery: ${deliveryDate.toLocaleDateString()} is NOT in range`);
+          }
+          return inRange;
+        })
         .map(p => ({
           id: p.id,
           code: p.code,
           name: p.name,
           deliveryDate: p.deliveryDate,
           status: p.status,
+          hasPendingTasks: false, // Will be calculated if needed
           statusColor: p.status === ProjectStatus.ACTIVE ? 'green' : 'gray',
         }));
+      
+      console.log(`[ProjectStore] Filtered to ${calendarProjects.value.length} projects in date range`);
     } catch (err: any) {
       console.error('Failed to fetch calendar projects:', err);
     }

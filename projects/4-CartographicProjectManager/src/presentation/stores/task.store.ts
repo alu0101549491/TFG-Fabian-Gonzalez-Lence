@@ -24,13 +24,13 @@ import type {
   ConfirmTaskDto,
   TaskHistoryEntryDto,
 } from '../../application/dto';
-import {TaskStatus} from '../../domain/enumerations/task-status';
+import {TaskStatus, TaskStatusTransitions} from '../../domain/enumerations/task-status';
 import {TaskPriority} from '../../domain/enumerations/task-priority';
 import {useAuthStore} from './auth.store';
 import {useProjectStore} from './project.store';
 import {TaskRepository} from '../../infrastructure/repositories/task.repository';
 import {ProjectRepository} from '../../infrastructure/repositories/project.repository';
-import type {Task} from '../../domain/entities/task';
+import {Task} from '../../domain/entities/task';
 
 /**
  * Task store using Composition API.
@@ -78,9 +78,9 @@ export const useTaskStore = defineStore('task', () => {
       projectName: projectName ?? 'Unknown',
       description: task.description,
       creatorId: task.creatorId,
-      creatorName: 'Unknown', // Will be fetched from backend
+      creatorName: task.creatorName || 'Unknown',
       assigneeId: task.assigneeId,
-      assigneeName: 'Unknown', // Will be fetched from backend
+      assigneeName: task.assigneeName || 'Unknown',
       status: task.status,
       priority: task.priority,
       dueDate: task.dueDate,
@@ -93,7 +93,7 @@ export const useTaskStore = defineStore('task', () => {
       confirmedAt: task.confirmedAt || null,
       isOverdue,
       canModify: authStore.isAdmin || task.creatorId === authStore.userId,
-      canDelete: authStore.isAdmin,
+      canDelete: authStore.isAdmin || task.creatorId === authStore.userId,
       canConfirm: authStore.isAdmin,
       canChangeStatus: true,
       allowedStatusTransitions: getValidTransitions(task.status),
@@ -104,20 +104,7 @@ export const useTaskStore = defineStore('task', () => {
    *  Helper to get valid status transitions
    */
   function getValidTransitions(currentStatus: TaskStatus): TaskStatus[] {
-    switch (currentStatus) {
-      case TaskStatus.PENDING:
-        return [TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED];
-      case TaskStatus.IN_PROGRESS:
-        return [TaskStatus.DONE, TaskStatus.CANCELLED];
-      case TaskStatus.DONE:
-        return [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS];
-      case TaskStatus.COMPLETED:
-        return [];
-      case TaskStatus.CANCELLED:
-        return [TaskStatus.PENDING];
-      default:
-        return [];
-    }
+    return TaskStatusTransitions[currentStatus] || [];
   }
 
   // Getters
@@ -429,7 +416,8 @@ export const useTaskStore = defineStore('task', () => {
         throw new Error('Task not found');
       }
 
-      taskEntity.status = newStatus;
+      // Use the entity's changeStatus method which validates transitions
+      taskEntity.changeStatus(newStatus, authStore.userId);
       if (comment) {
         taskEntity.comments = comment;
       }
@@ -482,10 +470,11 @@ export const useTaskStore = defineStore('task', () => {
       }
 
       if (confirmed) {
-        taskEntity.status = TaskStatus.COMPLETED;
-        taskEntity.confirmedAt = new Date();
+        // Use the entity's confirm method
+        taskEntity.confirm(authStore.userId);
       } else {
-        taskEntity.status = TaskStatus.IN_PROGRESS;
+        // Reject: change back to PENDING or IN_PROGRESS
+        taskEntity.changeStatus(TaskStatus.PENDING, authStore.userId);
         if (feedback) {
           taskEntity.comments = feedback;
         }

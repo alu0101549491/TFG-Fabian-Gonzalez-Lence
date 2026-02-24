@@ -26,8 +26,12 @@ export interface TaskProps {
   projectId: string;
   /** User who created the task */
   creatorId: string;
+  /** Creator username (optional, for display) */
+  creatorName?: string;
   /** User responsible for execution */
   assigneeId: string;
+  /** Assignee username (optional, for display) */
+  assigneeName?: string;
   /** Task description */
   description: string;
   /** Current task status */
@@ -83,7 +87,9 @@ export class Task {
   public readonly id: string;
   public readonly projectId: string;
   public readonly creatorId: string;
+  public readonly creatorName?: string;
   private assigneeIdValue: string;
+  private assigneeNameValue?: string;
   private descriptionValue: string;
   private statusValue: TaskStatus;
   private priorityValue: TaskPriority;
@@ -107,7 +113,9 @@ export class Task {
     this.id = props.id;
     this.projectId = props.projectId;
     this.creatorId = props.creatorId;
+    this.creatorName = props.creatorName;
     this.assigneeIdValue = props.assigneeId;
+    this.assigneeNameValue = props.assigneeName;
     this.descriptionValue = props.description;
     this.statusValue = props.status ?? TaskStatus.PENDING;
     this.priorityValue = props.priority ?? TaskPriority.MEDIUM;
@@ -156,6 +164,14 @@ export class Task {
     }
     this.assigneeIdValue = value;
     this.touchUpdatedAt();
+  }
+
+  public get assigneeName(): string | undefined {
+    return this.assigneeNameValue;
+  }
+
+  public set assigneeName(value: string | undefined) {
+    this.assigneeNameValue = value;
   }
 
   public get description(): string {

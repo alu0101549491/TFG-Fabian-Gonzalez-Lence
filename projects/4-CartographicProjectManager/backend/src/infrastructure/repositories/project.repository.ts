@@ -83,6 +83,17 @@ export class ProjectRepository implements IProjectRepository {
     }
   }
 
+  public async findByCreatorId(creatorId: string): Promise<Project[]> {
+    try {
+      return await prisma.project.findMany({
+        where: {creatorId},
+        include: {client: true},
+      });
+    } catch (error) {
+      throw new DatabaseError('Failed to find projects by creator ID');
+    }
+  }
+
   public async findByStatus(status: ProjectStatus): Promise<Project[]> {
     try {
       return await prisma.project.findMany({

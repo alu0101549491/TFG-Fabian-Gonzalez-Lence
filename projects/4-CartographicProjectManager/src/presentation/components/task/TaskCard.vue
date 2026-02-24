@@ -105,6 +105,7 @@
 
       <!-- Quick Status Transitions (if showStatusActions and has valid transitions) -->
       <div v-if="showStatusActions && validTransitions.length > 0" class="task-card-status-actions">
+        <span class="task-card-status-actions-label">Change to:</span>
         <button
           v-for="status in validTransitions"
           :key="status"
@@ -114,7 +115,7 @@
           :title="`Change to ${getStatusLabel(status)}`"
           @click.stop="handleStatusChange(status)"
         >
-          {{ getStatusLabel(status) }}
+          → {{ getStatusLabel(status) }}
         </button>
       </div>
     </div>
@@ -200,7 +201,12 @@ const canEdit = computed(() => {
   return isAdmin.value;
 });
 
-const canDelete = computed(() => isAdmin.value && !isCompleted.value);
+const canDelete = computed(() => {
+  if (isFullTask.value) {
+    return (props.task as TaskDto).canDelete;
+  }
+  return isAdmin.value && !isCompleted.value;
+});
 
 const showActions = computed(() => canEdit.value || canDelete.value);
 
@@ -319,7 +325,7 @@ function handleDragStart(event: DragEvent): void {
   background-color: var(--color-bg-primary);
   border: 1px solid var(--color-border-primary);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition:
     border-color var(--transition-fast),
@@ -507,9 +513,17 @@ function handleDragStart(event: DragEvent): void {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-1);
+  align-items: center;
   margin-top: var(--spacing-2);
   padding-top: var(--spacing-2);
   border-top: 1px solid var(--color-border-primary);
+}
+
+.task-card-status-actions-label {
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+  margin-right: var(--spacing-1);
 }
 
 .task-card-status-btn {

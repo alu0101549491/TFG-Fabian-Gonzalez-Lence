@@ -39,10 +39,34 @@
         </div>
       </div>
 
-      <!-- Status change comment -->
-      <div v-if="selectedNewStatus" class="task-form-status-comment">
+      <!-- Confirm/Reject for PERFORMED→COMPLETED (admin only) -->
+      <div v-if="selectedNewStatus === 'COMPLETED' && task?.status === 'PERFORMED' && canConfirm" class="task-form-status-comment">
+        <label class="task-form-label">
+          Confirmation Feedback
+          <span class="task-form-optional">(Optional)</span>
+        </label>
+        <textarea
+          v-model="statusComment"
+          class="task-form-textarea"
+          rows="2"
+          placeholder="Add feedback about this confirmation or rejection..."
+        />
+        <div class="task-form-confirm-actions">
+          <button type="button" class="task-form-btn task-form-btn-success" @click="handleConfirm(true)">
+            <span>✓</span>
+            <span>Confirm & Complete</span>
+          </button>
+          <button type="button" class="task-form-btn task-form-btn-danger" @click="handleConfirm(false)">
+            <span>✕</span>
+            <span>Reject</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Status change comment for other transitions -->
+      <div v-else-if="selectedNewStatus" class="task-form-status-comment">
         <label for="status-comment" class="task-form-label">
-          {{ selectedNewStatus === 'COMPLETED' ? 'Confirmation Feedback' : 'Status Change Comment' }}
+          Status Change Comment
           <span class="task-form-optional">(Optional)</span>
         </label>
         <textarea
@@ -53,21 +77,8 @@
           placeholder="Add a comment about this status change..."
         />
 
-        <!-- Confirm/Reject for PERFORMED status (admin only) -->
-        <div v-if="task?.status === 'PERFORMED' && canConfirm" class="task-form-confirm-actions">
-          <button type="button" class="task-form-btn task-form-btn-success" @click="handleConfirm(true)">
-            <span>✓</span>
-            <span>Confirm & Complete</span>
-          </button>
-          <button type="button" class="task-form-btn task-form-btn-danger" @click="handleConfirm(false)">
-            <span>✕</span>
-            <span>Reject</span>
-          </button>
-        </div>
-
-        <!-- Apply status change button (non-confirmation flow) -->
+        <!-- Apply status change button -->
         <button
-          v-else-if="selectedNewStatus && selectedNewStatus !== 'COMPLETED'"
           type="button"
           class="task-form-btn task-form-btn-secondary"
           @click="applyStatusChange"
@@ -263,6 +274,10 @@ export interface TaskFormProps {
   loading?: boolean;
   /** Can current user confirm tasks (admin only for PERFORMED→COMPLETED) */
   canConfirm?: boolean;
+  /** Project contract date (start date) */
+  projectContractDate?: Date | string;
+  /** Project delivery date (end date) */
+  projectDeliveryDate?: Date | string;
 }
 
 /**
@@ -427,6 +442,16 @@ function validateField(field: string): void {
     case 'dueDate':
       if (!form.dueDate) {
         errors.dueDate = 'Due date is required';
+      } else if (props.projectContractDate && props.projectDeliveryDate) {
+        const dueDate = new Date(form.dueDate);
+        const contractDate = new Date(props.projectContractDate);
+        const deliveryDate = new Date(props.projectDeliveryDate);
+        
+        if (dueDate < contractDate || dueDate > deliveryDate) {
+          const contractStr = contractDate.toLocaleDateString();
+          const deliveryStr = deliveryDate.toLocaleDateString();
+          errors.dueDate = `Due date must be between ${contractStr} and ${deliveryStr}`;
+        }
       }
       break;
   }
