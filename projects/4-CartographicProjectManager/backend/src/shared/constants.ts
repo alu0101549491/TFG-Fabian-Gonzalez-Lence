@@ -60,9 +60,11 @@ export const JWT = {
  */
 
 export const CORS = {
-  ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  ORIGIN: process.env.CORS_ORIGIN?.includes(',')
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : (process.env.CORS_ORIGIN || 'http://localhost:5173'),
   CREDENTIALS: true,
-} as const;
+};
 
 /**
  * ============================================
@@ -71,10 +73,12 @@ export const CORS = {
  */
 
 export const WEBSOCKET = {
-  CORS_ORIGIN: process.env.SOCKET_CORS_ORIGIN || 'http://localhost:5173',
+  CORS_ORIGIN: process.env.SOCKET_CORS_ORIGIN?.includes(',')
+    ? process.env.SOCKET_CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : (process.env.SOCKET_CORS_ORIGIN || 'http://localhost:5173'),
   PING_INTERVAL: 25000,
   PING_TIMEOUT: 20000,
-} as const;
+};
 
 /**
  * ============================================

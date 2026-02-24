@@ -22,6 +22,26 @@ Edit `.env` with your configuration:
 
 ### 3. Setup Database
 
+Before running Prisma commands, make sure PostgreSQL is running and the database exists:
+
+```bash
+# Start PostgreSQL (Linux with systemd)
+sudo systemctl start postgresql
+
+# Create database if it does not exist
+createdb cartographic_manager
+```
+
+If you don't have PostgreSQL installed locally, you can run it with Docker:
+
+```bash
+docker run --name cartographic-postgres \
+	-e POSTGRES_PASSWORD=postgres \
+	-e POSTGRES_DB=cartographic_manager \
+	-p 5432:5432 \
+	-d postgres:16
+```
+
 ```bash
 # Generate Prisma client
 npm run prisma:generate
@@ -158,6 +178,44 @@ If you get connection errors:
 1. Ensure PostgreSQL is running
 2. Check `DATABASE_URL` in `.env`
 3. Verify database exists: `createdb cartographic_manager`
+
+If you see Prisma error `P1001: Can't reach database server at localhost:5432`:
+
+```bash
+# Linux (systemd)
+sudo systemctl start postgresql
+
+# Verify PostgreSQL is listening on 5432
+sudo ss -ltnp | grep 5432
+
+# Ensure database exists
+createdb cartographic_manager
+
+# Retry Prisma steps
+npm run prisma:migrate
+npm run prisma:seed
+```
+
+If you get `Failed to start postgresql.service: Unit postgresql.service not found`:
+
+```bash
+# Ubuntu/Debian: install PostgreSQL service and client
+sudo apt update
+sudo apt install -y postgresql postgresql-client
+
+# Start and enable service
+sudo systemctl enable --now postgresql
+
+# Set password expected by default .env DATABASE_URL
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+
+# Create database
+sudo -u postgres createdb cartographic_manager || true
+
+# Retry Prisma steps
+npm run prisma:migrate
+npm run prisma:seed
+```
 
 ### Port Already in Use
 
