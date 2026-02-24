@@ -257,7 +257,7 @@ export interface FileUploaderProps {
  * FileUploader component emits
  */
 export interface FileUploaderEmits {
-  (e: 'upload', files: {file: File; section: string}[]): void;
+  (e: 'upload', files: {id: string; file: File; section: string}[]): void;
   (e: 'cancel', fileId: string): void;
   (e: 'retry', fileId: string): void;
   (e: 'clear'): void;
@@ -469,8 +469,7 @@ function retryUpload(fileId: string): void {
  * Start upload
  */
 function startUpload(): void {
-  const filesToUpload = pendingFiles.value.map((item) => ({
-    file: item.file,
+  const filesToUpload = pendingFiles.value.map((item) => ({    id: item.id,    file: item.file,
     section: selectedSection.value,
   }));
 

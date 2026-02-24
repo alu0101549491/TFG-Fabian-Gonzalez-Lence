@@ -1,0 +1,43 @@
+
+============================================
+🔐 INSTRUCCIONES: Actualizar Token de Dropbox
+============================================
+
+1. Abre el archivo: backend/.env
+
+2. Busca la línea:
+   DROPBOX_ACCESS_TOKEN=sl.u.AGVUrNUludeQk...
+
+3. Reemplázala con tu NUEVO token:
+   DROPBOX_ACCESS_TOKEN=tu-nuevo-token-aqui
+
+4. Guarda el archivo (Ctrl+S)
+
+5. Ejecuta estos comandos:
+
+   # Reiniciar el backend
+   pkill -9 node
+   sleep 2
+   cd /home/fabian/MyStuff/TFG-Fabian-Gonzalez-Lence/projects/4-CartographicProjectManager/backend
+   npm run dev &
+
+   # Esperar 5 segundos, luego probar Dropbox
+   sleep 5
+   npx tsx test-dropbox-simple.ts
+
+============================================
+✅ Si todo funciona correctamente, verás:
+============================================
+
+✅ Token de Dropbox encontrado
+✅ Servicio de Dropbox inicializado
+✅ Carpetas creadas en: /CartographicProjects/TEST-...
+✅ Archivo subido exitosamente
+✅ Link generado exitosamente
+✅ Archivo descargado exitosamente
+✅ ¡Contenido verificado!
+✅ Archivo eliminado
+✅ ¡Todas las pruebas pasaron!
+✨ La integración de Dropbox está funcionando correctamente
+
+============================================
