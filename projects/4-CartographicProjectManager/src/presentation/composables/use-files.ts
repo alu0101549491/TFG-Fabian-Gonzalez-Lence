@@ -16,6 +16,12 @@ import {ref, type Ref} from 'vue';
 import {FileRepository} from '../../infrastructure/repositories/file.repository';
 import type {File} from '../../domain/entities/file';
 import type {FileSummaryDto} from '../../application/dto';
+import {httpClient} from '../../infrastructure/http';
+
+/**
+ * Upload progress callback
+ */
+export type UploadProgressCallback = (progress: number) => void;
 
 /**
  * Return interface for useFiles composable
@@ -29,6 +35,12 @@ export interface UseFilesReturn {
   // Actions
   loadFilesByProject: (projectId: string) => Promise<void>;
   loadFilesByTask: (taskId: string) => Promise<void>;
+  uploadFile: (
+    fileToUpload: globalThis.File,
+    projectId: string,
+    section: string,
+    onProgress?: UploadProgressCallback
+  ) => Promise<FileSummaryDto | null>;
   deleteFile: (fileId: string) => Promise<boolean>;
   clearError: () => void;
 }
@@ -80,7 +92,7 @@ export function useFiles(): UseFilesReturn {
       uploadedAt: file.uploadedAt,
       uploadedBy: file.uploadedBy,
       uploaderName: 'Unknown', // Can be enhanced with user lookup
-      downloadUrl: `/api/files/${file.id}/download`, // Constructed from file ID
+      downloadUrl: `/files/${file.id}/download`, // Constructed from file ID
     };
   }
 
@@ -125,6 +137,71 @@ export function useFiles(): UseFilesReturn {
   }
 
   /**
+   * Uploads a file to a project
+   *
+   * @param fileToUpload - File to upload
+   * @param projectId - Project ID
+   * @param section - Project section (e.g., "Messages", "Plans")
+   * @param onProgress - Optional progress callback
+   * @returns Uploaded file summary or null if failed
+   */
+  async function uploadFile(
+    fileToUpload: globalThis.File,
+    projectId: string,
+    section: string,
+    onProgress?: UploadProgressCallback
+  ): Promise<FileSummaryDto | null> {
+    error.value = null;
+
+    try {
+      const response = await httpClient.uploadFile<{file: any}>(
+        '/files/upload',
+        fileToUpload,
+        {projectId, section},
+        {
+          onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.total) {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              onProgress(percentCompleted);
+            }
+          },
+        }
+      );
+
+      // Backend returns: {success: true, data: {file: {...}}, message: "..."}
+      // After interceptor: response.data = {success: true, data: {file: {...}}, message: "..."}
+      const fileData = (response.data as any)?.data?.file || response.data?.file;
+
+      if (fileData) {
+        const uploadedFile: FileSummaryDto = {
+          id: fileData.id,
+          name: fileData.name,
+          type: fileData.type,
+          sizeInBytes: fileData.sizeInBytes,
+          humanReadableSize: formatFileSize(fileData.sizeInBytes),
+          uploadedAt: fileData.uploadedAt,
+          uploadedBy: fileData.uploadedBy,
+          uploaderName: 'You',
+          downloadUrl: `/files/${fileData.id}/download`,
+        };
+
+        // Add to local state
+        files.value.push(uploadedFile);
+
+        return uploadedFile;
+      }
+
+      return null;
+    } catch (err: any) {
+      error.value = err.message || 'Failed to upload file';
+      console.error('Failed to upload file:', err);
+      return null;
+    }
+  }
+
+  /**
    * Deletes a file
    *
    * @param fileId - File ID to delete
@@ -161,6 +238,7 @@ export function useFiles(): UseFilesReturn {
     error,
     loadFilesByProject,
     loadFilesByTask,
+    uploadFile,
     deleteFile,
     clearError,
   };
