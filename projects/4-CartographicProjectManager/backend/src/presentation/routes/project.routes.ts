@@ -44,6 +44,10 @@ projectRoutes.get('/:id/messages', authenticate, (req, res, next) => {
   req.params.projectId = req.params.id;
   return messageController.getByProjectId(req, res, next);
 });
+projectRoutes.post('/:id/messages/mark-read', authenticate, (req, res, next) => {
+  req.params.projectId = req.params.id;
+  return messageController.markAsRead(req, res, next);
+});
 projectRoutes.get('/:id/files', authenticate, (req, res, next) => {
   req.params.projectId = req.params.id;
   return fileController.getByProjectId(req, res, next);

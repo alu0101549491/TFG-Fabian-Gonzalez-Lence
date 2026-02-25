@@ -57,6 +57,7 @@
       <div class="tab-content">
         <!-- Overview Tab -->
         <section
+          ref="overviewPanelRef"
           v-show="activeTab === 'overview'"
           id="overview-panel"
           class="tab-panel"
@@ -136,6 +137,7 @@
 
         <!-- Tasks Tab -->
         <section
+          ref="tasksPanelRef"
           v-show="activeTab === 'tasks'"
           id="tasks-panel"
           class="tab-panel"
@@ -180,14 +182,16 @@
 
         <!-- Messages Tab -->
         <section
+          ref="messagesPanelRef"
           v-show="activeTab === 'messages'"
           id="messages-panel"
           class="tab-panel"
           role="tabpanel"
           aria-labelledby="messages-tab"
         >
-          <div class="messages-container">
+          <div ref="messagesContainerRef" class="messages-container">
             <MessageList
+              ref="messageListRef"
               :messages="projectMessages"
               :loading="messagesLoading"
               :current-user-id="currentUserId"
@@ -201,6 +205,7 @@
 
         <!-- Files Tab -->
         <section
+          ref="filesPanelRef"
           v-show="activeTab === 'files'"
           id="files-panel"
           class="tab-panel"
@@ -523,7 +528,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted, watch} from 'vue';
+import {ref, computed, onMounted, onUnmounted, watch, nextTick} from 'vue';
 import {useRouter, useRoute} from 'vue-router';
 import {useAuth} from '../composables/use-auth';
 import {useProjects} from '../composables/use-projects';
@@ -575,6 +580,7 @@ const {
   isLoading: messagesLoading,
   loadMessagesByProject,
   sendMessage,
+  markAllAsRead,
 } = useMessages();
 
 const {
@@ -587,6 +593,12 @@ const {
 
 // Local State
 const activeTab = ref<'tasks' | 'files' | 'messages' | 'overview'>('overview');
+const messageListRef = ref<InstanceType<typeof MessageList> | null>(null);
+const messagesContainerRef = ref<HTMLElement | null>(null);
+const overviewPanelRef = ref<HTMLElement | null>(null);
+const tasksPanelRef = ref<HTMLElement | null>(null);
+const messagesPanelRef = ref<HTMLElement | null>(null);
+const filesPanelRef = ref<HTMLElement | null>(null);
 const taskStatusFilter = ref('');
 const showEditModal = ref(false);
 const showCreateTaskModal = ref(false);
@@ -1184,6 +1196,28 @@ watch(() => route.params.id, async (newId) => {
 watch(() => route.query.tab, (tab) => {
   if (tab && ['overview', 'tasks', 'messages', 'files'].includes(tab as string)) {
     activeTab.value = tab as any;
+  }
+});
+
+// Reset scroll and handle tab-specific actions when switching tabs
+watch(activeTab, async (newTab) => {
+  // Reset scroll position for non-messages tabs to top
+  nextTick(() => {
+    [overviewPanelRef.value, tasksPanelRef.value, filesPanelRef.value].forEach(panel => {
+      if (panel) {
+        panel.scrollTop = 0;
+      }
+    });
+  });
+
+  // Tab-specific logic
+  if (newTab === 'messages' && currentProject.value?.project.id) {
+    await markAllAsRead();
+    nextTick(() => {
+      setTimeout(() => {
+        messageListRef.value?.scrollToBottom(false);
+      }, 150);
+    });
   }
 });
 

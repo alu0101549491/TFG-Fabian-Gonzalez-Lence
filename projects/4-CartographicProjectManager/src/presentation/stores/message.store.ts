@@ -174,19 +174,53 @@ export const useMessageStore = defineStore('message', () => {
   }
 
   /**
-   * Fetches unread counts for all projects
+   * Fetches unread counts for all projects the user has access to.
+   * 
+   * @example
+   * ```typescript
+   * // Called by dashboard to populate message notification badges
+   * await messageStore.fetchUnreadCounts();
+   * ```
    */
   async function fetchUnreadCounts(): Promise<void> {
     if (!authStore.userId) return;
 
     try {
-      // Iterate through all projects and get unread counts
-      for (const [projectId] of messagesByProject.value.entries()) {
-        const count = await messageRepository.countUnreadByProjectAndUser(projectId, authStore.userId);
+      // Get all projects user has access to
+      const allProjects = projectStore.projects;
+      
+      if (allProjects.length === 0) {
+        console.warn('[MessageStore] ⚠️ No projects found, cannot fetch unread counts');
+        return;
+      }
+      
+      // Fetch unread count for each project
+      const countPromises = allProjects.map(async (project) => {
+        try {
+          const count = await messageRepository.countUnreadByProjectAndUser(
+            project.id,
+            authStore.userId!
+          );
+          return {projectId: project.id, count};
+        } catch (err) {
+          console.warn(`Failed to fetch unread count for project ${project.id}:`, err);
+          return {projectId: project.id, count: 0};
+        }
+      });
+      
+      const results = await Promise.all(countPromises);
+      
+      // Update unreadCounts map
+      results.forEach(({projectId, count}) => {
         unreadCounts.value.set(projectId, count);
+      });
+      
+      const totalUnread = results.reduce((sum, {count}) => sum + count, 0);
+      if (totalUnread > 0) {
+        console.log('[MessageStore] 📨 Fetched unread counts:', totalUnread, 'total unread messages across', results.length, 'projects');
       }
     } catch (err: any) {
-      console.error('Failed to fetch unread counts:', err);
+      console.error('[MessageStore] Failed to fetch unread counts:', err);
     }
   }
 
@@ -289,22 +323,18 @@ export const useMessageStore = defineStore('message', () => {
    * Handles real-time new message event
    */
   function handleNewMessage(payload: any): void {
-    console.log('[MessageStore] 🔄 handleNewMessage called with:', payload);
     const projectId = payload.projectId;
     const messages = messagesByProject.value.get(projectId) ?? [];
-    console.log('[MessageStore] 📋 Current messages for project', projectId, ':', messages.length);
     
     // Check if message already exists (prevent duplicates from HTTP response + WebSocket event)
     const messageExists = messages.some(m => m.id === payload.id);
     if (messageExists) {
-      console.log('[MessageStore] ⚠️ Message already exists, skipping duplicate:', payload.id);
       return;
     }
     
     // Add to end (append newest message) to match the order from backend
     const updatedMessages = [...messages, payload as MessageDto];
     messagesByProject.value.set(projectId, updatedMessages);
-    console.log('[MessageStore] ✅ Updated messages count:', updatedMessages.length);
     
     // Increment unread count if not from current user
     if (payload.senderId !== authStore.userId) {
@@ -324,12 +354,8 @@ export const useMessageStore = defineStore('message', () => {
    * Initialize WebSocket listeners for real-time message updates
    */
   function initializeWebSocket(): void {
-    console.log('[MessageStore] 🔌 Initializing WebSocket listeners...');
-    
     // Subscribe to new message events
     const unsubscribe = socketHandler.onMessage((payload: any) => {
-      console.log('[MessageStore] 📨 Received message:new event:', payload);
-      
       // Map the backend message (Prisma Message with sender relation) to MessageDto format
       const messageDto: MessageDto = {
         id: payload.id,
@@ -339,19 +365,15 @@ export const useMessageStore = defineStore('message', () => {
         senderRole: payload.sender?.role || 'CLIENT',
         content: payload.content,
         sentAt: new Date(payload.sentAt),
-        fileIds: [],
+        fileIds: payload.fileIds || [],
         files: [],
-        readByUserIds: [],
-        isRead: false,
+        readByUserIds: payload.readByUserIds || [],
+        isRead: authStore.userId ? (payload.readByUserIds || []).includes(authStore.userId) : false,
         isSystemMessage: false,
         type: 'NORMAL',
       };
-      
-      console.log('[MessageStore] ➕ Adding message to store:', messageDto);
       handleNewMessage(messageDto);
     });
-
-    console.log('[MessageStore] ✅ WebSocket message listener registered');
 
     // Subscribe to unread count updates
     socketHandler.onUnreadCount((payload: any) => {

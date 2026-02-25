@@ -225,6 +225,7 @@ import {useRouter} from 'vue-router';
 import {useAuth} from '../composables/use-auth';
 import {useProjects} from '../composables/use-projects';
 import {useNotifications} from '../composables/use-notifications';
+import {useMessageStore} from '../stores/message.store';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import ProjectCard from '../components/project/ProjectCard.vue';
 import ProjectForm from '../components/project/ProjectForm.vue';
@@ -258,6 +259,9 @@ const {
   markAllAsRead,
   deleteNotification,
 } = useNotifications();
+
+// Message store for unread counts
+const messageStore = useMessageStore();
 
 // Local State
 const showCreateModal = ref(false);
@@ -394,16 +398,23 @@ function getDeadlineUrgencyLabel(date: Date): string {
 /**
  * Handle notification click - navigate to related content
  *
- * @param {Notification} notification - Clicked notification
+ * @param {NotificationDto} notification - Clicked notification
  */
-function handleNotificationClick(notification: Notification): void {
-  if (notification.relatedId) {
-    if (notification.type.includes('project')) {
-      goToProject(notification.relatedId);
-    } else if (notification.type.includes('task')) {
+function handleNotificationClick(notification: NotificationDto): void {
+  if (notification.relatedEntityId) {
+    // For message notifications (including virtual ones), relatedEntityId is the projectId
+    if (notification.type === 'NEW_MESSAGE') {
+      router.push({
+        name: 'project-details',
+        params: {id: notification.relatedEntityId},
+        query: {tab: 'messages'},
+      });
+    } else if (notification.type.includes('PROJECT')) {
+      goToProject(notification.relatedEntityId);
+    } else if (notification.type.includes('TASK')) {
       // Navigate to project and tasks tab
       const project = projects.value.find((p) =>
-        p.tasks?.some((t) => t.id === notification.relatedId)
+        p.id === notification.relatedEntityId
       );
       if (project) {
         router.push({
@@ -412,16 +423,16 @@ function handleNotificationClick(notification: Notification): void {
           query: {tab: 'tasks'},
         });
       }
-    } else if (notification.type.includes('message')) {
-      // Navigate to project and messages tab
+    } else if (notification.type.includes('FILE')) {
+      // Navigate to project and files tab
       const project = projects.value.find((p) =>
-        p.messages?.some((m) => m.id === notification.relatedId)
+        p.id === notification.relatedEntityId
       );
       if (project) {
         router.push({
           name: 'project-details',
           params: {id: project.id},
-          query: {tab: 'messages'},
+          query: {tab: 'files'},
         });
       }
     }
@@ -523,6 +534,7 @@ onMounted(async () => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     
+    // First, load projects (needed for message unread counts)
     await Promise.all([
       fetchProjects().catch(err => {
         console.warn('Failed to fetch projects:', err.message);
@@ -538,6 +550,12 @@ onMounted(async () => {
         return null;
       }),
     ]);
+    
+    // Then, fetch message unread counts (needs projects to be loaded first)
+    await messageStore.fetchUnreadCounts().catch(err => {
+      console.warn('Failed to fetch message unread counts:', err.message);
+      return null;
+    });
     
     console.log('✅ Dashboard data loaded');
   } catch (error) {

@@ -55,7 +55,11 @@ export class MessageRepository implements IMessageRepository {
   public async create(data: Omit<Message, 'id' | 'sentAt'>): Promise<Message> {
     try {
       return await prisma.message.create({
-        data,
+        data: {
+          ...data,
+          // Automatically mark message as read by sender
+          readByUserIds: [data.senderId],
+        },
         include: {sender: true},
       });
     } catch (error) {
@@ -73,15 +77,45 @@ export class MessageRepository implements IMessageRepository {
 
   /**
    * Count unread messages for user in project.
-   * NOTE: Returns 0 as read tracking is not yet implemented in database.
-   * To implement: add readByUserIds String[] field to Message model or create MessageRead table.
    */
   public async countUnreadByProjectAndUser(projectId: string, userId: string): Promise<number> {
-    // TODO: Implement read tracking
-    // For now, return 0 as the Message table doesn't have readByUserIds field
-    // To implement properly, either:
-    // 1. Add readByUserIds String[] @default([]) to Message model
-    // 2. Create a separate MessageRead table with userId and messageId
-    return 0;
+    const count = await prisma.message.count({
+      where: {
+        projectId,
+        senderId: {not: userId}, // Don't count own messages
+        NOT: {
+          readByUserIds: {
+            has: userId, // User has NOT read this message
+          },
+        },
+      },
+    });
+    return count;
+  }
+
+  /**
+   * Mark all messages in a project as read by a user.
+   */
+  public async markAllAsRead(projectId: string, userId: string): Promise<void> {
+    try {
+      await prisma.message.updateMany({
+        where: {
+          projectId,
+          senderId: {not: userId}, // Don't update own messages
+          NOT: {
+            readByUserIds: {
+              has: userId, // Only update messages not already read
+            },
+          },
+        },
+        data: {
+          readByUserIds: {
+            push: userId, // Add userId to readByUserIds array
+          },
+        },
+      });
+    } catch (error) {
+      throw new DatabaseError('Failed to mark messages as read');
+    }
   }
 }
