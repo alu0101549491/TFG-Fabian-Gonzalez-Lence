@@ -11,6 +11,9 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  */
 
+// Import SocketHandler class first
+import {SocketHandler} from './socket.handler';
+
 // Export enums
 export { ConnectionState, ServerEvent, ClientEvent } from './socket.handler';
 

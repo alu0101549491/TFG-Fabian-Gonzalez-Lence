@@ -38,7 +38,9 @@ export class MessageController {
       const message = await this.messageRepository.create(req.body);
       
       // Emit WebSocket event
-      emitToProject(message.projectId, 'message:received', message);
+      console.log('🔊 [MessageController] Emitting message:new to project:', message.projectId, 'messageId:', message.id);
+      emitToProject(message.projectId, 'message:new', message);
+      console.log('✅ [MessageController] Event emitted successfully');
       
       sendSuccess(res, message, 'Message sent successfully', HTTP_STATUS.CREATED);
     } catch (error) {
