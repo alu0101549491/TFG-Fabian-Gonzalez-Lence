@@ -24,6 +24,7 @@ import {useAuthStore} from './auth.store';
 import {useProjectStore} from './project.store';
 import {MessageRepository} from '../../infrastructure/repositories/message.repository';
 import type {Message} from '../../domain/entities/message';
+import {socketHandler} from '../../infrastructure/websocket';
 
 /**
  * Pagination information for message lists
@@ -61,8 +62,8 @@ export const useMessageStore = defineStore('message', () => {
       id: message.id,
       projectId: message.projectId,
       senderId: message.senderId,
-      senderName: 'User', // Will be populated by backend
-      senderRole: 'CLIENT' as any,
+      senderName: message.senderName,
+      senderRole: message.senderRole as any,
       content: message.content,
       sentAt: message.sentAt,
       fileIds: message.fileIds,
@@ -207,24 +208,20 @@ export const useMessageStore = defineStore('message', () => {
     error.value = null;
 
     try {
-      // Create message using entity (backend will generate ID and sentAt)
-      const messageEntity = new Message({
-        id: `temp_${Date.now()}`, // Temporary ID, backend will replace
+      // Create message via repository using plain data
+      const savedMessage = await messageRepository.create({
         projectId,
         senderId: authStore.userId,
         content,
-        type: 'NORMAL',
         fileIds: fileIds || [],
-        readByUserIds: [authStore.userId], // Sender has read it
       });
-
-      const savedMessage = await messageRepository.save(messageEntity);
+      
       const newMessage = mapEntityToDto(savedMessage);
 
-      // Add to local state
-      const messages = messagesByProject.value.get(projectId) ?? [];
-      messagesByProject.value.set(projectId, [...messages, newMessage]);
-
+      // Don't add to local state - let WebSocket event handle it to avoid duplicates
+      // The message will be added when the 'message:new' event is received
+      // This ensures both sender and receiver see messages the same way
+      
       return newMessage;
     } catch (err: any) {
       error.value = err.message || 'Failed to send message';
@@ -292,14 +289,22 @@ export const useMessageStore = defineStore('message', () => {
    * Handles real-time new message event
    */
   function handleNewMessage(payload: any): void {
+    console.log('[MessageStore] 🔄 handleNewMessage called with:', payload);
     const projectId = payload.projectId;
     const messages = messagesByProject.value.get(projectId) ?? [];
+    console.log('[MessageStore] 📋 Current messages for project', projectId, ':', messages.length);
     
-    // Add to beginning (newest first)
-    messagesByProject.value.set(projectId, [
-      payload as MessageDto,
-      ...messages,
-    ]);
+    // Check if message already exists (prevent duplicates from HTTP response + WebSocket event)
+    const messageExists = messages.some(m => m.id === payload.id);
+    if (messageExists) {
+      console.log('[MessageStore] ⚠️ Message already exists, skipping duplicate:', payload.id);
+      return;
+    }
+    
+    // Add to end (append newest message) to match the order from backend
+    const updatedMessages = [...messages, payload as MessageDto];
+    messagesByProject.value.set(projectId, updatedMessages);
+    console.log('[MessageStore] ✅ Updated messages count:', updatedMessages.length);
     
     // Increment unread count if not from current user
     if (payload.senderId !== authStore.userId) {
@@ -314,6 +319,48 @@ export const useMessageStore = defineStore('message', () => {
   function handleUnreadCountUpdate(payload: {projectId: string; count: number}): void {
     unreadCounts.value.set(payload.projectId, payload.count);
   }
+
+  /**
+   * Initialize WebSocket listeners for real-time message updates
+   */
+  function initializeWebSocket(): void {
+    console.log('[MessageStore] 🔌 Initializing WebSocket listeners...');
+    
+    // Subscribe to new message events
+    const unsubscribe = socketHandler.onMessage((payload: any) => {
+      console.log('[MessageStore] 📨 Received message:new event:', payload);
+      
+      // Map the backend message (Prisma Message with sender relation) to MessageDto format
+      const messageDto: MessageDto = {
+        id: payload.id,
+        projectId: payload.projectId,
+        senderId: payload.senderId,
+        senderName: payload.sender?.username || 'Unknown User',
+        senderRole: payload.sender?.role || 'CLIENT',
+        content: payload.content,
+        sentAt: new Date(payload.sentAt),
+        fileIds: [],
+        files: [],
+        readByUserIds: [],
+        isRead: false,
+        isSystemMessage: false,
+        type: 'NORMAL',
+      };
+      
+      console.log('[MessageStore] ➕ Adding message to store:', messageDto);
+      handleNewMessage(messageDto);
+    });
+
+    console.log('[MessageStore] ✅ WebSocket message listener registered');
+
+    // Subscribe to unread count updates
+    socketHandler.onUnreadCount((payload: any) => {
+      handleUnreadCountUpdate(payload);
+    });
+  }
+
+  // Initialize WebSocket listeners when store is created
+  initializeWebSocket();
 
   /**
    * Clears messages for a project

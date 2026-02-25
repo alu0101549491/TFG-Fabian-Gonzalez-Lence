@@ -27,6 +27,10 @@ export interface MessageProps {
   projectId: string;
   /** User who sent the message */
   senderId: string;
+  /** Sender name (denormalized for display) */
+  senderName?: string;
+  /** Sender role (denormalized for display) */
+  senderRole?: string;
   /** Message body */
   content: string;
   /** Message type */
@@ -62,6 +66,8 @@ export class Message {
   public readonly id: string;
   public readonly projectId: string;
   public readonly senderId: string;
+  public readonly senderName: string;
+  public readonly senderRole: string;
   private contentValue: string;
   public readonly type: MessageType;
   public readonly sentAt: Date;
@@ -80,6 +86,8 @@ export class Message {
     this.id = props.id;
     this.projectId = props.projectId;
     this.senderId = props.senderId;
+    this.senderName = props.senderName ?? 'Unknown User';
+    this.senderRole = props.senderRole ?? 'CLIENT';
     this.contentValue = props.content;
     this.type = props.type ?? 'NORMAL';
     this.fileIdsValue = props.fileIds ?? [];

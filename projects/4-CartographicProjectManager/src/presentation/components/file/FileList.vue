@@ -68,17 +68,6 @@
             <span>📋</span>
           </button>
         </div>
-
-        <!-- Upload button -->
-        <button
-          v-if="canUpload"
-          type="button"
-          class="file-list-upload-btn"
-          @click="$emit('upload-click')"
-        >
-          <span>📤</span>
-          <span>Upload</span>
-        </button>
       </div>
     </div>
 
@@ -145,15 +134,7 @@
       >
         <!-- File icon/preview -->
         <div class="file-card-preview">
-          <img
-            v-if="isImage(file) && file.downloadUrl"
-            :src="file.downloadUrl"
-            :alt="file.name"
-            class="file-card-thumbnail"
-            loading="lazy"
-          />
           <span
-            v-else
             class="file-card-icon"
             :class="`file-card-icon-${file.type.toLowerCase()}`"
           >
@@ -439,7 +420,7 @@ function getFileIcon(fileType: FileType): string {
     [FileType.KML]: '🗺️',
     [FileType.SHP]: '🗺️',
     [FileType.DOCUMENT]: '📄',
-    [FileType.IMAGE]: '🖼️',
+    [FileType.IMAGE]: '🖼',
     [FileType.SPREADSHEET]: '📊',
     [FileType.CAD]: '📐',
     [FileType.COMPRESSED]: '📦',
@@ -476,37 +457,44 @@ function formatRelativeDate(date: Date): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-4);
+  gap: var(--spacing-3);
   flex-wrap: wrap;
 }
 
 /* Search */
 .file-list-search {
   position: relative;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 200px;
-  max-width: 300px;
+  max-width: 400px;
 }
 
 .file-list-search-icon {
   position: absolute;
-  left: var(--spacing-3);
+  left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 16px;
+  font-size: 14px;
   pointer-events: none;
+  opacity: 0.6;
+  color: var(--color-text-secondary);
 }
 
 .file-list-search-input {
   width: 100%;
   height: 36px;
-  padding: 0 var(--spacing-8) 0 var(--spacing-9);
+  padding: 0 32px 0 32px;
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   background-color: var(--color-bg-primary);
   border: 1px solid var(--color-border-primary);
   border-radius: var(--radius-md);
   transition: border-color var(--transition-fast);
+}
+
+.file-list-search-input::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 0.7;
 }
 
 .file-list-search-input:focus {
@@ -815,7 +803,7 @@ function formatRelativeDate(date: Date): string {
   filter: hue-rotate(340deg);
 }
 .file-card-icon-image {
-  filter: hue-rotate(200deg);
+  filter: hue-rotate(340deg);
 }
 .file-card-icon-spreadsheet {
   filter: hue-rotate(100deg);
@@ -962,7 +950,7 @@ function formatRelativeDate(date: Date): string {
   filter: hue-rotate(340deg);
 }
 .file-list-icon-image {
-  filter: hue-rotate(200deg);
+  filter: hue-rotate(340deg);
 }
 .file-list-icon-spreadsheet {
   filter: hue-rotate(100deg);

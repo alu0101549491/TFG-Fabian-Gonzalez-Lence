@@ -752,7 +752,7 @@ export class SocketHandler {
   private createSocket(token: string): Socket {
     return io(SOCKET_URL, {
       auth: {
-        token: `Bearer ${token}`,
+        token: token, // Send token without Bearer prefix (backend extracts it directly)
       },
       transports: ['websocket', 'polling'], // Prefer WebSocket, fallback to polling
       reconnection: true,
@@ -794,7 +794,9 @@ export class SocketHandler {
     });
 
     this.socket.on(ServerEvent.MESSAGE_NEW, (data) => {
+      console.log('[SocketHandler] 📨 Received message:new event from server:', data);
       this.emitToListeners(ServerEvent.MESSAGE_NEW, data);
+      console.log('[SocketHandler] ✅ Event forwarded to listeners');
     });
 
     this.socket.on(ServerEvent.MESSAGES_UNREAD_COUNT, (data) => {

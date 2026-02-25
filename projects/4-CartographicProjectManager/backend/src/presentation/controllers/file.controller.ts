@@ -35,7 +35,12 @@ export class FileController {
     // Initialize Dropbox service if token is available
     const dropboxToken = process.env.DROPBOX_ACCESS_TOKEN;
     if (dropboxToken) {
-      this.dropboxService = new DropboxService({accessToken: dropboxToken});
+      this.dropboxService = new DropboxService({
+        accessToken: dropboxToken,
+        refreshToken: process.env.DROPBOX_REFRESH_TOKEN,
+        appKey: process.env.DROPBOX_APP_KEY,
+        appSecret: process.env.DROPBOX_APP_SECRET,
+      });
     } else {
       console.warn('DROPBOX_ACCESS_TOKEN not set - file uploads will be disabled');
       this.dropboxService = null;
@@ -83,7 +88,7 @@ export class FileController {
 
       if (!this.dropboxService) {
         console.error('❌ Dropbox service not configured');
-        sendError(res, 'File upload service not configured', HTTP_STATUS.SERVICE_UNAVAILABLE);
+        sendError(res, 'File upload service not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
         return;
       }
 
@@ -164,11 +169,11 @@ export class FileController {
   public async download(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!this.dropboxService) {
-        sendError(res, 'File download service not configured', HTTP_STATUS.SERVICE_UNAVAILABLE);
+        sendError(res, 'File download service not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
         return;
       }
 
-      const file = await this.fileRepository.findById(req.params.id);
+      const file = await this.fileRepository.findById(req.params.id as string);
       if (!file) {
         sendError(res, 'File not found', HTTP_STATUS.NOT_FOUND);
         return;
@@ -188,12 +193,39 @@ export class FileController {
     }
   }
 
-  /**
-   * Delete a file from Dropbox and database
+  /**   * Get preview link for a file
+   */
+  public async preview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!this.dropboxService) {
+        sendError(res, 'File preview service not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        return;
+      }
+
+      const file = await this.fileRepository.findById(req.params.id as string);
+      if (!file) {
+        sendError(res, 'File not found', HTTP_STATUS.NOT_FOUND);
+        return;
+      }
+
+      // Get preview link from Dropbox (shared link that opens in browser)
+      const previewUrl = await this.dropboxService.getPreviewLink(file.dropboxPath);
+
+      sendSuccess(res, {
+        previewUrl,
+        filename: file.filename || file.originalName,
+      });
+    } catch (error) {
+      console.error('Preview error:', error);
+      next(error);
+    }
+  }
+
+  /**   * Delete a file from Dropbox and database
    */
   public async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const file = await this.fileRepository.findById(req.params.id);
+      const file = await this.fileRepository.findById(req.params.id as string);
       if (!file) {
         sendError(res, 'File not found', HTTP_STATUS.NOT_FOUND);
         return;
@@ -210,7 +242,7 @@ export class FileController {
       }
 
       // Delete metadata from database
-      await this.fileRepository.delete(req.params.id);
+      await this.fileRepository.delete(req.params.id as string);
 
       sendSuccess(res, null, 'File deleted successfully', HTTP_STATUS.OK);
     } catch (error) {
@@ -223,7 +255,7 @@ export class FileController {
    * @param filename - File name
    * @returns File type enum value
    */
-  private determineFileType(filename: string): string {
+  private determineFileType(filename: string): any {
     const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
 
     const typeMap: Record<string, string> = {

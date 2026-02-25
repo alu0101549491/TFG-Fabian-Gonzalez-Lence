@@ -193,9 +193,8 @@
               :current-user-id="currentUserId"
             />
             <MessageInput
-              :project-id="currentProject.project.id"
               :disabled="currentProject.project.status === 'finalized'"
-              @message-sent="handleMessageSent"
+              @send="handleMessageSend"
             />
           </div>
         </section>
@@ -524,7 +523,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from 'vue';
+import {ref, computed, onMounted, onUnmounted, watch} from 'vue';
 import {useRouter, useRoute} from 'vue-router';
 import {useAuth} from '../composables/use-auth';
 import {useProjects} from '../composables/use-projects';
@@ -543,6 +542,7 @@ import FileList from '../components/file/FileList.vue';
 import FileUploader from '../components/file/FileUploader.vue';
 import type {UpdateProjectDto, FileSummaryDto} from '@/application/dto';
 import {TaskStatus} from '@/domain/enumerations/task-status';
+import {STORAGE_KEYS} from '@/shared/constants';
 import type {CreateTaskDto, UpdateTaskDto, TaskDto, TaskSummaryDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto/task-data.dto';
 import type {MessageDto} from '@/application/dto/message-data.dto';
 
@@ -574,6 +574,7 @@ const {
   messages: projectMessages,
   isLoading: messagesLoading,
   loadMessagesByProject,
+  sendMessage,
 } = useMessages();
 
 const {
@@ -941,10 +942,30 @@ async function handleTaskDelete(task: TaskDto): Promise<void> {
 }
 
 /**
- * Handle message sent
+ * Handle message send from MessageInput component
+ *
+ * @param {Object} payload - Message payload with content and optional files
  */
-function handleMessageSent(): void {
-  // Message is automatically added via composable
+async function handleMessageSend(payload: {content: string; files: File[]}): Promise<void> {
+  if (!currentProject.value) return;
+
+  try {
+    console.log('Sending message:', payload.content);
+    
+    // TODO: Implement file upload handling if files are attached
+    // For now, just send the text content
+    const result = await sendMessage(payload.content);
+    
+    if (result.success) {
+      console.log('Message sent successfully:', result.message);
+    } else {
+      console.error('Failed to send message:', result.error);
+      alert(`Failed to send message: ${result.error}`);
+    }
+  } catch (error) {
+    console.error('Error sending message:', error);
+    alert('Failed to send message. Please try again.');
+  }
 }
 
 /**
@@ -1018,31 +1039,44 @@ async function handleFileUpload(uploads: Array<{id: string; file: File; section:
  */
 async function handleFileDownload(file: FileSummaryDto): Promise<void> {
   try {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+
+    console.log('Downloading file:', file.id);
+    
     // Get temporary download link from backend
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'}/files/${file.id}/download`, {
+    const response = await fetch(`${apiUrl}/files/${file.id}/download`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get download link');
+      const errorText = await response.text();
+      console.error('Download failed:', response.status, errorText);
+      throw new Error(`Failed to get download link: ${response.status}`);
     }
 
     const result = await response.json();
+    console.log('Download response:', result);
     
     // Backend returns: {success: true, data: {downloadUrl, filename, expiresAt}}
-    const downloadUrl = result.data?.data?.downloadUrl || result.data?.downloadUrl;
+    const downloadUrl = result.data?.downloadUrl || result.downloadUrl;
     
     if (downloadUrl) {
       // Open Dropbox temporary link in new tab
       window.open(downloadUrl, '_blank');
     } else {
+      console.error('No download URL in response:', result);
       throw new Error('No download URL received');
     }
   } catch (error) {
     console.error('Failed to download file:', error);
-    alert('Failed to download file. Please try again.');
+    alert(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -1080,30 +1114,43 @@ async function handleFileDelete(file: FileSummaryDto): Promise<void> {
  */
 async function handleFilePreview(file: FileSummaryDto): Promise<void> {
   try {
-    // Get temporary download link from backend
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'}/files/${file.id}/download`, {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+
+    console.log('Previewing file:', file.id);
+    
+    // Get preview link from backend (shared link that opens in browser viewer)
+    const response = await fetch(`${apiUrl}/files/${file.id}/preview`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get preview link');
+      const errorText = await response.text();
+      console.error('Preview failed:', response.status, errorText);
+      throw new Error(`Failed to get preview link: ${response.status}`);
     }
 
     const result = await response.json();
-    const downloadUrl = result.data?.data?.downloadUrl || result.data?.downloadUrl;
+    console.log('Preview response:', result);
     
-    if (downloadUrl) {
-      // For images and PDFs, open in new tab for preview
-      // For other files, the Dropbox link will show appropriate preview or download
-      window.open(downloadUrl, '_blank');
+    const previewUrl = result.data?.previewUrl || result.previewUrl;
+    
+    if (previewUrl) {
+      // Open Dropbox shared link in new tab (shows web viewer instead of forcing download)
+      window.open(previewUrl, '_blank');
     } else {
+      console.error('No preview URL in response:', result);
       throw new Error('No preview URL received');
     }
   } catch (error) {
     console.error('Failed to preview file:', error);
-    alert('Failed to preview file. Please try again.');
+    alert(`Failed to preview file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -1143,6 +1190,17 @@ watch(() => route.query.tab, (tab) => {
 // Lifecycle
 onMounted(async () => {
   await loadProjectData();
+
+  // Join project WebSocket room for real-time updates
+  if (currentProject.value?.project.id) {
+    const projectId = currentProject.value.project.id;
+    console.log('[ProjectDetailsView] 🏠 Joining project room:', projectId);
+    const {socketHandler} = await import('@/infrastructure/websocket');
+    socketHandler.joinProject(projectId);
+    console.log('[ProjectDetailsView] ✅ Successfully joined project room:', projectId);
+  } else {
+    console.error('[ProjectDetailsView] ❌ No project ID available to join room');
+  }
 
   // Set initial tab from query param
   if (route.query.tab) {
@@ -1184,6 +1242,15 @@ onMounted(async () => {
         unwatch();
       }, 5000);
     }
+  }
+});
+
+// Clean up on unmount
+onUnmounted(async () => {
+  // Leave project WebSocket room
+  if (currentProject.value?.project.id) {
+    const {socketHandler} = await import('@/infrastructure/websocket');
+    socketHandler.leaveProject(currentProject.value.project.id);
   }
 });
 </script>
@@ -1416,6 +1483,16 @@ onMounted(async () => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+}
+
+.messages-container > :first-child {
+  flex: 1;
+  min-height: 0; /* Important: allows flex child to shrink below content size */
+  overflow: hidden;
+}
+
+.messages-container > :last-child {
+  flex-shrink: 0; /* Prevents MessageInput from being compressed */
 }
 
 /* Error State */

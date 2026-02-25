@@ -43,6 +43,12 @@ const PROJECT_SECTIONS = [
 export interface DropboxConfig {
   /** Dropbox access token for authentication */
   accessToken: string;
+  /** Dropbox refresh token for automatic token renewal (optional) */
+  refreshToken?: string;
+  /** Dropbox app key (required if using refresh token) */
+  appKey?: string;
+  /** Dropbox app secret (required if using refresh token) */
+  appSecret?: string;
 }
 
 /**
@@ -117,6 +123,13 @@ export interface IDropboxService {
   getTemporaryLink(path: string): Promise<TemporaryLinkResponse>;
 
   /**
+   * Get preview link (shared link for viewing in browser)
+   * @param path - File path
+   * @returns Preview link URL
+   */
+  getPreviewLink(path: string): Promise<string>;
+
+  /**
    * Check if path exists
    * @param path - Path to check
    * @returns True if exists, false otherwise
@@ -161,18 +174,41 @@ export interface IDropboxService {
  */
 export class DropboxService implements IDropboxService {
   /** Dropbox client instance */
-  private readonly client: Dropbox;
+  private client: Dropbox;
 
   /** Upload timeout in milliseconds (5 minutes) */
   private readonly UPLOAD_TIMEOUT = 5 * 60 * 1000;
+
+  /** Current access token */
+  private accessToken: string;
+
+  /** Refresh token for automatic renewal */
+  private readonly refreshToken?: string;
+
+  /** App key for OAuth */
+  private readonly appKey?: string;
+
+  /** App secret for OAuth */
+  private readonly appSecret?: string;
+
+  /** Flag to prevent concurrent token refreshes */
+  private isRefreshing = false;
+
+  /** Promise for ongoing refresh operation */
+  private refreshPromise: Promise<void> | null = null;
 
   /**
    * Create Dropbox service instance
    * @param config - Dropbox configuration
    */
   public constructor(config: DropboxConfig) {
+    this.accessToken = config.accessToken;
+    this.refreshToken = config.refreshToken;
+    this.appKey = config.appKey;
+    this.appSecret = config.appSecret;
+
     this.client = new Dropbox({
-      accessToken: config.accessToken,
+      accessToken: this.accessToken,
       fetch: this.createFetchWithTimeout(),
     });
   }
@@ -183,7 +219,7 @@ export class DropboxService implements IDropboxService {
    * @private
    */
   private createFetchWithTimeout() {
-    return async (url: RequestInfo | URL, init?: RequestInit) => {
+    return async (url: string | URL, init?: RequestInit) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.UPLOAD_TIMEOUT);
 
@@ -199,6 +235,104 @@ export class DropboxService implements IDropboxService {
         throw error;
       }
     };
+  }
+
+  /**
+   * Refresh the access token using the refresh token
+   * @throws Error if refresh token is not configured or refresh fails
+   * @private
+   */
+  private async refreshAccessToken(): Promise<void> {
+    if (!this.refreshToken || !this.appKey || !this.appSecret) {
+      throw new Error(
+        'Cannot refresh token: refresh token, app key, or app secret not configured'
+      );
+    }
+
+    // If already refreshing, wait for that operation to complete
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.isRefreshing = true;
+
+    this.refreshPromise = (async () => {
+      try {
+        console.log('🔄 Refreshing Dropbox access token...');
+
+        const params = new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: this.refreshToken!,
+          client_id: this.appKey!,
+          client_secret: this.appSecret!,
+        });
+
+        const response = await fetch('https://api.dropbox.com/oauth2/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: params.toString(),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            `Failed to refresh token: ${response.status} - ${JSON.stringify(errorData)}`
+          );
+        }
+
+        const data = (await response.json()) as {
+          access_token: string;
+          expires_in?: number;
+        };
+        this.accessToken = data.access_token;
+
+        // Update Dropbox client with new token
+        this.client = new Dropbox({
+          accessToken: this.accessToken,
+          fetch: this.createFetchWithTimeout(),
+        });
+
+        console.log('✅ Dropbox access token refreshed successfully');
+      } finally {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
+  }
+
+  /**
+   * Execute a Dropbox API operation with automatic retry on 401 (expired token)
+   * @param operation - Function that performs the Dropbox API call
+   * @returns Result of the operation
+   * @private
+   */
+  private async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
+    } catch (error: any) {
+      // Check if error is 401 (expired token)
+      const is401Error =
+        error?.status === 401 ||
+        error?.error?.error?.['.tag'] === 'expired_access_token';
+
+      if (is401Error && this.refreshToken) {
+        console.log('⚠️  Access token expired, attempting to refresh...');
+
+        // Refresh the token
+        await this.refreshAccessToken();
+
+        // Retry the operation with the new token
+        console.log('🔁 Retrying operation with new token...');
+        return await operation();
+      }
+
+      // If not a 401 or no refresh token, rethrow the error
+      throw error;
+    }
   }
 
   /**
@@ -252,23 +386,25 @@ export class DropboxService implements IDropboxService {
     path: string,
     content: Buffer,
   ): Promise<DropboxFileMetadata> {
-    const size = content.length;
+    return this.executeWithRetry(async () => {
+      const size = content.length;
 
-    // Use simple upload for smaller files
-    if (size <= MAX_SIMPLE_UPLOAD_SIZE) {
-      const response = await this.client.filesUpload({
-        path,
-        contents: content,
-        mode: {'.tag': 'overwrite'},
-        autorename: false,
-        mute: false,
-      });
+      // Use simple upload for smaller files
+      if (size <= MAX_SIMPLE_UPLOAD_SIZE) {
+        const response = await this.client.filesUpload({
+          path,
+          contents: content,
+          mode: {'.tag': 'overwrite'},
+          autorename: false,
+          mute: false,
+        });
 
-      return this.mapToFileMetadata(response.result);
-    }
+        return this.mapToFileMetadata(response.result);
+      }
 
-    // Use upload session for large files
-    return this.uploadLargeFile(path, content);
+      // Use upload session for large files
+      return this.uploadLargeFile(path, content);
+    });
   }
 
   /**
@@ -339,14 +475,16 @@ export class DropboxService implements IDropboxService {
    * @returns File content as Buffer
    */
   public async downloadFile(path: string): Promise<Buffer> {
-    const response = await this.client.filesDownload({path});
-    const fileBlob = (response.result as files.FileMetadata & {fileBinary?: Buffer}).fileBinary;
+    return this.executeWithRetry(async () => {
+      const response = await this.client.filesDownload({path});
+      const fileBlob = (response.result as files.FileMetadata & {fileBinary?: Buffer}).fileBinary;
 
-    if (!fileBlob) {
-      throw new Error('Failed to download file: no content received');
-    }
+      if (!fileBlob) {
+        throw new Error('Failed to download file: no content received');
+      }
 
-    return fileBlob;
+      return fileBlob;
+    });
   }
 
   /**
@@ -354,7 +492,9 @@ export class DropboxService implements IDropboxService {
    * @param path - File/folder path to delete
    */
   public async deleteFile(path: string): Promise<void> {
-    await this.client.filesDeleteV2({path});
+    return this.executeWithRetry(async () => {
+      await this.client.filesDeleteV2({path});
+    });
   }
 
   /**
@@ -363,13 +503,53 @@ export class DropboxService implements IDropboxService {
    * @returns Temporary link response
    */
   public async getTemporaryLink(path: string): Promise<TemporaryLinkResponse> {
-    const response = await this.client.filesGetTemporaryLink({path});
+    return this.executeWithRetry(async () => {
+      const response = await this.client.filesGetTemporaryLink({path});
 
-    return {
-      link: response.result.link,
-      metadata: this.mapToFileMetadata(response.result.metadata),
-      expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours
-    };
+      return {
+        link: response.result.link,
+        metadata: this.mapToFileMetadata(response.result.metadata),
+        expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours
+      };
+    });
+  }
+
+  /**
+   * Get preview link (shared link) for viewing file in browser
+   * Creates a shared link that opens the Dropbox web viewer instead of forcing download
+   * Wrapped in executeWithRetry to handle token expiration
+   * @param path - Dropbox path
+   * @returns Preview URL
+   */
+  public async getPreviewLink(path: string): Promise<string> {
+    return this.executeWithRetry(async () => {
+      try {
+        // Try to get existing shared links first
+        const existingLinks = await this.client.sharingListSharedLinks({
+          path,
+          direct_only: true,
+        });
+
+        if (existingLinks.result.links && existingLinks.result.links.length > 0) {
+          // Return existing shared link (replace dl=0 with raw=1 for direct preview)
+          return existingLinks.result.links[0].url.replace('dl=0', 'raw=1');
+        }
+      } catch (error) {
+        // No existing links found, continue to create new one
+        console.log('No existing shared links, creating new one');
+      }
+
+      // Create new shared link
+      const response = await this.client.sharingCreateSharedLinkWithSettings({
+        path,
+        settings: {
+          requested_visibility: {'.tag': 'public'},
+        },
+      });
+
+      // Return the preview URL (raw=1 for direct viewing)
+      return response.result.url.replace('dl=0', 'raw=1');
+    });
   }
 
   /**
@@ -378,12 +558,14 @@ export class DropboxService implements IDropboxService {
    * @returns True if exists, false otherwise
    */
   public async pathExists(path: string): Promise<boolean> {
-    try {
-      await this.client.filesGetMetadata({path});
-      return true;
-    } catch {
-      return false;
-    }
+    return this.executeWithRetry(async () => {
+      try {
+        await this.client.filesGetMetadata({path});
+        return true;
+      } catch {
+        return false;
+      }
+    });
   }
 
   /**

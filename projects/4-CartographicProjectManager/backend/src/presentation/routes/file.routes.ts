@@ -31,6 +31,9 @@ fileRoutes.post('/upload', authenticate, uploadSingle, controller.upload.bind(co
 // Download file (get temporary link)
 fileRoutes.get('/:id/download', authenticate, controller.download.bind(controller));
 
+// Preview file (get shared link for web viewer)
+fileRoutes.get('/:id/preview', authenticate, controller.preview.bind(controller));
+
 // Delete file
 fileRoutes.delete('/:id', authenticate, controller.delete.bind(controller));
 
