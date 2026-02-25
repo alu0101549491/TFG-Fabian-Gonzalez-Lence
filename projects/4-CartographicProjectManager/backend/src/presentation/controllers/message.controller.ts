@@ -59,4 +59,16 @@ export class MessageController {
       next(error);
     }
   }
+
+  public async markAsRead(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const projectId = req.params.projectId as string;
+      const {userId} = req.body;
+      if (!userId) throw new Error('userId is required in request body');
+      await this.messageRepository.markAllAsRead(projectId, userId);
+      sendSuccess(res, null, 'Messages marked as read');
+    } catch (error) {
+      next(error);
+    }
+  }
 }

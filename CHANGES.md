@@ -412,6 +412,61 @@ Implemented Dropbox OAuth 2.0 refresh token mechanism for automatic access token
 
 ---
 
+#### 5. **Message Read Tracking, Unread Count, and Notification Integration** 📩
+
+**Rationale:**
+- Needed accurate unread message count per user/project
+- Enable marking messages as read and virtual notifications for unread messages
+- Support migration for existing messages
+
+**Database Schema Update:**
+- `backend/prisma/schema.prisma` (MODIFIED)
+  - Added `readByUserIds String[] @default([])` to `Message` model
+  - Enables tracking which users have read each message
+
+**Repository & Controller Enhancements:**
+- `backend/src/domain/repositories/message.repository.interface.ts` (MODIFIED)
+  - Added `countUnreadByProjectAndUser()` and `markAllAsRead()` to interface
+- `backend/src/infrastructure/repositories/message.repository.ts` (MODIFIED)
+  - `create()` now auto-marks sender as having read their own message
+  - `countUnreadByProjectAndUser()` returns count of messages not read by user
+  - `markAllAsRead()` updates all messages in project for user
+- `backend/src/presentation/controllers/message.controller.ts` (MODIFIED)
+  - Added `markAsRead()` endpoint for marking all messages as read
+- `backend/src/presentation/routes/project.routes.ts` (MODIFIED)
+  - Added `POST /:id/messages/mark-read` route
+
+**Frontend Store & Notification Integration:**
+- `src/presentation/stores/message.store.ts` (MODIFIED)
+  - `fetchUnreadCounts()` fetches unread counts for all projects
+  - `handleNewMessage()` and WebSocket logic updated for read tracking
+- `src/presentation/stores/notification.store.ts` (MODIFIED)
+  - Added virtual notifications for unread messages per project
+  - `markAsRead()` marks all messages as read for virtual notifications
+- `src/presentation/composables/use-notifications.ts` (MODIFIED)
+  - Uses `allNotifications` to include virtual message notifications
+- `src/presentation/views/DashboardView.vue` (MODIFIED)
+  - Loads projects before fetching unread counts
+  - Handles notification click for message notifications
+- `src/presentation/views/ProjectDetailsView.vue` (MODIFIED)
+  - Calls `markAllAsRead()` when switching to messages tab
+  - Resets scroll position for panels
+
+**Migration Scripts:**
+- `backend/scripts/mark-sender-messages-read.ts` (NEW)
+  - Script to mark all existing messages as read by their senders
+- `backend/scripts/check-messages.ts` (NEW)
+  - Script to check message read status for debugging
+
+**Impact:**
+- Accurate unread message count per user/project
+- Virtual notifications for unread messages
+- Marking messages as read on view
+- Migration support for legacy messages
+- Improved notification UX and dashboard stats
+
+---
+
 ### Testing Recommendations
 
 **OAuth Token Renewal:**
