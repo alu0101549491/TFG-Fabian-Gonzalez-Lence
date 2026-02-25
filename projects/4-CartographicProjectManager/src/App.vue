@@ -127,6 +127,7 @@ import {useNotificationStore} from '@/presentation/stores/notification.store';
 import AppHeader from '@/presentation/components/layout/AppHeader.vue';
 import AppSidebar from '@/presentation/components/layout/AppSidebar.vue';
 import LoadingSpinner from '@/presentation/components/common/LoadingSpinner.vue';
+import {socketHandler} from '@/infrastructure/websocket';
 
 /**
  * Toast notification interface
@@ -266,12 +267,32 @@ async function initializeApp(): Promise<void> {
       console.log('No active session found');
     }
 
-    // If authenticated, load initial data
-    if (isAuthenticated.value) {
+    // If authenticated, load initial data and connect WebSocket
+    console.log('[App] 🔍 Checking auth state:', {
+      isAuthenticated: isAuthenticated.value,
+      hasUserId: !!authStore.userId,
+      hasAccessToken: !!authStore.accessToken,
+    });
+    
+    if (isAuthenticated.value && authStore.userId && authStore.accessToken) {
       try {
+        console.log('[App] 🔌 Connecting to WebSocket...', {
+          userId: authStore.userId,
+          hasToken: !!authStore.accessToken,
+        });
+        
+        // Connect to WebSocket (this automatically joins user channel)
+        socketHandler.connect({
+          token: authStore.accessToken,
+          userId: authStore.userId,
+          debug: true,
+        });
+
+        console.log('[App] ✅ WebSocket connection initiated');
+
         await notificationStore.fetchNotifications();
       } catch (error) {
-        console.error('Failed to load notifications:', error);
+        console.error('[App] ❌ Failed to connect WebSocket:', error);
       }
     }
   } catch (error) {
@@ -295,6 +316,39 @@ function handleResize(): void {
     mobileSidebarOpen.value = false;
   }
 }
+
+// Watch for authentication state changes to connect/disconnect WebSocket
+watch(
+  () => isAuthenticated.value,
+  (authenticated, wasAuthenticated) => {
+    console.log('[App] 🔄 Auth state changed:', { authenticated, wasAuthenticated });
+    
+    if (authenticated && authStore.userId && authStore.accessToken) {
+      // User just logged in - connect WebSocket
+      console.log('[App] 🔌 Connecting to WebSocket after login...', {
+        userId: authStore.userId,
+        hasToken: !!authStore.accessToken,
+      });
+      
+      try {
+        socketHandler.connect({
+          token: authStore.accessToken,
+          userId: authStore.userId,
+          debug: true,
+        });
+
+        console.log('[App] ✅ WebSocket connection initiated');
+      } catch (error) {
+        console.error('[App] ❌ Failed to connect WebSocket:', error);
+      }
+    } else if (!authenticated && wasAuthenticated) {
+      // User logged out - disconnect WebSocket
+      console.log('[App] 🔌 Disconnecting WebSocket after logout...');
+      socketHandler.disconnect();
+    }
+  },
+  { immediate: false }
+);
 
 // Lifecycle
 onMounted(() => {

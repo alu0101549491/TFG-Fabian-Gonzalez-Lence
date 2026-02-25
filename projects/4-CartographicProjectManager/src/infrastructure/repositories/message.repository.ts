@@ -28,6 +28,12 @@ interface MessageApiResponse {
   fileIds: string[];
   readByUserIds: string[];
   type: string;
+  sender?: {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+  };
 }
 
 /**
@@ -75,6 +81,30 @@ export class MessageRepository implements IMessageRepository {
     const response = await httpClient.post<MessageApiResponse>(
       this.baseUrl,
       this.mapToApiRequest(message),
+    );
+    return this.mapToEntity(response.data);
+  }
+
+  /**
+   * Create new message from plain data
+   *
+   * @param data - Message data object
+   * @returns Created message entity
+   */
+  public async create(data: {
+    projectId: string;
+    senderId: string;
+    content: string;
+    fileIds?: string[];
+  }): Promise<Message> {
+    const response = await httpClient.post<MessageApiResponse>(
+      this.baseUrl,
+      {
+        projectId: data.projectId,
+        senderId: data.senderId,
+        content: data.content,
+        // Note: fileIds and type are not yet supported in the database schema
+      },
     );
     return this.mapToEntity(response.data);
   }
@@ -264,6 +294,8 @@ export class MessageRepository implements IMessageRepository {
       id: data.id,
       projectId: data.projectId,
       senderId: data.senderId,
+      senderName: data.sender?.username || 'Unknown User',
+      senderRole: data.sender?.role || 'CLIENT',
       content: data.content,
       sentAt: new Date(data.sentAt),
       fileIds: data.fileIds || [],

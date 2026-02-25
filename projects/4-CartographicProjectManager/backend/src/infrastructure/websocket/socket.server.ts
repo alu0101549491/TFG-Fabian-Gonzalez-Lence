@@ -63,13 +63,31 @@ export function initializeSocketServer(httpServer: HttpServer): void {
     // Join user's personal room
     socket.join(`user:${userId}`);
 
-    // Subscribe to project updates
+    // Join project room (frontend emits 'join:project')
+    socket.on('join:project', (data: {projectId: string}) => {
+      const projectId = data.projectId;
+      const roomName = `project:${projectId}`;
+      socket.join(roomName);
+      console.log(`✅ [WebSocket] User ${userId} joined room '${roomName}'`);
+      logInfo(`User ${userId} joined project room ${projectId}`);
+    });
+
+    // Leave project room (frontend emits 'leave:project')
+    socket.on('leave:project', (data: {projectId: string}) => {
+      const projectId = data.projectId;
+      const roomName = `project:${projectId}`;
+      socket.leave(roomName);
+      console.log(`👋 [WebSocket] User ${userId} left room '${roomName}'`);
+      logInfo(`User ${userId} left project room ${projectId}`);
+    });
+
+    // Legacy: Subscribe to project updates (keep for compatibility)
     socket.on('project:subscribe', (projectId: string) => {
       socket.join(`project:${projectId}`);
       logInfo(`User ${userId} subscribed to project ${projectId}`);
     });
 
-    // Unsubscribe from project updates
+    // Legacy: Unsubscribe from project updates (keep for compatibility)
     socket.on('project:unsubscribe', (projectId: string) => {
       socket.leave(`project:${projectId}`);
       logInfo(`User ${userId} unsubscribed from project ${projectId}`);
@@ -117,8 +135,14 @@ export function emitToProject(
   event: string,
   data: unknown
 ): void {
-  if (!io) return;
-  io.to(`project:${projectId}`).emit(event, data);
+  if (!io) {
+    console.log('❌ [WebSocket] Cannot emit - io not initialized');
+    return;
+  }
+  const room = `project:${projectId}`;
+  console.log(`🔊 [WebSocket] Emitting '${event}' to room '${room}'`);
+  io.to(room).emit(event, data);
+  console.log(`✅ [WebSocket] Event emitted to room '${room}'`);
 }
 
 /**

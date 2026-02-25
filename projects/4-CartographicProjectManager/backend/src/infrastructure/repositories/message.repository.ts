@@ -54,7 +54,10 @@ export class MessageRepository implements IMessageRepository {
 
   public async create(data: Omit<Message, 'id' | 'sentAt'>): Promise<Message> {
     try {
-      return await prisma.message.create({data});
+      return await prisma.message.create({
+        data,
+        include: {sender: true},
+      });
     } catch (error) {
       throw new DatabaseError('Failed to create message');
     }
