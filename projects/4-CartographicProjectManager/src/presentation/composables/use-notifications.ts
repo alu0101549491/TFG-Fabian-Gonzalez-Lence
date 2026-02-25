@@ -93,7 +93,8 @@ export function useNotifications(): UseNotificationsReturn {
   const router = useRouter();
 
   // Computed from store
-  const notifications = computed(() => store.notifications);
+  // Use allNotifications to include both database and virtual message notifications
+  const notifications = computed(() => store.allNotifications);
   const recentNotifications = computed(() => store.recentNotifications);
   const unreadNotifications = computed(() => store.unreadNotifications);
   const unreadCount = computed(() => store.unreadCount);

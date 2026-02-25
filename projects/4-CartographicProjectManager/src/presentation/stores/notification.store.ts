@@ -21,6 +21,8 @@ import type {
 } from '../../application/dto';
 import {NotificationType} from '../../domain/enumerations/notification-type';
 import {useAuthStore} from './auth.store';
+import {useMessageStore} from './message.store';
+import {useProjectStore} from './project.store';
 import {NotificationRepository} from '../../infrastructure/repositories/notification.repository';
 import type {Notification} from '../../domain/entities/notification';
 import {isSameDay, isThisWeek, formatDate} from '../../shared/utils';
@@ -34,6 +36,20 @@ const STORAGE_KEY = 'cpm_notifications';
 export const useNotificationStore = defineStore('notification', () => {
   const authStore = useAuthStore();
   const notificationRepository = new NotificationRepository();
+  
+  // Lazy-loaded stores to avoid circular dependencies
+  let messageStore: ReturnType<typeof useMessageStore> | null = null;
+  let projectStore: ReturnType<typeof useProjectStore> | null = null;
+  
+  function getMessageStore() {
+    if (!messageStore) messageStore = useMessageStore();
+    return messageStore;
+  }
+  
+  function getProjectStore() {
+    if (!projectStore) projectStore = useProjectStore();
+    return projectStore;
+  }
   
   /**
    * Helper function to map Notification entity to NotificationDto
@@ -76,19 +92,72 @@ export const useNotificationStore = defineStore('notification', () => {
 
   const hasUnread = computed(() => unreadCount.value > 0);
 
-  const recentNotifications = computed(() =>
-    notifications.value.slice(0, 5)
-  );
+  /**
+   * Generates virtual notifications for projects with unread messages.
+   * Each notification represents all unread messages from a specific project.
+   */
+  const messageNotifications = computed(() => {
+    const msgStore = getMessageStore();
+    const projStore = getProjectStore();
+    const virtualNotifications: NotificationDto[] = [];
+    
+    // Get all projects with unread messages
+    // Note: Pinia automatically unwraps refs when accessed from outside the store
+    msgStore.unreadCounts.forEach((count: number, projectId: string) => {
+      if (count > 0) {
+        // Find project name
+        const project = projStore.projects.find((p: any) => p.id === projectId);
+        const projectName = project?.name || project?.code || 'Project';
+        
+        // Get most recent message date for this project
+        const messages = msgStore.getMessagesForProject(projectId);
+        const latestMessage = messages.length > 0 
+          ? messages[messages.length - 1] 
+          : null;
+        const messageDate = latestMessage?.sentAt || new Date();
+        
+        // Create virtual notification
+        virtualNotifications.push({
+          id: `message-${projectId}`,
+          userId: authStore.userId || '',
+          type: NotificationType.NEW_MESSAGE,
+          title: 'Nuevos mensajes',
+          message: `${count} mensaje${count > 1 ? 's' : ''} sin leer de ${projectName}`,
+          relatedEntityId: projectId,
+          isRead: false,
+          createdAt: messageDate,
+          readAt: null,
+        });
+      }
+    });
+    
+    return virtualNotifications;
+  });
+
+  /**
+   * All notifications including both database notifications and message notifications.
+   * Sorted by creation date (newest first).
+   */
+  const allNotifications = computed(() => {
+    const combined = [...notifications.value, ...messageNotifications.value];
+    return combined.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  });
+
+  const recentNotifications = computed(() => {
+    return allNotifications.value.slice(0, 5);
+  });
 
   const filteredNotifications = computed(() => {
-    if (!typeFilter.value) return notifications.value;
-    return notifications.value.filter(n => n.type === typeFilter.value);
+    if (!typeFilter.value) return allNotifications.value;
+    return allNotifications.value.filter(n => n.type === typeFilter.value);
   });
 
   const notificationsByDate = computed(() => {
     const grouped = new Map<string, NotificationDto[]>();
     
-    notifications.value.forEach(notification => {
+    allNotifications.value.forEach(notification => {
       const dateKey = getDateKey(notification.createdAt);
       const existing = grouped.get(dateKey) ?? [];
       grouped.set(dateKey, [...existing, notification]);
@@ -205,12 +274,27 @@ export const useNotificationStore = defineStore('notification', () => {
   }
 
   /**
-   * Marks a notification as read
+   * Marks a notification as read.
+   * For message notifications (virtual), marks all messages in that project as read.
+   * For regular notifications, marks the notification as read in the database.
    */
   async function markAsRead(notificationId: string): Promise<void> {
     if (!authStore.userId) return;
 
     try {
+      // Check if this is a virtual message notification
+      if (notificationId.startsWith('message-')) {
+        const projectId = notificationId.replace('message-', '');
+        const msgStore = getMessageStore();
+        
+        // Mark all messages in this project as read
+        await msgStore.markAllAsRead(projectId);
+        
+        // Virtual notification will disappear automatically when unread count reaches 0
+        return;
+      }
+      
+      // Handle regular database notification
       await notificationRepository.markAsRead(notificationId);
       
       const notification = notifications.value.find(n => n.id === notificationId);
@@ -399,6 +483,8 @@ export const useNotificationStore = defineStore('notification', () => {
     recentNotifications,
     filteredNotifications,
     notificationsByDate,
+    allNotifications, // Includes message notifications
+    messageNotifications, // Virtual notifications for messages
     
     // Actions
     fetchNotifications,
