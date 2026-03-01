@@ -172,7 +172,7 @@
             👁️
           </button>
           <button
-            v-if="canDelete"
+            v-if="canDeleteFile(file)"
             type="button"
             class="file-card-action file-card-action-danger"
             title="Delete"
@@ -243,7 +243,7 @@
                 👁️
               </button>
               <button
-                v-if="canDelete"
+                v-if="canDeleteFile(file)"
                 type="button"
                 class="file-list-action file-list-action-danger"
                 title="Delete"
@@ -287,12 +287,16 @@ export interface FileListProps {
   viewMode?: 'grid' | 'list';
   /** Loading state */
   loading?: boolean;
-  /** Can user delete files */
+  /** Can user delete files (admin override) */
   canDelete?: boolean;
   /** Can user upload files */
   canUpload?: boolean;
   /** Empty state message */
   emptyMessage?: string;
+  /** Current user ID for permission checks */
+  currentUserId?: string;
+  /** Is current user an admin */
+  isAdmin?: boolean;
 }
 
 /**
@@ -314,6 +318,8 @@ const props = withDefaults(defineProps<FileListProps>(), {
   canDelete: false,
   canUpload: true,
   emptyMessage: 'No files uploaded yet',
+  currentUserId: '',
+  isAdmin: false,
 });
 
 const emit = defineEmits<FileListEmits>();
@@ -409,6 +415,24 @@ function isImage(file: FileDto): boolean {
  */
 function canPreview(file: FileDto): boolean {
   return file.type === FileType.IMAGE || file.type === FileType.PDF;
+}
+
+/**
+ * Check if current user can delete a specific file
+ * User can delete if they are admin OR if they uploaded the file
+ */
+function canDeleteFile(file: FileDto): boolean {
+  // Admin can delete any file (or if canDelete prop is true for backwards compatibility)
+  if (props.canDelete || props.isAdmin) {
+    return true;
+  }
+  
+  // User can delete their own files
+  if (props.currentUserId && file.uploadedBy === props.currentUserId) {
+    return true;
+  }
+  
+  return false;
 }
 
 /**

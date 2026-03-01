@@ -218,7 +218,7 @@
           </div>
 
           <FileUploader
-            v-if="canManageCurrentProject && currentProject.project.status !== 'finalized'"
+            v-if="canUploadFiles && currentProject.project.status !== 'finalized'"
             :project-id="currentProject.project.id"
             :sections="currentProject.sections.map(s => s.name)"
             :max-file-size="50 * 1024 * 1024"
@@ -232,6 +232,8 @@
             :files="projectFiles"
             :loading="filesLoading"
             :can-delete="canManageCurrentProject"
+            :current-user-id="userId"
+            :is-admin="isAdmin"
             @file-download="handleFileDownload"
             @file-delete="handleFileDelete"
             @file-preview="handleFilePreview"
@@ -626,6 +628,14 @@ const canManageCurrentProject = computed(() =>
 
 const canCreateTask = computed(() => 
   currentProject.value?.currentUserPermissions?.canCreateTask ?? false
+);
+
+const canUploadFiles = computed(() => 
+  currentProject.value?.currentUserPermissions?.canUploadFile ?? false
+);
+
+const canDownloadFiles = computed(() => 
+  currentProject.value?.currentUserPermissions?.canDownloadFile ?? false
 );
 
 const filteredTasks = computed(() => {

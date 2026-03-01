@@ -14,6 +14,8 @@
 import type {Request, Response, NextFunction} from 'express';
 import {FileRepository} from '@infrastructure/repositories/file.repository.js';
 import {ProjectRepository} from '@infrastructure/repositories/project.repository.js';
+import {UserRepository} from '@infrastructure/repositories/user.repository.js';
+import {PermissionRepository} from '@infrastructure/repositories/permission.repository.js';
 import {DropboxService} from '@infrastructure/external-services/dropbox.service.js';
 import {sendSuccess, sendError} from '@shared/utils.js';
 import {HTTP_STATUS} from '@shared/constants.js';
@@ -26,11 +28,15 @@ import {v4 as uuidv4} from 'uuid';
 export class FileController {
   private readonly fileRepository: FileRepository;
   private readonly projectRepository: ProjectRepository;
+  private readonly userRepository: UserRepository;
+  private readonly permissionRepository: PermissionRepository;
   private readonly dropboxService: DropboxService | null;
 
   public constructor() {
     this.fileRepository = new FileRepository();
     this.projectRepository = new ProjectRepository();
+    this.userRepository = new UserRepository();
+    this.permissionRepository = new PermissionRepository();
 
     // Initialize Dropbox service if token is available
     const dropboxToken = process.env.DROPBOX_ACCESS_TOKEN;
@@ -50,9 +56,18 @@ export class FileController {
   /**
    * Get all files for a project
    */
-  public async getByProjectId(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async getByProjectId(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const files = await this.fileRepository.findByProjectId(req.params.projectId as string);
+      const projectId = req.params.projectId as string;
+      
+      // Check if user has permission to view files from this project
+      const canView = await this.canDownloadFromProject(req.user!.id, projectId);
+      if (!canView) {
+        sendError(res, 'You do not have permission to view files from this project', HTTP_STATUS.FORBIDDEN);
+        return;
+      }
+
+      const files = await this.fileRepository.findByProjectId(projectId);
       const mappedFiles = files.map((file) => this.mapFileToDto(file));
       sendSuccess(res, mappedFiles);
     } catch (error) {
@@ -63,13 +78,21 @@ export class FileController {
   /**
    * Get a single file by ID
    */
-  public async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async getById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const file = await this.fileRepository.findById(req.params.id as string);
       if (!file) {
         sendError(res, 'File not found', HTTP_STATUS.NOT_FOUND);
         return;
       }
+
+      // Check if user has permission to view this file
+      const canView = await this.canDownloadFromProject(req.user!.id, file.projectId);
+      if (!canView) {
+        sendError(res, 'You do not have permission to view this file', HTTP_STATUS.FORBIDDEN);
+        return;
+      }
+
       sendSuccess(res, this.mapFileToDto(file));
     } catch (error) {
       next(error);
@@ -117,6 +140,16 @@ export class FileController {
       }
 
       console.log('✅ Project found:', project.code);
+
+      // Check if user has permission to upload to this project
+      const canUpload = await this.canUploadToProject(req.user!.id, projectId);
+      if (!canUpload) {
+        console.error('❌ User does not have permission to upload to this project');
+        sendError(res, 'You do not have permission to upload files to this project', HTTP_STATUS.FORBIDDEN);
+        return;
+      }
+
+      console.log('✅ User has upload permission');
 
       // Build Dropbox path
       const sectionFolder = section || 'Messages';
@@ -166,7 +199,7 @@ export class FileController {
   /**
    * Download a file from Dropbox
    */
-  public async download(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async download(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!this.dropboxService) {
         sendError(res, 'File download service not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
@@ -176,6 +209,13 @@ export class FileController {
       const file = await this.fileRepository.findById(req.params.id as string);
       if (!file) {
         sendError(res, 'File not found', HTTP_STATUS.NOT_FOUND);
+        return;
+      }
+
+      // Check if user has permission to download from this project
+      const canDownload = await this.canDownloadFromProject(req.user!.id, file.projectId);
+      if (!canDownload) {
+        sendError(res, 'You do not have permission to download files from this project', HTTP_STATUS.FORBIDDEN);
         return;
       }
 
@@ -195,7 +235,7 @@ export class FileController {
 
   /**   * Get preview link for a file
    */
-  public async preview(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async preview(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!this.dropboxService) {
         sendError(res, 'File preview service not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
@@ -205,6 +245,13 @@ export class FileController {
       const file = await this.fileRepository.findById(req.params.id as string);
       if (!file) {
         sendError(res, 'File not found', HTTP_STATUS.NOT_FOUND);
+        return;
+      }
+
+      // Check if user has permission to view/download from this project
+      const canDownload = await this.canDownloadFromProject(req.user!.id, file.projectId);
+      if (!canDownload) {
+        sendError(res, 'You do not have permission to preview files from this project', HTTP_STATUS.FORBIDDEN);
         return;
       }
 
@@ -223,11 +270,26 @@ export class FileController {
 
   /**   * Delete a file from Dropbox and database
    */
-  public async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async delete(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const file = await this.fileRepository.findById(req.params.id as string);
       if (!file) {
         sendError(res, 'File not found', HTTP_STATUS.NOT_FOUND);
+        return;
+      }
+
+      // Check if user has permission to delete (admin or file owner)
+      const user = await this.userRepository.findById(req.user!.id);
+      if (!user) {
+        sendError(res, 'User not found', HTTP_STATUS.FORBIDDEN);
+        return;
+      }
+
+      const isAdmin = user.role === 'ADMINISTRATOR';
+      const isOwner = file.uploadedBy === req.user!.id;
+
+      if (!isAdmin && !isOwner) {
+        sendError(res, 'You can only delete files that you uploaded', HTTP_STATUS.FORBIDDEN);
         return;
       }
 
@@ -247,6 +309,108 @@ export class FileController {
       sendSuccess(res, null, 'File deleted successfully', HTTP_STATUS.OK);
     } catch (error) {
       next(error);
+    }
+  }
+
+  /**
+   * Check if a user has permission to upload files to a project
+   * @param userId - User ID
+   * @param projectId - Project ID
+   * @returns True if user can upload, false otherwise
+   * @private
+   */
+  private async canUploadToProject(userId: string, projectId: string): Promise<boolean> {
+    try {
+      // Get user to check role
+      const user = await this.userRepository.findById(userId);
+      if (!user) {
+        return false;
+      }
+
+      // Administrator can upload to any project
+      if (user.role === 'ADMINISTRATOR') {
+        return true;
+      }
+
+      // Get project to check if user is the client
+      const project = await this.projectRepository.findById(projectId);
+      if (!project) {
+        return false;
+      }
+
+      // Client can upload to their assigned projects
+      if (user.role === 'CLIENT' && project.clientId === userId) {
+        return true;
+      }
+
+      // Special user creator can upload to their own projects
+      if (user.role === 'SPECIAL_USER' && project.creatorId === userId) {
+        return true;
+      }
+
+      // Special user needs explicit UPLOAD permission
+      if (user.role === 'SPECIAL_USER') {
+        const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
+        if (permission && permission.rights.includes('UPLOAD')) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error checking upload permission:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if a user has permission to download files from a project
+   * @param userId - User ID
+   * @param projectId - Project ID
+   * @returns True if user can download, false otherwise
+   * @private
+   */
+  private async canDownloadFromProject(userId: string, projectId: string): Promise<boolean> {
+    try {
+      // Get user to check role
+      const user = await this.userRepository.findById(userId);
+      if (!user) {
+        return false;
+      }
+
+      // Administrator can download from any project
+      if (user.role === 'ADMINISTRATOR') {
+        return true;
+      }
+
+      // Get project to check if user is the client
+      const project = await this.projectRepository.findById(projectId);
+      if (!project) {
+        return false;
+      }
+
+      // Client can download from their assigned projects
+      if (user.role === 'CLIENT' && project.clientId === userId) {
+        return true;
+      }
+
+      // Special user creator can download from their own projects
+      if (user.role === 'SPECIAL_USER' && project.creatorId === userId) {
+        return true;
+      }
+
+      // Special user needs explicit DOWNLOAD or VIEW permission
+      if (user.role === 'SPECIAL_USER') {
+        const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
+        if (permission && (permission.rights.includes('DOWNLOAD') || permission.rights.includes('VIEW'))) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error checking download permission:', error);
+      return false;
     }
   }
 
