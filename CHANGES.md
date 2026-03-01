@@ -8,7 +8,236 @@ This document contains all the git changes made to the Cartographic Project Mana
 
 ---
 
-## Latest Changes (February 25, 2026)
+## Latest Changes (March 1, 2026)
+
+### MAJOR: Permission-Based File Access Control & Owner-Based Deletion
+
+**Database-Driven Permissions, Special User Auto-Permissions & File Ownership Controls**
+
+**Location:** `projects/4-CartographicProjectManager/`
+
+**Description:**
+Implemented comprehensive permission-based access control system for file operations, including database-driven permission management, automatic permission grants for special user creators, and owner-based file deletion capabilities. Special users who create projects now automatically receive full permissions (VIEW, DOWNLOAD, UPLOAD, EDIT, DELETE, SEND_MESSAGE). Users can delete files they uploaded, while administrators retain global delete permissions. All changes enhance security, user autonomy, and access control granularity.
+
+**Status:** ✅ **PRODUCTION-READY** | 🔐 **PERMISSION-BASED** | 👤 **OWNER-CONTROLLED** | 🗑️ **SELF-DELETE**
+
+---
+
+#### 1. **Permission Repository - Database Access Control** 🔐
+
+**Rationale:**
+- Permission system required persistent storage for special user access rights
+- Database-driven permissions enable granular, per-project access control
+- Centralized permission management simplifies admin operations
+- Supports future permission extensions and role-based access control (RBAC)
+
+**New Repository Implementation:**
+- `backend/src/infrastructure/repositories/permission.repository.ts` (NEW - 135 lines)
+  - **CRUD Operations:**
+    - `findByUserAndProject(userId, projectId)` - Get user permissions for specific project
+    - `findByUserId(userId)` - Get all permissions for a user across projects
+    - `findByProjectId(projectId)` - Get all user permissions for a project
+    - `create(data)` - Grant permissions to user for project
+    - `update(userId, projectId, rights)` - Modify existing permissions
+    - `delete(userId, projectId)` - Revoke user permissions
+  - **Permission Model:**
+    - Uses Prisma `Permission` model with composite unique key (`userId_projectId`)
+    - Access rights array: `VIEW`, `DOWNLOAD`, `UPLOAD`, `EDIT`, `DELETE`, `SEND_MESSAGE`
+    - Tracks `grantedBy` for permission audit trail
+  - **Error Handling:**
+    - Wraps all operations in try-catch blocks
+    - Throws `DatabaseError` with descriptive messages
+  - **Impact**: Complete permission lifecycle management in database
+
+**Repository Index Updated:**
+- `backend/src/infrastructure/repositories/index.ts` (MODIFIED)
+  - Exported `PermissionRepository` for use in controllers
+  - Added to repository barrel exports for clean imports
+  - **Impact**: Repository available throughout application
+
+---
+
+#### 2. **File Controller - Permission-Based Access Checks** 🔒
+
+**Rationale:**
+- File operations must respect user permissions and ownership
+- Special user creators should have full access to their projects
+- Regular users should only access files within their permission scope
+- Owner-based deletion enables user autonomy without admin intervention
+
+**Enhanced Permission Validation:**
+- `backend/src/presentation/controllers/file.controller.ts` (MODIFIED - +176 insertions)
+  - **Constructor Updates:**
+    - Added `PermissionRepository` dependency injection
+    - Added `UserRepository` dependency injection for role checks
+  - **New Helper Methods:**
+    - `canUploadToProject(userId, projectId)` - Private method
+      - Administrators: Always allowed
+      - Clients: Can upload to assigned projects
+      - **Special user creators: Can upload to projects they created**
+      - Special users with permissions: Must have explicit `UPLOAD` right
+      - Returns boolean for upload authorization
+    - `canDownloadFromProject(userId, projectId)` - Private method
+      - Administrators: Always allowed
+      - Clients: Can download from assigned projects
+      - **Special user creators: Can download from projects they created**
+      - Special users with permissions: Must have `DOWNLOAD` or `VIEW` right
+      - Returns boolean for download/view authorization
+  - **Upload Endpoint (`POST /api/v1/files/upload`):**
+    - Validates project exists before file upload
+    - **Checks `canUploadToProject()` before accepting file**
+    - Returns 403 FORBIDDEN if user lacks upload permission
+    - Enhanced logging with permission check results
+  - **Download Endpoint (`GET /api/v1/files/:id/download`):**
+    - **Checks `canDownloadFromProject()` before serving file**
+    - Returns 403 FORBIDDEN if user lacks download permission
+  - **Preview Endpoint (`GET /api/v1/files/:id/preview`):**
+    - **Checks `canDownloadFromProject()` before preview link**
+    - Returns 403 FORBIDDEN if user lacks view permission
+  - **List Files Endpoint (`GET /api/v1/projects/:projectId/files`):**
+    - **Checks `canDownloadFromProject()` before listing files**
+    - Returns 403 FORBIDDEN if user lacks view permission
+  - **Get File Endpoint (`GET /api/v1/files/:id`):**
+    - **Checks `canDownloadFromProject()` before file metadata**
+    - Returns 403 FORBIDDEN if user lacks view permission
+  - **Delete Endpoint (`DELETE /api/v1/files/:id`):**
+    - **NEW LOGIC: Administrators can delete any file**
+    - **NEW LOGIC: File owners can delete files they uploaded**
+    - Compares `req.user.id` with `file.uploadedBy` for ownership check
+    - Returns 403 FORBIDDEN with message: "You can only delete files that you uploaded"
+    - Maintains backward compatibility for admin-only deletion
+  - **Impact**: All file operations now permission-gated and ownership-aware
+
+---
+
+#### 3. **Project Controller - Auto-Permissions for Creators** 👑
+
+**Rationale:**
+- Special users creating projects should automatically have access rights
+- Manual permission assignment creates friction and potential lockouts
+- Creator permissions should be comprehensive to enable project management
+- Auto-grants improve UX and reduce admin overhead
+
+**Project Creation Enhancement:**
+- `backend/src/presentation/controllers/project.controller.ts` (MODIFIED - +390 insertions)
+  - **Constructor Updates:**
+    - Added `PermissionRepository` dependency injection
+    - Added `UserRepository` dependency injection
+  - **Create Project Endpoint (`POST /api/v1/projects`):**
+    - After project creation, checks if creator is `SPECIAL_USER`
+    - If special user:
+      - Adds to `ProjectSpecialUser` relation (existing behavior)
+      - **NEW: Automatically creates permission record:**
+        ```typescript
+        await this.permissionRepository.create({
+          userId: currentUser.id,
+          projectId: project.id,
+          rights: ['VIEW', 'DOWNLOAD', 'UPLOAD', 'EDIT', 'DELETE', 'SEND_MESSAGE'],
+          grantedBy: currentUser.id,
+        });
+        ```
+      - Grants all access rights immediately upon project creation
+      - Self-grants permission (grantedBy = creator)
+    - **Impact**: Special user creators can immediately use their projects
+  - **Get Project Endpoint (`GET /api/v1/projects/:id`):**
+    - Enhanced with permission data for current user
+    - New helper method: `getUserPermissions(userId, projectId)`
+    - Returns `currentUserPermissions` object with boolean flags:
+      - `canEditProject`, `canDeleteProject`, `canCreateTask`
+      - `canUploadFile`, `canDownloadFile`, `canSendMessage`
+    - Frontend uses these flags for UI permission rendering
+  - **New Permission Management Endpoints:**
+    - `POST /api/v1/projects/:id/special-users` - Add special user with permissions
+    - `PATCH /api/v1/projects/:id/special-users/:userId` - Update user permissions
+    - `DELETE /api/v1/projects/:id/special-users/:userId` - Remove user access
+    - `GET /api/v1/projects/:id/special-users/:userId/permissions` - Get user permissions
+  - **Impact**: Comprehensive permission CRUD API for admin management
+
+**Project Routes Updated:**
+- `backend/src/presentation/routes/project.routes.ts` (MODIFIED - +6 insertions)
+  - Added 4 new authenticated routes for permission management
+  - All routes protected with `authenticate` middleware
+  - RESTful design for special user permission operations
+  - **Impact**: API endpoints available for frontend integration
+
+---
+
+#### 4. **Frontend - Owner-Based Delete Button Visibility** 🗑️
+
+**Rationale:**
+- Users should visually see delete options only for files they own
+- Per-file permission checks provide accurate UI state
+- Admin override maintains privileged access for system management
+- Improves UX by hiding unavailable actions
+
+**FileList Component Enhancement:**
+- `src/presentation/components/file/FileList.vue` (MODIFIED - +30 insertions)
+  - **New Props:**
+    - `currentUserId?: string` - Current authenticated user ID
+    - `isAdmin?: boolean` - Whether user has administrator role
+    - Props default to empty string and false respectively
+  - **New Permission Function:**
+    - `canDeleteFile(file: FileDto): boolean` - Per-file delete permission check
+    - Returns `true` if:
+      - User is admin (global delete permission), OR
+      - `canDelete` prop is true (backward compatibility), OR
+      - File's `uploadedBy` matches `currentUserId` (owner check)
+    - Returns `false` otherwise
+  - **Delete Button Updates:**
+    - **Grid View:** Changed `v-if="canDelete"` to `v-if="canDeleteFile(file)"`
+    - **List View:** Changed `v-if="canDelete"` to `v-if="canDeleteFile(file)"`
+    - Delete button (🗑️) now renders conditionally per file
+  - **Impact**: Delete buttons appear only for deletable files
+
+**ProjectDetailsView Integration:**
+- `src/presentation/views/ProjectDetailsView.vue` (MODIFIED - +12 insertions)
+  - **FileList Props Binding:**
+    - Added `:current-user-id="userId"` binding
+    - Added `:is-admin="isAdmin"` binding
+    - Both values from `useAuth()` composable
+  - **Data Flow:**
+    - `userId` computed from authenticated user
+    - `isAdmin` boolean flag from auth state
+    - Passed to FileList for per-file permission evaluation
+  - **Impact**: FileList receives user context for accurate render logic
+
+---
+
+## Technical Impact Summary
+
+**Security Enhancements:**
+- ✅ Permission-based access control for all file operations
+- ✅ Database-backed permission persistence and audit trail
+- ✅ Owner-based deletion prevents unauthorized file removal
+- ✅ Creator auto-permissions eliminate permission gaps
+
+**User Experience Improvements:**
+- ✅ Special users can immediately use projects they create
+- ✅ Users can manage (delete) their own uploaded files
+- ✅ UI accurately reflects per-file permissions
+- ✅ 403 error messages clearly explain permission denials
+
+**Architectural Benefits:**
+- ✅ Centralized permission logic in repository layer
+- ✅ Consistent permission checks across all file endpoints
+- ✅ Extensible permission model supports future RBAC features
+- ✅ Clean separation of concerns (repository → controller → routes)
+
+**Database Changes:**
+- ✅ Permission table populated for special user creators
+- ✅ Composite unique key ensures one permission set per user-project
+- ✅ Access rights array supports flexible permission combinations
+
+**API Changes:**
+- ✅ 4 new permission management endpoints (RESTful)
+- ✅ Enhanced project GET response includes user permissions
+- ✅ All file endpoints now permission-gated
+
+**Files Modified:** 7 files | **Lines Changed:** +599, -34 | **New Files:** 1
+
+---
+
+## Previous Changes (February 25, 2026)
 
 ### MAJOR: OAuth 2.0 Automatic Token Renewal + Real-time Messaging Enhancements
 

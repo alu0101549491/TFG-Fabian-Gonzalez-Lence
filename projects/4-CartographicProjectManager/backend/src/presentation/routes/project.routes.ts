@@ -31,6 +31,12 @@ projectRoutes.post('/', authenticate, controller.create.bind(controller));
 projectRoutes.put('/:id', authenticate, controller.update.bind(controller));
 projectRoutes.delete('/:id', authenticate, controller.delete.bind(controller));
 
+// Special user management
+projectRoutes.post('/:id/special-users', authenticate, controller.addSpecialUser.bind(controller));
+projectRoutes.put('/:id/special-users/:userId/permissions', authenticate, controller.updateSpecialUserPermissions.bind(controller));
+projectRoutes.get('/:id/special-users/:userId/permissions', authenticate, controller.getSpecialUserPermissions.bind(controller));
+projectRoutes.delete('/:id/special-users/:userId', authenticate, controller.removeSpecialUser.bind(controller));
+
 // Sub-resources
 projectRoutes.get('/:id/tasks', authenticate, (req, res, next) => {
   req.query.projectId = req.params.id;
