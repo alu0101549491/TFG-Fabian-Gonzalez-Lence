@@ -2,13 +2,17 @@
   "name": "tfg-fabian-gonzalez-lence-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Monorepo for TFG projects - Railway should use Root Directory: projects/4-CartographicProjectManager/backend",
+  "description": "Monorepo for TFG projects - CartographicProjectManager backend deployment",
+  "main": "projects/4-CartographicProjectManager/backend/dist/server.js",
   "scripts": {
-    "railway:build": "cd projects/4-CartographicProjectManager/backend && npm ci && npx prisma generate && npm run build",
-    "railway:start": "cd projects/4-CartographicProjectManager/backend && npx prisma migrate deploy && npm start"
+    "build": "cd projects/4-CartographicProjectManager/backend && npm ci && npx prisma generate && npm run build",
+    "start": "cd projects/4-CartographicProjectManager/backend && npx prisma migrate deploy && node dist/server.js",
+    "railway:build": "npm run build",
+    "railway:start": "npm run start"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   },
   "workspaces": [
     "projects/1-TheHangmanGame",
