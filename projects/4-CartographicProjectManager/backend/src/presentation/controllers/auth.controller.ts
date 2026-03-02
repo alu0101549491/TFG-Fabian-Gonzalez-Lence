@@ -106,10 +106,10 @@ export class AuthController {
   ): Promise<void> {
     try {
       // Log logout in audit trail if user is authenticated
-      if (req.user) {
+      if ((req as any).user) {
         await this.auditService.logLogout(
-          req.user.userId,
-          req.user.email,
+          (req as any).user.userId,
+          (req as any).user.email,
           req
         );
       }
