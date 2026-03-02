@@ -72,6 +72,19 @@ jobs:
             cd ../..
             echo "✅ 3-MiniBalatro built successfully"
           fi
+          
+          # Build 4-CartographicProjectManager
+          if [ -d "projects/4-CartographicProjectManager" ]; then
+            echo "🔨 Building 4-CartographicProjectManager..."
+            cd projects/4-CartographicProjectManager
+            npm ci
+            export BASE_URL="/$REPO_NAME/4-CartographicProjectManager/"
+            npm run build
+            mkdir -p "../../deploy/4-CartographicProjectManager"
+            cp -r dist/* "../../deploy/4-CartographicProjectManager/"
+            cd ../..
+            echo "✅ 4-CartographicProjectManager built successfully"
+          fi
 
       - name: Create index page
         run: |
@@ -161,6 +174,11 @@ jobs:
                           <div class="project-icon">🃏</div>
                           <div class="project-name">Mini Balatro</div>
                           <div class="project-description">Fun and addictive card game</div>
+                      </a>
+                      <a href="./4-CartographicProjectManager/" class="project-card">
+                          <div class="project-icon">🗺️</div>
+                          <div class="project-name">Cartographic Project Manager</div>
+                          <div class="project-description">Comprehensive management of cartographic projects with collaboration and task tracking</div>
                       </a>
                   </div>
               </div>
