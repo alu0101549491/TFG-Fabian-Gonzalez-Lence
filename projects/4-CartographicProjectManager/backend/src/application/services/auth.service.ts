@@ -57,7 +57,6 @@ export class AuthService {
       passwordHash,
       role: data.role as any,
       phone: data.phone ?? null,
-      whatsappEnabled: false,
     });
 
     // Generate tokens
