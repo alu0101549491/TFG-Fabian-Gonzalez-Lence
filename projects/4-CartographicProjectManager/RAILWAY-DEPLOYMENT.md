@@ -95,7 +95,7 @@ The script will:
 1. Go to [railway.app](https://railway.app/new)
 2. Click **"Deploy from GitHub repo"**
 3. Select your repository: `TFG-Fabian-Gonzalez-Lence`
-4. Railway will detect the backend automatically
+4. Railway will analyze the repository (it will fail initially - this is expected for monorepos)
 
 ### Step 2.2: Add PostgreSQL Database
 
@@ -106,13 +106,18 @@ The script will:
    - Creates a `DATABASE_URL` environment variable
    - Links it to your backend service
 
-### Step 2.3: Configure Backend Service
+### Step 2.3: Configure Backend Service (⚠️ CRITICAL FOR MONOREPO)
 
 1. Click on your backend service
-2. Go to **Settings** tab:
+2. Go to **Settings** tab
+3. Scroll down to **Service Settings**:
    - **Root Directory**: `projects/4-CartographicProjectManager/backend`
-   - **Build Command**: (leave empty, nixpacks.toml handles this)
-   - **Start Command**: (leave empty, nixpacks.toml handles this)
+   - **Build Command**: `npm ci && npx prisma generate && npm run build`
+   - **Start Command**: `npx prisma migrate deploy && npm start`
+   
+4. Click **"Redeploy"** after saving these settings
+
+> **Why this is needed**: Your repository is a monorepo with multiple projects. Railway needs to know which directory contains the backend app. Setting the Root Directory tells Railway to build from that specific folder.
 
 ### Step 2.4: Set Environment Variables
 

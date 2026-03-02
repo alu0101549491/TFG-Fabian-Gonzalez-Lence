@@ -1,0 +1,11 @@
+# Railway Configuration for CartographicProjectManager Backend
+# 
+# ⚠️ IMPORTANT: This repository is a MONOREPO
+# The backend is located at: projects/4-CartographicProjectManager/backend
+#
+# To deploy on Railway:
+# 1. In Railway dashboard, go to your service Settings
+# 2. Set "Root Directory" to: projects/4-CartographicProjectManager/backend
+# 3. Railway will then use the nixpacks.toml and railway.json in that directory
+#
+# See complete guide: projects/4-CartographicProjectManager/RAILWAY-DEPLOYMENT.md
