@@ -60,6 +60,9 @@ export function createApp(): express.Application {
         messages: `${SERVER.API_PREFIX}/messages`,
         notifications: `${SERVER.API_PREFIX}/notifications`,
         files: `${SERVER.API_PREFIX}/files`,
+        auditLogs: `${SERVER.API_PREFIX}/audit-logs`,
+        export: `${SERVER.API_PREFIX}/export`,
+        backup: `${SERVER.API_PREFIX}/backup`,
         health: `${SERVER.API_PREFIX}/health`,
       },
     });

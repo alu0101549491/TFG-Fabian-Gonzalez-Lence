@@ -19,3 +19,4 @@ export * from './message.repository.js';
 export * from './notification.repository.js';
 export * from './file.repository.js';
 export * from './permission.repository.js';
+export * from './audit-log.repository.js';

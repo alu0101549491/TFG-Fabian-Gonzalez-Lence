@@ -14,17 +14,25 @@
 
 import type {Request, Response, NextFunction} from 'express';
 import {AuthService} from '@application/services/auth.service.js';
+import {AuditService} from '@application/services/audit.service.js';
+import {AuditLogRepository} from '@infrastructure/repositories/audit-log.repository.js';
+import {PrismaClient} from '@prisma/client';
 import {sendSuccess, sendError} from '@shared/utils.js';
 import {HTTP_STATUS} from '@shared/constants.js';
+
+const prisma = new PrismaClient();
+const auditLogRepository = new AuditLogRepository(prisma);
 
 /**
  * Authentication controller
  */
 export class AuthController {
   private readonly authService: AuthService;
+  private readonly auditService: AuditService;
 
   public constructor() {
     this.authService = new AuthService();
+    this.auditService = new AuditService(auditLogRepository);
   }
 
   /**
@@ -45,6 +53,16 @@ export class AuthController {
         role,
         phone,
       });
+      
+      // Log user creation in audit trail
+      await this.auditService.logUserCreation(
+        result.user.id,
+        result.user.id,
+        result.user.username,
+        result.user.role,
+        req
+      );
+      
       sendSuccess(res, result, 'User registered successfully', HTTP_STATUS.CREATED);
     } catch (error) {
       next(error);
@@ -63,6 +81,14 @@ export class AuthController {
     try {
       const {email, password} = req.body;
       const result = await this.authService.login(email, password);
+      
+      // Log login in audit trail
+      await this.auditService.logLogin(
+        result.user.id,
+        result.user.username,
+        req
+      );
+      
       sendSuccess(res, result, 'Login successful');
     } catch (error) {
       next(error);
@@ -79,6 +105,15 @@ export class AuthController {
     next: NextFunction
   ): Promise<void> {
     try {
+      // Log logout in audit trail if user is authenticated
+      if (req.user) {
+        await this.auditService.logLogout(
+          req.user.userId,
+          req.user.email,
+          req
+        );
+      }
+      
       sendSuccess(res, null, 'Logout successful');
     } catch (error) {
       next(error);
