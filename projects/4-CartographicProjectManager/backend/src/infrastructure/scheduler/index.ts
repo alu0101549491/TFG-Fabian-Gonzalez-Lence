@@ -5,15 +5,12 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since February 18, 2026
- * @file src/application/services/index.ts
- * @desc Application services module exports
+ * @since March 2, 2026
+ * @file backend/src/infrastructure/scheduler/index.ts
+ * @desc Scheduler module exports
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
  */
 
-export * from './auth.service.js';
-export * from './audit.service.js';
-export * from './backup.service.js';
-export * from './deadline-reminder.service.js';
-export * from './export.service.js';
+export * from './deadline-reminder.scheduler.js';
+export * from './backup.scheduler.js';

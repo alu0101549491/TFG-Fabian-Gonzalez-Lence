@@ -18,9 +18,15 @@ import type {AuthenticatedRequest} from '@shared/types.js';
 import {ProjectRepository} from '@infrastructure/repositories/project.repository.js';
 import {PermissionRepository} from '@infrastructure/repositories/permission.repository.js';
 import {UserRepository} from '@infrastructure/repositories/user.repository.js';
+import {AuditService} from '@application/services/audit.service.js';
+import {AuditLogRepository} from '@infrastructure/repositories/audit-log.repository.js';
+import {PrismaClient} from '@prisma/client';
 import {sendSuccess, generateProjectCode, sendError} from '@shared/utils.js';
 import {HTTP_STATUS, ERROR_MESSAGES} from '@shared/constants.js';
 import {NotFoundError} from '@shared/errors.js';
+
+const prisma = new PrismaClient();
+const auditLogRepository = new AuditLogRepository(prisma);
 
 /**
  * Project controller
@@ -29,11 +35,13 @@ export class ProjectController {
   private readonly projectRepository: ProjectRepository;
   private readonly permissionRepository: PermissionRepository;
   private readonly userRepository: UserRepository;
+  private readonly auditService: AuditService;
 
   public constructor() {
     this.projectRepository = new ProjectRepository();
     this.permissionRepository = new PermissionRepository();
     this.userRepository = new UserRepository();
+    this.auditService = new AuditService(auditLogRepository);
   }
 
   /**
@@ -240,6 +248,14 @@ export class ProjectController {
         });
       }
       
+      // Log project creation in audit trail
+      await this.auditService.logProjectCreation(
+        currentUser.id,
+        project.id,
+        project.name,
+        req
+      );
+      
       sendSuccess(res, project, 'Project created successfully', HTTP_STATUS.CREATED);
     } catch (error) {
       next(error);
@@ -280,6 +296,27 @@ export class ProjectController {
 
       const project = await this.projectRepository.update(projectId, req.body);
       console.log(`[ProjectController] Project ${projectId} updated successfully`);
+      
+      // Log project finalization if status changed to FINALIZED
+      if (req.body.status === 'FINALIZED' && existingProject.status !== 'FINALIZED') {
+        await this.auditService.logProjectFinalization(
+          currentUser.id,
+          project.id,
+          project.name,
+          req
+        );
+      } else {
+        // Log general project update
+        await this.auditService.logProjectUpdate(
+          currentUser.id,
+          project.id,
+          project.name,
+          JSON.stringify({ status: existingProject.status }),
+          JSON.stringify({ status: project.status }),
+          req
+        );
+      }
+      
       sendSuccess(res, project, 'Project updated successfully');
     } catch (error) {
       console.error('[ProjectController] Error updating project:', error);
@@ -321,6 +358,14 @@ export class ProjectController {
 
       await this.projectRepository.delete(projectId);
       console.log(`[ProjectController] Project ${projectId} deleted successfully`);
+      
+      // Log project deletion in audit trail
+      await this.auditService.logProjectDeletion(
+        currentUser.id,
+        existingProject.id,
+        existingProject.name,
+        req
+      );
       
       sendSuccess(res, null, 'Project deleted successfully');
     } catch (error) {
@@ -378,6 +423,7 @@ export class ProjectController {
       await this.projectRepository.addSpecialUser(projectId, userId);
 
       // Create permissions if provided
+      let grantedPermissions: string[];
       if (permissions && Array.isArray(permissions)) {
         const validPermissions = permissions.filter((p: string) => 
           ['VIEW', 'DOWNLOAD', 'UPLOAD', 'EDIT', 'DELETE', 'SEND_MESSAGE'].includes(p)
@@ -390,6 +436,15 @@ export class ProjectController {
             rights: validPermissions,
             grantedBy: currentUser.id,
           });
+          grantedPermissions = validPermissions;
+        } else {
+          grantedPermissions = ['VIEW'];
+          await this.permissionRepository.create({
+            userId,
+            projectId,
+            rights: ['VIEW'] as AccessRight[],
+            grantedBy: currentUser.id,
+          });
         }
       } else {
         // Default permissions: VIEW only
@@ -399,13 +454,25 @@ export class ProjectController {
           rights: ['VIEW'] as AccessRight[],
           grantedBy: currentUser.id,
         });
+        grantedPermissions = ['VIEW'];
       }
+
+      // Log permission grant in audit trail
+      await this.auditService.logPermissionGrant(
+        currentUser.id,
+        userId,
+        user.username,
+        projectId,
+        project.name,
+        grantedPermissions,
+        req
+      );
 
       sendSuccess(res, {
         message: 'Special user added to project successfully',
         userId,
         projectId,
-        permissions: permissions || ['VIEW'],
+        permissions: grantedPermissions,
       }, 'Special user added successfully', HTTP_STATUS.CREATED);
     } catch (error) {
       console.error('[ProjectController] Error adding special user:', error);

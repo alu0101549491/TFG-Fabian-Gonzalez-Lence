@@ -85,6 +85,29 @@ enum AccessRight {
   SEND_MESSAGE
 }
 
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  FINALIZE
+  PERMISSION_GRANT
+  PERMISSION_REVOKE
+  LOGIN
+  LOGOUT
+  PASSWORD_CHANGE
+  ROLE_CHANGE
+}
+
+enum AuditResourceType {
+  PROJECT
+  TASK
+  USER
+  MESSAGE
+  FILE
+  PERMISSION
+  AUTHENTICATION
+}
+
 // ============================================
 // USER MODEL
 // ============================================
@@ -349,3 +372,28 @@ model Permission {
   @@map("permissions")
 }
 
+// ============================================
+// AUDIT LOG MODEL
+// ============================================
+
+model AuditLog {
+  id             String            @id @default(uuid())
+  userId         String?
+  action         AuditAction
+  resourceType   AuditResourceType
+  resourceId     String?
+  resourceName   String?
+  oldValue       String?
+  newValue       String?
+  ipAddress      String?
+  userAgent      String?
+  timestamp      DateTime          @default(now())
+  details        String?
+  
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType])
+  @@index([resourceId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}

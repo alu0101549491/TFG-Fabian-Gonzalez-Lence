@@ -19,6 +19,9 @@ import {taskRoutes} from './task.routes.js';
 import {messageRoutes} from './message.routes.js';
 import {notificationRoutes} from './notification.routes.js';
 import {fileRoutes} from './file.routes.js';
+import auditLogRoutes from './audit-log.routes.js';
+import exportRoutes from './export.routes.js';
+import backupRoutes from './backup.routes.js';
 
 export const apiRouter = Router();
 
@@ -29,6 +32,9 @@ apiRouter.use('/tasks', taskRoutes);
 apiRouter.use('/messages', messageRoutes);
 apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/files', fileRoutes);
+apiRouter.use('/audit-logs', auditLogRoutes);
+apiRouter.use('/export', exportRoutes);
+apiRouter.use('/backup', backupRoutes);
 
 // Health check endpoint
 apiRouter.get('/health', (req, res) => {

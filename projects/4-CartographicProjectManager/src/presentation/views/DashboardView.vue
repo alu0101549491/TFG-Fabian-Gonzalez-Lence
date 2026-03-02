@@ -113,27 +113,32 @@
 
           <div v-if="upcomingDeadlines.length > 0" class="deadline-list">
             <div
-              v-for="project in upcomingDeadlines"
-              :key="project.id"
+              v-for="item in upcomingDeadlines"
+              :key="item.id"
               class="deadline-item"
-              @click="goToProject(project.id)"
+              @click="item.type === 'project' ? goToProject(item.id) : goToProject(item.projectId!)"
               role="button"
               tabindex="0"
-              @keydown.enter="goToProject(project.id)"
+              @keydown.enter="item.type === 'project' ? goToProject(item.id) : goToProject(item.projectId!)"
             >
               <div
                 class="deadline-indicator"
-                :class="getDeadlineUrgencyClass(project.deliveryDate)"
-                :title="getDeadlineUrgencyLabel(project.deliveryDate)"
+                :class="getDeadlineUrgencyClass(item.date)"
+                :title="getDeadlineUrgencyLabel(item.date)"
               ></div>
               <div class="deadline-content">
-                <h3 class="deadline-code">{{ project.code }}</h3>
-                <p class="deadline-name">{{ project.name }}</p>
+                <div class="deadline-type-badge" :class="`badge-${item.type}`">
+                  {{ item.type === 'project' ? '📦 Project' : '✅ Task' }}
+                </div>
+                <h3 class="deadline-code" v-if="item.type === 'project'">{{ item.code }}</h3>
+                <p class="deadline-name">
+                  {{ item.type === 'project' ? item.name : item.description }}
+                </p>
                 <p class="deadline-date">
                   <span class="date-icon">📅</span>
-                  {{ formatDeadlineDate(project.deliveryDate) }}
+                  {{ formatDeadlineDate(item.date) }}
                   <span class="deadline-days">
-                    ({{ getDaysUntilDeadline(project.deliveryDate) }})
+                    ({{ getDaysUntilDeadline(item.date) }})
                   </span>
                 </p>
               </div>
@@ -234,11 +239,14 @@ import CalendarWidget from '../components/calendar/CalendarWidget.vue';
 import type {CreateProjectDto} from '@/application/dto';
 import type {NotificationDto} from '@/application/dto/notification-data.dto';
 import {UserRepository} from '@/infrastructure/repositories/user.repository';
+import {TaskRepository} from '@/infrastructure/repositories/task.repository';
 import {UserRole} from '@/domain/enumerations/user-role';
+import {TaskStatus} from '@/domain/enumerations/task-status';
+import type {Task} from '@/domain/entities/task';
 
 // Composables
 const router = useRouter();
-const {canCreateProject, isAuthenticated} = useAuth();
+const {canCreateProject, isAuthenticated, userId} = useAuth();
 const {
   projects,
   activeProjects,
@@ -266,6 +274,8 @@ const messageStore = useMessageStore();
 // Local State
 const showCreateModal = ref(false);
 const clients = ref<Array<{id: string; name: string}>>([]);
+const userTasks = ref<Task[]>([]);
+const taskRepository = new TaskRepository();
 
 // Computed Properties
 const stats = computed(() => ({
@@ -289,16 +299,65 @@ const recentProjects = computed(() =>
     .slice(0, 4)
 );
 
-const upcomingDeadlines = computed(() =>
-  (activeProjects.value ? [...activeProjects.value] : [])
-    .filter((p) => {
-      const deliveryDate = new Date(p.deliveryDate);
-      const today = new Date();
-      return deliveryDate >= today;
+// Combined deadlines with both projects and tasks
+type DeadlineItem = {
+  id: string;
+  type: 'project' | 'task';
+  name: string;
+  code?: string;
+  description?: string;
+  date: Date;
+  projectId?: string;
+  status?: string;
+};
+
+const upcomingDeadlines = computed(() => {
+  const items: DeadlineItem[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Add projects
+  if (activeProjects.value) {
+    activeProjects.value
+      .filter((p) => {
+        const deliveryDate = new Date(p.deliveryDate);
+        return deliveryDate >= today;
+      })
+      .forEach((p) => {
+        items.push({
+          id: p.id,
+          type: 'project',
+          name: p.name,
+          code: p.code,
+          date: new Date(p.deliveryDate),
+          status: p.status,
+        });
+      });
+  }
+  
+  // Add tasks (exclude completed tasks)
+  userTasks.value
+    .filter((t) => {
+      const dueDate = new Date(t.dueDate);
+      return dueDate >= today && t.status !== TaskStatus.COMPLETED;
     })
-    .sort((a, b) => new Date(a.deliveryDate).getTime() - new Date(b.deliveryDate).getTime())
-    .slice(0, 5)
-);
+    .forEach((t) => {
+      items.push({
+        id: t.id,
+        type: 'task',
+        name: 'Task',
+        description: t.description,
+        date: new Date(t.dueDate),
+        projectId: t.projectId,
+        status: t.status,
+      });
+    });
+  
+  // Sort by date and return top 10
+  return items
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .slice(0, 10);
+});
 
 const recentNotifications = computed(() =>
   notifications.value.slice(0, 5)
@@ -477,6 +536,20 @@ async function handleMonthChange(date: Date): Promise<void> {
 }
 
 /**
+ * Fetch tasks assigned to current user
+ */
+async function fetchUserTasks(): Promise<void> {
+  if (!userId.value) return;
+  
+  try {
+    userTasks.value = await taskRepository.findByAssigneeId(userId.value);
+  } catch (error) {
+    console.error('Failed to fetch user tasks:', error);
+    userTasks.value = [];
+  }
+}
+
+/**
  * Fetch available clients for project assignment
  */
 async function fetchClients(): Promise<void> {
@@ -545,6 +618,10 @@ onMounted(async () => {
         return null;
       }),
       fetchClients(),
+      fetchUserTasks().catch(err => {
+        console.warn('Failed to fetch user tasks:', err.message);
+        return null;
+      }),
       loadCalendarProjects(startOfMonth, endOfMonth).catch(err => {
         console.warn('Failed to load calendar projects:', err.message);
         return null;
@@ -736,6 +813,25 @@ onMounted(async () => {
 .deadline-content {
   flex: 1;
   min-width: 0;
+}
+
+.deadline-type-badge {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-2);
+}
+
+.deadline-type-badge.badge-project {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.deadline-type-badge.badge-task {
+  background-color: var(--color-success-light);
+  color: var(--color-success-dark);
 }
 
 .deadline-code {
