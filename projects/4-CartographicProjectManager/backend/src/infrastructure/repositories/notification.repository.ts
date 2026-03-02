@@ -48,7 +48,7 @@ export class NotificationRepository implements INotificationRepository {
     }
   }
 
-  public async create(data: Omit<Notification, 'id' | 'createdAt' | 'readAt'>): Promise<Notification> {
+  public async create(data: Omit<Notification, 'id' | 'createdAt' | 'readAt' | 'isRead'>): Promise<Notification> {
     try {
       return await prisma.notification.create({data});
     } catch (error) {
