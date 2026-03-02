@@ -31,3 +31,4 @@ userRoutes.post('/', authenticate, authorize('ADMINISTRATOR'), controller.create
 userRoutes.put('/:id', authenticate, authorizeOwnerOrAdmin, controller.update.bind(controller));
 userRoutes.delete('/:id', authenticate, authorizeOwnerOrAdmin, controller.delete.bind(controller));
 
+export default userRoutes;
