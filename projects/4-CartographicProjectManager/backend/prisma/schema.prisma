@@ -96,7 +96,6 @@ model User {
   passwordHash     String
   role             UserRole  @default(CLIENT)
   phone            String?
-  whatsappEnabled  Boolean   @default(false)
   createdAt        DateTime  @default(now())
   lastLogin        DateTime?
   
@@ -349,3 +348,4 @@ model Permission {
   @@index([projectId])
   @@map("permissions")
 }
+

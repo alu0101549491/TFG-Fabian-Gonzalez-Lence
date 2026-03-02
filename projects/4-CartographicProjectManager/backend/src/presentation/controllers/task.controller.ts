@@ -114,17 +114,18 @@ export class TaskController {
 
   public async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      // Get existing task to check for changes
+      const existingTask = await this.taskRepository.findById(req.params.id as string);
+      if (!existingTask) {
+        throw new NotFoundError(ERROR_MESSAGES.TASK_NOT_FOUND);
+      }
+      
       // Extract only fields that can be updated (exclude id, createdAt, updatedAt, fileIds, etc.)
       const {assigneeId, description, status, priority, dueDate, comments, completedAt, confirmedAt} = req.body;
       
       // If dueDate is being updated, validate it's within project date range
       if (dueDate) {
-        const task = await this.taskRepository.findById(req.params.id as string);
-        if (!task) {
-          throw new NotFoundError(ERROR_MESSAGES.TASK_NOT_FOUND);
-        }
-
-        const project = await this.projectRepository.findById(task.projectId);
+        const project = await this.projectRepository.findById(existingTask.projectId);
         if (!project) {
           throw new NotFoundError(ERROR_MESSAGES.PROJECT_NOT_FOUND);
         }

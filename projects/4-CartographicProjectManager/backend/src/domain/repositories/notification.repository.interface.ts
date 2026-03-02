@@ -21,7 +21,7 @@ export interface INotificationRepository {
   findById(id: string): Promise<Notification | null>;
   findByUserId(userId: string): Promise<Notification[]>;
   findUnreadByUserId(userId: string): Promise<Notification[]>;
-  create(data: Omit<Notification, 'id' | 'createdAt' | 'readAt'>): Promise<Notification>;
+  create(data: Omit<Notification, 'id' | 'createdAt' | 'readAt' | 'isRead'>): Promise<Notification>;
   markAsRead(id: string): Promise<Notification>;
   delete(id: string): Promise<void>;
   deleteAllForUser(userId: string): Promise<void>;
