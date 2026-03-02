@@ -146,13 +146,13 @@
 
             <div class="export-options">
               <button
-                @click="handleExport('json')"
+                @click="handleExport('excel')"
                 class="export-button"
                 :disabled="isExporting"
               >
-                <span class="export-icon">📄</span>
-                <span class="export-label">Export as JSON</span>
-                <span class="export-description">Complete data export</span>
+                <span class="export-icon">📗</span>
+                <span class="export-label">Export as Excel</span>
+                <span class="export-description">XLSX spreadsheet</span>
               </button>
 
               <button
@@ -346,6 +346,7 @@
 import {ref, computed, onMounted} from 'vue';
 import {useAuth} from '../composables/use-auth';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
+import {httpClient} from '../../infrastructure/http';
 
 // Types
 interface BackupRecord {
@@ -535,12 +536,37 @@ async function handleSaveSchedule(): Promise<void> {
 async function handleExport(format: string): Promise<void> {
   isExporting.value = true;
   try {
-    // Simulate export
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // Map frontend format to backend format and file extension
+    const formatMap: Record<string, {backend: string; ext: string}> = {
+      'excel': { backend: 'excel', ext: 'xlsx' },
+      'csv': { backend: 'csv', ext: 'csv' },
+      'pdf': { backend: 'pdf', ext: 'pdf' },
+    };
+    
+    const formatInfo = formatMap[format] || { backend: 'csv', ext: 'csv' };
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `projects_export_${timestamp}.${formatInfo.ext}`;
+    
+    // Call backend export API
+    const blob = await httpClient.downloadFile(
+      `/export/projects?format=${formatInfo.backend}`,
+      { responseType: 'blob' }
+    );
+    
+    // Create download link
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    link.click();
+    
+    // Cleanup
+    URL.revokeObjectURL(downloadUrl);
+    
     alert(`Data exported as ${format.toUpperCase()} successfully!`);
   } catch (error) {
     console.error(`Failed to export as ${format}:`, error);
-    alert(`Failed to export as ${format}`);
+    alert(`Failed to export as ${format}. Please ensure you are logged in as an administrator.`);
   } finally {
     isExporting.value = false;
   }

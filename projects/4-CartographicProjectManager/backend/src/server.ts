@@ -15,6 +15,7 @@ import {createServer} from 'http';
 import {createApp} from './presentation/app.js';
 import {connectDatabase, disconnectDatabase} from './infrastructure/database/index.js';
 import {initializeSocketServer} from './infrastructure/websocket/index.js';
+import {initializeDeadlineReminder, initializeBackupScheduler} from './infrastructure/scheduler/index.js';
 import {SERVER} from './shared/constants.js';
 import {logInfo, logError} from './shared/logger.js';
 
@@ -34,6 +35,12 @@ async function bootstrap(): Promise<void> {
 
     // Initialize WebSocket server
     initializeSocketServer(httpServer);
+    
+    // Initialize deadline reminder scheduler
+    initializeDeadlineReminder();
+    
+    // Initialize backup scheduler
+    initializeBackupScheduler();
 
     // Start listening
     httpServer.listen(SERVER.PORT, () => {
