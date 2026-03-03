@@ -1,11 +1,64 @@
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since March 3, 2026
+ * @file vite.config.ts
+ * @desc Vite configuration with PWA support
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ */
+
 import {defineConfig} from 'vite';
 import vue from '@vitejs/plugin-vue';
+import {VitePWA} from 'vite-plugin-pwa';
 import {resolve} from 'path';
 
 const base = process.env.BASE_URL || '/4-CartographicProjectManager/';
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'robots.txt'],
+      manifest: {
+        name: 'Cartographic Project Manager',
+        short_name: 'CartoManager',
+        description: 'Comprehensive management of cartographic projects',
+        theme_color: '#1e40af',
+        background_color: '#ffffff',
+        display: 'standalone',
+        scope: base,
+        start_url: base,
+        icons: [],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.railway\.app\/api\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 5, // 5 minutes
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
+      },
+      devOptions: {
+        enabled: false, // Disable in development to avoid conflicts
+      },
+    }),
+  ],
   root: '.',
   publicDir: 'public',
   base,
