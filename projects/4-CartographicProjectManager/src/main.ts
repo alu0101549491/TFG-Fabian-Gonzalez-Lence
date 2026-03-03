@@ -233,24 +233,10 @@ if (import.meta.hot) {
 // ============================================================================
 // Service Worker Registration (Production)
 // ============================================================================
-
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then((registration) => {
-        console.log('✅ ServiceWorker registered:', registration.scope);
-
-        // Check for updates periodically
-        setInterval(() => {
-          registration.update();
-        }, 60000); // Check every minute
-      })
-      .catch((error) => {
-        console.error('❌ ServiceWorker registration failed:', error);
-      });
-  });
-}
+// PWA Service Worker Registration
+// ============================================================================
+// Service worker is auto-registered by vite-plugin-pwa
+// The plugin handles registration, updates, and offline caching automatically
 
 // ============================================================================
 // Unhandled Promise Rejection Handler
