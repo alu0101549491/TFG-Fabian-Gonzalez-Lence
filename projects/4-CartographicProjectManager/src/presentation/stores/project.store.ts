@@ -317,7 +317,7 @@ export const useProjectStore = defineStore('project', () => {
         });
       }
 
-      // Find project summary in local state for additional data
+      // Find project summary in local state for display-only metadata
       let projectSummary = projects.value.find(p => p.id === projectId);
       
       // If not found, fetch projects first
@@ -327,7 +327,8 @@ export const useProjectStore = defineStore('project', () => {
       }
 
       currentProject.value = {
-        project: projectSummary as any || projectWithDetails,
+        // Use the full project details from API, not the summary
+        project: projectWithDetails,
         tasks: [],
         taskStats: { total: 0, pending: 0, inProgress: 0, completed: 0, overdue: 0 },
         recentMessages: [],
