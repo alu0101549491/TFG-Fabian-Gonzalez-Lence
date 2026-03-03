@@ -87,10 +87,13 @@ export const useAuthStore = defineStore('auth', () => {
           id: response.data.user.id,
           username: response.data.user.username,
           email: response.data.user.email,
+          firstName: '',
+          lastName: '',
           role: response.data.user.role,
+          isActive: true,
           phone: response.data.user.phone,
-          whatsappEnabled: response.data.user.whatsappEnabled,
           createdAt: new Date(response.data.user.createdAt),
+          updatedAt: new Date(response.data.user.createdAt),
           lastLogin: response.data.user.lastLogin ? new Date(response.data.user.lastLogin) : null,
         };
         
@@ -160,10 +163,13 @@ export const useAuthStore = defineStore('auth', () => {
           id: response.data.user.id,
           username: response.data.user.username,
           email: response.data.user.email,
+          firstName: '',
+          lastName: '',
           role: response.data.user.role,
+          isActive: true,
           phone: response.data.user.phone,
-          whatsappEnabled: response.data.user.whatsappEnabled,
           createdAt: new Date(response.data.user.createdAt),
+          updatedAt: new Date(response.data.user.createdAt),
           lastLogin: response.data.user.lastLogin ? new Date(response.data.user.lastLogin) : null,
         };
         

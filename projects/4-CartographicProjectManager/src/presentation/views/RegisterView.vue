@@ -140,18 +140,6 @@
           </div>
         </div>
 
-        <!-- WhatsApp Notifications -->
-        <div class="register-options">
-          <label class="register-checkbox-label">
-            <input
-              v-model="form.whatsappEnabled"
-              type="checkbox"
-              class="register-checkbox"
-            />
-            <span>Enable WhatsApp notifications</span>
-          </label>
-        </div>
-
         <!-- Submit Button -->
         <button
           type="submit"
@@ -202,7 +190,6 @@ const form = reactive<RegisterCredentialsDto & {confirmPassword: string}>({
   password: '',
   confirmPassword: '',
   phone: null,
-  whatsappEnabled: false,
 });
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
