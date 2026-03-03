@@ -496,10 +496,13 @@ export const useProjectStore = defineStore('project', () => {
       // Convert coordinateX/coordinateY to GeoCoordinates if provided
       let updatedCoordinates = projectProps.coordinates;
       if (data.coordinateX !== undefined || data.coordinateY !== undefined) {
-        if (data.coordinateX !== undefined && data.coordinateY !== undefined) {
-          // Both coordinates provided - create new GeoCoordinates
-          updatedCoordinates = new GeoCoordinates(data.coordinateY, data.coordinateX);
-        } else if (data.coordinateX === null && data.coordinateY === null) {
+        const x = data.coordinateX;
+        const y = data.coordinateY;
+        
+        if (x !== undefined && y !== undefined && x !== null && y !== null) {
+          // Both coordinates provided and not null - create new GeoCoordinates
+          updatedCoordinates = new GeoCoordinates(y, x);
+        } else if (x === null && y === null) {
           // Explicitly set to null - remove coordinates
           updatedCoordinates = null;
         }
@@ -508,6 +511,11 @@ export const useProjectStore = defineStore('project', () => {
       
       // Merge with update data (excluding coordinateX/coordinateY as they're now in coordinates)
       const {coordinateX, coordinateY, ...restData} = data;
+      console.log('[ProjectStore] restData after destructuring:', restData);
+      console.log('[ProjectStore] restData.contractDate:', restData.contractDate);
+      console.log('[ProjectStore] restData.deliveryDate:', restData.deliveryDate);
+      console.log('[ProjectStore] updatedCoordinates:', updatedCoordinates);
+      
       const updatedProps = {
         ...projectProps,
         ...restData,
