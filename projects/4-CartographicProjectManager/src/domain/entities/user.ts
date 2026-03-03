@@ -34,10 +34,8 @@ export interface UserProps {
   role: UserRole;
   /** Whether account is active */
   isActive?: boolean;
-  /** Phone number for WhatsApp notifications */
+  /** Phone number for contact */
   phone?: string | null;
-  /** Whether WhatsApp notifications are enabled */
-  whatsappEnabled?: boolean;
   /** Account creation timestamp */
   createdAt?: Date;
   /** Last update timestamp */
@@ -82,7 +80,6 @@ export class User {
   private roleValue: UserRole;
   private isActiveValue: boolean;
   private phoneValue: string | null;
-  private whatsappEnabledValue: boolean;
   public readonly createdAt: Date;
   private updatedAtValue: Date;
   private lastLoginValue: Date | null;
@@ -105,7 +102,6 @@ export class User {
     this.roleValue = props.role;
     this.isActiveValue = props.isActive ?? true;
     this.phoneValue = props.phone ?? null;
-    this.whatsappEnabledValue = props.whatsappEnabled ?? false;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAtValue = props.updatedAt ?? new Date();
     this.lastLoginValue = props.lastLogin ?? null;
@@ -205,14 +201,6 @@ export class User {
     this.phoneValue = value;
   }
 
-  public get whatsappEnabled(): boolean {
-    return this.whatsappEnabledValue;
-  }
-
-  public set whatsappEnabled(value: boolean) {
-    this.whatsappEnabledValue = value;
-  }
-
   public get isActive(): boolean {
     return this.isActiveValue;
   }
@@ -293,27 +281,6 @@ export class User {
   }
 
   /**
-   * Enables WhatsApp notifications with the provided phone number.
-   *
-   * @param phone - Phone number for WhatsApp notifications
-   * @throws {Error} If phone number is empty
-   */
-  public enableWhatsApp(phone: string): void {
-    if (!phone || phone.trim() === '') {
-      throw new Error('Phone number is required to enable WhatsApp notifications');
-    }
-    this.phoneValue = phone;
-    this.whatsappEnabledValue = true;
-  }
-
-  /**
-   * Disables WhatsApp notifications.
-   */
-  public disableWhatsApp(): void {
-    this.whatsappEnabledValue = false;
-  }
-
-  /**
    * Serializes the user entity to a plain object.
    * Excludes sensitive data like password hash.
    *
@@ -329,7 +296,6 @@ export class User {
       role: this.roleValue,
       isActive: this.isActiveValue,
       phone: this.phoneValue,
-      whatsappEnabled: this.whatsappEnabledValue,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAtValue.toISOString(),
       lastLogin: this.lastLoginValue ? this.lastLoginValue.toISOString() : null,
