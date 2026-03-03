@@ -1,6 +1,6 @@
 # Git Changes Summary
 
-Generated on: March 2, 2026
+Generated on: March 3, 2026
 
 ## Overview
 
@@ -8,7 +8,290 @@ This document contains all the git changes made to the Cartographic Project Mana
 
 ---
 
-## Latest Changes (March 2, 2026)
+## Latest Changes (March 3, 2026)
+
+### MAJOR: Task Permission System Implementation + Critical Bug Fixes
+
+**Enhanced Task Management Security & Data Persistence Improvements**
+
+**Location:** `projects/4-CartographicProjectManager/`
+
+**Description:**
+Implemented comprehensive task permission system allowing task assignees (special users/managers) to modify and update task status, aligned with specification requirements. Fixed critical bugs in project data persistence (contract date and coordinates not displaying after edit) and Dropbox folder creation (dropboxFolderId being empty for new projects). Enhanced both backend security validation and frontend UI permission controls.
+
+**Commits:**
+- `9ce41ba` - Frontend: Allow task assignees to modify tasks
+- `0ec21cb` - Backend: Add task permission validation + documentation
+- `9e4219f` - Fix Dropbox folder creation during project setup
+- `dcc3534` - Fix project fields not displaying after edit
+
+---
+
+#### Change 1: Task Permission System - Backend Validation
+
+**Commit:** `0ec21cb`  
+**Status:** ✅ Deployed to Production (Railway)
+
+**Problem:**
+- Any authenticated user could modify or delete any task (security vulnerability)
+- Specification requires special users (managers) to modify tasks assigned to them
+- No backend validation existed for task update/delete operations
+
+**Root Cause:**
+`TaskController.update()` and `TaskController.delete()` methods had no permission checks, allowing any authenticated user to modify any task regardless of their relationship to it.
+
+**Solution:**
+Added comprehensive permission validation in TaskController:
+
+**Files Modified:**
+- `backend/src/presentation/controllers/task.controller.ts`
+
+**Implementation Details:**
+
+**Update Method (Lines 115-140):**
+```typescript
+/**
+ * Permission validation for task updates
+ * - Administrators: can update any task
+ * - Task creator: can update their created tasks
+ * - Task assignee: can update tasks assigned to them
+ */
+const canUpdate =
+  currentUser.role === 'ADMINISTRATOR' ||
+  existingTask.creatorId === currentUser.id ||
+  existingTask.assigneeId === currentUser.id;
+
+if (!canUpdate) {
+  return sendError(res, 403, 'You do not have permission to update this task');
+}
+```
+
+**Delete Method (Lines 178-200):**
+```typescript
+/**
+ * Permission validation for task deletion
+ * - Administrators: can delete any task
+ * - Task creator: can delete their created tasks
+ * - Task assignee: CANNOT delete (can only modify)
+ */
+const canDelete =
+  currentUser.role === 'ADMINISTRATOR' ||
+  existingTask.creatorId === currentUser.id;
+
+if (!canDelete) {
+  return sendError(res, 403, 'You do not have permission to delete this task');
+}
+```
+
+**Permission Matrix:**
+
+| Role | Update Task | Delete Task | Change Status |
+|------|-------------|-------------|---------------|
+| Administrator | ✅ Any | ✅ Any | ✅ Any |
+| Task Creator | ✅ Own | ✅ Own | ✅ Own |
+| Task Assignee | ✅ Assigned | ❌ None | ✅ Assigned |
+| Other Users | ❌ None | ❌ None | ❌ None |
+
+**Impact:**
+- ✅ Fixed critical security vulnerability
+- ✅ Aligned with specification requirements
+- ✅ Special users can now update tasks assigned to them
+- ✅ Proper authorization at API level
+- ✅ Clear error messages for unauthorized attempts (403 Forbidden)
+
+**Testing Scenarios:**
+1. Admin updates any task → ✅ Allowed
+2. Client updates their created task → ✅ Allowed
+3. Special user updates task assigned to them → ✅ Allowed
+4. User attempts to update unrelated task → ❌ Forbidden (403)
+5. Assignee attempts to delete task → ❌ Forbidden (403)
+6. Creator deletes their task → ✅ Allowed
+
+---
+
+#### Change 2: Task Permission System - Frontend UI Controls
+
+**Commit:** `9ce41ba`  
+**Status:** ✅ Deployed to Production (GitHub Pages)
+
+**Problem:**
+- Edit Task button not visible for task assignees
+- Task status controls hidden for special users assigned to tasks
+- Frontend permission logic out of sync with backend validation
+
+**Root Cause:**
+In `task.store.ts`, the `canModify` and `canChangeStatus` computed properties only checked for admin or creator roles, ignoring the `assigneeId` field.
+
+**Solution:**
+Updated permission calculations to include assignee checks:
+
+**Files Modified:**
+- `src/presentation/stores/task.store.ts`
+
+**Implementation Details:**
+
+**Line 95 - canModify Property:**
+```typescript
+// Before
+canModify: authStore.isAdmin || task.creatorId === authStore.userId,
+
+// After
+canModify: authStore.isAdmin || 
+           task.creatorId === authStore.userId || 
+           task.assigneeId === authStore.userId,
+```
+
+**Line 98 - canChangeStatus Property:**
+```typescript
+// Before
+canChangeStatus: true, // Hardcoded - security issue!
+
+// After
+canChangeStatus: authStore.isAdmin || 
+                 task.creatorId === authStore.userId || 
+                 task.assigneeId === authStore.userId,
+```
+
+**Impact:**
+- ✅ Edit Task button now appears for assignees
+- ✅ Status dropdown controls visible for assignees
+- ✅ Frontend permissions match backend validation
+- ✅ Removed hardcoded `true` security issue
+- ✅ Improved user experience for special users
+
+**UI Changes:**
+- Task assignees now see "Edit Task" button in task cards
+- Task assignees can access status modification controls
+- Permission checks happen in real-time based on current user
+
+---
+
+#### Change 3: Fix Dropbox Folder Creation
+
+**Commit:** `9e4219f`  
+**Status:** ✅ Deployed to Production (Railway)
+
+**Problem:**
+- New projects had empty `dropboxFolderId` field in database
+- No Dropbox folder structure created during project setup
+- File management integration incomplete
+
+**Root Cause:**
+`ProjectController.create()` method never initialized or called the Dropbox service to create the project folder structure, even though the field existed in the database schema.
+
+**Solution:**
+Added Dropbox service initialization and folder creation during project creation:
+
+**Files Modified:**
+- `backend/src/presentation/controllers/project.controller.ts`
+
+**Implementation Details:**
+
+**Lines 224-241 in create() method:**
+```typescript
+// Create Dropbox folder structure for the project
+let dropboxFolderId = '';
+if (this.dropboxService) {
+  try {
+    dropboxFolderId = await this.dropboxService.createProjectFolder(
+      projectData.code
+    );
+    console.log(`✅ Created Dropbox folder with ID: ${dropboxFolderId} for project ${projectData.code}`);
+  } catch (error) {
+    console.error(`❌ Failed to create Dropbox folder for project ${projectData.code}:`, error);
+    // Continue project creation even if Dropbox fails (non-blocking)
+  }
+}
+```
+
+**Dropbox Folder Structure Created:**
+```
+/Projects/{projectCode}/
+├── 01_Documentacion_Tecnica/
+├── 02_Datos_Campo/
+├── 03_Informes_Avance/
+├── 04_Entregables_Finales/
+├── 05_Comunicaciones/
+└── 06_Archivos_Referencia/
+```
+
+**Impact:**
+- ✅ Projects now have organized Dropbox folder structure
+- ✅ `dropboxFolderId` field properly populated
+- ✅ File upload integration functional
+- ✅ Non-blocking error handling (project creation continues even if Dropbox fails)
+- ✅ Clear console logging for debugging
+
+**Error Handling:**
+- Dropbox service failures don't block project creation
+- Error logged to console for monitoring
+- Empty string stored if Dropbox unavailable (graceful degradation)
+
+---
+
+#### Change 4: Fix Project Fields Not Displaying After Edit
+
+**Commit:** `dcc3534`  
+**Status:** ✅ Deployed to Production (GitHub Pages)
+
+**Problem:**
+- Contract date field empty when editing existing projects
+- Coordinates not displaying in edit form
+- Other project details missing after initial load
+
+**Root Cause:**
+In `project.store.ts`, the `fetchProjectById()` action prioritized an incomplete `projectSummary` object over the complete `projectWithDetails` response from the API.
+
+**Solution:**
+Changed data assignment to always use the full API response:
+
+**Files Modified:**
+- `src/presentation/stores/project.store.ts`
+
+**Implementation Details:**
+
+**Line 330 in fetchProjectById():**
+```typescript
+// Before - prioritized incomplete summary
+project: projectSummary as any || projectWithDetails,
+
+// After - always use complete API response
+project: projectWithDetails,
+```
+
+**Impact:**
+- ✅ All project fields display correctly in edit forms
+- ✅ Contract date persists and displays
+- ✅ Coordinates visible and editable
+- ✅ Consistent data handling across application
+- ✅ Eliminated data loss during edit operations
+
+**Fields Now Displaying Correctly:**
+- Contract start/end dates
+- Geographic coordinates (latitude/longitude)
+- Project description
+- All custom metadata fields
+- Related entities (client, special users, tasks)
+
+---
+
+#### Additional Documentation
+
+**Created:** `TASK-PERMISSION-CHANGES.md`  
+**Commit:** `0ec21cb`  
+**Lines:** 208
+
+Comprehensive documentation file covering:
+- Problem statement and specification review
+- Complete permission matrix
+- Implementation details for both backend and frontend
+- Testing scenarios and verification steps
+- Security considerations
+- Future improvement suggestions
+
+---
+
+## Previous Changes (March 2, 2026)
 
 ### MAJOR: Complete System Administration Features Implementation
 
