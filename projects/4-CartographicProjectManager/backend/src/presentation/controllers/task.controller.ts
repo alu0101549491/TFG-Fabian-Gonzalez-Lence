@@ -15,7 +15,7 @@ import type {Request, Response, NextFunction} from 'express';
 import type {AuthenticatedRequest} from '@shared/types.js';
 import {TaskRepository} from '@infrastructure/repositories/task.repository.js';
 import {ProjectRepository} from '@infrastructure/repositories/project.repository.js';
-import {sendSuccess} from '@shared/utils.js';
+import {sendSuccess, sendError} from '@shared/utils.js';
 import {HTTP_STATUS, ERROR_MESSAGES} from '@shared/constants.js';
 import {NotFoundError} from '@shared/errors.js';
 
@@ -114,10 +114,27 @@ export class TaskController {
 
   public async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const authReq = req as AuthenticatedRequest;
+      const currentUser = authReq.user;
+      
+      if (!currentUser) {
+        throw new NotFoundError('User not authenticated');
+      }
+
       // Get existing task to check for changes
       const existingTask = await this.taskRepository.findById(req.params.id as string);
       if (!existingTask) {
         throw new NotFoundError(ERROR_MESSAGES.TASK_NOT_FOUND);
+      }
+
+      // Permission check: Admin, task creator, or task assignee can update
+      const canUpdate = currentUser.role === 'ADMINISTRATOR' 
+        || existingTask.creatorId === currentUser.id 
+        || existingTask.assigneeId === currentUser.id;
+      
+      if (!canUpdate) {
+        sendError(res, 'You do not have permission to update this task', HTTP_STATUS.FORBIDDEN);
+        return;
       }
       
       // Extract only fields that can be updated (exclude id, createdAt, updatedAt, fileIds, etc.)
@@ -161,6 +178,28 @@ export class TaskController {
 
   public async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const authReq = req as AuthenticatedRequest;
+      const currentUser = authReq.user;
+      
+      if (!currentUser) {
+        throw new NotFoundError('User not authenticated');
+      }
+
+      // Get existing task to check permissions
+      const existingTask = await this.taskRepository.findById(req.params.id as string);
+      if (!existingTask) {
+        throw new NotFoundError(ERROR_MESSAGES.TASK_NOT_FOUND);
+      }
+
+      // Permission check: Only admin or task creator can delete
+      const canDelete = currentUser.role === 'ADMINISTRATOR' 
+        || existingTask.creatorId === currentUser.id;
+      
+      if (!canDelete) {
+        sendError(res, 'You do not have permission to delete this task', HTTP_STATUS.FORBIDDEN);
+        return;
+      }
+
       await this.taskRepository.delete(req.params.id as string);
       sendSuccess(res, null, 'Task deleted successfully', HTTP_STATUS.NO_CONTENT);
     } catch (error) {
