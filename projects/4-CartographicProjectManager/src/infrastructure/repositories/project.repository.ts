@@ -218,6 +218,13 @@ export class ProjectRepository implements IProjectRepository {
     }
     
     console.log(`[ProjectRepository] Update payload:`, updatePayload);
+    console.log(`[ProjectRepository] Payload details:`, {
+      contractDate: updatePayload.contractDate,
+      deliveryDate: updatePayload.deliveryDate,
+      coordinateX: updatePayload.coordinateX,
+      coordinateY: updatePayload.coordinateY,
+      name: updatePayload.name,
+    });
     
     const response = await httpClient.put<ProjectApiResponse>(
       `${this.baseUrl}/${project.id}`,
