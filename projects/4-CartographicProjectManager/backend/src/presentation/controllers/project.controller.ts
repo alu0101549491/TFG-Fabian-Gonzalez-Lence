@@ -20,6 +20,7 @@ import {PermissionRepository} from '@infrastructure/repositories/permission.repo
 import {UserRepository} from '@infrastructure/repositories/user.repository.js';
 import {AuditService} from '@application/services/audit.service.js';
 import {AuditLogRepository} from '@infrastructure/repositories/audit-log.repository.js';
+import {DropboxService} from '@infrastructure/external-services/dropbox.service.js';
 import {PrismaClient} from '@prisma/client';
 import {sendSuccess, generateProjectCode, sendError} from '@shared/utils.js';
 import {HTTP_STATUS, ERROR_MESSAGES} from '@shared/constants.js';
@@ -36,12 +37,27 @@ export class ProjectController {
   private readonly permissionRepository: PermissionRepository;
   private readonly userRepository: UserRepository;
   private readonly auditService: AuditService;
+  private readonly dropboxService: DropboxService | null;
 
   public constructor() {
     this.projectRepository = new ProjectRepository();
     this.permissionRepository = new PermissionRepository();
     this.userRepository = new UserRepository();
     this.auditService = new AuditService(auditLogRepository);
+
+    // Initialize Dropbox service if credentials available
+    const dropboxToken = process.env.DROPBOX_ACCESS_TOKEN;
+    if (dropboxToken) {
+      this.dropboxService = new DropboxService({
+        accessToken: dropboxToken,
+        refreshToken: process.env.DROPBOX_REFRESH_TOKEN,
+        appKey: process.env.DROPBOX_APP_KEY,
+        appSecret: process.env.DROPBOX_APP_SECRET,
+      });
+    } else {
+      console.warn('DROPBOX_ACCESS_TOKEN not set - project folders will not be auto-created');
+      this.dropboxService = null;
+    }
   }
 
   /**
@@ -228,11 +244,24 @@ export class ProjectController {
         projectData.code = generateProjectCode(year, sequence);
       }
 
+      // Create Dropbox folder structure
+      let dropboxFolderId = '';
+      if (this.dropboxService) {
+        try {
+          dropboxFolderId = await this.dropboxService.createProjectFolder(projectData.code);
+          console.log(`✅ Created Dropbox folder for project ${projectData.code}: ${dropboxFolderId}`);
+        } catch (error) {
+          console.error(`❌ Failed to create Dropbox folder for project ${projectData.code}:`, error);
+          // Continue without Dropbox folder - files can still be uploaded, folders will be auto-created
+        }
+      }
+
       const project = await this.projectRepository.create({
         ...projectData,
         year,
         status: 'ACTIVE',
         creatorId: currentUser.id,
+        dropboxFolderId,
       });
       
       // If the creator is a SPECIAL_USER, automatically add them as a participant
