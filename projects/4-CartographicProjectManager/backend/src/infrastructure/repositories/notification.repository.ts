@@ -70,8 +70,13 @@ export class NotificationRepository implements INotificationRepository {
   public async delete(id: string): Promise<void> {
     try {
       await prisma.notification.delete({where: {id}});
-    } catch (error) {
-      throw new DatabaseError('Failed to delete notification');
+    } catch (error: any) {
+      console.error('Failed to delete notification:', error);
+      // If notification doesn't exist, Prisma throws P2025
+      if (error.code === 'P2025') {
+        throw new DatabaseError('Notification not found');
+      }
+      throw new DatabaseError(`Failed to delete notification: ${error.message || 'Unknown error'}`);
     }
   }
 
