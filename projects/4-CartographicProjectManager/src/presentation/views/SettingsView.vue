@@ -140,17 +140,6 @@
             <div class="checkbox-group">
               <label class="checkbox-label">
                 <input
-                  v-model="notificationForm.whatsappEnabled"
-                  type="checkbox"
-                />
-                <div class="checkbox-content">
-                  <span class="checkbox-title">WhatsApp Notifications</span>
-                  <span class="checkbox-description">Receive notifications via WhatsApp</span>
-                </div>
-              </label>
-
-              <label class="checkbox-label">
-                <input
                   v-model="notificationForm.emailNotifications"
                   type="checkbox"
                 />
@@ -535,7 +524,6 @@ const accountForm = ref({
 
 // Notification form
 const notificationForm = ref({
-  whatsappEnabled: user.value?.whatsappEnabled || false,
   emailNotifications: true,
   projectUpdates: true,
   deliveryReminders: true,
@@ -654,7 +642,6 @@ async function handleNotificationUpdate(): Promise<void> {
     // Create updated user entity with notification preferences
     const updatedUser = new User({
       ...currentUser,
-      whatsappEnabled: notificationForm.value.whatsappEnabled,
     });
 
     // Update in backend
@@ -753,7 +740,6 @@ onMounted(() => {
     accountForm.value.username = user.value.username;
     accountForm.value.email = user.value.email;
     accountForm.value.phone = user.value.phone || '';
-    notificationForm.value.whatsappEnabled = user.value.whatsappEnabled;
   }
 });
 </script>
