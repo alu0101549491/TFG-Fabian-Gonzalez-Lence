@@ -498,7 +498,7 @@ import {useRouter} from 'vue-router';
 import {useAuth} from '../composables/use-auth';
 import {UserRole} from '../../domain/enumerations/user-role';
 import {UserRepository} from '../../infrastructure/repositories/user.repository';
-import {User} from '../../domain/entities/user';
+import type {UpdateUserDto} from '../../application/dto/user-data.dto';
 
 const router = useRouter();
 const {user, isAdmin, isClient, isSpecialUser, logout} = useAuth();
@@ -600,22 +600,17 @@ async function handleAccountUpdate(): Promise<void> {
   try {
     if (!user.value) return;
 
-    // Fetch current user entity
-    const currentUser = await userRepository.getUserById(user.value.id);
-    if (!currentUser) {
-      throw new Error('User not found');
-    }
-
-    // Create updated user entity
-    const updatedUser = new User({
-      ...currentUser,
+    // Create update DTO with only the fields that changed
+    const updateData: UpdateUserDto = {
       username: accountForm.value.username,
       email: accountForm.value.email,
-      phone: accountForm.value.phone || undefined,
-    });
+      phone: accountForm.value.phone || null,
+      // Only include password if it was changed
+      ...(accountForm.value.newPassword && {password: accountForm.value.newPassword}),
+    };
 
     // Update in backend
-    await userRepository.updateUser(user.value.id, updatedUser);
+    await userRepository.updateUser(user.value.id, updateData);
     
     showSuccess('Account information updated successfully');
     accountForm.value.currentPassword = '';
@@ -633,19 +628,18 @@ async function handleNotificationUpdate(): Promise<void> {
   try {
     if (!user.value) return;
 
-    // Fetch current user entity
-    const currentUser = await userRepository.getUserById(user.value.id);
-    if (!currentUser) {
-      throw new Error('User not found');
+    // For now, notification preferences are not stored in the backend
+    // This is a placeholder for future implementation
+    const updateData: UpdateUserDto = {};
+
+    // Skip API call if no data to update
+    if (Object.keys(updateData).length === 0) {
+      showSuccess('Notification preferences saved locally');
+      return;
     }
 
-    // Create updated user entity with notification preferences
-    const updatedUser = new User({
-      ...currentUser,
-    });
-
-    // Update in backend
-    await userRepository.updateUser(user.value.id, updatedUser);
+    // Update in backend (when notification fields are added to backend)
+    await userRepository.updateUser(user.value.id, updateData);
     
     showSuccess('Notification preferences saved');
   } catch (error: any) {
