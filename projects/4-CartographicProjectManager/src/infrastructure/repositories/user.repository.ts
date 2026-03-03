@@ -37,7 +37,6 @@ interface UserApiResponse {
   passwordHash?: string; // Optional - backend removes it for security
   role: string;
   phone: string | null;
-  whatsappEnabled: boolean;
   createdAt: string;
   lastLogin: string | null;
 }
@@ -214,7 +213,6 @@ export class UserRepository implements IUserRepository {
       passwordHash: data.passwordHash || '[REDACTED]',
       role: data.role as UserRole,
       phone: data.phone,
-      whatsappEnabled: data.whatsappEnabled,
       createdAt: new Date(data.createdAt),
       lastLogin: data.lastLogin ? new Date(data.lastLogin) : null,
     });
@@ -235,7 +233,6 @@ export class UserRepository implements IUserRepository {
       // passwordHash is private and should never be sent in update requests
       role: user.role,
       phone: user.phone,
-      whatsappEnabled: user.whatsappEnabled,
       createdAt: user.createdAt.toISOString(),
       lastLogin: user.lastLogin?.toISOString() || null,
     };
@@ -382,7 +379,6 @@ export class UserRepository implements IUserRepository {
       email: data.email,
       role: data.role as UserRole,
       phone: data.phone,
-      whatsappEnabled: data.whatsappEnabled,
       createdAt: new Date(data.createdAt),
       lastLogin: data.lastLogin ? new Date(data.lastLogin) : null,
     };
