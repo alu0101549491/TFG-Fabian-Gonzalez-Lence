@@ -40,5 +40,4 @@ coverage/
 .nyc_output/
 
 # Prisma
-prisma/migrations/
-!prisma/migrations/.gitkeep
+# Note: migrations must be committed for Railway deployment
