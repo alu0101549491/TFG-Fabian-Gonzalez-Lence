@@ -92,10 +92,10 @@ export const useTaskStore = defineStore('task', () => {
       completedAt: task.completedAt || null,
       confirmedAt: task.confirmedAt || null,
       isOverdue,
-      canModify: authStore.isAdmin || task.creatorId === authStore.userId,
+      canModify: authStore.isAdmin || task.creatorId === authStore.userId || task.assigneeId === authStore.userId,
       canDelete: authStore.isAdmin || task.creatorId === authStore.userId,
       canConfirm: authStore.isAdmin,
-      canChangeStatus: true,
+      canChangeStatus: authStore.isAdmin || task.creatorId === authStore.userId || task.assigneeId === authStore.userId,
       allowedStatusTransitions: getValidTransitions(task.status),
     };
   }
