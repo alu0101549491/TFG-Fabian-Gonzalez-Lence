@@ -42,7 +42,6 @@ async function main(): Promise<void> {
       passwordHash: adminPassword,
       role: 'ADMINISTRATOR',
       phone: '+34600000001',
-      whatsappEnabled: false,
     },
   });
 
