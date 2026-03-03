@@ -256,16 +256,6 @@
               />
             </div>
 
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input
-                  v-model="form.whatsappEnabled"
-                  type="checkbox"
-                />
-                <span>Enable WhatsApp notifications</span>
-              </label>
-            </div>
-
             <div v-if="formError" class="form-error" role="alert">
               {{ formError }}
             </div>
@@ -393,7 +383,6 @@ interface UserForm {
   password: string;
   role: UserRole;
   phone: string;
-  whatsappEnabled: boolean;
 }
 
 const form = ref<UserForm & {id?: string}>({
@@ -402,7 +391,6 @@ const form = ref<UserForm & {id?: string}>({
   password: '',
   role: UserRole.CLIENT,
   phone: '',
-  whatsappEnabled: false,
 });
 
 // Computed
@@ -448,7 +436,6 @@ function openCreateModal(): void {
     password: '',
     role: UserRole.CLIENT,
     phone: '',
-    whatsappEnabled: false,
   };
   formError.value = null;
   showModal.value = true;
@@ -463,7 +450,6 @@ function openEditModal(user: UserSummaryDto): void {
     password: '',
     role: user.role,
     phone: user.phone || '',
-    whatsappEnabled: false, // Can't retrieve this from summary
   };
   formError.value = null;
   showModal.value = true;
@@ -486,7 +472,6 @@ async function handleSubmit(): Promise<void> {
         email: form.value.email,
         role: form.value.role,
         phone: form.value.phone || null,
-        whatsappEnabled: form.value.whatsappEnabled,
         // Only include password if it was changed
         ...(form.value.password && {password: form.value.password}),
       };
