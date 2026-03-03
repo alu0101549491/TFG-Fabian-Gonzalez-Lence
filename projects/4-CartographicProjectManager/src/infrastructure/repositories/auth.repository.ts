@@ -29,7 +29,6 @@ interface AuthApiResponse {
       email: string;
       role: UserRole;
       phone: string | null;
-      whatsappEnabled: boolean;
       createdAt: string;
       lastLogin: string | null;
     };
@@ -97,7 +96,6 @@ export class AuthRepository {
         email: credentials.email,
         password: credentials.password,
         phone: credentials.phone,
-        whatsappEnabled: credentials.whatsappEnabled,
       }
     );
     return response.data;

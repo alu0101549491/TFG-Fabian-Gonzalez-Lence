@@ -27,8 +27,6 @@ export interface UserDataDto {
   readonly role: UserRole;
   /** Phone number */
   readonly phone: string | null;
-  /** WhatsApp notifications enabled */
-  readonly whatsappEnabled: boolean;
   /** Account creation date */
   readonly createdAt: Date;
   /** Last login timestamp */
@@ -67,8 +65,6 @@ export interface CreateUserDto {
   readonly role: UserRole;
   /** Phone number (optional) */
   readonly phone?: string | null;
-  /** WhatsApp notifications enabled */
-  readonly whatsappEnabled?: boolean;
 }
 
 /**
@@ -85,8 +81,6 @@ export interface UpdateUserDto {
   readonly role?: UserRole;
   /** Updated phone */
   readonly phone?: string | null;
-  /** Updated WhatsApp setting */
-  readonly whatsappEnabled?: boolean;
 }
 
 /**

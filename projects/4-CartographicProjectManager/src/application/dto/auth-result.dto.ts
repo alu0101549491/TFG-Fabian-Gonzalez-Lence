@@ -60,8 +60,6 @@ export interface UserDto {
   readonly isActive: boolean;
   /** Phone number (optional) */
   readonly phone: string | null;
-  /** Whether WhatsApp notifications are enabled */
-  readonly whatsappEnabled: boolean;
   /** Account creation timestamp */
   readonly createdAt: Date;
   /** Last update timestamp */
@@ -96,8 +94,6 @@ export interface RegisterCredentialsDto {
   readonly confirmPassword: string;
   /** Phone number (optional) */
   readonly phone?: string | null;
-  /** Whether to enable WhatsApp notifications */
-  readonly whatsappEnabled?: boolean;
 }
 
 /**

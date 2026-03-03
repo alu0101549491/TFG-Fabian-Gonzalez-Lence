@@ -506,7 +506,6 @@ async function handleSubmit(): Promise<void> {
         password: form.value.password,
         role: form.value.role,
         phone: form.value.phone || null,
-        whatsappEnabled: form.value.whatsappEnabled,
       };
 
       const result = await createUser(createData);
