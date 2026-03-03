@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed:production": "tsx prisma/seed-production.ts",
     "db:reset": "prisma migrate reset",
     "test": "jest",
     "test:watch": "jest --watch",
