@@ -168,7 +168,7 @@
             </div>
             <div class="modal-body">
               <ProjectForm
-                :project="editingProject ?? undefined"
+                :project="editingProjectFull ?? undefined"
                 :clients="clients"
                 @submit="handleProjectSubmit"
                 @cancel="closeModals"
@@ -230,7 +230,7 @@ import {useProjects} from '../composables/use-projects';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import ProjectCard from '../components/project/ProjectCard.vue';
 import ProjectForm from '../components/project/ProjectForm.vue';
-import type {ProjectSummaryDto, CreateProjectDto, UpdateProjectDto} from '@/application/dto';
+import type {ProjectSummaryDto, CreateProjectDto, UpdateProjectDto, ProjectDto} from '@/application/dto';
 import {UserRepository} from '@/infrastructure/repositories/user.repository';
 import {UserRole} from '@/domain/enumerations/user-role';
 
@@ -242,10 +242,12 @@ const {
   activeProjects,
   finalizedProjects,
   isLoading,
+  currentProject,
   fetchProjects,
   createProject,
   updateProject,
   deleteProject,
+  loadProject,
 } = useProjects();
 
 // Local State
@@ -257,6 +259,7 @@ const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
 const editingProject = ref<ProjectSummaryDto | null>(null);
+const editingProjectFull = ref<ProjectDto | null>(null);
 const projectToDelete = ref<ProjectSummaryDto | null>(null);
 const isDeleting = ref(false);
 const clients = ref<Array<{id: string; name: string}>>([]);
@@ -379,6 +382,7 @@ function closeModals(): void {
   showCreateModal.value = false;
   showEditModal.value = false;
   editingProject.value = null;
+  editingProjectFull.value = null;
 }
 
 /**
@@ -386,9 +390,14 @@ function closeModals(): void {
  *
  * @param {ProjectSummaryDto} project - Project to edit
  */
-function handleEditProject(project: ProjectSummaryDto): void {
+async function handleEditProject(project: ProjectSummaryDto): Promise<void> {
   editingProject.value = project;
-  showEditModal.value = true;
+  // Fetch full project details with all fields
+  await loadProject(project.id);
+  if (currentProject.value?.project) {
+    editingProjectFull.value = currentProject.value.project;
+    showEditModal.value = true;
+  }
 }
 
 /**
