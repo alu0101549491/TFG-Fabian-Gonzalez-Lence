@@ -31,6 +31,7 @@ import {UserRepository} from '../../infrastructure/repositories/user.repository'
 import {TaskRepository} from '../../infrastructure/repositories/task.repository';
 import {MessageRepository} from '../../infrastructure/repositories/message.repository';
 import {Project} from '../../domain/entities/project';
+import {GeoCoordinates} from '../../domain/value-objects/geo-coordinates';
 import {TaskStatus} from '../../domain/enumerations/task-status';
 
 /**
@@ -492,16 +493,33 @@ export const useProjectStore = defineStore('project', () => {
         finalizedAt: currentProjectEntity.finalizedAt,
       };
       
-      // Merge with update data
+      // Convert coordinateX/coordinateY to GeoCoordinates if provided
+      let updatedCoordinates = projectProps.coordinates;
+      if (data.coordinateX !== undefined || data.coordinateY !== undefined) {
+        if (data.coordinateX !== undefined && data.coordinateY !== undefined) {
+          // Both coordinates provided - create new GeoCoordinates
+          updatedCoordinates = new GeoCoordinates(data.coordinateY, data.coordinateX);
+        } else if (data.coordinateX === null && data.coordinateY === null) {
+          // Explicitly set to null - remove coordinates
+          updatedCoordinates = null;
+        }
+        // If only one is provided, keep existing coordinates
+      }
+      
+      // Merge with update data (excluding coordinateX/coordinateY as they're now in coordinates)
+      const {coordinateX, coordinateY, ...restData} = data;
       const updatedProps = {
         ...projectProps,
-        ...data,
+        ...restData,
+        coordinates: updatedCoordinates,
         id: data.id, // Ensure ID is preserved
       };
       
       console.log('[ProjectStore] Merged props for new Project:', updatedProps);
       console.log('[ProjectStore] updatedProps.name:', updatedProps.name);
       console.log('[ProjectStore] updatedProps.status:', updatedProps.status);
+      console.log('[ProjectStore] updatedProps.contractDate:', updatedProps.contractDate);
+      console.log('[ProjectStore] updatedProps.coordinates:', updatedProps.coordinates);
       
       const updatedProject = new Project(updatedProps);
       console.log('[ProjectStore] Updated project object:', updatedProject);
