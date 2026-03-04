@@ -103,7 +103,7 @@ export class MessageRepository implements IMessageRepository {
         projectId: data.projectId,
         senderId: data.senderId,
         content: data.content,
-        // Note: fileIds and type are not yet supported in the database schema
+        fileIds: data.fileIds || [],
       },
     );
     return this.mapToEntity(response.data);

@@ -287,6 +287,7 @@ model Message {
   content      String
   sentAt       DateTime @default(now())
   readByUserIds String[] @default([])
+  fileIds      String[] @default([])
   
   // Relations
   project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
