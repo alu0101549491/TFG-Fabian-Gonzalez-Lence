@@ -1,6 +1,6 @@
 # Git Changes Summary
 
-Generated on: March 3, 2026
+Generated on: March 4, 2026
 
 ## Overview
 
@@ -8,7 +8,76 @@ This document contains all the git changes made to the Cartographic Project Mana
 
 ---
 
-## Latest Changes (March 3, 2026)
+## Latest Changes (March 4, 2026)
+
+### FEATURE: Message File Attachments Implementation
+
+**Enhanced Project Communication with File Sharing Capabilities**
+
+**Location:** `projects/4-CartographicProjectManager/`
+
+**Description:**
+Implemented complete message file attachment functionality, allowing users to attach and share files through the project messaging system. Added database schema support for file IDs in messages, implemented file upload handling with progress tracking, enriched message display with file details, and connected download functionality. Updated CORS configuration to support additional development ports.
+
+**Rationale:**
+Project communication often requires sharing documents, plans, and other files. The messaging system previously only supported text, limiting its utility for project collaboration. This enhancement enables seamless file sharing within conversation context, improving team coordination and reducing the need to switch between messages and file tabs.
+
+**Impact:**
+- Users can now attach multiple files when sending messages
+- Files can be sent with or without text content (default message "📎 File attachment" for file-only messages)
+- Message bubbles display attached files with download buttons
+- File metadata (name, size, type) is shown in message context
+- Frontend runs on port 5174 (in addition to 5173) without CORS issues
+- Improved user experience with integrated file sharing in conversations
+
+**Technical Changes:**
+
+#### Database Schema
+- Added `fileIds String[] @default([])` field to Message model in Prisma schema
+- Created and applied migration `20260304113557_add_message_file_ids`
+- Messages now support array of file ID references
+
+#### Backend Updates
+- `backend/src/infrastructure/repositories/message.repository.ts`:
+  - Updated `create()` method to properly send fileIds array to database
+  - Removed TODO comment about unsupported fileIds
+- `backend/.env`:
+  - Added port 5174 to `CORS_ORIGIN` configuration
+  - Added port 5174 to `SOCKET_CORS_ORIGIN` configuration
+  - Enables frontend to run on multiple ports during development
+
+#### Frontend Implementation
+- `src/presentation/views/ProjectDetailsView.vue`:
+  - Implemented complete file upload in `handleMessageSend()` function
+  - Files are uploaded to Dropbox before message creation
+  - Collects file IDs from successful uploads and passes to message creation
+  - Handles file-only messages with default text
+  - Created `enrichedMessages` computed property that merges message data with file details from project files
+  - Connected `@file-click` event handler to MessageList for file downloads
+  - Provides upload progress feedback to users
+  
+- `src/infrastructure/repositories/message.repository.ts`:
+  - Updated `create()` method to include fileIds in API request payload
+  - Ensures file attachments are persisted with messages
+
+#### User Experience
+- Seamless file attachment flow: select files → upload → send message
+- Visual feedback during file uploads with progress tracking
+- File attachments displayed in message bubbles with icons and metadata
+- Click-to-download functionality for message attachments
+- Error handling for failed uploads with user-friendly alerts
+
+**Files Modified:**
+- `backend/prisma/schema.prisma`
+- `backend/prisma/migrations/20260304113557_add_message_file_ids/migration.sql`
+- `backend/src/infrastructure/repositories/message.repository.ts`
+- `backend/.env`
+- `src/presentation/views/ProjectDetailsView.vue`
+- `src/infrastructure/repositories/message.repository.ts`
+
+---
+
+## Previous Changes (March 3, 2026)
 
 ### MAJOR: Task Permission System Implementation + Critical Bug Fixes
 

@@ -192,9 +192,10 @@
           <div ref="messagesContainerRef" class="messages-container">
             <MessageList
               ref="messageListRef"
-              :messages="projectMessages"
+              :messages="enrichedMessages"
               :loading="messagesLoading"
               :current-user-id="currentUserId"
+              @file-click="handleFileDownload"
             />
             <MessageInput
               :disabled="currentProject.project.status === 'finalized'"
@@ -652,10 +653,29 @@ const taskStats = computed(() => {
 
 const messageCount = computed(() => projectMessages.value.length);
 
+const enrichedMessages = computed(() => {
+  // Enrich messages with file details from project files
+  return projectMessages.value.map((message) => {
+    if (!message.fileIds || message.fileIds.length === 0) {
+      return message;
+    }
+    
+    // Find files that match the message's fileIds
+    const messageFiles = projectFiles.value.filter((file) =>
+      message.fileIds.includes(file.id)
+    );
+    
+    return {
+      ...message,
+      files: messageFiles,
+    };
+  });
+});
+
 const tabs = computed(() => [
   {key: 'overview', label: 'Overview', badge: 0},
   {key: 'tasks', label: 'Tasks', badge: taskStats.value.pending},
-  {key: 'messages', label: 'Messages', badge: projectMessages.value.filter((m) => !m.isRead).length},
+  {key: 'messages', label: 'Messages', badge: enrichedMessages.value.filter((m) => !m.isRead).length},
   {key: 'files', label: 'Files', badge: projectFiles.value.length},
 ]);
 
@@ -972,14 +992,56 @@ async function handleMessageSend(payload: {content: string; files: File[]}): Pro
   if (!currentProject.value) return;
 
   try {
-    console.log('Sending message:', payload.content);
+    const fileIds: string[] = [];
     
-    // TODO: Implement file upload handling if files are attached
-    // For now, just send the text content
-    const result = await sendMessage(payload.content);
+    // Upload files if any are attached
+    if (payload.files && payload.files.length > 0) {
+      console.log(`Uploading ${payload.files.length} file(s)...`);
+      
+      for (const file of payload.files) {
+        try {
+          const uploadedFile = await uploadFileToDropbox(
+            file,
+            currentProject.value.project.id,
+            'Messages',
+            (progress) => {
+              console.log(`Upload progress for ${file.name}: ${progress}%`);
+            }
+          );
+
+          if (uploadedFile && uploadedFile.id) {
+            fileIds.push(uploadedFile.id);
+            console.log(`File uploaded successfully: ${file.name} (ID: ${uploadedFile.id})`);
+          } else {
+            console.error(`Failed to upload file: ${file.name}`);
+            alert(`Failed to upload file: ${file.name}`);
+          }
+        } catch (error) {
+          console.error(`Error uploading file ${file.name}:`, error);
+          alert(`Failed to upload file: ${file.name}`);
+        }
+      }
+    }
+
+    // If no content and no files uploaded, don't send
+    if (!payload.content && fileIds.length === 0) {
+      alert('Message content is required');
+      return;
+    }
+
+    // Use default message text if only files are being sent
+    const messageContent = payload.content || '📎 File attachment';
+    
+    console.log('Sending message:', messageContent, 'with file IDs:', fileIds);
+    
+    const result = await sendMessage(messageContent, fileIds.length > 0 ? fileIds : undefined);
     
     if (result.success) {
       console.log('Message sent successfully:', result.message);
+      // Reload files to show the newly uploaded attachments
+      if (fileIds.length > 0) {
+        await loadFilesByProject(currentProject.value.project.id);
+      }
     } else {
       console.error('Failed to send message:', result.error);
       alert(`Failed to send message: ${result.error}`);
