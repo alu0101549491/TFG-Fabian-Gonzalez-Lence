@@ -40,7 +40,7 @@ export class NotificationController {
       const currentUser = authReq.user;
       
       if (!currentUser) {
-        return sendError(res, 401, 'Authentication required');
+        return sendError(res, 'Authentication required', 401);
       }
 
       const notificationId = req.params.id as string;
@@ -58,7 +58,7 @@ export class NotificationController {
         notification.userId === currentUser.id;
 
       if (!canMarkAsRead) {
-        return sendError(res, 403, 'You do not have permission to modify this notification');
+        return sendError(res, 'You do not have permission to modify this notification', 403);
       }
 
       const updatedNotification = await this.notificationRepository.markAsRead(notificationId);
@@ -74,7 +74,7 @@ export class NotificationController {
       const currentUser = authReq.user;
       
       if (!currentUser) {
-        return sendError(res, 401, 'Authentication required');
+        return sendError(res, 'Authentication required', 401);
       }
 
       const notificationId = req.params.id as string;
@@ -92,7 +92,7 @@ export class NotificationController {
         notification.userId === currentUser.id;
 
       if (!canDelete) {
-        return sendError(res, 403, 'You do not have permission to delete this notification');
+        return sendError(res, 'You do not have permission to delete this notification', 403);
       }
 
       await this.notificationRepository.delete(notificationId);
