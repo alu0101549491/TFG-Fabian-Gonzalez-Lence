@@ -502,24 +502,7 @@
   - Priority: Medium
   - Estimated complexity: Medium
 
-- [ ] **Group 10.5: Test Suites (Unit + E2E)** (12 files)
-  - Files:
-    - tests/__mocks__/fileMock.js
-    - tests/__mocks__/styleMock.js
-    - tests/application/services/services.test.ts
-    - tests/domain/entities/entities.test.ts
-    - tests/domain/value-objects/value-objects.test.ts
-    - tests/infrastructure/external-services/external-services.test.ts
-    - tests/infrastructure/repositories/repositories.test.ts
-    - tests/presentation/components/components.test.ts
-    - tests/presentation/stores/stores.test.ts
-    - tests/presentation/views/views.test.ts
-    - e2e/example.spec.ts
-    - e2e/README.md
-  - Priority: High
-  - Estimated complexity: Medium
-
-- [ ] **Group 10.6: Documentation & Project Notes** (18 files)
+- [ ] **Group 10.5: Documentation & Project Notes** (18 files)
   - Files:
     - DEBUGGING-AUTH-ERRORS.md
     - INTEGRATION.md
@@ -542,7 +525,7 @@
   - Priority: Low
   - Estimated complexity: Low
 
-- [ ] **Group 10.7: Operational Artifacts (Logs/Backups/Misc)** (4 files)
+- [ ] **Group 10.6: Operational Artifacts (Logs/Backups/Misc)** (4 files)
   - Files:
     - backend/backups/.gitignore
     - backend/logs/app.log
