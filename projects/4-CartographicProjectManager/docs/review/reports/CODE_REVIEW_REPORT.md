@@ -4,8 +4,8 @@
 **Review Date:** March 5, 2026
 **Reviewer:** GitHub Copilot Agent
 **Codebase Version:** dd8d063
-**Total Files Reviewed:** 186
-**Total Groups Reviewed:** 31
+**Total Files Reviewed:** 202
+**Total Groups Reviewed:** 33
 
 ---
 
@@ -18,10 +18,10 @@ Initial review (Domain enumerations + entities) shows strong documentation disci
 
 **Statistics (so far):**
 - Critical Issues: 4
-- High Issues: 18
-- Medium Issues: 85
-- Low Issues: 62
-- Total Issues: 169
+- High Issues: 20
+- Medium Issues: 93
+- Low Issues: 69
+- Total Issues: 186
 
 **Recommendation:**
 - [ ] ✅ APPROVED - Ready for production
@@ -987,6 +987,81 @@ Main priorities are interaction semantics (avoid nested button patterns) and enf
 
 ---
 
+### Phase 8: Presentation Layer - Views Review
+
+#### Group 8.1: Views
+**Files Reviewed:**
+- src/presentation/views/BackupView.vue
+- src/presentation/views/CalendarView.vue
+- src/presentation/views/DashboardView.vue
+- src/presentation/views/ForbiddenView.vue
+- src/presentation/views/LoginView-complete.vue
+- src/presentation/views/LoginView.vue
+- src/presentation/views/NotFoundView.vue
+- src/presentation/views/NotificationsView.vue
+- src/presentation/views/ProjectDetailsView.vue
+- src/presentation/views/ProjectListView.vue
+- src/presentation/views/RegisterView.vue
+- src/presentation/views/SettingsView.vue
+- src/presentation/views/UserManagementView.vue
+
+**Score:** 6.1/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D32-001 | 🟠 HIGH | src/presentation/views/CalendarView.vue | 33-40 | **Calendar date selection handler is wired to a non-existent event:** the view listens to `@date-click`, but `CalendarWidget` emits `date-select` / `day-click` (not `date-click`). As a result, selecting a day won’t update `selectedDate` and the “Selected Date Details” panel won’t behave as intended. | Rename the listener to match the widget contract (e.g., `@date-select="handleDateClick"` or `@day-click="handleDayClick"`) and consider aligning on a single event name across the calendar feature to prevent drift. |
+| D32-002 | 🟡 MEDIUM | src/presentation/views/CalendarView.vue | 187-212 | **Potential N+1 / sequential fetch pattern for tasks:** `loadTasksForProjects()` loops projects and awaits `fetchTasksByProject()` for each, which can generate many sequential requests on month change. This can become slow and amplify backend load. | Add a backend endpoint to fetch tasks for a date range / project set in one call, or parallelize with `Promise.all` with a sensible concurrency limit and cache results by month/project. |
+| D32-003 | 🟢 LOW | src/presentation/views/DashboardView.vue | 110-124 | **Accessibility: `role="button"` lacks Space-key activation:** the clickable deadline item handles Enter only. Keyboard users expect Space to activate a “button-like” control. | Use a semantic `<button>`/`<a>` (preferred), or add `@keydown.space.prevent` alongside Enter to keep keyboard parity. |
+| D32-004 | 🟠 HIGH | src/presentation/views/ProjectListView.vue | 47-55, 300-303 | **Status filtering is broken due to enum/value mismatch:** the status filter options use lowercase values (`active`, `finalized`), but `ProjectSummaryDto.status` is a `ProjectStatus` enum (`'ACTIVE'`, `'FINALIZED'`, etc.). The filter comparison `p.status === statusFilter.value` will never match, so status filtering won’t work. | Bind select option values to the real enum values (e.g., `:value="ProjectStatus.ACTIVE"`, `:value="ProjectStatus.FINALIZED"`) and type `statusFilter` as `ProjectStatus | ''` to keep it exhaustive and self-documenting. |
+| D32-005 | 🟢 LOW | src/presentation/views/ProjectListView.vue | 307-319 | **Sorting repeatedly constructs `Date` objects:** the comparator creates `new Date(...)` repeatedly during sorting and every reactive re-run. | Precompute numeric timestamps (e.g., map to `{...p, deliveryDateMs}`) or compare using cached derived keys to reduce repeated parsing. |
+| D32-006 | 🟡 MEDIUM | src/presentation/views/ProjectDetailsView.vue | 39-76, 65, 145, 190, 214 | **Tabs a11y wiring is incomplete:** panels use `aria-labelledby="overview-tab"` etc., but the corresponding tab buttons do not define matching `id` attributes. This breaks the tab/tabpanel relationship for assistive technologies. | Add `:id="`${tab.key}-tab`"` to tab buttons and set each panel’s `aria-labelledby` to match (or compute both from the same source). Consider adding basic keyboard navigation semantics for `role="tab"` if this becomes a primary UI affordance. |
+| D32-007 | 🟡 MEDIUM | src/presentation/views/ProjectDetailsView.vue | 1117-1162 | **Manual token handling + `window.open` hardening:** file download/preview pulls the token from `localStorage`, calls `fetch` directly (bypassing the central HTTP client), and opens a new tab via `window.open(downloadUrl, '_blank')` without `noopener/noreferrer`, which enables reverse-tabnabbing if a malicious page is opened. | Route API calls through the existing HTTP client/repository layer (consistent retries/refresh/errors). When opening new tabs, use `window.open(url, '_blank', 'noopener,noreferrer')` and set `newWindow.opener = null` defensively (or use an `<a target="_blank" rel="noopener noreferrer">`). |
+| D32-008 | 🟡 MEDIUM | src/presentation/views/SettingsView.vue | 642-690 | **Settings persistence is not user-scoped and is only local:** multiple role-specific settings are saved under global `localStorage` keys (`clientSettings`, `specialUserSettings`, `adminSettings`), which can leak preferences across users on shared devices and is easy to lose/overwrite. | Namespace keys by user ID (and role) or persist these settings server-side. If local-only is intentional, clearly surface that persistence is device-local and not account-wide. |
+| D32-009 | 🟡 MEDIUM | src/presentation/views/BackupView.vue | 475-537 | **Admin backup flows are stubbed/simulated:** critical operations (backup create/schedule, Dropbox connect/sync) are simulated with `setTimeout`, `Math.random()`, and `alert(...)`. This is easy to ship accidentally and misrepresents system behavior. | Replace the stubs with real service calls (or clearly isolate demo-only UI behind a dev flag). Avoid `Math.random()` IDs; use server-issued IDs or UUIDs. |
+| D32-010 | 🟢 LOW | src/presentation/views/ForbiddenView.vue / NotFoundView.vue | 49-55 / 44-50 | **Design token inconsistency:** error pages use hard-coded gradients and hex colors (e.g., `#667eea`, `#f5576c`) instead of theme tokens. This undermines theming/high-contrast support and diverges from the rest of the design system. | Replace hard-coded colors with existing CSS variables/tokens (or centralize error-page styling in shared styles). |
+
+**Positive Aspects:**
+- Views generally have clear structure, good empty/loading states, and reasonable aria-label usage for major controls.
+- `UserManagementView` shows good type discipline on filters (e.g., `roleFilter: UserRole | ''`) and clean store/composable integration.
+- `CalendarView` normalizes date comparisons by zeroing hours before equality checks.
+
+**Group Notes:**
+The top correctness risks are event-contract drift (`CalendarView` vs `CalendarWidget`) and enum/value mismatches in filtering (`ProjectListView`). The next priorities are improving a11y semantics in the tabbed layout and hardening file download/preview to avoid bypassing shared HTTP/security patterns.
+
+---
+
+### Phase 9: App Entry & Configuration Review
+
+#### Group 9.1: App Entry
+**Files Reviewed:**
+- src/App.vue
+- src/main.ts
+- backend/src/server.ts
+
+**Score:** 6.8/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D33-001 | 🟡 MEDIUM | src/App.vue | 271-299, 321-349 | **WebSocket connection can be initiated twice:** `initializeApp()` connects when the session is restored, and the auth-state watcher also connects when `isAuthenticated` flips true. If `authStore.initialize()` transitions auth state, both paths can run and create duplicate connections/subscriptions. | Make `socketHandler.connect()` idempotent (no-op if already connected for same user), or gate connection to a single place (either initial bootstrap or the auth watcher). Consider storing a “connected userId” and disconnect/reconnect only when it changes. |
+| D33-002 | 🟡 MEDIUM | src/App.vue | 271-347 | **Debug logging + socket debug mode are not environment-gated:** `[App]` logs run unconditionally and `socketHandler.connect({ debug: true })` is always enabled. This is noisy in production and can leak operational details; it can also impact performance if the WebSocket handler emits verbose logs. | Gate logs and `debug: true` behind `import.meta.env.DEV` (or a dedicated debug flag). Default to `debug: false` in production builds. |
+| D33-003 | 🟢 LOW | src/App.vue | 234 | **`provide()` uses a string injection key for the toast API:** `provide('toast', addToast)` is easy to collide with other providers and loses type-safety in consumers (string keys are not checked and are hard to refactor). | Use a typed `InjectionKey` (e.g., `export const TOAST_KEY: InjectionKey<(t: Omit<Toast,'id'>)=>void> = Symbol('toast')`) and `provide(TOAST_KEY, addToast)` / `inject(TOAST_KEY)`. |
+| D33-004 | 🟢 LOW | src/App.vue | 192-211 | **Toast IDs and timers are fragile:** toast IDs use `Date.now()` + `Math.random()` (collision/test fragility), and auto-dismiss uses `setTimeout` without tracking/clearing timers on teardown. | Prefer `crypto.randomUUID()` for IDs (or a central ID generator). Optionally track timeout handles per toast and clear them in `onUnmounted()` to avoid late state updates in edge cases (HMR/tests). |
+| D33-005 | 🟡 MEDIUM | backend/src/server.ts | 65-96 | **Graceful shutdown is not hardened against repeated calls and cleanup failures:** multiple signals/errors can call `shutdown()` concurrently; `disconnectDatabase()` errors aren’t handled, and the forced-exit timer isn’t cleared. This can lead to noisy logs, double-close attempts, or exiting with open resources. | Add an idempotent guard (e.g., `let isShuttingDown = false`) so shutdown runs once. Wrap `disconnectDatabase()` in `try/catch` and always `process.exit(...)` deterministically. Clear the forced-timeout timer when shutdown completes successfully. |
+| D33-006 | 🟢 LOW | backend/src/server.ts | 9, 90-93 | **Header metadata and error typing are inconsistent:** `@file` says `src/server.ts` but the file is `backend/src/server.ts`; `unhandledRejection` logs `reason as Error` even when it isn’t an `Error`. | Align the header `@file` path to `backend/src/server.ts`. Log unhandled rejections safely (e.g., `reason instanceof Error ? reason : new Error(String(reason))` or log `reason` as unknown without `as Error`). |
+| D33-007 | 🟢 LOW | src/main.ts | 245-255 | **Unhandled-rejection handler always calls `event.preventDefault()`:** this suppresses the browser’s default reporting even in development, which can make debugging harder and potentially hide errors from tooling. | Only call `preventDefault()` when you’re actually handling/reporting the error (typically in production), or gate it behind `import.meta.env.PROD`. |
+
+**Positive Aspects:**
+- `src/main.ts` is well-structured with clear bootstrapping phases (Pinia, Router, HTTP client) and development-only logging.
+- `src/App.vue` cleans up the resize listener and centralizes initialization concerns in a single `initializeApp()` flow.
+- `backend/src/server.ts` includes a reasonable graceful shutdown path and uses a shared logger rather than ad-hoc `console.*`.
+
+**Group Notes:**
+The main correctness/perf risk is duplicated WebSocket connection initiation. The next priority is ensuring debug logging and “debug mode” are not enabled in production by default.
+
+---
+
 ## INCIDENT TODO LIST
 
 ### Critical Issues (Must Fix)
@@ -1014,6 +1089,9 @@ Main priorities are interaction semantics (avoid nested button patterns) and enf
 - [ ] **D18-001** - Auth store persists access/refresh tokens in `localStorage` (XSS exfiltration risk)
 - [ ] **D22-001** - Notification listing endpoint lacks ownership/admin enforcement
 - [ ] **D22-002** - Message creation trusts raw request body (spoofing/access risk)
+
+- [ ] **D32-001** - CalendarView listens to `date-click` (CalendarWidget emits `date-select`/`day-click`)
+- [ ] **D32-004** - ProjectListView status filter values don’t match `ProjectStatus` enum (filter broken)
 
 ### Medium Issues (Recommended Fix)
 - [ ] **D1-002** - TaskPriority includes `URGENT` not in requirements
@@ -1106,6 +1184,16 @@ Main priorities are interaction semantics (avoid nested button patterns) and enf
 - [ ] **D31-002** - CalendarWidget `maxProjectsPerDay` cap not enforced across projects+tasks
 - [ ] **D31-003** - CalendarWidget day generation filters arrays per-day with repeated date parsing (O(42*n))
 
+- [ ] **D32-002** - CalendarView loads tasks with sequential per-project requests (N+1 risk)
+- [ ] **D32-006** - ProjectDetailsView tabs: `aria-labelledby` references missing tab IDs
+- [ ] **D32-007** - ProjectDetailsView download/preview bypass HTTP client + missing `noopener` on `window.open`
+- [ ] **D32-008** - SettingsView saves role settings to non-user-scoped `localStorage` keys
+- [ ] **D32-009** - BackupView backup/schedule/Dropbox actions are simulated stubs (prod risk)
+
+- [ ] **D33-001** - App WebSocket connect can be initiated twice (bootstrap + auth watcher)
+- [ ] **D33-002** - App WebSocket debug/logging is not environment-gated (production noise/leakage)
+- [ ] **D33-005** - Backend shutdown is not idempotent and doesn’t guard cleanup failures
+
 
 ### Low Issues (Optional Fix)
 - [ ] **D2-003** - Backend GeoCoordinates should reject NaN/Infinity
@@ -1175,6 +1263,15 @@ Main priorities are interaction semantics (avoid nested button patterns) and enf
 - [ ] **D31-004** - CalendarWidget uses `toISOString()` for day keys (timezone/DST sensitivity)
 - [ ] **D31-005** - CalendarWidget includes noisy `console.log` debug watcher for projects
 
+- [ ] **D32-003** - DashboardView clickable deadline items miss Space key activation
+- [ ] **D32-005** - ProjectListView sorts by repeatedly constructing `Date` objects in comparator
+- [ ] **D32-010** - Forbidden/NotFound views use hard-coded colors/gradients instead of tokens
+
+- [ ] **D33-003** - App toast `provide()` uses string injection key (type-safety/collision risk)
+- [ ] **D33-004** - App toast IDs use `Math.random()` and timers aren’t tracked for teardown
+- [ ] **D33-006** - Backend server header `@file` mismatch + unhandledRejection casts unknown to Error
+- [ ] **D33-007** - main.ts unhandledrejection handler suppresses default browser reporting
+
 ---
 
 ## CROSS-CUTTING CONCERNS
@@ -1193,6 +1290,8 @@ Main priorities are interaction semantics (avoid nested button patterns) and enf
 - Notification list grouping repeats the same UTC `toISOString()` calendar-day bug pattern, suggesting a shared utility for local date bucketing would reduce drift across components (D30-001).
 - Notification list filter state/contracts are weakly typed (`activeFilter: string`, filter-change emitting `{}` for non-unread), which undermines exhaustive handling and makes parent integration brittle (D30-002/D30-005).
 - CalendarWidget uses UTC `toISOString()` for day keys in a local calendar grid; date semantics (local day vs UTC timestamp) should be consistently modeled across the Presentation layer (D31-004).
+- View-layer contracts drift in multiple places (custom events and enum values), which TypeScript can’t enforce at runtime; prefer deriving UI option values from enums and reusing typed emit contracts to prevent broken wiring (D32-001/D32-004).
+- App-level dependency injection uses string keys (`provide('toast', ...)`), which is easy to collide and hard to type-check across the app; use typed `InjectionKey`s for safer provide/inject contracts (D33-003).
 
 ### Consistency Analysis
 **Issues:**
@@ -1205,6 +1304,8 @@ Main priorities are interaction semantics (avoid nested button patterns) and enf
 - File components also surface inconsistent component contracts (unused emits/styles) and continue `$emit`-in-template patterns, reinforcing the need for a consistent typed-emits + component-API hygiene convention (D29-003/D29-007).
 - Notification components continue `$emit`-in-template usage and rely on `role="button"` patterns that need consistent keyboard parity (Space + Enter) across the Presentation layer (D30-004).
 - CalendarWidget repeats the “clickable container” pattern but also nests real `<button>`s inside a `role="button"` day cell; standardize a consistent interactive-element pattern to avoid nested-controls a11y pitfalls (D31-001).
+- Views include multiple “demo/stub” style implementations (`alert`, simulated API delays) and hard-coded styling in error pages; centralize UX primitives and keep production views backed by real service calls to avoid drift (D32-009/D32-010).
+- App entry includes unconditional debug-style logs and enables WebSocket debug mode by default; standardize an environment-gated logging/debug convention for entrypoints and core infrastructure initialization (D33-002).
 
 ### Security Analysis
 **Issues:**
@@ -1225,6 +1326,8 @@ Main priorities are interaction semantics (avoid nested button patterns) and enf
 - Backend controllers log request bodies/stacks via `console.*`, increasing leakage risk (D22-005).
 - Upload middleware should validate beyond extensions and error handler responses should avoid leaking internals (D23-001/D23-002).
 - Additional security review will be covered in Infrastructure/Auth/HTTP/WebSocket groups.
+- File preview/download flows should avoid bypassing the shared HTTP client and must harden new-tab navigation against reverse-tabnabbing (`window.open` without `noopener`) (D32-007).
+- App entry currently enables verbose `[App]` logging and WebSocket debug mode by default; ensure production builds do not emit debug traces that could leak operational details or expand the XSS “information surface” (D33-002).
 
 ### Performance Analysis
 **Issues:**
@@ -1233,9 +1336,11 @@ Main priorities are interaction semantics (avoid nested button patterns) and enf
 - FileList sorting repeatedly constructs `Date` objects inside the comparator; for larger lists, cache timestamps or precompute derived sort keys to avoid repeated parsing on reactive updates (D29-006).
 - NotificationList’s dual load-more mechanisms can cause duplicate fetches if parent `loadingMore` state lags; consider a single guarded trigger to avoid redundant work (D30-003).
 - CalendarWidget recomputes the 42-day grid by filtering entire project/task arrays per day with repeated `Date` parsing; pre-bucketing items by day key will scale better (D31-003).
+- CalendarView loads tasks per project during month changes and initial load; consider batching/parallelization to avoid slow sequential fetch patterns when calendars contain many projects (D32-002).
+- Duplicated WebSocket connect initiation can create redundant connections/subscriptions and extra event traffic; ensure connect/disconnect lifecycle is single-sourced or idempotent (D33-001).
 
 
 ---
 
 **Report Generated:** 2026-03-05
-**Next Review Scheduled:** After Phase 2 (Application) completes
+**Next Review Scheduled:** After Phase 9 completes
