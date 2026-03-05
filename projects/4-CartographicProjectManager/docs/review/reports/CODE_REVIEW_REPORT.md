@@ -4,8 +4,8 @@
 **Review Date:** March 5, 2026
 **Reviewer:** GitHub Copilot Agent
 **Codebase Version:** dd8d063
-**Total Files Reviewed:** 202
-**Total Groups Reviewed:** 33
+**Total Files Reviewed:** 244
+**Total Groups Reviewed:** 35
 
 ---
 
@@ -18,10 +18,10 @@ Initial review (Domain enumerations + entities) shows strong documentation disci
 
 **Statistics (so far):**
 - Critical Issues: 4
-- High Issues: 20
-- Medium Issues: 93
-- Low Issues: 69
-- Total Issues: 186
+- High Issues: 21
+- Medium Issues: 95
+- Low Issues: 73
+- Total Issues: 192
 
 **Recommendation:**
 - [ ] ✅ APPROVED - Ready for production
@@ -1062,6 +1062,93 @@ The main correctness/perf risk is duplicated WebSocket connection initiation. Th
 
 ---
 
+#### Group 9.2: Index/Barrel Exports
+**Files Reviewed:**
+- src/application/dto/index.ts
+- src/application/index.ts
+- src/application/interfaces/index.ts
+- src/application/services/index.ts
+- src/domain/entities/index.ts
+- src/domain/enumerations/index.ts
+- src/domain/index.ts
+- src/domain/repositories/index.ts
+- src/domain/value-objects/index.ts
+- src/infrastructure/external-services/index.ts
+- src/infrastructure/http/index.ts
+- src/infrastructure/index.ts
+- src/infrastructure/repositories/index.ts
+- src/infrastructure/websocket/index.ts
+- src/presentation/composables/index.ts
+- src/presentation/components/calendar/index.ts
+- src/presentation/components/common/index.ts
+- src/presentation/components/file/index.ts
+- src/presentation/components/message/index.ts
+- src/presentation/components/notification/index.ts
+- src/presentation/index.ts
+- src/presentation/stores/index.ts
+- src/shared/index.ts
+
+- backend/src/domain/index.ts
+- backend/src/domain/repositories/index.ts
+- backend/src/domain/value-objects/index.ts
+- backend/src/application/index.ts
+- backend/src/application/services/index.ts
+- backend/src/infrastructure/auth/index.ts
+- backend/src/infrastructure/database/index.ts
+- backend/src/infrastructure/external-services/index.ts
+- backend/src/infrastructure/index.ts
+- backend/src/infrastructure/repositories/index.ts
+- backend/src/infrastructure/scheduler/index.ts
+- backend/src/infrastructure/websocket/index.ts
+- backend/src/presentation/controllers/index.ts
+- backend/src/presentation/index.ts
+- backend/src/presentation/middlewares/index.ts
+- backend/src/presentation/routes/index.ts
+- backend/src/shared/index.ts
+
+**Score:** 6.4/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D34-001 | 🟠 HIGH | src/infrastructure/external-services/index.ts | 104-117 | **Incorrect type imports likely break builds:** the file re-imports `WhatsAppConfig` / `IWhatsAppGateway` from `./dropbox.service` instead of `./whatsapp.gateway`, which is almost certainly wrong and can cause type-check/runtime issues depending on TS settings. | Import WhatsApp-related types from `./whatsapp.gateway` and keep the Dropbox-only types imported from `./dropbox.service`. If re-importing is only for “convenience”, consider removing the re-import block entirely and rely on the existing named exports. |
+| D34-002 | 🟡 MEDIUM | src/presentation/stores/index.ts | 73-132 | **“Index” module contains non-barrel, weakly-typed WebSocket wiring:** `setupStoreWebSocketListeners(socketHandler?: any)` uses `any`, optional-chaining `.on?.(...)`, and stringly-typed event names. This is easy to drift from the actual WebSocket API (which elsewhere exposes typed `onNotification`, `onMessage`, etc.) and can ship as dead or incorrect integration code. | Either remove this helper until a real connection-manager abstraction exists, or type it against the actual WebSocket handler interface and use the typed subscription methods (avoid `.on` + string event names). Gate logs behind `import.meta.env.DEV` if kept. |
+| D34-003 | 🟢 LOW | src/{application,domain,presentation,infrastructure}/**/index.ts | Multiple | **File header template is inconsistent across barrel exports:** several frontend barrel files start with an `@module` doc block rather than the standard University/TFG header used across most of the codebase, reducing documentation consistency and making automated auditing harder. | Standardize index/barrel files to the same header template (including correct `@file` paths) or formally document that barrel exports may use a smaller header and enforce it consistently. |
+| D34-004 | 🟢 LOW | backend/src/**/index.ts | Multiple | **Backend barrel file header metadata often uses wrong `@file` paths:** multiple backend index modules declare `@file src/...` even though the real path is `backend/src/...`, continuing the existing header-path mismatch pattern. | Align `@file` to the real repo-relative path (e.g., `backend/src/shared/index.ts`) for consistency and easier navigation/auditing. |
+
+**Positive Aspects:**
+- Barrel exports are generally well-organized by layer and feature area (Application/Domain/Infrastructure/Presentation), improving discoverability.
+- Frontend component indexes export both SFC components and their props/emits types, which helps keep consumer code type-safe.
+- Backend indexes consistently use explicit `.js` extensions, which is compatible with Node ESM + TS `NodeNext`-style setups.
+
+**Group Notes:**
+The main “must-fix” item is the incorrect import source in the frontend external-services index (D34-001). The other findings are primarily about keeping barrel exports purely declarative and keeping header metadata consistent.
+
+---
+
+#### Group 9.3: Public Assets
+**Files Reviewed:**
+- public/.gitkeep
+- public/robots.txt
+
+**Score:** 7.2/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D35-001 | 🟡 MEDIUM | public/.gitkeep | 1-10 | **Public assets appear incomplete for a PWA-capable build:** the placeholder notes list required icon files (`pwa-192x192.png`, `pwa-512x512.png`, `favicon.ico`, `apple-touch-icon.png`), but the `public/` directory currently contains only `.gitkeep` and `robots.txt`. This likely results in broken favicon/icon requests and a weaker PWA install experience. | Add the referenced icon assets to `public/` (or update the PWA/icon strategy so these files aren’t expected). Keep the “required files” list accurate so CI/reviewers can validate it.
+| D35-002 | 🟢 LOW | public/robots.txt | 1-2 | **Robots policy is permissive by default:** `Allow: /` is fine for a marketing site, but for an authenticated SPA it can lead to indexing of non-public routes (login/settings/dashboard) unless intentionally desired. | Decide intended indexing policy. If this app should not be indexed, use a restrictive policy (especially for staging), or disallow sensitive routes. Don’t rely on `robots.txt` for security.
+| D35-003 | 🟢 LOW | public/.gitkeep | 1-10 | **`.gitkeep` is likely publicly served:** Vite copies `public/` into the build output; keeping a `.gitkeep` with internal notes can expose unnecessary information and creates an avoidable publicly reachable file. | Move these notes to project documentation (e.g., README or docs) and keep `public/` for actual shipped assets only.
+
+**Positive Aspects:**
+- `robots.txt` exists (better than missing) and won’t block the app from being indexed when intentional.
+- The `.gitkeep` notes clearly document how to generate PWA assets, which helps onboarding.
+
+**Group Notes:**
+Main action item is aligning the “required assets” expectations with what is actually shipped in `public/`.
+
+---
+
 ## INCIDENT TODO LIST
 
 ### Critical Issues (Must Fix)
@@ -1092,6 +1179,8 @@ The main correctness/perf risk is duplicated WebSocket connection initiation. Th
 
 - [ ] **D32-001** - CalendarView listens to `date-click` (CalendarWidget emits `date-select`/`day-click`)
 - [ ] **D32-004** - ProjectListView status filter values don’t match `ProjectStatus` enum (filter broken)
+
+- [ ] **D34-001** - External-services index imports WhatsApp types from Dropbox module (likely build break)
 
 ### Medium Issues (Recommended Fix)
 - [ ] **D1-002** - TaskPriority includes `URGENT` not in requirements
@@ -1194,6 +1283,10 @@ The main correctness/perf risk is duplicated WebSocket connection initiation. Th
 - [ ] **D33-002** - App WebSocket debug/logging is not environment-gated (production noise/leakage)
 - [ ] **D33-005** - Backend shutdown is not idempotent and doesn’t guard cleanup failures
 
+- [ ] **D34-002** - Stores index contains weakly-typed WebSocket wiring helper (drift/dead-code risk)
+
+- [ ] **D35-001** - Public folder appears to be missing referenced PWA/icon assets
+
 
 ### Low Issues (Optional Fix)
 - [ ] **D2-003** - Backend GeoCoordinates should reject NaN/Infinity
@@ -1272,6 +1365,12 @@ The main correctness/perf risk is duplicated WebSocket connection initiation. Th
 - [ ] **D33-006** - Backend server header `@file` mismatch + unhandledRejection casts unknown to Error
 - [ ] **D33-007** - main.ts unhandledrejection handler suppresses default browser reporting
 
+- [ ] **D34-003** - Frontend barrel files use inconsistent (non-standard) header templates
+- [ ] **D34-004** - Backend barrel file headers often use wrong `@file` paths
+
+- [ ] **D35-002** - robots.txt allows all routes by default (confirm intended indexing policy)
+- [ ] **D35-003** - public `.gitkeep` likely shipped publicly (move notes to docs)
+
 ---
 
 ## CROSS-CUTTING CONCERNS
@@ -1292,6 +1391,7 @@ The main correctness/perf risk is duplicated WebSocket connection initiation. Th
 - CalendarWidget uses UTC `toISOString()` for day keys in a local calendar grid; date semantics (local day vs UTC timestamp) should be consistently modeled across the Presentation layer (D31-004).
 - View-layer contracts drift in multiple places (custom events and enum values), which TypeScript can’t enforce at runtime; prefer deriving UI option values from enums and reusing typed emit contracts to prevent broken wiring (D32-001/D32-004).
 - App-level dependency injection uses string keys (`provide('toast', ...)`), which is easy to collide and hard to type-check across the app; use typed `InjectionKey`s for safer provide/inject contracts (D33-003).
+- Presentation store barrel includes a WebSocket wiring helper typed as `any` with string event names, which undermines type safety and can drift from the real WebSocket API surface (D34-002).
 
 ### Consistency Analysis
 **Issues:**
@@ -1306,6 +1406,8 @@ The main correctness/perf risk is duplicated WebSocket connection initiation. Th
 - CalendarWidget repeats the “clickable container” pattern but also nests real `<button>`s inside a `role="button"` day cell; standardize a consistent interactive-element pattern to avoid nested-controls a11y pitfalls (D31-001).
 - Views include multiple “demo/stub” style implementations (`alert`, simulated API delays) and hard-coded styling in error pages; centralize UX primitives and keep production views backed by real service calls to avoid drift (D32-009/D32-010).
 - App entry includes unconditional debug-style logs and enables WebSocket debug mode by default; standardize an environment-gated logging/debug convention for entrypoints and core infrastructure initialization (D33-002).
+- Multiple barrel-export files don’t follow a consistent file-header convention across the codebase (frontend `@module` blocks vs the project’s standard header template; backend `@file` path mismatches), making documentation/auditing less uniform (D34-003/D34-004).
+- Public assets currently include a placeholder `.gitkeep` and appear to omit expected icon files; ensure public-asset expectations match what is actually shipped to avoid broken icon requests and inconsistent PWA metadata (D35-001/D35-003).
 
 ### Security Analysis
 **Issues:**
@@ -1328,6 +1430,7 @@ The main correctness/perf risk is duplicated WebSocket connection initiation. Th
 - Additional security review will be covered in Infrastructure/Auth/HTTP/WebSocket groups.
 - File preview/download flows should avoid bypassing the shared HTTP client and must harden new-tab navigation against reverse-tabnabbing (`window.open` without `noopener`) (D32-007).
 - App entry currently enables verbose `[App]` logging and WebSocket debug mode by default; ensure production builds do not emit debug traces that could leak operational details or expand the XSS “information surface” (D33-002).
+- Avoid shipping internal notes/files from `public/` when they aren’t needed, as they can expose implementation details and create unnecessary public endpoints (D35-003).
 
 ### Performance Analysis
 **Issues:**
