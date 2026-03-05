@@ -4,8 +4,8 @@
 **Review Date:** March 5, 2026
 **Reviewer:** GitHub Copilot Agent
 **Codebase Version:** dd8d063
-**Total Files Reviewed:** 170
-**Total Groups Reviewed:** 26
+**Total Files Reviewed:** 186
+**Total Groups Reviewed:** 31
 
 ---
 
@@ -19,9 +19,9 @@ Initial review (Domain enumerations + entities) shows strong documentation disci
 **Statistics (so far):**
 - Critical Issues: 4
 - High Issues: 18
-- Medium Issues: 71
-- Low Issues: 44
-- Total Issues: 137
+- Medium Issues: 85
+- Low Issues: 62
+- Total Issues: 169
 
 **Recommendation:**
 - [ ] ✅ APPROVED - Ready for production
@@ -844,6 +844,149 @@ Most issues here are accessibility and UX correctness edge cases rather than bus
 
 ---
 
+#### Group 7.2: Task Components
+**Files Reviewed:**
+- src/presentation/components/task/TaskCard.vue
+- src/presentation/components/task/TaskForm.vue
+- src/presentation/components/task/TaskHistory.vue
+- src/presentation/components/task/TaskList.vue
+
+**Score:** 6.9/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D27-001 | 🟡 MEDIUM | src/presentation/components/task/TaskList.vue | 50-57, 316-324 | **Priority sorting logic contradicts the UI label:** the sort option “Priority (Low → High)” is implemented with `URGENT` as the lowest weight (1) and `LOW` as the highest weight (4), which yields “Urgent → Low” for ascending. This is a correctness/UX bug and makes sorting feel broken. | Either rename the label to match the ordering, or flip the weight mapping (e.g., `LOW: 1 … URGENT: 4`) so ascending produces Low→High and descending produces High→Low. |
+| D27-002 | 🟡 MEDIUM | src/presentation/components/task/TaskForm.vue | 351-358, 405-407, 520-531 | **Date-only handling is timezone-sensitive:** `formatDateForInput()` uses `toISOString().split('T')[0]` (UTC) while submit/validation uses `new Date(form.dueDate)` (local parsing). In non-UTC timezones, this can shift the displayed due date by one day when editing an existing task. | Use a local “YYYY-MM-DD” formatter (from local date parts) for `<input type="date">`, or keep date-only values as strings at the boundary and avoid `Date` round-trips for date-only fields. |
+| D27-003 | 🟡 MEDIUM | src/presentation/components/task/TaskForm.vue | 42-44, 313-314 | **Enum comparisons are stringly-typed in the template:** the template compares `selectedNewStatus` / `task.status` to string literals like `'COMPLETED'` and `'PERFORMED'` even though state is typed as `TaskStatus | null`. This is fragile and can drift if enum values or casing change. | Compare against `TaskStatus.COMPLETED` / `TaskStatus.PERFORMED` (and keep all status logic consistently enum-based). |
+| D27-004 | 🟢 LOW | src/presentation/components/task/TaskCard.vue | 15-33 | **Keyboard interaction is incomplete for `role="button"`:** the card supports Enter but not Space, which is expected for button-like controls; additionally it mixes `role="button"` with `draggable`, which can create confusing interaction for keyboard/screen-reader users. | Add `@keydown.space.prevent="handleClick"` (and consider `@keydown.enter.prevent`). If possible, switch to a semantic `<button>` wrapper or provide an explicit “open” button while leaving the card as a non-interactive container. |
+| D27-005 | 🟢 LOW | src/presentation/components/task/TaskForm.vue | 229-237, 243-246, 284-301 | **Template bypasses typed emitter:** the component defines typed emits, but uses `$emit('remove-file', ...)` and `$emit('cancel')` in the template. This reduces type-safety and consistency across the Presentation layer. | Use the typed `emit` function (e.g., `@click="emit('cancel')"`) or route through `handleCancel()` / `handleRemoveFile(fileId)` helpers. |
+| D27-006 | 🟢 LOW | src/presentation/components/task/TaskList.vue | 66-70, 108-117, 125-134, 198-199 | **TaskList relies on `$emit` in templates despite typed emits:** `defineEmits<TaskListEmits>()` exists, but several template paths use `$emit` (including the create button and TaskCard event forwarding). | Forward events through typed handlers defined in `<script setup>` (e.g., `onCreate() { emit('create') }`, `onTaskClick(task) { emit('task-click', task) }`). |
+| D27-007 | 🟢 LOW | src/presentation/components/task/TaskHistory.vue | 97-105, 110-152 | **History rendering depends on ad-hoc string parsing of actions:** `getActionType()` / `formatAction()` infer semantics from substrings in `entry.action`, which makes the UI brittle if backend strings change (or are localized). This echoes the broader “action: string” drift risk noted earlier (D5-004). | Introduce a typed `TaskHistoryAction` union/enum at the DTO boundary (or a stable `actionType` field) and map to display strings in one place. |
+| D27-008 | 🟢 LOW | src/presentation/components/task/TaskHistory.vue | 59-63 | **Value-change section uses truthiness checks:** `v-if="entry.previousValue || entry.newValue"` will hide changes when either side is an empty string (or other falsy-but-meaningful values). | Use explicit emptiness checks (`!= null` and `!== ''`) aligned with the backend contract for “no value”. |
+
+**Positive Aspects:**
+- `TaskForm` does a good job separating create/edit flows and provides clear client-side validation.
+- `TaskCard` follows a tidy “summary + quick actions + status transitions” structure and uses typed emits in script.
+- `TaskList` provides both grouped and flat views with a simple filter model and clear empty/loading states.
+
+**Group Notes:**
+The biggest correctness issue is the priority sort mismatch (D27-001). Most other findings are consistency/a11y hardening (typed-emits usage, keyboard interaction) and avoiding date-only timezone drift in forms (D27-002).
+
+---
+
+#### Group 7.3: Message Components
+**Files Reviewed:**
+- src/presentation/components/message/index.ts
+- src/presentation/components/message/MessageBubble.vue
+- src/presentation/components/message/MessageInput.vue
+- src/presentation/components/message/MessageList.vue
+
+**Score:** 7.3/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D28-001 | 🟡 MEDIUM | src/presentation/components/message/MessageList.vue | 177-206, 219-234 | **Message date grouping is timezone-sensitive:** the list groups by `new Date(message.sentAt).toISOString().split('T')[0]` (UTC), and Today/Yesterday logic compares against `today.toISOString().split('T')[0]`. This can mis-group messages across day boundaries and mislabel “Today/Yesterday” for users outside UTC. | Group by local calendar date (derive `YYYY-MM-DD` from local date parts) or use a date utility to compute local start-of-day keys consistently. Avoid `toISOString()` for date-only UI grouping. |
+| D28-002 | 🟡 MEDIUM | src/presentation/components/message/MessageBubble.vue | 123-131 | **Initials computation can throw for whitespace-heavy names:** `senderInitials` splits on `' '` and assumes `parts[0][0]`/`parts[1][0]` exist. Inputs like `'  John'` or `'John  Doe'` can yield empty segments and trigger runtime errors when calling `toUpperCase()`. | Normalize first: `name.trim().split(/\s+/).filter(Boolean)` and defensively fall back when initials are not available. |
+| D28-003 | 🟡 MEDIUM | src/presentation/components/message/MessageInput.vue | 243-252 | **Enter-to-send can break IME composition:** `handleKeyDown()` sends on Enter when Shift is not held, but does not guard for composition (`event.isComposing` / keyCode 229). This can accidentally send partially composed text for IME users. | Bail out when composing: `if (event.isComposing) return;` (and/or guard keyCode 229) before treating Enter as “send”. |
+| D28-004 | 🟢 LOW | src/presentation/components/message/MessageBubble.vue | 55 | **Template bypasses typed emitter:** the file attachment click uses `$emit('file-click', file)` even though typed emits are declared in `<script setup>`. | Use the typed `emit` function in the template (or route through a handler function) to keep event names/payloads type-checked. |
+| D28-005 | 🟢 LOW | src/presentation/components/message/MessageList.vue | 55 | **Template bypasses typed emitter:** `@file-click="(file) => $emit('file-click', file)"` uses `$emit` even though a typed `emit` exists. | Use `emit('file-click', file)` via a handler function to keep payload typing consistent. |
+| D28-006 | 🟢 LOW | src/presentation/components/message/MessageList.vue / MessageBubble.vue | 116, 110-114 | **Dead/unused emits in public interfaces:** `MessageListEmits` declares `message-read`, and `MessageBubbleEmits` declares `retry`, but neither event is emitted in the component. This creates misleading APIs and can hide missing behavior. | Remove unused events from emit contracts, or implement the missing behavior (e.g., emit `message-read` via a visibility/intersection observer). |
+| D28-007 | 🟢 LOW | src/presentation/components/message/MessageBubble.vue | 380 | **Hard-coded color token:** read-status styling uses a raw hex value (`#a7f3d0`) instead of design tokens, which undermines theming/high-contrast consistency. | Replace with an existing CSS variable token consistent with the design system. |
+
+**Positive Aspects:**
+- `MessageInput` has a clean UX: auto-resize, file previews, max file count, and typing indicators with proper timeout cleanup.
+- `MessageList` is well-structured and uses an IntersectionObserver for infinite scroll.
+- `MessageBubble` keeps layout logic simple and supports compact rendering + attachments.
+
+**Group Notes:**
+Most findings are UX correctness and consistency: avoid UTC-based date keys for UI grouping (D28-001), harden initials computation (D28-002), and improve IME compatibility for Enter-to-send (D28-003).
+
+---
+
+#### Group 7.4: File Components
+**Files Reviewed:**
+- src/presentation/components/file/index.ts
+- src/presentation/components/file/FileList.vue
+- src/presentation/components/file/FileUploader.vue
+
+**Score:** 6.8/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D29-001 | 🟡 MEDIUM | src/presentation/components/file/FileList.vue | 78, 401-403 | **“All Files” section tab does not emit `section-change`:** section buttons call `setActiveSection(section)` (which emits), but the “All Files” tab only mutates internal state (`activeSectionInternal = ''`). This can desync parent state (URL/query, persisted filters, etc.) from the component’s internal UI. | Route “All Files” through the same code path: call `setActiveSection('')` (or emit `section-change` explicitly when clearing). |
+| D29-002 | 🟡 MEDIUM | src/presentation/components/file/FileUploader.vue | 23-38 | **Drop zone is mouse-only (not keyboard-accessible):** the drop zone is a clickable `div` (`@click="triggerFileInput"`) without `role`, `tabindex`, or Space/Enter handling, so keyboard-only users can’t open the file picker via the primary control. | Use a semantic `<button type="button">` for the drop zone, or add `role="button"`, `tabindex="0"`, and handle `@keydown.enter` / `@keydown.space.prevent` to trigger the file input. |
+| D29-003 | 🟢 LOW | src/presentation/components/file/FileList.vue | 130-134, 207-208, 332-341 | **File row/card interaction is inconsistent and bypasses typed emits:** grid cards use `role="button"` with Enter only (no Space), and both grid + table use `$emit(...)` in templates even though typed `emit` exists. | Add Space activation (`@keydown.space.prevent`) where `role="button"` is used. Prefer routing interactions through typed handlers in `<script setup>` using `emit('file-click', file)` etc. |
+| D29-004 | 🟢 LOW | src/presentation/components/file/FileUploader.vue | 336-349, 433-452, 482-492 | **Preview cleanup is mismatched:** previews are created via `FileReader.readAsDataURL()` (data URLs), but cleanup calls `URL.revokeObjectURL(item.preview)`, which is meant for `URL.createObjectURL()` blobs. This is confusing and suggests memory cleanup is not actually happening as intended. | Either switch to `URL.createObjectURL(file)` and revoke those URLs, or keep data URLs and remove the `revokeObjectURL` calls (or store a separate object URL). |
+| D29-005 | 🟢 LOW | src/presentation/components/file/FileUploader.vue | 308-312 | **Queue item ID generation uses `Math.random()`:** this can collide in fast consecutive adds and makes tests less deterministic. | Use `crypto.randomUUID()` (where available) or reuse the shared ID generator already flagged elsewhere (D15-001) to keep patterns consistent. |
+| D29-006 | 🟢 LOW | src/presentation/components/file/FileList.vue | 369-388 | **Sorting repeatedly parses dates inside the comparator:** `new Date(a.uploadedAt)` is constructed during each comparison, which can become noticeable for large file lists and reactive re-sorts. | Cache timestamps (e.g., precompute `uploadedAtMs`) or compare using a derived key computed once per file before sorting. |
+| D29-007 | 🟢 LOW | src/presentation/components/file/FileList.vue | 311, 606 | **Dead/unused API surface:** `FileListEmits` declares `upload-click` and styles exist for `.file-list-upload-btn`, but no upload button is rendered in the template. This increases maintenance cost and creates misleading expectations for consumers. | Either implement the upload button (if intended) and emit `upload-click`, or remove the unused emit + styles to keep the component contract minimal. |
+
+**Positive Aspects:**
+- `FileList` provides a solid UX baseline: search, section filtering, grid/list toggle, skeleton loading, and a helpful size footer.
+- `FileUploader` has a clear queue model with per-file status and progress updates driven by parent props.
+- Both components provide sensible aria-labels for icon-only action buttons.
+
+**Group Notes:**
+The most important fixes are correctness (consistent section-change emission) and accessibility (keyboard support for the uploader drop zone). The rest are consistency/perf cleanups.
+
+---
+
+#### Group 7.5: Notification Components
+**Files Reviewed:**
+- src/presentation/components/notification/index.ts
+- src/presentation/components/notification/NotificationItem.vue
+- src/presentation/components/notification/NotificationList.vue
+
+**Score:** 7.0/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D30-001 | 🟡 MEDIUM | src/presentation/components/notification/NotificationList.vue | 284-319 | **Notification date grouping is timezone-sensitive:** grouping and Today/Yesterday detection use `toISOString().split('T')[0]` (UTC). This can mislabel notifications around day boundaries for users outside UTC (same class of bug as D28-001). | Compute local “YYYY-MM-DD” keys from local date parts (or use a date utility) and avoid `toISOString()` for UI calendar grouping. |
+| D30-002 | 🟡 MEDIUM | src/presentation/components/notification/NotificationList.vue | 357-365 | **`filter-change` payload doesn’t reflect selected filter:** the UI supports `task/message/project` filters, but the watcher only sets `filter.isRead=false` for `unread` and emits `{}` for everything else. Consumers can’t reliably react to filter changes. | Map each select option to a meaningful `NotificationFilter` payload (e.g., set `filter.type` for `task/message/project`, or expose the selected UI filter as a typed union and let the parent interpret). |
+| D30-003 | 🟡 MEDIUM | src/presentation/components/notification/NotificationList.vue | 232-252, 370-384 | **Potential duplicate “load more” triggers:** the component emits `load-more` via both IntersectionObserver and a scroll-threshold fallback. If parent `loadingMore` state lags, both paths can fire for the same boundary condition and trigger duplicate fetches. | Gate load-more emission with an internal “inFlight” flag, or use a single load-more mechanism (observer preferred) with robust cleanup/unobserve behavior. |
+| D30-004 | 🟢 LOW | src/presentation/components/notification/NotificationItem.vue / NotificationList.vue | 23-27, 47, 102-103, 124 | **Accessibility + typed-emits consistency:** `NotificationItem` uses `role="button"` with Enter only (no Space), and `NotificationList` templates use `$emit(...)` even though typed `emit` exists. | Add Space activation (`@keydown.space.prevent`) where `role="button"` is used. Route template emissions through typed handlers using `emit(...)` for consistent type checking. |
+| D30-005 | 🟢 LOW | src/presentation/components/notification/NotificationList.vue | 208 | **Filter state is weakly typed:** `activeFilter` is `ref<string>`, which makes it easy to drift from the actual option set (`'all' | 'unread' | 'task' | 'message' | 'project'`). | Type the filter as a union (or derive from the option list) to make filter handling exhaustive and prevent accidental typos. |
+
+**Positive Aspects:**
+- `NotificationItem` has a clear, type-driven icon mapping and reasonable relative-time formatting.
+- `NotificationList` has good UX primitives: skeleton loading, empty-state messaging, badge count, and compact mode.
+- The list uses IntersectionObserver rather than relying only on scroll math.
+
+**Group Notes:**
+The main hardening areas are timezone-correct grouping (D30-001) and making the filter-change contract reliably convey the UI selection (D30-002).
+
+---
+
+#### Group 7.6: Calendar Components
+**Files Reviewed:**
+- src/presentation/components/calendar/index.ts
+- src/presentation/components/calendar/CalendarWidget.vue
+
+**Score:** 6.6/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D31-001 | 🟡 MEDIUM | src/presentation/components/calendar/CalendarWidget.vue | 116-190 | **Nested interactive controls inside a `role="button"` day cell:** the day cell is focusable/clickable (`role="button"`, `tabindex`) but also contains real `<button>`s for projects/tasks. This creates conflicting semantics/focus behavior and can confuse screen readers/keyboard users. | Make the day cell non-interactive when it contains inner buttons, or restructure so “select day” is a dedicated `<button>` (e.g., day number) and inner item buttons remain separate. Avoid nesting interactive elements. If `role="button"` remains, add Space-key parity (`@keydown.space.prevent`). |
+| D31-002 | 🟡 MEDIUM | src/presentation/components/calendar/CalendarWidget.vue | 146-190, 608-629 | **`maxProjectsPerDay` cap is not enforced for combined projects + tasks:** `getVisibleProjects()` and `getVisibleTasks()` each slice to `maxProjectsPerDay`, so the UI can render up to 2× the intended max while the “+X more” indicator compares against `maxProjectsPerDay`. | Compute a shared visible budget: show up to `maxProjectsPerDay` combined (e.g., `visibleProjects = projects.slice(0, max)`; `visibleTasks = tasks.slice(0, Math.max(0, max - visibleProjects.length))`). Ensure the “more” indicator matches the actual cap. |
+| D31-003 | 🟡 MEDIUM | src/presentation/components/calendar/CalendarWidget.vue | 494-543, 517-525 | **Calendar day generation is O(42·(projects+tasks)) with repeated date parsing:** for each of 42 days, the code filters the full project/task arrays and constructs `new Date(...)`. This can become sluggish with larger datasets and recomputes often reactively. | Pre-bucket projects/tasks by local-day key once (e.g., computed `Map<YYYY-MM-DD, ...>`) and then fill the 42-day grid via map lookups. Cache parsed timestamps/normalized day keys in a view-model. |
+| D31-004 | 🟢 LOW | src/presentation/components/calendar/CalendarWidget.vue | 118 | **Day key uses UTC `toISOString()`:** `:key="day.date.toISOString()"` can be misleading for a local calendar view and can shift around DST/timezone boundaries. | Use a local-date key (e.g., `${year}-${month}-${day}`) or `date.getTime()` (if dates are normalized to local midnight) to keep keys stable and local-semantic. |
+| D31-005 | 🟢 LOW | src/presentation/components/calendar/CalendarWidget.vue | 717-726 | **Debug logging left in reactive watcher:** a deep/immediate watch logs project counts and sample data to `console.log`, which is noisy and can leak data in production builds. | Remove the watcher, or gate logs behind `import.meta.env.DEV`/a debug flag and avoid logging raw objects. |
+
+**Positive Aspects:**
+- Clear separation of full vs mini display modes with sensible templates for both.
+- Good aria-label coverage for day cells and navigation buttons; icon-only controls include labels.
+- Click-outside behavior is implemented with proper add/remove lifecycle hooks.
+
+**Group Notes:**
+Main priorities are interaction semantics (avoid nested button patterns) and enforcing the combined per-day cap. Performance can be improved by pre-bucketing items rather than re-filtering for each day cell.
+
+---
+
 ## INCIDENT TODO LIST
 
 ### Critical Issues (Must Fix)
@@ -944,6 +1087,24 @@ Most issues here are accessibility and UX correctness edge cases rather than bus
 - [ ] **D26-001** - ProjectSummary clickable tiles are not keyboard-accessible
 - [ ] **D26-002** - ProjectForm date-only inputs can shift by timezone (UTC formatting)
 - [ ] **D26-003** - ProjectCard mixes event emission with internal navigation
+- [ ] **D27-001** - TaskList priority sort label/order mismatch
+- [ ] **D27-002** - TaskForm date-only dueDate can shift by timezone (UTC formatting)
+- [ ] **D27-003** - TaskForm compares TaskStatus via string literals
+
+- [ ] **D28-001** - MessageList groups dates via UTC `toISOString()` (Today/Yesterday mislabels)
+- [ ] **D28-002** - MessageBubble senderInitials can throw on whitespace-heavy names
+- [ ] **D28-003** - MessageInput Enter-to-send lacks IME composition guard
+
+- [ ] **D29-001** - FileList “All Files” tab doesn’t emit section-change (state desync risk)
+- [ ] **D29-002** - FileUploader drop zone is not keyboard-accessible (clickable div)
+
+- [ ] **D30-001** - NotificationList groups dates via UTC `toISOString()` (Today/Yesterday mislabels)
+- [ ] **D30-002** - NotificationList filter-change payload doesn’t match UI selection
+- [ ] **D30-003** - NotificationList can emit duplicate load-more events (observer + scroll)
+
+- [ ] **D31-001** - CalendarWidget day cell nests buttons inside `role="button"` (a11y/interaction conflict)
+- [ ] **D31-002** - CalendarWidget `maxProjectsPerDay` cap not enforced across projects+tasks
+- [ ] **D31-003** - CalendarWidget day generation filters arrays per-day with repeated date parsing (O(42*n))
 
 
 ### Low Issues (Optional Fix)
@@ -991,6 +1152,28 @@ Most issues here are accessibility and UX correctness edge cases rather than bus
 - [ ] **D26-005** - ProjectForm Cancel uses `$emit` instead of typed `emit`
 - [ ] **D26-006** - ProjectForm generateCode() can collide (Math.random)
 - [ ] **D26-007** - ProjectSummary delete button lacks aria-label; statusLabel lacks fallback
+- [ ] **D27-004** - TaskCard role="button" lacks Space key activation; draggable interaction ambiguity
+- [ ] **D27-005** - TaskForm templates use `$emit` instead of typed `emit` (cancel/remove-file)
+- [ ] **D27-006** - TaskList templates use `$emit` instead of typed `emit` for forwarding
+- [ ] **D27-007** - TaskHistory action rendering relies on substring parsing of `action`
+- [ ] **D27-008** - TaskHistory value-change rendering uses truthiness checks
+
+- [ ] **D28-004** - MessageBubble uses `$emit` in template for file-click (typed emit bypass)
+- [ ] **D28-005** - MessageList uses `$emit` in template for file-click (typed emit bypass)
+- [ ] **D28-006** - Message components declare unused emits (`retry`/`message-read`)
+- [ ] **D28-007** - MessageBubble uses hard-coded hex color for read status
+
+- [ ] **D29-003** - FileList clickables miss Space key and bypass typed emits (`$emit`)
+- [ ] **D29-004** - FileUploader preview cleanup uses revokeObjectURL with data URLs
+- [ ] **D29-005** - FileUploader queue IDs use `Math.random()` (collision/test fragility)
+- [ ] **D29-006** - FileList sorting repeatedly constructs Date objects in comparator
+- [ ] **D29-007** - FileList has unused upload-click emit + unused upload button styles
+
+- [ ] **D30-004** - Notification a11y/consistency: missing Space key + `$emit` in templates
+- [ ] **D30-005** - NotificationList activeFilter is weakly typed (string)
+
+- [ ] **D31-004** - CalendarWidget uses `toISOString()` for day keys (timezone/DST sensitivity)
+- [ ] **D31-005** - CalendarWidget includes noisy `console.log` debug watcher for projects
 
 ---
 
@@ -1005,6 +1188,11 @@ Most issues here are accessibility and UX correctness edge cases rather than bus
 - Many Application DTOs use `Date` types for likely JSON payloads, which can mask runtime mismatches unless a centralized mapping/parsing layer exists (D5-001).
 - Several common UI components lose type information at the DOM boundary (notably `<select>` values) and rely on truthiness checks that mis-handle valid values like `0` (D24-003).
 - Date-only fields in feature components are round-tripped through `Date` and then formatted via `toISOString()`, which can shift calendar dates depending on timezone (D26-002).
+- Task form status logic is mostly enum-based, but some template paths still compare against raw string literals, which is fragile and undermines the value of `TaskStatus` (D27-003).
+- Message list date grouping uses `toISOString()` (UTC) for “calendar day” bucketing and Today/Yesterday comparisons, which can mis-group messages across timezones; treat calendar-day keys as a local UI concern (D28-001).
+- Notification list grouping repeats the same UTC `toISOString()` calendar-day bug pattern, suggesting a shared utility for local date bucketing would reduce drift across components (D30-001).
+- Notification list filter state/contracts are weakly typed (`activeFilter: string`, filter-change emitting `{}` for non-unread), which undermines exhaustive handling and makes parent integration brittle (D30-002/D30-005).
+- CalendarWidget uses UTC `toISOString()` for day keys in a local calendar grid; date semantics (local day vs UTC timestamp) should be consistently modeled across the Presentation layer (D31-004).
 
 ### Consistency Analysis
 **Issues:**
@@ -1012,6 +1200,11 @@ Most issues here are accessibility and UX correctness edge cases rather than bus
 - Common component files mix header templates and (in `LoadingSpinner`) introduce hard-coded fallback colors, which weakens the project-wide token + documentation conventions (D24-008/D24-010).
 - Layout components still rely on untyped template globals (`$emit`, `$router`) and diverge in header style, which erodes the project’s type-safety and documentation consistency goals (D25-003/D25-005).
 - Feature components continue the `$emit`-in-template pattern and include several non-semantic clickable tiles, reinforcing the need for a consistent “interactive element” pattern across the Presentation layer (D26-001/D26-005).
+- Task components repeat the `$emit`-in-template pattern and also build translucent colors via string concatenation (e.g., `${color}20`), which assumes a hex color format and can be brittle if tokens ever switch representation (D27-005/D27-006).
+- Message components continue the `$emit`-in-template pattern and include a hard-coded hex value in component CSS, weakening the project’s token/theming discipline (D28-004/D28-005/D28-007).
+- File components also surface inconsistent component contracts (unused emits/styles) and continue `$emit`-in-template patterns, reinforcing the need for a consistent typed-emits + component-API hygiene convention (D29-003/D29-007).
+- Notification components continue `$emit`-in-template usage and rely on `role="button"` patterns that need consistent keyboard parity (Space + Enter) across the Presentation layer (D30-004).
+- CalendarWidget repeats the “clickable container” pattern but also nests real `<button>`s inside a `role="button"` day cell; standardize a consistent interactive-element pattern to avoid nested-controls a11y pitfalls (D31-001).
 
 ### Security Analysis
 **Issues:**
@@ -1036,6 +1229,10 @@ Most issues here are accessibility and UX correctness edge cases rather than bus
 ### Performance Analysis
 **Issues:**
 - Some client-side denormalization patterns can trigger N+1 request cascades (e.g., project summary mapping fetching client/tasks/unread per project) and should be addressed with backend aggregation/batching (D18-004).
+- TaskList sorts by repeatedly constructing `Date` objects inside the comparator; if task counts grow large, consider caching timestamps or pre-normalizing date fields in a view-model layer to reduce re-parse work during reactive updates.
+- FileList sorting repeatedly constructs `Date` objects inside the comparator; for larger lists, cache timestamps or precompute derived sort keys to avoid repeated parsing on reactive updates (D29-006).
+- NotificationList’s dual load-more mechanisms can cause duplicate fetches if parent `loadingMore` state lags; consider a single guarded trigger to avoid redundant work (D30-003).
+- CalendarWidget recomputes the 42-day grid by filtering entire project/task arrays per day with repeated `Date` parsing; pre-bucketing items by day key will scale better (D31-003).
 
 
 ---
