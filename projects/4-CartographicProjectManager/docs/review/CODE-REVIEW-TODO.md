@@ -1,6 +1,6 @@
 ## CODE REVIEW TODO LIST - Cartographic Project Manager
 
-> Scope: All files in `projects/4-CartographicProjectManager` (317 files total, excluding `node_modules`).
+> Scope: All files in `projects/4-CartographicProjectManager` (303 files total, excluding `node_modules`).
 > This TODO list groups frontend + backend source, tests, and operational/configuration artifacts.
 
 ### Phase 1: Domain Layer Review
@@ -537,10 +537,10 @@
 ---
 
 ## SUMMARY
-- Total Files to Review: 317
-- Total Review Groups: 42
+- Total Files to Review: 303
+- Total Review Groups: 41
 - Estimated Review Time: 20-28 hours
 - Critical Priority Groups: 9
-- High Priority Groups: 22
+- High Priority Groups: 21
 - Medium Priority Groups: 8
 - Low Priority Groups: 3
