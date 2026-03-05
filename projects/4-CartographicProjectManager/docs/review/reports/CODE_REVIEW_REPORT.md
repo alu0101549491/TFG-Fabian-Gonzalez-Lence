@@ -4,8 +4,8 @@
 **Review Date:** March 5, 2026
 **Reviewer:** GitHub Copilot Agent
 **Codebase Version:** dd8d063
-**Total Files Reviewed:** 244
-**Total Groups Reviewed:** 35
+**Total Files Reviewed:** 316
+**Total Groups Reviewed:** 41
 
 ---
 
@@ -17,11 +17,11 @@
 Initial review (Domain enumerations + entities) shows strong documentation discipline and helpful type-guard utilities, but also reveals a recurring architecture smell: Domain types are currently carrying Presentation/Infrastructure concerns (UI mappings in enums, and JSON serialization + WhatsApp/Dropbox coupling in entities), which undermines Clean Architecture boundaries and increases coupling.
 
 **Statistics (so far):**
-- Critical Issues: 4
-- High Issues: 21
-- Medium Issues: 95
-- Low Issues: 73
-- Total Issues: 192
+- Critical Issues: 5
+- High Issues: 30
+- Medium Issues: 111
+- Low Issues: 79
+- Total Issues: 225
 
 **Recommendation:**
 - [ ] ✅ APPROVED - Ready for production
@@ -1149,6 +1149,224 @@ Main action item is aligning the “required assets” expectations with what is
 
 ---
 
+### Phase 10: Cross-Cutting Concerns Review
+
+#### Group 10.1: Type Definitions
+**Files Reviewed:**
+- src/vite-env.d.ts
+- backend/src/shared/types.ts
+
+**Score:** 6.3/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D36-001 | 🟡 MEDIUM | src/vite-env.d.ts / src/main.ts / src/shared/constants.ts / src/infrastructure/websocket/socket.handler.ts | vite-env.d.ts:20-21; main.ts:111; constants.ts:39; socket.handler.ts:28 | **Env var type declarations drift from actual usage (and naming is inconsistent):** `ImportMetaEnv` declares `VITE_WS_BASE_URL`, but code uses `VITE_SOCKET_URL`. Additionally, `VITE_APP_VERSION` is used but not declared in `ImportMetaEnv`. This undermines type-safety and increases the chance of silently-misconfigured builds. | Standardize on a single name (`VITE_SOCKET_URL` vs `VITE_WS_BASE_URL`) and declare all used env vars in `ImportMetaEnv` (including `VITE_APP_VERSION`). Consider centralizing env var names in a single module and reusing those constants in config + runtime code to prevent drift.
+| D36-002 | 🟡 MEDIUM | backend/src/shared/types.ts | 39-44 | **Pagination query typing doesn’t match Express reality:** `PaginationQuery.page` / `limit` are typed as `number`, but `req.query` values arrive as strings (or arrays) unless explicitly parsed/validated. This can mislead controllers/services and contributes to `NaN` propagation bugs. | Type query inputs as `string | undefined` (or `unknown`) at the HTTP boundary and convert via a single parser/validator (e.g., `parsePagination`) that returns a fully validated numeric shape.
+| D36-003 | 🟡 MEDIUM | backend/src/shared/types.ts | 62-67, 78-86 | **Roles are stringly-typed in shared auth request/JWT shapes:** `AuthenticatedUser.role` and `JwtPayload.role` are plain `string`, which invites drift from the canonical role set and weakens authorization type-safety. | Use a backend `UserRole` enum/union type for these fields (or import the shared role type if intended). Keep parsing/validation at the middleware boundary.
+| D36-004 | 🟢 LOW | backend/src/shared/types.ts | 9 | **Header metadata `@file` path mismatch:** the header says `src/shared/types.ts`, but the actual path is `backend/src/shared/types.ts`. | Align the header’s `@file` to `backend/src/shared/types.ts` to match repo structure.
+| D36-005 | 🟢 LOW | src/vite-env.d.ts | 4-6 | **Type definition file header is non-standard vs project convention:** this file uses an `@module` doc block rather than the standard University/TFG header used across most TypeScript sources, reducing consistency. | Standardize the header template for `.d.ts` files (either adopt the standard header or formally document a consistent exception for ambient declaration files).
+
+**Positive Aspects:**
+- `vite-env.d.ts` explicitly types `.vue` imports and documents the intent of Vite env typing.
+- Backend shared types are centralized and generally well-named, making controller/service contracts easier to read.
+
+**Group Notes:**
+The highest value fix is aligning env-var typings/names with actual usage (D36-001) and making request-query typing reflect real Express inputs (D36-002).
+
+---
+
+#### Group 10.2: Configuration Files
+**Files Reviewed:**
+- .env.development
+- .env.example
+- .env.production
+- .gitignore
+- eslint.config.mjs
+- index.html
+- jest.config.js
+- jest.setup.js
+- package-lock.json
+- package.json
+- playwright.config.ts
+- tsconfig.json
+- tsconfig.node.json
+- typedoc.json
+- vite.config.ts
+- backend/.env
+- backend/.env.example
+- backend/.env.railway
+- backend/.gitignore
+- backend/nixpacks.toml
+- backend/package-lock.json
+- backend/package.json
+- backend/railway.json
+- backend/tsconfig.json
+
+**Score:** 4.9/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D37-001 | 🔴 CRITICAL | backend/.env | 45, 47, 49-50 | **Committed secret material in repo:** `backend/.env` contains what appear to be real Dropbox credentials (access token, refresh token, app key, app secret). Even if `.env` is gitignored, a tracked `.env` will remain in history and is a high-impact incident (credential theft and account compromise). | Immediately rotate/revoke the exposed tokens/keys and treat them as compromised. Remove `backend/.env` from git tracking (`git rm --cached`) and purge from history (e.g., `git filter-repo` / BFG) if this repo was ever pushed remotely. Add secret scanning (GitHub Advanced Security / gitleaks) and enforce a policy of using `.env.example` + platform secrets (Railway vars) only. |
+| D37-002 | 🟠 HIGH | backend/railway.json / backend/nixpacks.toml | railway.json:16; nixpacks.toml:16 | **Production deploy seeds on every start:** both Railway and Nixpacks startup commands run `prisma:seed:production` on each process start. This is risky in production (duplicate data, unintended overwrites, increased cold-start time, and coupling startup health to seed idempotency). | Run seeding as an explicit one-time/manual job (or gated migration step) rather than every `start`. If seeding must run automatically, ensure the seed script is fully idempotent and guarded by environment + database checks. Prefer: `migrate deploy` on startup, seed only on first deploy or via a separate release phase. |
+| D37-003 | 🟠 HIGH | jest.config.js / jest.setup.js / package.json | jest.config.js:15, 44; jest.setup.js:2; package.json:5, 43, 52, 57 | **Frontend Jest configuration likely broken in ESM + Vue 3 setup:** the project is ESM (`"type": "module"`), but `jest.setup.js` uses CommonJS `require(...)`. Also `jest.config.js` uses `setupFilesAfterSetup` (non-standard; Jest expects `setupFilesAfterEnv`). Finally, `.vue` is transformed via `@vue/vue3-jest`, but that package is not present in `devDependencies`, making tests likely fail at runtime. | Align Jest config to the chosen module system and Vue transformer approach. Concretely: switch setup file to ESM (`import '@testing-library/jest-dom'`) or rename to `.cjs` and ensure Jest loads it correctly; rename `setupFilesAfterSetup` → `setupFilesAfterEnv`; add the missing Vue Jest transformer (or migrate to Vitest, which is common with Vite/Vue 3). Ensure the config is executed under `--experimental-vm-modules` if staying with Jest+ESM. |
+| D37-004 | 🟡 MEDIUM | .env.example | 10 | **Frontend env template encourages client-side third-party access tokens:** `.env.example` includes `VITE_DROPBOX_ACCESS_TOKEN`, which reinforces a pattern of placing long-lived third-party credentials in client configuration. This pairs poorly with the existing Dropbox client-side integration risk (see D10-002). | Remove `VITE_DROPBOX_ACCESS_TOKEN` from the frontend env template and move Dropbox access to backend-only, issuing short-lived app tokens if needed. If a frontend token is unavoidable, make it explicitly short-lived, scoped, and non-sensitive, and document the security trade-offs. |
+| D37-005 | 🟢 LOW | playwright.config.ts | 29 | **E2E baseURL is hard-coded:** `baseURL: 'http://localhost:5173'` can create brittle CI/dev workflows if the port changes or if Playwright is pointed at a preview/staging environment. | Allow overriding via env var (e.g., `PLAYWRIGHT_BASE_URL`) and/or configure Playwright `webServer` to start Vite and reuse the port consistently in CI. |
+
+**Positive Aspects:**
+- `.env.example` / `backend/.env.example` and `backend/.env.railway` templates exist, which is good for onboarding and avoiding guesswork.
+- Both lockfiles appear free of registry auth tokens (`_authToken`), reducing accidental supply-chain credential exposure risk.
+- Backend and frontend `tsconfig` files are strict and broadly consistent with ESM + bundler usage.
+
+**Group Notes:**
+The immediate priority is incident response for the committed Dropbox credentials (D37-001). Next priorities are removing seed-on-start from production boot (D37-002) and fixing the Jest harness so tests can run reliably (D37-003).
+
+---
+
+#### Group 10.3: Database Schema & Migrations (Prisma)
+**Files Reviewed:**
+- backend/prisma/schema.prisma
+- backend/prisma/seed.ts
+- backend/prisma/seed-production.ts
+- backend/prisma/migrations/migration_lock.toml
+- backend/prisma/migrations/20260224161201_/migration.sql
+- backend/prisma/migrations/20260301133940_add_read_by_user_ids/migration.sql
+- backend/prisma/migrations/20260301200605_add_whatsapp_notifications/migration.sql
+- backend/prisma/migrations/20260302170957_remove_whatsapp_integration/migration.sql
+- backend/prisma/migrations/20260302172347_add_audit_log_system/migration.sql
+- backend/prisma/migrations/20260304113557_add_message_file_ids/migration.sql
+
+**Score:** 6.0/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D38-001 | 🟠 HIGH | backend/prisma/seed.ts / backend/prisma/schema.prisma / backend/prisma/migrations/* | seed.ts:50, 61, 72; schema.prisma:1-10; migration.sql:33; remove_whatsapp_integration:19 | **Seed script is out of sync with schema/migrations:** `seed.ts` sets `whatsappEnabled`, but the current `schema.prisma` has no `User.whatsappEnabled` field, and the migrations show it was introduced then later dropped. This will cause the dev seed to fail at runtime/compile time and is a sign of tooling drift. | Update `seed.ts` to match the current schema (remove `whatsappEnabled` usage and any WhatsApp-specific user fields). Consider adding a lightweight CI check to run `prisma validate` and (optionally) `prisma db push --accept-data-loss` against a disposable DB to catch drift early. |
+| D38-002 | 🟠 HIGH | backend/prisma/seed-production.ts | 36, 52-55 | **Production seeding uses a predictable default admin password and prints it:** hashing + emitting a fixed password (`admin123`) is an avoidable security risk, especially given earlier findings about secrets/config hardening. | Require an initial admin password via env var (fail fast if missing), or generate a strong random password and output it once to a secure channel (or store a one-time reset token). Do not log credentials in normal startup logs. |
+| D38-003 | 🟡 MEDIUM | backend/prisma/seed.ts | 26-35 | **Destructive seed without environment guard:** the dev seed clears all tables via `deleteMany()` calls. If this script is accidentally executed against a non-dev database, it can cause full data loss. | Add a hard guard (e.g., require `NODE_ENV === 'development'` and/or explicit `SEED_CONFIRM=I_UNDERSTAND`) and validate `DATABASE_URL` host/DB name before deleting. Keep production seeding in a separate script (already present) and ensure deploy pipelines never call the dev seed. |
+| D38-004 | 🟡 MEDIUM | backend/prisma/schema.prisma / backend/prisma/migrations/* | schema.prisma:289-290; add_read_by_user_ids:2; add_message_file_ids:2 | **Denormalized array fields for references:** `Message.readByUserIds` and `Message.fileIds` are `String[]` stored inline. This makes referential integrity impossible (no FK to `users`/`files`), allows duplicates, and can become inefficient for large rooms/messages or “read receipts” queries. | Prefer join tables (`MessageReadReceipt`, `MessageFile`) with proper unique constraints and indexes. If keeping arrays for simplicity, enforce de-duplication in application code and consider GIN indexes / query patterns to avoid full scans. |
+| D38-005 | 🟢 LOW | backend/prisma/schema.prisma | 365, 380-399 | **Audit/permission attribution fields are not relationally enforced:** `Permission.grantedBy` and `AuditLog.userId` are plain strings (or nullable), without relations to `User`. This can allow orphaned/invalid IDs and makes cleanup or user attribution harder to guarantee. | Either add optional relations with `onDelete: SetNull` (to preserve logs) or explicitly document why these fields are intentionally non-relational and ensure consistent population in the application layer. |
+
+**Positive Aspects:**
+- Schema uses enums and consistent indexing, making core query patterns clearer and less error-prone.
+- Migration history is present and readable; `migration_lock.toml` is correctly committed.
+- Production seed is separated from dev seed and includes an “only if empty” guard.
+
+**Group Notes:**
+The primary risks here are operational drift (seed vs schema) and production security posture (default admin credential). Addressing those will make local setup and deploys significantly safer and more repeatable.
+
+---
+
+#### Group 10.4: Operational Scripts & Manual Test Utilities
+**Files Reviewed:**
+- initialization.sh
+- backend/restart-backend.sh
+- backend/setup.sh
+- backend/update-dropbox-token.sh
+- backend/scripts/check-messages.ts
+- backend/scripts/get-dropbox-refresh-token.ts
+- backend/scripts/mark-sender-messages-read.ts
+- backend/scripts/DROPBOX_OAUTH_SETUP.md
+- backend/test-dropbox-simple.ts
+- backend/test-dropbox-token.ts
+- backend/test-large-upload.ts
+- backend/DROPBOX-TOKEN-UPDATE.txt
+- backend/test-dropbox.sh
+- backend/test-upload-endpoint.sh
+
+**Score:** 5.6/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D39-001 | 🟠 HIGH | backend/scripts/get-dropbox-refresh-token.ts | 74-77, 85, 92-93 | **Sensitive tokens are printed to stdout (and optionally echoed for manual copy):** the script prints full access + refresh tokens and can also print the exact `.env` lines. This is risky (terminal scrollback, log capture, screen sharing) and conflicts with the “never commit secrets” posture (see D37-001). | Avoid printing full tokens; print only a short prefix/suffix (e.g., first/last 4 chars) and write directly to `.env` (with strict file permissions) when the user opts-in. Prefer outputting a one-time file with `0600` perms or guiding users to set secrets in Railway rather than editing `.env` on shared machines. |
+| D39-002 | 🟠 HIGH | backend/DROPBOX-TOKEN-UPDATE.txt | 9 | **Secret material footprint in repo notes:** the instructions include a real-looking Dropbox token prefix (`sl.u....`). Even partial tokens in committed docs can become operationally risky, and this file reinforces manual token handling in plain text. | Remove any token-like strings from documentation and keep only placeholders (e.g., `sl.<your-token>`). Prefer guiding users to use refresh-token flow and platform secret managers. Treat any token text that ever matched a real secret as compromised (rotate). |
+| D39-003 | 🟡 MEDIUM | backend/restart-backend.sh / backend/update-dropbox-token.sh | restart-backend.sh:6, 8-9; update-dropbox-token.sh:64 | **Unsafe process management + non-portable paths:** scripts use `pkill -9 node`, which can kill unrelated Node processes, and one script hard-codes an absolute local path. This is hazardous on dev machines and brittle in other environments. | Track and stop a specific PID (store it in a pidfile), or use a process manager (npm script, `lsof -ti :3000 | xargs kill`, etc.). Replace hard-coded paths with relative paths (e.g., `cd "$(dirname "$0")"`) and avoid `-9` unless absolutely required. |
+| D39-004 | 🟡 MEDIUM | backend/setup.sh | 47-49, 69 | **Setup script can be destructive and lacks safety guards:** it runs `prisma db pull --force` (can overwrite local schema) or `prisma db push` (can apply schema changes without migrations). Without environment/DB safeguards, this is risky if pointed at the wrong `DATABASE_URL`. | Add explicit environment checks (require `NODE_ENV=development`, confirm DB name/host), and avoid `db push` in favor of migrations. Remove `--force` unless you clearly document the intent and restrict to disposable dev DBs. |
+| D39-005 | 🟡 MEDIUM | backend/test-dropbox.sh | 28, 30 | **Manual test script is likely broken (credential + parsing drift):** login uses `admin@cartography.com` (typo vs seed), and token extraction uses a brittle grep for `"token"` which may not match the API’s actual response shape. | Use the correct seeded credentials and parse JSON robustly (prefer `jq` with a checked dependency). Align with the backend’s actual login response contract (`data.accessToken` vs other fields) and fail with actionable errors when parsing fails. |
+| D39-006 | 🟢 LOW | backend/test-upload-endpoint.sh | 13, 29-30, 121 | **Test script has unvalidated tool dependencies and brittle success detection:** it assumes `jq` exists and uses `curl -v` output with a broad `grep` check for `200|201`, which can false-positive. | Add a `command -v jq` prerequisite check and use `curl -sS -w '%{http_code}'` to reliably capture status codes. Keep parsing consistent with API response envelopes. |
+| D39-007 | 🟢 LOW | backend/test-large-upload.ts / backend/scripts/check-messages.ts | test-large-upload.ts:5; check-messages.ts:1 | **Script hygiene inconsistencies:** `test-large-upload.ts` imports a TS module without an ESM `.js` extension (unlike other backend scripts), and `check-messages.ts` lacks the project’s standard file header/JSDoc conventions. | Standardize script module resolution conventions (or document exceptions when using `tsx`) and apply the standard header template for consistency/auditing across operational utilities. |
+
+**Positive Aspects:**
+- Operational utilities are separated from main runtime code (`backend/scripts/`, `backend/test-*`), reducing accidental coupling.
+- Several scripts include guardrails and guided output (e.g., backend setup prompts, token validation checks).
+- The OAuth refresh-token flow documentation is detailed and includes explicit security notes.
+
+**Group Notes:**
+Most issues are “ops safety” rather than app logic: avoid printing/embedding tokens, avoid killing generic `node` processes, and add clear environment safeguards to any script that can mutate data or configuration.
+
+---
+
+#### Group 10.5: Documentation & Project Notes
+**Files Reviewed:**
+- README.md
+- backend/README.md
+- backend/RAILWAY.md
+- backend/SETUP.md
+- docs/development/ARCHITECTURE.md
+- docs/development/BACKEND-IMPLEMENTATION.md
+- docs/development/DROPBOX-INTEGRATION.md
+- docs/deployment/DROPBOX-DEPLOYMENT.md
+- docs/deployment/RAILWAY-DEPLOYMENT.md
+- docs/development/IMPLEMENTATION-SUMMARY.md
+- docs/specification.md
+- docs/tasks/TASK-PERMISSION-CHANGES.md
+- docs/testing/DEBUGGING-AUTH-ERRORS.md
+- docs/testing/TESTING-FILE-UPLOAD-UI.md
+- docs/tasks/WHATSAPP-REMOVAL-COMPLETE.md
+- docs/tasks/TODO-STATUS.md
+- docs/development/INTEGRATION.md
+- e2e/README.md
+
+**Score:** 4.9/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D40-001 | 🟡 MEDIUM | README.md / backend/README.md / docs/development/INTEGRATION.md / docs/tasks/TODO-STATUS.md | README.md:46, 175-180; backend/README.md:6-11; INTEGRATION.md:246-250; TODO-STATUS.md:17 | **Broken documentation links and path drift:** multiple docs link to `docs/*` files that no longer exist at those paths (docs now live under `docs/development/`, `docs/deployment/`, `docs/tasks/`, `docs/testing/`). This makes the docs harder to navigate and increases the chance of following stale guidance. | Update all relative links to match the current docs layout (or restore the expected `docs/*.md` paths via moving/duplicating files). Consider adding a simple markdown link checker in CI. |
+| D40-002 | 🟠 HIGH | backend/README.md / docs/development/INTEGRATION.md | backend/README.md:176-180; INTEGRATION.md:18-20, 83-92, 121-135 | **Authentication storage guidance conflicts (security posture drift):** backend README claims “Tokens are httpOnly cookies” while the integration guide documents token persistence in `localStorage` and Bearer-token headers. This inconsistency can cause insecure implementations (cookie vs localStorage have different threat models) and debugging confusion. | Align docs with the actual implementation: explicitly document whether auth is cookie-based or Bearer-token based, and where tokens are stored. If moving to cookies, document CSRF protections and cookie flags; if staying with headers, document XSS-hardening expectations and rotation. |
+| D40-003 | 🟡 MEDIUM | docs/development/INTEGRATION.md / docs/development/BACKEND-IMPLEMENTATION.md / docs/tasks/TODO-STATUS.md | INTEGRATION.md:8-23; BACKEND-IMPLEMENTATION.md:227-234; TODO-STATUS.md:56-66 | **Conflicting “integration status” claims:** `INTEGRATION.md` states integration is completed and stores use real API calls, while other docs still describe frontend auth/stores as mock and “awaiting API implementation”. | Choose a single source of truth (e.g., `INTEGRATION.md`) and update/retire the stale claims. Add a prominent “Last updated” date + version/commit reference to each doc to prevent long-term drift. |
+| D40-004 | 🟠 HIGH | docs/testing/TESTING-FILE-UPLOAD-UI.md / docs/development/DROPBOX-INTEGRATION.md | TESTING-FILE-UPLOAD-UI.md:179-183; DROPBOX-INTEGRATION.md:105-108 | **Docs include token-like secret material and encourage client-side secrets:** one doc shows a Dropbox token prefix (`sl.u...`) and another suggests using `VITE_DROPBOX_ACCESS_TOKEN` in frontend env. Both increase the risk of credential exposure (repos, screenshots, GitHub Pages builds) and undermine the “never commit tokens” guidance. | Replace any token-like strings with placeholders, and remove/strongly discourage any client-side Dropbox access-token configuration. Prefer server-side Dropbox integration exclusively and platform secret managers for deployment. Treat any previously shared token-like strings as potentially compromised and rotate credentials. |
+| D40-005 | 🟡 MEDIUM | docs/testing/DEBUGGING-AUTH-ERRORS.md | 135-148 | **Health check endpoint mismatch:** debugging guide uses `curl http://localhost:3000/health`, but the backend exposes health under the API prefix (`/api/v1/health`). | Update debugging instructions to call the real endpoint and keep it consistent across docs (`/api/v1/health`). |
+| D40-006 | 🟡 MEDIUM | backend/SETUP.md / docs/testing/TESTING-FILE-UPLOAD-UI.md | backend/SETUP.md:105-107; TESTING-FILE-UPLOAD-UI.md:188-190 | **File upload endpoint mismatch:** backend setup guide documents `POST /api/v1/files` for upload, while other docs reference `POST /api/v1/files/upload`. Endpoint drift makes setup/testing error-prone. | Confirm the real API route and align docs accordingly (prefer consistent `POST /api/v1/files/upload` if that’s the implemented route). |
+| D40-007 | 🟡 MEDIUM | README.md / docs/development/ARCHITECTURE.md / docs/tasks/WHATSAPP-REMOVAL-COMPLETE.md | README.md:22-23; ARCHITECTURE.md:28, 77-83; WHATSAPP-REMOVAL-COMPLETE.md:1-3 | **WhatsApp feature documentation drift:** README and architecture docs still present WhatsApp as an active integration, while the project notes state WhatsApp integration has been removed. This can mislead reviewers/users and complicate future maintenance expectations. | Update README/architecture docs to reflect the current feature set (and optionally link to the removal note). If WhatsApp is “planned/future”, label it explicitly as such and remove implementation-specific claims. |
+| D40-008 | 🟡 MEDIUM | docs/deployment/RAILWAY-DEPLOYMENT.md / docs/development/IMPLEMENTATION-SUMMARY.md | RAILWAY-DEPLOYMENT.md:104-118; IMPLEMENTATION-SUMMARY.md:205-212 | **Deployment/infra guidance is internally inconsistent:** Railway guide says Dropbox is mandatory and provides a start command that does not mention production seeding, while other docs describe Dropbox as optional and prior config review found “seed on every start” behavior (D37-002). | Reconcile “mandatory vs optional” Dropbox posture and ensure Railway docs match the actual `railway.json`/`nixpacks.toml` start pipeline. Ideally: avoid seeding on every start; document seed as a one-time deploy step. |
+
+**Positive Aspects:**
+- There is a lot of documentation coverage: local setup, integration, deployment, and troubleshooting.
+- Multiple docs explicitly warn against committing secrets and encourage env-vars/secret managers.
+- The specification is detailed and helps validate requirements/acceptance criteria.
+
+**Group Notes:**
+The main theme is drift: multiple docs appear to have been generated at different times and now conflict on security posture (cookies vs localStorage), feature set (WhatsApp), and endpoint paths. Cleaning this up is a high-leverage way to reduce onboarding and ops mistakes.
+
+---
+
+#### Group 10.6: Operational Artifacts (Logs/Backups/Misc)
+**Files Reviewed:**
+- backend/backups/.gitignore
+- backend/logs/app.log
+- backend/logs/error.log
+- backend/tgres psql -h localhost -U postgres -d cartographic_manager -t -A -F, -c SELECT "contractDate", "coordinateX", "coordinateY" FROM projects LIMIT 1;
+
+**Score:** 3.8/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D41-001 | 🟠 HIGH | backend/logs/app.log / backend/logs/error.log | app.log:1-120; error.log:1-120 | **Runtime logs are committed to the repository and include sensitive operational data:** stack traces with local filesystem paths, detailed Prisma errors, user IDs, IP addresses, user agents, and SQL query text referencing sensitive columns (e.g., `passwordHash`). Committing logs increases the risk of leaking secrets/PII and makes repository history noisy and harder to audit. | Remove committed log files from git history (treat as sensitive), add ignore rules for `backend/logs/*.log` (and any rotated variants), and gate verbose query/error logging behind `NODE_ENV !== 'production'`. Add log redaction for tokens/PII before writing to disk. |
+| D41-002 | 🟡 MEDIUM | backend/tgres psql -h localhost -U postgres -d cartographic_manager -t -A -F, -c SELECT "contractDate", "coordinateX", "coordinateY" FROM projects LIMIT 1; | 1-7 | **Stray ad-hoc database query output committed as a file (with a command-line name):** file contains real-looking project records (IDs, names, coordinates, dates). This suggests accidental check-in of local operational artifacts and can leak internal data and schemas. | Delete this artifact from the repository and add repo hygiene guidance (or ignore patterns) to prevent committing local dumps/query outputs. If sample data is needed, add a sanitized fixture under `docs/` or `backend/scripts/` with a stable filename and no real identifiers. |
+
+**Positive Aspects:**
+- Backups directory includes an internal `.gitignore` that prevents accidental commit of common dump formats.
+- Logs are structured JSON, which is generally good for ingestion and parsing (when stored safely outside git).
+
+**Group Notes:**
+Operational artifacts (logs, ad-hoc DB outputs) should not live in version control. This group indicates a repo hygiene gap: add ignore rules, purge sensitive history, and prefer reproducible scripts/docs over committed outputs.
+
+---
+
 ## INCIDENT TODO LIST
 
 ### Critical Issues (Must Fix)
@@ -1156,6 +1374,7 @@ Main action item is aligning the “required assets” expectations with what is
 - [ ] **D9-001** - WebSocket server allows joining any project room without authorization
 - [ ] **D10-001** - Frontend WhatsApp gateway exposes Twilio credentials and sends messages client-side
 - [ ] **D14-001** - Backend JWT secrets have hard-coded defaults; require env + fail fast
+- [ ] **D37-001** - Backend `.env` contains real Dropbox credentials (rotate + purge from git history)
 
 ### High Issues (Should Fix)
 - [ ] **D1-001** - Domain enums contain UI mappings; move to Presentation/Shared
@@ -1181,6 +1400,20 @@ Main action item is aligning the “required assets” expectations with what is
 - [ ] **D32-004** - ProjectListView status filter values don’t match `ProjectStatus` enum (filter broken)
 
 - [ ] **D34-001** - External-services index imports WhatsApp types from Dropbox module (likely build break)
+
+- [ ] **D37-002** - Railway/Nixpacks start commands run production seed on every start
+- [ ] **D37-003** - Jest config is inconsistent with ESM + Vue 3 and likely won’t run
+
+- [ ] **D38-001** - Prisma dev seed references removed `whatsappEnabled` field (seed/schema drift)
+- [ ] **D38-002** - Production seed uses predictable default admin password and logs it
+
+- [ ] **D39-001** - Dropbox refresh-token script prints full tokens to stdout
+- [ ] **D39-002** - Dropbox token update notes include token-like prefix (remove/rotate)
+
+- [ ] **D40-002** - Docs conflict on auth token storage model (cookies vs localStorage/Bearer)
+- [ ] **D40-004** - Docs include token-like strings and encourage client-side Dropbox tokens
+
+- [ ] **D41-001** - Runtime logs are committed (sensitive operational data leakage risk)
 
 ### Medium Issues (Recommended Fix)
 - [ ] **D1-002** - TaskPriority includes `URGENT` not in requirements
@@ -1287,6 +1520,28 @@ Main action item is aligning the “required assets” expectations with what is
 
 - [ ] **D35-001** - Public folder appears to be missing referenced PWA/icon assets
 
+- [ ] **D36-001** - Env var typing/naming drifts from actual usage (VITE_SOCKET_URL/VITE_APP_VERSION)
+- [ ] **D36-002** - PaginationQuery types don’t match Express query strings (misleading)
+- [ ] **D36-003** - Backend auth/JWT role fields are stringly-typed (drift risk)
+
+- [ ] **D37-004** - Frontend `.env.example` encourages client-side Dropbox access token
+
+- [ ] **D38-003** - Dev seed clears all tables without an environment/DB safety guard
+- [ ] **D38-004** - Message read receipts/attachments stored as string arrays (no FK, scaling risk)
+
+- [ ] **D39-003** - Scripts use `pkill -9 node` and hard-coded paths (unsafe/non-portable)
+- [ ] **D39-004** - Backend setup script runs `prisma db pull --force` / `db push` without safety checks
+- [ ] **D39-005** - Dropbox test script uses wrong seeded email + brittle token parsing
+
+- [ ] **D40-001** - Broken doc links due to docs path drift
+- [ ] **D40-003** - Docs conflict on whether frontend integration is complete
+- [ ] **D40-005** - Debug guide uses wrong health endpoint (`/health` vs `/api/v1/health`)
+- [ ] **D40-006** - Backend setup docs list wrong file upload endpoint
+- [ ] **D40-007** - WhatsApp feature set drift across docs
+- [ ] **D40-008** - Dropbox mandatory/optional + Railway start pipeline guidance inconsistent
+
+- [ ] **D41-002** - Stray ad-hoc DB query output committed as a file
+
 
 ### Low Issues (Optional Fix)
 - [ ] **D2-003** - Backend GeoCoordinates should reject NaN/Infinity
@@ -1327,6 +1582,11 @@ Main action item is aligning the “required assets” expectations with what is
 - [ ] **D24-008** - LoadingSpinner has dead `overlay` prop + hard-coded color fallbacks
 - [ ] **D24-010** - Common components header templates are inconsistent
 - [ ] **D25-003** - Layout components use `$emit`/`$router` instead of typed `emit`/`router`
+- [ ] **D37-005** - Playwright baseURL is hard-coded to localhost:5173
+- [ ] **D38-005** - Audit/permission attribution fields are not relationally enforced
+
+- [ ] **D39-006** - Upload endpoint test script assumes `jq` + brittle status detection
+- [ ] **D39-007** - Script hygiene inconsistencies (headers, ESM import conventions)
 - [ ] **D25-004** - Layout AppSidebar has unused `computed` import
 - [ ] **D25-005** - Layout components header templates are inconsistent
 - [ ] **D26-004** - ProjectCard role="button" lacks Space key activation
@@ -1371,6 +1631,9 @@ Main action item is aligning the “required assets” expectations with what is
 - [ ] **D35-002** - robots.txt allows all routes by default (confirm intended indexing policy)
 - [ ] **D35-003** - public `.gitkeep` likely shipped publicly (move notes to docs)
 
+- [ ] **D36-004** - Backend shared types header `@file` path mismatch
+- [ ] **D36-005** - vite-env.d.ts uses non-standard header vs project convention
+
 ---
 
 ## CROSS-CUTTING CONCERNS
@@ -1392,6 +1655,11 @@ Main action item is aligning the “required assets” expectations with what is
 - View-layer contracts drift in multiple places (custom events and enum values), which TypeScript can’t enforce at runtime; prefer deriving UI option values from enums and reusing typed emit contracts to prevent broken wiring (D32-001/D32-004).
 - App-level dependency injection uses string keys (`provide('toast', ...)`), which is easy to collide and hard to type-check across the app; use typed `InjectionKey`s for safer provide/inject contracts (D33-003).
 - Presentation store barrel includes a WebSocket wiring helper typed as `any` with string event names, which undermines type safety and can drift from the real WebSocket API surface (D34-002).
+- Vite env typing currently doesn’t reflect the env vars actually used across the frontend (`VITE_SOCKET_URL`, `VITE_APP_VERSION`), reducing type-safety and increasing misconfiguration risk (D36-001).
+- Backend request-boundary types model pagination values as numbers even though Express query params arrive as strings unless parsed, encouraging subtle bugs and `NaN` propagation (D36-002).
+- Backend shared auth/JWT shapes model roles as `string`, increasing drift risk vs the actual role set enforced in authorization logic (D36-003).
+- Prisma seed scripts can drift from the schema/migration state (e.g., removed columns still referenced), leading to runtime failures in local/dev setup (D38-001).
+- Script/test utilities mix TS/ESM import conventions inconsistently (extension vs no extension), which can cause environment-specific execution failures (D39-007).
 
 ### Consistency Analysis
 **Issues:**
@@ -1408,6 +1676,11 @@ Main action item is aligning the “required assets” expectations with what is
 - App entry includes unconditional debug-style logs and enables WebSocket debug mode by default; standardize an environment-gated logging/debug convention for entrypoints and core infrastructure initialization (D33-002).
 - Multiple barrel-export files don’t follow a consistent file-header convention across the codebase (frontend `@module` blocks vs the project’s standard header template; backend `@file` path mismatches), making documentation/auditing less uniform (D34-003/D34-004).
 - Public assets currently include a placeholder `.gitkeep` and appear to omit expected icon files; ensure public-asset expectations match what is actually shipped to avoid broken icon requests and inconsistent PWA metadata (D35-001/D35-003).
+- Frontend test tooling configuration is internally inconsistent (ESM project + CJS `require` setup, non-standard Jest option, missing Vue transformer), which makes the test harness fragile and harder to maintain (D37-003).
+- Prisma seed scripts and migrations reflect a history of WhatsApp feature addition/removal; keeping seed scripts aligned with current schema avoids recurring setup breakage (D38-001).
+- Operational scripts embed machine-specific paths and broad process-kill commands (`pkill -9 node`), reducing portability and predictability across dev setups (D39-003).
+- Documentation files contain multiple broken relative links and contradictory guidance across “generated” docs; without a single source of truth + link checking, doc drift will keep increasing (D40-001/D40-003/D40-008).
+- Repository contains committed operational artifacts (runtime logs and ad-hoc DB output), indicating inconsistent repo hygiene and risking sensitive-data leakage (D41-001/D41-002).
 
 ### Security Analysis
 **Issues:**
@@ -1417,6 +1690,9 @@ Main action item is aligning the “required assets” expectations with what is
 - Frontend vendor gateways embed/consume third-party secrets (Twilio/Dropbox), which is a critical credential exposure risk (D10-001/D10-002).
 - Some backend database errors include raw underlying message text, which can leak internals if surfaced directly in API responses (D11-006).
 - Backend JWT secrets currently have hard-coded defaults, which is a critical “fail-open” security posture if env vars are missing (D14-001).
+- Backend repository contains real third-party credentials in `backend/.env`, which must be treated as compromised and removed from history (D37-001).
+- Production seed sets and logs a predictable admin password, which is unsafe in real deployments and should be replaced with an env-supplied or one-time credential (D38-002).
+- Operational/token scripts and notes print or embed token material in plaintext, which increases accidental leakage risk (terminal history/screen sharing/repo notes) and should be eliminated (D39-001/D39-002).
 - Frontend shared ID generation uses `Math.random()` despite claiming UUID v4 compliance; this is not appropriate for security-sensitive identifiers (D15-001).
 - Frontend global styles import Google Fonts via third-party URL, which can complicate CSP/privacy requirements depending on deployment constraints (D16-001).
 - Router post-login redirect handling does not validate the redirect target, which can cause unexpected navigation and should be hardened (D17-001).
@@ -1431,6 +1707,10 @@ Main action item is aligning the “required assets” expectations with what is
 - File preview/download flows should avoid bypassing the shared HTTP client and must harden new-tab navigation against reverse-tabnabbing (`window.open` without `noopener`) (D32-007).
 - App entry currently enables verbose `[App]` logging and WebSocket debug mode by default; ensure production builds do not emit debug traces that could leak operational details or expand the XSS “information surface” (D33-002).
 - Avoid shipping internal notes/files from `public/` when they aren’t needed, as they can expose implementation details and create unnecessary public endpoints (D35-003).
+- Production deployment scripts currently run database seeding on every start; this expands blast radius for seed bugs and risks data integrity (D37-002).
+- Multiple docs include token-like values and/or suggest putting secrets into frontend Vite env vars; this increases the chance of secret leakage through repo history, static hosting, or CI logs (D40-004).
+- Authentication docs are inconsistent about cookies vs Bearer tokens; mismatched assumptions here can lead to insecure deployments (missing CSRF/XSS mitigations) and hard-to-debug auth failures (D40-002).
+- Committed runtime logs and ad-hoc DB query outputs can leak sensitive operational data and should be purged/ignored (D41-001/D41-002).
 
 ### Performance Analysis
 **Issues:**
@@ -1441,9 +1721,10 @@ Main action item is aligning the “required assets” expectations with what is
 - CalendarWidget recomputes the 42-day grid by filtering entire project/task arrays per day with repeated `Date` parsing; pre-bucketing items by day key will scale better (D31-003).
 - CalendarView loads tasks per project during month changes and initial load; consider batching/parallelization to avoid slow sequential fetch patterns when calendars contain many projects (D32-002).
 - Duplicated WebSocket connect initiation can create redundant connections/subscriptions and extra event traffic; ensure connect/disconnect lifecycle is single-sourced or idempotent (D33-001).
+- Message read receipts and file attachments stored as inline arrays can become inefficient and difficult to index at scale; normalize if message volume or “read tracking” grows (D38-004).
 
 
 ---
 
 **Report Generated:** 2026-03-05
-**Next Review Scheduled:** After Phase 9 completes
+**Next Review Scheduled:** Phase 10 complete
