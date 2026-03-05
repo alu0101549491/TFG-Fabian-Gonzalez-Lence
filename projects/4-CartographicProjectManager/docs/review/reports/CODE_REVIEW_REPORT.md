@@ -4,8 +4,8 @@
 **Review Date:** March 5, 2026
 **Reviewer:** GitHub Copilot Agent
 **Codebase Version:** dd8d063
-**Total Files Reviewed:** 150
-**Total Groups Reviewed:** 23
+**Total Files Reviewed:** 170
+**Total Groups Reviewed:** 26
 
 ---
 
@@ -19,9 +19,9 @@ Initial review (Domain enumerations + entities) shows strong documentation disci
 **Statistics (so far):**
 - Critical Issues: 4
 - High Issues: 18
-- Medium Issues: 61
-- Low Issues: 32
-- Total Issues: 115
+- Medium Issues: 71
+- Low Issues: 44
+- Total Issues: 137
 
 **Recommendation:**
 - [ ] ✅ APPROVED - Ready for production
@@ -741,6 +741,109 @@ This is a solid baseline; the main hardening opportunity is ensuring validation 
 
 ---
 
+### Phase 6: Presentation Layer - Component Review
+
+#### Group 6.1: Common Components
+**Files Reviewed:**
+- src/presentation/components/common/AppBadge.vue
+- src/presentation/components/common/AppButton.vue
+- src/presentation/components/common/AppCard.vue
+- src/presentation/components/common/AppConfirmDialog.vue
+- src/presentation/components/common/AppEmptyState.vue
+- src/presentation/components/common/AppFooter.vue
+- src/presentation/components/common/AppHeader.vue
+- src/presentation/components/common/AppInput.vue
+- src/presentation/components/common/AppModal.vue
+- src/presentation/components/common/AppSelect.vue
+- src/presentation/components/common/AppSidebar.vue
+- src/presentation/components/common/AppSpinner.vue
+- src/presentation/components/common/AppTextarea.vue
+- src/presentation/components/common/LoadingSpinner.vue
+- src/presentation/components/common/index.ts
+
+**Score:** 6.8/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D24-001 | 🟡 MEDIUM | src/presentation/components/common/AppModal.vue | 131-145, 196-211 | **Body scroll locking has global side effects and can override unrelated page styles:** the watcher runs with `{immediate: true}` and calls `unlockBodyScroll()` even when the modal starts closed, and unlock resets `document.body.style.overflow/paddingRight` to empty strings. This can break pages that intentionally set these styles, and it won’t handle “stacked” modals safely (closing one unlocks all). | Track whether this modal instance actually locked scroll (store previous overflow/padding values), and only restore when you previously locked. Consider a shared “scroll lock” ref-counter helper if multiple modals can exist. |
+| D24-002 | 🟡 MEDIUM | src/presentation/components/common/AppInput.vue | 187-192 | **Number input parsing is lossy and can emit unexpected values:** `Number(target.value)` will emit `0` for `''` and `NaN` for invalid numeric strings, which can corrupt form state and validation (and differs from native number input semantics). | Treat empty input as `null`/`''` (choose one contract) and guard against `NaN`. If numeric options are needed, parse with `valueAsNumber` and `Number.isFinite(...)` checks. |
+| D24-003 | 🟡 MEDIUM | src/presentation/components/common/AppSelect.vue | 41-43, 58-66, 138-143 | **Select placeholder/clear logic breaks for falsy values and type round-tripping:** placeholder `:selected="!modelValue"` and clear button `v-if="... && modelValue"` treat `0` as “empty”. Additionally, `HTMLSelectElement.value` always returns a string, so emitting `target.value` drops numeric option types. | Use explicit emptiness checks (`modelValue == null || modelValue === ''`). Map back to the declared option type (e.g., lookup `options.find(o => String(o.value) === target.value)` and emit `o.value`). |
+| D24-004 | 🟡 MEDIUM | src/presentation/components/common/AppConfirmDialog.vue | 15-22, 108-111 | **ConfirmDialog close semantics are inconsistent:** overlay/escape/X closes `AppModal` and triggers only `update:modelValue` forwarding, but does not emit `cancel`. Consumers listening for `cancel` won’t run cleanup logic on these close paths. | Treat any non-confirm close as cancel: listen to `@close` from `AppModal` and emit `cancel` (while also updating `modelValue`). Prefer using the typed `emit` function instead of `$emit` in the template. |
+| D24-005 | 🟢 LOW | src/presentation/components/common/AppCard.vue | 24-28, 105-109 | **Clickable card is missing full keyboard interaction:** it uses `role="button"` and supports Enter, but does not handle Space key activation (expected for buttons) and does not prevent default scroll behavior if Space is added later. | Add `@keydown.space.prevent` handling when `clickable` is true and consider `:aria-disabled="loading"` when `loading` blocks interaction. |
+| D24-006 | 🟢 LOW | src/presentation/components/common/{AppInput,AppSelect,AppTextarea,AppModal}.vue | AppInput: 163-164; AppSelect: 133-134; AppTextarea: 124-125; AppModal: 96-98 | **Runtime-generated IDs via `Math.random()` are non-deterministic:** this can cause hydration mismatches in SSR and makes snapshot/e2e tests harder. | Prefer Vue’s `useId()` (Vue 3.5+) or a stable per-instance counter utility; allow passing `id` via props consistently. |
+| D24-007 | 🟢 LOW | src/presentation/components/common/{AppInput,AppTextarea,AppConfirmDialog}.vue | AppInput: 58-60; AppTextarea: 38-39; AppConfirmDialog: 21-22 | **Inconsistent event emitting style in `<script setup>` templates:** several components use `$emit(...)` in templates even though `defineEmits()` is declared. This reduces type-safety and consistency (and can hide event-name typos). | Use the `emit` function returned from `defineEmits()` consistently in templates (e.g., `@focus="emit('focus', $event)"`). |
+| D24-008 | 🟢 LOW | src/presentation/components/common/LoadingSpinner.vue | 21-33, 70-92 | **Dead props + hard-coded fallback colors undermine design-token consistency:** `overlay` is declared but not used, and several CSS rules hard-code hex colors as fallback values. | Either implement `overlay` behavior or remove the prop. Replace hard-coded fallbacks with token-only values (or centralize fallbacks in the token definitions). |
+| D24-009 | 🟡 MEDIUM | src/presentation/components/common/AppHeader.vue | 45-51 | **Header contains placeholder/incorrect runtime state:** notification count is hard-coded (`ref(3)`) and `onMounted` is imported but unused. This risks shipping a UI that always shows “3” notifications. | Wire notification count to a store/service, or clearly mark as temporary and remove before release. Clean up unused imports. |
+| D24-010 | 🟢 LOW | src/presentation/components/common/{AppHeader,AppFooter,AppSidebar,LoadingSpinner}.vue | AppHeader: 1-6; AppFooter: 1-5; AppSidebar: 1-6; LoadingSpinner: 1-6 | **File headers are inconsistent within the same component group:** several components use a different header style than the rest of the codebase’s standard “University of La Laguna” template. | Standardize these headers to the project template for traceability and consistent doc generation. |
+
+**Positive Aspects:**
+- The base form components consistently expose `error` state and set `aria-invalid`, which is a good accessibility baseline.
+- `AppModal` provides a solid starting point: `Teleport`, `Transition`, `role="dialog"`, and a basic focus trap.
+- Styling generally uses design tokens (spacing, radius, colors, shadows) rather than raw values.
+
+**Group Notes:**
+Most issues are correctness/a11y edge cases and consistency. The biggest functional risk is value handling for `number`/select inputs and avoiding global side-effects in the modal scroll-lock implementation.
+
+---
+
+#### Group 6.2: Layout Components
+**Files Reviewed:**
+- src/presentation/components/layout/AppHeader.vue
+- src/presentation/components/layout/AppSidebar.vue
+
+**Score:** 7.0/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D25-001 | 🟡 MEDIUM | src/presentation/components/layout/AppSidebar.vue | 70-76 | **Navigation links are not permission-aware:** the sidebar includes routes like `/backup` and `/settings` unconditionally. If these views are role-restricted (admin-only), this creates UX confusion and encourages “click-into-403” flows; if route guards are ever weakened, it becomes a real access-control issue. | Build `navLinks` from an explicit permission model (store-derived role/rights) and/or keep route meta as the source of truth for visibility; ensure router guards enforce access regardless of UI visibility. |
+| D25-002 | 🟡 MEDIUM | src/presentation/components/layout/AppHeader.vue | 40-63 | **User dropdown lacks standard dismissal behavior:** the dropdown toggles open/closed but does not close on outside click, route navigation (except settings/logout handlers), or Escape key. This can leave menus “stuck” and harms keyboard accessibility. | Add click-outside + Escape handling (and ensure cleanup on unmount). Consider focus management: move focus into the menu on open and return focus to the trigger on close. |
+| D25-003 | 🟢 LOW | src/presentation/components/layout/{AppHeader,AppSidebar}.vue | AppHeader: 19, 32; AppSidebar: 25-26, 36 | **Template uses `$emit` / `$router` instead of typed `emit` + `router`:** this bypasses the type-checked emitter/router instances created in `<script setup>` and is inconsistent with the typed-emits pattern used elsewhere. | Use `emit('toggle-sidebar')` / `emit('close')` / `router.push(...)` via handlers defined in script setup. |
+| D25-004 | 🟢 LOW | src/presentation/components/layout/AppSidebar.vue | 46 | **Unused import indicates lint/type-check drift:** `computed` is imported but never used. | Remove unused imports to keep lint clean and reduce noise in reviews. |
+| D25-005 | 🟢 LOW | src/presentation/components/layout/{AppHeader,AppSidebar}.vue | 1-11 | **File header template inconsistency:** these layout components use a partial header style (missing the second `@see` link and differing formatting) compared to the standard template used across many other modules. | Standardize headers within the Presentation layer so generated docs and audits remain consistent. |
+
+**Positive Aspects:**
+- Both components use clear, minimal state and keep side-effects low.
+- `AppHeader` correctly sources unread notifications from the store (computed), avoiding hard-coded counts.
+- Sidebar mobile overlay click-to-close is implemented and stops propagation inside the nav.
+
+**Group Notes:**
+Primary improvements are UX/accessibility polish (menu dismissal) and consistency (typed emits/router usage). Authorization must remain backend-first, but navigation visibility should align with route access to reduce confusion.
+
+---
+
+### Phase 7: Presentation Layer - Feature Components Review
+
+#### Group 7.1: Project Components
+**Files Reviewed:**
+- src/presentation/components/project/ProjectCard.vue
+- src/presentation/components/project/ProjectForm.vue
+- src/presentation/components/project/ProjectSummary.vue
+
+**Score:** 7.1/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D26-001 | 🟡 MEDIUM | src/presentation/components/project/ProjectSummary.vue | 86-164, 200-218 | **Clickable “stat cards” and section cards are not keyboard-accessible:** several interactive tiles are `div` elements with `@click` (and `$emit(...)`) but no `role`, `tabindex`, or Space/Enter handling. This blocks keyboard-only and assistive tech users from navigating to tasks/messages/files/participants. | Prefer semantic `<button type="button">` for interactive tiles. If a `div` must remain, add `role="button"`, `tabindex="0"`, and handle `@keydown.enter` / `@keydown.space.prevent` consistently. Consider `aria-label` where the visible label is ambiguous. |
+| D26-002 | 🟡 MEDIUM | src/presentation/components/project/ProjectForm.vue | 473-476 | **Date-only formatting is timezone-sensitive:** `formatDateForInput()` uses `toISOString().split('T')[0]` which formats in UTC. For users outside UTC, this can render an off-by-one date in `<input type="date">` when the underlying date is interpreted as local time. | Format “date-only” values in local time (e.g., via `getFullYear()/getMonth()/getDate()` with zero-padding) or keep transport as an ISO date string (`YYYY-MM-DD`) and avoid `Date` round-trips for date-only inputs. |
+| D26-003 | 🟡 MEDIUM | src/presentation/components/project/ProjectCard.vue | 243-246 | **Component mixes navigation with event emission:** `handleClick()` both emits a `click` event and performs `router.push(...)`. Parents listening to `@click` may also navigate or trigger other side effects, causing double-navigation or unexpected flows. | Pick a single responsibility: either (a) emit and let the parent route, or (b) navigate internally and emit a more specific “opened”/“selected” event. If both are needed, add an explicit prop controlling navigation. |
+| D26-004 | 🟢 LOW | src/presentation/components/project/ProjectCard.vue | 15-29 | **Keyboard interaction is incomplete for `role="button"`:** the card handles Enter but not Space, which is expected for button-like controls. | Add `@keydown.space.prevent="handleClick"` (and consider `@keydown.enter.prevent`). Alternatively, use a real `<button>` element for the clickable container. |
+| D26-005 | 🟢 LOW | src/presentation/components/project/ProjectForm.vue | 231-240, 276-288 | **Template bypasses typed emitter:** the Cancel button uses `$emit('cancel')` even though a typed `emit` function is defined via `defineEmits<ProjectFormEmits>()`. This reduces type-safety and consistency (event-name typos won’t be caught). | Use `@click="emit('cancel')"` or route through a `handleCancel()` function in script setup. |
+| D26-006 | 🟢 LOW | src/presentation/components/project/ProjectForm.vue | 450-455 | **Generated project codes can collide:** `generateCode()` uses `Math.random()` to pick a 1–999 sequence. This can easily generate duplicates and cause avoidable backend validation failures. | Generate codes server-side (authoritative) or use a backend-provided “next sequence” endpoint. If client-side generation remains, validate uniqueness before submit and surface a clear error when a collision occurs. |
+| D26-007 | 🟢 LOW | src/presentation/components/project/ProjectSummary.vue | 51-82, 304-312 | **Minor a11y/robustness gaps in header/status:** the delete action button is icon-only (no `aria-label`), and `statusLabel` can evaluate to `undefined` for unexpected statuses, resulting in blank UI text. | Add `aria-label="Delete project"` (and optionally `title`). For `statusLabel`, provide a fallback (`labels[status] ?? status`) like `ProjectCard` does. |
+
+**Positive Aspects:**
+- `ProjectForm` provides clear, field-specific validation and keeps create/edit modes distinct.
+- `ProjectCard` correctly stops propagation inside the actions menu and includes click-outside closing behavior.
+- `ProjectSummary` is cleanly structured and relies on computed “shortcuts” (project/taskStats/permissions), keeping the template readable.
+
+**Group Notes:**
+Most issues here are accessibility and UX correctness edge cases rather than business-logic problems. The biggest hardening opportunities are (1) making all interactive tiles fully accessible, and (2) avoiding timezone bugs in date-only inputs.
+
+---
+
 ## INCIDENT TODO LIST
 
 ### Critical Issues (Must Fix)
@@ -831,6 +934,16 @@ This is a solid baseline; the main hardening opportunity is ensuring validation 
 - [ ] **D22-006** - File upload path uses unsanitized section/filename in Dropbox path
 - [ ] **D23-001** - Upload middleware validates by extension only and throws generic errors
 - [ ] **D23-002** - Error handler may leak `AppError` message/details to clients
+- [ ] **D24-001** - AppModal scroll lock/unlock mutates global body styles (immediate unlock + stacked modal risk)
+- [ ] **D24-002** - AppInput number parsing emits `0` for empty and can emit `NaN`
+- [ ] **D24-003** - AppSelect placeholder/clear logic breaks for `0` and emits strings for numeric options
+- [ ] **D24-004** - ConfirmDialog does not emit `cancel` on overlay/escape/X close
+- [ ] **D24-009** - AppHeader uses hard-coded notification count + unused imports
+- [ ] **D25-001** - Layout sidebar navigation is not permission-aware (admin-only links shown to all)
+- [ ] **D25-002** - Layout header user dropdown lacks click-outside/Escape dismissal behavior
+- [ ] **D26-001** - ProjectSummary clickable tiles are not keyboard-accessible
+- [ ] **D26-002** - ProjectForm date-only inputs can shift by timezone (UTC formatting)
+- [ ] **D26-003** - ProjectCard mixes event emission with internal navigation
 
 
 ### Low Issues (Optional Fix)
@@ -866,6 +979,18 @@ This is a solid baseline; the main hardening opportunity is ensuring validation 
 - [ ] **D22-007** - Controllers parse query/path inputs without strict validation
 - [ ] **D22-008** - Backend controller module headers use wrong `@file` paths
 - [ ] **D23-003** - Backend middleware module headers use wrong `@file` paths
+- [ ] **D24-005** - AppCard clickable a11y: missing Space key activation
+- [ ] **D24-006** - UI components generate IDs via `Math.random()` (SSR/test instability)
+- [ ] **D24-007** - Common components use `$emit` instead of typed `emit` in `<script setup>` templates
+- [ ] **D24-008** - LoadingSpinner has dead `overlay` prop + hard-coded color fallbacks
+- [ ] **D24-010** - Common components header templates are inconsistent
+- [ ] **D25-003** - Layout components use `$emit`/`$router` instead of typed `emit`/`router`
+- [ ] **D25-004** - Layout AppSidebar has unused `computed` import
+- [ ] **D25-005** - Layout components header templates are inconsistent
+- [ ] **D26-004** - ProjectCard role="button" lacks Space key activation
+- [ ] **D26-005** - ProjectForm Cancel uses `$emit` instead of typed `emit`
+- [ ] **D26-006** - ProjectForm generateCode() can collide (Math.random)
+- [ ] **D26-007** - ProjectSummary delete button lacks aria-label; statusLabel lacks fallback
 
 ---
 
@@ -878,10 +1003,15 @@ This is a solid baseline; the main hardening opportunity is ensuring validation 
 - Domain types include some internal mismatches that will surface as TS errors (e.g., `Notification.shouldSendViaWhatsApp()` referencing missing `User.whatsappEnabled`).
 - Some domain fields are weakly typed (e.g., `Message.senderRole: string`, `Permission.sectionAccess: string[]`), increasing drift risk vs enums and requirements.
 - Many Application DTOs use `Date` types for likely JSON payloads, which can mask runtime mismatches unless a centralized mapping/parsing layer exists (D5-001).
+- Several common UI components lose type information at the DOM boundary (notably `<select>` values) and rely on truthiness checks that mis-handle valid values like `0` (D24-003).
+- Date-only fields in feature components are round-tripped through `Date` and then formatted via `toISOString()`, which can shift calendar dates depending on timezone (D26-002).
 
 ### Consistency Analysis
 **Issues:**
 - UI labels/colors/icons are currently embedded into Domain enumerations, which risks inconsistent UI behavior and complicates localization/theming.
+- Common component files mix header templates and (in `LoadingSpinner`) introduce hard-coded fallback colors, which weakens the project-wide token + documentation conventions (D24-008/D24-010).
+- Layout components still rely on untyped template globals (`$emit`, `$router`) and diverge in header style, which erodes the project’s type-safety and documentation consistency goals (D25-003/D25-005).
+- Feature components continue the `$emit`-in-template pattern and include several non-semantic clickable tiles, reinforcing the need for a consistent “interactive element” pattern across the Presentation layer (D26-001/D26-005).
 
 ### Security Analysis
 **Issues:**
