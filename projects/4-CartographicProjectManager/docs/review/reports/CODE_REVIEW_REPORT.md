@@ -1,11 +1,11 @@
 # CODE REVIEW REPORT
 ## Cartographic Project Manager (CPM)
 
-**Review Date:** March 4, 2026
+**Review Date:** March 5, 2026
 **Reviewer:** GitHub Copilot Agent
 **Codebase Version:** dd8d063
-**Total Files Reviewed:** 108
-**Total Groups Reviewed:** 15
+**Total Files Reviewed:** 150
+**Total Groups Reviewed:** 23
 
 ---
 
@@ -18,10 +18,10 @@ Initial review (Domain enumerations + entities) shows strong documentation disci
 
 **Statistics (so far):**
 - Critical Issues: 4
-- High Issues: 15
-- Medium Issues: 39
-- Low Issues: 21
-- Total Issues: 79
+- High Issues: 18
+- Medium Issues: 61
+- Low Issues: 32
+- Total Issues: 115
 
 **Recommendation:**
 - [ ] ✅ APPROVED - Ready for production
@@ -512,6 +512,235 @@ The main action items are robustness and security posture: hardening parsing (av
 
 ---
 
+### Phase 5: Presentation Layer - Core Review
+
+#### Group 5.1: Styles
+**Files Reviewed:**
+- src/presentation/styles/main.css
+- src/presentation/styles/variables.css
+
+**Score:** 7.2/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D16-001 | 🟡 MEDIUM | src/presentation/styles/main.css | 20-21 | **Privacy/CSP + performance risk:** importing Google Fonts via CSS `@import url(...)` triggers an extra render-blocking request and introduces a third-party dependency that can complicate CSP and privacy requirements. | Prefer loading fonts via HTML `<link rel="preconnect">` + `<link rel="stylesheet">`, or self-host the font files. If you must use Google Fonts, document CSP requirements and consider a local fallback-only mode. |
+| D16-002 | 🟢 LOW | src/presentation/styles/main.css | 1065-1069 | **Hard-coded colors in high-contrast override:** `prefers-contrast: high` sets `--color-border-primary`/`--color-text-secondary` to `#000`, bypassing the token system. This is defensible for accessibility, but it can drift from the design token approach used elsewhere. | Define dedicated high-contrast tokens in `variables.css` (e.g., `--color-hc-border`, `--color-hc-text`) and reference them here to keep overrides within the token system. |
+| D16-003 | 🟢 LOW | src/presentation/styles/main.css | 29-35 | **Aggressive global reset may have side-effects:** applying `margin: 0; padding: 0;` to `*` can unintentionally override default spacing for elements/components (including third-party widgets) and can increase the need for per-component style fixes. | Consider a more targeted reset (e.g., normalize stylesheet) or limit resets to known elements, keeping global overrides minimal. |
+
+**Positive Aspects:**
+- The design-token approach in `variables.css` is comprehensive and consistent; most component styling uses tokens rather than raw values.
+- Accessibility is treated seriously: keyboard focus handling, `sr-only`, skip link, and `prefers-reduced-motion` are present and well-scoped.
+- Component base styles (buttons/inputs/cards/modals) are cohesive and reuse shared primitives (spacing/radius/shadows).
+
+**Group Notes:**
+Overall the styling system is solid; the main improvement is replacing third-party font loading via CSS `@import` with a more CSP-friendly and performant approach.
+
+---
+
+#### Group 5.2: Router
+**Files Reviewed:**
+- src/presentation/router/index.ts
+
+**Score:** 6.3/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D17-001 | 🟡 MEDIUM | src/presentation/router/index.ts | 350-356, 644-655 | **Unvalidated redirect target:** the auth guard stores `redirect: to.fullPath`, and `handlePostLoginRedirect()` later does `router.push(redirect)` without validating it. This can cause unexpected navigation (or navigation failures) if the query param is tampered with or points to an invalid route. | Validate redirects before navigating: allow only internal paths you expect (e.g., strings starting with `/` and not `//`), and/or use `router.resolve()` + a denylist (`/login`, `/forbidden`) before pushing. Fallback to dashboard on invalid inputs. |
+| D17-002 | 🟡 MEDIUM | src/presentation/router/index.ts | 375-411 | **Client-side project access check is brittle and may leak data:** the router guard instantiates `ProjectRepository` and fetches “project with participants” to decide access, then uses `(projectData as any).creatorId` and assumes shapes like `specialUsers?.some(su => su.userId === ...)`. This can break with DTO drift and adds a network call on navigation. It also encourages a false sense of security (client-side checks are bypassable; server must enforce). | Enforce project authorization on the backend (return 403/404) and keep the router guard minimal (e.g., redirect on 403). If you keep a client-side check for UX, source access from a typed permission service/store and avoid `any` by aligning DTO shapes. |
+| D17-003 | 🟢 LOW | src/presentation/router/index.ts | 365-368, 401-409, 447-458 | **Console logging in core navigation paths:** role denial and project access failures use `console.warn`/`console.error` (and router errors log to console). This is noisy and can leak contextual info (user id, project id) into shared-device consoles. | Gate logs behind `import.meta.env.DEV` (or a centralized frontend logger) and avoid logging identifiers unless necessary. |
+
+**Positive Aspects:**
+- Meta typing via `declare module 'vue-router'` makes route-level auth/navigation configuration much clearer.
+- Route definitions are well organized, consistently titled, and lazily loaded.
+- Scroll behavior and chunk-load error handling improve UX during navigation.
+
+**Group Notes:**
+The biggest improvements are around keeping authorization “server-first” and hardening redirect handling. Router guards are great for UX, but they shouldn’t duplicate backend permission logic or depend on unstable DTO shapes.
+
+---
+
+#### Group 5.3: Stores (Pinia)
+**Files Reviewed:**
+- src/presentation/stores/auth.store.ts
+- src/presentation/stores/message.store.ts
+- src/presentation/stores/notification.store.ts
+- src/presentation/stores/project.store.ts
+- src/presentation/stores/task.store.ts
+- src/presentation/stores/user.store.ts
+
+**Score:** 5.8/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D18-001 | 🟠 HIGH | src/presentation/stores/auth.store.ts | 310-357 | **Sensitive token persistence in `localStorage`:** access + refresh tokens (and user profile JSON) are stored in `localStorage`. Any XSS on the origin can exfiltrate refresh tokens, enabling long-lived account compromise. | Prefer HttpOnly secure cookies for refresh tokens (and short-lived access tokens), or keep tokens in memory/session storage with strict CSP + XSS hardening. At minimum, never store refresh tokens in `localStorage`, and clear storage on logout and auth errors. |
+| D18-002 | 🟡 MEDIUM | src/presentation/stores/auth.store.ts | 50-58, 103-105, 264-270, 329-343 | **Session validity is estimated and can be “extended” on reload:** `expiresAt` is derived from `AUTH.TOKEN_EXPIRY_HOURS` and, on reload, recomputed as `now + expiryMs`. `validateSession()` is effectively local-only. This can cause the UI to treat expired tokens as valid until the server rejects requests. | Parse JWT `exp` (or accept `expiresAt` from backend) and persist it alongside tokens. Don’t recompute expiry relative to *load time*. Consider a backend `/auth/session` validation endpoint if you need definitive server-side checks. |
+| D18-003 | 🟡 MEDIUM | src/presentation/stores/project.store.ts | 287-356 | **Brittle permission/participant mapping via `any` + hidden fields:** project participant roles are cast with `as any`, and permissions depend on `(projectWithDetails as any).creatorId`. This duplicates server authorization logic in client state and is fragile under DTO drift. | Introduce a typed `ProjectWithParticipantsDto` that includes `creatorId` explicitly (if needed), or compute permissions server-side and return a typed permission object. Avoid `any` casts by aligning DTO shapes and enums across layers. |
+| D18-004 | 🟡 MEDIUM | src/presentation/stores/project.store.ts | 154-189, 248-251 | **N+1 request pattern for project summaries:** mapping each `Project` to `ProjectSummaryDto` triggers extra calls (fetch client name, tasks, unread messages) per project. With many projects this will be slow and can overload the backend. | Denormalize on the backend: return client name + counts in the list endpoint, or add a batch endpoint to fetch counts in one round trip. Consider caching and concurrency limits if some denormalization must remain client-side. |
+| D18-005 | 🟡 MEDIUM | src/presentation/stores/message.store.ts | 136-163, 271-316 | **Pagination + read-state are internally inconsistent:** `fetchMessagesByProject(..., loadMore)` doesn’t actually paginate (always loads the full set), yet merges messages and sets a fake pagination object. `markAsRead()` calls a *project-level* “mark as read” endpoint but only marks a single message locally and decrements unread by 1, risking state drift. | Implement real pagination (page/limit or cursor) end-to-end, and make read APIs match UI semantics (either “mark one” or “mark all”). After a project-level mark-as-read, update all local messages/read counts consistently. |
+| D18-006 | 🟡 MEDIUM | src/presentation/stores/notification.store.ts | 30, 171-204, 251-252 | **Notification persistence is not user-scoped and is incomplete:** notifications are saved under a global `localStorage` key (`cpm_notifications`) without a per-user namespace; this can leak state across accounts on shared machines. The store also defines `loadFromStorage()` but doesn’t call it during initialization, so persistence is only half-implemented. | Scope storage keys by `userId` (or clear on logout/login), and call `loadFromStorage()` on store init (or remove persistence entirely). Ensure date fields are consistently rehydrated (`createdAt`, `readAt`). |
+| D18-007 | 🟢 LOW | src/presentation/stores/{auth,project,message,notification,user}.store.ts | Multiple | **Production-noisy console logging + unused unsubscribe:** several stores contain verbose `console.*` logging (including debug emoji logs and dumping objects), and `message.store.ts` captures a WebSocket `unsubscribe` but never uses it. This is noisy and can leak contextual data into shared-device consoles. | Gate logs behind `import.meta.env.DEV` or a centralized logger with log levels. If WebSocket listeners need cleanup (e.g., on logout), retain and call `unsubscribe` appropriately. |
+
+**Positive Aspects:**
+- Stores are consistently structured (state/getters/actions) and generally follow a readable Composition-API style.
+- Several UX-friendly touches exist (e.g., duplicate WebSocket message suppression, derived computed views for lists).
+- The use of Domain entities in some flows (`Project`, `Task`) suggests an intent to centralize invariants.
+
+**Group Notes:**
+The core theme is “state correctness vs. security”: several stores implement authorization/persistence decisions client-side (tokens, permissions, unread/read state) in ways that can drift from backend truth. Tightening DTO contracts, avoiding `any`, and moving security-sensitive decisions server-first will improve both reliability and posture.
+
+---
+
+#### Group 5.4: Composables
+**Files Reviewed:**
+- src/presentation/composables/use-auth.ts
+- src/presentation/composables/use-files.ts
+- src/presentation/composables/use-messages.ts
+- src/presentation/composables/use-notifications.ts
+- src/presentation/composables/use-projects.ts
+- src/presentation/composables/use-tasks.ts
+- src/presentation/composables/use-users.ts
+
+**Score:** 6.4/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D19-001 | 🟡 MEDIUM | src/presentation/composables/use-auth.ts | 152-160, 229-234 | **Redirect handling is duplicated and still unvalidated:** after login, `useAuth()` pushes `currentRoute.query.redirect` directly; `requireAuth()` also stores an `intended_route` in `sessionStorage`. This duplicates router logic and preserves the same “untrusted redirect” risk already tracked in router code. | Centralize redirect handling in one place (router guard + a single helper), and validate redirect targets before navigation (allow only internal, resolved routes). Prefer one mechanism (query param or session storage), not both. |
+| D19-002 | 🟡 MEDIUM | src/presentation/composables/use-files.ts | 156-176 | **Upload response typing is `any` and depends on unclear interceptor behavior:** `uploadFile<{file: any}>` then extracts `(response.data as any)?.data?.file || response.data?.file`, suggesting inconsistent response envelopes. This can hide breakages until runtime and encourages ad-hoc casting. | Define and enforce a single upload response shape (e.g., `ApiResponse<{ file: FileDto }>`), and update the HTTP client interceptor typing so callers don’t need `any` or dual-path extraction. |
+| D19-003 | 🟢 LOW | src/presentation/composables/use-tasks.ts | 26, 273-277, 364-366 | **Status/transition semantics are duplicated and may drift:** the composable relies on `TASK.STATUS_TRANSITIONS` for transitions and uses a broad `pendingCount` definition (`status !== COMPLETED`), which can diverge from Domain transition tables and UI expectations (pending vs in-progress vs done). | Source transition rules from the domain enum/table (`TaskStatusTransitions`) or from a single shared mapping. Rename counters (e.g., `openCount`) or tighten the predicate to match business semantics. |
+| D19-004 | 🟢 LOW | src/presentation/composables/{use-projects,use-users}.ts | 209-212, 152-155, 194-200 | **Composable-level permission gating can create a false sense of security:** some actions are guarded client-side (e.g., create project/users), while others are not. This is fine for UX but should not be treated as authorization. | Keep client checks for UX only, but ensure backend enforces permissions consistently. Consider returning explicit permission DTOs from the server and using them for UI gating to avoid drift. |
+
+**Positive Aspects:**
+- Composables keep UI components clean by providing a stable, typed façade over stores.
+- Most composables are thin wrappers, which reduces duplicated state management logic.
+
+**Group Notes:**
+The composables are generally well-structured, but a few patterns (redirect navigation, `any`-typed upload envelopes, duplicated transition mappings) should be centralized to reduce drift and prevent recurring issues across files.
+
+---
+
+#### Group 5.5: Backend App Bootstrap
+**Files Reviewed:**
+- backend/src/presentation/app.ts
+
+**Score:** 6.2/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D20-001 | 🟡 MEDIUM | backend/src/presentation/app.ts | 32-37 | **CORS configuration is a common foot-gun with credentials:** `cors({ origin: CORS.ORIGIN, credentials: CORS.CREDENTIALS })` is correct *if* `origin` is a strict allowlist. If `CORS.ORIGIN` can be `'*'` while credentials are enabled, browsers will reject the response and/or you risk accidentally broadening cross-site access. | Ensure `CORS.ORIGIN` is an explicit allowlist (string[] or origin callback) when `credentials: true`. Add tests/config validation to prevent invalid combinations (e.g., `'*'` + credentials). |
+| D20-002 | 🟡 MEDIUM | backend/src/presentation/app.ts | 44-45 | **Request logging mode is not environment-gated:** `morgan('dev')` is enabled unconditionally. In production, this is noisy and can leak request paths/timings into logs (and sometimes sensitive query strings). | Gate morgan format/enablement by environment (e.g., `dev` only), or switch to a structured logger integration with redaction and log levels. |
+| D20-003 | 🟡 MEDIUM | backend/src/presentation/app.ts | 39-45 | **Missing basic edge protections at the app boundary:** the app sets JSON body limits (good) but does not show global rate limiting / slow-down / brute-force protections at bootstrap time. Given auth endpoints and file uploads, this increases DoS and credential-stuffing risk unless enforced elsewhere. | Add an app-level rate limiter (and/or route-scoped limiters for `/auth/*`, `/files/*`) and ensure `trust proxy` is configured correctly when behind a reverse proxy. |
+| D20-004 | 🟢 LOW | backend/src/presentation/app.ts | 9-12 | **Header metadata mismatch:** `@file` says `src/presentation/app.ts` but the file is under `backend/src/presentation/app.ts`, reducing traceability in generated docs/audits. | Update the header `@file` path to match the real location. |
+
+**Positive Aspects:**
+- Middleware ordering is sensible: Helmet + CORS + parsers + logging + routes + 404 + global error handler.
+- Explicit JSON/urlencoded size limits reduce accidental large-payload abuse compared to defaults.
+- Root endpoint provides a clear discovery payload for API consumers.
+
+**Group Notes:**
+This file is a good minimal bootstrap; the main improvements are hardening the production posture (CORS allowlists, env-gated logging, and rate limiting).
+
+---
+
+#### Group 5.6: Backend Routes
+**Files Reviewed:**
+- backend/src/presentation/routes/audit-log.routes.ts
+- backend/src/presentation/routes/auth.routes.ts
+- backend/src/presentation/routes/backup.routes.ts
+- backend/src/presentation/routes/export.routes.ts
+- backend/src/presentation/routes/file.routes.ts
+- backend/src/presentation/routes/index.ts
+- backend/src/presentation/routes/message.routes.ts
+- backend/src/presentation/routes/notification.routes.ts
+- backend/src/presentation/routes/project.routes.ts
+- backend/src/presentation/routes/task.routes.ts
+- backend/src/presentation/routes/user.routes.ts
+
+**Score:** 6.6/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D21-001 | 🟡 MEDIUM | backend/src/presentation/routes/{project,task,file,message,notification}.ts | project: 27-38, 41-60; task: 21-25; file: 23-39; message: 21-22; notification: 22-30 | **Authorization is not expressed at the routing boundary for most resources:** many routers apply `authenticate` but do not use `authorize` / policy middleware for sensitive operations (project writes, file upload/delete, task mutation). If controllers/services don’t enforce ownership/membership consistently, this becomes a privilege escalation risk; even if they do, the intended policy is opaque at the HTTP boundary. | Prefer route-level policy middleware for the “coarse” checks (role, project membership/ownership) and keep controllers focused on orchestration. At minimum, document required permissions per route and ensure controllers enforce them with shared helpers. |
+| D21-002 | 🟡 MEDIUM | backend/src/presentation/routes/{project,notification}.ts | project: 41-60; notification: 21-27 | **Request object mutation to reuse controller handlers weakens type-safety and validation:** routes mutate `req.query`/`req.params` (e.g., setting `projectId` / `userId`) to fit controller method signatures. This is fragile, bypasses normal parsing/validation patterns, and is hard to reason about when middleware also depends on these fields. | Add dedicated controller methods for these endpoints (accept the path/query shape directly), or use small adapters that extract validated values and call shared service methods without mutating `req`. |
+| D21-003 | 🟡 MEDIUM | backend/src/presentation/routes/audit-log.routes.ts | 16-23 | **Prisma client is instantiated inside a route module:** `new PrismaClient()` is created at import time in the router. This encourages multiple clients across modules, complicates lifecycle management (disconnect/shutdown), and makes testing/DI harder. | Centralize PrismaClient creation (one instance) and inject it via repositories/controllers, or use an app-level DI container/factory to provide a shared client. |
+| D21-004 | 🟢 LOW | backend/src/presentation/routes/{index,auth,file,message,notification,project,task,user}.ts | index: 9-12; project: 9-12; file: 9-12; notification: 9-12; task: 9-12; message: 9-12 | **Backend route module headers are inconsistent:** several files have `@file src/presentation/...` despite living under `backend/src/presentation/...` and some headers omit the second `@see` link used elsewhere. This reduces traceability and makes documentation generation inconsistent. | Standardize headers for backend files to match their actual paths and the project’s preferred header template. |
+
+**Positive Aspects:**
+- Route composition is clean and discoverable via `apiRouter` (and includes a simple `/health` endpoint).
+- Admin-only routers correctly use `authenticate` + `authorize('ADMINISTRATOR')` at the router level (e.g., audit logs, export, backup).
+
+**Group Notes:**
+The routing layer is mostly straightforward; the main risks are policy clarity (authorization) and maintainability (request mutation + local Prisma instantiation).
+
+---
+
+#### Group 5.7: Backend Controllers
+**Files Reviewed:**
+- backend/src/presentation/controllers/audit-log.controller.ts
+- backend/src/presentation/controllers/auth.controller.ts
+- backend/src/presentation/controllers/backup.controller.ts
+- backend/src/presentation/controllers/export.controller.ts
+- backend/src/presentation/controllers/file.controller.ts
+- backend/src/presentation/controllers/index.ts
+- backend/src/presentation/controllers/message.controller.ts
+- backend/src/presentation/controllers/notification.controller.ts
+- backend/src/presentation/controllers/project.controller.ts
+- backend/src/presentation/controllers/task.controller.ts
+- backend/src/presentation/controllers/user.controller.ts
+
+**Score:** 6.0/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D22-001 | 🟠 HIGH | backend/src/presentation/controllers/notification.controller.ts | 28-34 | **Notification listing is not access-controlled in the controller:** `getByUserId()` returns notifications for `req.params.userId` with no ownership/admin check. Given the routes support passing `userId` via query/params, any authenticated user can likely read another user’s notifications. | Enforce `currentUser.id === userId` unless `currentUser.role === 'ADMINISTRATOR'`. Prefer taking `userId` from the auth context (ignore userId input entirely for non-admin). |
+| D22-002 | 🟠 HIGH | backend/src/presentation/controllers/message.controller.ts | 36-46 | **Message creation trusts raw request body:** `create()` passes `req.body` directly to persistence. If the payload contains author/sender fields, this enables spoofing/impersonation unless the repository overrides them. It also doesn’t enforce project membership/permissions in the controller. | Bind sender identity server-side from the authenticated user and validate project access before creating the message. Consider DTO validation and a service-layer command (e.g., `CreateMessageCommand`). |
+| D22-003 | 🟡 MEDIUM | backend/src/presentation/controllers/{auth,export,project}.controller.ts | auth: 19-25; export: 15-33; project: 24-31 | **PrismaClient is instantiated at module scope in multiple controllers:** this encourages multiple client instances, complicates shutdown/disconnect, and makes tests/DI harder (similar to D21-003 in routes). | Centralize PrismaClient creation and inject it, or use a shared repository/service factory/DI container to reuse a single instance. |
+| D22-004 | 🟡 MEDIUM | backend/src/presentation/controllers/{project,task}.controller.ts | project: 73-78, 184-186, 307-324, 369-386; task: 57-62, 90-92, 101-104, 120-122, 184-186 | **Incorrect error semantics for auth/authorization:** controllers throw `NotFoundError` for “user not authenticated” and for permission denials. This likely produces wrong HTTP status codes (404 vs 401/403), hides failures, and complicates client UX/debugging. | Use specific errors for unauthenticated (`UnauthorizedError`) and forbidden (`ForbiddenError`) and keep `NotFoundError` for actual missing resources. |
+| D22-005 | 🟡 MEDIUM | backend/src/presentation/controllers/{file,project,message}.controller.ts | file: 107-110, 190-194; project: 312-313, 350-352, 373-402; message: 41-43 | **Debug `console.*` logging in request paths can leak sensitive data:** logs include request bodies, user IDs, file names, and error stacks. In production this increases PII/secret leakage risk and log noise. | Replace with the project logger (with levels + redaction) and gate verbose logs behind environment checks. Never log full request bodies or stacks by default. |
+| D22-006 | 🟡 MEDIUM | backend/src/presentation/controllers/file.controller.ts | 124-157 | **Dropbox path construction uses user-controlled values without sanitization:** `section` and `originalname` are interpolated into a Dropbox path. This can create unexpected folder hierarchies or overwrite/collide names (and may enable path-like injection depending on upstream). | Sanitize/normalize `section` and filenames (allowlist characters, strip separators, enforce max lengths) and consider generating server-side filenames (store original separately). |
+| D22-007 | 🟢 LOW | backend/src/presentation/controllers/{audit-log,export,project,user}.controller.ts | audit-log: 67-78, 230-233; export: 43-49; project: 88-90, 108-110, 210-211; user: 90-91, 113-114 | **Input parsing/decoding lacks validation:** several controllers use `parseInt(...)` and `new Date(...)` without validating `NaN`/Invalid Date, and use `decodeURIComponent(...)` on path params which can throw on malformed input. This can turn client errors into 500s. | Validate query/path inputs and return 400 for invalid values. Use safe decoding helpers and strict parse utilities. |
+| D22-008 | 🟢 LOW | backend/src/presentation/controllers/{auth,file,message,notification,project,task,user,index}.ts | auth: 8-12; file: 8-12; message: 8-12; notification: 8-12; project: 8-12; task: 8-12; user: 8-13; index: 8-12 | **Controller file headers are inconsistent:** many controllers still declare `@file src/presentation/...` while living under `backend/src/presentation/...`, reducing traceability and consistency in generated docs. | Standardize the file header `@file` metadata for backend controllers. |
+
+**Positive Aspects:**
+- Several controllers do include meaningful server-side permission checks (e.g., `TaskController.update/delete` and `NotificationController.markAsRead/delete`).
+- `ProjectController.getById()` performs explicit access control and includes a permissions DTO for the current user.
+- `FileController` centralizes upload/download permission checks in dedicated helpers.
+
+**Group Notes:**
+The biggest correctness/security risks are missing access control on “read” endpoints (notifications) and trusting client-provided authorship (messages). The rest is mostly maintainability and production hardening (Prisma lifecycle, error semantics, logging hygiene, and input validation).
+
+---
+
+#### Group 5.8: Backend Middlewares
+**Files Reviewed:**
+- backend/src/presentation/middlewares/error-handler.middleware.ts
+- backend/src/presentation/middlewares/index.ts
+- backend/src/presentation/middlewares/upload.middleware.ts
+
+**Score:** 7.1/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D23-001 | 🟡 MEDIUM | backend/src/presentation/middlewares/upload.middleware.ts | 61-72 | **Upload validation is extension-only and error typing is too generic:** `fileFilter()` checks `originalname` extension only and rejects by calling `cb(new Error(...))`. Attackers can spoof extensions, and generic errors often surface as 500s unless explicitly mapped. | Validate both extension and MIME type (and consider magic-byte sniffing for high-risk types). Reject with a typed `AppError`/`BadRequestError` so clients receive 400 with a consistent error shape. |
+| D23-002 | 🟡 MEDIUM | backend/src/presentation/middlewares/error-handler.middleware.ts | 27-32 | **`AppError` responses may leak internal details:** the error handler returns `error.message` and `(error as any).errors`. If `AppError` is used for internal exceptions or includes sensitive fields, this can leak implementation details to clients. | Ensure `AppError` messages are safe-for-client and gate detailed fields behind environment checks. Replace `(error as any).errors` with a typed optional field. |
+| D23-003 | 🟢 LOW | backend/src/presentation/middlewares/{error-handler,index}.ts | error-handler: 8-12; index: 8-12 | **Backend middleware headers are inconsistent:** `@file` paths still point at `src/presentation/...` while files live under `backend/src/presentation/...`, reducing traceability. | Standardize header `@file` metadata for backend middleware modules. |
+
+**Positive Aspects:**
+- Centralized `errorHandler` exists and integrates with the project logger (`logError`).
+- Upload limits are explicit (`MAX_FILE_SIZE`) and use in-memory storage suitable for streaming to Dropbox.
+
+**Group Notes:**
+This is a solid baseline; the main hardening opportunity is ensuring validation and error mapping produce predictable 4xx responses and don’t leak internals.
+
+---
+
 ## INCIDENT TODO LIST
 
 ### Critical Issues (Must Fix)
@@ -536,6 +765,9 @@ The main action items are robustness and security posture: hardening parsing (av
 - [ ] **D11-001** - Frontend repositories mis-detect Axios 404 and throw instead of returning null
 - [ ] **D13-001** - Deadline reminder scheduler creates a separate PrismaClient and never disconnects
 - [ ] **D15-001** - Frontend `generateId()` uses `Math.random()`; use crypto-safe UUIDs
+- [ ] **D18-001** - Auth store persists access/refresh tokens in `localStorage` (XSS exfiltration risk)
+- [ ] **D22-001** - Notification listing endpoint lacks ownership/admin enforcement
+- [ ] **D22-002** - Message creation trusts raw request body (spoofing/access risk)
 
 ### Medium Issues (Recommended Fix)
 - [ ] **D1-002** - TaskPriority includes `URGENT` not in requirements
@@ -577,6 +809,29 @@ The main action items are robustness and security posture: hardening parsing (av
 - [ ] **D15-002** - Backend `parsePagination()` can propagate `NaN` for invalid query params
 - [ ] **D15-003** - Backend auth roles are stringly-typed in shared request/JWT types
 - [ ] **D15-004** - Frontend `deepClone()` is unsafe beyond plain objects
+- [ ] **D16-001** - CSS imports Google Fonts via `@import` (privacy/CSP + render-blocking)
+- [ ] **D17-001** - Post-login redirect is not validated before `router.push(redirect)`
+- [ ] **D17-002** - Router project-access guard uses brittle DTO assumptions + client-side auth logic
+- [ ] **D18-002** - Auth session expiry is estimated/recomputed on reload (doesn’t use JWT `exp`/server truth)
+- [ ] **D18-003** - Project store permissions rely on `any` + hidden `creatorId` field (DTO drift risk)
+- [ ] **D18-004** - Project store summary mapping creates N+1 backend request pattern
+- [ ] **D18-005** - Message store pagination/read-state are inconsistent with backend operations
+- [ ] **D18-006** - Notification store localStorage persistence isn’t user-scoped and doesn’t hydrate on init
+- [ ] **D19-001** - useAuth pushes unvalidated `redirect` query and duplicates redirect mechanisms
+- [ ] **D19-002** - File upload composable relies on `any` + inconsistent response envelope extraction
+- [ ] **D20-001** - Backend CORS config must be strict allowlist when credentials are enabled
+- [ ] **D20-002** - Backend morgan `dev` logging is not environment-gated
+- [ ] **D20-003** - Backend app bootstrap lacks visible rate limiting/brute-force protections
+- [ ] **D21-001** - Backend routes don’t express authorization policy consistently (auth-only)
+- [ ] **D21-002** - Backend routes mutate `req.params`/`req.query` to reuse controllers
+- [ ] **D21-003** - Audit log router instantiates `PrismaClient` in the module
+- [ ] **D22-003** - Controllers instantiate `PrismaClient` at module scope
+- [ ] **D22-004** - Controllers throw `NotFoundError` for auth/authz failures (wrong status)
+- [ ] **D22-005** - Controllers contain verbose `console.*` logs with request bodies/stacks
+- [ ] **D22-006** - File upload path uses unsanitized section/filename in Dropbox path
+- [ ] **D23-001** - Upload middleware validates by extension only and throws generic errors
+- [ ] **D23-002** - Error handler may leak `AppError` message/details to clients
+
 
 ### Low Issues (Optional Fix)
 - [ ] **D2-003** - Backend GeoCoordinates should reject NaN/Infinity
@@ -600,6 +855,17 @@ The main action items are robustness and security posture: hardening parsing (av
 - [ ] **D14-005** - Backend constants header `@file` path mismatch
 - [ ] **D15-005** - Backend logger console formatter can throw on circular metadata
 - [ ] **D15-006** - Backend shared file headers have repeated `@file` path mismatches
+- [ ] **D16-002** - High-contrast override uses hard-coded `#000` instead of tokens
+- [ ] **D16-003** - Global `*` reset includes margin/padding zero (potential side-effects)
+- [ ] **D17-003** - Router uses `console.*` in core navigation/guard paths
+- [ ] **D18-007** - Stores contain noisy `console.*` debug logs and leave unused WebSocket unsubscribe
+- [ ] **D19-003** - Tasks composable duplicates transition semantics and uses broad “pending” counter
+- [ ] **D19-004** - Composable permission checks are UX-only; avoid treating them as authorization
+- [ ] **D20-004** - Backend app bootstrap header `@file` path mismatch
+- [ ] **D21-004** - Backend route module headers use wrong `@file` paths
+- [ ] **D22-007** - Controllers parse query/path inputs without strict validation
+- [ ] **D22-008** - Backend controller module headers use wrong `@file` paths
+- [ ] **D23-003** - Backend middleware module headers use wrong `@file` paths
 
 ---
 
@@ -626,13 +892,23 @@ The main action items are robustness and security posture: hardening parsing (av
 - Some backend database errors include raw underlying message text, which can leak internals if surfaced directly in API responses (D11-006).
 - Backend JWT secrets currently have hard-coded defaults, which is a critical “fail-open” security posture if env vars are missing (D14-001).
 - Frontend shared ID generation uses `Math.random()` despite claiming UUID v4 compliance; this is not appropriate for security-sensitive identifiers (D15-001).
+- Frontend global styles import Google Fonts via third-party URL, which can complicate CSP/privacy requirements depending on deployment constraints (D16-001).
+- Router post-login redirect handling does not validate the redirect target, which can cause unexpected navigation and should be hardened (D17-001).
+- Auth store persists access/refresh tokens in `localStorage`, increasing XSS blast radius (D18-001).
+- Notification store persists notifications in `localStorage` under a global key, which can leak state across users on shared devices (D18-006).
+- Backend app bootstrap should harden CORS + production logging and add rate limiting (D20-001/D20-002/D20-003).
+- Backend routes should make authorization policy explicit (D21-001).
+- Backend controllers include at least one clear access-control gap (notifications) and trust client-provided message payloads (D22-001/D22-002).
+- Backend controllers log request bodies/stacks via `console.*`, increasing leakage risk (D22-005).
+- Upload middleware should validate beyond extensions and error handler responses should avoid leaking internals (D23-001/D23-002).
 - Additional security review will be covered in Infrastructure/Auth/HTTP/WebSocket groups.
 
 ### Performance Analysis
 **Issues:**
-- Not assessed yet (will be covered in Infrastructure/HTTP/WebSocket + large components).
+- Some client-side denormalization patterns can trigger N+1 request cascades (e.g., project summary mapping fetching client/tasks/unread per project) and should be addressed with backend aggregation/batching (D18-004).
+
 
 ---
 
-**Report Generated:** 2026-03-04
+**Report Generated:** 2026-03-05
 **Next Review Scheduled:** After Phase 2 (Application) completes
