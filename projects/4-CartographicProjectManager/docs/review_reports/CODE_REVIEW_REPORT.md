@@ -4,8 +4,8 @@
 **Review Date:** March 4, 2026
 **Reviewer:** GitHub Copilot Agent
 **Codebase Version:** dd8d063
-**Total Files Reviewed:** 102
-**Total Groups Reviewed:** 14
+**Total Files Reviewed:** 108
+**Total Groups Reviewed:** 15
 
 ---
 
@@ -18,10 +18,10 @@ Initial review (Domain enumerations + entities) shows strong documentation disci
 
 **Statistics (so far):**
 - Critical Issues: 4
-- High Issues: 14
-- Medium Issues: 36
-- Low Issues: 19
-- Total Issues: 73
+- High Issues: 15
+- Medium Issues: 39
+- Low Issues: 21
+- Total Issues: 79
 
 **Recommendation:**
 - [ ] ✅ APPROVED - Ready for production
@@ -481,6 +481,37 @@ This group highlights a recurring theme: configuration that spans frontend + bac
 
 ---
 
+#### Group 4.2: Utilities
+**Files Reviewed:**
+- src/shared/utils.ts
+- backend/src/shared/utils.ts
+- backend/src/shared/errors.ts
+- backend/src/shared/logger.ts
+- backend/src/shared/types.ts
+- backend/src/shared/index.ts
+
+**Score:** 6.1/10
+
+**Issues Found:**
+| ID | Severity | File | Line(s) | Description | Suggested Fix |
+|----|----------|------|---------|-------------|---------------|
+| D15-001 | 🟠 HIGH | src/shared/utils.ts | 41-46 | **Insecure/incorrect UUID generation:** `generateId()` claims “UUID v4 compliant” but uses `Math.random()`, which is not cryptographically secure and is not appropriate for security-sensitive identifiers (e.g., reset tokens, invitation links). It also increases collision risk under load. | Use `crypto.randomUUID()` (supported in modern browsers) or `crypto.getRandomValues`-based UUID generation. If this ID is used across layers, standardize on UUIDs generated server-side (or via a shared `IdGenerator` abstraction). |
+| D15-002 | 🟡 MEDIUM | backend/src/shared/utils.ts | 113-128 | **Pagination parsing can produce `NaN`:** `parsePagination()` uses `parseInt()` and then `Math.max/Math.min`. If `page` or `limit` are non-numeric (e.g., `?page=abc`), `parseInt` returns `NaN` and the current logic propagates `NaN` into `skip`, breaking queries and responses. | Guard with `Number.isFinite` and fall back to defaults on `NaN`. Consider centralized query validation (Zod) and return 400 on invalid pagination inputs. |
+| D15-003 | 🟡 MEDIUM | backend/src/shared/types.ts | 64-86 | **Stringly-typed auth roles in shared types:** `AuthenticatedUser.role` and `JwtPayload.role` are `string`, which reintroduces the same “typos compile” risk seen in middleware authorization. This increases drift risk between backend role constants and authorization checks. | Type roles as a shared enum/union (e.g., `UserRole` from Prisma or a backend domain enum) and use it consistently across auth middleware, JWT payloads, and request typing. |
+| D15-004 | 🟡 MEDIUM | src/shared/utils.ts | 1059-1076 | **`deepClone()` is unsafe for many real-world objects:** the implementation doesn’t handle circular references and will silently strip prototypes for class instances (and won’t correctly clone Maps/Sets/Files/Blobs). This can cause subtle runtime bugs if used on anything other than plain JSON-like objects. | Prefer `structuredClone()` where available, or clearly document constraints (plain objects/arrays/dates only). If you need broad cloning, use a well-tested library or introduce specialized clone utilities per domain shape. |
+| D15-005 | 🟢 LOW | backend/src/shared/logger.ts | 31-37 | **Console formatting can throw on circular metadata:** the development `consoleFormat` uses `JSON.stringify(metadata)`, which will throw if `meta` contains circular references (common with request objects). This can break logging when debugging. | Use a safe stringifier (e.g., `safe-stable-stringify`) or log metadata via Winston formats that handle complex objects without throwing. |
+| D15-006 | 🟢 LOW | backend/src/shared/{utils,errors,logger,types,index}.ts | 9-12 | **Repeated header metadata mismatch:** `@file` paths point to `src/shared/*.ts` even though these are under `backend/src/shared/*.ts`. This reduces traceability in generated docs and audits. | Update `@file` entries to the correct relative paths (e.g., `backend/src/shared/utils.ts`). |
+
+**Positive Aspects:**
+- Backend response helpers (`sendSuccess`, `sendError`, `sendPaginated`) establish a consistent API envelope and are easy to reuse.
+- Backend error taxonomy (`AppError` and subclasses) is straightforward and supports operational/non-operational distinction.
+- Frontend utilities are well-documented and organized by category, which improves discoverability.
+
+**Group Notes:**
+The main action items are robustness and security posture: hardening parsing (avoid `NaN` propagation), tightening role typing, and ensuring ID generation is appropriate for any security-sensitive workflows.
+
+---
+
 ## INCIDENT TODO LIST
 
 ### Critical Issues (Must Fix)
@@ -504,6 +535,7 @@ This group highlights a recurring theme: configuration that spans frontend + bac
 - [ ] **D10-002** - Frontend Dropbox service uses access token client-side (secret exposure risk)
 - [ ] **D11-001** - Frontend repositories mis-detect Axios 404 and throw instead of returning null
 - [ ] **D13-001** - Deadline reminder scheduler creates a separate PrismaClient and never disconnects
+- [ ] **D15-001** - Frontend `generateId()` uses `Math.random()`; use crypto-safe UUIDs
 
 ### Medium Issues (Recommended Fix)
 - [ ] **D1-002** - TaskPriority includes `URGENT` not in requirements
@@ -542,6 +574,9 @@ This group highlights a recurring theme: configuration that spans frontend + bac
 - [ ] **D13-003** - Auth middleware role authorization is stringly-typed
 - [ ] **D14-002** - Frontend/backend upload constraints diverge (size + MIME/type lists)
 - [ ] **D14-003** - Backend config defaults fail open (empty DB URL, debug logging)
+- [ ] **D15-002** - Backend `parsePagination()` can propagate `NaN` for invalid query params
+- [ ] **D15-003** - Backend auth roles are stringly-typed in shared request/JWT types
+- [ ] **D15-004** - Frontend `deepClone()` is unsafe beyond plain objects
 
 ### Low Issues (Optional Fix)
 - [ ] **D2-003** - Backend GeoCoordinates should reject NaN/Infinity
@@ -563,6 +598,8 @@ This group highlights a recurring theme: configuration that spans frontend + bac
 - [ ] **D13-005** - Optional auth swallows invalid tokens silently
 - [ ] **D14-004** - Backend constants call `dotenv.config()` at import time
 - [ ] **D14-005** - Backend constants header `@file` path mismatch
+- [ ] **D15-005** - Backend logger console formatter can throw on circular metadata
+- [ ] **D15-006** - Backend shared file headers have repeated `@file` path mismatches
 
 ---
 
@@ -588,6 +625,7 @@ This group highlights a recurring theme: configuration that spans frontend + bac
 - Frontend vendor gateways embed/consume third-party secrets (Twilio/Dropbox), which is a critical credential exposure risk (D10-001/D10-002).
 - Some backend database errors include raw underlying message text, which can leak internals if surfaced directly in API responses (D11-006).
 - Backend JWT secrets currently have hard-coded defaults, which is a critical “fail-open” security posture if env vars are missing (D14-001).
+- Frontend shared ID generation uses `Math.random()` despite claiming UUID v4 compliance; this is not appropriate for security-sensitive identifiers (D15-001).
 - Additional security review will be covered in Infrastructure/Auth/HTTP/WebSocket groups.
 
 ### Performance Analysis
