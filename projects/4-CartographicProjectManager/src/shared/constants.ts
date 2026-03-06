@@ -268,7 +268,6 @@ export const FILE = {
  * Notification-related constants
  */
 export const NOTIFICATION = {
-  WHATSAPP_RATE_LIMIT_MINUTES: 30,
   RETENTION_DAYS: 30,
   MAX_TITLE_LENGTH: 100,
   MAX_MESSAGE_LENGTH: 500,

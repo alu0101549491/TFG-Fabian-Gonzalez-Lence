@@ -29,7 +29,6 @@ interface NotificationApiResponse {
   relatedEntityId: string | null;
   createdAt: string;
   isRead: boolean;
-  sentViaWhatsApp: boolean;
 }
 
 /**
@@ -259,7 +258,6 @@ export class NotificationRepository implements INotificationRepository {
       relatedEntityId: data.relatedEntityId,
       createdAt: new Date(data.createdAt),
       isRead: data.isRead,
-      sentViaWhatsApp: data.sentViaWhatsApp,
     });
   }
 
@@ -281,7 +279,6 @@ export class NotificationRepository implements INotificationRepository {
       relatedEntityId: notification.relatedEntityId,
       createdAt: notification.createdAt.toISOString(),
       isRead: notification.isRead,
-      sentViaWhatsApp: notification.sentViaWhatsApp,
     };
   }
 

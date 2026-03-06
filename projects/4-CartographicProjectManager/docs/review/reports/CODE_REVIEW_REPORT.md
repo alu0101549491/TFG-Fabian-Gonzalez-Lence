@@ -14,7 +14,7 @@
 **Overall Codebase Score:** TBD/10
 
 **Summary:**
-Initial review (Domain enumerations + entities) shows strong documentation discipline and helpful type-guard utilities, but also reveals a recurring architecture smell: Domain types are currently carrying Presentation/Infrastructure concerns (UI mappings in enums, and JSON serialization + WhatsApp/Dropbox coupling in entities), which undermines Clean Architecture boundaries and increases coupling.
+Initial review (Domain enumerations + entities) shows strong documentation discipline and helpful type-guard utilities, but also reveals a recurring architecture smell: Domain types are currently carrying Presentation/Infrastructure concerns (UI mappings in enums, and JSON serialization + Dropbox coupling in entities), which undermines Clean Architecture boundaries and increases coupling.
 
 **Statistics (so far):**
 - Critical Issues: 5
@@ -106,7 +106,6 @@ The main risk is consistency drift between frontend/backend domain primitives. I
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
 | D3-001 | 🟠 HIGH | src/domain/entities/*.ts | Multiple | **Layer boundary violation:** Entities implement `toJSON()` methods that shape API-facing payloads (ISO string dates, nested serialization). This couples Domain to transport concerns and forces entities to “know” response formats. | Remove `toJSON()` from domain entities. Introduce explicit mappers/DTO assemblers in Application/Presentation (e.g., `*DtoMapper`) responsible for date formatting and payload shape. |
-| D3-002 | 🟠 HIGH | src/domain/entities/notification.ts | 144-146 | **Correctness + coupling:** `Notification.shouldSendViaWhatsApp()` references `user.whatsappEnabled`, but `User` does not expose that property. This is also an Infrastructure-specific channel concern leaking into Domain. | Move channel-routing decisions to an Application service (e.g., `NotificationDeliveryPolicy`) based on user preferences stored as a dedicated VO/setting. Keep Domain notification channel-agnostic (or model channels as an enum without vendor-specific naming). |
 | D3-003 | 🟡 MEDIUM | src/domain/entities/{notification,message,permission,task-history}.ts | Multiple | **Non-deterministic ID generation inside Domain:** factory methods build IDs using `Date.now()` + `Math.random()` (and legacy `substr`) and repeat that pattern across multiple entities. This harms testability and consistency. | Generate IDs in Application (inject an `IdGenerator`/UUID provider) and pass IDs into entities, or centralize ID creation behind a domain service interface. |
 | D3-004 | 🟡 MEDIUM | src/domain/entities/{project,file}.ts | Multiple | **Vendor coupling + type-safety risk:** multiple entities encode Dropbox-specific naming (`dropboxFolderId`, `dropboxPath`). Additionally, `ProjectProps.dropboxFolderId` is optional but stored as required `string`, which can become `undefined` at runtime. | Rename to vendor-agnostic concepts (e.g., `externalFolderId`, `storagePath`) and keep Dropbox semantics in Infrastructure adapters. Make types consistent (`string | null`/`undefined`) and default safely in constructors. |
 | D3-005 | 🟡 MEDIUM | src/domain/entities/user.ts | 150-226 | **Inconsistent audit timestamp updates:** Several setters mutate entity state without calling a `touchUpdatedAt()` equivalent (e.g., `firstName`, `lastName`, `role`, `phone`, `isActive`). This makes `updatedAt` unreliable for sync and UI refresh logic. | Add a single `touchUpdatedAt()` helper and call it consistently in mutating setters, or remove `updatedAt` from entity and manage it at persistence boundaries (Prisma). |
@@ -123,7 +122,7 @@ The main risk is consistency drift between frontend/backend domain primitives. I
 - `Permission` uses defensive copying for rights/section access and consistently updates `updatedAt` via `touchUpdatedAt()`.
 
 **Group Notes:**
-These entities are drifting toward an “anemic domain + DTO” hybrid: they contain domain rules, but also embed serialization and integration details (WhatsApp, Dropbox). Bringing DTO mapping and delivery/persistence decisions back to the Application/Infrastructure layers would improve adherence to the Clean Architecture described in `docs/ARCHITECTURE.md`.
+These entities are drifting toward an “anemic domain + DTO” hybrid: they contain domain rules, but also embed serialization and integration details (Dropbox). Bringing DTO mapping and delivery/persistence decisions back to the Application/Infrastructure layers would improve adherence to the Clean Architecture described in `docs/ARCHITECTURE.md`.
 
 ---
 
@@ -190,7 +189,7 @@ The frontend repository layer is structurally reasonable, but it currently has a
 |----|----------|------|---------|-------------|---------------|
 | D5-001 | 🟠 HIGH | src/application/dto/*.dto.ts | Multiple (e.g., auth-result.dto.ts:64-110, project-data.dto.ts:42-124, task-data.dto.ts:32-156, export-result.dto.ts:72-121) | **Transport typing mismatch:** many DTOs use `Date` fields, but these DTOs appear to model API payloads (JSON), where dates are typically serialized as strings. This makes types lie at runtime and encourages scattered parsing/formatting logic. | Use explicit transport types at the API boundary (e.g., ISO-8601 `string` or an `IsoDateString` branded type). Parse into `Date` in a single adapter/mapping layer, and keep UI/application models separate from transport DTOs. |
 | D5-002 | 🟡 MEDIUM | src/application/dto/{project-data,project-details,calendar-data,task-data}.dto.ts | project-data.dto.ts:116-120, project-details.dto.ts:227-231, calendar-data.dto.ts:36-40, task-data.dto.ts:126-136 | **DTOs include UI/view-model concerns:** fields like `statusColor`, `isOverdue`, `daysUntilDelivery`, and multiple `can*` permission flags are presentation-oriented. This blurs the boundary between transport contracts and UI view models, and can lead to duplicated or inconsistent business rules. | If these are server-computed read-model fields, explicitly treat them as query/read DTOs and keep them separate from core “entity DTOs”. Otherwise, compute them in Presentation (or a dedicated view-model layer) from canonical fields. |
-| D5-003 | 🟡 MEDIUM | src/application/dto/{project-data,project-details,file-data}.dto.ts | project-data.dto.ts:46, project-details.dto.ts:57-59, file-data.dto.ts:90, notification-data.dto.ts:86 | **Vendor/channel coupling in API contracts:** DTOs expose Dropbox- and WhatsApp-specific naming and errors (`dropboxFolderId`, `dropboxFolderUrl`, `dropboxPath`, `DROPBOX_ERROR`, `whatsAppEnabled`). This bakes Infrastructure/vendor decisions into the application contract and makes migrations harder. | Prefer vendor-agnostic terms (`storageFolderId`, `storagePath`, `messagingEnabled`) and keep vendor naming in Infrastructure adapters. If the contract must expose Dropbox/WhatsApp, document it explicitly and centralize mapping to avoid bleed into Domain (see D3-002, D3-004). |
+| D5-003 | 🟡 MEDIUM | src/application/dto/{project-data,project-details,file-data}.dto.ts | project-data.dto.ts:46, project-details.dto.ts:57-59, file-data.dto.ts:90 | **Vendor coupling in API contracts:** DTOs expose Dropbox-specific naming and errors (`dropboxFolderId`, `dropboxFolderUrl`, `dropboxPath`, `DROPBOX_ERROR`). This bakes Infrastructure/vendor decisions into the application contract and makes migrations harder. | Prefer vendor-agnostic terms (`storageFolderId`, `storagePath`) and keep vendor naming in Infrastructure adapters. If the contract must expose Dropbox, document it explicitly and centralize mapping to avoid bleed into Domain (see D3-004). |
 | D5-004 | 🟡 MEDIUM | src/application/dto/{calendar-data,task-data}.dto.ts | calendar-data.dto.ts:38, task-data.dto.ts:142-156 | **Weakly typed string fields reduce safety:** `CalendarItemDto.statusColor` is `string` (instead of a constrained union like `ProjectStatusColor`), and `TaskHistoryEntryDto.action` is a free-form `string`. These are easy sources of drift and typos. | Tighten these to unions/enums (e.g., reuse `ProjectStatusColor`; introduce a `TaskHistoryAction` union/enum) and keep conversions in mappers/adapters. |
 | D5-005 | 🟢 LOW | src/application/dto/{auth-result,validation-result}.dto.ts | auth-result.dto.ts:153-194, validation-result.dto.ts:136-195 | **Mixed responsibilities inside “DTO” modules:** these files define DTO types but also include factory/helper functions. This is not inherently wrong, but it can make it harder to keep DTOs as pure transport contracts and can encourage more business logic to accumulate in the DTO folder. | Consider moving factories/helpers to `src/application/` utilities (e.g., `src/application/validation/*`) or to a `dto-helpers` module, keeping DTO files primarily declarative. |
 | D5-006 | 🟢 LOW | src/application/dto/{auth-result,user-data}.dto.ts | auth-result.dto.ts:38-69, user-data.dto.ts:1-35 | **DTO duplication + documentation inconsistency:** `auth-result.dto.ts` defines a `UserDto` that overlaps with `UserDataDto`/`UserSummaryDto` in `user-data.dto.ts`. Additionally, `user-data.dto.ts`’s header metadata is inconsistent with the project standard (`@file` path format, missing `typescripttutorial` reference). | Consolidate shared user DTO shapes (or clearly distinguish “auth user payload” vs “admin user payload”) to avoid divergence. Align file headers to the project’s documentation template for consistency. |
@@ -223,7 +222,7 @@ The primary risk in this group is boundary clarity: many of these types look lik
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
 | D6-001 | 🟡 MEDIUM | src/application/interfaces/*.interface.ts | Multiple (e.g., authentication-service.interface.ts:32-33, file-service.interface.ts:38-41, backup-service.interface.ts:37-38) | **Error contract is documentation-only:** interfaces list many `@throws {SomeError}` tags, but these error types aren’t part of the interface type system (and may not even exist as concrete classes in this layer). Consumers can’t reliably handle errors without inspecting implementation details. | Define and export a small, shared Application error taxonomy (typed error classes or discriminated unions), or return a typed `Result<T, E>` shape for service methods so failures are explicit and consistent. |
-| D6-002 | 🟡 MEDIUM | src/application/interfaces/{file-service,notification-service}.interface.ts | file-service.interface.ts:10,29,41,69; notification-service.interface.ts:10,26,130-146 | **Infrastructure/vendor coupling leaks into Application interfaces:** the interfaces explicitly encode Dropbox and WhatsApp semantics. This tightens coupling and makes it harder to swap providers or run the application without those integrations. | Prefer vendor-agnostic “storage” and “messaging channel” abstractions at the interface boundary; keep vendor naming in Infrastructure adapters (consistent with Domain findings D3-002/D3-004 and DTO findings D5-003). |
+| D6-002 | 🟡 MEDIUM | src/application/interfaces/file-service.interface.ts | 10,29,41,69 | **Infrastructure/vendor coupling leaks into Application interfaces:** the interface explicitly encodes Dropbox semantics. This tightens coupling and makes it harder to swap providers or run the application without that integration. | Prefer a vendor-agnostic “storage” abstraction at the interface boundary; keep vendor naming in Infrastructure adapters (consistent with Domain findings D3-004 and DTO findings D5-003). |
 | D6-003 | 🟡 MEDIUM | src/application/interfaces/authorization-service.interface.ts | 15-223 (notably 203-208) | **Authorization interface is very “fat” and returns a non-transport-friendly type:** `IAuthorizationService` exposes many granular methods and returns `Set<AccessRight>` for project permissions. This surface area is hard to maintain and `Set` is awkward across JSON boundaries. | Consider a single `authorize(action, context)`/policy-based API (or split into smaller, bounded interfaces). Return `AccessRight[]` instead of `Set` at boundaries, converting internally if needed. |
 | D6-004 | 🟢 LOW | src/application/interfaces/project-service.interface.ts | 135-136 | **Date-typed parameters at likely HTTP boundary:** `getProjectsForCalendar(userId, startDate: Date, endDate: Date)` assumes `Date` instances. If implemented via HTTP, these will be serialized to strings and need centralized parsing anyway. | Accept ISO strings in service interface params (transport-safe) or enforce a single adapter layer that converts `Date` ↔ string consistently before API calls (align with D5-001). |
 
@@ -335,7 +334,6 @@ The backend join-room authorization gap (D9-001) is the highest risk: it undermi
 #### Group 3.3: External Services
 **Files Reviewed:**
 - src/infrastructure/external-services/dropbox.service.ts
-- src/infrastructure/external-services/whatsapp.gateway.ts
 - backend/src/infrastructure/external-services/dropbox.service.ts
 
 **Score:** 4.6/10
@@ -343,7 +341,6 @@ The backend join-room authorization gap (D9-001) is the highest risk: it undermi
 **Issues Found:**
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
-| D10-001 | 🔴 CRITICAL | src/infrastructure/external-services/whatsapp.gateway.ts | 44-53, 608-645 | **Client-side Twilio credentials exposure:** the frontend gateway contains `accountSid` + `authToken` and makes direct Basic-authenticated requests to Twilio. Any browser user can exfiltrate these secrets, send messages on your behalf, and burn quota/cost. This is not safe to run in a client bundle. | Move Twilio/WhatsApp sending to the backend only. Expose a backend endpoint (or service) that accepts a minimal, validated request and performs the Twilio call server-side. Remove Twilio credentials from all frontend config/build artifacts. |
 | D10-002 | 🟠 HIGH | src/infrastructure/external-services/dropbox.service.ts | 70-79, 812-820, 846-854 | **Client-side Dropbox access token usage:** the frontend Dropbox integration stores and uses an access token directly for API/content operations. If this token is app-scoped (not per-user OAuth), it is effectively a shared secret and is recoverable by any user via DevTools/network logs. | Prefer backend-mediated Dropbox operations (upload/download via backend, pre-signed temporary links, or a scoped per-user OAuth flow). Never ship a long-lived app Dropbox token in the frontend. |
 | D10-003 | 🟡 MEDIUM | src/infrastructure/external-services/dropbox.service.ts | 1054-1065 | **Metadata mapping can produce invalid dates:** `mapToFileMetadata()` blindly builds `modifiedAt` from `server_modified` even for folders (or entries lacking that field), producing `Invalid Date` and potentially breaking sorting/UI display. | Branch by entry type (`.tag === 'folder'`) and set `modifiedAt` to `null`/`undefined` or a safe default; validate required fields before casting. |
 | D10-004 | 🟡 MEDIUM | backend/src/infrastructure/external-services/dropbox.service.ts | 362-376, 560-568 | **Over-broad error swallowing hides real failures:** `createFolder()` treats any `'.tag' === 'path'` error as “already exists”, and `pathExists()` returns `false` for all errors (including permission/config issues). This can mask misconfiguration and lead to silent data loss. | Narrow the “already exists” check to the specific conflict/exists case (Dropbox SDK provides structured tags). For `pathExists()`, only return `false` on explicit “not found”; otherwise rethrow/log. |
@@ -352,10 +349,9 @@ The backend join-room authorization gap (D9-001) is the highest risk: it undermi
 **Positive Aspects:**
 - Dropbox implementations include chunked upload support and centralized retry/refresh patterns.
 - Frontend Dropbox service has clear separation between API vs content endpoints.
-- WhatsApp gateway provides a clean interface and response shape for upstream consumers.
 
 **Group Notes:**
-The architecture intent is clear, but the current placement of vendor API calls in the frontend (Twilio/WhatsApp, and likely Dropbox) creates major security and compliance risk. These integrations should be backend-first, with the frontend calling a narrow internal API.
+The architecture intent is clear, but the current placement of vendor API calls in the frontend (and likely Dropbox) creates major security and compliance risk. These integrations should be backend-first, with the frontend calling a narrow internal API.
 
 ---
 
@@ -1111,7 +1107,6 @@ The main correctness/perf risk is duplicated WebSocket connection initiation. Th
 **Issues Found:**
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
-| D34-001 | 🟠 HIGH | src/infrastructure/external-services/index.ts | 104-117 | **Incorrect type imports likely break builds:** the file re-imports `WhatsAppConfig` / `IWhatsAppGateway` from `./dropbox.service` instead of `./whatsapp.gateway`, which is almost certainly wrong and can cause type-check/runtime issues depending on TS settings. | Import WhatsApp-related types from `./whatsapp.gateway` and keep the Dropbox-only types imported from `./dropbox.service`. If re-importing is only for “convenience”, consider removing the re-import block entirely and rely on the existing named exports. |
 | D34-002 | 🟡 MEDIUM | src/presentation/stores/index.ts | 73-132 | **“Index” module contains non-barrel, weakly-typed WebSocket wiring:** `setupStoreWebSocketListeners(socketHandler?: any)` uses `any`, optional-chaining `.on?.(...)`, and stringly-typed event names. This is easy to drift from the actual WebSocket API (which elsewhere exposes typed `onNotification`, `onMessage`, etc.) and can ship as dead or incorrect integration code. | Either remove this helper until a real connection-manager abstraction exists, or type it against the actual WebSocket handler interface and use the typed subscription methods (avoid `.on` + string event names). Gate logs behind `import.meta.env.DEV` if kept. |
 | D34-003 | 🟢 LOW | src/{application,domain,presentation,infrastructure}/**/index.ts | Multiple | **File header template is inconsistent across barrel exports:** several frontend barrel files start with an `@module` doc block rather than the standard University/TFG header used across most of the codebase, reducing documentation consistency and making automated auditing harder. | Standardize index/barrel files to the same header template (including correct `@file` paths) or formally document that barrel exports may use a smaller header and enforce it consistently. |
 | D34-004 | 🟢 LOW | backend/src/**/index.ts | Multiple | **Backend barrel file header metadata often uses wrong `@file` paths:** multiple backend index modules declare `@file src/...` even though the real path is `backend/src/...`, continuing the existing header-path mismatch pattern. | Align `@file` to the real repo-relative path (e.g., `backend/src/shared/index.ts`) for consistency and easier navigation/auditing. |
@@ -1122,7 +1117,7 @@ The main correctness/perf risk is duplicated WebSocket connection initiation. Th
 - Backend indexes consistently use explicit `.js` extensions, which is compatible with Node ESM + TS `NodeNext`-style setups.
 
 **Group Notes:**
-The main “must-fix” item is the incorrect import source in the frontend external-services index (D34-001). The other findings are primarily about keeping barrel exports purely declarative and keeping header metadata consistent.
+The findings are primarily about keeping barrel exports purely declarative and keeping header metadata consistent.
 
 ---
 
@@ -1232,8 +1227,6 @@ The immediate priority is incident response for the committed Dropbox credential
 - backend/prisma/migrations/migration_lock.toml
 - backend/prisma/migrations/20260224161201_/migration.sql
 - backend/prisma/migrations/20260301133940_add_read_by_user_ids/migration.sql
-- backend/prisma/migrations/20260301200605_add_whatsapp_notifications/migration.sql
-- backend/prisma/migrations/20260302170957_remove_whatsapp_integration/migration.sql
 - backend/prisma/migrations/20260302172347_add_audit_log_system/migration.sql
 - backend/prisma/migrations/20260304113557_add_message_file_ids/migration.sql
 
@@ -1242,7 +1235,6 @@ The immediate priority is incident response for the committed Dropbox credential
 **Issues Found:**
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
-| D38-001 | 🟠 HIGH | backend/prisma/seed.ts / backend/prisma/schema.prisma / backend/prisma/migrations/* | seed.ts:50, 61, 72; schema.prisma:1-10; migration.sql:33; remove_whatsapp_integration:19 | **Seed script is out of sync with schema/migrations:** `seed.ts` sets `whatsappEnabled`, but the current `schema.prisma` has no `User.whatsappEnabled` field, and the migrations show it was introduced then later dropped. This will cause the dev seed to fail at runtime/compile time and is a sign of tooling drift. | Update `seed.ts` to match the current schema (remove `whatsappEnabled` usage and any WhatsApp-specific user fields). Consider adding a lightweight CI check to run `prisma validate` and (optionally) `prisma db push --accept-data-loss` against a disposable DB to catch drift early. |
 | D38-002 | 🟠 HIGH | backend/prisma/seed-production.ts | 36, 52-55 | **Production seeding uses a predictable default admin password and prints it:** hashing + emitting a fixed password (`admin123`) is an avoidable security risk, especially given earlier findings about secrets/config hardening. | Require an initial admin password via env var (fail fast if missing), or generate a strong random password and output it once to a secure channel (or store a one-time reset token). Do not log credentials in normal startup logs. |
 | D38-003 | 🟡 MEDIUM | backend/prisma/seed.ts | 26-35 | **Destructive seed without environment guard:** the dev seed clears all tables via `deleteMany()` calls. If this script is accidentally executed against a non-dev database, it can cause full data loss. | Add a hard guard (e.g., require `NODE_ENV === 'development'` and/or explicit `SEED_CONFIRM=I_UNDERSTAND`) and validate `DATABASE_URL` host/DB name before deleting. Keep production seeding in a separate script (already present) and ensure deploy pipelines never call the dev seed. |
 | D38-004 | 🟡 MEDIUM | backend/prisma/schema.prisma / backend/prisma/migrations/* | schema.prisma:289-290; add_read_by_user_ids:2; add_message_file_ids:2 | **Denormalized array fields for references:** `Message.readByUserIds` and `Message.fileIds` are `String[]` stored inline. This makes referential integrity impossible (no FK to `users`/`files`), allows duplicates, and can become inefficient for large rooms/messages or “read receipts” queries. | Prefer join tables (`MessageReadReceipt`, `MessageFile`) with proper unique constraints and indexes. If keeping arrays for simplicity, enforce de-duplication in application code and consider GIN indexes / query patterns to avoid full scans. |
@@ -1314,7 +1306,6 @@ Most issues are “ops safety” rather than app logic: avoid printing/embedding
 - docs/tasks/TASK-PERMISSION-CHANGES.md
 - docs/testing/DEBUGGING-AUTH-ERRORS.md
 - docs/testing/TESTING-FILE-UPLOAD-UI.md
-- docs/tasks/WHATSAPP-REMOVAL-COMPLETE.md
 - docs/tasks/TODO-STATUS.md
 - docs/development/INTEGRATION.md
 - e2e/README.md
@@ -1330,7 +1321,6 @@ Most issues are “ops safety” rather than app logic: avoid printing/embedding
 | D40-004 | 🟠 HIGH | docs/testing/TESTING-FILE-UPLOAD-UI.md / docs/development/DROPBOX-INTEGRATION.md | TESTING-FILE-UPLOAD-UI.md:179-183; DROPBOX-INTEGRATION.md:105-108 | **Docs include token-like secret material and encourage client-side secrets:** one doc shows a Dropbox token prefix (`sl.u...`) and another suggests using `VITE_DROPBOX_ACCESS_TOKEN` in frontend env. Both increase the risk of credential exposure (repos, screenshots, GitHub Pages builds) and undermine the “never commit tokens” guidance. | Replace any token-like strings with placeholders, and remove/strongly discourage any client-side Dropbox access-token configuration. Prefer server-side Dropbox integration exclusively and platform secret managers for deployment. Treat any previously shared token-like strings as potentially compromised and rotate credentials. |
 | D40-005 | 🟡 MEDIUM | docs/testing/DEBUGGING-AUTH-ERRORS.md | 135-148 | **Health check endpoint mismatch:** debugging guide uses `curl http://localhost:3000/health`, but the backend exposes health under the API prefix (`/api/v1/health`). | Update debugging instructions to call the real endpoint and keep it consistent across docs (`/api/v1/health`). |
 | D40-006 | 🟡 MEDIUM | backend/SETUP.md / docs/testing/TESTING-FILE-UPLOAD-UI.md | backend/SETUP.md:105-107; TESTING-FILE-UPLOAD-UI.md:188-190 | **File upload endpoint mismatch:** backend setup guide documents `POST /api/v1/files` for upload, while other docs reference `POST /api/v1/files/upload`. Endpoint drift makes setup/testing error-prone. | Confirm the real API route and align docs accordingly (prefer consistent `POST /api/v1/files/upload` if that’s the implemented route). |
-| D40-007 | 🟡 MEDIUM | README.md / docs/development/ARCHITECTURE.md / docs/tasks/WHATSAPP-REMOVAL-COMPLETE.md | README.md:22-23; ARCHITECTURE.md:28, 77-83; WHATSAPP-REMOVAL-COMPLETE.md:1-3 | **WhatsApp feature documentation drift:** README and architecture docs still present WhatsApp as an active integration, while the project notes state WhatsApp integration has been removed. This can mislead reviewers/users and complicate future maintenance expectations. | Update README/architecture docs to reflect the current feature set (and optionally link to the removal note). If WhatsApp is “planned/future”, label it explicitly as such and remove implementation-specific claims. |
 | D40-008 | 🟡 MEDIUM | docs/deployment/RAILWAY-DEPLOYMENT.md / docs/development/IMPLEMENTATION-SUMMARY.md | RAILWAY-DEPLOYMENT.md:104-118; IMPLEMENTATION-SUMMARY.md:205-212 | **Deployment/infra guidance is internally inconsistent:** Railway guide says Dropbox is mandatory and provides a start command that does not mention production seeding, while other docs describe Dropbox as optional and prior config review found “seed on every start” behavior (D37-002). | Reconcile “mandatory vs optional” Dropbox posture and ensure Railway docs match the actual `railway.json`/`nixpacks.toml` start pipeline. Ideally: avoid seeding on every start; document seed as a one-time deploy step. |
 
 **Positive Aspects:**
@@ -1339,7 +1329,7 @@ Most issues are “ops safety” rather than app logic: avoid printing/embedding
 - The specification is detailed and helps validate requirements/acceptance criteria.
 
 **Group Notes:**
-The main theme is drift: multiple docs appear to have been generated at different times and now conflict on security posture (cookies vs localStorage), feature set (WhatsApp), and endpoint paths. Cleaning this up is a high-leverage way to reduce onboarding and ops mistakes.
+The main theme is drift: multiple docs appear to have been generated at different times and now conflict on security posture (cookies vs localStorage) and endpoint paths. Cleaning this up is a high-leverage way to reduce onboarding and ops mistakes.
 
 ---
 
@@ -1372,14 +1362,12 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 ### Critical Issues (Must Fix)
 - [ ] **D7-001** - Application service implementations/call sites drift from interfaces; unify contracts to restore compilability
 - [ ] **D9-001** - WebSocket server allows joining any project room without authorization
-- [ ] **D10-001** - Frontend WhatsApp gateway exposes Twilio credentials and sends messages client-side
 - [ ] **D14-001** - Backend JWT secrets have hard-coded defaults; require env + fail fast
 - [ ] **D37-001** - Backend `.env` contains real Dropbox credentials (rotate + purge from git history)
 
 ### High Issues (Should Fix)
 - [ ] **D1-001** - Domain enums contain UI mappings; move to Presentation/Shared
 - [ ] **D3-001** - Domain entities implement API-facing `toJSON()`; move mapping out of Domain
-- [ ] **D3-002** - Notification references `user.whatsappEnabled` and bakes in WhatsApp routing
 - [ ] **D4-001** - Backend “Domain” repository interfaces depend on Prisma types (`@prisma/client`)
 - [ ] **D4-002** - Frontend repository interfaces import enums from wrong modules
 - [ ] **D5-001** - DTOs use `Date` types across (likely) JSON boundaries; define transport-safe date types + mappers
@@ -1399,12 +1387,8 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D32-001** - CalendarView listens to `date-click` (CalendarWidget emits `date-select`/`day-click`)
 - [ ] **D32-004** - ProjectListView status filter values don’t match `ProjectStatus` enum (filter broken)
 
-- [ ] **D34-001** - External-services index imports WhatsApp types from Dropbox module (likely build break)
-
 - [ ] **D37-002** - Railway/Nixpacks start commands run production seed on every start
 - [ ] **D37-003** - Jest config is inconsistent with ESM + Vue 3 and likely won’t run
-
-- [ ] **D38-001** - Prisma dev seed references removed `whatsappEnabled` field (seed/schema drift)
 - [ ] **D38-002** - Production seed uses predictable default admin password and logs it
 
 - [ ] **D39-001** - Dropbox refresh-token script prints full tokens to stdout
@@ -1430,10 +1414,10 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D4-003** - Repository interfaces are “fat” and leak query patterns
 - [ ] **D4-004** - TaskHistory action filtering uses untyped `string`
 - [ ] **D5-002** - DTOs include UI/view-model fields (`statusColor`, `isOverdue`, `can*`) without clear boundary
-- [ ] **D5-003** - Vendor/channel coupling in DTO contracts (Dropbox/WhatsApp naming)
+- [ ] **D5-003** - Vendor coupling in DTO contracts (Dropbox naming)
 - [ ] **D5-004** - Weakly typed DTO fields (`statusColor: string`, `action: string`) encourage drift
 - [ ] **D6-001** - Service interface error contracts rely on `@throws` without typed/shared error model
-- [ ] **D6-002** - Application service interfaces couple directly to Dropbox/WhatsApp concepts
+- [ ] **D6-002** - Application service interfaces couple directly to Dropbox concepts
 - [ ] **D6-003** - Authorization service interface is fat and returns `Set<AccessRight>`
 - [ ] **D7-005** - Project service coordinate truthiness checks + empty-string Dropbox folder IDs
 - [ ] **D7-006** - File service uses string section default + builds Dropbox paths from unsanitized inputs
@@ -1537,7 +1521,6 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D40-003** - Docs conflict on whether frontend integration is complete
 - [ ] **D40-005** - Debug guide uses wrong health endpoint (`/health` vs `/api/v1/health`)
 - [ ] **D40-006** - Backend setup docs list wrong file upload endpoint
-- [ ] **D40-007** - WhatsApp feature set drift across docs
 - [ ] **D40-008** - Dropbox mandatory/optional + Railway start pipeline guidance inconsistent
 
 - [ ] **D41-002** - Stray ad-hoc DB query output committed as a file
@@ -1642,7 +1625,6 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 **Issues:**
 - Type-check is currently failing in multiple layers (tracked as we review groups). Some are rooted in incorrect imports/exports between Domain entities/enums and repository interfaces.
 - Several Application service implementations and call sites are out of sync with their declared interfaces, undermining TypeScript’s ability to enforce contracts (D7-001).
-- Domain types include some internal mismatches that will surface as TS errors (e.g., `Notification.shouldSendViaWhatsApp()` referencing missing `User.whatsappEnabled`).
 - Some domain fields are weakly typed (e.g., `Message.senderRole: string`, `Permission.sectionAccess: string[]`), increasing drift risk vs enums and requirements.
 - Many Application DTOs use `Date` types for likely JSON payloads, which can mask runtime mismatches unless a centralized mapping/parsing layer exists (D5-001).
 - Several common UI components lose type information at the DOM boundary (notably `<select>` values) and rely on truthiness checks that mis-handle valid values like `0` (D24-003).
@@ -1658,7 +1640,7 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - Vite env typing currently doesn’t reflect the env vars actually used across the frontend (`VITE_SOCKET_URL`, `VITE_APP_VERSION`), reducing type-safety and increasing misconfiguration risk (D36-001).
 - Backend request-boundary types model pagination values as numbers even though Express query params arrive as strings unless parsed, encouraging subtle bugs and `NaN` propagation (D36-002).
 - Backend shared auth/JWT shapes model roles as `string`, increasing drift risk vs the actual role set enforced in authorization logic (D36-003).
-- Prisma seed scripts can drift from the schema/migration state (e.g., removed columns still referenced), leading to runtime failures in local/dev setup (D38-001).
+Prisma seed scripts can drift from the schema/migration state (e.g., removed columns still referenced), leading to runtime failures in local/dev setup.
 - Script/test utilities mix TS/ESM import conventions inconsistently (extension vs no extension), which can cause environment-specific execution failures (D39-007).
 
 ### Consistency Analysis
@@ -1677,7 +1659,6 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - Multiple barrel-export files don’t follow a consistent file-header convention across the codebase (frontend `@module` blocks vs the project’s standard header template; backend `@file` path mismatches), making documentation/auditing less uniform (D34-003/D34-004).
 - Public assets currently include a placeholder `.gitkeep` and appear to omit expected icon files; ensure public-asset expectations match what is actually shipped to avoid broken icon requests and inconsistent PWA metadata (D35-001/D35-003).
 - Frontend test tooling configuration is internally inconsistent (ESM project + CJS `require` setup, non-standard Jest option, missing Vue transformer), which makes the test harness fragile and harder to maintain (D37-003).
-- Prisma seed scripts and migrations reflect a history of WhatsApp feature addition/removal; keeping seed scripts aligned with current schema avoids recurring setup breakage (D38-001).
 - Operational scripts embed machine-specific paths and broad process-kill commands (`pkill -9 node`), reducing portability and predictability across dev setups (D39-003).
 - Documentation files contain multiple broken relative links and contradictory guidance across “generated” docs; without a single source of truth + link checking, doc drift will keep increasing (D40-001/D40-003/D40-008).
 - Repository contains committed operational artifacts (runtime logs and ad-hoc DB output), indicating inconsistent repo hygiene and risking sensitive-data leakage (D41-001/D41-002).
@@ -1687,7 +1668,7 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - High-risk operational command execution exists in backend backup flows (D7-003).
 - HTTP client contains debug logging that may leak payloads/tokens depending on usage (D8-005).
 - WebSocket project room joins are not authorization-guarded, risking cross-project event leakage (D9-001).
-- Frontend vendor gateways embed/consume third-party secrets (Twilio/Dropbox), which is a critical credential exposure risk (D10-001/D10-002).
+- Frontend vendor gateways embed/consume third-party secrets (Dropbox), which is a critical credential exposure risk (D10-002).
 - Some backend database errors include raw underlying message text, which can leak internals if surfaced directly in API responses (D11-006).
 - Backend JWT secrets currently have hard-coded defaults, which is a critical “fail-open” security posture if env vars are missing (D14-001).
 - Backend repository contains real third-party credentials in `backend/.env`, which must be treated as compromised and removed from history (D37-001).
