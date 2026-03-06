@@ -83,7 +83,7 @@ export interface AppConfirmDialogEmits {
   (e: 'cancel'): void;
 }
 
-const props = withDefaults(defineProps<AppConfirmDialogProps>(), {
+withDefaults(defineProps<AppConfirmDialogProps>(), {
   title: 'Confirm Action',
   message: 'Are you sure you want to proceed?',
   confirmText: 'Confirm',

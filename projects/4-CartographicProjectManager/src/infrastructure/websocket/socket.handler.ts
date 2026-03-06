@@ -42,15 +42,6 @@ const RECONNECTION_DELAY = 1000;
  */
 const RECONNECTION_DELAY_MAX = 30000;
 
-/**
- * Ping interval for connection health check (ms)
- */
-const PING_INTERVAL = 25000;
-
-/**
- * Ping timeout before considering connection dead (ms)
- */
-const PING_TIMEOUT = 20000;
 
 /**
  * WebSocket connection state enumeration
@@ -761,8 +752,6 @@ export class SocketHandler {
       reconnectionDelayMax: RECONNECTION_DELAY_MAX,
       timeout: 20000,
       autoConnect: false, // Manual connection control
-      pingInterval: PING_INTERVAL,
-      pingTimeout: PING_TIMEOUT,
     });
   }
 
@@ -905,7 +894,9 @@ export class SocketHandler {
    */
   private handleReconnectAttempt(attempt: number): void {
     this.reconnectAttempts = attempt;
-    this.log(`Reconnection attempt ${attempt}/${RECONNECTION_ATTEMPTS}`);
+    this.log(
+      `Reconnection attempt ${this.reconnectAttempts}/${RECONNECTION_ATTEMPTS}`,
+    );
     this.setConnectionState(ConnectionState.RECONNECTING);
   }
 

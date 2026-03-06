@@ -185,7 +185,7 @@
           <CalendarWidget
             :projects="calendarProjects"
             :mode="'mini'"
-            @project-click="goToProject"
+            @project-click="handleCalendarProjectClick"
             @month-change="handleMonthChange"
           />
         </section>
@@ -211,7 +211,6 @@
             </div>
             <div class="modal-body">
               <ProjectForm
-                :project="null"
                 :clients="clients"
                 @submit="handleCreateProject"
                 @cancel="showCreateModal = false"
@@ -236,11 +235,12 @@ import ProjectCard from '../components/project/ProjectCard.vue';
 import ProjectForm from '../components/project/ProjectForm.vue';
 import NotificationList from '../components/notification/NotificationList.vue';
 import CalendarWidget from '../components/calendar/CalendarWidget.vue';
-import type {CreateProjectDto} from '@/application/dto';
+import type {CalendarProjectDto, CreateProjectDto, UpdateProjectDto} from '@/application/dto';
 import type {NotificationDto} from '@/application/dto/notification-data.dto';
 import {UserRepository} from '@/infrastructure/repositories/user.repository';
 import {TaskRepository} from '@/infrastructure/repositories/task.repository';
 import {UserRole} from '@/domain/enumerations/user-role';
+import {ProjectStatus} from '@/domain/enumerations/project-status';
 import {TaskStatus} from '@/domain/enumerations/task-status';
 import type {Task} from '@/domain/entities/task';
 
@@ -250,7 +250,6 @@ const {canCreateProject, isAuthenticated, userId} = useAuth();
 const {
   projects,
   activeProjects,
-  projectsDueThisWeek,
   calendarProjects,
   isLoading,
   fetchProjects,
@@ -265,7 +264,6 @@ const {
   fetchNotifications,
   markAsRead,
   markAllAsRead,
-  deleteNotification,
 } = useNotifications();
 
 // Message store for unread counts
@@ -289,9 +287,13 @@ const stats = computed(() => ({
     const deliveryDate = new Date(p.deliveryDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return deliveryDate < today && p.status !== 'finalized';
+    return deliveryDate < today && p.status !== ProjectStatus.FINALIZED;
   }).length || 0,
 }));
+
+function handleCalendarProjectClick(project: CalendarProjectDto): void {
+  goToProject(project.id);
+}
 
 const recentProjects = computed(() =>
   (activeProjects.value ? [...activeProjects.value] : [])
@@ -529,7 +531,9 @@ async function handleMarkAllAsRead(): Promise<void> {
  */
 async function handleMonthChange(date: Date): Promise<void> {
   try {
-    await loadCalendarProjects(date.getFullYear(), date.getMonth() + 1);
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    await loadCalendarProjects(startOfMonth, endOfMonth);
   } catch (error) {
     console.error('Failed to load calendar projects:', error);
   }
@@ -574,15 +578,20 @@ async function fetchClients(): Promise<void> {
  *
  * @param {CreateProjectDto} projectData - New project data
  */
-async function handleCreateProject(projectData: CreateProjectDto): Promise<void> {
+async function handleCreateProject(projectData: CreateProjectDto | UpdateProjectDto): Promise<void> {
+  if (!('year' in projectData) || !('code' in projectData)) {
+    console.error('Invalid create project payload');
+    return;
+  }
+
   try {
     const result = await createProject(projectData);
     showCreateModal.value = false;
     
-    if (result.success && result.project?.id) {
+    if (result.success && result.projectId) {
       // Refresh the project list to include the new project
       await fetchProjects();
-      goToProject(result.project.id);
+      goToProject(result.projectId);
     } else {
       console.error('Failed to create project:', result.error);
     }

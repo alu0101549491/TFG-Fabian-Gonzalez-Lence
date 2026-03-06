@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-const props = withDefaults(
+withDefaults(
   defineProps<{
     size?: 'sm' | 'md' | 'lg';
     color?: 'primary' | 'white' | 'gray';

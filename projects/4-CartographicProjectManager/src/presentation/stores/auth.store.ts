@@ -14,7 +14,7 @@
 
 import {defineStore} from 'pinia';
 import {ref, computed} from 'vue';
-import type {UserDto, LoginCredentialsDto, RegisterCredentialsDto, AuthResultDto} from '../../application/dto';
+import type {UserDto, LoginCredentialsDto, RegisterCredentialsDto} from '../../application/dto';
 import {UserRole} from '../../domain/enumerations/user-role';
 import {AuthErrorCode} from '../../application/dto/auth-result.dto';
 import {STORAGE_KEYS, AUTH} from '../../shared/constants';

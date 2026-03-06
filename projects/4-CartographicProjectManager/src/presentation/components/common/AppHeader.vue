@@ -42,14 +42,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from 'vue';
+import {ref, computed} from 'vue';
 import {useAuth} from '../../composables/use-auth';
 
-const {currentUser, logout} = useAuth();
+const {user: currentUser, logout} = useAuth();
 const showUserMenu = ref(false);
 const notificationCount = ref(3);
 
-const userName = computed(() => currentUser.value?.getUsername?.() || 'User');
+const userName = computed(() => currentUser.value?.username ?? 'User');
 const userInitials = computed(() => {
   const name = userName.value;
   return name.substring(0, 2).toUpperCase();

@@ -22,6 +22,7 @@ import type {
   CreateProjectDto,
   UpdateProjectDto,
   ParticipantDto,
+  ProjectDto,
 } from '../../application/dto';
 import {ProjectStatus} from '../../domain/enumerations/project-status';
 import {AccessRight} from '../../domain/enumerations/access-right';
@@ -156,7 +157,9 @@ export const useProjectStore = defineStore('project', () => {
     let clientName = 'Unknown Client';
     try {
       const client = await userRepository.getUserById(project.clientId);
-      clientName = client.username;
+      if (client) {
+        clientName = client.username;
+      }
     } catch (err) {
       console.warn(`Failed to fetch client name for project ${project.id}:`, err);
     }
@@ -284,6 +287,27 @@ export const useProjectStore = defineStore('project', () => {
         throw new Error('Project not found');
       }
 
+      const projectDto: ProjectDto = {
+        id: projectWithDetails.id,
+        code: projectWithDetails.code,
+        name: projectWithDetails.name,
+        year: projectWithDetails.year,
+        type: projectWithDetails.type as any,
+        description: null,
+        clientId: projectWithDetails.clientId,
+        clientName: projectWithDetails.client?.username ?? 'Unknown Client',
+        coordinateX: projectWithDetails.coordinateX,
+        coordinateY: projectWithDetails.coordinateY,
+        contractDate: new Date(projectWithDetails.contractDate),
+        deliveryDate: new Date(projectWithDetails.deliveryDate),
+        status: projectWithDetails.status as any,
+        dropboxFolderId: projectWithDetails.dropboxFolderId,
+        dropboxFolderUrl: '',
+        createdAt: new Date(projectWithDetails.createdAt),
+        updatedAt: new Date(projectWithDetails.updatedAt),
+        finalizedAt: projectWithDetails.finalizedAt ? new Date(projectWithDetails.finalizedAt) : null,
+      };
+
       // Map participants from backend data
       const participants: ParticipantDto[] = [];
 
@@ -328,7 +352,7 @@ export const useProjectStore = defineStore('project', () => {
 
       currentProject.value = {
         // Use the full project details from API, not the summary
-        project: projectWithDetails,
+        project: projectDto,
         tasks: [],
         taskStats: { total: 0, pending: 0, inProgress: 0, completed: 0, overdue: 0 },
         recentMessages: [],
@@ -698,8 +722,12 @@ export const useProjectStore = defineStore('project', () => {
       projects.value[index] = {...projects.value[index], ...payload};
     }
     
-    if (currentProject.value?.project.id === payload.id) {
-      currentProject.value.project = {...currentProject.value.project, ...payload};
+    const existingCurrentProject = currentProject.value;
+    if (existingCurrentProject && existingCurrentProject.project.id === payload.id) {
+      currentProject.value = {
+        ...existingCurrentProject,
+        project: {...existingCurrentProject.project, ...payload},
+      };
     }
   }
 
@@ -709,12 +737,19 @@ export const useProjectStore = defineStore('project', () => {
   function handleProjectFinalized(payload: {projectId: string}): void {
     const index = projects.value.findIndex(p => p.id === payload.projectId);
     if (index !== -1) {
-      projects.value[index].status = ProjectStatus.FINALIZED;
-      projects.value[index].statusColor = 'gray';
+      projects.value[index] = {
+        ...projects.value[index],
+        status: ProjectStatus.FINALIZED,
+        statusColor: 'gray',
+      };
     }
     
-    if (currentProject.value?.project.id === payload.projectId) {
-      currentProject.value.project.status = ProjectStatus.FINALIZED;
+    const existingCurrentProject = currentProject.value;
+    if (existingCurrentProject && existingCurrentProject.project.id === payload.projectId) {
+      currentProject.value = {
+        ...existingCurrentProject,
+        project: {...existingCurrentProject.project, status: ProjectStatus.FINALIZED},
+      };
     }
   }
 

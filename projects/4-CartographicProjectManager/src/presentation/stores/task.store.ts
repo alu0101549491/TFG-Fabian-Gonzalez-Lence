@@ -17,11 +17,8 @@ import {ref, computed} from 'vue';
 import type {
   TaskDto,
   TaskFilterDto,
-  TaskListResponseDto,
   CreateTaskDto,
   UpdateTaskDto,
-  ChangeTaskStatusDto,
-  ConfirmTaskDto,
   TaskHistoryEntryDto,
 } from '../../application/dto';
 import {TaskStatus, TaskStatusTransitions} from '../../domain/enumerations/task-status';
@@ -141,7 +138,7 @@ export const useTaskStore = defineStore('task', () => {
 
   const completedTasks = computed(() =>
     currentProjectTasks.value.filter(
-      t => t.status === TaskStatus.DONE || t.status === TaskStatus.COMPLETED
+      t => t.status === TaskStatus.COMPLETED
     )
   );
 
@@ -201,8 +198,10 @@ export const useTaskStore = defineStore('task', () => {
       let projectName = 'Unknown';
       try {
         const project = await projectRepository.findById(projectId);
-        projectCode = project.code;
-        projectName = project.name;
+        if (project) {
+          projectCode = project.code;
+          projectName = project.name;
+        }
       } catch (err) {
         console.warn(`Failed to fetch project info for ${projectId}:`, err);
       }
@@ -255,6 +254,8 @@ export const useTaskStore = defineStore('task', () => {
    */
   async function fetchTaskHistory(taskId: string): Promise<void> {
     if (!authStore.userId) return;
+
+    void taskId;
 
     isLoadingHistory.value = true;
 
@@ -564,8 +565,9 @@ export const useTaskStore = defineStore('task', () => {
       tasks[index] = {...tasks[index], ...payload};
       tasksByProject.value.set(payload.projectId, [...tasks]);
       
-      if (currentTask.value?.id === payload.id) {
-        currentTask.value = {...currentTask.value, ...payload};
+      const existingCurrentTask = currentTask.value;
+      if (existingCurrentTask && existingCurrentTask.id === payload.id) {
+        currentTask.value = {...existingCurrentTask, ...payload};
       }
     }
   }
@@ -592,11 +594,12 @@ export const useTaskStore = defineStore('task', () => {
     const index = tasks.findIndex(t => t.id === payload.taskId);
     
     if (index !== -1) {
-      tasks[index].status = payload.newStatus;
+      tasks[index] = {...tasks[index], status: payload.newStatus};
       tasksByProject.value.set(payload.projectId, [...tasks]);
       
-      if (currentTask.value?.id === payload.taskId) {
-        currentTask.value.status = payload.newStatus;
+      const existingCurrentTask = currentTask.value;
+      if (existingCurrentTask && existingCurrentTask.id === payload.taskId) {
+        currentTask.value = {...existingCurrentTask, status: payload.newStatus};
       }
     }
   }

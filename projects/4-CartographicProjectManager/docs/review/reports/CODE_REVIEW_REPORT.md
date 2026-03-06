@@ -30,6 +30,24 @@ Initial review (Domain enumerations + entities) shows strong documentation disci
 
 ---
 
+## POST-RESOLUTION UPDATE (March 6, 2026)
+
+This review report was updated after the remediation work documented in `RESOLUTION_REPORT.md`.
+
+Items marked **✅ RESOLVED (2026-03-06)** have been verified as fixed in the current codebase state and are no longer blocking the verification gates reported in `RESOLUTION_REPORT.md` (type-check, lint with 0 errors, and builds).
+
+**Resolved findings:**
+- D4-002: Fixed incorrect enum imports in domain repository interfaces.
+- D7-001: Aligned service interfaces ↔ implementations and standardized notification call sites to the object-shaped `sendNotification(data: SendNotificationData)` signature.
+- D7-002: Fixed AuthorizationService admin role checks and corrected the commented-out admin delete check.
+- D9-001: Added server-side authorization checks before allowing WebSocket clients to join project rooms.
+- D14-001: Removed unsafe JWT secret defaults and now fail-fast when required JWT env vars are missing.
+
+**Partially resolved findings:**
+- D7-004: The missing `ValidationErrorCode` import was fixed and password updates were made safer by creating a new `User` entity; however, the service still contains mock/placeholder auth logic and unsafe `user['passwordHash']` access.
+
+---
+
 ## GROUP REVIEW DETAILS
 
 ### Phase 1: Domain Layer
@@ -149,7 +167,7 @@ These entities are drifting toward an “anemic domain + DTO” hybrid: they con
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
 | D4-001 | 🟠 HIGH | backend/src/domain/repositories/*.repository.interface.ts | 15 (multiple files) | **Clean Architecture violation:** backend “Domain” repository interfaces import Prisma model types from `@prisma/client` (e.g., `import type {Project} from '@prisma/client'`). This makes the Domain layer depend on Infrastructure/persistence details and couples all upstream consumers to the database schema. | Define backend domain entities/DTOs independent of Prisma, and map Prisma models ↔ domain types in Infrastructure repositories. Alternatively, relocate these interfaces to Infrastructure if they are intentionally persistence-bound. |
-| D4-002 | 🟠 HIGH | src/domain/repositories/{task,notification}-repository.interface.ts | 15 | **Incorrect imports break type-safety/builds:** repository interfaces import enums from entity modules (`TaskStatus`, `TaskPriority`, `NotificationType`) that are not exported by those entity files. | Import enums from their actual modules (e.g., `../enumerations/task-status`, `../enumerations/task-priority`, `../enumerations/notification-type`) and keep entity modules exporting only entities/props. |
+| D4-002 | 🟠 HIGH ✅ RESOLVED (2026-03-06) | src/domain/repositories/{task,notification}-repository.interface.ts | 15 | **Incorrect imports break type-safety/builds:** repository interfaces import enums from entity modules (`TaskStatus`, `TaskPriority`, `NotificationType`) that are not exported by those entity files. **Resolved:** interfaces now import enums from the corresponding `../enumerations/*` modules. | Implemented: enums are imported from their actual modules (e.g., `../enumerations/task-status`, `../enumerations/task-priority`, `../enumerations/notification-type`). |
 | D4-003 | 🟡 MEDIUM | src/domain/repositories/*.interface.ts | Multiple | **Fat repository interfaces / query leakage:** interfaces include many query-specific methods (counts, multiple filtered variants, cascade deletes). This can leak persistence query patterns into Domain contracts and increase maintenance cost (each new query becomes an interface change). | Consider splitting read models (Query services) vs write repositories, or use a specification/query object pattern so the interface remains stable while queries evolve. |
 | D4-004 | 🟡 MEDIUM | src/domain/repositories/task-history-repository.interface.ts | 47 | **Weak typing for actions:** `findByTaskIdAndAction(taskId, action: string)` relies on ad-hoc strings, which encourages drift vs the `TaskHistory.action` semantics. | Introduce an `Action` enum/union for task history actions (or reuse a shared constant list) and type the repository method accordingly. |
 | D4-005 | 🟢 LOW | backend/src/domain/repositories/{task,file,message,notification}.repository.interface.ts | Multiple | **Documentation inconsistency:** several backend repository interfaces omit per-method JSDoc (contrasts with frontend interfaces and the project’s documentation standards). | Add concise JSDoc for methods (parameters/returns/semantics), especially for non-trivial ones like unread counts and file linkage. |
@@ -260,10 +278,10 @@ These interfaces are a solid starting point, but clarifying error-handling and r
 **Issues Found:**
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
-| D7-001 | 🔴 CRITICAL | src/application/services/{notification,export,backup}.service.ts; src/application/services/{message,task,backup,project}.service.ts | Multiple (e.g., notification.service.ts:54-112 vs notification-service.interface.ts:40-46; export.service.ts:55-77 vs export-service.interface.ts:38-70; backup.service.ts:70-95 vs backup-service.interface.ts:66-110; message.service.ts:107-113; task.service.ts:128-135; project.service.ts:132-139) | **Contract drift breaks type-safety and likely fails compilation:** several service classes declare `implements I*Service` but don’t match the interface signatures and/or omit required methods. Additionally, call sites are using *both* positional and object-shaped `sendNotification(...)` calls, so even if compilation is forced, runtime behavior will be inconsistent. | Pick a single API shape per service (preferably matching the interface). Then: (1) align interface ↔ implementation (rename/add required methods), (2) update all call sites to the same signature, (3) add a small compile-time “contract test” pattern (e.g., `const _t: INotificationService = new NotificationService(...)`) to prevent silent drift. |
-| D7-002 | 🟠 HIGH | src/application/services/authorization.service.ts | 52, 77, 100, 115, 128-129 | **Authorization correctness bug + role inconsistency:** `canDeleteProject()` has an admin check accidentally commented into the preceding line (`// Only admins can delete projectsif ...`), and the service inconsistently checks `UserRole.ADMIN` vs `UserRole.ADMINISTRATOR`. This can deny admin privileges (or apply them inconsistently), especially for destructive operations. | Fix the comment/statement split, and standardize on the single canonical admin role enum value. Add unit tests for “admin can access/modify/delete/finalize” across all authorization methods. |
+| D7-001 | 🔴 CRITICAL ✅ RESOLVED (2026-03-06) | src/application/services/{notification,export,backup}.service.ts; src/application/services/{message,task,backup,project}.service.ts | Multiple (e.g., notification.service.ts:54-112 vs notification-service.interface.ts:40-46; export.service.ts:55-77 vs export-service.interface.ts:38-70; backup.service.ts:70-95 vs backup-service.interface.ts:66-110; message.service.ts:107-113; task.service.ts:128-135; project.service.ts:132-139) | **Contract drift breaks type-safety and likely fails compilation. Resolved:** service classes match their `I*Service` interfaces and notification senders now consistently call `sendNotification(data: SendNotificationData)` using the object-shaped payload. | Implemented: interface ↔ implementation signatures were reconciled, and call sites were standardized to the interface’s object-shaped `sendNotification(data)` API. |
+| D7-002 | 🟠 HIGH ✅ RESOLVED (2026-03-06) | src/application/services/authorization.service.ts | 52, 77, 100, 115, 128-129 | **Authorization correctness bug + role inconsistency. Resolved:** the admin delete check is no longer accidentally commented out, and admin checks consistently use the canonical `UserRole.ADMINISTRATOR`. | Implemented: corrected the comment/statement split and standardized role checks to `UserRole.ADMINISTRATOR`. |
 | D7-003 | 🟠 HIGH | backend/src/application/services/backup.service.ts | 80-86, 128-134 | **Command injection + secret exposure risk:** database password and other URL-derived values are interpolated into shell commands executed via `exec`. This can leak credentials (e.g., process list) and is vulnerable if any value contains shell metacharacters/quotes. | Use `spawn`/`execFile` with argument arrays and pass `PGPASSWORD` via `env` instead of string interpolation. Validate/escape DB params defensively and avoid logging sensitive values. |
-| D7-004 | 🟠 HIGH | src/application/services/authentication.service.ts | 83-86, 99-103, 252-257 | **Mock auth logic + type-safety escape hatches likely break builds and security expectations:** the service verifies passwords locally via `user['passwordHash']` and generates placeholder tokens/sessions in-memory (client-side), while also referencing `ValidationErrorCode` without importing it. This is both a correctness risk (compile error) and a security risk if the mock is used outside dev/test. | If this is intended as a mock, isolate it behind a `MockAuthenticationService` and ensure production uses backend-only auth. Remove bracket-indexing (`user['passwordHash']`) by introducing a proper DTO shape. Fix missing imports and add explicit environment guards to prevent accidental production use. |
+| D7-004 | 🟠 HIGH 🟡 PARTIALLY RESOLVED (2026-03-06) | src/application/services/authentication.service.ts | 83-86, 99-103, 252-257 | **Mock auth logic + type-safety escape hatches remain a security risk:** the missing `ValidationErrorCode` import was fixed and password updates were made safer (new `User` entity for updates), but the service still verifies passwords locally and accesses `user['passwordHash']`, and it still generates placeholder tokens/sessions client-side. | If this is intended as a mock, isolate it behind a `MockAuthenticationService` and ensure production uses backend-only auth. Remove bracket-indexing (`user['passwordHash']`) by introducing a proper DTO shape. Add explicit environment guards to prevent accidental production use. |
 | D7-005 | 🟡 MEDIUM | src/application/services/project.service.ts | 99-106, 115-121, 166-169 | **Coordinate truthiness bug + invalid defaulting:** coordinate creation uses `data.coordinateX && data.coordinateY`, which fails for valid `0` values, and `dropboxFolderId` is forced to `''` after a Dropbox error. This can silently drop coordinates and introduce invalid identifiers. | Use nullish checks (`!= null`) for numeric coordinates and represent missing Dropbox folder as `null`/`undefined` consistently (don’t coerce to empty string). Consider failing fast on storage setup if it’s required downstream. |
 | D7-006 | 🟡 MEDIUM | src/application/services/file.service.ts | 104-106 | **Type mismatch + path construction risk:** `section` defaults to the string `'Messages'` despite `ProjectSection` being an enum-like type, and user-provided values (`section`, `name`) are concatenated into a Dropbox path. This can cause invalid section values and makes path-safety dependent on Dropbox SDK behavior. | Default using the canonical `ProjectSection` value (not a string literal) and validate/sanitize file names and section inputs before constructing paths. |
 | D7-007 | 🟡 MEDIUM | backend/src/application/services/deadline-reminder.service.ts | 119-125, 191-197 | **Stringly-typed notification types + duplicate reminder risk:** notification `type` fields are literal strings (e.g., `'TASK_STATUS_CHANGE'`, `'PROJECT_ASSIGNED'`) rather than shared enums, and the reminder job doesn’t record which reminders have already been sent (scheduler reruns can spam users). | Use the canonical notification type enum (Prisma enum or shared constant) and persist “reminder sent” markers (or compute idempotency keys) to prevent duplicates. |
@@ -316,7 +334,7 @@ This client is close to being a solid foundation, but the interceptor/type-casti
 **Issues Found:**
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
-| D9-001 | 🔴 CRITICAL | backend/src/infrastructure/websocket/socket.server.ts | 66-94 | **Authorization bypass: any authenticated user can join any project room.** The server accepts `join:project` / legacy subscribe events and unconditionally `socket.join(project:${projectId})` without verifying the requesting user has access rights to that project. This can lead to cross-project data exposure for real-time events. | Add an authorization check in the join handlers (e.g., query project membership/permissions by `socket.data.userId` and reject/ignore unauthorized joins). Consider using server-side room names derived from verified membership rather than client-provided IDs. |
+| D9-001 | 🔴 CRITICAL ✅ RESOLVED (2026-03-06) | backend/src/infrastructure/websocket/socket.server.ts | 66-94 | **Authorization bypass: any authenticated user can join any project room. Resolved:** project-room joins now verify the requesting user has access rights (admin role, project ownership, or explicit permission) before calling `socket.join(project:${projectId})`. | Implemented: server-side authorization checks were added to `join:project` and legacy subscribe handlers; unauthorized join attempts are rejected. |
 | D9-002 | 🟡 MEDIUM | src/infrastructure/websocket/socket.handler.ts | 340-406, 752-766, 915-919 | **Reconnect uses a potentially stale token:** the socket is created with a fixed `auth.token` value captured at `connect()` time. If the access token rotates/refreshes, reconnections may fail or keep using expired credentials. | Use the `ITokenProvider` on reconnect to update `socket.auth.token` before reconnect attempts (or provide `auth` as a function), and/or handle `connect_error` to trigger token refresh + reconnect. |
 | D9-003 | 🟢 LOW | src/infrastructure/websocket/socket.handler.ts; backend/src/infrastructure/websocket/socket.server.ts | socket.handler.ts:796-800, 989-990, 1001-1005; socket.server.ts:71, 80-81, 139-146 | **Debug logging in production paths:** several `console.log` / `console.error` statements exist outside a proper logger and, in some cases, outside the `debug` gate. This can leak identifiers and create noise in production. | Route logs through the shared logger with log levels; ensure debug logs are gated and avoid logging payloads/tokens. |
 | D9-004 | 🟡 MEDIUM | src/infrastructure/websocket/socket.handler.ts | 286-296, 394-400 | **Type contract mismatch for `ConnectionOptions.token`:** `token` is typed as required, but the implementation falls back to `tokenProvider` (`options.token || this.tokenProvider?.getAccessToken()`), implying it was intended to be optional. | Make `token?: string` and rely on `tokenProvider`, or remove the fallback and keep the type strict. |
@@ -327,7 +345,7 @@ This client is close to being a solid foundation, but the interceptor/type-casti
 - Client reconnect handling re-joins user/project rooms, which improves UX after transient disconnects.
 
 **Group Notes:**
-The backend join-room authorization gap (D9-001) is the highest risk: it undermines project isolation guarantees. The client-side reconnect/token handling is also likely to surface as flaky “random disconnect” behavior unless it’s made token-rotation aware.
+The backend join-room authorization gap (D9-001) was resolved in post-review remediation (2026-03-06). The client-side reconnect/token handling remains a likely source of flaky “random disconnect” behavior unless it’s made token-rotation aware.
 
 ---
 
@@ -461,7 +479,7 @@ The scheduler’s DB client handling (D13-001) is the main reliability risk here
 **Issues Found:**
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
-| D14-001 | 🔴 CRITICAL | backend/src/shared/constants.ts | 48-54 | **Security misconfiguration hazard:** JWT secrets fall back to hard-coded defaults (`default-secret-change-in-production`, `default-refresh-secret`). If a production environment is misconfigured, attackers could forge tokens and impersonate users/admins. | Remove secret defaults and fail fast at startup when `JWT_SECRET` / `JWT_REFRESH_SECRET` are missing. Prefer centralized env-schema validation (e.g., Zod/envalid) in the backend entrypoint and keep constants as pure reads of validated config. |
+| D14-001 | 🔴 CRITICAL ✅ RESOLVED (2026-03-06) | backend/src/shared/constants.ts | 48-54 | **Security misconfiguration hazard. Resolved:** JWT secrets no longer fall back to hard-coded defaults; the backend now fails fast if `JWT_SECRET` / `JWT_REFRESH_SECRET` are missing. | Implemented: removed secret defaults and introduced required-env checks for JWT secrets. |
 | D14-002 | 🟡 MEDIUM | src/shared/constants.ts + backend/src/shared/constants.ts | 191-258; 89-117 | **Frontend/backend upload rules are inconsistent:** frontend allows up to 50MB and includes additional geo/CAD extensions, while backend default max size is 10MB and its `ALLOWED_MIME_TYPES` list omits some frontend-supported types. This will produce “works in UI, fails on server” behavior. | Define a single source of truth for upload constraints (size + types) and share it (e.g., shared package or generated constants). If constraints must differ, enforce server constraints in UI and render server-driven validation errors predictably. |
 | D14-003 | 🟡 MEDIUM | backend/src/shared/constants.ts | 38-40, 125-128 | **Fail-open defaults for critical config:** database URL defaults to an empty string and logging defaults to `debug`. This tends to fail late and can leak noisy or sensitive logs in production if env is incomplete. | Validate required env vars at startup (e.g., `DATABASE_URL`, `LOG_LEVEL`) and select safe production defaults (e.g., `info`/`warn`). Prefer explicit configuration per environment rather than implicit fallbacks. |
 | D14-004 | 🟢 LOW | backend/src/shared/constants.ts | 15-17 | **Import-time side effects:** calling `dotenv.config()` inside a shared constants module creates side effects on import, complicating tests and making load order matter. | Move `dotenv.config()` to the backend process entrypoint (e.g., `server.ts`/`index.ts`) so configuration happens once, predictably, before other imports. |
@@ -1360,20 +1378,20 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 ## INCIDENT TODO LIST
 
 ### Critical Issues (Must Fix)
-- [ ] **D7-001** - Application service implementations/call sites drift from interfaces; unify contracts to restore compilability
-- [ ] **D9-001** - WebSocket server allows joining any project room without authorization
-- [ ] **D14-001** - Backend JWT secrets have hard-coded defaults; require env + fail fast
+- [x] **D7-001** - Application service implementations/call sites drift from interfaces; unify contracts to restore compilability
+- [x] **D9-001** - WebSocket server allows joining any project room without authorization
+- [x] **D14-001** - Backend JWT secrets have hard-coded defaults; require env + fail fast
 - [ ] **D37-001** - Backend `.env` contains real Dropbox credentials (rotate + purge from git history)
 
 ### High Issues (Should Fix)
 - [ ] **D1-001** - Domain enums contain UI mappings; move to Presentation/Shared
 - [ ] **D3-001** - Domain entities implement API-facing `toJSON()`; move mapping out of Domain
 - [ ] **D4-001** - Backend “Domain” repository interfaces depend on Prisma types (`@prisma/client`)
-- [ ] **D4-002** - Frontend repository interfaces import enums from wrong modules
+- [x] **D4-002** - Frontend repository interfaces import enums from wrong modules
 - [ ] **D5-001** - DTOs use `Date` types across (likely) JSON boundaries; define transport-safe date types + mappers
-- [ ] **D7-002** - Authorization service role mismatch + admin delete bug (commented-out check)
+- [x] **D7-002** - Authorization service role mismatch + admin delete bug (commented-out check)
 - [ ] **D7-003** - Backend backup uses `exec` with interpolated secrets/params (command injection + leakage risk)
-- [ ] **D7-004** - Frontend authentication service mixes mock auth + missing import/type escapes
+- [ ] **D7-004** - Frontend authentication service mixes mock auth + missing import/type escapes (🟡 PARTIALLY RESOLVED: missing import fixed; mock auth + `passwordHash` indexing remain)
 - [ ] **D8-001** - HTTP client retry path can crash when `error.config` is missing
 - [ ] **D8-002** - HTTP client refresh failure can leave requests hanging
 - [ ] **D10-002** - Frontend Dropbox service uses access token client-side (secret exposure risk)
@@ -1667,10 +1685,10 @@ Prisma seed scripts can drift from the schema/migration state (e.g., removed col
 **Issues:**
 - High-risk operational command execution exists in backend backup flows (D7-003).
 - HTTP client contains debug logging that may leak payloads/tokens depending on usage (D8-005).
-- WebSocket project room joins are not authorization-guarded, risking cross-project event leakage (D9-001).
+- WebSocket project room joins are now authorization-guarded (D9-001 ✅ resolved).
 - Frontend vendor gateways embed/consume third-party secrets (Dropbox), which is a critical credential exposure risk (D10-002).
 - Some backend database errors include raw underlying message text, which can leak internals if surfaced directly in API responses (D11-006).
-- Backend JWT secrets currently have hard-coded defaults, which is a critical “fail-open” security posture if env vars are missing (D14-001).
+- Backend JWT secrets now require env vars and fail fast when missing (D14-001 ✅ resolved).
 - Backend repository contains real third-party credentials in `backend/.env`, which must be treated as compromised and removed from history (D37-001).
 - Production seed sets and logs a predictable admin password, which is unsafe in real deployments and should be replaced with an env-supplied or one-time credential (D38-002).
 - Operational/token scripts and notes print or embed token material in plaintext, which increases accidental leakage risk (terminal history/screen sharing/repo notes) and should be eliminated (D39-001/D39-002).

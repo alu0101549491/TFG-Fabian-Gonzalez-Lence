@@ -38,7 +38,7 @@
       <div v-if="hasMore && !loadingMore" ref="loadMoreTriggerRef" class="message-list-load-trigger" />
 
       <!-- Messages grouped by date -->
-      <template v-for="(group, groupIndex) in groupedMessages" :key="group.date">
+      <template v-for="group in groupedMessages" :key="group.date">
         <!-- Date separator -->
         <div class="message-list-date-separator">
           <span class="message-list-date">{{ formatDateSeparator(group.date) }}</span>
@@ -292,8 +292,10 @@ function handleScroll(event: Event): void {
 /**
  * Scroll to bottom
  */
-function scrollToBottom(smooth = true): void {
+function scrollToBottom(eventOrSmooth: boolean | Event = true): void {
   if (!scrollAnchorRef.value) return;
+
+  const smooth = typeof eventOrSmooth === 'boolean' ? eventOrSmooth : true;
 
   scrollAnchorRef.value.scrollIntoView({
     behavior: smooth ? 'smooth' : 'auto',

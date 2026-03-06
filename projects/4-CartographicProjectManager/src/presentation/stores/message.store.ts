@@ -16,9 +16,6 @@ import {defineStore} from 'pinia';
 import {ref, computed} from 'vue';
 import type {
   MessageDto,
-  MessageFilterDto,
-  MessageListResponseDto,
-  CreateMessageDto,
 } from '../../application/dto';
 import {useAuthStore} from './auth.store';
 import {useProjectStore} from './project.store';
@@ -282,11 +279,11 @@ export const useMessageStore = defineStore('message', () => {
       // Update local state
       const messages = messagesByProject.value.get(pid);
       if (messages) {
-        const msg = messages.find(m => m.id === messageId);
-        if (msg && !msg.isRead) {
-          msg.isRead = true;
-          
-          // Decrement unread count
+        const index = messages.findIndex(m => m.id === messageId);
+        if (index !== -1 && !messages[index].isRead) {
+          const updated = messages.map((m, i) => (i === index ? {...m, isRead: true} : m));
+          messagesByProject.value.set(pid, updated);
+
           const currentCount = unreadCounts.value.get(pid) ?? 0;
           unreadCounts.value.set(pid, Math.max(0, currentCount - 1));
         }
@@ -311,7 +308,7 @@ export const useMessageStore = defineStore('message', () => {
       // Update local state
       const messages = messagesByProject.value.get(pid);
       if (messages) {
-        messages.forEach(m => m.isRead = true);
+        messagesByProject.value.set(pid, messages.map(m => ({...m, isRead: true})));
         unreadCounts.value.set(pid, 0);
       }
     } catch (err: any) {
@@ -355,7 +352,7 @@ export const useMessageStore = defineStore('message', () => {
    */
   function initializeWebSocket(): void {
     // Subscribe to new message events
-    const unsubscribe = socketHandler.onMessage((payload: any) => {
+    socketHandler.onMessage((payload: any) => {
       // Map the backend message (Prisma Message with sender relation) to MessageDto format
       const messageDto: MessageDto = {
         id: payload.id,

@@ -385,6 +385,9 @@ router.beforeEach(async (
         } else {
           // Fetch project with participants to verify access
           const projectData = await projectRepository.getProjectWithParticipants(projectId);
+          if (!projectData) {
+            return next({ name: 'projects' });
+          }
           
           // Check if user is client
           const isClient = projectData.client?.id === authStore.userId;

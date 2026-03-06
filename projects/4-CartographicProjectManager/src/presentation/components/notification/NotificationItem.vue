@@ -124,6 +124,8 @@ const iconMap: Record<NotificationType, IconConfig> = {
   [NotificationType.FILE_RECEIVED]: {emoji: '📎', color: 'info'},
   [NotificationType.PROJECT_ASSIGNED]: {emoji: '📝', color: 'info'},
   [NotificationType.PROJECT_FINALIZED]: {emoji: '🎉', color: 'success'},
+  [NotificationType.BACKUP_COMPLETED]: {emoji: '💾', color: 'success'},
+  [NotificationType.BACKUP_RESTORED]: {emoji: '🛠️', color: 'info'},
 };
 
 /**
@@ -184,6 +186,8 @@ const relatedEntityLabel = computed<string | null>(() => {
     [NotificationType.FILE_RECEIVED]: 'File',
     [NotificationType.PROJECT_ASSIGNED]: 'Project',
     [NotificationType.PROJECT_FINALIZED]: 'Project',
+    [NotificationType.BACKUP_COMPLETED]: 'Backup',
+    [NotificationType.BACKUP_RESTORED]: 'Backup',
   };
 
   return typeToLabel[props.notification.type];

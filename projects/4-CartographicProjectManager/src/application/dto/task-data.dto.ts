@@ -15,6 +15,7 @@
 import {TaskStatus} from '../../domain/enumerations/task-status';
 import {TaskPriority} from '../../domain/enumerations/task-priority';
 import {FileSummaryDto} from './file-data.dto';
+import type {TaskSummaryDto} from './project-details.dto';
 
 /**
  * Input DTO for creating a new task.

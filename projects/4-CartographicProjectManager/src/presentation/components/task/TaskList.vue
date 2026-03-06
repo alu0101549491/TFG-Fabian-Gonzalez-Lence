@@ -197,10 +197,18 @@ const props = withDefaults(defineProps<TaskListProps>(), {
 
 const emit = defineEmits<TaskListEmits>();
 
+type TaskFilterState = {
+  status: TaskStatus | '';
+  priority: TaskPriority | '';
+  assigneeId: string;
+  sortBy: NonNullable<TaskFilters['sortBy']>;
+  sortOrder: NonNullable<TaskFilters['sortOrder']>;
+};
+
 // Filter state
-const filters = ref<TaskFilters>({
-  status: '' as TaskStatus | '',
-  priority: '' as TaskPriority | '',
+const filters = ref<TaskFilterState>({
+  status: '',
+  priority: '',
   assigneeId: '',
   sortBy: 'dueDate',
   sortOrder: 'asc',
@@ -209,9 +217,17 @@ const filters = ref<TaskFilters>({
 const sortValue = computed({
   get: () => `${filters.value.sortBy}-${filters.value.sortOrder}`,
   set: (val: string) => {
-    const [sortBy, sortOrder] = val.split('-') as [string, 'asc' | 'desc'];
-    filters.value.sortBy = sortBy as TaskFilters['sortBy'];
-    filters.value.sortOrder = sortOrder;
+    const [sortByRaw, sortOrderRaw] = val.split('-') as [string, string];
+
+    const allowedSortBy: TaskFilterState['sortBy'][] = ['dueDate', 'priority', 'status', 'createdAt'];
+    const nextSortBy = allowedSortBy.includes(sortByRaw as TaskFilterState['sortBy'])
+      ? (sortByRaw as TaskFilterState['sortBy'])
+      : 'dueDate';
+
+    const nextSortOrder: TaskFilterState['sortOrder'] = sortOrderRaw === 'desc' ? 'desc' : 'asc';
+
+    filters.value.sortBy = nextSortBy;
+    filters.value.sortOrder = nextSortOrder;
   },
 });
 
@@ -236,10 +252,10 @@ const filteredTasks = computed(() => {
   let result = [...props.tasks];
 
   // Apply filters
-  if (filters.value.status) {
+  if (filters.value.status !== '') {
     result = result.filter((t) => t.status === filters.value.status);
   }
-  if (filters.value.priority) {
+  if (filters.value.priority !== '') {
     result = result.filter((t) => t.priority === filters.value.priority);
   }
   if (filters.value.assigneeId) {
@@ -342,8 +358,8 @@ function getStatusWeight(status: TaskStatus): number {
  */
 function emitFilterChange(): void {
   emit('filter-change', {
-    status: filters.value.status || undefined,
-    priority: filters.value.priority || undefined,
+    status: filters.value.status === '' ? undefined : filters.value.status,
+    priority: filters.value.priority === '' ? undefined : filters.value.priority,
     assigneeId: filters.value.assigneeId || undefined,
     sortBy: filters.value.sortBy,
     sortOrder: filters.value.sortOrder,
@@ -362,8 +378,8 @@ function handleSortChange(): void {
  */
 function clearFilters(): void {
   filters.value = {
-    status: '' as TaskStatus | '',
-    priority: '' as TaskPriority | '',
+    status: '',
+    priority: '',
     assigneeId: '',
     sortBy: 'dueDate',
     sortOrder: 'asc',

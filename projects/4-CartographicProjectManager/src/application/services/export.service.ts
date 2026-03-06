@@ -17,10 +17,15 @@ import {
   type ExportResultDto,
   type ExportProgressDto,
   type ExportInfoDto,
+  type ValidationResultDto,
   ExportFormat,
   ExportDataType,
   ExportStatus,
   ExportErrorCode,
+  ValidationErrorCode,
+  validResult,
+  invalidResult,
+  createError,
 } from '../dto';
 import {IExportService} from '../interfaces/export-service.interface';
 import {
@@ -33,6 +38,7 @@ import {
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
 import {UnauthorizedError, NotFoundError} from './common/errors';
 import {generateId} from './common/utils';
+import {ProjectStatus} from '../../domain/enumerations/project-status';
 
 /**
  * Placeholder interfaces for export generators.
@@ -53,8 +59,13 @@ interface IExcelGenerator {
  * Implementation of export operations.
  */
 export class ExportService implements IExportService {
-  // Track export progress
-  private readonly exportProgress = new Map<string, ExportProgressDto>();
+  private readonly exportJobs = new Map<
+    string,
+    {
+      progress: ExportProgressDto;
+      info: ExportInfoDto;
+    }
+  >();
 
   constructor(
     private readonly projectRepository: IProjectRepository,
@@ -75,26 +86,45 @@ export class ExportService implements IExportService {
     filters: ExportFiltersDto,
     userId: string
   ): Promise<ExportResultDto> {
+    const requestedAt = new Date();
+
     // Check permissions
     const canExport = await this.authorizationService.canExportData(userId);
     if (!canExport) {
       return {
+        success: false,
         status: ExportStatus.FAILED,
         errorCode: ExportErrorCode.PERMISSION_DENIED,
-        errorMessage: 'You do not have permission to export data',
+        error: 'You do not have permission to export data',
+        format: filters.format,
+        recordCount: 0,
+        requestedAt,
       };
     }
 
     const exportId = generateId();
     
     try {
-      // Initialize progress
-      this.exportProgress.set(exportId, {
+      const initialProgress: ExportProgressDto = {
         exportId,
-        status: ExportStatus.IN_PROGRESS,
+        status: ExportStatus.PROCESSING,
         progress: 0,
-        startedAt: new Date(),
-      });
+        currentStep: 'Fetching data',
+      };
+
+      const initialInfo: ExportInfoDto = {
+        exportId,
+        format: filters.format,
+        status: ExportStatus.PROCESSING,
+        recordCount: 0,
+        fileSize: 0,
+        requestedAt,
+        completedAt: null,
+        downloadUrl: null,
+        expiresAt: null,
+      };
+
+      this.exportJobs.set(exportId, {progress: initialProgress, info: initialInfo});
 
       // Fetch data based on type
       let data: unknown[];
@@ -113,29 +143,40 @@ export class ExportService implements IExportService {
           data = await this.fetchMessages(filters);
           filename = `messages_export_${Date.now()}`;
           break;
-        case ExportDataType.FILES:
-          data = await this.fetchFiles(filters);
-          filename = `files_export_${Date.now()}`;
-          break;
-        case ExportDataType.USERS:
-          data = await this.fetchUsers(filters);
-          filename = `users_export_${Date.now()}`;
+        case ExportDataType.FULL_REPORT:
+          data = await this.fetchFullReport(filters);
+          filename = `full_report_export_${Date.now()}`;
           break;
         default:
           return {
+            success: false,
             status: ExportStatus.FAILED,
-            errorCode: ExportErrorCode.INVALID_FORMAT,
-            errorMessage: 'Invalid data type',
+            errorCode: ExportErrorCode.INVALID_FILTERS,
+            error: 'Invalid data type',
+            format: filters.format,
+            recordCount: 0,
+            requestedAt,
           };
       }
 
-      // Update progress
-      this.exportProgress.set(exportId, {
-        exportId,
-        status: ExportStatus.IN_PROGRESS,
-        progress: 50,
-        startedAt: this.exportProgress.get(exportId)!.startedAt,
-      });
+      {
+        const job = this.exportJobs.get(exportId);
+        if (job) {
+          this.exportJobs.set(exportId, {
+            progress: {
+              ...job.progress,
+              status: ExportStatus.PROCESSING,
+              progress: 50,
+              currentStep: 'Generating file',
+            },
+            info: {
+              ...job.info,
+              status: ExportStatus.PROCESSING,
+              recordCount: data.length,
+            },
+          });
+        }
+      }
 
       // Generate file based on format
       let fileContent: Buffer;
@@ -161,46 +202,87 @@ export class ExportService implements IExportService {
           break;
         default:
           return {
+            success: false,
             status: ExportStatus.FAILED,
-            errorCode: ExportErrorCode.INVALID_FORMAT,
-            errorMessage: 'Invalid export format',
+            errorCode: ExportErrorCode.FORMAT_ERROR,
+            error: 'Invalid export format',
+            format: filters.format,
+            recordCount: data.length,
+            requestedAt,
           };
       }
 
       // TODO: Store file (e.g., in Dropbox or temp storage)
       const downloadUrl = `/api/exports/${exportId}/download`;
+      const completedAt = new Date();
+      const expiresAt = new Date(requestedAt.getTime() + 24 * 60 * 60 * 1000);
 
-      // Update progress to completed
-      this.exportProgress.set(exportId, {
-        exportId,
-        status: ExportStatus.COMPLETED,
-        progress: 100,
-        startedAt: this.exportProgress.get(exportId)!.startedAt,
-        completedAt: new Date(),
-      });
+      {
+        const job = this.exportJobs.get(exportId);
+        if (job) {
+          this.exportJobs.set(exportId, {
+            progress: {
+              ...job.progress,
+              status: ExportStatus.COMPLETED,
+              progress: 100,
+              currentStep: 'Completed',
+            },
+            info: {
+              ...job.info,
+              status: ExportStatus.COMPLETED,
+              recordCount: data.length,
+              fileSize: fileContent.length,
+              completedAt,
+              downloadUrl,
+              expiresAt,
+            },
+          });
+        }
+      }
 
       return {
+        success: true,
         status: ExportStatus.COMPLETED,
         exportId,
         filename: filename + fileExtension,
         downloadUrl,
         fileSize: fileContent.length,
+        format: filters.format,
         recordCount: data.length,
+        requestedAt,
+        completedAt,
+        expiresAt,
       };
     } catch (error) {
       console.error('Export error:', error);
-      
-      this.exportProgress.set(exportId, {
-        exportId,
-        status: ExportStatus.FAILED,
-        progress: 0,
-        startedAt: this.exportProgress.get(exportId)!.startedAt,
-      });
+
+      {
+        const job = this.exportJobs.get(exportId);
+        if (job) {
+          this.exportJobs.set(exportId, {
+            progress: {
+              ...job.progress,
+              status: ExportStatus.FAILED,
+              progress: 0,
+              currentStep: 'Failed',
+            },
+            info: {
+              ...job.info,
+              status: ExportStatus.FAILED,
+              completedAt: new Date(),
+            },
+          });
+        }
+      }
 
       return {
+        success: false,
         status: ExportStatus.FAILED,
         errorCode: ExportErrorCode.GENERATION_FAILED,
-        errorMessage: 'Export generation failed',
+        error: 'Export generation failed',
+        format: filters.format,
+        recordCount: 0,
+        requestedAt,
       };
     }
   }
@@ -214,12 +296,12 @@ export class ExportService implements IExportService {
       throw new UnauthorizedError('You do not have permission to view export progress');
     }
 
-    const progress = this.exportProgress.get(exportId);
-    if (!progress) {
+    const job = this.exportJobs.get(exportId);
+    if (!job) {
       throw new NotFoundError(`Export ${exportId} not found`);
     }
 
-    return progress;
+    return job.progress;
   }
 
   /**
@@ -231,17 +313,12 @@ export class ExportService implements IExportService {
       throw new UnauthorizedError('You do not have permission to view export information');
     }
 
-    const progress = this.exportProgress.get(exportId);
-    if (!progress) {
+    const job = this.exportJobs.get(exportId);
+    if (!job) {
       throw new NotFoundError(`Export ${exportId} not found`);
     }
 
-    return {
-      exportId,
-      status: progress.status,
-      createdAt: progress.startedAt,
-      expiresAt: new Date(progress.startedAt.getTime() + 24 * 60 * 60 * 1000), // 24 hours
-    };
+    return job.info;
   }
 
   /**
@@ -256,18 +333,16 @@ export class ExportService implements IExportService {
     // Return predefined presets
     return [
       {
-        name: 'All Projects',
         dataType: ExportDataType.PROJECTS,
         format: ExportFormat.EXCEL,
+        includeFinalized: true,
       },
       {
-        name: 'Active Tasks',
         dataType: ExportDataType.TASKS,
         format: ExportFormat.CSV,
-        includeCompleted: false,
+        includeFinalized: false,
       },
       {
-        name: 'Project Messages',
         dataType: ExportDataType.MESSAGES,
         format: ExportFormat.PDF,
       },
@@ -283,16 +358,24 @@ export class ExportService implements IExportService {
       throw new UnauthorizedError('You do not have permission to cancel exports');
     }
 
-    const progress = this.exportProgress.get(exportId);
-    if (!progress) {
+    const job = this.exportJobs.get(exportId);
+    if (!job) {
       throw new NotFoundError(`Export ${exportId} not found`);
     }
 
-    if (progress.status === ExportStatus.IN_PROGRESS) {
-      this.exportProgress.set(exportId, {
-        ...progress,
-        status: ExportStatus.FAILED,
-        errorMessage: 'Export cancelled by user',
+    if (job.progress.status === ExportStatus.PROCESSING) {
+      this.exportJobs.set(exportId, {
+        progress: {
+          ...job.progress,
+          status: ExportStatus.FAILED,
+          progress: 0,
+          currentStep: 'Cancelled',
+        },
+        info: {
+          ...job.info,
+          status: ExportStatus.FAILED,
+          completedAt: new Date(),
+        },
       });
     }
   }
@@ -300,29 +383,59 @@ export class ExportService implements IExportService {
   /**
    * Validates export filters.
    */
-  async validateExportFilters(filters: ExportFiltersDto, userId: string): Promise<{
-    isValid: boolean;
-    errors?: string[];
-  }> {
-    const errors: string[] = [];
+  async validateExportFilters(
+    filters: ExportFiltersDto,
+    userId: string
+  ): Promise<ValidationResultDto> {
+    const errors = [];
+
+    // Keep auth check consistent with other export operations
+    const canExport = await this.authorizationService.canExportData(userId);
+    if (!canExport) {
+      errors.push(
+        createError(
+          'userId',
+          'You do not have permission to export data',
+          ValidationErrorCode.PERMISSION_DENIED
+        )
+      );
+    }
 
     if (!filters.dataType) {
-      errors.push('Data type is required');
+      errors.push(
+        createError(
+          'dataType',
+          'Data type is required',
+          ValidationErrorCode.REQUIRED
+        )
+      );
     }
 
     if (!filters.format) {
-      errors.push('Export format is required');
+      errors.push(
+        createError(
+          'format',
+          'Export format is required',
+          ValidationErrorCode.REQUIRED
+        )
+      );
     }
 
-    // Validate date range if provided
-    if (filters.startDate && filters.endDate && filters.startDate >= filters.endDate) {
-      errors.push('Start date must be before end date');
+    if (
+      filters.startDate &&
+      filters.endDate &&
+      filters.startDate >= filters.endDate
+    ) {
+      errors.push(
+        createError(
+          'dateRange',
+          'Start date must be before end date',
+          ValidationErrorCode.DATE_RANGE_INVALID
+        )
+      );
     }
 
-    return {
-      isValid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
-    };
+    return errors.length > 0 ? invalidResult(errors) : validResult();
   }
 
   /**
@@ -334,7 +447,7 @@ export class ExportService implements IExportService {
       throw new UnauthorizedError('You do not have permission to delete exports');
     }
 
-    this.exportProgress.delete(exportId);
+    this.exportJobs.delete(exportId);
     // TODO: Delete file from storage
   }
 
@@ -342,6 +455,7 @@ export class ExportService implements IExportService {
    * Gets available export formats for a data type.
    */
   public async getAvailableFormats(dataType: ExportDataType, userId: string): Promise<ExportFormat[]> {
+    void dataType;
     const canExport = await this.authorizationService.canExportData(userId);
     if (!canExport) {
       throw new UnauthorizedError('You do not have permission to access export formats');
@@ -355,19 +469,30 @@ export class ExportService implements IExportService {
    * Fetches projects based on filters.
    */
   private async fetchProjects(filters: ExportFiltersDto): Promise<unknown[]> {
-    const projects = await this.projectRepository.findAll({
-      startDate: filters.startDate,
-      endDate: filters.endDate,
-      status: filters.status,
+    const projects = await this.projectRepository.findAll();
+
+    const filtered = projects.filter((p) => {
+      if (filters.projectIds && !filters.projectIds.includes(p.id)) return false;
+      if (filters.clientId && p.clientId !== filters.clientId) return false;
+      if (filters.projectType && p.type !== filters.projectType) return false;
+      if (filters.projectStatus && p.status !== filters.projectStatus) return false;
+      if (filters.includeFinalized === false && p.status === ProjectStatus.FINALIZED) return false;
+      if (filters.startDate && p.contractDate < filters.startDate) return false;
+      if (filters.endDate && p.contractDate > filters.endDate) return false;
+      return true;
     });
 
-    return projects.map(p => ({
+    return filtered.map((p) => ({
+      id: p.id,
       code: p.code,
       name: p.name,
-      type: p.projectType,
+      type: p.type,
       status: p.status,
-      startDate: p.startDate,
-      endDate: p.estimatedEndDate,
+      clientId: p.clientId,
+      contractDate: p.contractDate,
+      deliveryDate: p.deliveryDate,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
     }));
   }
 
@@ -375,19 +500,42 @@ export class ExportService implements IExportService {
    * Fetches tasks based on filters.
    */
   private async fetchTasks(filters: ExportFiltersDto): Promise<unknown[]> {
-    const tasks = await this.taskRepository.findAll({
-      projectId: filters.projectId,
-      status: filters.status,
-      includeCompleted: filters.includeCompleted,
+    const projectIds = filters.projectIds ?? [];
+    if (projectIds.length === 0) {
+      return [];
+    }
+
+    const tasksByProject = await Promise.all(
+      projectIds.map(async (projectId) => ({
+        projectId,
+        tasks: await this.taskRepository.findByProjectId(projectId),
+      })),
+    );
+
+    const allTasks = tasksByProject.flatMap(({projectId, tasks}) =>
+      tasks.map((t) => ({projectId, task: t})),
+    );
+
+    const filtered = allTasks.filter(({task}) => {
+      if (filters.taskStatus && task.status !== filters.taskStatus) return false;
+      if (filters.taskPriority && task.priority !== filters.taskPriority) return false;
+      if (filters.assigneeId && task.assigneeId !== filters.assigneeId) return false;
+      if (filters.startDate && task.createdAt < filters.startDate) return false;
+      if (filters.endDate && task.createdAt > filters.endDate) return false;
+      return true;
     });
 
-    return tasks.map(t => ({
-      title: t.title,
-      status: t.status,
-      priority: t.priority,
-      assignee: t.assigneeId,
-      dueDate: t.dueDate,
-      createdAt: t.createdAt,
+    return filtered.map(({projectId, task}) => ({
+      projectId,
+      id: task.id,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      assigneeId: task.assigneeId,
+      creatorId: task.creatorId,
+      dueDate: task.dueDate,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
     }));
   }
 
@@ -395,51 +543,95 @@ export class ExportService implements IExportService {
    * Fetches messages based on filters.
    */
   private async fetchMessages(filters: ExportFiltersDto): Promise<unknown[]> {
-    if (!filters.projectId) {
+    const projectIds = filters.projectIds ?? [];
+    if (projectIds.length === 0) {
       return [];
     }
 
-    const messages = await this.messageRepository.findByProject(filters.projectId);
+    const messagesByProject = await Promise.all(
+      projectIds.map(async (projectId) => ({
+        projectId,
+        messages: await this.messageRepository.findByProjectId(projectId),
+      })),
+    );
 
-    return messages.map(m => ({
-      sender: m.senderId,
-      content: m.content,
-      sentAt: m.sentAt,
-      isSystem: m.isSystemMessage,
+    const allMessages = messagesByProject.flatMap(({projectId, messages}) =>
+      messages.map((m) => ({projectId, message: m})),
+    );
+
+    const filtered = allMessages.filter(({message}) => {
+      if (filters.startDate && message.sentAt < filters.startDate) return false;
+      if (filters.endDate && message.sentAt > filters.endDate) return false;
+      return true;
+    });
+
+    return filtered.map(({projectId, message}) => ({
+      projectId,
+      id: message.id,
+      senderId: message.senderId,
+      content: message.content,
+      sentAt: message.sentAt,
+      isSystemMessage: message.isSystemMessage(),
+      type: message.type,
     }));
   }
 
-  /**
-   * Fetches files based on filters.
-   */
-  private async fetchFiles(filters: ExportFiltersDto): Promise<unknown[]> {
-    const files = filters.projectId
-      ? await this.fileRepository.findByProject(filters.projectId)
-      : await this.fileRepository.findAll();
+  private async fetchFullReport(filters: ExportFiltersDto): Promise<unknown[]> {
+    const projects = (await this.fetchProjects(filters)) as Array<{id: string; code: string; name: string; clientId: string}>;
 
-    return files.map(f => ({
-      filename: f.filename,
-      type: f.fileType,
-      size: f.fileSize,
-      uploadedBy: f.uploadedById,
-      uploadedAt: f.uploadedAt,
-    }));
-  }
+    const reports = await Promise.all(
+      projects.map(async (p) => {
+        const [tasks, messages, files, client] = await Promise.all([
+          this.taskRepository.findByProjectId(p.id),
+          this.messageRepository.findByProjectId(p.id),
+          filters.includeAttachments ? this.fileRepository.findByProjectId(p.id) : Promise.resolve([]),
+          this.userRepository.findById(p.clientId),
+        ]);
 
-  /**
-   * Fetches users based on filters.
-   */
-  private async fetchUsers(filters: ExportFiltersDto): Promise<unknown[]> {
-    const users = await this.userRepository.findAll();
+        return {
+          project: {
+            id: p.id,
+            code: p.code,
+            name: p.name,
+            clientId: p.clientId,
+            clientName: client?.username ?? 'Unknown',
+          },
+          counts: {
+            tasks: tasks.length,
+            messages: messages.length,
+            files: filters.includeAttachments ? files.length : undefined,
+          },
+          tasks: tasks.map((t) => ({
+            id: t.id,
+            description: t.description,
+            status: t.status,
+            priority: t.priority,
+            assigneeId: t.assigneeId,
+            dueDate: t.dueDate,
+          })),
+          messages: messages.map((m) => ({
+            id: m.id,
+            senderId: m.senderId,
+            content: m.content,
+            sentAt: m.sentAt,
+            type: m.type,
+          })),
+          files: filters.includeAttachments
+            ? files.map((f) => ({
+                id: f.id,
+                name: f.name,
+                type: f.type,
+                sizeInBytes: f.sizeInBytes,
+                dropboxPath: f.dropboxPath,
+                uploadedBy: f.uploadedBy,
+                uploadedAt: f.uploadedAt,
+              }))
+            : undefined,
+        };
+      }),
+    );
 
-    return users.map(u => ({
-      username: u.username,
-      email: u.email,
-      role: u.role,
-      firstName: u.firstName,
-      lastName: u.lastName,
-      createdAt: u.createdAt,
-    }));
+    return reports;
   }
 
   /**
@@ -448,15 +640,13 @@ export class ExportService implements IExportService {
   private getHeaders(dataType: ExportDataType): string[] {
     switch (dataType) {
       case ExportDataType.PROJECTS:
-        return ['Code', 'Name', 'Type', 'Status', 'Start Date', 'End Date'];
+        return ['ID', 'Code', 'Name', 'Type', 'Status', 'Client ID', 'Contract Date', 'Delivery Date'];
       case ExportDataType.TASKS:
-        return ['Title', 'Status', 'Priority', 'Assignee', 'Due Date', 'Created'];
+        return ['Project ID', 'ID', 'Description', 'Status', 'Priority', 'Assignee', 'Due Date', 'Created'];
       case ExportDataType.MESSAGES:
-        return ['Sender', 'Content', 'Sent At', 'Is System'];
-      case ExportDataType.FILES:
-        return ['Filename', 'Type', 'Size', 'Uploaded By', 'Uploaded At'];
-      case ExportDataType.USERS:
-        return ['Username', 'Email', 'Role', 'First Name', 'Last Name', 'Created'];
+        return ['Project ID', 'ID', 'Sender ID', 'Content', 'Sent At', 'Is System', 'Type'];
+      case ExportDataType.FULL_REPORT:
+        return ['Project', 'Counts', 'Tasks', 'Messages', 'Files'];
       default:
         return [];
     }

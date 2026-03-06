@@ -20,7 +20,6 @@ import {
   type BackupInfoDto,
   type BackupScheduleDto,
   type StorageUsageDto,
-  type ValidationResultDto,
 } from '../dto';
 
 /**
@@ -39,7 +38,6 @@ export interface IBackupService {
    */
   createBackup(
     userId: string,
-    description?: string,
   ): Promise<BackupResultDto>;
 
   /**
@@ -63,7 +61,7 @@ export interface IBackupService {
    * @returns Paginated list of backup entries ordered by creation date
    * @throws {UnauthorizedError} If user doesn't have backup permission
    */
-  getBackupHistory(userId: string): Promise<BackupListResponseDto>;
+  listBackups(userId: string): Promise<BackupListResponseDto>;
 
   /**
    * Retrieves detailed information about a specific backup.
@@ -73,7 +71,7 @@ export interface IBackupService {
    * @throws {NotFoundError} If backup doesn't exist
    * @throws {UnauthorizedError} If user doesn't have backup permission
    */
-  getBackupById(backupId: string, userId: string): Promise<BackupInfoDto>;
+  getBackupInfo(backupId: string, userId: string): Promise<BackupInfoDto>;
 
   /**
    * Deletes a specific backup.
@@ -94,10 +92,7 @@ export interface IBackupService {
    * @throws {UnauthorizedError} If user doesn't have backup permission
    * @throws {ValidationError} If schedule configuration is invalid
    */
-  scheduleAutomaticBackup(
-    schedule: BackupScheduleDto,
-    userId: string,
-  ): Promise<void>;
+  scheduleBackup(schedule: BackupScheduleDto, userId: string): Promise<void>;
 
   /**
    * Retrieves the current automatic backup schedule.
@@ -106,7 +101,7 @@ export interface IBackupService {
    * @throws {UnauthorizedError} If user doesn't have backup permission
    * @throws {NotFoundError} If no schedule is configured
    */
-  getBackupSchedule(userId: string): Promise<BackupScheduleDto>;
+  getBackupSchedule(userId: string): Promise<BackupScheduleDto | null>;
 
   /**
    * Disables the automatic backup schedule.
@@ -114,7 +109,7 @@ export interface IBackupService {
    * @returns Promise that resolves when schedule is disabled
    * @throws {UnauthorizedError} If user doesn't have backup permission
    */
-  disableAutomaticBackup(userId: string): Promise<void>;
+  disableAutoBackup(userId: string): Promise<void>;
 
   /**
    * Gets storage usage information for backups.
@@ -123,13 +118,4 @@ export interface IBackupService {
    * @throws {UnauthorizedError} If user doesn't have backup permission
    */
   getStorageUsage(userId: string): Promise<StorageUsageDto>;
-
-  /**
-   * Validates the integrity of a backup file.
-   * @param backupId - The unique identifier of the backup to validate
-   * @returns Validation result indicating if backup is valid and restorable
-   * @throws {NotFoundError} If backup doesn't exist
-   * @throws {UnauthorizedError} If user doesn't have backup permission
-   */
-  validateBackup(backupId: string): Promise<ValidationResultDto>;
 }

@@ -23,6 +23,7 @@ import {
   type ConfirmTaskDto,
   type TaskHistoryEntryDto,
   type ValidationResultDto,
+  ValidationErrorCode,
   validResult,
   invalidResult,
   createError,
@@ -37,26 +38,17 @@ import {
 } from '../../domain/repositories';
 import {INotificationService} from '../interfaces/notification-service.interface';
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
-import {UnauthorizedError, NotFoundError, ValidationError, BusinessRuleError, ConflictError} from './common/errors';
+import {NotFoundError, ValidationError, BusinessRuleError, UnauthorizedError} from './common/errors';
 import {generateId} from './common/utils';
 import {Task} from '../../domain/entities/task';
 import {TaskHistory} from '../../domain/entities/task-history';
-import {TaskStatus} from '../../domain/enumerations/task-status';
+import {TaskStatus, TaskStatusTransitions} from '../../domain/enumerations/task-status';
 import {NotificationType} from '../../domain/enumerations/notification-type';
 
 /**
  * Implementation of task management operations.
  */
 export class TaskService implements ITaskService {
-  // Valid status transitions map
-  private readonly statusTransitions = new Map<TaskStatus, TaskStatus[]>([
-    [TaskStatus.PENDING, [TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED]],
-    [TaskStatus.IN_PROGRESS, [TaskStatus.PERFORMED, TaskStatus.PENDING, TaskStatus.CANCELLED]],
-    [TaskStatus.PERFORMED, [TaskStatus.COMPLETED, TaskStatus.PENDING]],
-    [TaskStatus.COMPLETED, []],  // Cannot transition from completed
-    [TaskStatus.CANCELLED, [TaskStatus.PENDING]],
-  ]);
-
   constructor(
     private readonly taskRepository: ITaskRepository,
     private readonly projectRepository: IProjectRepository,
@@ -108,13 +100,14 @@ export class TaskService implements ITaskService {
     const task = new Task({
       id: generateId(),
       projectId: data.projectId,
-      title: data.title,
       description: data.description,
       assigneeId: data.assigneeId,
       creatorId,
       status: TaskStatus.PENDING,
       priority: data.priority,
       dueDate: data.dueDate,
+      comments: data.comments ?? null,
+      fileIds: data.fileIds ?? [],
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -122,19 +115,19 @@ export class TaskService implements ITaskService {
     await this.taskRepository.save(task);
 
     // Record history
-    await this.recordHistory(task.id, creatorId, 'CREATED', TaskStatus.PENDING, 'Task created');
+    await this.recordHistory(task.id, creatorId, 'CREATED', null, TaskStatus.PENDING);
 
     // Notify assignee
     await this.notificationService.sendNotification({
       recipientId: data.assigneeId,
-      type: NotificationType.TASK_ASSIGNED,
+      type: NotificationType.NEW_TASK,
       title: 'Task Assigned',
-      message: `You have been assigned task: ${task.title}`,
+      message: `You have been assigned a new task: ${task.description}`,
       relatedProjectId: data.projectId,
       relatedTaskId: task.id,
     });
 
-    return this.mapToDto(task);
+    return this.mapToDto(task, creatorId);
   }
 
   /**
@@ -151,20 +144,37 @@ export class TaskService implements ITaskService {
       throw new NotFoundError(`Task ${data.id} not found`);
     }
 
-    // Update fields
-    if (data.title !== undefined) task.title = data.title;
+    const validation = await this.validateTaskData(data);
+    if (!validation.isValid) {
+      throw new ValidationError('Invalid task data', validation.errors || []);
+    }
+
     if (data.description !== undefined) task.description = data.description;
+    if (data.assigneeId !== undefined) task.assigneeId = data.assigneeId;
     if (data.priority !== undefined) task.priority = data.priority;
     if (data.dueDate !== undefined) task.dueDate = data.dueDate;
-    
-    task.updatedAt = new Date();
+    if (data.comments !== undefined) task.comments = data.comments;
 
-    await this.taskRepository.save(task);
+    if (data.fileIds !== undefined) {
+      const desired = new Set(data.fileIds);
+      for (const existingId of task.fileIds) {
+        if (!desired.has(existingId)) {
+          task.removeFile(existingId);
+        }
+      }
+      for (const nextId of desired) {
+        if (!task.fileIds.includes(nextId)) {
+          task.attachFile(nextId);
+        }
+      }
+    }
+
+    await this.taskRepository.update(task);
 
     // Record history
-    await this.recordHistory(task.id, userId, 'UPDATED', task.status, 'Task updated');
+    await this.recordHistory(task.id, userId, 'UPDATED', null, null);
 
-    return this.mapToDto(task);
+    return this.mapToDto(task, userId);
   }
 
   /**
@@ -188,7 +198,7 @@ export class TaskService implements ITaskService {
     await this.taskRepository.delete(taskId);
 
     // Record history
-    await this.recordHistory(taskId, userId, 'DELETED', task.status, 'Task deleted');
+    await this.recordHistory(taskId, userId, 'DELETED', task.status, null);
   }
 
   /**
@@ -205,7 +215,7 @@ export class TaskService implements ITaskService {
       throw new UnauthorizedError('You do not have permission to access this task');
     }
 
-    return this.mapToDto(task);
+    return this.mapToDto(task, userId);
   }
 
   /**
@@ -221,15 +231,15 @@ export class TaskService implements ITaskService {
       throw new UnauthorizedError('You do not have permission to access this project');
     }
 
-    const tasks = await this.taskRepository.findByProject(projectId, filters);
-    const taskDtos = tasks.map(t => this.mapToDto(t));
+    const allTasks = await this.taskRepository.findByProjectId(projectId);
+    const filtered = this.applyFilters(allTasks, filters);
+    const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
 
-    return {
-      tasks: taskDtos.map(t => this.mapToSummaryDto(t)),
-      total: taskDtos.length,
-      page: filters?.page || 1,
-      pageSize: filters?.pageSize || taskDtos.length,
-    };
+    const summaries = await Promise.all(
+      items.map((t) => this.mapToSummaryDto(t)),
+    );
+
+    return {tasks: summaries, total, page, limit, totalPages};
   }
 
   /**
@@ -244,15 +254,11 @@ export class TaskService implements ITaskService {
       throw new NotFoundError(`User ${assigneeId} not found`);
     }
 
-    const tasks = await this.taskRepository.findByAssignee(assigneeId, filters);
-    const taskDtos = tasks.map(t => this.mapToDto(t));
-
-    return {
-      tasks: taskDtos.map(t => this.mapToSummaryDto(t)),
-      total: taskDtos.length,
-      page: filters?.page || 1,
-      pageSize: filters?.pageSize || taskDtos.length,
-    };
+    const allTasks = await this.taskRepository.findByAssigneeId(assigneeId);
+    const filtered = this.applyFilters(allTasks, filters);
+    const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
+    const summaries = await Promise.all(items.map((t) => this.mapToSummaryDto(t)));
+    return {tasks: summaries, total, page, limit, totalPages};
   }
 
   /**
@@ -267,15 +273,11 @@ export class TaskService implements ITaskService {
       throw new NotFoundError(`User ${creatorId} not found`);
     }
 
-    const tasks = await this.taskRepository.findByCreator(creatorId, filters);
-    const taskDtos = tasks.map(t => this.mapToDto(t));
-
-    return {
-      tasks: taskDtos.map(t => this.mapToSummaryDto(t)),
-      total: taskDtos.length,
-      page: filters?.page || 1,
-      pageSize: filters?.pageSize || taskDtos.length,
-    };
+    const allTasks = await this.taskRepository.findByCreatorId(creatorId);
+    const filtered = this.applyFilters(allTasks, filters);
+    const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
+    const summaries = await Promise.all(items.map((t) => this.mapToSummaryDto(t)));
+    return {tasks: summaries, total, page, limit, totalPages};
   }
 
   /**
@@ -287,13 +289,8 @@ export class TaskService implements ITaskService {
       throw new NotFoundError(`User ${userId} not found`);
     }
 
-    const filters: TaskFilterDto = {
-      assigneeId: userId,
-      overdue: true,
-    };
-
-    const result = await this.getTasksByAssignee(userId, filters);
-    return result.tasks;
+    const tasks = await this.taskRepository.findOverdueByAssigneeId(userId);
+    return Promise.all(tasks.map((t) => this.mapToSummaryDto(t)));
   }
 
   /**
@@ -305,7 +302,7 @@ export class TaskService implements ITaskService {
       throw new NotFoundError(`Project ${projectId} not found`);
     }
 
-    return await this.taskRepository.countPendingByProject(projectId);
+    return await this.taskRepository.countPendingByProjectId(projectId);
   }
 
   /**
@@ -326,8 +323,11 @@ export class TaskService implements ITaskService {
       throw new NotFoundError(`Task ${data.taskId} not found`);
     }
 
-    // Validate transition
-    const validTransitions = this.statusTransitions.get(task.status) || [];
+    if (data.newStatus === TaskStatus.COMPLETED) {
+      throw new BusinessRuleError('Use confirmTask to complete a task');
+    }
+
+    const validTransitions = TaskStatusTransitions[task.status];
     if (!validTransitions.includes(data.newStatus)) {
       throw new BusinessRuleError(
         `Invalid status transition from ${task.status} to ${data.newStatus}`
@@ -335,18 +335,21 @@ export class TaskService implements ITaskService {
     }
 
     const oldStatus = task.status;
-    task.status = data.newStatus;
-    task.updatedAt = new Date();
+    if (data.newStatus === TaskStatus.PERFORMED) {
+      task.markAsPerformed(userId);
+    } else {
+      task.changeStatus(data.newStatus, userId);
+    }
 
-    await this.taskRepository.save(task);
+    await this.taskRepository.update(task);
 
     // Record history
     await this.recordHistory(
       task.id,
       userId,
       'STATUS_CHANGED',
-      data.newStatus,
-      data.notes || `Status changed from ${oldStatus} to ${data.newStatus}`
+      oldStatus,
+      data.newStatus
     );
 
     // Notify relevant parties
@@ -356,15 +359,15 @@ export class TaskService implements ITaskService {
     for (const recipientId of notifyIds) {
       await this.notificationService.sendNotification({
         recipientId,
-        type: NotificationType.TASK_STATUS_CHANGED,
+        type: NotificationType.TASK_STATUS_CHANGE,
         title: 'Task Status Changed',
-        message: `Task "${task.title}" status changed to ${data.newStatus}`,
+        message: `Task "${task.description}" status changed to ${data.newStatus}`,
         relatedProjectId: task.projectId,
         relatedTaskId: task.id,
       });
     }
 
-    return this.mapToDto(task);
+    return this.mapToDto(task, userId);
   }
 
   /**
@@ -385,34 +388,36 @@ export class TaskService implements ITaskService {
       throw new BusinessRuleError('Only tasks in PERFORMED status can be confirmed');
     }
 
-    // Client can accept (COMPLETED) or reject (back to PENDING)
-    task.status = data.accepted ? TaskStatus.COMPLETED : TaskStatus.PENDING;
-    task.updatedAt = new Date();
+    if (data.confirmed) {
+      task.confirm(userId);
+    } else {
+      task.rejectConfirmation(userId);
+    }
 
-    await this.taskRepository.save(task);
+    await this.taskRepository.update(task);
 
     // Record history
     await this.recordHistory(
       task.id,
       userId,
-      data.accepted ? 'CONFIRMED' : 'REJECTED',
-      task.status,
-      data.notes || (data.accepted ? 'Task confirmed' : 'Task rejected')
+      data.confirmed ? 'CONFIRMED' : 'REJECTED',
+      TaskStatus.PERFORMED,
+      task.status
     );
 
     // Notify assignee
     await this.notificationService.sendNotification({
       recipientId: task.assigneeId,
-      type: data.accepted ? NotificationType.TASK_COMPLETED : NotificationType.TASK_STATUS_CHANGED,
-      title: data.accepted ? 'Task Confirmed' : 'Task Rejected',
-      message: data.accepted
-        ? `Your task "${task.title}" has been confirmed`
-        : `Your task "${task.title}" needs revision`,
+      type: NotificationType.TASK_STATUS_CHANGE,
+      title: data.confirmed ? 'Task Confirmed' : 'Task Rejected',
+      message: data.confirmed
+        ? `Your task "${task.description}" has been confirmed`
+        : `Your task "${task.description}" needs revision`,
       relatedProjectId: task.projectId,
       relatedTaskId: task.id,
     });
 
-    return this.mapToDto(task);
+    return this.mapToDto(task, userId);
   }
 
   /**
@@ -467,16 +472,23 @@ export class TaskService implements ITaskService {
       throw new UnauthorizedError('You do not have permission to access this task');
     }
 
-    const history = await this.taskHistoryRepository.findByTask(taskId);
-    
-    return history.map(h => ({
+    const history = await this.taskHistoryRepository.findByTaskId(taskId);
+
+    const usersById = new Map<string, string>();
+    await Promise.all(
+      [...new Set(history.map((h) => h.userId))].map(async (id) => {
+        const u = await this.userRepository.findById(id);
+        usersById.set(id, u?.username ?? 'Unknown');
+      }),
+    );
+
+    return history.map((h) => ({
       id: h.id,
-      taskId: h.taskId,
-      userId: h.userId,
       action: h.action,
-      oldValue: h.oldValue,
+      previousValue: h.previousValue,
       newValue: h.newValue,
-      notes: h.notes,
+      userId: h.userId,
+      userName: usersById.get(h.userId) ?? 'Unknown',
       timestamp: h.timestamp,
     }));
   }
@@ -495,7 +507,7 @@ export class TaskService implements ITaskService {
       throw new UnauthorizedError('You do not have permission to access this task');
     }
 
-    return this.statusTransitions.get(task.status) || [];
+    return TaskStatusTransitions[task.status];
   }
 
   /**
@@ -504,18 +516,36 @@ export class TaskService implements ITaskService {
   public async validateTaskData(
     data: CreateTaskDto | UpdateTaskDto
   ): Promise<ValidationResultDto> {
-    const errors = [];
+    const errors: Array<ReturnType<typeof createError>> = [];
 
-    if ('title' in data && (!data.title || data.title.trim().length === 0)) {
-      errors.push(createError('title', 'Task title is required', 'REQUIRED'));
-    }
-
-    if ('title' in data && data.title && data.title.length > 200) {
-      errors.push(createError('title', 'Task title must be 200 characters or less', 'TOO_LONG'));
+    if ('description' in data) {
+      if (!data.description || data.description.trim().length === 0) {
+        errors.push(
+          createError(
+            'description',
+            'Task description is required',
+            ValidationErrorCode.REQUIRED,
+          ),
+        );
+      } else if (data.description.length > 1000) {
+        errors.push(
+          createError(
+            'description',
+            'Task description must be 1000 characters or less',
+            ValidationErrorCode.TOO_LONG,
+          ),
+        );
+      }
     }
 
     if ('dueDate' in data && data.dueDate && data.dueDate < new Date()) {
-      errors.push(createError('dueDate', 'Due date cannot be in the past', 'INVALID_DATE'));
+      errors.push(
+        createError(
+          'dueDate',
+          'Due date cannot be in the past',
+          ValidationErrorCode.DATE_IN_PAST,
+        ),
+      );
     }
 
     return errors.length > 0 ? invalidResult(errors) : validResult();
@@ -528,16 +558,16 @@ export class TaskService implements ITaskService {
     taskId: string,
     userId: string,
     action: string,
-    newValue: TaskStatus,
-    notes?: string
+    previousValue: TaskStatus | null,
+    newValue: TaskStatus | null
   ): Promise<void> {
     const history = new TaskHistory({
       id: generateId(),
       taskId,
       userId,
       action,
-      newValue: newValue.toString(),
-      notes,
+      previousValue: previousValue?.toString() ?? null,
+      newValue: newValue?.toString() ?? null,
       timestamp: new Date(),
     });
 
@@ -547,33 +577,137 @@ export class TaskService implements ITaskService {
   /**
    * Maps task entity to DTO.
    */
-  private mapToDto(task: Task): TaskDto {
+  private async mapToDto(task: Task, userId: string): Promise<TaskDto> {
+    const project = await this.projectRepository.findById(task.projectId);
+    if (!project) {
+      throw new NotFoundError(`Project ${task.projectId} not found`);
+    }
+
+    const [creator, assignee] = await Promise.all([
+      this.userRepository.findById(task.creatorId),
+      this.userRepository.findById(task.assigneeId),
+    ]);
+
+    const files = await Promise.all(
+      task.fileIds.map(async (fileId) => {
+        const file = await this.fileRepository.findById(fileId);
+        if (!file) return null;
+        const uploader = await this.userRepository.findById(file.uploadedBy);
+        return {
+          id: file.id,
+          name: file.name,
+          type: file.type,
+          sizeInBytes: file.sizeInBytes,
+          humanReadableSize: file.getHumanReadableSize(),
+          uploadedBy: file.uploadedBy,
+          uploaderName: uploader?.username ?? 'Unknown',
+          uploadedAt: file.uploadedAt,
+          downloadUrl: `/api/files/${file.id}/download`,
+        };
+      }),
+    );
+
+    const canModify = await this.authorizationService.canModifyTask(userId, task.id);
+    const canDelete = await this.authorizationService.canDeleteTask(userId, task.id);
+    const canConfirm = await this.authorizationService.canConfirmTask(userId, task.id);
+
+    const allowedTransitions = TaskStatusTransitions[task.status];
+    const transitionChecks = await Promise.all(
+      allowedTransitions.map(async (next) => {
+        const ok = await this.authorizationService.canChangeTaskStatus(userId, task.id, next);
+        return ok ? next : null;
+      }),
+    );
+
+    const allowedStatusTransitions = transitionChecks.filter(
+      (s): s is TaskStatus => s !== null,
+    );
+
     return {
       id: task.id,
       projectId: task.projectId,
-      title: task.title,
+      projectCode: project.code,
+      projectName: project.name,
       description: task.description,
-      assigneeId: task.assigneeId,
       creatorId: task.creatorId,
+      creatorName: task.creatorName ?? creator?.username ?? 'Unknown',
+      assigneeId: task.assigneeId,
+      assigneeName: task.assigneeName ?? assignee?.username ?? 'Unknown',
       status: task.status,
       priority: task.priority,
       dueDate: task.dueDate,
+      comments: task.comments,
+      fileIds: task.fileIds,
+      files: files.filter((f): f is NonNullable<typeof f> => f !== null),
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
+      completedAt: task.completedAt,
+      confirmedAt: task.confirmedAt,
+      isOverdue: task.isOverdue(),
+      canModify,
+      canDelete,
+      canConfirm,
+      canChangeStatus: allowedStatusTransitions.length > 0,
+      allowedStatusTransitions,
     };
   }
 
-  /**
-   * Maps task to summary DTO.
-   */
-  private mapToSummaryDto(task: TaskDto): TaskSummaryDto {
+  private async mapToSummaryDto(task: Task): Promise<TaskSummaryDto> {
+    const [creator, assignee] = await Promise.all([
+      this.userRepository.findById(task.creatorId),
+      this.userRepository.findById(task.assigneeId),
+    ]);
+
     return {
       id: task.id,
-      title: task.title,
+      description: task.description,
+      assigneeId: task.assigneeId,
+      assigneeName: task.assigneeName ?? assignee?.username ?? 'Unknown',
+      creatorId: task.creatorId,
+      creatorName: task.creatorName ?? creator?.username ?? 'Unknown',
       status: task.status,
       priority: task.priority,
       dueDate: task.dueDate,
-      assigneeId: task.assigneeId,
+      isOverdue: task.isOverdue(),
+      hasAttachments: task.fileIds.length > 0,
+      attachmentCount: task.fileIds.length,
+      createdAt: task.createdAt,
     };
+  }
+
+  private applyFilters(tasks: Task[], filters?: TaskFilterDto): Task[] {
+    if (!filters) return tasks;
+
+    return tasks.filter((t) => {
+      if (filters.projectId && t.projectId !== filters.projectId) return false;
+      if (filters.assigneeId && t.assigneeId !== filters.assigneeId) return false;
+      if (filters.creatorId && t.creatorId !== filters.creatorId) return false;
+      if (filters.status && t.status !== filters.status) return false;
+      if (filters.priority && t.priority !== filters.priority) return false;
+      if (filters.isOverdue && !t.isOverdue()) return false;
+      if (filters.dueDateFrom && t.dueDate < filters.dueDateFrom) return false;
+      if (filters.dueDateTo && t.dueDate > filters.dueDateTo) return false;
+      if (filters.searchTerm) {
+        const term = filters.searchTerm.toLowerCase();
+        if (!t.description.toLowerCase().includes(term)) return false;
+      }
+      return true;
+    });
+  }
+
+  private paginate(tasks: Task[], filters?: TaskFilterDto): {
+    items: Task[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  } {
+    const total = tasks.length;
+    const page = Math.max(1, filters?.page ?? 1);
+    const limit = Math.max(1, filters?.limit ?? (total || 1));
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const start = (page - 1) * limit;
+    const items = tasks.slice(start, start + limit);
+    return {items, page, limit, total, totalPages};
   }
 }

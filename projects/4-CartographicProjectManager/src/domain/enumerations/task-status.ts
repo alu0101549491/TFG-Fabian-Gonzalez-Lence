@@ -76,7 +76,7 @@ export const TaskStatusTransitions: Record<TaskStatus, TaskStatus[]> = {
     TaskStatus.IN_PROGRESS,
     TaskStatus.PERFORMED,
   ],
-  [TaskStatus.PERFORMED]: [TaskStatus.COMPLETED],
+  [TaskStatus.PERFORMED]: [TaskStatus.COMPLETED, TaskStatus.PENDING],
   [TaskStatus.COMPLETED]: [],
 };
 
