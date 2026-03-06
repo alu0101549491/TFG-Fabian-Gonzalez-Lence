@@ -130,7 +130,7 @@
             <!-- Recent Activity -->
             <div class="info-card">
               <h2>Recent Activity</h2>
-              <TaskHistory :history="currentProject.tasks.slice(0, 5).map(t => ({}))" :loading="isLoading" />
+              <TaskHistory :history="[]" :loading="false" />
             </div>
           </div>
         </section>
@@ -198,7 +198,7 @@
               @file-click="handleFileDownload"
             />
             <MessageInput
-              :disabled="currentProject.project.status === 'finalized'"
+              :disabled="currentProject.project.status === ProjectStatus.FINALIZED"
               @send="handleMessageSend"
             />
           </div>
@@ -219,7 +219,7 @@
           </div>
 
           <FileUploader
-            v-if="canUploadFiles && currentProject.project.status !== 'finalized'"
+            v-if="canUploadFiles && currentProject.project.status !== ProjectStatus.FINALIZED"
             :project-id="currentProject.project.id"
             :sections="currentProject.sections.map(s => s.name)"
             :max-file-size="50 * 1024 * 1024"
@@ -230,10 +230,10 @@
           />
 
           <FileList
-            :files="projectFiles"
+            :files="projectFilesForList"
             :loading="filesLoading"
             :can-delete="canManageCurrentProject"
-            :current-user-id="userId"
+            :current-user-id="userId ?? undefined"
             :is-admin="isAdmin"
             @file-download="handleFileDownload"
             @file-delete="handleFileDelete"
@@ -548,11 +548,13 @@ import MessageList from '../components/message/MessageList.vue';
 import MessageInput from '../components/message/MessageInput.vue';
 import FileList from '../components/file/FileList.vue';
 import FileUploader from '../components/file/FileUploader.vue';
+import type {FileUploadProgressDto} from '../components/file/FileUploader.vue';
+import type {FileListItemDto} from '../components/file/FileList.vue';
 import type {UpdateProjectDto, FileSummaryDto} from '@/application/dto';
+import {ProjectStatus} from '@/domain/enumerations/project-status';
 import {TaskStatus} from '@/domain/enumerations/task-status';
 import {STORAGE_KEYS} from '@/shared/constants';
 import type {CreateTaskDto, UpdateTaskDto, TaskDto, TaskSummaryDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto/task-data.dto';
-import type {MessageDto} from '@/application/dto/message-data.dto';
 
 // Composables
 const router = useRouter();
@@ -595,14 +597,15 @@ const {
 } = useFiles();
 
 // Local State
-const activeTab = ref<'tasks' | 'files' | 'messages' | 'overview'>('overview');
+type TabKey = 'overview' | 'tasks' | 'messages' | 'files';
+const activeTab = ref<TabKey>('overview');
 const messageListRef = ref<InstanceType<typeof MessageList> | null>(null);
 const messagesContainerRef = ref<HTMLElement | null>(null);
 const overviewPanelRef = ref<HTMLElement | null>(null);
 const tasksPanelRef = ref<HTMLElement | null>(null);
 const messagesPanelRef = ref<HTMLElement | null>(null);
 const filesPanelRef = ref<HTMLElement | null>(null);
-const taskStatusFilter = ref('');
+const taskStatusFilter = ref<TaskStatus | ''>('');
 const showEditModal = ref(false);
 const showCreateTaskModal = ref(false);
 const showTaskDetailsModal = ref(false);
@@ -613,7 +616,7 @@ const showDeleteModal = ref(false);
 const isFinalizing = ref(false);
 const isDeleting = ref(false);
 const isUploadingFiles = ref(false);
-const uploadProgress = ref<Array<{fileId: string; status: string; progress: number; error?: string}>>([]);
+const uploadProgress = ref<FileUploadProgressDto[]>([]);
 
 // Computed Properties
 const projectId = computed(() => route.params.id as string);
@@ -633,10 +636,6 @@ const canCreateTask = computed(() =>
 
 const canUploadFiles = computed(() => 
   currentProject.value?.currentUserPermissions?.canUploadFile ?? false
-);
-
-const canDownloadFiles = computed(() => 
-  currentProject.value?.currentUserPermissions?.canDownloadFile ?? false
 );
 
 const filteredTasks = computed(() => {
@@ -672,7 +671,24 @@ const enrichedMessages = computed(() => {
   });
 });
 
-const tabs = computed(() => [
+const projectFilesForList = computed<FileListItemDto[]>(() => {
+  const sectionByFileId = new Map<string, string>();
+
+  if (currentProject.value) {
+    for (const section of currentProject.value.sections) {
+      for (const file of section.files) {
+        sectionByFileId.set(file.id, section.name);
+      }
+    }
+  }
+
+  return projectFiles.value.map((file) => ({
+    ...file,
+    section: sectionByFileId.get(file.id) ?? null,
+  }));
+});
+
+const tabs = computed((): Array<{key: TabKey; label: string; badge: number}> => [
   {key: 'overview', label: 'Overview', badge: 0},
   {key: 'tasks', label: 'Tasks', badge: taskStats.value.pending},
   {key: 'messages', label: 'Messages', badge: enrichedMessages.value.filter((m) => !m.isRead).length},
@@ -695,9 +711,10 @@ const availableAssignees = computed(() => {
   if (creatorId && isSpecialUser.value && creatorId === userId.value) {
     const creatorExists = assignees.some(a => a.id === creatorId);
     if (!creatorExists && user.value) {
+      const fullName = `${user.value.firstName} ${user.value.lastName}`.trim();
       assignees.push({
         id: user.value.id,
-        name: user.value.name,
+        name: fullName || user.value.username,
         role: user.value.role
       });
     }
@@ -852,7 +869,12 @@ async function handleDeleteConfirm(): Promise<void> {
  *
  * @param {CreateTaskDto} taskData - New task data
  */
-async function handleTaskCreate(taskData: CreateTaskDto): Promise<void> {
+async function handleTaskCreate(taskData: CreateTaskDto | UpdateTaskDto): Promise<void> {
+  if (!('projectId' in taskData)) {
+    console.error('Invalid create task payload');
+    return;
+  }
+
   try {
     const result = await createTask(taskData);
     
@@ -872,8 +894,11 @@ async function handleTaskCreate(taskData: CreateTaskDto): Promise<void> {
  *
  * @param {TaskDto} task - Clicked task
  */
-function handleTaskClick(task: TaskDto): void {
-  selectedTask.value = task;
+function handleTaskClick(task: TaskDto | TaskSummaryDto): void {
+  const resolvedTask = 'projectId' in task ? task : (projectTasks.value.find((t) => t.id === task.id) ?? null);
+  if (!resolvedTask) return;
+
+  selectedTask.value = resolvedTask;
   showTaskDetailsModal.value = true;
 }
 
@@ -882,8 +907,11 @@ function handleTaskClick(task: TaskDto): void {
  *
  * @param {TaskDto} task - Task to edit
  */
-function handleTaskEdit(task: TaskDto): void {
-  selectedTask.value = task;
+function handleTaskEdit(task: TaskDto | TaskSummaryDto): void {
+  const resolvedTask = 'projectId' in task ? task : (projectTasks.value.find((t) => t.id === task.id) ?? null);
+  if (!resolvedTask) return;
+
+  selectedTask.value = resolvedTask;
   showTaskEditModal.value = true;
 }
 
@@ -975,12 +1003,17 @@ async function handleConfirmTask(data: ConfirmTaskDto): Promise<void> {
  *
  * @param {TaskDto} task - Task to delete
  */
-async function handleTaskDelete(task: TaskDto): Promise<void> {
-  try {
-    await deleteTask(task.id);
-  } catch (error) {
-    console.error('Failed to delete task:', error);
-  }
+function handleTaskDelete(task: TaskDto | TaskSummaryDto): void {
+  const resolvedTask = 'projectId' in task ? task : (projectTasks.value.find((t) => t.id === task.id) ?? null);
+  if (!resolvedTask) return;
+
+  void (async () => {
+    try {
+      await deleteTask(resolvedTask.id);
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    }
+  })();
 }
 
 /**

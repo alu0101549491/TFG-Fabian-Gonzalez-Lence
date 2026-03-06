@@ -17,6 +17,37 @@ import type {Server as HttpServer} from 'http';
 import {WEBSOCKET} from '@shared/constants.js';
 import {logInfo, logError} from '@shared/logger.js';
 import {verifyAccessToken} from '../auth/jwt.service.js';
+import {PermissionRepository} from '../repositories/permission.repository.js';
+import {ProjectRepository} from '../repositories/project.repository.js';
+
+const permissionRepository = new PermissionRepository();
+const projectRepository = new ProjectRepository();
+
+async function canJoinProjectRoom(
+  userId: string,
+  userRole: unknown,
+  projectId: string
+): Promise<boolean> {
+  if (!projectId) return false;
+
+  // Allow privileged roles to join any project room
+  if (userRole === 'ADMINISTRATOR' || userRole === 'ADMIN') {
+    return true;
+  }
+
+  // Check if user is the client of the project
+  const project = await projectRepository.findById(projectId);
+  if (project && project.clientId === userId) {
+    return true;
+  }
+
+  // Check if user has explicit permissions
+  const permission = await permissionRepository.findByUserAndProject(
+    userId,
+    projectId
+  );
+  return permission !== null;
+}
 
 /**
  * Socket.io server instance
@@ -58,19 +89,48 @@ export function initializeSocketServer(httpServer: HttpServer): void {
   // Connection handler
   io.on('connection', (socket) => {
     const userId = socket.data.userId;
+    const userRole = socket.data.userRole;
     logInfo(`WebSocket client connected: ${userId}`);
 
     // Join user's personal room
     socket.join(`user:${userId}`);
 
     // Join project room (frontend emits 'join:project')
-    socket.on('join:project', (data: {projectId: string}) => {
-      const projectId = data.projectId;
-      const roomName = `project:${projectId}`;
-      socket.join(roomName);
-      console.log(`✅ [WebSocket] User ${userId} joined room '${roomName}'`);
-      logInfo(`User ${userId} joined project room ${projectId}`);
-    });
+    socket.on(
+      'join:project',
+      async (
+        data: {projectId: string},
+        ack?: (result: {ok: boolean; reason?: string}) => void
+      ) => {
+        try {
+          const projectId = data.projectId;
+
+          const authorized = await canJoinProjectRoom(
+            userId,
+            userRole,
+            projectId
+          );
+          if (!authorized) {
+            logInfo(
+              `WebSocket join denied: user=${userId} project=${projectId}`
+            );
+            ack?.({ok: false, reason: 'unauthorized'});
+            return;
+          }
+
+          const roomName = `project:${projectId}`;
+          socket.join(roomName);
+          console.log(
+            `✅ [WebSocket] User ${userId} joined room '${roomName}'`
+          );
+          logInfo(`User ${userId} joined project room ${projectId}`);
+          ack?.({ok: true});
+        } catch (error) {
+          logError('WebSocket join:project error:', error as Error);
+          ack?.({ok: false, reason: 'error'});
+        }
+      }
+    );
 
     // Leave project room (frontend emits 'leave:project')
     socket.on('leave:project', (data: {projectId: string}) => {
@@ -82,10 +142,35 @@ export function initializeSocketServer(httpServer: HttpServer): void {
     });
 
     // Legacy: Subscribe to project updates (keep for compatibility)
-    socket.on('project:subscribe', (projectId: string) => {
-      socket.join(`project:${projectId}`);
-      logInfo(`User ${userId} subscribed to project ${projectId}`);
-    });
+    socket.on(
+      'project:subscribe',
+      async (
+        projectId: string,
+        ack?: (result: {ok: boolean; reason?: string}) => void
+      ) => {
+        try {
+          const authorized = await canJoinProjectRoom(
+            userId,
+            userRole,
+            projectId
+          );
+          if (!authorized) {
+            logInfo(
+              `WebSocket subscribe denied: user=${userId} project=${projectId}`
+            );
+            ack?.({ok: false, reason: 'unauthorized'});
+            return;
+          }
+
+          socket.join(`project:${projectId}`);
+          logInfo(`User ${userId} subscribed to project ${projectId}`);
+          ack?.({ok: true});
+        } catch (error) {
+          logError('WebSocket project:subscribe error:', error as Error);
+          ack?.({ok: false, reason: 'error'});
+        }
+      }
+    );
 
     // Legacy: Unsubscribe from project updates (keep for compatibility)
     socket.on('project:unsubscribe', (projectId: string) => {

@@ -102,21 +102,22 @@
 import {ref, computed, onMounted} from 'vue';
 import {useRouter} from 'vue-router';
 import {useProjects} from '../composables/use-projects';
-import {useTaskStore, useProjectStore} from '../stores';
+import {useTaskStore} from '../stores';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import CalendarWidget from '../components/calendar/CalendarWidget.vue';
 import ProjectCard from '../components/project/ProjectCard.vue';
-import type {Project} from '@/shared/models/project.model';
-import type {CalendarTaskDto, CalendarProjectDto} from '@/application/dto';
+import type {CalendarTaskDto, CalendarProjectDto, ProjectSummaryDto} from '@/application/dto';
 
 // Composables
 const router = useRouter();
-const {   calendarProjects,
+const {
+  projects,
+  fetchProjects,
+  calendarProjects,
   isLoading,
   loadCalendarProjects,
 } = useProjects();
 const taskStore = useTaskStore();
-const projectStore = useProjectStore();
 
 // Local State
 const selectedDate = ref<Date | null>(null);
@@ -126,7 +127,7 @@ const calendarTasks = computed<CalendarTaskDto[]>(() => {
   const allTasks: CalendarTaskDto[] = [];
   
   // Get all tasks from all loaded projects
-  for (const [projectId, tasks] of taskStore.tasksByProject.entries()) {
+  for (const [, tasks] of taskStore.tasksByProject.entries()) {
     for (const task of tasks) {
       allTasks.push({
         id: task.id,
@@ -157,13 +158,13 @@ const formatSelectedDate = computed(() => {
   });
 });
 
-const projectsOnDate = computed(() => {
+const projectsOnDate = computed<ProjectSummaryDto[]>(() => {
   if (!selectedDate.value) return [];
 
   const targetDate = new Date(selectedDate.value);
   targetDate.setHours(0, 0, 0, 0);
 
-  return calendarProjects.value.filter((project) => {
+  return projects.value.filter((project) => {
     const deliveryDate = new Date(project.deliveryDate);
     deliveryDate.setHours(0, 0, 0, 0);
     return deliveryDate.getTime() === targetDate.getTime();
@@ -249,6 +250,9 @@ function handleDateClick(date: Date): void {
 
 // Lifecycle
 onMounted(async () => {
+  // Ensure we have full project summaries for the ProjectCard list
+  await fetchProjects().catch(() => null);
+
   const today = new Date();
   // Get first day of current month
   const startDate = new Date(today.getFullYear(), today.getMonth(), 1);

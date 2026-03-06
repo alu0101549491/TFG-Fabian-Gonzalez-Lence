@@ -313,6 +313,27 @@ export class Task {
   }
 
   /**
+   * Rejects a performed task, returning it to PENDING.
+   *
+   * @param userId - User rejecting (must be task creator)
+   * @throws {Error} If user cannot reject or status invalid
+   */
+  public rejectConfirmation(userId: string): void {
+    if (userId !== this.creatorId) {
+      throw new Error('Only the task creator can reject completion');
+    }
+
+    if (this.statusValue !== TaskStatus.PERFORMED) {
+      throw new Error('Task must be in PERFORMED status to be rejected');
+    }
+
+    this.statusValue = TaskStatus.PENDING;
+    this.completedAtValue = null;
+    this.confirmedAtValue = null;
+    this.touchUpdatedAt();
+  }
+
+  /**
    * Checks if user can confirm this task.
    *
    * @param userId - User ID to check

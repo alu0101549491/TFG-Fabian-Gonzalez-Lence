@@ -327,6 +327,7 @@ function removeFile(index: number): void {
  */
 function handleDragOver(event: DragEvent): void {
   if (!props.allowFiles || props.disabled) return;
+  event.preventDefault();
   isDragging.value = true;
 }
 
@@ -334,6 +335,7 @@ function handleDragOver(event: DragEvent): void {
  * Handle drag leave
  */
 function handleDragLeave(event: DragEvent): void {
+  void event;
   isDragging.value = false;
 }
 

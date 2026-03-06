@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 defineProps<{isOpen?: boolean}>();
-const emit = defineEmits<{close: []}>;
+const emit = defineEmits<{(e: 'close'): void}>();
 
 function closeSidebar() {
   emit('close');

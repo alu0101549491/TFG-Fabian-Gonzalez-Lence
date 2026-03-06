@@ -49,7 +49,7 @@
           <!-- Header: User + Time -->
           <div class="task-history-header">
             <span class="task-history-user">{{ entry.userName }}</span>
-            <span class="task-history-time">{{ formatRelativeTime(entry.createdAt) }}</span>
+            <span class="task-history-time">{{ formatRelativeTime(entry.timestamp) }}</span>
           </div>
 
           <!-- Action description -->
@@ -62,11 +62,6 @@
             <span v-if="entry.newValue" class="task-history-new-value">{{ formatValue(entry.newValue) }}</span>
           </div>
 
-          <!-- Comment (if any) -->
-          <div v-if="entry.comment" class="task-history-comment">
-            <span class="task-history-comment-icon">💬</span>
-            <p class="task-history-comment-text">"{{ entry.comment }}"</p>
-          </div>
         </div>
       </div>
     </div>
@@ -87,7 +82,7 @@ export interface TaskHistoryProps {
   loading?: boolean;
 }
 
-const props = withDefaults(defineProps<TaskHistoryProps>(), {
+withDefaults(defineProps<TaskHistoryProps>(), {
   loading: false,
 });
 

@@ -19,9 +19,7 @@ import {
   type MessageFilterDto,
   type MessageListResponseDto,
   type UnreadCountsDto,
-  ValidationResultDto,
-  validResult,
-  invalidResult,
+  ValidationErrorCode,
   createError,
 } from '../dto';
 import {IMessageService} from '../interfaces/message-service.interface';
@@ -29,27 +27,26 @@ import {
   type IMessageRepository,
   type IProjectRepository,
   type IUserRepository,
-  type IMessageReadRepository,
 } from '../../domain/repositories';
 import {INotificationService} from '../interfaces/notification-service.interface';
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
 import {UnauthorizedError, NotFoundError, ValidationError} from './common/errors';
 import {generateId, truncate} from './common/utils';
 import {Message} from '../../domain/entities/message';
-import {MessageRead} from '../../domain/entities/message-read';
 import {NotificationType} from '../../domain/enumerations/notification-type';
+import {UserRole} from '../../domain/enumerations/user-role';
 
 /**
  * Implementation of message management operations.
  */
 export class MessageService implements IMessageService {
   private readonly MAX_CONTENT_LENGTH = 5000;
+  private readonly SYSTEM_SENDER_ID = 'SYSTEM';
 
   constructor(
     private readonly messageRepository: IMessageRepository,
     private readonly projectRepository: IProjectRepository,
     private readonly userRepository: IUserRepository,
-    private readonly messageReadRepository: IMessageReadRepository,
     private readonly notificationService: INotificationService,
     private readonly authorizationService: IAuthorizationService
   ) {}
@@ -61,7 +58,11 @@ export class MessageService implements IMessageService {
     // Validate content length
     if (data.content.length > this.MAX_CONTENT_LENGTH) {
       throw new ValidationError('Message content too long', [
-        createError('content', `Message must be ${this.MAX_CONTENT_LENGTH} characters or less`, 'TOO_LONG'),
+        createError(
+          'content',
+          `Message must be ${this.MAX_CONTENT_LENGTH} characters or less`,
+          ValidationErrorCode.TOO_LONG,
+        ),
       ]);
     }
 
@@ -77,35 +78,37 @@ export class MessageService implements IMessageService {
       throw new NotFoundError(`Project ${data.projectId} not found`);
     }
 
+    const sender = await this.userRepository.findById(senderId);
+    if (!sender) {
+      throw new NotFoundError(`User ${senderId} not found`);
+    }
+
     // Create message
     const message = new Message({
       id: generateId(),
       projectId: data.projectId,
       senderId,
+      senderName: sender.username,
+      senderRole: sender.role,
       content: data.content,
-      isSystemMessage: false,
+      type: 'NORMAL',
+      fileIds: data.fileIds ?? [],
+      readByUserIds: [senderId],
       sentAt: new Date(),
     });
 
-    await this.messageRepository.save(message);
+    const saved = await this.messageRepository.save(message);
 
-    // Mark as read by sender automatically
-    const senderRead = new MessageRead({
-      id: generateId(),
-      messageId: message.id,
-      userId: senderId,
-      readAt: new Date(),
-    });
-    await this.messageReadRepository.save(senderRead);
-
-    // Get all project participants
-    const participants = await this.projectRepository.getParticipants(data.projectId);
+    // Derive participants (client + special users)
+    const participantIds = Array.from(
+      new Set([project.clientId, ...project.specialUserIds]),
+    );
     
     // Notify all participants except sender
-    for (const participant of participants) {
-      if (participant.userId !== senderId) {
+    for (const participantId of participantIds) {
+      if (participantId !== senderId) {
         await this.notificationService.sendNotification({
-          recipientId: participant.userId,
+          recipientId: participantId,
           type: NotificationType.NEW_MESSAGE,
           title: 'New Message',
           message: `New message in project ${project.name}: ${truncate(data.content, 50)}`,
@@ -114,7 +117,7 @@ export class MessageService implements IMessageService {
       }
     }
 
-    return this.mapToDto(message);
+    return await this.mapToDto(saved, senderId);
   }
 
   /**
@@ -130,23 +133,13 @@ export class MessageService implements IMessageService {
       throw new UnauthorizedError('You do not have permission to access messages in this project');
     }
 
-    const messages = await this.messageRepository.findByProject(projectId, filters);
-    const messageDtos = await Promise.all(
-      messages.map(async m => {
-        const readStatus = await this.messageReadRepository.findByMessageAndUser(m.id, userId);
-        return {
-          ...this.mapToDto(m),
-          isRead: readStatus !== null,
-        };
-      })
-    );
+    const allMessages = await this.messageRepository.findByProjectId(projectId);
+    const filtered = this.applyFilters(allMessages, userId, filters);
+    const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
+    const unreadCount = await this.messageRepository.countUnreadByProjectAndUser(projectId, userId);
 
-    return {
-      messages: messageDtos,
-      total: messageDtos.length,
-      page: filters?.page || 1,
-      pageSize: filters?.pageSize || messageDtos.length,
-    };
+    const messageDtos = await Promise.all(items.map((m) => this.mapToDto(m, userId)));
+    return {messages: messageDtos, total, page, limit, totalPages, unreadCount};
   }
 
   /**
@@ -161,16 +154,21 @@ export class MessageService implements IMessageService {
       throw new NotFoundError(`User ${userId} not found`);
     }
 
-    // Get all accessible projects
-    // TODO: Implement efficient query
-    const messages = await this.messageRepository.findByUser(userId, filters);
-    const messageDtos = messages.map(m => this.mapToDto(m));
+    const messages = filters?.projectId
+      ? await this.messageRepository.findByProjectIdAndSenderId(filters.projectId, userId)
+      : await this.messageRepository.findBySenderId(userId);
+
+    const filtered = this.applyFilters(messages, userId, filters);
+    const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
+    const messageDtos = await Promise.all(items.map((m) => this.mapToDto(m, userId)));
 
     return {
       messages: messageDtos,
-      total: messageDtos.length,
-      page: filters?.page || 1,
-      pageSize: filters?.pageSize || messageDtos.length,
+      total,
+      page,
+      limit,
+      totalPages,
+      unreadCount: filtered.filter((m) => !m.isReadBy(userId)).length,
     };
   }
 
@@ -178,27 +176,23 @@ export class MessageService implements IMessageService {
    * Marks specific messages as read by a user.
    */
   public async markMessagesAsRead(data: MarkMessagesReadDto, userId: string): Promise<void> {
+    const canAccess = await this.authorizationService.canAccessMessages(userId, data.projectId);
+    if (!canAccess) {
+      throw new UnauthorizedError('You do not have permission to access messages in this project');
+    }
+
+    if (!data.messageIds || data.messageIds.length === 0) {
+      await this.messageRepository.markAsReadByProjectAndUser(data.projectId, userId);
+      return;
+    }
+
     for (const messageId of data.messageIds) {
-      // Check if message exists
       const message = await this.messageRepository.findById(messageId);
-      if (!message) {
-        continue; // Skip non-existent messages
-      }
+      if (!message) continue;
+      if (message.projectId !== data.projectId) continue;
 
-      // Check if already read
-      const existing = await this.messageReadRepository.findByMessageAndUser(messageId, userId);
-      if (existing) {
-        continue; // Already marked as read
-      }
-
-      // Mark as read
-      const messageRead = new MessageRead({
-        id: generateId(),
-        messageId,
-        userId,
-        readAt: new Date(),
-      });
-      await this.messageReadRepository.save(messageRead);
+      message.markAsRead(userId);
+      await this.messageRepository.update(message);
     }
   }
 
@@ -211,20 +205,7 @@ export class MessageService implements IMessageService {
       throw new UnauthorizedError('You do not have permission to access messages in this project');
     }
 
-    const messages = await this.messageRepository.findByProject(projectId);
-    
-    for (const message of messages) {
-      const existing = await this.messageReadRepository.findByMessageAndUser(message.id, userId);
-      if (!existing) {
-        const messageRead = new MessageRead({
-          id: generateId(),
-          messageId: message.id,
-          userId,
-          readAt: new Date(),
-        });
-        await this.messageReadRepository.save(messageRead);
-      }
-    }
+    await this.messageRepository.markAsReadByProjectAndUser(projectId, userId);
   }
 
   /**
@@ -248,14 +229,9 @@ export class MessageService implements IMessageService {
       throw new NotFoundError(`User ${userId} not found`);
     }
 
-    // Get all projects user has access to
-    // TODO: Implement efficient query
-    const counts: Record<string, number> = {};
-    
-    return {
-      projectCounts: counts,
-      totalUnread: Object.values(counts).reduce((sum, count) => sum + count, 0),
-    };
+    // TODO: Implement "counts per project" once we have a project listing query.
+    // For now, return a placeholder.
+    return {projectId: '', projectCode: '', unreadCount: 0};
   }
 
   /**
@@ -290,7 +266,7 @@ export class MessageService implements IMessageService {
       throw new UnauthorizedError('You do not have permission to access this message');
     }
 
-    return this.mapToDto(message);
+    return await this.mapToDto(message, userId);
   }
 
   /**
@@ -302,31 +278,66 @@ export class MessageService implements IMessageService {
       throw new NotFoundError(`Project ${projectId} not found`);
     }
 
-    const message = new Message({
-      id: generateId(),
-      projectId,
-      senderId: null, // System message has no sender
-      content,
-      isSystemMessage: true,
-      sentAt: new Date(),
-    });
-
-    await this.messageRepository.save(message);
-
-    return this.mapToDto(message);
+    const message = Message.createSystemMessage(projectId, content);
+    const saved = await this.messageRepository.save(message);
+    return await this.mapToDto(saved, this.SYSTEM_SENDER_ID);
   }
 
   /**
    * Maps message entity to DTO.
    */
-  private mapToDto(message: Message): MessageDto {
+  private async mapToDto(message: Message, currentUserId: string): Promise<MessageDto> {
+    const sender = message.senderId === this.SYSTEM_SENDER_ID
+      ? null
+      : await this.userRepository.findById(message.senderId);
+
+    const senderName = sender?.username ?? message.senderName ?? 'System';
+    const senderRole = (sender?.role ?? (message.senderRole as UserRole) ?? UserRole.CLIENT);
+
     return {
       id: message.id,
       projectId: message.projectId,
-      senderId: message.senderId || undefined,
+      senderId: message.senderId,
+      senderName,
+      senderRole,
       content: message.content,
-      isSystemMessage: message.isSystemMessage,
       sentAt: message.sentAt,
+      fileIds: message.fileIds,
+      files: [],
+      readByUserIds: message.readByUserIds,
+      isRead: message.isReadBy(currentUserId),
+      isSystemMessage: message.isSystemMessage(),
+      type: message.type,
     };
+  }
+
+  private applyFilters(messages: Message[], userId: string, filters?: MessageFilterDto): Message[] {
+    if (!filters) return messages;
+
+    return messages.filter((m) => {
+      if (filters.senderId && m.senderId !== filters.senderId) return false;
+      if (filters.includeSystemMessages === false && m.isSystemMessage()) return false;
+      if (filters.unreadOnly && m.isReadBy(userId)) return false;
+      if (filters.startDate && m.sentAt < filters.startDate) return false;
+      if (filters.endDate && m.sentAt > filters.endDate) return false;
+      return true;
+    });
+  }
+
+  private paginate(messages: Message[], filters?: MessageFilterDto): {
+    items: Message[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  } {
+    const sorted = [...messages].sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime());
+    const total = sorted.length;
+    const page = Math.max(1, filters?.page ?? 1);
+    const limit = Math.max(1, filters?.limit ?? (total || 1));
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const start = (page - 1) * limit;
+    const items = sorted.slice(start, start + limit);
+    return {items, page, limit, total, totalPages};
   }
 }

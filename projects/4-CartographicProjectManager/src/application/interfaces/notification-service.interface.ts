@@ -21,6 +21,18 @@ import {
 import {NotificationType} from '../../domain/enumerations/notification-type';
 
 /**
+ * Data needed to create/send a notification.
+ */
+export interface SendNotificationData {
+  recipientId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  relatedProjectId?: string;
+  relatedTaskId?: string;
+}
+
+/**
  * Service interface for notification operations.
  * Handles sending, retrieving, and managing notifications through
  * the in-app channel.
@@ -37,13 +49,7 @@ export interface INotificationService {
    * @throws {NotFoundError} If user doesn't exist
    * @throws {ValidationError} If notification data is invalid
    */
-  sendNotification(
-    userId: string,
-    type: NotificationType,
-    title: string,
-    message: string,
-    relatedEntityId?: string,
-  ): Promise<void>;
+  sendNotification(data: SendNotificationData): Promise<NotificationDto>;
 
   /**
    * Sends the same notification to multiple users.
@@ -56,11 +62,8 @@ export interface INotificationService {
    * @throws {ValidationError} If notification data is invalid
    */
   sendBulkNotifications(
-    userIds: string[],
-    type: NotificationType,
-    title: string,
-    message: string,
-    relatedEntityId?: string,
+    recipientIds: string[],
+    data: Omit<SendNotificationData, 'recipientId'>
   ): Promise<void>;
 
   /**
@@ -102,6 +105,11 @@ export interface INotificationService {
   markAsRead(notificationId: string, userId: string): Promise<void>;
 
   /**
+   * Marks multiple notifications as read.
+   */
+  markMultipleAsRead(notificationIds: string[], userId: string): Promise<void>;
+
+  /**
    * Marks all notifications as read for a user.
    * @param userId - The unique identifier of the user
    * @returns Promise that resolves when all notifications are marked as read
@@ -120,11 +128,9 @@ export interface INotificationService {
   deleteNotification(notificationId: string, userId: string): Promise<void>;
 
   /**
-   * Deletes old notifications older than a specified number of days.
-   * @param olderThanDays - Number of days to use as threshold
-   * @returns The number of notifications deleted
+    * Deletes all read notifications for a user.
    */
-  deleteOldNotifications(olderThanDays: number): Promise<number>;
+    deleteAllRead(userId: string): Promise<void>;
 
   /**
    * Retrieves notification preferences for a user.
@@ -132,9 +138,7 @@ export interface INotificationService {
    * @returns The user's notification preferences
    * @throws {NotFoundError} If user doesn't exist
    */
-  getUserNotificationPreferences(
-    userId: string,
-  ): Promise<NotificationPreferencesDto>;
+  getUserPreferences(userId: string): Promise<NotificationPreferencesDto>;
 
   /**
    * Updates notification preferences for a user.
@@ -144,8 +148,16 @@ export interface INotificationService {
    * @throws {NotFoundError} If user doesn't exist
    * @throws {ValidationError} If preferences are invalid
    */
-  updateUserNotificationPreferences(
+  updateUserPreferences(
     userId: string,
     preferences: NotificationPreferencesDto,
   ): Promise<void>;
+
+  /**
+   * Retrieves a specific notification by id.
+   */
+  getNotificationById(
+    notificationId: string,
+    userId: string,
+  ): Promise<NotificationDto>;
 }

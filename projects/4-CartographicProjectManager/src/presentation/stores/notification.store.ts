@@ -16,15 +16,13 @@ import {defineStore} from 'pinia';
 import {ref, computed} from 'vue';
 import type {
   NotificationDto,
-  NotificationFilterDto,
-  NotificationListResponseDto,
 } from '../../application/dto';
 import {NotificationType} from '../../domain/enumerations/notification-type';
 import {useAuthStore} from './auth.store';
 import {useMessageStore} from './message.store';
 import {useProjectStore} from './project.store';
 import {NotificationRepository} from '../../infrastructure/repositories/notification.repository';
-import type {Notification} from '../../domain/entities/notification';
+import type {Notification as DomainNotification} from '../../domain/entities/notification';
 import {isSameDay, isThisWeek, formatDate} from '../../shared/utils';
 
 const STORAGE_KEY = 'cpm_notifications';
@@ -54,7 +52,7 @@ export const useNotificationStore = defineStore('notification', () => {
   /**
    * Helper function to map Notification entity to NotificationDto
    */
-  function mapEntityToDto(notification: Notification): NotificationDto {
+  function mapEntityToDto(notification: DomainNotification): NotificationDto {
     return {
       id: notification.id,
       userId: notification.userId,
@@ -259,6 +257,9 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
+  // Load persisted notifications at store creation (client-side)
+  loadFromStorage();
+
   /**
    * Fetches unread count only
    */
@@ -378,8 +379,9 @@ export const useNotificationStore = defineStore('notification', () => {
     unreadCount.value++;
     
     // Show browser notification if supported and permitted
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(payload.title, {
+    const BrowserNotification = globalThis.Notification;
+    if (typeof BrowserNotification !== 'undefined' && BrowserNotification.permission === 'granted') {
+      new BrowserNotification(payload.title, {
         body: payload.message,
         icon: '/logo.png',
         tag: payload.id,
@@ -398,17 +400,18 @@ export const useNotificationStore = defineStore('notification', () => {
    * Requests browser notification permission
    */
   async function requestNotificationPermission(): Promise<boolean> {
-    if (!('Notification' in window)) {
+    const BrowserNotification = globalThis.Notification;
+    if (typeof BrowserNotification === 'undefined') {
       console.warn('Browser does not support notifications');
       return false;
     }
 
-    if (Notification.permission === 'granted') {
+    if (BrowserNotification.permission === 'granted') {
       return true;
     }
 
-    if (Notification.permission !== 'denied') {
-      const permission = await Notification.requestPermission();
+    if (BrowserNotification.permission !== 'denied') {
+      const permission = await BrowserNotification.requestPermission();
       return permission === 'granted';
     }
 

@@ -12,7 +12,7 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {httpClient, type ApiResponse} from '../http';
+import {httpClient} from '../http';
 import {Project} from '../../domain/entities/project';
 import {GeoCoordinates} from '../../domain/value-objects/geo-coordinates';
 import {type ProjectStatus} from '../../domain/enumerations/project-status';

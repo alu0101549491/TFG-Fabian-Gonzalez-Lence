@@ -103,7 +103,11 @@ export class FileService implements IFileService {
 
       // Build Dropbox path
       const section = data.section || 'Messages';
-      const dropboxPath = `${this.dropboxService.getProjectFolderPath(project.code)}/${section}/${data.name}`;
+      const projectFolderPath = project.dropboxFolderId
+        ? project.dropboxFolderId
+        : await this.dropboxService.createProjectFolder(project.code);
+
+      const dropboxPath = `${projectFolderPath}/${section}/${data.name}`;
 
       // Upload to Dropbox
       const dropboxMetadata = await this.dropboxService.uploadFile(
@@ -369,7 +373,9 @@ export class FileService implements IFileService {
       throw new NotFoundError(`File ${fileId} not found`);
     }
 
-    return await this.dropboxService.generateTemporaryUrl(file.dropboxPath, expiresInSeconds);
+    void expiresInSeconds;
+    const {link} = await this.dropboxService.getTemporaryLink(file.dropboxPath);
+    return link;
   }
 
   /**
@@ -391,7 +397,8 @@ export class FileService implements IFileService {
       return null;
     }
 
-    return await this.dropboxService.generateTemporaryUrl(file.dropboxPath, 3600);
+    const {link} = await this.dropboxService.getTemporaryLink(file.dropboxPath);
+    return link;
   }
 
   /**

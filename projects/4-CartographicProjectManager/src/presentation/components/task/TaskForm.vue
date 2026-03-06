@@ -225,7 +225,7 @@
         <div v-for="file in taskFiles" :key="file.id" class="task-form-file">
           <span class="task-form-file-icon">📎</span>
           <span class="task-form-file-name">{{ file.name }}</span>
-          <span class="task-form-file-size">{{ formatFileSize(file.size) }}</span>
+          <span class="task-form-file-size">{{ formatFileSize(file.sizeInBytes) }}</span>
           <button
             v-if="!isCompleted"
             type="button"

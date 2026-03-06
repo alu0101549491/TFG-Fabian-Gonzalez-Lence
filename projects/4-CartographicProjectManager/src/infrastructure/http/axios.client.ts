@@ -15,7 +15,6 @@
 import axios, {
   AxiosInstance,
   AxiosError,
-  AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios';
@@ -855,40 +854,6 @@ export class AxiosClient {
       error.code === 'ECONNABORTED' || // Timeout
       (error.response.status >= 500 && error.response.status < 600) // Server error
     );
-  }
-
-  /**
-   * Retry request with exponential backoff
-   *
-   * @template T Response type
-   * @param requestFn - Function that performs the request
-   * @param maxAttempts - Maximum number of retry attempts
-   * @returns Promise resolving to request result
-   */
-  private async retryRequest<T>(
-    requestFn: () => Promise<T>,
-    maxAttempts: number = MAX_RETRY_ATTEMPTS,
-  ): Promise<T> {
-    let lastError: Error | null = null;
-
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        return await requestFn();
-      } catch (error) {
-        lastError = error as Error;
-
-        // Don't retry if not an Axios error or if shouldn't retry
-        if (!axios.isAxiosError(error) || !this.shouldRetry(error, attempt)) {
-          throw error;
-        }
-
-        // Wait before retrying with exponential backoff
-        await delay(RETRY_DELAY_MS * Math.pow(2, attempt));
-      }
-    }
-
-    // All retries failed
-    throw lastError;
   }
 
   /**

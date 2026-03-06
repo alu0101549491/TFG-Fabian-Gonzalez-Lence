@@ -22,9 +22,7 @@ import type {
   CreateProjectDto,
   UpdateProjectDto,
   CalendarProjectDto,
-  ProjectDto,
 } from '../../application/dto';
-import {ProjectStatus} from '../../domain/enumerations/project-status';
 import {getProjectStatusColor as getStatusColor} from '../../shared/utils';
 
 /**
@@ -33,8 +31,8 @@ import {getProjectStatusColor as getStatusColor} from '../../shared/utils';
 export interface CreateProjectResult {
   /** Whether operation was successful */
   success: boolean;
-  /** Created project if successful */
-  project?: ProjectDto;
+  /** Created project ID if successful */
+  projectId?: string;
   /** Error message if failed */
   error?: string;
 }
@@ -45,8 +43,6 @@ export interface CreateProjectResult {
 export interface UpdateProjectResult {
   /** Whether operation was successful */
   success: boolean;
-  /** Updated project if successful */
-  project?: ProjectDto;
   /** Error message if failed */
   error?: string;
 }
@@ -211,10 +207,10 @@ export function useProjects(): UseProjectsReturn {
       return {success: false, error: 'Only administrators and special users can create projects'};
     }
 
-    const project = await store.createProject(data);
+    const projectId = await store.createProject(data);
 
-    if (project) {
-      return {success: true, project};
+    if (projectId) {
+      return {success: true, projectId};
     }
 
     return {success: false, error: store.error ?? 'Failed to create project'};
@@ -227,10 +223,10 @@ export function useProjects(): UseProjectsReturn {
    * @returns Result with updated project or error
    */
   async function updateProject(data: UpdateProjectDto): Promise<UpdateProjectResult> {
-    const project = await store.updateProject(data);
+    const success = await store.updateProject(data);
 
-    if (project) {
-      return {success: true, project};
+    if (success) {
+      return {success: true};
     }
 
     return {success: false, error: store.error ?? 'Failed to update project'};

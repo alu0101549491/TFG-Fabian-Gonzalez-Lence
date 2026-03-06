@@ -43,7 +43,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   Home as HomeIcon,
@@ -61,8 +60,8 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  close: [];
-  'toggle-collapse': [];
+  (e: 'close'): void;
+  (e: 'toggle-collapse'): void;
 }>();
 
 const route = useRoute();
@@ -82,7 +81,7 @@ function isActive(path: string): boolean {
   return route.path.startsWith(path);
 }
 
-function handleOverlayClick(event: MouseEvent) {
+function handleOverlayClick(event: MouseEvent): void {
   if ((event.target as HTMLElement).classList.contains('mobile-open')) {
     emit('close');
   }

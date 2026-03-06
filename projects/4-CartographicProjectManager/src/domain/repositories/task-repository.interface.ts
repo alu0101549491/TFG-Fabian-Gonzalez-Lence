@@ -12,7 +12,9 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {Task, TaskPriority, TaskStatus} from '../entities/task';
+import {Task} from '../entities/task';
+import {TaskPriority} from '../enumerations/task-priority';
+import {TaskStatus} from '../enumerations/task-status';
 
 /**
  * Abstraction for Task data access operations.

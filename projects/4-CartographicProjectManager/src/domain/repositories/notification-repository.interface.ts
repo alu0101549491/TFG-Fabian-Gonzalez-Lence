@@ -12,7 +12,8 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {Notification, NotificationType} from '../entities/notification';
+import {Notification} from '../entities/notification';
+import {NotificationType} from '../enumerations/notification-type';
 
 /**
  * Abstraction for Notification data access operations.

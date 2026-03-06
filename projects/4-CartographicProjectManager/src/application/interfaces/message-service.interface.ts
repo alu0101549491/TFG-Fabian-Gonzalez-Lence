@@ -15,6 +15,7 @@
 import {
   type CreateMessageDto,
   type MessageDto,
+  type MarkMessagesReadDto,
   type MessageFilterDto,
   type MessageListResponseDto,
   type UnreadCountsDto,
@@ -35,7 +36,7 @@ export interface IMessageService {
    * @throws {NotFoundError} If project doesn't exist
    * @throws {UnauthorizedError} If sender doesn't have permission
    */
-  sendMessage(data: CreateMessageDto, senderId: string): Promise<MessageDto>;
+  createMessage(data: CreateMessageDto, senderId: string): Promise<MessageDto>;
 
   /**
    * Retrieves a specific message by its ID.
@@ -71,11 +72,10 @@ export interface IMessageService {
    * @throws {NotFoundError} If project doesn't exist
    * @throws {UnauthorizedError} If user doesn't have access
    */
-  getLatestMessages(
-    projectId: string,
+  getMessagesByUser(
     userId: string,
-    limit: number,
-  ): Promise<MessageDto[]>;
+    filters?: MessageFilterDto,
+  ): Promise<MessageListResponseDto>;
 
   /**
    * Marks a specific message as read by a user.
@@ -85,7 +85,7 @@ export interface IMessageService {
    * @throws {NotFoundError} If message doesn't exist
    * @throws {UnauthorizedError} If user doesn't have access
    */
-  markMessageAsRead(messageId: string, userId: string): Promise<void>;
+  markMessagesAsRead(data: MarkMessagesReadDto, userId: string): Promise<void>;
 
   /**
    * Marks all messages in a project as read for a user.
@@ -113,7 +113,7 @@ export interface IMessageService {
    * @returns Array of unread counts by project
    * @throws {NotFoundError} If user doesn't exist
    */
-  getUnreadCountsByUser(userId: string): Promise<UnreadCountsDto[]>;
+  getUnreadCountsByUser(userId: string): Promise<UnreadCountsDto>;
 
   /**
    * Deletes a message (soft delete, preserves for history).
@@ -132,5 +132,5 @@ export interface IMessageService {
    * @returns The created system message data transfer object
    * @throws {NotFoundError} If project doesn't exist
    */
-  createSystemMessage(projectId: string, content: string): Promise<MessageDto>;
+  sendSystemMessage(projectId: string, content: string): Promise<MessageDto>;
 }

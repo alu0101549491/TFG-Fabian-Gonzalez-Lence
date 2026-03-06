@@ -119,7 +119,7 @@ export class Project {
     this.contractDateValue = props.contractDate;
     this.deliveryDateValue = props.deliveryDate;
     this.statusValue = props.status ?? ProjectStatus.ACTIVE;
-    this.dropboxFolderIdValue = props.dropboxFolderId;
+    this.dropboxFolderIdValue = props.dropboxFolderId ?? '';
     this.specialUserIdsValue = props.specialUserIds ?? [];
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAtValue = props.updatedAt ?? new Date();

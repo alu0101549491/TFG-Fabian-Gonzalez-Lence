@@ -328,6 +328,7 @@ import type {
   ProjectPayload,
   FilePayload,
   TaskStatusChangedPayload,
+  TaskConfirmedPayload,
   UnreadCountPayload,
 } from './socket.handler';
 import type { ConnectionState, ServerEvent } from './socket.handler';
