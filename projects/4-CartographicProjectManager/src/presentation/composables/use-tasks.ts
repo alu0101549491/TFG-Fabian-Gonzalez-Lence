@@ -21,9 +21,8 @@ import type {
   UpdateTaskDto,
   TaskHistoryEntryDto,
 } from '../../application/dto';
-import {TaskStatus} from '../../domain/enumerations/task-status';
+import {TaskStatus, TaskStatusTransitions} from '../../domain/enumerations/task-status';
 import {TaskPriority} from '../../domain/enumerations/task-priority';
-import {TASK} from '../../shared/constants';
 import {
   getTaskPriorityColor as getPriorityColor,
   getTaskStatusColor as getStatusColorUtil,
@@ -362,7 +361,7 @@ export function useTasks(): UseTasksReturn {
    * Gets valid status transitions for a task
    */
   function getValidTransitions(task: TaskDto): TaskStatus[] {
-    return TASK.STATUS_TRANSITIONS[task.status] ?? [];
+    return TaskStatusTransitions[task.status] ?? [];
   }
 
   /**

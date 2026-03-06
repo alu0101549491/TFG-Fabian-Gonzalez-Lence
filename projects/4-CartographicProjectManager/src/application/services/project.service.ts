@@ -130,13 +130,13 @@ export class ProjectService implements IProjectService {
     }
 
     // Notify
-    await this.notificationService.sendNotification(
-      creatorId,
-      NotificationType.PROJECT_ASSIGNED,
-      'Project Created',
-      `Project ${project.name} has been created`,
-      project.id
-    );
+    await this.notificationService.sendNotification({
+      recipientId: creatorId,
+      type: NotificationType.PROJECT_ASSIGNED,
+      title: 'Project Created',
+      message: `Project ${project.name} has been created`,
+      relatedProjectId: project.id,
+    });
 
     return await this.mapToDto(project);
   }
@@ -366,13 +366,13 @@ export class ProjectService implements IProjectService {
     await this.projectRepository.save(project);
 
     // Notify client
-    await this.notificationService.sendNotification(
-      clientId,
-      NotificationType.PROJECT_ASSIGNED,
-      'Project Assigned',
-      `You have been assigned to project ${project.name}`,
-      projectId
-    );
+    await this.notificationService.sendNotification({
+      recipientId: clientId,
+      type: NotificationType.PROJECT_ASSIGNED,
+      title: 'Project Assigned',
+      message: `You have been assigned to project ${project.name}`,
+      relatedProjectId: projectId,
+    });
   }
 
   /**
@@ -417,13 +417,13 @@ export class ProjectService implements IProjectService {
     await this.permissionRepository.save(permission);
 
     // Notify user
-    await this.notificationService.sendNotification(
-      userId,
-      NotificationType.PROJECT_ASSIGNED,
-      'Added to Project',
-      `You have been added to project ${project.name}`,
-      projectId
-    );
+    await this.notificationService.sendNotification({
+      recipientId: userId,
+      type: NotificationType.PROJECT_ASSIGNED,
+      title: 'Added to Project',
+      message: `You have been added to project ${project.name}`,
+      relatedProjectId: projectId,
+    });
   }
 
   /**
@@ -549,13 +549,13 @@ export class ProjectService implements IProjectService {
     // Notify all participants
     const participants = await this.getProjectParticipants(projectId, adminId);
     for (const participant of participants) {
-      await this.notificationService.sendNotification(
-        participant.userId,
-        NotificationType.PROJECT_FINALIZED,
-        'Project Finalized',
-        `Project ${project.name} has been completed`,
-        projectId
-      );
+      await this.notificationService.sendNotification({
+        recipientId: participant.userId,
+        type: NotificationType.PROJECT_FINALIZED,
+        title: 'Project Finalized',
+        message: `Project ${project.name} has been completed`,
+        relatedProjectId: projectId,
+      });
     }
   }
 
@@ -649,6 +649,7 @@ export class ProjectService implements IProjectService {
       name: project.name,
       year: project.year,
       type: project.type,
+      description: null,
       clientId: project.clientId,
       clientName,
       coordinateX: project.coordinates?.longitude ?? null,
@@ -701,6 +702,8 @@ export class ProjectService implements IProjectService {
       statusColor: this.getStatusColor(project.status),
       isOverdue,
       daysUntilDelivery,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
     };
   }
 

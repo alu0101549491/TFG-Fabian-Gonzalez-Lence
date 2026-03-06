@@ -238,6 +238,8 @@ export class User {
    * @returns True if the password matches (to be implemented in service layer)
    */
   public authenticate(password: string): boolean {
+    void password;
+    void this.passwordHash;
     // Domain entities should not contain cryptographic logic
     // This method signature exists for domain modeling
     // Actual implementation will be in the authentication service

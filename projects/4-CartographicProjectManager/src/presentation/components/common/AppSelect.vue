@@ -118,7 +118,7 @@ export interface AppSelectEmits {
   (e: 'change', value: string | number | null): void;
 }
 
-const props = withDefaults(defineProps<AppSelectProps>(), {
+withDefaults(defineProps<AppSelectProps>(), {
   size: 'md',
   disabled: false,
   required: false,

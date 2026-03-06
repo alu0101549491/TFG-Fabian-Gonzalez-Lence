@@ -225,6 +225,8 @@ export function useNotifications(): UseNotificationsReturn {
       [NotificationType.FILE_RECEIVED]: 'file',
       [NotificationType.PROJECT_ASSIGNED]: 'folder-plus',
       [NotificationType.PROJECT_FINALIZED]: 'folder-check',
+      [NotificationType.BACKUP_COMPLETED]: 'database',
+      [NotificationType.BACKUP_RESTORED]: 'rotate-ccw',
     };
     return icons[type] ?? 'bell';
   }
@@ -243,6 +245,8 @@ export function useNotifications(): UseNotificationsReturn {
       [NotificationType.FILE_RECEIVED]: 'purple',
       [NotificationType.PROJECT_ASSIGNED]: 'blue',
       [NotificationType.PROJECT_FINALIZED]: 'gray',
+      [NotificationType.BACKUP_COMPLETED]: 'green',
+      [NotificationType.BACKUP_RESTORED]: 'blue',
     };
     return colors[type] ?? 'gray';
   }

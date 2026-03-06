@@ -28,6 +28,10 @@ export enum NotificationType {
   PROJECT_ASSIGNED = 'PROJECT_ASSIGNED',
   /** A project has been finalized. */
   PROJECT_FINALIZED = 'PROJECT_FINALIZED',
+  /** A system backup finished successfully. */
+  BACKUP_COMPLETED = 'BACKUP_COMPLETED',
+  /** The system was restored from a backup successfully. */
+  BACKUP_RESTORED = 'BACKUP_RESTORED',
 }
 
 /**
@@ -40,6 +44,8 @@ export const NotificationTypeDisplayName: Record<NotificationType, string> = {
   [NotificationType.FILE_RECEIVED]: 'File Received',
   [NotificationType.PROJECT_ASSIGNED]: 'Project Assigned',
   [NotificationType.PROJECT_FINALIZED]: 'Project Finalized',
+  [NotificationType.BACKUP_COMPLETED]: 'Backup Completed',
+  [NotificationType.BACKUP_RESTORED]: 'Backup Restored',
 };
 
 /**
@@ -57,6 +63,8 @@ export const NotificationTypeMessageTemplate: Record<NotificationType, string> =
       "You've been assigned to project {projectCode}",
     [NotificationType.PROJECT_FINALIZED]:
       'Project {projectCode} has been finalized',
+    [NotificationType.BACKUP_COMPLETED]: 'System backup completed',
+    [NotificationType.BACKUP_RESTORED]: 'System restored from backup',
   };
 
 /**
@@ -69,6 +77,8 @@ export const NotificationTypeIcon: Record<NotificationType, string> = {
   [NotificationType.FILE_RECEIVED]: 'file',
   [NotificationType.PROJECT_ASSIGNED]: 'project',
   [NotificationType.PROJECT_FINALIZED]: 'check',
+  [NotificationType.BACKUP_COMPLETED]: 'backup',
+  [NotificationType.BACKUP_RESTORED]: 'restore',
 };
 
 /**

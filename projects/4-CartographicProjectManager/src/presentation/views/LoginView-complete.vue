@@ -131,7 +131,7 @@ const isFormValid = computed(() => form.email.trim() !== '' && form.password.tri
 async function handleLogin() {
   error.value = null;
   try {
-    await login({email: form.email, password: form.password, rememberMe: form.rememberMe});
+    await login(form.email, form.password, form.rememberMe);
     const redirect = (route.query.redirect as string) || '/';
     router.push(redirect);
   } catch (err: any) {

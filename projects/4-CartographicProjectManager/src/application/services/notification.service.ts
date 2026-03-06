@@ -18,7 +18,10 @@ import {
   type NotificationListResponseDto,
   type NotificationPreferencesDto,
 } from '../dto';
-import {INotificationService} from '../interfaces/notification-service.interface';
+import {
+  type INotificationService,
+  type SendNotificationData,
+} from '../interfaces/notification-service.interface';
 import {
   type INotificationRepository,
   type IUserRepository,
@@ -28,18 +31,6 @@ import {NotFoundError} from './common/errors';
 import {generateId} from './common/utils';
 import {Notification} from '../../domain/entities/notification';
 import {NotificationType} from '../../domain/enumerations/notification-type';
-
-/**
- * Data for creating a notification.
- */
-interface CreateNotificationData {
-  recipientId: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  relatedProjectId?: string;
-  relatedTaskId?: string;
-}
 
 /**
  * Implementation of notification management operations.
@@ -54,7 +45,7 @@ export class NotificationService implements INotificationService {
   /**
    * Sends a notification to a user.
    */
-  public async sendNotification(data: CreateNotificationData): Promise<NotificationDto> {
+  public async sendNotification(data: SendNotificationData): Promise<NotificationDto> {
     // Verify recipient exists
     const recipient = await this.userRepository.findById(data.recipientId);
     if (!recipient) {
@@ -63,10 +54,19 @@ export class NotificationService implements INotificationService {
 
     // Check preferences
     const preferences = await this.getUserPreferences(data.recipientId);
-    if (!preferences.receiveNotifications) {
+    if (!preferences.inAppEnabled) {
       // User has disabled notifications
       return this.createEmptyNotificationDto();
     }
+
+    if (data.relatedProjectId) {
+      const project = await this.projectRepository.findById(data.relatedProjectId);
+      if (!project) {
+        throw new NotFoundError(`Project ${data.relatedProjectId} not found`);
+      }
+    }
+
+    const relatedEntityId = data.relatedTaskId ?? data.relatedProjectId ?? null;
 
     // Create notification
     const notification = new Notification({
@@ -75,15 +75,15 @@ export class NotificationService implements INotificationService {
       type: data.type,
       title: data.title,
       message: data.message,
-      relatedProjectId: data.relatedProjectId,
-      relatedTaskId: data.relatedTaskId,
+      relatedEntityId,
       isRead: false,
+      readAt: null,
       createdAt: new Date(),
     });
 
-    await this.notificationRepository.save(notification);
+    const saved = await this.notificationRepository.save(notification);
 
-    return this.mapToDto(notification);
+    return this.mapToDto(saved);
   }
 
   /**
@@ -91,7 +91,7 @@ export class NotificationService implements INotificationService {
    */
   async sendBulkNotifications(
     recipientIds: string[],
-    data: Omit<CreateNotificationData, 'recipientId'>
+    data: Omit<SendNotificationData, 'recipientId'>
   ): Promise<void> {
     for (const recipientId of recipientIds) {
       try {
@@ -118,15 +118,13 @@ export class NotificationService implements INotificationService {
       throw new NotFoundError(`User ${userId} not found`);
     }
 
-    const notifications = await this.notificationRepository.findByUser(userId, filters);
-    const notificationDtos = notifications.map(n => this.mapToDto(n));
+    const allNotifications = await this.notificationRepository.findByUserId(userId);
+    const filtered = this.applyFilters(allNotifications, filters);
+    const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
+    const unreadCount = await this.notificationRepository.countUnreadByUserId(userId);
 
-    return {
-      notifications: notificationDtos,
-      total: notificationDtos.length,
-      page: filters?.page || 1,
-      pageSize: filters?.pageSize || notificationDtos.length,
-    };
+    const notificationDtos = items.map((n) => this.mapToDto(n));
+    return {notifications: notificationDtos, total, page, limit, totalPages, unreadCount};
   }
 
   /**
@@ -138,7 +136,7 @@ export class NotificationService implements INotificationService {
       throw new NotFoundError(`User ${userId} not found`);
     }
 
-    const notifications = await this.notificationRepository.findUnreadByUser(userId);
+    const notifications = await this.notificationRepository.findUnreadByUserId(userId);
     return notifications.map(n => this.mapToDto(n));
   }
 
@@ -151,7 +149,7 @@ export class NotificationService implements INotificationService {
       throw new NotFoundError(`User ${userId} not found`);
     }
 
-    return await this.notificationRepository.countUnreadByUser(userId);
+    return await this.notificationRepository.countUnreadByUserId(userId);
   }
 
   /**
@@ -167,10 +165,8 @@ export class NotificationService implements INotificationService {
       throw new NotFoundError('Notification not found');
     }
 
-    notification.isRead = true;
-    notification.readAt = new Date();
-
-    await this.notificationRepository.save(notification);
+    notification.markAsRead();
+    await this.notificationRepository.update(notification);
   }
 
   /**
@@ -195,7 +191,7 @@ export class NotificationService implements INotificationService {
       throw new NotFoundError(`User ${userId} not found`);
     }
 
-    await this.notificationRepository.markAllAsReadForUser(userId);
+    await this.notificationRepository.markAllAsReadByUserId(userId);
   }
 
   /**
@@ -223,7 +219,9 @@ export class NotificationService implements INotificationService {
       throw new NotFoundError(`User ${userId} not found`);
     }
 
-    await this.notificationRepository.deleteReadByUser(userId);
+    const notifications = await this.notificationRepository.findByUserId(userId);
+    const readNotifications = notifications.filter((n) => n.isRead);
+    await Promise.all(readNotifications.map((n) => this.notificationRepository.delete(n.id)));
   }
 
   /**
@@ -238,11 +236,12 @@ export class NotificationService implements INotificationService {
     // TODO: Store preferences in database
     // For now, return default preferences
     return {
-      receiveNotifications: true,
-      notifyOnTaskAssignment: true,
-      notifyOnTaskStatusChange: true,
-      notifyOnMessage: true,
-      notifyOnProjectUpdate: true,
+      inAppEnabled: true,
+      notifyNewMessages: true,
+      notifyReceivedFiles: true,
+      notifyAssignedTasks: true,
+      notifyTaskStatusChanges: true,
+      notifyDeadlineReminders: true,
     };
   }
 
@@ -288,8 +287,7 @@ export class NotificationService implements INotificationService {
       type: notification.type,
       title: notification.title,
       message: notification.message,
-      relatedProjectId: notification.relatedProjectId,
-      relatedTaskId: notification.relatedTaskId,
+      relatedEntityId: notification.relatedEntityId,
       isRead: notification.isRead,
       createdAt: notification.createdAt,
       readAt: notification.readAt,
@@ -303,11 +301,52 @@ export class NotificationService implements INotificationService {
     return {
       id: '',
       userId: '',
-      type: NotificationType.TASK_ASSIGNED,
+      type: NotificationType.NEW_TASK,
       title: '',
       message: '',
+      relatedEntityId: null,
       isRead: false,
       createdAt: new Date(),
+      readAt: null,
     };
+  }
+
+  private applyFilters(
+    notifications: Notification[],
+    filters?: NotificationFilterDto,
+  ): Notification[] {
+    if (!filters) return notifications;
+
+    return notifications.filter((n) => {
+      if (filters.type && n.type !== filters.type) return false;
+      if (filters.unreadOnly && n.isRead) return false;
+      if (filters.relatedEntityId && n.relatedEntityId !== filters.relatedEntityId) return false;
+      if (filters.startDate && n.createdAt < filters.startDate) return false;
+      if (filters.endDate && n.createdAt > filters.endDate) return false;
+      return true;
+    });
+  }
+
+  private paginate(
+    notifications: Notification[],
+    filters?: NotificationFilterDto,
+  ): {
+    items: Notification[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  } {
+    const sorted = [...notifications].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+
+    const total = sorted.length;
+    const page = Math.max(1, filters?.page ?? 1);
+    const limit = Math.max(1, filters?.limit ?? (total || 1));
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const start = (page - 1) * limit;
+    const items = sorted.slice(start, start + limit);
+    return {items, page, limit, total, totalPages};
   }
 }

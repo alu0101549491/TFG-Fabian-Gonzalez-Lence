@@ -33,6 +33,8 @@ export interface NotificationProps {
   relatedEntityId?: string | null;
   /** Whether user has seen it */
   isRead?: boolean;
+  /** When notification was read */
+  readAt?: Date | null;
   /** When notification was created */
   createdAt?: Date;
 }
@@ -62,6 +64,7 @@ export class Notification {
   public readonly relatedEntityId: string | null;
   public readonly createdAt: Date;
   private isReadValue: boolean;
+  private readAtValue: Date | null;
 
   /**
    * Creates a new Notification entity.
@@ -80,6 +83,10 @@ export class Notification {
     this.relatedEntityId = props.relatedEntityId ?? null;
     this.isReadValue = props.isRead ?? false;
     this.createdAt = props.createdAt ?? new Date();
+
+    this.readAtValue = this.isReadValue
+      ? (props.readAt ?? this.createdAt)
+      : null;
   }
 
   /**
@@ -109,6 +116,10 @@ export class Notification {
     return this.isReadValue;
   }
 
+  public get readAt(): Date | null {
+    return this.readAtValue;
+  }
+
   // Business Logic Methods
 
   /**
@@ -116,6 +127,7 @@ export class Notification {
    */
   public markAsRead(): void {
     this.isReadValue = true;
+    this.readAtValue = this.readAtValue ?? new Date();
   }
 
   // Factory Methods
@@ -214,6 +226,7 @@ export class Notification {
       message: this.message,
       relatedEntityId: this.relatedEntityId,
       createdAt: this.createdAt.toISOString(),
+      readAt: this.readAtValue ? this.readAtValue.toISOString() : null,
       isRead: this.isReadValue,
     };
   }

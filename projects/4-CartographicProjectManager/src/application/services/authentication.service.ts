@@ -20,15 +20,16 @@ import {
   createSuccessAuthResult,
   createFailedAuthResult,
   AuthErrorCode,
+  ValidationErrorCode,
   validResult,
   invalidResult,
   createError,
 } from '../dto';
 import {IAuthenticationService} from '../interfaces/authentication-service.interface';
 import {type IUserRepository} from '../../domain/repositories';
-import {UnauthorizedError, NotFoundError, ValidationError} from './common/errors';
+import {UnauthorizedError, NotFoundError} from './common/errors';
 import {generateId} from './common/utils';
-import {UserRole} from '../../domain/enumerations/user-role';
+import {User} from '../../domain/entities/user';
 
 /**
  * Implementation of authentication operations.
@@ -263,12 +264,14 @@ export class AuthenticationService implements IAuthenticationService {
       return validation;
     }
 
-      // Hash the new password
-      // NOTE: Actual bcrypt hashing happens on backend API
-      // This is a placeholder for local/mock authentication
+    // Hash the new password
+    // NOTE: Actual bcrypt hashing happens on backend API
+    // This is a placeholder for local/mock authentication
     const newPasswordHash = await this.hashPassword(newPassword);
-    // Note: passwordHash is readonly, we need to use update instead
-    const updatedUser = await this.userRepository.update(user);
+
+    // User.passwordHash is private/readonly in the domain entity, so create a new entity.
+    const updatedUser = this.withPasswordHash(user, newPasswordHash);
+    await this.userRepository.update(updatedUser);
 
     return validResult();
   }
@@ -277,7 +280,7 @@ export class AuthenticationService implements IAuthenticationService {
    * Initiates a password reset process by sending a reset link.
    */
   public async requestPasswordReset(email: string): Promise<void> {
-    const user = await this.userRepository.findByUsernameOrEmail(email);
+    const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new NotFoundError(`No account found with email ${email}`);
     }
@@ -328,10 +331,9 @@ export class AuthenticationService implements IAuthenticationService {
     }
 
     const newPasswordHash = await this.hashPassword(newPassword);
-    user.passwordHash = newPasswordHash;
-    user.updatedAt = new Date();
 
-    await this.userRepository.save(user);
+    const updatedUser = this.withPasswordHash(user, newPasswordHash);
+    await this.userRepository.update(updatedUser);
 
     // Remove reset token
     this.resetTokens.delete(token);
@@ -350,7 +352,7 @@ export class AuthenticationService implements IAuthenticationService {
    * Retrieves the number of failed login attempts for an account.
    */
   public async getFailedLoginAttempts(email: string): Promise<number> {
-    const user = await this.userRepository.findByUsernameOrEmail(email);
+    const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new NotFoundError(`No account found with email ${email}`);
     }
@@ -362,7 +364,7 @@ export class AuthenticationService implements IAuthenticationService {
    * Clears failed login attempts for an account.
    */
   public async clearFailedLoginAttempts(email: string): Promise<void> {
-    const user = await this.userRepository.findByUsernameOrEmail(email);
+    const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new NotFoundError(`No account found with email ${email}`);
     }
@@ -421,6 +423,23 @@ export class AuthenticationService implements IAuthenticationService {
     }
 
     return errors.length > 0 ? invalidResult(errors) : validResult();
+  }
+
+  private withPasswordHash(user: User, passwordHash: string): User {
+    return new User({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      passwordHash,
+      role: user.role,
+      isActive: user.isActive,
+      phone: user.phone,
+      createdAt: user.createdAt,
+      updatedAt: new Date(),
+      lastLogin: user.lastLogin,
+    });
   }
 
   /**

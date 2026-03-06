@@ -206,7 +206,7 @@
         <div class="project-summary-sections-grid">
           <div
             v-for="section in sections"
-            :key="section.key"
+            :key="section.name"
             class="project-summary-section-card"
             @click="$emit('view-files')"
           >

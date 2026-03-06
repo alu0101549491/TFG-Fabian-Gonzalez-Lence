@@ -417,8 +417,8 @@ async function handleProjectSubmit(
       await updateProject(updateData);
     } else {
       const result = await createProject(projectData as CreateProjectDto);
-      if (result?.success && result.project?.id) {
-        goToProject(result.project.id);
+      if (result?.success && result.projectId) {
+        goToProject(result.projectId);
         return;
       }
     }

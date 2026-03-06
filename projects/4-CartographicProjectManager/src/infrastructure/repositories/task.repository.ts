@@ -353,31 +353,6 @@ export class TaskRepository implements ITaskRepository {
   }
 
   /**
-   * Map Task entity to API request payload
-   *
-   * @param task - Task domain entity
-   * @returns API request payload
-   */
-  private mapToApiRequest(task: Task): Record<string, unknown> {
-    return {
-      id: task.id,
-      projectId: task.projectId,
-      creatorId: task.creatorId,
-      assigneeId: task.assigneeId,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate.toISOString(),
-      fileIds: task.fileIds,
-      comments: task.comments,
-      createdAt: task.createdAt.toISOString(),
-      updatedAt: task.updatedAt.toISOString(),
-      completedAt: task.completedAt?.toISOString() || null,
-      confirmedAt: task.confirmedAt?.toISOString() || null,
-    };
-  }
-
-  /**
    * Check if error is 404 Not Found
    *
    * @param error - Error object

@@ -490,8 +490,8 @@ function handleSubmit(): void {
       type: form.type as ProjectType,
       contractDate: new Date(form.contractDate),
       deliveryDate: new Date(form.deliveryDate),
-      coordinateX: form.coordinateX ?? undefined,
-      coordinateY: form.coordinateY ?? undefined,
+      coordinateX: form.coordinateX ?? null,
+      coordinateY: form.coordinateY ?? null,
     };
     emit('submit', updateData);
   } else {
@@ -503,8 +503,9 @@ function handleSubmit(): void {
       type: form.type as ProjectType,
       contractDate: new Date(form.contractDate),
       deliveryDate: new Date(form.deliveryDate),
-      coordinateX: form.coordinateX ?? undefined,
-      coordinateY: form.coordinateY ?? undefined,
+      coordinateX: form.coordinateX ?? null,
+      coordinateY: form.coordinateY ?? null,
+      dropboxFolderId: '',
     };
     emit('submit', createData);
   }

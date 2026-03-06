@@ -127,7 +127,6 @@
 
 <script setup lang="ts">
 import {ref, reactive, computed} from 'vue';
-import {useRouter, useRoute} from 'vue-router';
 import {useAuth} from '@/presentation/composables';
 import LoadingSpinner from '@/presentation/components/common/LoadingSpinner.vue';
 import {
@@ -139,8 +138,6 @@ import {
   AlertCircle as AlertCircleIcon,
 } from 'lucide-vue-next';
 
-const router = useRouter();
-const route = useRoute();
 const {login, isLoading} = useAuth();
 
 // State

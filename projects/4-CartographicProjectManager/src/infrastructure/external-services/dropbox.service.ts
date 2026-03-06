@@ -371,16 +371,12 @@ export class DropboxService implements IDropboxService {
   /** Dropbox access token */
   private accessToken: string;
 
-  /** Dropbox refresh token */
-  private refreshToken: string | null = null;
-
   /**
    * Create Dropbox service instance
    * @param config - Dropbox configuration
    */
   public constructor(config: DropboxConfig) {
     this.accessToken = config.accessToken;
-    this.refreshToken = config.refreshToken || null;
   }
 
   /**

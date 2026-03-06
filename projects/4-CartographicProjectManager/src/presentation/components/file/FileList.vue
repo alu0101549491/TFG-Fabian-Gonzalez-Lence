@@ -217,7 +217,7 @@
               <span class="file-list-name" :title="file.name">{{ file.name }}</span>
             </td>
             <td class="file-list-td-section">
-              <span class="file-list-section-badge">{{ file.section }}</span>
+              <span class="file-list-section-badge">{{ file.section ?? '' }}</span>
             </td>
             <td class="file-list-td-size">{{ formatFileSize(file.sizeInBytes) }}</td>
             <td class="file-list-td-date">{{ formatRelativeDate(file.uploadedAt) }}</td>
@@ -269,16 +269,22 @@
 
 <script setup lang="ts">
 import {ref, computed, watch} from 'vue';
-import type {FileDto} from '@/application/dto';
+import type {FileDto, FileSummaryDto} from '@/application/dto';
 import {FileType} from '@/domain/enumerations';
 import {formatFileSize} from '@/shared/utils';
+
+export type FileListItemDto =
+  | FileDto
+  | (FileSummaryDto & {
+      section?: string | null;
+    });
 
 /**
  * FileList component props
  */
 export interface FileListProps {
   /** Files to display */
-  files: FileDto[];
+  files: FileListItemDto[];
   /** Project sections */
   sections?: string[];
   /** Active section filter */
@@ -303,10 +309,10 @@ export interface FileListProps {
  * FileList component emits
  */
 export interface FileListEmits {
-  (e: 'file-click', file: FileDto): void;
-  (e: 'file-download', file: FileDto): void;
-  (e: 'file-preview', file: FileDto): void;
-  (e: 'file-delete', file: FileDto): void;
+  (e: 'file-click', file: FileListItemDto): void;
+  (e: 'file-download', file: FileListItemDto): void;
+  (e: 'file-preview', file: FileListItemDto): void;
+  (e: 'file-delete', file: FileListItemDto): void;
   (e: 'section-change', section: string): void;
   (e: 'upload-click'): void;
 }
@@ -406,14 +412,7 @@ function setActiveSection(section: string): void {
 /**
  * Check if file is image
  */
-function isImage(file: FileDto): boolean {
-  return file.type === FileType.IMAGE;
-}
-
-/**
- * Check if file can be previewed
- */
-function canPreview(file: FileDto): boolean {
+function canPreview(file: FileListItemDto): boolean {
   return file.type === FileType.IMAGE || file.type === FileType.PDF;
 }
 
@@ -421,7 +420,7 @@ function canPreview(file: FileDto): boolean {
  * Check if current user can delete a specific file
  * User can delete if they are admin OR if they uploaded the file
  */
-function canDeleteFile(file: FileDto): boolean {
+function canDeleteFile(file: FileListItemDto): boolean {
   // Admin can delete any file (or if canDelete prop is true for backwards compatibility)
   if (props.canDelete || props.isAdmin) {
     return true;

@@ -46,10 +46,21 @@ export const DATABASE = {
  */
 
 export const JWT = {
-  SECRET: process.env.JWT_SECRET || 'default-secret-change-in-production',
+  SECRET: (() => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('Missing required environment variable: JWT_SECRET');
+    }
+    return secret;
+  })(),
   EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
-  REFRESH_SECRET:
-    process.env.JWT_REFRESH_SECRET || 'default-refresh-secret',
+  REFRESH_SECRET: (() => {
+    const refreshSecret = process.env.JWT_REFRESH_SECRET;
+    if (!refreshSecret) {
+      throw new Error('Missing required environment variable: JWT_REFRESH_SECRET');
+    }
+    return refreshSecret;
+  })(),
   REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
 };
 

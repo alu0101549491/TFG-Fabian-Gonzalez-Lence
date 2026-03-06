@@ -49,18 +49,14 @@ export class AuthorizationService implements IAuthorizationService {
     if (!project) throw new NotFoundError(`Project ${projectId} not found`);
 
     // Admin has access to all projects
-    if (user.role === UserRole.ADMIN) return true;
+    if (user.role === UserRole.ADMINISTRATOR) return true;
 
     // Client can access assigned projects
     if (user.role === UserRole.CLIENT && project.clientId === userId) return true;
 
-    // Special User needs explicit READ permission
-    const permissions = await this.permissionRepository.findByUserAndProject(userId, projectId);
-    return permissions.some(p => 
-      p.accessRight === AccessRight.READ || 
-      p.accessRight === AccessRight.WRITE ||
-      p.accessRight === AccessRight.DELETE
-    );
+    // Special User needs explicit VIEW permission
+    const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
+    return permission ? permission.canView() : false;
   }
 
   /**
@@ -74,17 +70,14 @@ export class AuthorizationService implements IAuthorizationService {
     if (!project) throw new NotFoundError(`Project ${projectId} not found`);
 
     // Admin can modify all projects
-    if (user.role === UserRole.ADMIN) return true;
+    if (user.role === UserRole.ADMINISTRATOR) return true;
 
     // Client cannot modify projects (read-only)
     if (user.role === UserRole.CLIENT) return false;
 
-    // Special User needs WRITE permission
-    const permissions = await this.permissionRepository.findByUserAndProject(userId, projectId);
-    return permissions.some(p => 
-      p.accessRight === AccessRight.WRITE || 
-      p.accessRight === AccessRight.DELETE
-    );
+    // Special User needs EDIT permission
+    const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
+    return permission ? (permission.canEdit() || permission.canDelete()) : false;
   }
 
   /**
@@ -97,17 +90,19 @@ export class AuthorizationService implements IAuthorizationService {
     const project = await this.projectRepository.findById(projectId);
     if (!project) throw new NotFoundError(`Project ${projectId} not found`);
 
-    // Only admins can delete projectsif (user.role === UserRole.ADMIN) return true;
+    // Only admins can delete projects
+    if (user.role === UserRole.ADMINISTRATOR) return true;
 
     // Special User needs DELETE permission
-    const permissions = await this.permissionRepository.findByUserAndProject(userId, projectId);
-    return permissions.some(p => p.accessRight === AccessRight.DELETE);
+    const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
+    return permission ? permission.canDelete() : false;
   }
 
   /**
    * Checks if a user can finalize a specific project.
    */
   public async canFinalizeProject(userId: string, projectId: string): Promise<boolean> {
+    void projectId;
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -142,6 +137,7 @@ export class AuthorizationService implements IAuthorizationService {
     projectId: string,
     assigneeId: string
   ): Promise<boolean> {
+    void projectId;
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -203,6 +199,7 @@ export class AuthorizationService implements IAuthorizationService {
     taskId: string,
     newStatus: TaskStatus
   ): Promise<boolean> {
+    void newStatus;
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -306,7 +303,7 @@ export class AuthorizationService implements IAuthorizationService {
     if (user.role === UserRole.ADMINISTRATOR) return true;
 
     // File uploader can delete their own files
-    if (file.uploadedById === userId) return true;
+    if (file.uploadedBy === userId) return true;
 
     return false;
   }
@@ -318,6 +315,7 @@ export class AuthorizationService implements IAuthorizationService {
     userId: string,
     projectId: string
   ): Promise<boolean> {
+    void projectId;
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
