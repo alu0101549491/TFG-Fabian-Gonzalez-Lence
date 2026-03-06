@@ -210,8 +210,11 @@ export class AxiosClient {
   /** Flag indicating if token refresh is in progress */
   private isRefreshing = false;
 
-  /** Queue of callbacks waiting for token refresh */
-  private refreshSubscribers: Array<(token: string) => void> = [];
+  /** Queue of subscribers waiting for token refresh */
+  private refreshSubscribers: Array<{
+    resolve: (token: string) => void;
+    reject: (error: unknown) => void;
+  }> = [];
 
   /** Abort controller for cancelling all requests */
   private abortController: AbortController | null = null;
@@ -301,12 +304,14 @@ export class AxiosClient {
         ) {
           if (this.isRefreshing) {
             // Wait for ongoing refresh to complete
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
               this.subscribeToTokenRefresh((token: string) => {
                 if (originalRequest.headers) {
                   originalRequest.headers.Authorization = `Bearer ${token}`;
                 }
                 resolve(this.axiosInstance(originalRequest));
+              }, (refreshError: unknown) => {
+                reject(refreshError);
               });
             });
           }
@@ -316,10 +321,7 @@ export class AxiosClient {
         }
 
         // Check if request should be retried
-        if (
-          this.shouldRetry(error, originalRequest._retryCount || 0) &&
-          originalRequest
-        ) {
+        if (originalRequest && this.shouldRetry(error, originalRequest._retryCount || 0)) {
           originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
           await delay(RETRY_DELAY_MS * originalRequest._retryCount);
           return this.axiosInstance(originalRequest);
@@ -373,6 +375,9 @@ export class AxiosClient {
       // Clear tokens on refresh failure
       this.tokenStorage?.clearTokens();
 
+      // Reject all subscribers waiting for refresh
+      this.onTokenRefreshFailed(error);
+
       // Dispatch session expired event for presentation layer
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('auth:sessionExpired'));
@@ -390,8 +395,11 @@ export class AxiosClient {
    *
    * @param callback - Callback to invoke when token is refreshed
    */
-  private subscribeToTokenRefresh(callback: (token: string) => void): void {
-    this.refreshSubscribers.push(callback);
+  private subscribeToTokenRefresh(
+    onSuccess: (token: string) => void,
+    onFailure: (error: unknown) => void,
+  ): void {
+    this.refreshSubscribers.push({resolve: onSuccess, reject: onFailure});
   }
 
   /**
@@ -400,7 +408,16 @@ export class AxiosClient {
    * @param newToken - The new access token
    */
   private onTokenRefreshed(newToken: string): void {
-    this.refreshSubscribers.forEach((callback) => callback(newToken));
+    this.refreshSubscribers.forEach((subscriber) => subscriber.resolve(newToken));
+  }
+
+  /**
+   * Reject all subscribers after a failed token refresh.
+   *
+   * @param error - The error that caused token refresh to fail
+   */
+  private onTokenRefreshFailed(error: unknown): void {
+    this.refreshSubscribers.forEach((subscriber) => subscriber.reject(error));
   }
 
   /**

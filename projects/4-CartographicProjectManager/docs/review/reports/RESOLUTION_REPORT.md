@@ -33,16 +33,19 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D4-002** — Incorrect enum imports in domain repository interfaces were fixed.
 - **D7-001** — Application service interfaces ↔ implementations were aligned; notification sending now consistently uses the object-shaped `sendNotification(data: SendNotificationData)` contract.
 - **D7-002** — AuthorizationService admin-role checks were standardized to `UserRole.ADMINISTRATOR`, and the commented-out admin delete check was corrected.
+- **D7-003** — Backend backup/restore no longer uses shell-interpolated `exec`; commands are executed with argument arrays and secrets are passed via environment (`PGPASSWORD`).
+- **D7-008** — Backend project export now uses nullish checks for coordinates so valid `0` values are included in PDF output.
 - **D9-001** — Backend WebSocket project-room joins are now authorization-guarded (admin role, project ownership, or explicit permission) before `socket.join()`.
 - **D14-001** — Backend JWT secrets no longer fall back to hard-coded defaults; missing `JWT_SECRET` / `JWT_REFRESH_SECRET` now fails fast.
+- **D8-001 / D8-002** — Axios interceptor retry/refresh flow was hardened to avoid crashes when `error.config` is missing and to ensure queued requests reject on refresh failure (no hangs).
 
 ### 🟡 Partially Resolved
 - **D7-004** — The missing `ValidationErrorCode` import was fixed and password updates were made safer (new `User` entity on update). However, the service still contains mock/placeholder auth logic, still accesses `user['passwordHash']`, and still generates placeholder tokens client-side.
+- **D7-005** — Coordinate handling was fixed to preserve valid `0` values and handle partial coordinate updates deterministically, but Dropbox-folder-id normalization to an empty string still remains in the Domain/entity path.
+- **D37-001** — Committed secret mitigation was partially applied by untracking/ignoring `backend/.env.railway` and adding a sanitized `backend/.env.railway.example`; full remediation still requires credential rotation and (if previously pushed) git history purge.
 
 ### ⏳ Not Addressed (still outstanding)
-- **D7-003** — Backend backup command injection/secret exposure risk (shell `exec` interpolation) was not remediated.
-- **D7-005** — ProjectService coordinate truthiness bug (`0` coordinates) was not remediated.
-- **D8-001 / D8-002 / D8-003 / D8-004 / D8-005** — Axios client retry/refresh/cancel/type/logging findings were not fully remediated.
+- **D8-003 / D8-004 / D8-005** — Axios client cancel/type/logging findings were not fully remediated.
 - **D10-002** — Frontend Dropbox access token usage remains a high security risk and was not redesigned.
 - **D14-002 / D14-003 / D14-004 / D14-005** — Upload-rule drift, fail-open defaults, import-time dotenv side effects, and header metadata mismatch remain.
 ### Frontend: strict TS + DTO/contract alignment
@@ -78,6 +81,14 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
   - `backend/src/infrastructure/websocket/socket.server.ts`
 - JWT secret defaults were removed and missing secrets now fail fast:
   - `backend/src/shared/constants.ts`
+- Backup/restore commands are executed safely without shell interpolation:
+  - `backend/src/application/services/backup.service.ts`
+
+### Frontend: Axios retry/refresh reliability
+- Retry guard is null-safe when Axios provides errors without a `config`:
+  - `src/infrastructure/http/axios.client.ts`
+- Refresh queue rejects all waiting requests on refresh failure (no hanging Promises):
+  - `src/infrastructure/http/axios.client.ts`
 
 ## Remaining Items / Known Non-Blocking Output
 - Frontend `npm run lint` reports a large number of warnings (primarily Vue formatting / attribute ordering / single-line element newline).
