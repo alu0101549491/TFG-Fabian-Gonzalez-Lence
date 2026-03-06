@@ -7,7 +7,7 @@
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 11, 2026
  * @file application/interfaces/notification-service.interface.ts
- * @desc Service interface for in-app and WhatsApp notification delivery.
+ * @desc Service interface for in-app notification delivery.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
  */
@@ -23,7 +23,7 @@ import {NotificationType} from '../../domain/enumerations/notification-type';
 /**
  * Service interface for notification operations.
  * Handles sending, retrieving, and managing notifications through
- * multiple channels including in-app and WhatsApp delivery.
+ * the in-app channel.
  */
 export interface INotificationService {
   /**
@@ -125,28 +125,6 @@ export interface INotificationService {
    * @returns The number of notifications deleted
    */
   deleteOldNotifications(olderThanDays: number): Promise<number>;
-
-  /**
-   * Sends a notification via WhatsApp to a user.
-   * @param userId - The unique identifier of the user
-   * @param message - The message content to send
-   * @returns True if message was sent successfully, false otherwise
-   * @throws {NotFoundError} If user doesn't exist
-   * @throws {ValidationError} If user doesn't have WhatsApp configured
-   */
-  sendViaWhatsApp(userId: string, message: string): Promise<boolean>;
-
-  /**
-   * Determines if a notification should be sent via WhatsApp based on user preferences.
-   * @param userId - The unique identifier of the user
-   * @param notificationType - The type of notification to check
-   * @returns True if WhatsApp should be used for this notification type
-   * @throws {NotFoundError} If user doesn't exist
-   */
-  shouldSendWhatsApp(
-    userId: string,
-    notificationType: NotificationType,
-  ): Promise<boolean>;
 
   /**
    * Retrieves notification preferences for a user.

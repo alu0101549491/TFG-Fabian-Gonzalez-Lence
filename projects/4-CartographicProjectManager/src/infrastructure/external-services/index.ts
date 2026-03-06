@@ -7,7 +7,7 @@
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 11, 2026
  * @file src/infrastructure/external-services/index.ts
- * @desc Barrel export for external service integrations (Dropbox & WhatsApp)
+ * @desc Barrel export for external service integrations (Dropbox)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  */
 
@@ -34,23 +34,6 @@ export {
   DropboxInsufficientSpaceError,
 } from './dropbox.service';
 
-// WhatsApp Gateway exports
-export {
-  WhatsAppGateway,
-  type IWhatsAppGateway,
-  type WhatsAppConfig,
-  type SendMessageRequest,
-  type SendMessageResponse,
-  type MessageStatusCallback,
-  type TemplateParams,
-  WhatsAppErrorCode,
-  MessageStatus,
-  MESSAGE_TEMPLATES,
-} from './whatsapp.gateway';
-
-// WhatsApp error classes
-export { TwilioApiError } from './whatsapp.gateway';
-
 /**
  * Factory function for creating configured Dropbox service instance
  *
@@ -74,41 +57,10 @@ export function createDropboxService(
 }
 
 /**
- * Factory function for creating configured WhatsApp gateway instance
- *
- * @param config - WhatsApp gateway configuration
- * @returns Configured WhatsApp gateway
- *
- * @example
- * ```typescript
- * const whatsappGateway = createWhatsAppGateway({
- *   accountSid: process.env.VITE_TWILIO_ACCOUNT_SID,
- *   authToken: process.env.VITE_TWILIO_AUTH_TOKEN,
- *   fromNumber: process.env.VITE_TWILIO_WHATSAPP_NUMBER,
- *   enabled: process.env.VITE_WHATSAPP_ENABLED === 'true'
- * });
- *
- * await whatsappGateway.sendTaskAssignedNotification(
- *   '+34612345678',
- *   'Review cartography plans',
- *   '2026-02-15'
- * );
- * ```
- */
-export function createWhatsAppGateway(
-  config: WhatsAppConfig,
-): IWhatsAppGateway {
-  return new WhatsAppGateway(config);
-}
-
-/**
  * Re-import types for convenience
  */
 import type {
   DropboxConfig,
   IDropboxService,
-  WhatsAppConfig,
-  IWhatsAppGateway,
 } from './dropbox.service';
 import { DropboxService } from './dropbox.service';
-import { WhatsAppGateway } from './whatsapp.gateway';

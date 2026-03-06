@@ -82,8 +82,6 @@ export interface NotificationListResponseDto {
 export interface NotificationPreferencesDto {
   /** Whether in-app notifications are enabled */
   readonly inAppEnabled: boolean;
-  /** Whether WhatsApp notifications are enabled */
-  readonly whatsAppEnabled: boolean;
   /** Notify on new messages */
   readonly notifyNewMessages: boolean;
   /** Notify on received files */
