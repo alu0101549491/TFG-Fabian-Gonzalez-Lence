@@ -12,13 +12,43 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { logInfo, logError } from '../../shared/logger.js';
 
-const execAsync = promisify(exec);
+function runCommand(
+  command: string,
+  args: string[],
+  env: NodeJS.ProcessEnv
+): Promise<{stdout: string; stderr: string}> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      env,
+      shell: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+
+    child.stdout.on('data', (chunk: Buffer) => stdoutChunks.push(chunk));
+    child.stderr.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
+
+    child.on('error', (error) => reject(error));
+    child.on('close', (code) => {
+      const stdout = Buffer.concat(stdoutChunks).toString('utf8');
+      const stderr = Buffer.concat(stderrChunks).toString('utf8');
+
+      if (code !== 0) {
+        reject(new Error(`${command} exited with code ${code}: ${stderr || stdout}`));
+        return;
+      }
+
+      resolve({stdout, stderr});
+    });
+  });
+}
 
 /**
  * Configuration for backup service
@@ -77,18 +107,44 @@ export class BackupService {
       const dbUser = dbUrl.username;
       const dbPassword = dbUrl.password;
 
-      // Build pg_dump command
-      const command = `PGPASSWORD="${dbPassword}" pg_dump -h ${dbHost} -p ${dbPort} -U ${dbUser} -F c -b -v -f "${backupPath}" ${dbName}`;
+      if (!dbName) {
+        throw new Error('Invalid database URL: missing database name');
+      }
+      if (!dbUser) {
+        throw new Error('Invalid database URL: missing username');
+      }
+      if (!dbPassword) {
+        throw new Error('Invalid database URL: missing password');
+      }
 
       logInfo(`[Backup] Creating database backup: ${filename}`);
 
-      // Execute backup command
-      const { stdout, stderr } = await execAsync(command);
+      const { stderr } = await runCommand(
+        'pg_dump',
+        [
+          '-h',
+          dbHost,
+          '-p',
+          dbPort,
+          '-U',
+          dbUser,
+          '-F',
+          'c',
+          '-b',
+          '-v',
+          '-f',
+          backupPath,
+          dbName,
+        ],
+        {
+          ...process.env,
+          PGPASSWORD: dbPassword,
+        }
+      );
 
       if (stderr && !stderr.includes('pg_dump:')) {
         logError(`[Backup] Backup warnings: ${stderr}`);
       }
-
       // Get file size
       const stats = await fs.stat(backupPath);
 
@@ -125,18 +181,42 @@ export class BackupService {
       const dbUser = dbUrl.username;
       const dbPassword = dbUrl.password;
 
-      // Build pg_restore command
-      const command = `PGPASSWORD="${dbPassword}" pg_restore -h ${dbHost} -p ${dbPort} -U ${dbUser} -d ${dbName} -c -v "${backupPath}"`;
+      if (!dbName) {
+        throw new Error('Invalid database URL: missing database name');
+      }
+      if (!dbUser) {
+        throw new Error('Invalid database URL: missing username');
+      }
+      if (!dbPassword) {
+        throw new Error('Invalid database URL: missing password');
+      }
 
       logInfo(`[Backup] Restoring database from: ${backupFilename}`);
 
-      // Execute restore command
-      const { stdout, stderr } = await execAsync(command);
+      const { stderr } = await runCommand(
+        'pg_restore',
+        [
+          '-h',
+          dbHost,
+          '-p',
+          dbPort,
+          '-U',
+          dbUser,
+          '-d',
+          dbName,
+          '-c',
+          '-v',
+          backupPath,
+        ],
+        {
+          ...process.env,
+          PGPASSWORD: dbPassword,
+        }
+      );
 
       if (stderr && !stderr.includes('pg_restore:')) {
         logError(`[Backup] Restore warnings: ${stderr}`);
       }
-
       logInfo(`[Backup] Database restored successfully from: ${backupFilename}`);
 
       return {
