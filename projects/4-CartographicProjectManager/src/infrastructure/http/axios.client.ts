@@ -224,6 +224,7 @@ export class AxiosClient {
    */
   public constructor() {
     this.axiosInstance = this.createAxiosInstance();
+    this.abortController = new AbortController();
     this.setupRequestInterceptor();
     this.setupResponseInterceptor();
   }
@@ -260,6 +261,12 @@ export class AxiosClient {
   private setupRequestInterceptor(): void {
     this.axiosInstance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
+        // Attach a default AbortSignal so cancelAllRequests() can cancel in-flight requests.
+        // If the caller provides a per-request signal, do not override it.
+        if (!config.signal && this.abortController) {
+          config.signal = this.abortController.signal;
+        }
+
         // Add authorization header if token exists
         const token = this.tokenStorage?.getAccessToken();
         if (token && config.headers) {
@@ -285,14 +292,7 @@ export class AxiosClient {
    */
   private setupResponseInterceptor(): void {
     this.axiosInstance.interceptors.response.use(
-      (response: AxiosResponse) => {
-        // Transform successful response to ApiResponse format
-        return {
-          data: response.data,
-          status: response.status,
-          message: response.data?.message,
-        } as unknown as AxiosResponse;
-      },
+      (response: AxiosResponse) => response,
       async (error: AxiosError) => {
         const originalRequest = error.config as ExtendedAxiosRequestConfig;
 
@@ -618,21 +618,17 @@ export class AxiosClient {
     url: string,
     config?: RequestConfig,
   ): Promise<ApiResponse<T>> {
-    console.log(`[AxiosClient] DELETE ${url}`);
     const response = await this.axiosInstance.delete<BackendApiResponse<T>>(url, config);
-    console.log(`[AxiosClient] DELETE response status: ${response.status}`, response.data);
-    
+
     // Handle 204 No Content responses (empty body)
     if (response.status === 204 || !response.data) {
-      console.log('[AxiosClient] Handling 204 No Content response');
       return {
         data: null as T,
         status: response.status,
         message: 'Successfully deleted',
       };
     }
-    
-    console.log('[AxiosClient] Returning structured response');
+
     return {
       data: response.data.data as T,
       status: response.status,
@@ -684,7 +680,7 @@ export class AxiosClient {
       });
     }
 
-    const response = await this.axiosInstance.post<T>(url, formData, {
+    const response = await this.axiosInstance.post<BackendApiResponse<T>>(url, formData, {
       ...config,
       timeout: UPLOAD_TIMEOUT,
       headers: {
@@ -704,7 +700,11 @@ export class AxiosClient {
       },
     });
 
-    return response as unknown as ApiResponse<T>;
+    return {
+      data: response.data.data as T,
+      status: response.status,
+      message: response.data.message,
+    };
   }
 
   /**
@@ -749,7 +749,7 @@ export class AxiosClient {
       });
     }
 
-    const response = await this.axiosInstance.post<T>(url, formData, {
+    const response = await this.axiosInstance.post<BackendApiResponse<T>>(url, formData, {
       ...config,
       timeout: UPLOAD_TIMEOUT,
       headers: {
@@ -769,7 +769,11 @@ export class AxiosClient {
       },
     });
 
-    return response as unknown as ApiResponse<T>;
+    return {
+      data: response.data.data as T,
+      status: response.status,
+      message: response.data.message,
+    };
   }
 
   /**
@@ -877,10 +881,8 @@ export class AxiosClient {
    * Cancel all pending requests
    */
   public cancelAllRequests(): void {
-    if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = new AbortController();
-    }
+    this.abortController?.abort();
+    this.abortController = new AbortController();
   }
 
   /**

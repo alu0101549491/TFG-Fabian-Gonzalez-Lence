@@ -38,6 +38,9 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D9-001** — Backend WebSocket project-room joins are now authorization-guarded (admin role, project ownership, or explicit permission) before `socket.join()`.
 - **D14-001** — Backend JWT secrets no longer fall back to hard-coded defaults; missing `JWT_SECRET` / `JWT_REFRESH_SECRET` now fails fast.
 - **D8-001 / D8-002** — Axios interceptor retry/refresh flow was hardened to avoid crashes when `error.config` is missing and to ensure queued requests reject on refresh failure (no hangs).
+- **D8-003** — Axios global cancellation is now functional: a default `AbortSignal` is attached to requests and `cancelAllRequests()` aborts in-flight work and resets the controller.
+- **D8-004** — Axios response typing was made consistent: interceptor no longer returns a casted pseudo-response, and upload helpers map `BackendApiResponse<T>` to `ApiResponse<T>` without unsafe casts.
+- **D8-005** — Removed `console.log` debug output from the Axios delete path to avoid leaking payloads in production.
 
 ### 🟡 Partially Resolved
 - **D7-004** — The missing `ValidationErrorCode` import was fixed and password updates were made safer (new `User` entity on update). However, the service still contains mock/placeholder auth logic, still accesses `user['passwordHash']`, and still generates placeholder tokens client-side.
@@ -45,7 +48,6 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D37-001** — Committed secret mitigation was partially applied by untracking/ignoring `backend/.env.railway` and adding a sanitized `backend/.env.railway.example`; full remediation still requires credential rotation and (if previously pushed) git history purge.
 
 ### ⏳ Not Addressed (still outstanding)
-- **D8-003 / D8-004 / D8-005** — Axios client cancel/type/logging findings were not fully remediated.
 - **D10-002** — Frontend Dropbox access token usage remains a high security risk and was not redesigned.
 - **D14-002 / D14-003 / D14-004 / D14-005** — Upload-rule drift, fail-open defaults, import-time dotenv side effects, and header metadata mismatch remain.
 ### Frontend: strict TS + DTO/contract alignment
@@ -88,6 +90,12 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - Retry guard is null-safe when Axios provides errors without a `config`:
   - `src/infrastructure/http/axios.client.ts`
 - Refresh queue rejects all waiting requests on refresh failure (no hanging Promises):
+  - `src/infrastructure/http/axios.client.ts`
+- Global request cancellation is wired via `AbortController` signal injection:
+  - `src/infrastructure/http/axios.client.ts`
+- Debug logging removed from delete path:
+  - `src/infrastructure/http/axios.client.ts`
+- Response typing made consistent (no unsafe response casting; upload helpers map `BackendApiResponse<T>` to `ApiResponse<T>`):
   - `src/infrastructure/http/axios.client.ts`
 
 ## Remaining Items / Known Non-Blocking Output
