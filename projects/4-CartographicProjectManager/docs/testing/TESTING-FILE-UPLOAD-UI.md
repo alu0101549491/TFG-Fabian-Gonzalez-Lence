@@ -178,7 +178,7 @@ npm run dev
 ### 2. Verifica el Token de Dropbox
 ```bash
 # En backend/.env debe estar:
-DROPBOX_ACCESS_TOKEN=sl.u.AGXSaqWUnaGg33z...
+DROPBOX_ACCESS_TOKEN=<dropbox_access_token>
 ```
 
 ### 3. Verifica la Consola del Navegador

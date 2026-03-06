@@ -66,7 +66,7 @@ In the **Settings** tab:
 4. Add to your `.env` file:
 
 ```bash
-DROPBOX_ACCESS_TOKEN=sl.your-access-token-here
+DROPBOX_ACCESS_TOKEN=<dropbox_access_token>
 ```
 
 ⚠️ **Note**: This token does not expire but should only be used for development.
@@ -83,7 +83,7 @@ DROPBOX_APP_KEY=your-app-key
 DROPBOX_APP_SECRET=your-app-secret
 ```
 
-3. Implement OAuth flow in your frontend to obtain user-specific tokens
+3. Implement OAuth flow in your backend to obtain/refresh tokens
 
 ### 4. Backend Configuration
 
@@ -91,21 +91,16 @@ Edit `backend/.env`:
 
 ```bash
 # Required
-DROPBOX_ACCESS_TOKEN=sl.your-access-token-here
+DROPBOX_ACCESS_TOKEN=<dropbox_access_token>
 
 # Optional (for OAuth flow)
 DROPBOX_APP_KEY=your-app-key
 DROPBOX_APP_SECRET=your-app-secret
 ```
 
-### 5. Frontend Configuration (Optional)
+### 5. Frontend Configuration
 
-Edit `.env`:
-
-```bash
-# Optional - for client-side Dropbox features
-VITE_DROPBOX_ACCESS_TOKEN=sl.your-access-token-here
-```
+No Dropbox credentials should be configured in the frontend. The frontend must use the backend `/api/v1/files/*` endpoints.
 
 ## Usage
 
