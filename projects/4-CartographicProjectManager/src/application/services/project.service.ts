@@ -51,14 +51,6 @@ import {NotificationType} from '../../domain/enumerations/notification-type';
 import {GeoCoordinates} from '../../domain/value-objects/geo-coordinates';
 
 /**
- * Placeholder interface for Dropbox service.
- */
-interface IDropboxService {
-  createProjectFolder(projectCode: string): Promise<string>;
-  deleteProjectFolder(folderId: string): Promise<void>;
-}
-
-/**
  * Implementation of project management operations.
  */
 export class ProjectService implements IProjectService {
@@ -71,7 +63,6 @@ export class ProjectService implements IProjectService {
     private readonly permissionRepository: IPermissionRepository,
     private readonly notificationService: INotificationService,
     private readonly authorizationService: IAuthorizationService,
-    private readonly dropboxService: IDropboxService
   ) {}
 
   /**
@@ -96,15 +87,6 @@ export class ProjectService implements IProjectService {
       throw new NotFoundError(`User ${creatorId} not found`);
     }
 
-    // Create Dropbox folder
-    let dropboxFolderId: string | undefined;
-    try {
-      dropboxFolderId = await this.dropboxService.createProjectFolder(data.code);
-    } catch (error) {
-      console.error('Failed to create Dropbox folder:', error);
-      // Continue without Dropbox folder
-    }
-
     // Create project entity
     const project = new Project({
       id: generateId(),
@@ -120,7 +102,7 @@ export class ProjectService implements IProjectService {
       contractDate: data.contractDate,
       deliveryDate: data.deliveryDate,
       status: ProjectStatus.ACTIVE,
-      dropboxFolderId: dropboxFolderId || '',
+      dropboxFolderId: data.dropboxFolderId,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -201,15 +183,6 @@ export class ProjectService implements IProjectService {
 
     if (project.status === ProjectStatus.FINALIZED) {
       throw new BusinessRuleError('Cannot delete a finalized project');
-    }
-
-    // Delete Dropbox folder
-    if (project.dropboxFolderId) {
-      try {
-        await this.dropboxService.deleteProjectFolder(project.dropboxFolderId);
-      } catch (error) {
-        console.error('Failed to delete Dropbox folder:', error);
-      }
     }
 
     await this.projectRepository.delete(projectId);

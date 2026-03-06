@@ -41,6 +41,9 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D8-003** — Axios global cancellation is now functional: a default `AbortSignal` is attached to requests and `cancelAllRequests()` aborts in-flight work and resets the controller.
 - **D8-004** — Axios response typing was made consistent: interceptor no longer returns a casted pseudo-response, and upload helpers map `BackendApiResponse<T>` to `ApiResponse<T>` without unsafe casts.
 - **D8-005** — Removed `console.log` debug output from the Axios delete path to avoid leaking payloads in production.
+- **D10-002** — Client-side Dropbox integration and any frontend token-env guidance were removed; the frontend no longer supports shipping Dropbox credentials and relies on backend `/api/v1/files/*` endpoints.
+- **D37-004** — Frontend `.env.example` no longer includes `VITE_DROPBOX_ACCESS_TOKEN` (no encouragement of client-side third-party access tokens).
+- **D40-004** — Docs no longer include token-like Dropbox strings or recommend client-side Dropbox tokens; guidance now uses placeholders and backend-only credentials.
 
 ### 🟡 Partially Resolved
 - **D7-004** — The missing `ValidationErrorCode` import was fixed and password updates were made safer (new `User` entity on update). However, the service still contains mock/placeholder auth logic, still accesses `user['passwordHash']`, and still generates placeholder tokens client-side.
@@ -48,7 +51,6 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D37-001** — Committed secret mitigation was partially applied by untracking/ignoring `backend/.env.railway` and adding a sanitized `backend/.env.railway.example`; full remediation still requires credential rotation and (if previously pushed) git history purge.
 
 ### ⏳ Not Addressed (still outstanding)
-- **D10-002** — Frontend Dropbox access token usage remains a high security risk and was not redesigned.
 - **D14-002 / D14-003 / D14-004 / D14-005** — Upload-rule drift, fail-open defaults, import-time dotenv side effects, and header metadata mismatch remain.
 ### Frontend: strict TS + DTO/contract alignment
 - Realtime-store updates no longer spread nullable refs (safe narrowing before immutable updates):
