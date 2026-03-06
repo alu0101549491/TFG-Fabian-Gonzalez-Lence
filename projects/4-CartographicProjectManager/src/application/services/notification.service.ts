@@ -7,7 +7,7 @@
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 11, 2026
  * @file application/services/notification.service.ts
- * @desc Service implementation for notifications and WhatsApp integration.
+ * @desc Service implementation for notifications.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
  */
@@ -30,13 +30,6 @@ import {Notification} from '../../domain/entities/notification';
 import {NotificationType} from '../../domain/enumerations/notification-type';
 
 /**
- * Placeholder interface for WhatsApp gateway.
- */
-interface IWhatsAppGateway {
-  sendMessage(phoneNumber: string, message: string): Promise<boolean>;
-}
-
-/**
  * Data for creating a notification.
  */
 interface CreateNotificationData {
@@ -52,15 +45,10 @@ interface CreateNotificationData {
  * Implementation of notification management operations.
  */
 export class NotificationService implements INotificationService {
-  // Rate limiting for WhatsApp: Store last send time per project-user pair
-  private readonly whatsappRateLimits = new Map<string, Date>();
-  private readonly WHATSAPP_RATE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
-
   constructor(
     private readonly notificationRepository: INotificationRepository,
     private readonly userRepository: IUserRepository,
     private readonly projectRepository: IProjectRepository,
-    private readonly whatsAppGateway: IWhatsAppGateway
   ) {}
 
   /**
@@ -94,19 +82,6 @@ export class NotificationService implements INotificationService {
     });
 
     await this.notificationRepository.save(notification);
-
-    // Send via WhatsApp if enabled and rate limit allows
-    if (preferences.receiveWhatsApp && recipient.phoneNumber && data.relatedProjectId) {
-      const canSendWhatsApp = this.checkWhatsAppRateLimit(
-        data.recipientId,
-        data.relatedProjectId
-      );
-      
-      if (canSendWhatsApp) {
-        await this.sendViaWhatsApp(recipient.phoneNumber, data.title, data.message);
-        this.updateWhatsAppRateLimit(data.recipientId, data.relatedProjectId);
-      }
-    }
 
     return this.mapToDto(notification);
   }
@@ -264,7 +239,6 @@ export class NotificationService implements INotificationService {
     // For now, return default preferences
     return {
       receiveNotifications: true,
-      receiveWhatsApp: false,
       notifyOnTaskAssignment: true,
       notifyOnTaskStatusChange: true,
       notifyOnMessage: true,
@@ -302,46 +276,6 @@ export class NotificationService implements INotificationService {
     }
 
     return this.mapToDto(notification);
-  }
-
-  /**
-   * Sends a notification via WhatsApp.
-   */
-  private async sendViaWhatsApp(
-    phoneNumber: string,
-    title: string,
-    message: string
-  ): Promise<void> {
-    try {
-      const fullMessage = `${title}\n\n${message}`;
-      await this.whatsAppGateway.sendMessage(phoneNumber, fullMessage);
-    } catch (error) {
-      console.error('Failed to send WhatsApp message:', error);
-      // Don't throw error - WhatsApp is optional
-    }
-  }
-
-  /**
-   * Checks if WhatsApp notification can be sent (rate limiting).
-   */
-  private checkWhatsAppRateLimit(userId: string, projectId: string): boolean {
-    const key = `${userId}:${projectId}`;
-    const lastSent = this.whatsappRateLimits.get(key);
-    
-    if (!lastSent) {
-      return true;
-    }
-
-    const timeSinceLastSent = Date.now() - lastSent.getTime();
-    return timeSinceLastSent >= this.WHATSAPP_RATE_LIMIT_MS;
-  }
-
-  /**
-   * Updates the WhatsApp rate limit timestamp.
-   */
-  private updateWhatsAppRateLimit(userId: string, projectId: string): void {
-    const key = `${userId}:${projectId}`;
-    this.whatsappRateLimits.set(key, new Date());
   }
 
   /**

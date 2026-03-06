@@ -7,14 +7,13 @@
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 11, 2026
  * @file domain/entities/notification.ts
- * @desc Entity representing a notification sent to a user. Supports both in-app and WhatsApp delivery channels.
+ * @desc Entity representing an in-app notification sent to a user.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
  */
 
 import {NotificationType} from '../enumerations/notification-type';
 import {TaskStatus} from '../enumerations/task-status';
-import {type User} from './user';
 
 /**
  * Properties for creating a Notification entity.
@@ -34,8 +33,6 @@ export interface NotificationProps {
   relatedEntityId?: string | null;
   /** Whether user has seen it */
   isRead?: boolean;
-  /** Whether sent via WhatsApp */
-  sentViaWhatsApp?: boolean;
   /** When notification was created */
   createdAt?: Date;
 }
@@ -43,8 +40,7 @@ export interface NotificationProps {
 /**
  * Represents a notification for a user about a system event.
  *
- * Notifications support both in-app display and WhatsApp delivery
- * based on user preferences.
+ * Notifications are intended for in-app display.
  *
  * @example
  * ```typescript
@@ -66,7 +62,6 @@ export class Notification {
   public readonly relatedEntityId: string | null;
   public readonly createdAt: Date;
   private isReadValue: boolean;
-  private sentViaWhatsAppValue: boolean;
 
   /**
    * Creates a new Notification entity.
@@ -84,7 +79,6 @@ export class Notification {
     this.message = props.message;
     this.relatedEntityId = props.relatedEntityId ?? null;
     this.isReadValue = props.isRead ?? false;
-    this.sentViaWhatsAppValue = props.sentViaWhatsApp ?? false;
     this.createdAt = props.createdAt ?? new Date();
   }
 
@@ -115,10 +109,6 @@ export class Notification {
     return this.isReadValue;
   }
 
-  public get sentViaWhatsApp(): boolean {
-    return this.sentViaWhatsAppValue;
-  }
-
   // Business Logic Methods
 
   /**
@@ -126,23 +116,6 @@ export class Notification {
    */
   public markAsRead(): void {
     this.isReadValue = true;
-  }
-
-  /**
-   * Records WhatsApp delivery.
-   */
-  public markAsSentViaWhatsApp(): void {
-    this.sentViaWhatsAppValue = true;
-  }
-
-  /**
-   * Determines if should send via WhatsApp.
-   *
-   * @param user - User receiving notification
-   * @returns True if user has WhatsApp enabled
-   */
-  public shouldSendViaWhatsApp(user: User):  boolean {
-    return user.whatsappEnabled && user.phone !== null;
   }
 
   // Factory Methods
@@ -242,7 +215,6 @@ export class Notification {
       relatedEntityId: this.relatedEntityId,
       createdAt: this.createdAt.toISOString(),
       isRead: this.isReadValue,
-      sentViaWhatsApp: this.sentViaWhatsAppValue,
     };
   }
 }

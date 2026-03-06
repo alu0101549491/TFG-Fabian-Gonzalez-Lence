@@ -47,7 +47,6 @@ async function main(): Promise<void> {
       passwordHash: adminPassword,
       role: 'ADMINISTRATOR',
       phone: '+34600000001',
-      whatsappEnabled: true,
     },
   });
 
@@ -58,7 +57,6 @@ async function main(): Promise<void> {
       passwordHash: clientPassword,
       role: 'CLIENT',
       phone: '+34600000002',
-      whatsappEnabled: false,
     },
   });
 
@@ -69,7 +67,6 @@ async function main(): Promise<void> {
       passwordHash: clientPassword,
       role: 'CLIENT',
       phone: '+34600000003',
-      whatsappEnabled: true,
     },
   });
 
