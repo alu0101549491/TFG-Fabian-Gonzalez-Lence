@@ -230,7 +230,7 @@ export class ExportService {
         doc.text(`Contract Date: ${project.contractDate.toLocaleDateString()}`);
         doc.text(`Delivery Date: ${project.deliveryDate.toLocaleDateString()}`);
         
-        if (project.coordinateX && project.coordinateY) {
+        if (project.coordinateX != null && project.coordinateY != null) {
           doc.text(`Coordinates: ${project.coordinateX}, ${project.coordinateY}`);
         }
         

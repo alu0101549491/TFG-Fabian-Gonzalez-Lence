@@ -113,7 +113,10 @@ export class ProjectService implements IProjectService {
       name: data.name,
       type: data.type,
       clientId: data.clientId,
-      coordinates: data.coordinateX && data.coordinateY ? new GeoCoordinates(data.coordinateY, data.coordinateX) : null,
+      coordinates:
+        data.coordinateX != null && data.coordinateY != null
+          ? new GeoCoordinates(data.coordinateY, data.coordinateX)
+          : null,
       contractDate: data.contractDate,
       deliveryDate: data.deliveryDate,
       status: ProjectStatus.ACTIVE,
@@ -164,9 +167,17 @@ export class ProjectService implements IProjectService {
     if (data.dropboxFolderId !== undefined) project.dropboxFolderId = data.dropboxFolderId;
     if (data.status !== undefined) project.status = data.status;
     if (data.coordinateX !== undefined || data.coordinateY !== undefined) {
-      if (data.coordinateX && data.coordinateY) {
-        project.coordinates = new GeoCoordinates(data.coordinateY, data.coordinateX);
-      }
+      const nextX =
+        data.coordinateX !== undefined
+          ? data.coordinateX
+          : (project.coordinates?.getX() ?? null);
+      const nextY =
+        data.coordinateY !== undefined
+          ? data.coordinateY
+          : (project.coordinates?.getY() ?? null);
+
+      project.coordinates =
+        nextX != null && nextY != null ? new GeoCoordinates(nextY, nextX) : null;
     }
 
     await this.projectRepository.save(project);
