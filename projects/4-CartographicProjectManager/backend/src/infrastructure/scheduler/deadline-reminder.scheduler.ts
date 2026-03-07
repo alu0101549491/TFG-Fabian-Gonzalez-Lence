@@ -13,9 +13,9 @@
  */
 
 import cron from 'node-cron';
-import { PrismaClient } from '@prisma/client';
 import { DeadlineReminderService } from '../../application/services/deadline-reminder.service.js';
 import { NotificationRepository } from '../repositories/notification.repository.js';
+import { prisma } from '../database/prisma.client.js';
 import { logInfo, logError } from '../../shared/logger.js';
 
 /**
@@ -23,7 +23,6 @@ import { logInfo, logError } from '../../shared/logger.js';
  * Runs daily at 9:00 AM to check for upcoming deadlines
  */
 export function initializeDeadlineReminder(): void {
-  const prisma = new PrismaClient();
   const notificationRepository = new NotificationRepository();
   const deadlineService = new DeadlineReminderService(prisma, notificationRepository, {
     reminderDays: [7, 3, 1], // Remind at 7, 3, and 1 days before deadline

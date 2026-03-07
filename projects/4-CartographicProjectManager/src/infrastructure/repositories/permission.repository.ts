@@ -285,6 +285,7 @@ export class PermissionRepository implements IPermissionRepository {
    * @returns True if 404 error
    */
   private isNotFoundError(error: unknown): boolean {
-    return (error as {status?: number})?.status === 404;
+    const maybeError = error as {status?: number; response?: {status?: number}};
+    return maybeError?.status === 404 || maybeError?.response?.status === 404;
   }
 }
