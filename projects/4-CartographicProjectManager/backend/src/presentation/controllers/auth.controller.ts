@@ -119,4 +119,22 @@ export class AuthController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/v1/auth/refresh
+   * Refresh access token
+   */
+  public async refresh(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const {refreshToken} = req.body;
+      const result = await this.authService.refresh(refreshToken);
+      sendSuccess(res, result, 'Token refreshed');
+    } catch (error) {
+      next(error);
+    }
+  }
 }

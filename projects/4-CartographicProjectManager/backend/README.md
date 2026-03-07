@@ -177,7 +177,9 @@ npm test -- --coverage
 Uses JWT (JSON Web Tokens) for authentication:
 - Access tokens expire in 7 days (configurable)
 - Refresh tokens expire in 30 days
-- Tokens are httpOnly cookies for security
+- Tokens are returned in the JSON response body; clients send them via the `Authorization: Bearer <token>` header
+
+Note: Cookie-based (httpOnly) auth is not implemented in the current backend.
 
 ## 📝 Author
 

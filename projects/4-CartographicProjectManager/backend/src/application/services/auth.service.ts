@@ -15,7 +15,7 @@
 import type {User} from '@prisma/client';
 import {UserRepository} from '@infrastructure/repositories/user.repository.js';
 import {hashPassword, verifyPassword} from '@infrastructure/auth/password.service.js';
-import {generateAccessToken, generateRefreshToken} from '@infrastructure/auth/jwt.service.js';
+import {generateAccessToken, generateRefreshToken, verifyRefreshToken} from '@infrastructure/auth/jwt.service.js';
 import {UnauthorizedError, ConflictError, BadRequestError} from '@shared/errors.js';
 
 /**
@@ -129,6 +129,49 @@ export class AuthService {
       user: userWithoutPassword,
       accessToken,
       refreshToken,
+    };
+  }
+
+  /**
+   * Refresh session using a refresh token.
+   *
+   * @param refreshToken - Refresh token
+   * @returns User and new tokens
+   */
+  public async refresh(refreshToken: string): Promise<{
+    user: Omit<User, 'passwordHash'>;
+    accessToken: string;
+    refreshToken: string;
+  }> {
+    if (!refreshToken) {
+      throw new BadRequestError('Refresh token is required');
+    }
+
+    const payload = verifyRefreshToken(refreshToken);
+
+    const user = await this.userRepository.findById(payload.userId);
+    if (!user) {
+      throw new UnauthorizedError('Invalid refresh token');
+    }
+
+    const accessToken = generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const newRefreshToken = generateRefreshToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const {passwordHash: _, ...userWithoutPassword} = user;
+
+    return {
+      user: userWithoutPassword,
+      accessToken,
+      refreshToken: newRefreshToken,
     };
   }
 }

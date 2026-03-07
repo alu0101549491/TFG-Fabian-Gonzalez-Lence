@@ -20,3 +20,4 @@ const controller = new AuthController();
 authRoutes.post('/register', controller.register.bind(controller));
 authRoutes.post('/login', controller.login.bind(controller));
 authRoutes.post('/logout', controller.logout.bind(controller));
+authRoutes.post('/refresh', controller.refresh.bind(controller));

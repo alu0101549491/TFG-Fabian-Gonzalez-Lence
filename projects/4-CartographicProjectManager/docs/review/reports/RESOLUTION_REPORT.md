@@ -47,6 +47,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D15-001** — Frontend `generateId()` now generates RFC 4122 v4 UUIDs using Web Crypto (`crypto.randomUUID()`/`crypto.getRandomValues`) instead of `Math.random()`.
 - **D22-001** — Notification listing now enforces ownership/admin checks and does not allow authenticated users to fetch other users’ notifications.
 - **D22-002** — Message listing/creation now validates project access and binds `senderId` server-side from the authenticated user (no spoofed authorship).
+- **D7-004** — Removed the unused/mock frontend `AuthenticationService` that performed local password checks and generated placeholder tokens; auth remains backend-driven via `AuthRepository` + `auth.store.ts`.
 - **D32-001** — `CalendarView` now listens to `CalendarWidget`’s emitted `date-select` event so date selection updates `selectedDate` as intended.
 - **D32-004** — `ProjectListView` status filter now uses `ProjectStatus` enum values (typed `statusFilter`) so status filtering works.
 - **D38-002** — Production seed no longer uses or logs a default password; it now requires `SEED_ADMIN_PASSWORD` (and optionally `SEED_ADMIN_EMAIL`).
@@ -54,10 +55,13 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D39-002** — Dropbox token update instructions no longer include token-like prefixes; examples use placeholders.
 - **D37-002** — Railway/Nixpacks start commands no longer run production seeding on every process start; startup now runs migrations + server only.
 - **D37-004** — Frontend `.env.example` no longer includes `VITE_DROPBOX_ACCESS_TOKEN` (no encouragement of client-side third-party access tokens).
+- **D40-002** — Docs now consistently describe the implemented auth model (tokens returned in JSON; clients send `Authorization: Bearer <token>`). Backend now exposes `POST /api/v1/auth/refresh` to match the frontend refresh workflow.
 - **D40-004** — Docs no longer include token-like Dropbox strings or recommend client-side Dropbox tokens; guidance now uses placeholders and backend-only credentials.
+- **D37-003** — Frontend Jest harness is now consistent with ESM + Vue 3 (setup/mocks moved to `.cjs`, config uses `setupFilesAfterEnv`, Vue transformer deps installed); `npm test` passes. ESLint flat config was updated to treat these `.cjs` files as CommonJS so `npm run lint` stays at 0 errors.
+- **D41-001** — Removed committed runtime log files under `backend/logs/` to prevent leaking operational/PII data via version control.
+- **D41-002** — Removed stray committed ad-hoc DB output artifact (command-line named file) from `backend/`.
 
 ### 🟡 Partially Resolved
-- **D7-004** — The missing `ValidationErrorCode` import was fixed and password updates were made safer (new `User` entity on update). However, the service still contains mock/placeholder auth logic, still accesses `user['passwordHash']`, and still generates placeholder tokens client-side.
 - **D7-005** — Coordinate handling was fixed to preserve valid `0` values and handle partial coordinate updates deterministically, but Dropbox-folder-id normalization to an empty string still remains in the Domain/entity path.
 - **D37-001** — Committed secret mitigation was partially applied by untracking/ignoring `backend/.env.railway` and adding a sanitized `backend/.env.railway.example`; full remediation still requires credential rotation and (if previously pushed) git history purge.
 
@@ -84,7 +88,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
     - Removed `parserOptions.project` (prevents “file not in tsconfig” parsing errors).
     - Added Vue SFC parsing via `vue-eslint-parser`.
     - Kept many high-noise style rules at `warn` to avoid large-scale reformatting.
-    - Added targeted overrides for CommonJS Jest mocks and `jest.setup.js`.
+    - Added targeted overrides for CommonJS Jest mocks and `jest.setup.cjs`.
     - Ignored `backend/**` for the frontend lint run (backend has its own build/lint context).
 
 ### Backend: lint config added (ESLint v9)
