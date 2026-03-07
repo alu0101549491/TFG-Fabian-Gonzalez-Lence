@@ -12,10 +12,6 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import dotenv from 'dotenv';
-
-dotenv.config();
-
 /**
  * ============================================
  * SERVER CONFIGURATION
@@ -134,7 +130,8 @@ export const UPLOAD = {
  */
 
 export const LOGGING = {
-  LEVEL: process.env.LOG_LEVEL || 'debug',
+  LEVEL: process.env.LOG_LEVEL
+    || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
   FILE: process.env.LOG_FILE || 'logs/app.log',
 } as const;
 

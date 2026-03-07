@@ -13,9 +13,11 @@
  */
 
 import type {Request, Response, NextFunction} from 'express';
+import {UserRole} from '@prisma/client';
 import {verifyAccessToken, extractTokenFromHeader} from './jwt.service.js';
 import {UnauthorizedError, ForbiddenError} from '@shared/errors.js';
 import type {AuthenticatedRequest} from '@shared/types.js';
+import {logDebug} from '@shared/logger.js';
 
 /**
  * Middleware to authenticate requests using JWT
@@ -55,7 +57,7 @@ export function authenticate(
  * @param allowedRoles - Array of allowed roles
  * @returns Express middleware function
  */
-export function authorize(...allowedRoles: string[]) {
+export function authorize(...allowedRoles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       const user = (req as AuthenticatedRequest).user;
@@ -101,7 +103,13 @@ export function optionalAuth(
 
     next();
   } catch (error) {
-    // Silently fail for optional auth
+    logDebug('optionalAuth: invalid token provided; proceeding as anonymous', {
+      path: req.path,
+      method: req.method,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+
     next();
   }
 }
@@ -128,7 +136,7 @@ export function authorizeOwnerOrAdmin(
 
     const resourceId = req.params.id;
     const isOwner = resourceId === user.id;
-    const isAdmin = user.role === 'ADMINISTRATOR';
+    const isAdmin = user.role === UserRole.ADMINISTRATOR;
 
     if (!isOwner && !isAdmin) {
       throw new ForbiddenError('Insufficient permissions');

@@ -16,6 +16,9 @@
  * Geographic coordinates value object
  */
 export class GeoCoordinates {
+  /** Epsilon tolerance for floating-point equality comparisons. */
+  private static readonly EPSILON = 1e-9;
+
   /**
    * Creates new geographic coordinates
    *
@@ -33,6 +36,10 @@ export class GeoCoordinates {
    * Validates coordinate values
    */
   private validate(): void {
+    if (!Number.isFinite(this.x) || !Number.isFinite(this.y)) {
+      throw new Error('Coordinates must be finite numbers');
+    }
+
     if (this.x < -180 || this.x > 180) {
       throw new Error('Longitude must be between -180 and 180');
     }
@@ -48,7 +55,10 @@ export class GeoCoordinates {
    * @returns True if coordinates are equal
    */
   public equals(other: GeoCoordinates): boolean {
-    return this.x === other.x && this.y === other.y;
+    return (
+      Math.abs(this.x - other.x) < GeoCoordinates.EPSILON
+      && Math.abs(this.y - other.y) < GeoCoordinates.EPSILON
+    );
   }
 
   /**

@@ -42,7 +42,9 @@ export function createApp(): express.Application {
   app.use(express.urlencoded({extended: true, limit: '10mb'}));
 
   // Logging middleware
-  app.use(morgan('dev'));
+  if (SERVER.NODE_ENV === 'development') {
+    app.use(morgan('dev'));
+  }
 
   // API routes
   app.use(SERVER.API_PREFIX, apiRouter);

@@ -13,6 +13,7 @@
  */
 
 import { Router } from 'express';
+import { UserRole } from '@prisma/client';
 import { BackupController } from '../controllers/backup.controller.js';
 import { authenticate, authorize } from '../../infrastructure/auth/auth.middleware.js';
 
@@ -27,7 +28,7 @@ const backupController = new BackupController();
 router.post(
   '/create',
   authenticate,
-  authorize('ADMINISTRATOR'),
+  authorize(UserRole.ADMINISTRATOR),
   backupController.createBackup.bind(backupController)
 );
 
@@ -35,7 +36,7 @@ router.post(
 router.get(
   '/list',
   authenticate,
-  authorize('ADMINISTRATOR'),
+  authorize(UserRole.ADMINISTRATOR),
   backupController.listBackups.bind(backupController)
 );
 
@@ -43,7 +44,7 @@ router.get(
 router.post(
   '/restore',
   authenticate,
-  authorize('ADMINISTRATOR'),
+  authorize(UserRole.ADMINISTRATOR),
   backupController.restoreBackup.bind(backupController)
 );
 
@@ -51,7 +52,7 @@ router.post(
 router.delete(
   '/:filename',
   authenticate,
-  authorize('ADMINISTRATOR'),
+  authorize(UserRole.ADMINISTRATOR),
   backupController.deleteBackup.bind(backupController)
 );
 
@@ -59,7 +60,7 @@ router.delete(
 router.post(
   '/cleanup',
   authenticate,
-  authorize('ADMINISTRATOR'),
+  authorize(UserRole.ADMINISTRATOR),
   backupController.cleanupBackups.bind(backupController)
 );
 

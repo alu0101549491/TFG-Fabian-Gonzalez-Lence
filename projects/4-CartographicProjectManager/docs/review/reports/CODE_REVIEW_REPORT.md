@@ -97,8 +97,8 @@ The biggest concern is architectural: domain enums are doing double-duty as UI c
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
 | D2-001 | 🟡 MEDIUM | src/domain/value-objects/geo-coordinates.ts | 18-34, 312-327 | **Dual coordinate representations increase confusion risk:** this VO supports both `{latitude, longitude}` and `{x, y}`; meanwhile backend VO exposes only `{x, y}`. This can lead to subtle mapping mistakes at DTO boundaries and inconsistent JSON shapes across services. | Standardize a single canonical representation at the API boundary (DTOs), and keep VO constructors consistent across frontend/backend (or generate a shared package for domain primitives). |
-| D2-002 | 🟡 MEDIUM | backend/src/domain/value-objects/geo-coordinates.ts | 50-52 | **Floating-point equality is too strict:** backend `equals()` uses `===` on numbers, which is brittle for computed coordinates and can fail even for “same point” after parsing/serialization. | Use an epsilon-based comparison (similar to frontend), or compare using a configurable tolerance. |
-| D2-003 | 🟢 LOW | backend/src/domain/value-objects/geo-coordinates.ts | 35-42 | **Validation is incomplete for NaN/Infinity:** bounds checks won’t catch `NaN` and will accept it silently (`NaN < -180` is false). | Add `Number.isFinite` checks before range checks and throw a typed domain error. |
+| D2-002 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/domain/value-objects/geo-coordinates.ts | N/A (epsilon-based equality) | **Floating-point equality hardened:** `equals()` now compares coordinates using an epsilon tolerance, avoiding brittle strict equality failures after parsing/serialization. | Completed: replaced strict `===` with epsilon-based comparison (aligned with frontend tolerance). |
+| D2-003 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/domain/value-objects/geo-coordinates.ts | N/A (finite check added) | **Validation hardened for NaN/Infinity:** coordinates now reject non-finite values before range checks, preventing silent acceptance of `NaN`/`Infinity`. | Completed: added `Number.isFinite` checks before bounds validation. |
 
 **Positive Aspects:**
 - Frontend VO is well-documented, immutable, and self-validating; distance calculation is pure and testable.
@@ -457,9 +457,9 @@ The main decision point is the token storage strategy: `localStorage` is conveni
 |----|----------|------|---------|-------------|---------------|
 | D13-001 | 🟠 HIGH ✅ RESOLVED (2026-03-06) | backend/src/infrastructure/scheduler/deadline-reminder.scheduler.ts | N/A (scheduler updated) | **Prisma client lifecycle + inconsistency risk:** the scheduler constructed a new `PrismaClient()` and passed it into `DeadlineReminderService`, while `NotificationRepository` used the shared singleton prisma from `prisma.client`. This mixed DB clients in the same workflow and never called `$disconnect()`, risking connection leaks and unpredictable behavior in long-running processes. **Resolved:** the scheduler now imports and uses the shared `prisma` singleton. | Completed: removed per-scheduler `new PrismaClient()` and standardized on the shared `prisma` singleton (`../database/prisma.client.js`). |
 | D13-002 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/infrastructure/scheduler/backup.scheduler.ts | N/A (scheduler gated) | **Scheduler could run with invalid config:** `databaseUrl` fell back to an empty string (`process.env.DATABASE_URL || ''`). **Resolved:** the backup scheduler now disables itself at startup with a clear error log if `DATABASE_URL` is missing. | Completed: added an early guard for `DATABASE_URL` and skipped scheduling/startup backup when absent. |
-| D13-003 | 🟡 MEDIUM | backend/src/infrastructure/auth/auth.middleware.ts | 58-75, 117-140 | **Role checks are stringly-typed:** `authorize(...allowedRoles: string[])` and `authorizeOwnerOrAdmin()` compare roles to string literals (e.g., `'ADMINISTRATOR'`). This is brittle (typos compile) and can drift from the canonical role enum. | Type roles as `UserRole` (from Prisma or your domain enum) and centralize role constants. Prefer `authorize(...allowedRoles: UserRole[])`. |
+| D13-003 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/infrastructure/auth/auth.middleware.ts | N/A (typed UserRole) | **Role checks are now strongly typed:** authorization middleware now uses Prisma `UserRole` for role checks and constants, reducing drift/typo risk. | Completed: `authorize(...allowedRoles)` now takes `UserRole[]` and admin checks use `UserRole.ADMINISTRATOR`. |
 | D13-004 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/infrastructure/auth/jwt.service.ts | N/A (typing hardened) | **`expiresIn` typing was bypassed with `as any`:** this can hide misconfiguration. **Resolved:** `expiresIn` is now typed using `SignOptions['expiresIn']` (no `any` cast). | Completed: replaced `as any` with a constrained `SignOptions['expiresIn']` cast for both access and refresh tokens. |
-| D13-005 | 🟢 LOW | backend/src/infrastructure/auth/auth.middleware.ts | 85-106 | **Optional auth silently ignores invalid tokens:** `optionalAuth()` catches verification failures and proceeds as anonymous. This is sometimes intended, but it can also mask client bugs (sending bad tokens) and complicate debugging. | Consider logging invalid token events at debug level (without leaking token content) or distinguishing between “no token” vs “invalid token” for observability. |
+| D13-005 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/infrastructure/auth/auth.middleware.ts | N/A (debug logging added) | **Optional auth observability improved:** invalid tokens no longer fail silently; `optionalAuth()` now logs a debug-level event (without token content) and proceeds as anonymous as intended. | Completed: added `logDebug(...)` on verification failure to distinguish “invalid token” from “no token” cases operationally. |
 
 **Positive Aspects:**
 - JWT handling is centralized and middleware wiring is straightforward.
@@ -485,8 +485,8 @@ With D13-001 resolved, the biggest improvement here is moving away from stringly
 |----|----------|------|---------|-------------|---------------|
 | D14-001 | 🔴 CRITICAL ✅ RESOLVED (2026-03-06) | backend/src/shared/constants.ts | 48-54 | **Security misconfiguration hazard. Resolved:** JWT secrets no longer fall back to hard-coded defaults; the backend now fails fast if `JWT_SECRET` / `JWT_REFRESH_SECRET` are missing. | Implemented: removed secret defaults and introduced required-env checks for JWT secrets. |
 | D14-002 | 🟡 MEDIUM | src/shared/constants.ts + backend/src/shared/constants.ts | 191-258; 89-117 | **Frontend/backend upload rules are inconsistent:** frontend allows up to 50MB and includes additional geo/CAD extensions, while backend default max size is 10MB and its `ALLOWED_MIME_TYPES` list omits some frontend-supported types. This will produce “works in UI, fails on server” behavior. | Define a single source of truth for upload constraints (size + types) and share it (e.g., shared package or generated constants). If constraints must differ, enforce server constraints in UI and render server-driven validation errors predictably. |
-| D14-003 | 🟡 MEDIUM | backend/src/shared/constants.ts | 38-40, 125-128 | **Fail-open defaults for critical config:** database URL defaults to an empty string and logging defaults to `debug`. This tends to fail late and can leak noisy or sensitive logs in production if env is incomplete. | Validate required env vars at startup (e.g., `DATABASE_URL`, `LOG_LEVEL`) and select safe production defaults (e.g., `info`/`warn`). Prefer explicit configuration per environment rather than implicit fallbacks. |
-| D14-004 | 🟢 LOW | backend/src/shared/constants.ts | 15-17 | **Import-time side effects:** calling `dotenv.config()` inside a shared constants module creates side effects on import, complicating tests and making load order matter. | Move `dotenv.config()` to the backend process entrypoint (e.g., `server.ts`/`index.ts`) so configuration happens once, predictably, before other imports. |
+| D14-003 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/shared/constants.ts + backend/src/server.ts | N/A (startup validation added) | **Fail-open defaults removed for critical config:** the server now validates required env at startup and uses safer production defaults for logging, reducing late failures and noisy production logs. | Completed: added startup env validation (e.g., `DATABASE_URL` required in production; `LOG_LEVEL` validated) and defaulted prod logging to `info` when unset. |
+| D14-004 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/shared/constants.ts + backend/src/server.ts | N/A (dotenv moved to entrypoint) | **Import-time side effects removed:** `dotenv.config()` no longer runs inside the shared constants module; environment loading happens once in the server entrypoint before backend modules are imported. | Completed: removed dotenv usage from constants and loaded `.env` in `server.ts` before dynamically importing the app modules. |
 | D14-005 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/shared/constants.ts | N/A (header standardized) | **Header metadata mismatch resolved:** `@file` now correctly matches `backend/src/shared/constants.ts`, improving traceability in generated docs and audits. | Completed: standardized the header to use the correct `@file` path. |
 
 **Positive Aspects:**
@@ -514,10 +514,10 @@ This group highlights a recurring theme: configuration that spans frontend + bac
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
 | D15-001 | 🟠 HIGH ✅ RESOLVED (2026-03-06) | src/shared/utils.ts | N/A (function updated) | **Insecure/incorrect UUID generation:** `generateId()` claimed “UUID v4 compliant” but used `Math.random()`, which is not cryptographically secure and increases collision risk. **Resolved:** UUIDs are now generated using Web Crypto (`crypto.randomUUID()` when available, otherwise `crypto.getRandomValues` per RFC 4122 v4). | Completed: updated `generateId()` to use Web Crypto (`randomUUID`/`getRandomValues`) instead of `Math.random()`. |
-| D15-002 | 🟡 MEDIUM | backend/src/shared/utils.ts | 113-128 | **Pagination parsing can produce `NaN`:** `parsePagination()` uses `parseInt()` and then `Math.max/Math.min`. If `page` or `limit` are non-numeric (e.g., `?page=abc`), `parseInt` returns `NaN` and the current logic propagates `NaN` into `skip`, breaking queries and responses. | Guard with `Number.isFinite` and fall back to defaults on `NaN`. Consider centralized query validation (Zod) and return 400 on invalid pagination inputs. |
-| D15-003 | 🟡 MEDIUM | backend/src/shared/types.ts | 64-86 | **Stringly-typed auth roles in shared types:** `AuthenticatedUser.role` and `JwtPayload.role` are `string`, which reintroduces the same “typos compile” risk seen in middleware authorization. This increases drift risk between backend role constants and authorization checks. | Type roles as a shared enum/union (e.g., `UserRole` from Prisma or a backend domain enum) and use it consistently across auth middleware, JWT payloads, and request typing. |
+| D15-002 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/shared/utils.ts | N/A (NaN-safe parsing) | **Pagination parsing hardened:** invalid/non-numeric `page`/`limit` no longer propagate `NaN` into `skip`; defaults are applied safely. | Completed: coercion is now guarded via `Number.isFinite` and falls back to defaults. |
+| D15-003 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/shared/types.ts | N/A (UserRole types) | **Auth role types are now constrained:** `AuthenticatedUser.role` and `JwtPayload.role` now use Prisma `UserRole`, preventing string drift and improving compile-time safety across middleware/JWT/request typing. | Completed: replaced `string` roles with `UserRole` in shared backend types. |
 | D15-004 | 🟡 MEDIUM | src/shared/utils.ts | 1059-1076 | **`deepClone()` is unsafe for many real-world objects:** the implementation doesn’t handle circular references and will silently strip prototypes for class instances (and won’t correctly clone Maps/Sets/Files/Blobs). This can cause subtle runtime bugs if used on anything other than plain JSON-like objects. | Prefer `structuredClone()` where available, or clearly document constraints (plain objects/arrays/dates only). If you need broad cloning, use a well-tested library or introduce specialized clone utilities per domain shape. |
-| D15-005 | 🟢 LOW | backend/src/shared/logger.ts | 31-37 | **Console formatting can throw on circular metadata:** the development `consoleFormat` uses `JSON.stringify(metadata)`, which will throw if `meta` contains circular references (common with request objects). This can break logging when debugging. | Use a safe stringifier (e.g., `safe-stable-stringify`) or log metadata via Winston formats that handle complex objects without throwing. |
+| D15-005 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/shared/logger.ts | N/A (safe metadata serialization) | **Console formatting hardened:** development console formatting no longer throws on circular metadata; it falls back to a safe inspector representation when JSON serialization fails. | Completed: added a safe metadata serializer that uses `JSON.stringify` with a fallback to `util.inspect`. |
 | D15-006 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/shared/{utils,errors,logger,types,index}.ts | N/A (headers standardized) | **Repeated header metadata mismatch resolved:** backend shared files now consistently declare `@file backend/src/shared/*.ts`, improving traceability in generated docs/audits. | Completed: updated `@file` entries to the correct relative paths across the shared backend modules. |
 
 **Positive Aspects:**
@@ -650,7 +650,7 @@ The composables are generally well-structured, but a few patterns (redirect navi
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
 | D20-001 | 🟡 MEDIUM | backend/src/presentation/app.ts | 32-37 | **CORS configuration is a common foot-gun with credentials:** `cors({ origin: CORS.ORIGIN, credentials: CORS.CREDENTIALS })` is correct *if* `origin` is a strict allowlist. If `CORS.ORIGIN` can be `'*'` while credentials are enabled, browsers will reject the response and/or you risk accidentally broadening cross-site access. | Ensure `CORS.ORIGIN` is an explicit allowlist (string[] or origin callback) when `credentials: true`. Add tests/config validation to prevent invalid combinations (e.g., `'*'` + credentials). |
-| D20-002 | 🟡 MEDIUM | backend/src/presentation/app.ts | 44-45 | **Request logging mode is not environment-gated:** `morgan('dev')` is enabled unconditionally. In production, this is noisy and can leak request paths/timings into logs (and sometimes sensitive query strings). | Gate morgan format/enablement by environment (e.g., `dev` only), or switch to a structured logger integration with redaction and log levels. |
+| D20-002 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/presentation/app.ts | N/A (dev-only morgan) | **Request logging is now environment-gated:** `morgan('dev')` runs only in development, reducing production log noise and avoiding leaking request details unnecessarily. | Completed: wrapped `morgan('dev')` middleware registration behind `SERVER.NODE_ENV === 'development'`. |
 | D20-003 | 🟡 MEDIUM | backend/src/presentation/app.ts | 39-45 | **Missing basic edge protections at the app boundary:** the app sets JSON body limits (good) but does not show global rate limiting / slow-down / brute-force protections at bootstrap time. Given auth endpoints and file uploads, this increases DoS and credential-stuffing risk unless enforced elsewhere. | Add an app-level rate limiter (and/or route-scoped limiters for `/auth/*`, `/files/*`) and ensure `trust proxy` is configured correctly when behind a reverse proxy. |
 | D20-004 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/presentation/app.ts | N/A (header standardized) | **Header metadata mismatch resolved:** the app bootstrap header now correctly uses `@file backend/src/presentation/app.ts` (and is consistent with the project header template), improving traceability. | Completed: standardized the header metadata to match the real file location. |
 
@@ -1180,8 +1180,8 @@ Main action item is aligning the “required assets” expectations with what is
 |----|----------|------|---------|-------------|---------------|
 | D36-001 | 🟡 MEDIUM | src/vite-env.d.ts / src/main.ts / src/shared/constants.ts / src/infrastructure/websocket/socket.handler.ts | vite-env.d.ts:20-21; main.ts:111; constants.ts:39; socket.handler.ts:28 | **Env var type declarations drift from actual usage (and naming is inconsistent):** `ImportMetaEnv` declares `VITE_WS_BASE_URL`, but code uses `VITE_SOCKET_URL`. Additionally, `VITE_APP_VERSION` is used but not declared in `ImportMetaEnv`. This undermines type-safety and increases the chance of silently-misconfigured builds. | Standardize on a single name (`VITE_SOCKET_URL` vs `VITE_WS_BASE_URL`) and declare all used env vars in `ImportMetaEnv` (including `VITE_APP_VERSION`). Consider centralizing env var names in a single module and reusing those constants in config + runtime code to prevent drift.
 | D36-002 | 🟡 MEDIUM | backend/src/shared/types.ts | 39-44 | **Pagination query typing doesn’t match Express reality:** `PaginationQuery.page` / `limit` are typed as `number`, but `req.query` values arrive as strings (or arrays) unless explicitly parsed/validated. This can mislead controllers/services and contributes to `NaN` propagation bugs. | Type query inputs as `string | undefined` (or `unknown`) at the HTTP boundary and convert via a single parser/validator (e.g., `parsePagination`) that returns a fully validated numeric shape.
-| D36-003 | 🟡 MEDIUM | backend/src/shared/types.ts | 62-67, 78-86 | **Roles are stringly-typed in shared auth request/JWT shapes:** `AuthenticatedUser.role` and `JwtPayload.role` are plain `string`, which invites drift from the canonical role set and weakens authorization type-safety. | Use a backend `UserRole` enum/union type for these fields (or import the shared role type if intended). Keep parsing/validation at the middleware boundary.
-| D36-004 | 🟢 LOW | backend/src/shared/types.ts | 9 | **Header metadata `@file` path mismatch:** the header says `src/shared/types.ts`, but the actual path is `backend/src/shared/types.ts`. | Align the header’s `@file` to `backend/src/shared/types.ts` to match repo structure.
+| D36-003 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/shared/types.ts | N/A (UserRole typing) | **Roles are no longer stringly typed:** shared auth request/JWT shapes now use Prisma `UserRole`, reducing authorization drift risk. | Completed: updated shared backend role fields to `UserRole`.
+| D36-004 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/shared/types.ts | N/A (header already aligned) | **Header metadata aligned:** the shared backend types header now correctly uses `@file backend/src/shared/types.ts`. | Completed: header `@file` matches the real repo-relative path.
 | D36-005 | 🟢 LOW | src/vite-env.d.ts | 4-6 | **Type definition file header is non-standard vs project convention:** this file uses an `@module` doc block rather than the standard University/TFG header used across most TypeScript sources, reducing consistency. | Standardize the header template for `.d.ts` files (either adopt the standard header or formally document a consistent exception for ambient declaration files).
 
 **Positive Aspects:**
@@ -1426,7 +1426,7 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D1-003** - TaskStatus naming/transitions may diverge from FR11/FR12
 - [ ] **D1-004** - ProjectStatus lifecycle may diverge from requirements
 - [ ] **D2-001** - Coordinate representation inconsistent across layers
-- [ ] **D2-002** - Backend GeoCoordinates equality too strict
+- [x] **D2-002** - Backend GeoCoordinates equality too strict
 - [ ] **D3-003** - Domain entity factories generate IDs with `Date.now()`/`Math.random()`
 - [ ] **D3-004** - Dropbox coupling + optional/required type mismatch (`dropboxFolderId`/`dropboxPath`)
 - [ ] **D3-005** - `updatedAt` not consistently updated in User setters
@@ -1455,11 +1455,11 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D11-003** - Backend TaskRepository returns `any` and leaks augmented shapes
 - [ ] **D12-001** - Frontend TokenStorage stores JWTs in localStorage (XSS exfiltration risk)
 - [x] **D13-002** - Backup scheduler can start with empty `DATABASE_URL` config
-- [ ] **D13-003** - Auth middleware role authorization is stringly-typed
+- [x] **D13-003** - Auth middleware role authorization is stringly-typed
 - [ ] **D14-002** - Frontend/backend upload constraints diverge (size + MIME/type lists)
-- [ ] **D14-003** - Backend config defaults fail open (empty DB URL, debug logging)
-- [ ] **D15-002** - Backend `parsePagination()` can propagate `NaN` for invalid query params
-- [ ] **D15-003** - Backend auth roles are stringly-typed in shared request/JWT types
+- [x] **D14-003** - Backend config defaults fail open (empty DB URL, debug logging)
+- [x] **D15-002** - Backend `parsePagination()` can propagate `NaN` for invalid query params
+- [x] **D15-003** - Backend auth roles are stringly-typed in shared request/JWT types
 - [ ] **D15-004** - Frontend `deepClone()` is unsafe beyond plain objects
 - [ ] **D16-001** - CSS imports Google Fonts via `@import` (privacy/CSP + render-blocking)
 - [ ] **D17-001** - Post-login redirect is not validated before `router.push(redirect)`
@@ -1472,7 +1472,7 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D19-001** - useAuth pushes unvalidated `redirect` query and duplicates redirect mechanisms
 - [ ] **D19-002** - File upload composable relies on `any` + inconsistent response envelope extraction
 - [ ] **D20-001** - Backend CORS config must be strict allowlist when credentials are enabled
-- [ ] **D20-002** - Backend morgan `dev` logging is not environment-gated
+- [x] **D20-002** - Backend morgan `dev` logging is not environment-gated
 - [ ] **D20-003** - Backend app bootstrap lacks visible rate limiting/brute-force protections
 - [ ] **D21-001** - Backend routes don’t express authorization policy consistently (auth-only)
 - [ ] **D21-002** - Backend routes mutate `req.params`/`req.query` to reuse controllers
@@ -1528,7 +1528,7 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 
 - [ ] **D36-001** - Env var typing/naming drifts from actual usage (VITE_SOCKET_URL/VITE_APP_VERSION)
 - [ ] **D36-002** - PaginationQuery types don’t match Express query strings (misleading)
-- [ ] **D36-003** - Backend auth/JWT role fields are stringly-typed (drift risk)
+- [x] **D36-003** - Backend auth/JWT role fields are stringly-typed (drift risk)
 
 - [ ] **D37-004** - Frontend `.env.example` encourages client-side Dropbox access token
 
@@ -1549,7 +1549,7 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 
 
 ### Low Issues (Optional Fix)
-- [ ] **D2-003** - Backend GeoCoordinates should reject NaN/Infinity
+- [x] **D2-003** - Backend GeoCoordinates should reject NaN/Infinity
 - [ ] **D3-007** - Task serialization omits `creatorName`/`assigneeName`
 - [ ] **D3-010** - Permission uses `Set` in props (prefer array at DTO boundaries)
 - [ ] **D4-005** - Backend repository interfaces lack consistent per-method docs
@@ -1565,10 +1565,10 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D12-002** - TokenStorage imports `ITokenStorage` from HTTP client module (coupling risk)
 - [ ] **D12-003** - Prisma query logging and `as never` casts in event hooks
 - [x] **D13-004** - JWT service uses `as any` for `expiresIn` config
-- [ ] **D13-005** - Optional auth swallows invalid tokens silently
-- [ ] **D14-004** - Backend constants call `dotenv.config()` at import time
+- [x] **D13-005** - Optional auth swallows invalid tokens silently
+- [x] **D14-004** - Backend constants call `dotenv.config()` at import time
 - [x] **D14-005** - Backend constants header `@file` path mismatch
-- [ ] **D15-005** - Backend logger console formatter can throw on circular metadata
+- [x] **D15-005** - Backend logger console formatter can throw on circular metadata
 - [x] **D15-006** - Backend shared file headers have repeated `@file` path mismatches
 - [ ] **D16-002** - High-contrast override uses hard-coded `#000` instead of tokens
 - [ ] **D16-003** - Global `*` reset includes margin/padding zero (potential side-effects)
@@ -1636,7 +1636,7 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D35-002** - robots.txt allows all routes by default (confirm intended indexing policy)
 - [ ] **D35-003** - public `.gitkeep` likely shipped publicly (move notes to docs)
 
-- [ ] **D36-004** - Backend shared types header `@file` path mismatch
+- [x] **D36-004** - Backend shared types header `@file` path mismatch
 - [ ] **D36-005** - vite-env.d.ts uses non-standard header vs project convention
 
 ---

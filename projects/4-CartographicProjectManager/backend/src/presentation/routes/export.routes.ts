@@ -13,6 +13,7 @@
  */
 
 import { Router } from 'express';
+import { UserRole } from '@prisma/client';
 import { ExportController } from '../controllers/export.controller.js';
 import { authenticate, authorize } from '../../infrastructure/auth/auth.middleware.js';
 
@@ -22,7 +23,7 @@ const exportController = new ExportController();
 /**
  * All export routes require authentication and administrator role
  */
-router.use(authenticate, authorize('ADMINISTRATOR'));
+router.use(authenticate, authorize(UserRole.ADMINISTRATOR));
 
 /**
  * GET /api/v1/export/projects

@@ -30,6 +30,8 @@ Run from `projects/4-CartographicProjectManager/backend`:
 This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REPORT.md`.
 
 ### ✅ Resolved (verified)
+- **D2-002** — GeoCoordinates value equality now uses epsilon-based comparison (not strict `===`) to avoid brittle float equality failures.
+- **D2-003** — GeoCoordinates validation now rejects non-finite values (`NaN`/`Infinity`) before range checks.
 - **D4-002** — Incorrect enum imports in domain repository interfaces were fixed.
 - **D7-001** — Application service interfaces ↔ implementations were aligned; notification sending now consistently uses the object-shaped `sendNotification(data: SendNotificationData)` contract.
 - **D7-002** — AuthorizationService admin-role checks were standardized to `UserRole.ADMINISTRATOR`, and the commented-out admin delete check was corrected.
@@ -40,6 +42,8 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D9-003** — WebSocket client/server no longer use direct `console.*` debug logging in production paths; logging routes through the shared logger / debug-gated logging.
 - **D9-004** — WebSocket client `ConnectionOptions.token` is now optional to match the implementation’s `tokenProvider` fallback.
 - **D14-001** — Backend JWT secrets no longer fall back to hard-coded defaults; missing `JWT_SECRET` / `JWT_REFRESH_SECRET` now fails fast.
+- **D14-003** — Backend startup now validates critical env (e.g., `DATABASE_URL` required in production; `LOG_LEVEL` validated) and production logging defaults to `info` when unset.
+- **D14-004** — Removed import-time dotenv side effects from backend constants; `.env` loading now happens in the server entrypoint before backend modules are imported.
 - **D14-005** — Backend constants header metadata was standardized; `@file` now correctly points to `backend/src/shared/constants.ts`.
 - **D8-001 / D8-002** — Axios interceptor retry/refresh flow was hardened to avoid crashes when `error.config` is missing and to ensure queued requests reject on refresh failure (no hangs).
 - **D8-003** — Axios global cancellation is now functional: a default `AbortSignal` is attached to requests and `cancelAllRequests()` aborts in-flight work and resets the controller.
@@ -52,13 +56,21 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D11-004** — Frontend and backend repositories no longer use direct `console.*` debug logging in core data paths; backend routes through the shared logger and frontend removes the noisy debug prints.
 - **D13-001** — Deadline reminder scheduler now uses the shared Prisma singleton (`prisma`) instead of constructing a separate `PrismaClient`, avoiding mixed-client workflows and reducing connection lifecycle risk.
 - **D13-002** — Backup scheduler now disables itself at startup (with a clear error log) if `DATABASE_URL` is missing, instead of running with an empty config.
+- **D13-003** — Backend authorization middleware now uses typed Prisma `UserRole` (no stringly-typed role checks); admin checks use `UserRole.ADMINISTRATOR`.
 - **D13-004** — JWT service no longer uses `as any` for `expiresIn`; it now uses `SignOptions['expiresIn']` typing for both access and refresh tokens.
+- **D13-005** — Optional auth no longer swallows invalid tokens silently; it logs a debug-level event (without token content) and proceeds as anonymous.
 - **D15-001** — Frontend `generateId()` now generates RFC 4122 v4 UUIDs using Web Crypto (`crypto.randomUUID()`/`crypto.getRandomValues`) instead of `Math.random()`.
+- **D15-002** — Backend `parsePagination()` no longer propagates `NaN` for invalid/non-numeric `page`/`limit`; it safely falls back to defaults.
+- **D15-003** — Backend shared auth/JWT request types now use Prisma `UserRole` instead of free-form strings.
+- **D15-005** — Backend development console logging no longer throws on circular metadata; metadata serialization falls back safely when JSON stringification fails.
 - **D15-006** — Backend shared module headers were standardized; `@file` now consistently points to `backend/src/shared/*.ts`.
+- **D36-003** — Backend auth role fields in shared type definitions are no longer stringly-typed; they are constrained to Prisma `UserRole`.
+- **D36-004** — Backend shared types header metadata is aligned (`@file backend/src/shared/types.ts`).
 - **D22-006** — File upload Dropbox path construction is now hardened: `section` is normalized/allowlisted and the Dropbox storage filename is generated server-side using the file id and a sanitized basename (original filename is preserved separately).
 - **D22-001** — Notification listing now enforces ownership/admin checks and does not allow authenticated users to fetch other users’ notifications.
 - **D22-002** — Message listing/creation now validates project access and binds `senderId` server-side from the authenticated user (no spoofed authorship).
 - **D20-004** — Backend app bootstrap header metadata was standardized; `@file` now correctly points to `backend/src/presentation/app.ts`.
+- **D20-002** — Backend request logging is now environment-gated; `morgan('dev')` is enabled only in development.
 - **D21-004** — Backend route module headers were standardized (correct `@file` paths and consistent header template `@see` links).
 - **D22-008** — Backend controller module headers were standardized; `@file` now correctly points to `backend/src/presentation/controllers/...`.
 - **D23-003** — Backend middleware module headers were standardized; `@file` now correctly points to `backend/src/presentation/middlewares/...`.
@@ -86,7 +98,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D37-001** — Committed secret mitigation was partially applied by untracking/ignoring `backend/.env.railway` and adding a sanitized `backend/.env.railway.example`; full remediation still requires credential rotation and (if previously pushed) git history purge.
 
 ### ⏳ Not Addressed (still outstanding)
-- **D14-002 / D14-003 / D14-004** — Upload-rule drift, fail-open defaults, and import-time dotenv side effects remain.
+- **D14-002** — Upload-rule drift between frontend and backend constraints remains.
 ### Frontend: strict TS + DTO/contract alignment
 - Realtime-store updates no longer spread nullable refs (safe narrowing before immutable updates):
   - `src/presentation/stores/project.store.ts`

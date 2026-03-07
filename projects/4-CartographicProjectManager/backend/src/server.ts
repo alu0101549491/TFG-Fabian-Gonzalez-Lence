@@ -11,19 +11,53 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  */
 
-import {createServer} from 'http';
-import {createApp} from './presentation/app.js';
-import {connectDatabase, disconnectDatabase} from './infrastructure/database/index.js';
-import {initializeSocketServer} from './infrastructure/websocket/index.js';
-import {initializeDeadlineReminder, initializeBackupScheduler} from './infrastructure/scheduler/index.js';
-import {SERVER} from './shared/constants.js';
-import {logInfo, logError} from './shared/logger.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+function validateEnvironment(): void {
+  const nodeEnv = process.env.NODE_ENV || 'development';
+
+  const jwtSecret = process.env.JWT_SECRET;
+  const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
+  if (!jwtSecret) {
+    throw new Error('Missing required environment variable: JWT_SECRET');
+  }
+  if (!jwtRefreshSecret) {
+    throw new Error('Missing required environment variable: JWT_REFRESH_SECRET');
+  }
+
+  const databaseUrl = process.env.DATABASE_URL;
+  if (nodeEnv === 'production' && !databaseUrl) {
+    throw new Error('Missing required environment variable in production: DATABASE_URL');
+  }
+
+  const logLevel = process.env.LOG_LEVEL;
+  if (logLevel) {
+    const allowedLevels = new Set(['error', 'warn', 'info', 'debug']);
+    if (!allowedLevels.has(logLevel)) {
+      throw new Error(`Invalid LOG_LEVEL: ${logLevel}. Allowed: error, warn, info, debug`);
+    }
+  }
+}
 
 /**
  * Bootstrap and start the server
  */
 async function bootstrap(): Promise<void> {
   try {
+    validateEnvironment();
+
+    const [{createServer}, {createApp}, {connectDatabase, disconnectDatabase}, {initializeSocketServer}, {initializeDeadlineReminder, initializeBackupScheduler}, {SERVER}, {logInfo, logError}] = await Promise.all([
+      import('node:http'),
+      import('./presentation/app.js'),
+      import('./infrastructure/database/index.js'),
+      import('./infrastructure/websocket/index.js'),
+      import('./infrastructure/scheduler/index.js'),
+      import('./shared/constants.js'),
+      import('./shared/logger.js'),
+    ]);
+
     // Connect to database
     await connectDatabase();
 
@@ -120,7 +154,9 @@ async function bootstrap(): Promise<void> {
       void shutdown('UNHANDLED_REJECTION');
     });
   } catch (error) {
-    logError('Failed to start server:', error as Error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    // Logger may not be available if startup fails before imports
+    process.stderr.write(`Failed to start server: ${err.stack || err.message}\n`);
     process.exit(1);
   }
 }
