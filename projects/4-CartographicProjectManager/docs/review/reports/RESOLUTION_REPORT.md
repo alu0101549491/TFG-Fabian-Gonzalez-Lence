@@ -47,6 +47,12 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D15-001** — Frontend `generateId()` now generates RFC 4122 v4 UUIDs using Web Crypto (`crypto.randomUUID()`/`crypto.getRandomValues`) instead of `Math.random()`.
 - **D22-001** — Notification listing now enforces ownership/admin checks and does not allow authenticated users to fetch other users’ notifications.
 - **D22-002** — Message listing/creation now validates project access and binds `senderId` server-side from the authenticated user (no spoofed authorship).
+- **D32-001** — `CalendarView` now listens to `CalendarWidget`’s emitted `date-select` event so date selection updates `selectedDate` as intended.
+- **D32-004** — `ProjectListView` status filter now uses `ProjectStatus` enum values (typed `statusFilter`) so status filtering works.
+- **D38-002** — Production seed no longer uses or logs a default password; it now requires `SEED_ADMIN_PASSWORD` (and optionally `SEED_ADMIN_EMAIL`).
+- **D39-001** — Dropbox refresh-token helper script now masks tokens by default; printing full secrets requires explicit `--print-full`.
+- **D39-002** — Dropbox token update instructions no longer include token-like prefixes; examples use placeholders.
+- **D37-002** — Railway/Nixpacks start commands no longer run production seeding on every process start; startup now runs migrations + server only.
 - **D37-004** — Frontend `.env.example` no longer includes `VITE_DROPBOX_ACCESS_TOKEN` (no encouragement of client-side third-party access tokens).
 - **D40-004** — Docs no longer include token-like Dropbox strings or recommend client-side Dropbox tokens; guidance now uses placeholders and backend-only credentials.
 

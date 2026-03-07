@@ -53,8 +53,8 @@
             aria-label="Filter by status"
           >
             <option value="">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="finalized">Finalized</option>
+            <option :value="ProjectStatus.ACTIVE">Active</option>
+            <option :value="ProjectStatus.FINALIZED">Finalized</option>
           </select>
 
           <select
@@ -233,6 +233,7 @@ import ProjectForm from '../components/project/ProjectForm.vue';
 import type {ProjectSummaryDto, CreateProjectDto, UpdateProjectDto, ProjectDto} from '@/application/dto';
 import {UserRepository} from '@/infrastructure/repositories/user.repository';
 import {UserRole} from '@/domain/enumerations/user-role';
+import {ProjectStatus} from '@/domain/enumerations/project-status';
 
 // Composables
 const router = useRouter();
@@ -252,7 +253,7 @@ const {
 
 // Local State
 const searchQuery = ref('');
-const statusFilter = ref('');
+const statusFilter = ref<ProjectStatus | ''>('');
 const typeFilter = ref('');
 const sortBy = ref<'updatedAt' | 'createdAt' | 'deliveryDate' | 'code' | 'name'>('updatedAt');
 const showCreateModal = ref(false);
