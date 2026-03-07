@@ -1,11 +1,13 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 export default {
-  preset: 'ts-jest',
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'jsdom',
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
   roots: ['<rootDir>/tests', '<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
+      useESM: true,
       tsconfig: {
         jsx: 'preserve',
         esModuleInterop: true,
@@ -16,8 +18,8 @@ export default {
   },
   moduleNameMapper: {
     // CSS and asset mocks
-    '\\.(css|less|scss|sass)$': '<rootDir>/tests/__mocks__/styleMock.js',
-    '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/tests/__mocks__/fileMock.js',
+    '\\.(css|less|scss|sass)$': '<rootDir>/tests/__mocks__/styleMock.cjs',
+    '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/tests/__mocks__/fileMock.cjs',
     // Path aliases
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@domain/(.*)$': '<rootDir>/src/domain/$1',
@@ -41,6 +43,6 @@ export default {
     },
   },
   coverageDirectory: 'coverage',
-  setupFilesAfterSetup: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.cjs'],
   silent: true,
 };

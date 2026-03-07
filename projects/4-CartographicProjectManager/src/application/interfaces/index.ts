@@ -4,7 +4,6 @@
  * @category Application
  */
 
-export type {IAuthenticationService} from './authentication-service.interface';
 export type {IProjectService} from './project-service.interface';
 export type {ITaskService} from './task-service.interface';
 export type {IMessageService} from './message-service.interface';

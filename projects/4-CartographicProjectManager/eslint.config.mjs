@@ -119,10 +119,11 @@ export default tseslint.config(
       },
     },
     {
-      files: ['jest.setup.js'],
+      files: ['jest.setup.cjs'],
       languageOptions: {
         globals: {
           ...globals.node,
+          ...globals.commonjs,
           ...globals.jest,
           ...globals.es2021,
         },
@@ -133,10 +134,11 @@ export default tseslint.config(
       },
     },
     {
-      files: ['tests/__mocks__/**/*.js'],
+      files: ['tests/__mocks__/**/*.cjs'],
       languageOptions: {
         globals: {
           ...globals.node,
+          ...globals.commonjs,
           ...globals.es2021,
         },
         sourceType: 'commonjs',

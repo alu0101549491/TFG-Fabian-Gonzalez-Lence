@@ -356,7 +356,20 @@ export class AxiosClient {
         refreshToken,
       });
 
-      const { accessToken, refreshToken: newRefreshToken } = response.data;
+      const refreshResponseData = (response.data && typeof response.data === 'object' && 'data' in response.data)
+        ? (response.data as {data: unknown}).data
+        : response.data;
+
+      if (!refreshResponseData || typeof refreshResponseData !== 'object') {
+        throw new Error('Malformed refresh response');
+      }
+
+      const accessToken = (refreshResponseData as {accessToken?: unknown}).accessToken;
+      const newRefreshToken = (refreshResponseData as {refreshToken?: unknown}).refreshToken;
+
+      if (typeof accessToken !== 'string' || typeof newRefreshToken !== 'string') {
+        throw new Error('Malformed refresh response');
+      }
 
       // Store new tokens
       this.tokenStorage?.setTokens(accessToken, newRefreshToken);

@@ -4,7 +4,6 @@
  * @category Application
  */
 
-export {AuthenticationService} from './authentication.service';
 export {AuthorizationService} from './authorization.service';
 export {ProjectService} from './project.service';
 export {TaskService} from './task.service';

@@ -12,6 +12,7 @@ This document provides a comprehensive guide for the backend-frontend integratio
 - Endpoint: `POST /api/v1/auth/login`
 - Endpoint: `POST /api/v1/auth/register`
 - Endpoint: `POST /api/v1/auth/logout`
+- Endpoint: `POST /api/v1/auth/refresh`
 - JWT-based authentication with access and refresh tokens
 - Password hashing with bcrypt
 
