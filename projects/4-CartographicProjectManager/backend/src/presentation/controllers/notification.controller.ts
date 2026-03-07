@@ -27,7 +27,26 @@ export class NotificationController {
 
   public async getByUserId(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const notifications = await this.notificationRepository.findByUserId(req.params.userId as string);
+      const authReq = req as AuthenticatedRequest;
+      const currentUser = authReq.user;
+
+      if (!currentUser) {
+        return sendError(res, 'Authentication required', HTTP_STATUS.UNAUTHORIZED);
+      }
+
+      const requestedUserId = req.params.userId as string | undefined;
+      const isAdmin = currentUser.role === 'ADMINISTRATOR';
+
+      if (!isAdmin && requestedUserId && requestedUserId !== currentUser.id) {
+        return sendError(
+          res,
+          'You do not have permission to view notifications for this user',
+          HTTP_STATUS.FORBIDDEN,
+        );
+      }
+
+      const targetUserId = isAdmin && requestedUserId ? requestedUserId : currentUser.id;
+      const notifications = await this.notificationRepository.findByUserId(targetUserId);
       sendSuccess(res, notifications);
     } catch (error) {
       next(error);

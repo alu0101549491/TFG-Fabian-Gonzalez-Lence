@@ -39,11 +39,29 @@ import {
  * ```
  */
 export function generateId(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  const cryptoObj = globalThis.crypto;
+  if (typeof cryptoObj?.randomUUID === 'function') {
+    return cryptoObj.randomUUID();
+  }
+
+  if (typeof cryptoObj?.getRandomValues !== 'function') {
+    throw new Error('Secure UUID generation requires Web Crypto (crypto.getRandomValues).');
+  }
+
+  const bytes = new Uint8Array(16);
+  cryptoObj.getRandomValues(bytes);
+
+  // RFC 4122 version 4
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  // RFC 4122 variant 1
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  let hex = '';
+  for (const byte of bytes) {
+    hex += byte.toString(16).padStart(2, '0');
+  }
+
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 /**
