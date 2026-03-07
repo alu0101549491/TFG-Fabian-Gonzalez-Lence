@@ -6,7 +6,7 @@
 1. Abre el archivo: backend/.env
 
 2. Busca la línea:
-   DROPBOX_ACCESS_TOKEN=sl.u.AGVUrNUludeQk...
+   DROPBOX_ACCESS_TOKEN=sl.<your-token-here>
 
 3. Reemplázala con tu NUEVO token:
    DROPBOX_ACCESS_TOKEN=tu-nuevo-token-aqui

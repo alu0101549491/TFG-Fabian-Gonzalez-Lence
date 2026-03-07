@@ -33,13 +33,22 @@ async function main(): Promise<void> {
   console.log('✓ Database is empty, proceeding with seed...');
 
   // Create admin user
-  const adminPassword = await bcrypt.hash('admin123', 10);
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@cartographic.com';
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
+
+  if (!seedAdminPassword || seedAdminPassword.trim().length === 0) {
+    throw new Error(
+      'Missing required env var: SEED_ADMIN_PASSWORD. Refusing to seed a predictable default admin credential.'
+    );
+  }
+
+  const adminPasswordHash = await bcrypt.hash(seedAdminPassword, 10);
 
   const admin = await prisma.user.create({
     data: {
       username: 'Admin User',
-      email: 'admin@cartographic.com',
-      passwordHash: adminPassword,
+      email: seedAdminEmail,
+      passwordHash: adminPasswordHash,
       role: 'ADMINISTRATOR',
       phone: '+34600000001',
     },
@@ -49,11 +58,9 @@ async function main(): Promise<void> {
   console.log('');
   console.log('🎉 Production seed completed successfully!');
   console.log('');
-  console.log('📝 Default credentials:');
-  console.log('   Email: admin@cartographic.com');
-  console.log('   Password: admin123');
-  console.log('');
-  console.log('⚠️  IMPORTANT: Change the admin password after first login!');
+  console.log('📝 Admin login details:');
+  console.log(`   Email: ${admin.email}`);
+  console.log('   Password: (set via SEED_ADMIN_PASSWORD; not printed)');
 }
 
 main()

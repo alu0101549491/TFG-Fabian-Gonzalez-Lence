@@ -35,7 +35,7 @@
           @project-click="handleProjectClick"
           @task-click="handleTaskClick"
           @month-change="handleMonthChange"
-          @date-click="handleDateClick"
+          @date-select="handleDateClick"
         />
       </div>
 

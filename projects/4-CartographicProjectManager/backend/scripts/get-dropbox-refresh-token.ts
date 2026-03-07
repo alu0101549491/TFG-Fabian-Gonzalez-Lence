@@ -28,6 +28,23 @@ const APP_KEY = process.env.DROPBOX_APP_KEY;
 const APP_SECRET = process.env.DROPBOX_APP_SECRET;
 const REDIRECT_URI = 'http://localhost:3000/auth/dropbox/callback';
 
+const SHOULD_PRINT_FULL_TOKENS = process.argv.includes('--print-full');
+
+function maskSecret(value: string, visibleStart = 6, visibleEnd = 4): string {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return '<empty>';
+  }
+
+  if (trimmed.length <= visibleStart + visibleEnd) {
+    return `${'*'.repeat(trimmed.length)} (len=${trimmed.length})`;
+  }
+
+  const start = trimmed.slice(0, visibleStart);
+  const end = trimmed.slice(-visibleEnd);
+  return `${start}${'*'.repeat(trimmed.length - visibleStart - visibleEnd)}${end} (len=${trimmed.length})`;
+}
+
 /**
  * Main function to obtain Dropbox refresh token
  */
@@ -45,7 +62,7 @@ async function main(): Promise<void> {
   console.log('✅ App Key and Secret found\n');
 
   // Step 1: Generate authorization URL
-  const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=code&token_access_type=offline`;
+  const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=code&token_access_type=offline&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
   console.log('📋 STEP 1: Authorize the application\n');
   console.log('Visit this URL in your browser:');
@@ -71,10 +88,18 @@ async function main(): Promise<void> {
 
     console.log('✅ Tokens obtained successfully!\n');
     console.log('=' .repeat(60));
-    console.log('Access Token (expires in 4 hours):');
-    console.log('\x1b[33m%s\x1b[0m', tokens.access_token);
-    console.log('\nRefresh Token (permanent):');
-    console.log('\x1b[32m%s\x1b[0m', tokens.refresh_token);
+    if (SHOULD_PRINT_FULL_TOKENS) {
+      console.log('⚠️  WARNING: Printing full tokens to stdout (use only in a private terminal session).\n');
+      console.log('Access Token (expires in 4 hours):');
+      console.log('\x1b[33m%s\x1b[0m', tokens.access_token);
+      console.log('\nRefresh Token (permanent):');
+      console.log('\x1b[32m%s\x1b[0m', tokens.refresh_token);
+    } else {
+      console.log('Tokens (masked):');
+      console.log(`Access Token:  ${maskSecret(tokens.access_token)}`);
+      console.log(`Refresh Token: ${maskSecret(tokens.refresh_token)}`);
+      console.log('\n(Use --print-full only if you fully understand the risk.)');
+    }
     console.log('=' .repeat(60));
     console.log('\n');
 
@@ -89,8 +114,14 @@ async function main(): Promise<void> {
     } else {
       console.log('\n📝 Manual update required:');
       console.log('   Add these lines to your .env file:');
-      console.log(`   DROPBOX_ACCESS_TOKEN=${tokens.access_token}`);
-      console.log(`   DROPBOX_REFRESH_TOKEN=${tokens.refresh_token}\n`);
+      if (SHOULD_PRINT_FULL_TOKENS) {
+        console.log(`   DROPBOX_ACCESS_TOKEN=${tokens.access_token}`);
+        console.log(`   DROPBOX_REFRESH_TOKEN=${tokens.refresh_token}\n`);
+      } else {
+        console.log('   DROPBOX_ACCESS_TOKEN=<not printed>');
+        console.log('   DROPBOX_REFRESH_TOKEN=<not printed>\n');
+        console.log('   Re-run with --print-full to print tokens, or answer "y" to update .env automatically.\n');
+      }
     }
 
   } catch (error: any) {
@@ -148,7 +179,10 @@ async function exchangeCodeForTokens(code: string): Promise<{
  */
 async function updateEnvFile(accessToken: string, refreshToken: string): Promise<void> {
   const envPath = path.resolve(__dirname, '../.env');
-  let envContent = fs.readFileSync(envPath, 'utf-8');
+  let envContent = '';
+  if (fs.existsSync(envPath)) {
+    envContent = fs.readFileSync(envPath, 'utf-8');
+  }
 
   // Update or add DROPBOX_ACCESS_TOKEN
   if (envContent.includes('DROPBOX_ACCESS_TOKEN=')) {
