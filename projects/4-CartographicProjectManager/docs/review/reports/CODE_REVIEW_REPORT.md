@@ -339,9 +339,9 @@ This client is close to being a solid foundation, but the interceptor/type-casti
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
 | D9-001 | 🔴 CRITICAL ✅ RESOLVED (2026-03-06) | backend/src/infrastructure/websocket/socket.server.ts | 66-94 | **Authorization bypass: any authenticated user can join any project room. Resolved:** project-room joins now verify the requesting user has access rights (admin role, project ownership, or explicit permission) before calling `socket.join(project:${projectId})`. | Implemented: server-side authorization checks were added to `join:project` and legacy subscribe handlers; unauthorized join attempts are rejected. |
-| D9-002 | 🟡 MEDIUM | src/infrastructure/websocket/socket.handler.ts | 340-406, 752-766, 915-919 | **Reconnect uses a potentially stale token:** the socket is created with a fixed `auth.token` value captured at `connect()` time. If the access token rotates/refreshes, reconnections may fail or keep using expired credentials. | Use the `ITokenProvider` on reconnect to update `socket.auth.token` before reconnect attempts (or provide `auth` as a function), and/or handle `connect_error` to trigger token refresh + reconnect. |
-| D9-003 | 🟢 LOW | src/infrastructure/websocket/socket.handler.ts; backend/src/infrastructure/websocket/socket.server.ts | socket.handler.ts:796-800, 989-990, 1001-1005; socket.server.ts:71, 80-81, 139-146 | **Debug logging in production paths:** several `console.log` / `console.error` statements exist outside a proper logger and, in some cases, outside the `debug` gate. This can leak identifiers and create noise in production. | Route logs through the shared logger with log levels; ensure debug logs are gated and avoid logging payloads/tokens. |
-| D9-004 | 🟡 MEDIUM | src/infrastructure/websocket/socket.handler.ts | 286-296, 394-400 | **Type contract mismatch for `ConnectionOptions.token`:** `token` is typed as required, but the implementation falls back to `tokenProvider` (`options.token || this.tokenProvider?.getAccessToken()`), implying it was intended to be optional. | Make `token?: string` and rely on `tokenProvider`, or remove the fallback and keep the type strict. |
+| D9-002 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | src/infrastructure/websocket/socket.handler.ts | N/A (token refresh on reconnect added) | **Reconnect used a potentially stale token:** the socket auth token was captured at `connect()` time, so token rotation could break reconnection. **Resolved:** reconnection attempts now refresh `socket.auth.token` from `ITokenProvider` before reconnecting. | Completed: on `reconnect_attempt`, the handler updates `socket.auth = { token: tokenProvider.getAccessToken() }` when available. |
+| D9-003 | 🟢 LOW ✅ RESOLVED (2026-03-07) | src/infrastructure/websocket/socket.handler.ts; backend/src/infrastructure/websocket/socket.server.ts | N/A (console logging removed) | **Debug logging in production paths:** several `console.*` statements existed outside the shared logger. **Resolved:** WebSocket client/server now avoid direct `console.*` and use the shared logger / debug-gated logging where appropriate. | Completed: removed `console.log` debug prints from message forwarding and server emit/join/leave paths; logging routes through the shared logger. |
+| D9-004 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | src/infrastructure/websocket/socket.handler.ts | N/A (type aligned) | **Type contract mismatch for `ConnectionOptions.token`:** `token` was typed as required, but the implementation falls back to `tokenProvider`. **Resolved:** `ConnectionOptions.token` is now optional, matching the implementation and enabling dynamic token retrieval. | Completed: changed `token` to `token?: string` and used the nullish-coalescing fallback to `tokenProvider.getAccessToken()`. |
 
 **Positive Aspects:**
 - Clear event taxonomy and strongly typed payloads make it easy to consume events safely in Presentation.
@@ -349,7 +349,7 @@ This client is close to being a solid foundation, but the interceptor/type-casti
 - Client reconnect handling re-joins user/project rooms, which improves UX after transient disconnects.
 
 **Group Notes:**
-The backend join-room authorization gap (D9-001) was resolved in post-review remediation (2026-03-06). The client-side reconnect/token handling remains a likely source of flaky “random disconnect” behavior unless it’s made token-rotation aware.
+The backend join-room authorization gap (D9-001) and client-side reconnect/token handling (D9-002) were resolved in post-review remediation.
 
 ---
 
@@ -456,9 +456,9 @@ The main decision point is the token storage strategy: `localStorage` is conveni
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
 | D13-001 | 🟠 HIGH ✅ RESOLVED (2026-03-06) | backend/src/infrastructure/scheduler/deadline-reminder.scheduler.ts | N/A (scheduler updated) | **Prisma client lifecycle + inconsistency risk:** the scheduler constructed a new `PrismaClient()` and passed it into `DeadlineReminderService`, while `NotificationRepository` used the shared singleton prisma from `prisma.client`. This mixed DB clients in the same workflow and never called `$disconnect()`, risking connection leaks and unpredictable behavior in long-running processes. **Resolved:** the scheduler now imports and uses the shared `prisma` singleton. | Completed: removed per-scheduler `new PrismaClient()` and standardized on the shared `prisma` singleton (`../database/prisma.client.js`). |
-| D13-002 | 🟡 MEDIUM | backend/src/infrastructure/scheduler/backup.scheduler.ts | 24-29 | **Scheduler may run with invalid config:** `databaseUrl` falls back to an empty string (`process.env.DATABASE_URL || ''`). If the env var is missing/misconfigured, the scheduler still starts and will fail at runtime (possibly repeatedly). | Validate required environment variables at startup and fail fast (or disable the job) if `DATABASE_URL` is absent. Consider making backup settings configurable via env vars rather than hard-coded. |
+| D13-002 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/infrastructure/scheduler/backup.scheduler.ts | N/A (scheduler gated) | **Scheduler could run with invalid config:** `databaseUrl` fell back to an empty string (`process.env.DATABASE_URL || ''`). **Resolved:** the backup scheduler now disables itself at startup with a clear error log if `DATABASE_URL` is missing. | Completed: added an early guard for `DATABASE_URL` and skipped scheduling/startup backup when absent. |
 | D13-003 | 🟡 MEDIUM | backend/src/infrastructure/auth/auth.middleware.ts | 58-75, 117-140 | **Role checks are stringly-typed:** `authorize(...allowedRoles: string[])` and `authorizeOwnerOrAdmin()` compare roles to string literals (e.g., `'ADMINISTRATOR'`). This is brittle (typos compile) and can drift from the canonical role enum. | Type roles as `UserRole` (from Prisma or your domain enum) and centralize role constants. Prefer `authorize(...allowedRoles: UserRole[])`. |
-| D13-004 | 🟢 LOW | backend/src/infrastructure/auth/jwt.service.ts | 26-38 | **`expiresIn` typing is bypassed with `as any`:** configuration is cast to `any`, which can hide misconfiguration (e.g., wrong unit/type). | Type `JWT.EXPIRES_IN`/`JWT.REFRESH_EXPIRES_IN` correctly (e.g., `string | number`) and validate at startup; avoid `as any`. |
+| D13-004 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/infrastructure/auth/jwt.service.ts | N/A (typing hardened) | **`expiresIn` typing was bypassed with `as any`:** this can hide misconfiguration. **Resolved:** `expiresIn` is now typed using `SignOptions['expiresIn']` (no `any` cast). | Completed: replaced `as any` with a constrained `SignOptions['expiresIn']` cast for both access and refresh tokens. |
 | D13-005 | 🟢 LOW | backend/src/infrastructure/auth/auth.middleware.ts | 85-106 | **Optional auth silently ignores invalid tokens:** `optionalAuth()` catches verification failures and proceeds as anonymous. This is sometimes intended, but it can also mask client bugs (sending bad tokens) and complicate debugging. | Consider logging invalid token events at debug level (without leaking token content) or distinguishing between “no token” vs “invalid token” for observability. |
 
 **Positive Aspects:**
@@ -1062,12 +1062,12 @@ The top correctness risks are event-contract drift (`CalendarView` vs `CalendarW
 **Issues Found:**
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
-| D33-001 | 🟡 MEDIUM | src/App.vue | 271-299, 321-349 | **WebSocket connection can be initiated twice:** `initializeApp()` connects when the session is restored, and the auth-state watcher also connects when `isAuthenticated` flips true. If `authStore.initialize()` transitions auth state, both paths can run and create duplicate connections/subscriptions. | Make `socketHandler.connect()` idempotent (no-op if already connected for same user), or gate connection to a single place (either initial bootstrap or the auth watcher). Consider storing a “connected userId” and disconnect/reconnect only when it changes. |
-| D33-002 | 🟡 MEDIUM | src/App.vue | 271-347 | **Debug logging + socket debug mode are not environment-gated:** `[App]` logs run unconditionally and `socketHandler.connect({ debug: true })` is always enabled. This is noisy in production and can leak operational details; it can also impact performance if the WebSocket handler emits verbose logs. | Gate logs and `debug: true` behind `import.meta.env.DEV` (or a dedicated debug flag). Default to `debug: false` in production builds. |
+| D33-001 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | src/App.vue; src/infrastructure/websocket/socket.handler.ts | N/A (connect hardened) | **WebSocket connection could be initiated twice:** bootstrap + auth watcher could both call `socketHandler.connect()`, creating duplicate sockets while the first was still connecting. **Resolved:** `SocketHandler.connect()` now reuses an existing socket instance and only connects once. | Completed: `connect()` is now idempotent for an existing socket (updates auth token + calls `connect()` only when needed) rather than creating a second socket. |
+| D33-002 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | src/App.vue | N/A (debug gated) | **Debug logging + socket debug mode were not environment-gated:** `[App]` logs and `debug: true` ran unconditionally. **Resolved:** WebSocket debug mode and informational logs are now gated behind `import.meta.env.DEV`. | Completed: `debug` and informational `console.log` statements now run only in dev builds. |
 | D33-003 | 🟢 LOW | src/App.vue | 234 | **`provide()` uses a string injection key for the toast API:** `provide('toast', addToast)` is easy to collide with other providers and loses type-safety in consumers (string keys are not checked and are hard to refactor). | Use a typed `InjectionKey` (e.g., `export const TOAST_KEY: InjectionKey<(t: Omit<Toast,'id'>)=>void> = Symbol('toast')`) and `provide(TOAST_KEY, addToast)` / `inject(TOAST_KEY)`. |
 | D33-004 | 🟢 LOW | src/App.vue | 192-211 | **Toast IDs and timers are fragile:** toast IDs use `Date.now()` + `Math.random()` (collision/test fragility), and auto-dismiss uses `setTimeout` without tracking/clearing timers on teardown. | Prefer `crypto.randomUUID()` for IDs (or a central ID generator). Optionally track timeout handles per toast and clear them in `onUnmounted()` to avoid late state updates in edge cases (HMR/tests). |
-| D33-005 | 🟡 MEDIUM | backend/src/server.ts | 65-96 | **Graceful shutdown is not hardened against repeated calls and cleanup failures:** multiple signals/errors can call `shutdown()` concurrently; `disconnectDatabase()` errors aren’t handled, and the forced-exit timer isn’t cleared. This can lead to noisy logs, double-close attempts, or exiting with open resources. | Add an idempotent guard (e.g., `let isShuttingDown = false`) so shutdown runs once. Wrap `disconnectDatabase()` in `try/catch` and always `process.exit(...)` deterministically. Clear the forced-timeout timer when shutdown completes successfully. |
-| D33-006 | 🟢 LOW | backend/src/server.ts | 9, 90-93 | **Header metadata and error typing are inconsistent:** `@file` says `src/server.ts` but the file is `backend/src/server.ts`; `unhandledRejection` logs `reason as Error` even when it isn’t an `Error`. | Align the header `@file` path to `backend/src/server.ts`. Log unhandled rejections safely (e.g., `reason instanceof Error ? reason : new Error(String(reason))` or log `reason` as unknown without `as Error`). |
+| D33-005 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/server.ts | N/A (shutdown hardened) | **Graceful shutdown was not hardened against repeated calls and cleanup failures:** multiple signals/errors could call `shutdown()` concurrently; cleanup errors weren’t handled, and the forced-exit timer wasn’t cleared. **Resolved:** shutdown is now idempotent, closes HTTP server with error handling, disconnects the DB with `try/catch`, and clears the forced-exit timer. | Completed: added `isShuttingDown` guard, wrapped `httpServer.close` and `disconnectDatabase()` in `try/catch`, and cleared the forced-shutdown timeout on completion. |
+| D33-006 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/server.ts | N/A (metadata + logging aligned) | **Header metadata and error typing were inconsistent:** `@file` path mismatched, and `unhandledRejection` cast `reason` to `Error`. **Resolved:** `@file` now matches `backend/src/server.ts`, and unhandled rejections are logged safely via `reason instanceof Error ? reason : new Error(String(reason))`. | Completed: updated header metadata and removed unsafe `as Error` casting for unhandled rejections. |
 | D33-007 | 🟢 LOW | src/main.ts | 245-255 | **Unhandled-rejection handler always calls `event.preventDefault()`:** this suppresses the browser’s default reporting even in development, which can make debugging harder and potentially hide errors from tooling. | Only call `preventDefault()` when you’re actually handling/reporting the error (typically in production), or gate it behind `import.meta.env.PROD`. |
 
 **Positive Aspects:**
@@ -1447,14 +1447,14 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D7-008** - Backend export coordinate truthiness checks skip valid `0` coordinates
 - [ ] **D8-003** - HTTP client `cancelAllRequests()` abort logic is not wired/initialized
 - [ ] **D8-004** - HTTP client response typing relies on unsafe casts; upload response generics inconsistent
-- [ ] **D9-002** - WebSocket client reconnect uses stale token; not token-rotation aware
-- [ ] **D9-004** - WebSocket client `ConnectionOptions.token` type doesn’t match implementation fallback
+- [x] **D9-002** - WebSocket client reconnect uses stale token; not token-rotation aware
+- [x] **D9-004** - WebSocket client `ConnectionOptions.token` type doesn’t match implementation fallback
 - [ ] **D10-003** - Frontend Dropbox metadata mapping can yield invalid dates for folders
 - [ ] **D10-004** - Backend Dropbox service swallows broad errors (createFolder/pathExists)
 - [ ] **D11-002** - Frontend repositories interpolate unencoded query strings (fragile for ISO dates)
 - [ ] **D11-003** - Backend TaskRepository returns `any` and leaks augmented shapes
 - [ ] **D12-001** - Frontend TokenStorage stores JWTs in localStorage (XSS exfiltration risk)
-- [ ] **D13-002** - Backup scheduler can start with empty `DATABASE_URL` config
+- [x] **D13-002** - Backup scheduler can start with empty `DATABASE_URL` config
 - [ ] **D13-003** - Auth middleware role authorization is stringly-typed
 - [ ] **D14-002** - Frontend/backend upload constraints diverge (size + MIME/type lists)
 - [ ] **D14-003** - Backend config defaults fail open (empty DB URL, debug logging)
@@ -1518,9 +1518,9 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D32-008** - SettingsView saves role settings to non-user-scoped `localStorage` keys
 - [ ] **D32-009** - BackupView backup/schedule/Dropbox actions are simulated stubs (prod risk)
 
-- [ ] **D33-001** - App WebSocket connect can be initiated twice (bootstrap + auth watcher)
-- [ ] **D33-002** - App WebSocket debug/logging is not environment-gated (production noise/leakage)
-- [ ] **D33-005** - Backend shutdown is not idempotent and doesn’t guard cleanup failures
+- [x] **D33-001** - App WebSocket connect can be initiated twice (bootstrap + auth watcher)
+- [x] **D33-002** - App WebSocket debug/logging is not environment-gated (production noise/leakage)
+- [x] **D33-005** - Backend shutdown is not idempotent and doesn’t guard cleanup failures
 
 - [ ] **D34-002** - Stores index contains weakly-typed WebSocket wiring helper (drift/dead-code risk)
 
@@ -1557,14 +1557,14 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D5-006** - Duplicate user DTO shapes + header inconsistency in `user-data.dto.ts`
 - [ ] **D6-004** - Project service calendar query takes `Date` parameters (ensure transport-safe mapping)
 - [ ] **D8-005** - HTTP client leaves `console.log` statements in delete path
-- [ ] **D9-003** - WebSocket client/server include `console.*` debug logs in production paths
+- [x] **D9-003** - WebSocket client/server include `console.*` debug logs in production paths
 - [ ] **D10-005** - Backend Dropbox service uses `console.log` in infra paths
 - [ ] **D11-004** - Repositories contain `console.*` debug logs in core paths
 - [ ] **D11-005** - Frontend UserRepository mixes paradigms and inconsistent error handling
 - [ ] **D11-006** - Backend AuditLogRepository may propagate sensitive error details
 - [ ] **D12-002** - TokenStorage imports `ITokenStorage` from HTTP client module (coupling risk)
 - [ ] **D12-003** - Prisma query logging and `as never` casts in event hooks
-- [ ] **D13-004** - JWT service uses `as any` for `expiresIn` config
+- [x] **D13-004** - JWT service uses `as any` for `expiresIn` config
 - [ ] **D13-005** - Optional auth swallows invalid tokens silently
 - [ ] **D14-004** - Backend constants call `dotenv.config()` at import time
 - [ ] **D14-005** - Backend constants header `@file` path mismatch
@@ -1627,7 +1627,7 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 
 - [ ] **D33-003** - App toast `provide()` uses string injection key (type-safety/collision risk)
 - [ ] **D33-004** - App toast IDs use `Math.random()` and timers aren’t tracked for teardown
-- [ ] **D33-006** - Backend server header `@file` mismatch + unhandledRejection casts unknown to Error
+- [x] **D33-006** - Backend server header `@file` mismatch + unhandledRejection casts unknown to Error
 - [ ] **D33-007** - main.ts unhandledrejection handler suppresses default browser reporting
 
 - [ ] **D34-003** - Frontend barrel files use inconsistent (non-standard) header templates

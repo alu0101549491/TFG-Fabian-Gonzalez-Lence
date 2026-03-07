@@ -24,7 +24,9 @@ import {UnauthorizedError} from '@shared/errors.js';
  * @returns Signed JWT token
  */
 export function generateAccessToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT.SECRET, {expiresIn: JWT.EXPIRES_IN as any});
+  return jwt.sign(payload, JWT.SECRET, {
+    expiresIn: JWT.EXPIRES_IN as SignOptions['expiresIn'],
+  });
 }
 
 /**
@@ -34,7 +36,9 @@ export function generateAccessToken(payload: JwtPayload): string {
  * @returns Signed refresh token
  */
 export function generateRefreshToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT.REFRESH_SECRET, {expiresIn: JWT.REFRESH_EXPIRES_IN as any});
+  return jwt.sign(payload, JWT.REFRESH_SECRET, {
+    expiresIn: JWT.REFRESH_EXPIRES_IN as SignOptions['expiresIn'],
+  });
 }
 
 /**

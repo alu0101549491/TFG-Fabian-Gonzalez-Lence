@@ -276,7 +276,7 @@ export interface Subscription {
  */
 export interface ConnectionOptions {
   /** JWT authentication token */
-  token: string;
+  token?: string;
   /** User ID for joining user-specific channel */
   userId: string;
   /** Whether to connect automatically (default: true) */
@@ -374,19 +374,30 @@ export class SocketHandler {
    * ```
    */
   public connect(options: ConnectionOptions): void {
-    if (this.socket?.connected) {
-      this.log('Already connected');
-      return;
-    }
-
     this.userId = options.userId;
     this.debug = options.debug ?? false;
 
     // Get token from options or provider
-    const token = options.token || this.tokenProvider?.getAccessToken();
+    const token = options.token ?? this.tokenProvider?.getAccessToken();
     if (!token) {
       this.log('No token available for connection');
       this.setConnectionState(ConnectionState.ERROR);
+      return;
+    }
+
+    // If a socket already exists, reuse it (prevents duplicate connections).
+    if (this.socket) {
+      this.socket.auth = {token};
+
+      if (this.socket.connected) {
+        this.log('Already connected');
+        return;
+      }
+
+      this.setConnectionState(ConnectionState.CONNECTING);
+      if (options.autoConnect !== false) {
+        this.socket.connect();
+      }
       return;
     }
 
@@ -783,9 +794,8 @@ export class SocketHandler {
     });
 
     this.socket.on(ServerEvent.MESSAGE_NEW, (data) => {
-      console.log('[SocketHandler] 📨 Received message:new event from server:', data);
       this.emitToListeners(ServerEvent.MESSAGE_NEW, data);
-      console.log('[SocketHandler] ✅ Event forwarded to listeners');
+      this.log('Received message:new event from server');
     });
 
     this.socket.on(ServerEvent.MESSAGES_UNREAD_COUNT, (data) => {
@@ -894,6 +904,12 @@ export class SocketHandler {
    */
   private handleReconnectAttempt(attempt: number): void {
     this.reconnectAttempts = attempt;
+
+    const token = this.tokenProvider?.getAccessToken();
+    if (this.socket && token) {
+      this.socket.auth = {token};
+    }
+
     this.log(
       `Reconnection attempt ${this.reconnectAttempts}/${RECONNECTION_ATTEMPTS}`,
     );

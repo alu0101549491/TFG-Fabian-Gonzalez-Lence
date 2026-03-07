@@ -253,6 +253,8 @@ async function handleLogout(): Promise<void> {
 async function initializeApp(): Promise<void> {
   isInitializing.value = true;
 
+  const appDebug = import.meta.env.DEV;
+
   try {
     // Restore sidebar state
     const savedCollapsed = localStorage.getItem('sidebar_collapsed');
@@ -268,27 +270,33 @@ async function initializeApp(): Promise<void> {
     }
 
     // If authenticated, load initial data and connect WebSocket
-    console.log('[App] 🔍 Checking auth state:', {
-      isAuthenticated: isAuthenticated.value,
-      hasUserId: !!authStore.userId,
-      hasAccessToken: !!authStore.accessToken,
-    });
+    if (appDebug) {
+      console.log('[App] 🔍 Checking auth state:', {
+        isAuthenticated: isAuthenticated.value,
+        hasUserId: !!authStore.userId,
+        hasAccessToken: !!authStore.accessToken,
+      });
+    }
     
     if (isAuthenticated.value && authStore.userId && authStore.accessToken) {
       try {
-        console.log('[App] 🔌 Connecting to WebSocket...', {
-          userId: authStore.userId,
-          hasToken: !!authStore.accessToken,
-        });
+        if (appDebug) {
+          console.log('[App] 🔌 Connecting to WebSocket...', {
+            userId: authStore.userId,
+            hasToken: !!authStore.accessToken,
+          });
+        }
         
         // Connect to WebSocket (this automatically joins user channel)
         socketHandler.connect({
           token: authStore.accessToken,
           userId: authStore.userId,
-          debug: true,
+          debug: appDebug,
         });
 
-        console.log('[App] ✅ WebSocket connection initiated');
+        if (appDebug) {
+          console.log('[App] ✅ WebSocket connection initiated');
+        }
 
         await notificationStore.fetchNotifications();
       } catch (error) {
@@ -321,29 +329,39 @@ function handleResize(): void {
 watch(
   () => isAuthenticated.value,
   (authenticated, wasAuthenticated) => {
-    console.log('[App] 🔄 Auth state changed:', { authenticated, wasAuthenticated });
+    const appDebug = import.meta.env.DEV;
+
+    if (appDebug) {
+      console.log('[App] 🔄 Auth state changed:', { authenticated, wasAuthenticated });
+    }
     
     if (authenticated && authStore.userId && authStore.accessToken) {
       // User just logged in - connect WebSocket
-      console.log('[App] 🔌 Connecting to WebSocket after login...', {
-        userId: authStore.userId,
-        hasToken: !!authStore.accessToken,
-      });
+      if (appDebug) {
+        console.log('[App] 🔌 Connecting to WebSocket after login...', {
+          userId: authStore.userId,
+          hasToken: !!authStore.accessToken,
+        });
+      }
       
       try {
         socketHandler.connect({
           token: authStore.accessToken,
           userId: authStore.userId,
-          debug: true,
+          debug: appDebug,
         });
 
-        console.log('[App] ✅ WebSocket connection initiated');
+        if (appDebug) {
+          console.log('[App] ✅ WebSocket connection initiated');
+        }
       } catch (error) {
         console.error('[App] ❌ Failed to connect WebSocket:', error);
       }
     } else if (!authenticated && wasAuthenticated) {
       // User logged out - disconnect WebSocket
-      console.log('[App] 🔌 Disconnecting WebSocket after logout...');
+      if (appDebug) {
+        console.log('[App] 🔌 Disconnecting WebSocket after logout...');
+      }
       socketHandler.disconnect();
     }
   },

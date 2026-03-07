@@ -120,9 +120,6 @@ export function initializeSocketServer(httpServer: HttpServer): void {
 
           const roomName = `project:${projectId}`;
           socket.join(roomName);
-          console.log(
-            `✅ [WebSocket] User ${userId} joined room '${roomName}'`
-          );
           logInfo(`User ${userId} joined project room ${projectId}`);
           ack?.({ok: true});
         } catch (error) {
@@ -137,7 +134,6 @@ export function initializeSocketServer(httpServer: HttpServer): void {
       const projectId = data.projectId;
       const roomName = `project:${projectId}`;
       socket.leave(roomName);
-      console.log(`👋 [WebSocket] User ${userId} left room '${roomName}'`);
       logInfo(`User ${userId} left project room ${projectId}`);
     });
 
@@ -221,13 +217,12 @@ export function emitToProject(
   data: unknown
 ): void {
   if (!io) {
-    console.log('❌ [WebSocket] Cannot emit - io not initialized');
+    logError('WebSocket emit failed: io not initialized');
     return;
   }
   const room = `project:${projectId}`;
-  console.log(`🔊 [WebSocket] Emitting '${event}' to room '${room}'`);
   io.to(room).emit(event, data);
-  console.log(`✅ [WebSocket] Event emitted to room '${room}'`);
+  logInfo(`Emitted '${event}' to room '${room}'`);
 }
 
 /**

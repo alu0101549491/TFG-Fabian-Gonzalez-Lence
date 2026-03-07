@@ -22,10 +22,18 @@ import { logInfo, logError } from '../../shared/logger.js';
  * Runs daily at 2:00 AM to create backups and cleanup old ones
  */
 export function initializeBackupScheduler(): void {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    logError(
+      '[Scheduler] Backup scheduler disabled: missing required env var DATABASE_URL'
+    );
+    return;
+  }
+
   const backupService = new BackupService({
     backupDir: path.join(process.cwd(), 'backups'),
     retentionDays: 30, // Keep backups for 30 days
-    databaseUrl: process.env.DATABASE_URL || '',
+    databaseUrl,
   });
 
   // Schedule: Run every day at 2:00 AM
