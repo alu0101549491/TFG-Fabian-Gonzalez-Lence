@@ -243,10 +243,16 @@ if (import.meta.hot) {
 // ============================================================================
 
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
+  const error = event.reason instanceof Error
+    ? event.reason
+    : new Error(String(event.reason));
 
-  // Prevent default browser behavior
-  event.preventDefault();
+  console.error('Unhandled promise rejection:', error);
+
+  // Keep default browser reporting in development.
+  if (import.meta.env.PROD) {
+    event.preventDefault();
+  }
 
   // In production, send to error tracking service
   if (import.meta.env.PROD) {

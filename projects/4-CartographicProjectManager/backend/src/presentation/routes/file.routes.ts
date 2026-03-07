@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 24, 2026
- * @file src/presentation/routes/file.routes.ts
+ * @file backend/src/presentation/routes/file.routes.ts
  * @desc File routes with upload middleware
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Router} from 'express';

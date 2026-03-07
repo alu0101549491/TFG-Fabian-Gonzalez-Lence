@@ -6,7 +6,7 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 1, 2026
- * @file src/infrastructure/repositories/permission.repository.ts
+ * @file backend/src/infrastructure/repositories/permission.repository.ts
  * @desc Permission repository implementation using Prisma
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  */

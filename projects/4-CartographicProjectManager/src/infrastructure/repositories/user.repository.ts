@@ -260,22 +260,17 @@ export class UserRepository implements IUserRepository {
    * @returns Array of user summary DTOs
    */
   public async getAllUsers(filters?: UserFilterDto): Promise<UserSummaryDto[]> {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.role) params.append('role', filters.role);
-      if (filters?.search) params.append('search', filters.search);
-      if (filters?.activeOnly) params.append('activeOnly', 'true');
+    const params = new URLSearchParams();
+    if (filters?.role) params.append('role', filters.role);
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.activeOnly) params.append('activeOnly', 'true');
 
-      const queryString = params.toString();
-      const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
+    const queryString = params.toString();
+    const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
 
-      const response = await httpClient.get<UserApiResponse[]>(url);
-      
-      return response.data.map((user) => this.mapToSummaryDto(user));
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-      throw error;
-    }
+    const response = await httpClient.get<UserApiResponse[]>(url);
+
+    return response.data.map((user) => this.mapToSummaryDto(user));
   }
 
   /**

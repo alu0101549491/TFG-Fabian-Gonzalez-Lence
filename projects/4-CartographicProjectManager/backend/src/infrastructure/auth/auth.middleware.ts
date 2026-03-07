@@ -6,7 +6,7 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 18, 2026
- * @file src/infrastructure/auth/auth.middleware.ts
+ * @file backend/src/infrastructure/auth/auth.middleware.ts
  * @desc Authentication middleware for Express routes
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
