@@ -36,6 +36,9 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D7-003** — Backend backup/restore no longer uses shell-interpolated `exec`; commands are executed with argument arrays and secrets are passed via environment (`PGPASSWORD`).
 - **D7-008** — Backend project export now uses nullish checks for coordinates so valid `0` values are included in PDF output.
 - **D9-001** — Backend WebSocket project-room joins are now authorization-guarded (admin role, project ownership, or explicit permission) before `socket.join()`.
+- **D9-002** — WebSocket client reconnection now refreshes `socket.auth.token` from `ITokenProvider`, avoiding stale-token reconnect failures.
+- **D9-003** — WebSocket client/server no longer use direct `console.*` debug logging in production paths; logging routes through the shared logger / debug-gated logging.
+- **D9-004** — WebSocket client `ConnectionOptions.token` is now optional to match the implementation’s `tokenProvider` fallback.
 - **D14-001** — Backend JWT secrets no longer fall back to hard-coded defaults; missing `JWT_SECRET` / `JWT_REFRESH_SECRET` now fails fast.
 - **D8-001 / D8-002** — Axios interceptor retry/refresh flow was hardened to avoid crashes when `error.config` is missing and to ensure queued requests reject on refresh failure (no hangs).
 - **D8-003** — Axios global cancellation is now functional: a default `AbortSignal` is attached to requests and `cancelAllRequests()` aborts in-flight work and resets the controller.
@@ -44,12 +47,18 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D10-002** — Client-side Dropbox integration and any frontend token-env guidance were removed; the frontend no longer supports shipping Dropbox credentials and relies on backend `/api/v1/files/*` endpoints.
 - **D11-001** — Frontend repositories’ 404 detection was made robust: “find-or-null” methods now treat both normalized `ApiError.status` and Axios-shaped `error.response.status` as 404, preventing avoidable throws/UI crashes.
 - **D13-001** — Deadline reminder scheduler now uses the shared Prisma singleton (`prisma`) instead of constructing a separate `PrismaClient`, avoiding mixed-client workflows and reducing connection lifecycle risk.
+- **D13-002** — Backup scheduler now disables itself at startup (with a clear error log) if `DATABASE_URL` is missing, instead of running with an empty config.
+- **D13-004** — JWT service no longer uses `as any` for `expiresIn`; it now uses `SignOptions['expiresIn']` typing for both access and refresh tokens.
 - **D15-001** — Frontend `generateId()` now generates RFC 4122 v4 UUIDs using Web Crypto (`crypto.randomUUID()`/`crypto.getRandomValues`) instead of `Math.random()`.
 - **D22-001** — Notification listing now enforces ownership/admin checks and does not allow authenticated users to fetch other users’ notifications.
 - **D22-002** — Message listing/creation now validates project access and binds `senderId` server-side from the authenticated user (no spoofed authorship).
 - **D7-004** — Removed the unused/mock frontend `AuthenticationService` that performed local password checks and generated placeholder tokens; auth remains backend-driven via `AuthRepository` + `auth.store.ts`.
 - **D32-001** — `CalendarView` now listens to `CalendarWidget`’s emitted `date-select` event so date selection updates `selectedDate` as intended.
 - **D32-004** — `ProjectListView` status filter now uses `ProjectStatus` enum values (typed `statusFilter`) so status filtering works.
+- **D33-001** — WebSocket client connection initiation is now idempotent, preventing duplicate socket instances when connect is triggered from multiple app paths.
+- **D33-002** — App/WebSocket debug logging is now gated to dev builds (`import.meta.env.DEV`), avoiding production noise.
+- **D33-005** — Backend shutdown is now idempotent and resilient: HTTP close/disconnect errors are handled and the forced-exit timer is cleared on completion.
+- **D33-006** — Backend server metadata/logging consistency: `@file` path corrected and `unhandledRejection` logging no longer casts unknown values to `Error`.
 - **D38-002** — Production seed no longer uses or logs a default password; it now requires `SEED_ADMIN_PASSWORD` (and optionally `SEED_ADMIN_EMAIL`).
 - **D39-001** — Dropbox refresh-token helper script now masks tokens by default; printing full secrets requires explicit `--print-full`.
 - **D39-002** — Dropbox token update instructions no longer include token-like prefixes; examples use placeholders.
