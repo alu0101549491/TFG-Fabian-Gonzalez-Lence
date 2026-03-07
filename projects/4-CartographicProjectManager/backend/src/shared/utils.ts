@@ -114,11 +114,14 @@ export function parsePagination(
   page?: string,
   limit?: string
 ): {page: number; limit: number; skip: number} {
-  const parsedPage = Math.max(1, parseInt(page || '1', 10));
-  const parsedLimit = Math.min(
-    100,
-    Math.max(1, parseInt(limit || '20', 10))
-  );
+  const rawPage = Number(page);
+  const rawLimit = Number(limit);
+
+  const pageNumber = Number.isFinite(rawPage) ? Math.trunc(rawPage) : 1;
+  const limitNumber = Number.isFinite(rawLimit) ? Math.trunc(rawLimit) : 20;
+
+  const parsedPage = Math.max(1, pageNumber);
+  const parsedLimit = Math.min(100, Math.max(1, limitNumber));
   const skip = (parsedPage - 1) * parsedLimit;
 
   return {

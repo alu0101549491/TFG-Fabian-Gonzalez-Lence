@@ -13,7 +13,18 @@
  */
 
 import winston from 'winston';
+import {inspect} from 'node:util';
 import {LOGGING, SERVER} from './constants.js';
+
+function safeSerializeMetadata(metadata: Record<string, unknown>): string {
+  if (!Object.keys(metadata).length) return '';
+
+  try {
+    return JSON.stringify(metadata, null, 2);
+  } catch {
+    return inspect(metadata, {depth: 5, breakLength: Infinity, compact: false});
+  }
+}
 
 /**
  * Winston logger format configuration
@@ -32,7 +43,7 @@ const consoleFormat = winston.format.combine(
   winston.format.colorize(),
   winston.format.printf(
     ({level, message, timestamp, ...metadata}) =>
-      `${timestamp} [${level}]: ${message} ${Object.keys(metadata).length ? JSON.stringify(metadata, null, 2) : ''}`
+      `${timestamp} [${level}]: ${message} ${safeSerializeMetadata(metadata)}`
   )
 );
 

@@ -13,6 +13,7 @@
  */
 
 import type {Request} from 'express';
+import type {UserRole} from '@prisma/client';
 
 /**
  * Standard API response format
@@ -64,7 +65,7 @@ export interface PaginatedResponse<T> {
 export interface AuthenticatedUser {
   id: string;
   email: string;
-  role: string;
+  role: UserRole;
 }
 
 /**
@@ -80,7 +81,7 @@ export interface AuthenticatedRequest extends Request {
 export interface JwtPayload {
   userId: string;
   email: string;
-  role: string;
+  role: UserRole;
   iat?: number;
   exp?: number;
 }

@@ -13,7 +13,7 @@
  */
 
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import { AuditLogController } from '../controllers/audit-log.controller.js';
 import { AuditLogRepository } from '../../infrastructure/repositories/audit-log.repository.js';
 import { authenticate, authorize } from '../../infrastructure/auth/auth.middleware.js';
@@ -27,7 +27,7 @@ const router = Router();
 /**
  * All audit log routes require authentication and administrator role
  */
-router.use(authenticate, authorize('ADMINISTRATOR'));
+router.use(authenticate, authorize(UserRole.ADMINISTRATOR));
 
 /**
  * GET /api/v1/audit-logs
