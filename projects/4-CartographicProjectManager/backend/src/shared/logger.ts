@@ -5,8 +5,8 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since February 18, 2026
- * @file src/shared/logger.ts
+ * @since March 7, 2026
+ * @file backend/src/shared/logger.ts
  * @desc Centralized logging utility using Winston
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}

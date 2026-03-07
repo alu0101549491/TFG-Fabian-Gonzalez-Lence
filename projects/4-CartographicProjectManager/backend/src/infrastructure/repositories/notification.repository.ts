@@ -5,8 +5,8 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since February 18, 2026
- * @file src/infrastructure/repositories/notification.repository.ts
+ * @since March 7, 2026
+ * @file backend/src/infrastructure/repositories/notification.repository.ts
  * @desc Notification repository implementation using Prisma
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
@@ -16,6 +16,7 @@ import type {Notification} from '@prisma/client';
 import type {INotificationRepository} from '@domain/repositories/notification.repository.interface.js';
 import {prisma} from '../database/prisma.client.js';
 import {DatabaseError} from '@shared/errors.js';
+import {logError, logWarning} from '../../shared/logger.js';
 
 export class NotificationRepository implements INotificationRepository {
   public async findById(id: string): Promise<Notification | null> {
@@ -71,11 +72,17 @@ export class NotificationRepository implements INotificationRepository {
     try {
       await prisma.notification.delete({where: {id}});
     } catch (error: any) {
-      console.error('Failed to delete notification:', error);
       // If notification doesn't exist, Prisma throws P2025
       if (error.code === 'P2025') {
+        logWarning('Notification not found while deleting', {notificationId: id});
         throw new DatabaseError('Notification not found');
       }
+
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Failed to delete notification', normalizedError, {
+        notificationId: id,
+      });
       throw new DatabaseError(`Failed to delete notification: ${error.message || 'Unknown error'}`);
     }
   }

@@ -14,6 +14,7 @@
 
 import {Dropbox} from 'dropbox';
 import type {files} from 'dropbox';
+import {logError, logInfo, logWarning} from '../../shared/logger.js';
 
 /**
  * Root folder path for all projects in Dropbox
@@ -258,7 +259,7 @@ export class DropboxService implements IDropboxService {
 
     this.refreshPromise = (async () => {
       try {
-        console.log('🔄 Refreshing Dropbox access token...');
+        logInfo('Refreshing Dropbox access token');
 
         const params = new URLSearchParams({
           grant_type: 'refresh_token',
@@ -294,7 +295,7 @@ export class DropboxService implements IDropboxService {
           fetch: this.createFetchWithTimeout(),
         });
 
-        console.log('✅ Dropbox access token refreshed successfully');
+        logInfo('Dropbox access token refreshed successfully');
       } finally {
         this.isRefreshing = false;
         this.refreshPromise = null;
@@ -320,13 +321,13 @@ export class DropboxService implements IDropboxService {
         error?.error?.error?.['.tag'] === 'expired_access_token';
 
       if (is401Error && this.refreshToken) {
-        console.log('⚠️  Access token expired, attempting to refresh...');
+        logWarning('Dropbox access token expired; attempting refresh');
 
         // Refresh the token
         await this.refreshAccessToken();
 
         // Retry the operation with the new token
-        console.log('🔁 Retrying operation with new token...');
+        logInfo('Retrying Dropbox operation with refreshed token');
         return await operation();
       }
 
@@ -367,11 +368,33 @@ export class DropboxService implements IDropboxService {
       });
       return path;
     } catch (error: unknown) {
-      const err = error as {error?: {error?: {'.tag'?: string}}};
-      // Ignore if folder already exists
-      if (err.error?.error?.['.tag'] === 'path') {
+      const err = error as {
+        error?: {
+          error?: {
+            '.tag'?: string;
+            path?: {
+              '.tag'?: string;
+              conflict?: {
+                '.tag'?: string;
+              };
+            };
+          };
+        };
+      };
+
+      const createFolderTag = err.error?.error?.['.tag'];
+      const writeErrorTag = err.error?.error?.path?.['.tag'];
+      const conflictTag = err.error?.error?.path?.conflict?.['.tag'];
+
+      // Ignore only explicit conflict/exists cases (folder already exists)
+      if (
+        createFolderTag === 'path' &&
+        writeErrorTag === 'conflict' &&
+        (conflictTag === 'folder' || conflictTag === undefined)
+      ) {
         return path;
       }
+
       throw error;
     }
   }
@@ -536,7 +559,10 @@ export class DropboxService implements IDropboxService {
         }
       } catch (error) {
         // No existing links found, continue to create new one
-        console.log('No existing shared links, creating new one');
+        logWarning('Unable to list existing Dropbox shared links; creating a new one', {
+          path,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
 
       // Create new shared link
@@ -562,8 +588,32 @@ export class DropboxService implements IDropboxService {
       try {
         await this.client.filesGetMetadata({path});
         return true;
-      } catch {
-        return false;
+      } catch (error: unknown) {
+        const err = error as {
+          error?: {
+            error?: {
+              '.tag'?: string;
+              path?: {
+                '.tag'?: string;
+              };
+            };
+          };
+        };
+
+        const getMetadataTag = err.error?.error?.['.tag'];
+        const lookupErrorTag = err.error?.error?.path?.['.tag'];
+        if (getMetadataTag === 'path' && lookupErrorTag === 'not_found') {
+          return false;
+        }
+
+        const normalizedError =
+          error instanceof Error ? error : new Error(String(error));
+        logError('Unexpected Dropbox error while checking path existence', normalizedError, {
+          path,
+          getMetadataTag,
+          lookupErrorTag,
+        });
+        throw error;
       }
     });
   }

@@ -40,18 +40,28 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D9-003** — WebSocket client/server no longer use direct `console.*` debug logging in production paths; logging routes through the shared logger / debug-gated logging.
 - **D9-004** — WebSocket client `ConnectionOptions.token` is now optional to match the implementation’s `tokenProvider` fallback.
 - **D14-001** — Backend JWT secrets no longer fall back to hard-coded defaults; missing `JWT_SECRET` / `JWT_REFRESH_SECRET` now fails fast.
+- **D14-005** — Backend constants header metadata was standardized; `@file` now correctly points to `backend/src/shared/constants.ts`.
 - **D8-001 / D8-002** — Axios interceptor retry/refresh flow was hardened to avoid crashes when `error.config` is missing and to ensure queued requests reject on refresh failure (no hangs).
 - **D8-003** — Axios global cancellation is now functional: a default `AbortSignal` is attached to requests and `cancelAllRequests()` aborts in-flight work and resets the controller.
 - **D8-004** — Axios response typing was made consistent: interceptor no longer returns a casted pseudo-response, and upload helpers map `BackendApiResponse<T>` to `ApiResponse<T>` without unsafe casts.
 - **D8-005** — Removed `console.log` debug output from the Axios delete path to avoid leaking payloads in production.
 - **D10-002** — Client-side Dropbox integration and any frontend token-env guidance were removed; the frontend no longer supports shipping Dropbox credentials and relies on backend `/api/v1/files/*` endpoints.
+- **D10-004** — Backend Dropbox service no longer swallows broad “path” errors: `createFolder()` only ignores explicit “already exists” conflicts and `pathExists()` only returns `false` for explicit “not found”; unexpected errors are logged and rethrown.
+- **D10-005** — Backend Dropbox integration no longer uses direct `console.log` in infra paths; it now routes operational messages through the shared logger.
 - **D11-001** — Frontend repositories’ 404 detection was made robust: “find-or-null” methods now treat both normalized `ApiError.status` and Axios-shaped `error.response.status` as 404, preventing avoidable throws/UI crashes.
+- **D11-004** — Frontend and backend repositories no longer use direct `console.*` debug logging in core data paths; backend routes through the shared logger and frontend removes the noisy debug prints.
 - **D13-001** — Deadline reminder scheduler now uses the shared Prisma singleton (`prisma`) instead of constructing a separate `PrismaClient`, avoiding mixed-client workflows and reducing connection lifecycle risk.
 - **D13-002** — Backup scheduler now disables itself at startup (with a clear error log) if `DATABASE_URL` is missing, instead of running with an empty config.
 - **D13-004** — JWT service no longer uses `as any` for `expiresIn`; it now uses `SignOptions['expiresIn']` typing for both access and refresh tokens.
 - **D15-001** — Frontend `generateId()` now generates RFC 4122 v4 UUIDs using Web Crypto (`crypto.randomUUID()`/`crypto.getRandomValues`) instead of `Math.random()`.
+- **D15-006** — Backend shared module headers were standardized; `@file` now consistently points to `backend/src/shared/*.ts`.
+- **D22-006** — File upload Dropbox path construction is now hardened: `section` is normalized/allowlisted and the Dropbox storage filename is generated server-side using the file id and a sanitized basename (original filename is preserved separately).
 - **D22-001** — Notification listing now enforces ownership/admin checks and does not allow authenticated users to fetch other users’ notifications.
 - **D22-002** — Message listing/creation now validates project access and binds `senderId` server-side from the authenticated user (no spoofed authorship).
+- **D20-004** — Backend app bootstrap header metadata was standardized; `@file` now correctly points to `backend/src/presentation/app.ts`.
+- **D21-004** — Backend route module headers were standardized (correct `@file` paths and consistent header template `@see` links).
+- **D22-008** — Backend controller module headers were standardized; `@file` now correctly points to `backend/src/presentation/controllers/...`.
+- **D23-003** — Backend middleware module headers were standardized; `@file` now correctly points to `backend/src/presentation/middlewares/...`.
 - **D7-004** — Removed the unused/mock frontend `AuthenticationService` that performed local password checks and generated placeholder tokens; auth remains backend-driven via `AuthRepository` + `auth.store.ts`.
 - **D32-001** — `CalendarView` now listens to `CalendarWidget`’s emitted `date-select` event so date selection updates `selectedDate` as intended.
 - **D32-004** — `ProjectListView` status filter now uses `ProjectStatus` enum values (typed `statusFilter`) so status filtering works.
@@ -59,6 +69,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D33-002** — App/WebSocket debug logging is now gated to dev builds (`import.meta.env.DEV`), avoiding production noise.
 - **D33-005** — Backend shutdown is now idempotent and resilient: HTTP close/disconnect errors are handled and the forced-exit timer is cleared on completion.
 - **D33-006** — Backend server metadata/logging consistency: `@file` path corrected and `unhandledRejection` logging no longer casts unknown values to `Error`.
+- **D33-007** — Frontend `unhandledrejection` handler no longer suppresses default browser reporting in development (`preventDefault()` is production-only).
 - **D38-002** — Production seed no longer uses or logs a default password; it now requires `SEED_ADMIN_PASSWORD` (and optionally `SEED_ADMIN_EMAIL`).
 - **D39-001** — Dropbox refresh-token helper script now masks tokens by default; printing full secrets requires explicit `--print-full`.
 - **D39-002** — Dropbox token update instructions no longer include token-like prefixes; examples use placeholders.
@@ -75,7 +86,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D37-001** — Committed secret mitigation was partially applied by untracking/ignoring `backend/.env.railway` and adding a sanitized `backend/.env.railway.example`; full remediation still requires credential rotation and (if previously pushed) git history purge.
 
 ### ⏳ Not Addressed (still outstanding)
-- **D14-002 / D14-003 / D14-004 / D14-005** — Upload-rule drift, fail-open defaults, import-time dotenv side effects, and header metadata mismatch remain.
+- **D14-002 / D14-003 / D14-004** — Upload-rule drift, fail-open defaults, and import-time dotenv side effects remain.
 ### Frontend: strict TS + DTO/contract alignment
 - Realtime-store updates no longer spread nullable refs (safe narrowing before immutable updates):
   - `src/presentation/stores/project.store.ts`

@@ -6,7 +6,7 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 18, 2026
- * @file src/domain/repositories/index.ts
+ * @file backend/src/domain/repositories/index.ts
  * @desc Repository interfaces module exports
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}

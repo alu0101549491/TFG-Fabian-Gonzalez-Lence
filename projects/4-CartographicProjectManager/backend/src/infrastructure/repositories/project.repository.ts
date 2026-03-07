@@ -5,8 +5,8 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since February 18, 2026
- * @file src/infrastructure/repositories/project.repository.ts
+ * @since March 7, 2026
+ * @file backend/src/infrastructure/repositories/project.repository.ts
  * @desc Project repository implementation using Prisma
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
@@ -16,6 +16,7 @@ import type {Project, ProjectStatus, ProjectType} from '@prisma/client';
 import type {IProjectRepository} from '@domain/repositories/project.repository.interface.js';
 import {prisma} from '../database/prisma.client.js';
 import {DatabaseError} from '@shared/errors.js';
+import {logDebug, logError} from '../../shared/logger.js';
 
 /**
  * Project repository implementation
@@ -149,31 +150,41 @@ export class ProjectRepository implements IProjectRepository {
       }
       
       if (updateData.status === 'FINALIZED' && !updateData.finalizedAt) {
-        console.log(`[Backend ProjectRepository] Setting finalizedAt for project ${id}`);
+        logDebug('Setting finalizedAt for project', {projectId: id});
         updateData.finalizedAt = new Date();
       }
       
-      console.log(`[Backend ProjectRepository] Updating project ${id} with data:`, updateData);
+      logDebug('Updating project', {
+        projectId: id,
+        fields: Object.keys(updateData as object),
+      });
       const result = await prisma.project.update({
         where: {id},
         data: updateData,
       });
-      console.log(`[Backend ProjectRepository] Project ${id} updated successfully. Status: ${result.status}, FinalizedAt: ${result.finalizedAt}`);
+      logDebug('Project updated successfully', {
+        projectId: id,
+        status: result.status,
+        finalizedAt: result.finalizedAt,
+      });
       
       return result;
     } catch (error) {
-      console.error(`[Backend ProjectRepository] Error updating project ${id}:`, error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Error updating project', normalizedError, {projectId: id});
       throw new DatabaseError('Failed to update project');
     }
   }
 
   public async delete(id: string): Promise<void> {
     try {
-      console.log(`[Backend ProjectRepository] Deleting project ${id} from database...`);
-      const result = await prisma.project.delete({where: {id}});
-      console.log(`[Backend ProjectRepository] Project deleted:`, result);
+      logDebug('Deleting project', {projectId: id});
+      await prisma.project.delete({where: {id}});
     } catch (error) {
-      console.error(`[Backend ProjectRepository] Error deleting project ${id}:`, error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Error deleting project', normalizedError, {projectId: id});
       throw new DatabaseError('Failed to delete project');
     }
   }

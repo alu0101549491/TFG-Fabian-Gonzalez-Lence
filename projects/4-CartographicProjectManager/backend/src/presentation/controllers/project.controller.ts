@@ -5,8 +5,8 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since February 18, 2026
- * @file src/presentation/controllers/project.controller.ts
+ * @since March 7, 2026
+ * @file backend/src/presentation/controllers/project.controller.ts
  * @desc Project controller handling project CRUD operations
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
@@ -25,6 +25,7 @@ import {PrismaClient} from '@prisma/client';
 import {sendSuccess, generateProjectCode, sendError} from '@shared/utils.js';
 import {HTTP_STATUS, ERROR_MESSAGES} from '@shared/constants.js';
 import {NotFoundError} from '@shared/errors.js';
+import {logDebug, logError, logInfo, logWarning} from '@shared/logger.js';
 
 const prisma = new PrismaClient();
 const auditLogRepository = new AuditLogRepository(prisma);
@@ -55,7 +56,7 @@ export class ProjectController {
         appSecret: process.env.DROPBOX_APP_SECRET,
       });
     } else {
-      console.warn('DROPBOX_ACCESS_TOKEN not set - project folders will not be auto-created');
+      logWarning('DROPBOX_ACCESS_TOKEN not set - project folders will not be auto-created');
       this.dropboxService = null;
     }
   }
@@ -249,9 +250,16 @@ export class ProjectController {
       if (this.dropboxService) {
         try {
           dropboxFolderId = await this.dropboxService.createProjectFolder(projectData.code);
-          console.log(`✅ Created Dropbox folder for project ${projectData.code}: ${dropboxFolderId}`);
+          logInfo('Created Dropbox folder for project', {
+            projectCode: projectData.code,
+            dropboxFolderId,
+          });
         } catch (error) {
-          console.error(`❌ Failed to create Dropbox folder for project ${projectData.code}:`, error);
+          const normalizedError =
+            error instanceof Error ? error : new Error(String(error));
+          logError('Failed to create Dropbox folder for project', normalizedError, {
+            projectCode: projectData.code,
+          });
           // Continue without Dropbox folder - files can still be uploaded, folders will be auto-created
         }
       }
@@ -309,7 +317,11 @@ export class ProjectController {
       }
 
       const projectId = req.params.id as string;
-      console.log(`[ProjectController] UPDATE request for project ${projectId} with data:`, req.body);
+      logDebug('Project update request received', {
+        projectId,
+        fields: Object.keys(req.body as object),
+        userId: currentUser.id,
+      });
       
       // Check if user has permission to update
       const existingProject = await this.projectRepository.findById(projectId);
@@ -324,7 +336,7 @@ export class ProjectController {
       }
 
       const project = await this.projectRepository.update(projectId, req.body);
-      console.log(`[ProjectController] Project ${projectId} updated successfully`);
+  logInfo('Project updated successfully', {projectId});
       
       // Log project finalization if status changed to FINALIZED
       if (req.body.status === 'FINALIZED' && existingProject.status !== 'FINALIZED') {
@@ -348,7 +360,11 @@ export class ProjectController {
       
       sendSuccess(res, project, 'Project updated successfully');
     } catch (error) {
-      console.error('[ProjectController] Error updating project:', error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Error updating project', normalizedError, {
+        projectId: req.params.id,
+      });
       next(error);
     }
   }
@@ -371,7 +387,10 @@ export class ProjectController {
       }
 
       const projectId = req.params.id as string;
-      console.log(`[ProjectController] DELETE request for project: ${projectId}`);
+      logDebug('Project delete request received', {
+        projectId,
+        userId: currentUser.id,
+      });
       
       // Check if user has permission to delete
       const existingProject = await this.projectRepository.findById(projectId);
@@ -386,7 +405,7 @@ export class ProjectController {
       }
 
       await this.projectRepository.delete(projectId);
-      console.log(`[ProjectController] Project ${projectId} deleted successfully`);
+  logInfo('Project deleted successfully', {projectId});
       
       // Log project deletion in audit trail
       await this.auditService.logProjectDeletion(
@@ -398,7 +417,11 @@ export class ProjectController {
       
       sendSuccess(res, null, 'Project deleted successfully');
     } catch (error) {
-      console.error('[ProjectController] Error deleting project:', error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Error deleting project', normalizedError, {
+        projectId: req.params.id,
+      });
       next(error);
     }
   }
@@ -504,7 +527,11 @@ export class ProjectController {
         permissions: grantedPermissions,
       }, 'Special user added successfully', HTTP_STATUS.CREATED);
     } catch (error) {
-      console.error('[ProjectController] Error adding special user:', error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Error adding special user', normalizedError, {
+        projectId: req.params.id,
+      });
       next(error);
     }
   }
@@ -574,7 +601,11 @@ export class ProjectController {
         permissions: validPermissions,
       });
     } catch (error) {
-      console.error('[ProjectController] Error updating permissions:', error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Error updating permissions', normalizedError, {
+        projectId: req.params.id,
+      });
       next(error);
     }
   }
@@ -615,12 +646,19 @@ export class ProjectController {
         await this.permissionRepository.delete(userId, projectId);
       } catch (error) {
         // Permission might not exist, that's okay
-        console.log('No permissions to delete');
+        logDebug('No permissions to delete for user+project', {
+          userId,
+          projectId,
+        });
       }
 
       sendSuccess(res, null, 'Special user removed from project successfully');
     } catch (error) {
-      console.error('[ProjectController] Error removing special user:', error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Error removing special user', normalizedError, {
+        projectId: req.params.id,
+      });
       next(error);
     }
   }
@@ -760,7 +798,12 @@ export class ProjectController {
         grantedAt: permission.grantedAt,
       });
     } catch (error) {
-      console.error('[ProjectController] Error getting permissions:', error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Error getting permissions', normalizedError, {
+        projectId: req.params.id,
+        userId: req.params.userId,
+      });
       next(error);
     }
   }

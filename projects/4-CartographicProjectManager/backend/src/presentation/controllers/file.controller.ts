@@ -5,13 +5,14 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since February 24, 2026
- * @file src/presentation/controllers/file.controller.ts
+ * @since March 7, 2026
+ * @file backend/src/presentation/controllers/file.controller.ts
  * @desc File controller with Dropbox integration
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  */
 
-import type {Request, Response, NextFunction} from 'express';
+import type {Response, NextFunction} from 'express';
+import * as path from 'node:path';
 import {FileRepository} from '@infrastructure/repositories/file.repository.js';
 import {ProjectRepository} from '@infrastructure/repositories/project.repository.js';
 import {UserRepository} from '@infrastructure/repositories/user.repository.js';
@@ -20,6 +21,7 @@ import {DropboxService} from '@infrastructure/external-services/dropbox.service.
 import {sendSuccess, sendError} from '@shared/utils.js';
 import {HTTP_STATUS} from '@shared/constants.js';
 import type {AuthenticatedRequest} from '@shared/types.js';
+import {logDebug, logError, logInfo, logWarning} from '@shared/logger.js';
 import {v4 as uuidv4} from 'uuid';
 
 /**
@@ -48,9 +50,45 @@ export class FileController {
         appSecret: process.env.DROPBOX_APP_SECRET,
       });
     } else {
-      console.warn('DROPBOX_ACCESS_TOKEN not set - file uploads will be disabled');
+      logWarning('DROPBOX_ACCESS_TOKEN not set - file uploads will be disabled');
       this.dropboxService = null;
     }
+  }
+
+  private sanitizeDropboxPathSegment(segment: unknown): string {
+    const str = typeof segment === 'string' ? segment : '';
+    const withoutControlChars = Array.from(str)
+      .filter((char) => {
+        const codePoint = char.codePointAt(0);
+        return codePoint !== undefined && codePoint >= 0x20 && codePoint !== 0x7f;
+      })
+      .join('');
+
+    return withoutControlChars
+      .replace(/[\\/]/g, '_')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 128);
+  }
+
+  private normalizeSection(section: unknown): string {
+    const normalized = this.sanitizeDropboxPathSegment(section);
+    const allowedSections = new Set([
+      'ReportAndAnnexes',
+      'Plans',
+      'Specifications',
+      'Budget',
+      'Tasks',
+      'Messages',
+    ]);
+    return allowedSections.has(normalized) ? normalized : 'Messages';
+  }
+
+  private buildDropboxStorageFilename(originalName: string, fileId: string): string {
+    const sanitized = this.sanitizeDropboxPathSegment(originalName) || 'file';
+    const ext = path.extname(sanitized).slice(0, 16);
+    const base = path.basename(sanitized, ext).slice(0, 80) || 'file';
+    return `${fileId}_${base}${ext}`;
   }
 
   /**
@@ -104,19 +142,14 @@ export class FileController {
    */
   public async upload(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      console.log('📤 Upload request received');
-      console.log('User:', req.user?.id);
-      console.log('Body:', req.body);
-      console.log('File:', req.file ? `${req.file.originalname} (${req.file.size} bytes)` : 'NO FILE');
-
       if (!this.dropboxService) {
-        console.error('❌ Dropbox service not configured');
+        logWarning('Dropbox service not configured; upload disabled');
         sendError(res, 'File upload service not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
         return;
       }
 
       if (!req.file) {
-        console.error('❌ No file provided');
+        logWarning('No file provided in upload request', {userId: req.user?.id});
         sendError(res, 'No file provided', HTTP_STATUS.BAD_REQUEST);
         return;
       }
@@ -124,39 +157,45 @@ export class FileController {
       const {projectId, section, taskId, messageId} = req.body;
 
       if (!projectId) {
-        console.error('❌ No project ID provided');
+        logWarning('No projectId provided in upload request', {userId: req.user?.id});
         sendError(res, 'Project ID is required', HTTP_STATUS.BAD_REQUEST);
         return;
       }
 
-      console.log('🔍 Finding project:', projectId);
+      logDebug('Upload request received', {
+        userId: req.user?.id,
+        projectId,
+        originalName: req.file.originalname,
+        size: req.file.size,
+      });
 
       // Get project to validate and get project code
       const project = await this.projectRepository.findById(projectId);
       if (!project) {
-        console.error('❌ Project not found:', projectId);
+        logWarning('Upload project not found', {projectId, userId: req.user?.id});
         sendError(res, 'Project not found', HTTP_STATUS.NOT_FOUND);
         return;
       }
 
-      console.log('✅ Project found:', project.code);
-
       // Check if user has permission to upload to this project
       const canUpload = await this.canUploadToProject(req.user!.id, projectId);
       if (!canUpload) {
-        console.error('❌ User does not have permission to upload to this project');
+        logWarning('User lacks upload permission for project', {
+          userId: req.user?.id,
+          projectId,
+        });
         sendError(res, 'You do not have permission to upload files to this project', HTTP_STATUS.FORBIDDEN);
         return;
       }
 
-      console.log('✅ User has upload permission');
-
       // Build Dropbox path
-      const sectionFolder = section || 'Messages';
-      const dropboxPath = `${this.dropboxService.getProjectFolderPath(project.code)}/${sectionFolder}/${req.file.originalname}`;
-
-      console.log('📂 Dropbox path:', dropboxPath);
-      console.log('☁️  Uploading to Dropbox...');
+      const sectionFolder = this.normalizeSection(section);
+      const fileId = uuidv4();
+      const storageFilename = this.buildDropboxStorageFilename(
+        req.file.originalname,
+        fileId,
+      );
+      const dropboxPath = `${this.dropboxService.getProjectFolderPath(project.code)}/${sectionFolder}/${storageFilename}`;
 
       // Upload to Dropbox
       const dropboxMetadata = await this.dropboxService.uploadFile(
@@ -164,12 +203,9 @@ export class FileController {
         req.file.buffer,
       );
 
-      console.log('✅ Uploaded to Dropbox');
-      console.log('💾 Saving to database...');
-
       // Save file metadata to database
       const fileData = {
-        id: uuidv4(),
+        id: fileId,
         filename: req.file.originalname,
         originalName: req.file.originalname,
         dropboxPath: dropboxMetadata.path,
@@ -183,15 +219,20 @@ export class FileController {
 
       const file = await this.fileRepository.create(fileData);
 
-      console.log('✅ File created in database:', file.id);
+      logInfo('File uploaded successfully', {
+        fileId: file.id,
+        projectId,
+        userId: req.user?.id,
+      });
 
       sendSuccess(res, {file: this.mapFileToDto(file)}, 'File uploaded successfully', HTTP_STATUS.CREATED);
     } catch (error) {
-      console.error('❌ File upload error:', error);
-      if (error instanceof Error) {
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-      }
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('File upload failed', normalizedError, {
+        userId: req.user?.id,
+        projectId: (req.body as {projectId?: string} | undefined)?.projectId,
+      });
       next(error);
     }
   }
@@ -228,7 +269,12 @@ export class FileController {
         expiresAt: linkResponse.expiresAt,
       });
     } catch (error) {
-      console.error('File download error:', error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('File download failed', normalizedError, {
+        userId: req.user?.id,
+        fileId: req.params.id,
+      });
       next(error);
     }
   }
@@ -263,7 +309,12 @@ export class FileController {
         filename: file.filename || file.originalName,
       });
     } catch (error) {
-      console.error('Preview error:', error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('File preview failed', normalizedError, {
+        userId: req.user?.id,
+        fileId: req.params.id,
+      });
       next(error);
     }
   }
@@ -298,7 +349,12 @@ export class FileController {
         try {
           await this.dropboxService.deleteFile(file.dropboxPath);
         } catch (error) {
-          console.error('Failed to delete from Dropbox:', error);
+          const normalizedError =
+            error instanceof Error ? error : new Error(String(error));
+          logError('Failed to delete file from Dropbox; continuing with metadata deletion', normalizedError, {
+            fileId: file.id,
+            projectId: file.projectId,
+          });
           // Continue with metadata deletion even if Dropbox deletion fails
         }
       }
@@ -358,7 +414,12 @@ export class FileController {
 
       return false;
     } catch (error) {
-      console.error('Error checking upload permission:', error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Error checking upload permission', normalizedError, {
+        userId,
+        projectId,
+      });
       return false;
     }
   }
@@ -409,7 +470,12 @@ export class FileController {
 
       return false;
     } catch (error) {
-      console.error('Error checking download permission:', error);
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Error checking download permission', normalizedError, {
+        userId,
+        projectId,
+      });
       return false;
     }
   }

@@ -6,7 +6,7 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 18, 2026
- * @file src/infrastructure/websocket/socket.server.ts
+ * @file backend/src/infrastructure/websocket/socket.server.ts
  * @desc WebSocket server configuration using Socket.io for real-time features
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}

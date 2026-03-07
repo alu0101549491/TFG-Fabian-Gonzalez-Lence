@@ -195,8 +195,6 @@ export class ProjectRepository implements IProjectRepository {
    * @returns Updated project
    */
   public async update(project: Project): Promise<Project> {
-    console.log(`[ProjectRepository] Sending PUT request to update project ${project.id}`, project);
-    
     // Send only updatable fields to backend
     const updatePayload: Record<string, unknown> = {
       name: project.name,
@@ -217,20 +215,10 @@ export class ProjectRepository implements IProjectRepository {
       updatePayload.coordinateY = null;
     }
     
-    console.log(`[ProjectRepository] Update payload:`, updatePayload);
-    console.log(`[ProjectRepository] Payload details:`, {
-      contractDate: updatePayload.contractDate,
-      deliveryDate: updatePayload.deliveryDate,
-      coordinateX: updatePayload.coordinateX,
-      coordinateY: updatePayload.coordinateY,
-      name: updatePayload.name,
-    });
-    
     const response = await httpClient.put<ProjectApiResponse>(
       `${this.baseUrl}/${project.id}`,
       updatePayload,
     );
-    console.log(`[ProjectRepository] PUT response:`, response);
     return this.mapToEntity(response.data);
   }
 
@@ -240,9 +228,7 @@ export class ProjectRepository implements IProjectRepository {
    * @param id - Project ID to delete
    */
   public async delete(id: string): Promise<void> {
-    console.log(`[ProjectRepository] Sending DELETE request for project ${id}`);
-    const response = await httpClient.delete(`${this.baseUrl}/${id}`);
-    console.log(`[ProjectRepository] DELETE response:`, response);
+    await httpClient.delete(`${this.baseUrl}/${id}`);
   }
 
   /**

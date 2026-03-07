@@ -6,7 +6,7 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 18, 2026
- * @file src/infrastructure/database/prisma.client.ts
+ * @file backend/src/infrastructure/database/prisma.client.ts
  * @desc Prisma client singleton instance for database operations
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}

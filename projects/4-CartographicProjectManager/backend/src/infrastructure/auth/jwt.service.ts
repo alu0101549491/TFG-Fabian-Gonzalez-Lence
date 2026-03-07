@@ -6,7 +6,7 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 18, 2026
- * @file src/infrastructure/auth/jwt.service.ts
+ * @file backend/src/infrastructure/auth/jwt.service.ts
  * @desc JWT token generation and verification utilities
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
