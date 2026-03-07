@@ -42,6 +42,11 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D8-004** — Axios response typing was made consistent: interceptor no longer returns a casted pseudo-response, and upload helpers map `BackendApiResponse<T>` to `ApiResponse<T>` without unsafe casts.
 - **D8-005** — Removed `console.log` debug output from the Axios delete path to avoid leaking payloads in production.
 - **D10-002** — Client-side Dropbox integration and any frontend token-env guidance were removed; the frontend no longer supports shipping Dropbox credentials and relies on backend `/api/v1/files/*` endpoints.
+- **D11-001** — Frontend repositories’ 404 detection was made robust: “find-or-null” methods now treat both normalized `ApiError.status` and Axios-shaped `error.response.status` as 404, preventing avoidable throws/UI crashes.
+- **D13-001** — Deadline reminder scheduler now uses the shared Prisma singleton (`prisma`) instead of constructing a separate `PrismaClient`, avoiding mixed-client workflows and reducing connection lifecycle risk.
+- **D15-001** — Frontend `generateId()` now generates RFC 4122 v4 UUIDs using Web Crypto (`crypto.randomUUID()`/`crypto.getRandomValues`) instead of `Math.random()`.
+- **D22-001** — Notification listing now enforces ownership/admin checks and does not allow authenticated users to fetch other users’ notifications.
+- **D22-002** — Message listing/creation now validates project access and binds `senderId` server-side from the authenticated user (no spoofed authorship).
 - **D37-004** — Frontend `.env.example` no longer includes `VITE_DROPBOX_ACCESS_TOKEN` (no encouragement of client-side third-party access tokens).
 - **D40-004** — Docs no longer include token-like Dropbox strings or recommend client-side Dropbox tokens; guidance now uses placeholders and backend-only credentials.
 
