@@ -234,7 +234,7 @@
         type="button"
         class="project-form-btn project-form-btn-secondary"
         :disabled="loading"
-        @click="$emit('cancel')"
+        @click="emit('cancel')"
       >
         Cancel
       </button>

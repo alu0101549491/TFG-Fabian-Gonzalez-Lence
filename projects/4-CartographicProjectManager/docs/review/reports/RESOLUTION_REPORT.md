@@ -108,8 +108,24 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D24-002** — `AppInput` number parsing no longer emits `0` for empty or `NaN` for invalid values; it uses `valueAsNumber` with finite checks and treats empty as `''`.
 - **D24-003** — `AppSelect` placeholder/clear logic now handles falsy values (like `0`) correctly and preserves numeric option types by mapping the selected string value back to the declared option value.
 - **D24-005** — `AppCard` now supports Space key activation (with `.prevent`) in addition to Enter when `clickable` is enabled.
+- **D24-006** — Common UI components no longer generate ids via `Math.random()`; ids are now deterministic via per-module counters with optional override props (`id` for input/select/textarea, `titleId` for modal).
 - **D24-007** — Common components now use typed `emit(...)` in templates instead of `$emit(...)`, improving event type-safety and consistency.
+- **D24-008** — `LoadingSpinner` no longer declares a dead `overlay` prop, and its styling uses design tokens without hard-coded hex fallback values.
+- **D24-010** — Common component file headers were standardized to the project’s University of La Laguna template for consistency and doc generation.
 - **D25-003** — Layout `AppHeader`/`AppSidebar` templates no longer use `$emit`/`$router`; navigation and events go through the typed `emit(...)` and `router.push(...)` handlers.
+- **D25-002** — `AppHeader` user dropdown now closes on click-outside, Escape, and route changes; document listeners are registered only while open and are cleaned up on close/unmount.
+- **D25-004** — Layout `AppSidebar` no longer contains an unused `computed` import (report drift cleared).
+- **D25-005** — Layout component file headers were standardized; the missing second `@see` link was added for consistency.
+- **D26-004** — `ProjectCard` now supports Space key activation (with `.prevent`) in addition to Enter when using `role="button"`.
+- **D26-005** — `ProjectForm` template no longer uses `$emit`; Cancel now uses typed `emit('cancel')`.
+- **D26-001** — `ProjectSummary` clickable stat/section tiles are now keyboard-accessible: added `role="button"`, `tabindex="0"`, and Enter/Space handling; template uses typed `emit(...)` instead of `$emit(...)`.
+- **D26-007** — `ProjectSummary` delete icon button now has `aria-label`/`title`, and `statusLabel` has a safe fallback so unexpected statuses don’t render blank UI.
+- **D27-004** — `TaskCard` now supports Space key activation (with `.prevent`) in addition to Enter when using `role="button"`.
+- **D27-005** — `TaskForm` template no longer uses `$emit` for cancel/remove-file; it now uses typed `emit(...)`.
+- **D27-006** — `TaskList` template event forwarding no longer uses `$emit`; it now forwards via typed `emit(...)`.
+- **D27-001** — Fixed TaskList priority sorting: adjusted `TaskPriority` weight mapping so “Priority (Low → High)” sorts Low→Urgent when ascending (and the reverse when descending), matching the UI label.
+- **D28-004** — `MessageBubble` attachment clicks now use typed `emit('file-click', file)` in the template.
+- **D28-005** — `MessageList` file-click forwarding now uses typed `emit('file-click', file)`.
 
 ### 🟡 Partially Resolved
 - **D7-005** — Coordinate handling was fixed to preserve valid `0` values and handle partial coordinate updates deterministically, but Dropbox-folder-id normalization to an empty string still remains in the Domain/entity path.

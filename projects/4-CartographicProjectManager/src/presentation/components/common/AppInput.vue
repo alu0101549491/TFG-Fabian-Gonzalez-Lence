@@ -90,6 +90,8 @@
 <script setup lang="ts">
 import {ref, computed} from 'vue';
 
+let appInputIdCounter = 0;
+
 /**
  * Input component props
  */
@@ -160,7 +162,8 @@ const showPassword = ref(false);
 /**
  * Generate unique input ID
  */
-const inputId = computed(() => props.id || `input-${Math.random().toString(36).substr(2, 9)}`);
+const generatedInputId = `input-${++appInputIdCounter}`;
+const inputId = computed(() => props.id || generatedInputId);
 
 /**
  * Computed input type (handles password toggle)

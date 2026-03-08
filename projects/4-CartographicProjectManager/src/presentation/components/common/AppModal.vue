@@ -61,6 +61,8 @@ let bodyScrollLockCount = 0;
 let originalBodyOverflow: string | null = null;
 let originalBodyPaddingRight: string | null = null;
 
+let appModalTitleIdCounter = 0;
+
 /**
  * Modal component props
  */
@@ -69,6 +71,8 @@ export interface AppModalProps {
   modelValue: boolean;
   /** Modal title */
   title?: string;
+  /** Optional title element id override (used for aria-labelledby) */
+  titleId?: string;
   /** Modal size */
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   /** Closable via X button */
@@ -98,7 +102,8 @@ const props = withDefaults(defineProps<AppModalProps>(), {
 const emit = defineEmits<AppModalEmits>();
 
 const modalRef = ref<HTMLElement | null>(null);
-const titleId = computed(() => `modal-title-${Math.random().toString(36).substr(2, 9)}`);
+const generatedTitleId = `modal-title-${++appModalTitleIdCounter}`;
+const titleId = computed(() => props.titleId || generatedTitleId);
 
 // Store previously focused element
 let previousActiveElement: HTMLElement | null = null;

@@ -54,7 +54,7 @@
             v-if="permissions.canEdit && !isFinalized"
             type="button"
             class="project-summary-action-btn"
-            @click="$emit('edit')"
+            @click="emit('edit')"
           >
             <span>✏️</span>
             <span>Edit</span>
@@ -66,7 +66,7 @@
             class="project-summary-action-btn project-summary-action-btn-primary"
             :disabled="!canFinalize"
             :title="!canFinalize ? 'Complete all tasks before finalizing' : 'Finalize project'"
-            @click="$emit('finalize')"
+            @click="emit('finalize')"
           >
             <span>✓</span>
             <span>Finalize</span>
@@ -76,7 +76,9 @@
             v-if="permissions.canDelete"
             type="button"
             class="project-summary-action-btn project-summary-action-btn-danger"
-            @click="$emit('delete')"
+            aria-label="Delete project"
+            title="Delete project"
+            @click="emit('delete')"
           >
             <span>🗑️</span>
           </button>
@@ -86,7 +88,14 @@
       <!-- Stats Grid -->
       <div class="project-summary-stats">
         <!-- Tasks Stat -->
-        <div class="project-summary-stat project-summary-stat-clickable" @click="$emit('view-tasks')">
+        <div
+          class="project-summary-stat project-summary-stat-clickable"
+          role="button"
+          tabindex="0"
+          @click="emit('view-tasks')"
+          @keydown.enter="emit('view-tasks')"
+          @keydown.space.prevent="emit('view-tasks')"
+        >
           <div class="project-summary-stat-icon project-summary-stat-icon-tasks">
             <span>✓</span>
           </div>
@@ -105,7 +114,11 @@
         <!-- Messages Stat -->
         <div
           class="project-summary-stat project-summary-stat-clickable"
-          @click="$emit('view-messages')"
+          role="button"
+          tabindex="0"
+          @click="emit('view-messages')"
+          @keydown.enter="emit('view-messages')"
+          @keydown.space.prevent="emit('view-messages')"
         >
           <div class="project-summary-stat-icon project-summary-stat-icon-messages">
             <span>💬</span>
@@ -151,7 +164,11 @@
         <!-- Participants Stat -->
         <div
           class="project-summary-stat project-summary-stat-clickable"
-          @click="$emit('view-participants')"
+          role="button"
+          tabindex="0"
+          @click="emit('view-participants')"
+          @keydown.enter="emit('view-participants')"
+          @keydown.space.prevent="emit('view-participants')"
         >
           <div class="project-summary-stat-icon project-summary-stat-icon-participants">
             <span>👥</span>
@@ -208,7 +225,11 @@
             v-for="section in sections"
             :key="section.name"
             class="project-summary-section-card"
-            @click="$emit('view-files')"
+            role="button"
+            tabindex="0"
+            @click="emit('view-files')"
+            @keydown.enter="emit('view-files')"
+            @keydown.space.prevent="emit('view-files')"
           >
             <span class="project-summary-section-card-icon">📁</span>
             <div class="project-summary-section-card-content">
@@ -226,7 +247,7 @@
             <span class="project-summary-section-icon">👥</span>
             Participants
           </h3>
-          <button type="button" class="project-summary-view-all" @click="$emit('view-participants')">
+          <button type="button" class="project-summary-view-all" @click="emit('view-participants')">
             View all
           </button>
         </div>
@@ -284,7 +305,7 @@ const props = withDefaults(defineProps<ProjectSummaryProps>(), {
   loading: false,
 });
 
-defineEmits<ProjectSummaryEmits>();
+const emit = defineEmits<ProjectSummaryEmits>();
 
 // Computed - shortcuts
 const project = computed(() => props.projectDetails.project);
@@ -308,7 +329,7 @@ const statusLabel = computed(() => {
     [ProjectStatus.PENDING_REVIEW]: 'Pending Review',
     [ProjectStatus.FINALIZED]: 'Finalized',
   };
-  return labels[project.value.status];
+  return labels[project.value.status] ?? project.value.status;
 });
 
 const statusColor = computed(() => {
@@ -559,6 +580,11 @@ function getRoleLabel(role: UserRole): string {
   box-shadow: var(--shadow-sm);
 }
 
+.project-summary-stat-clickable:focus-visible {
+  outline: 2px solid var(--color-primary-300);
+  outline-offset: 2px;
+}
+
 .project-summary-stat-icon {
   display: flex;
   align-items: center;
@@ -744,6 +770,11 @@ function getRoleLabel(role: UserRole): string {
 
 .project-summary-section-card:hover {
   border-color: var(--color-primary-300);
+}
+
+.project-summary-section-card:focus-visible {
+  outline: 2px solid var(--color-primary-300);
+  outline-offset: 2px;
 }
 
 .project-summary-section-card-icon {

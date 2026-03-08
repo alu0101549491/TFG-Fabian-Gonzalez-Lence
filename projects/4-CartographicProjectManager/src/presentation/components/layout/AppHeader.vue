@@ -3,11 +3,13 @@
   School of Engineering and Technology
   Degree in Computer Engineering
   Final Degree Project (TFG)
-  
+
   @author Fabián González Lence <alu0101549491@ull.edu.es>
   @since February 16, 2026
   @file src/presentation/components/layout/AppHeader.vue
   @desc Application header with navigation and user menu
+  @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+  @see {@link https://typescripttutorial.net}
 -->
 
 <template>
@@ -37,12 +39,14 @@
       </button>
 
       <!-- User menu -->
-      <div class="user-menu">
+      <div ref="userMenuRef" class="user-menu">
         <button
           type="button"
           class="user-button"
           @click="showUserMenu = !showUserMenu"
           aria-label="User menu"
+          aria-haspopup="menu"
+          :aria-expanded="showUserMenu"
         >
           <UserIcon :size="20" />
           <span class="user-name">{{ username }}</span>
@@ -65,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/presentation/composables';
 import { useNotificationStore } from '@/presentation/stores/notification.store';
@@ -87,11 +91,56 @@ const router = useRouter();
 const { username } = useAuth();
 const notificationStore = useNotificationStore();
 
+const userMenuRef = ref<HTMLElement | null>(null);
 const showUserMenu = ref(false);
 const unreadCount = computed(() => notificationStore.unreadCount);
 
-function goToSettings() {
+function closeUserMenu() {
   showUserMenu.value = false;
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  if (!showUserMenu.value) return;
+
+  const target = event.target;
+  if (!(target instanceof Node)) return;
+
+  if (!userMenuRef.value?.contains(target)) {
+    closeUserMenu();
+  }
+}
+
+function handleDocumentKeyDown(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return;
+  if (!showUserMenu.value) return;
+  closeUserMenu();
+}
+
+watch(showUserMenu, (isOpen) => {
+  if (isOpen) {
+    document.addEventListener('pointerdown', handleDocumentPointerDown);
+    document.addEventListener('keydown', handleDocumentKeyDown);
+    return;
+  }
+
+  document.removeEventListener('pointerdown', handleDocumentPointerDown);
+  document.removeEventListener('keydown', handleDocumentKeyDown);
+});
+
+watch(
+  () => router.currentRoute.value.fullPath,
+  () => {
+    closeUserMenu();
+  },
+);
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown);
+  document.removeEventListener('keydown', handleDocumentKeyDown);
+});
+
+function goToSettings() {
+  closeUserMenu();
   router.push('/settings');
 }
 
@@ -104,7 +153,7 @@ function handleToggleSidebar() {
 }
 
 function handleLogout() {
-  showUserMenu.value = false;
+  closeUserMenu();
   emit('logout');
 }
 </script>

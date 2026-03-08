@@ -52,7 +52,7 @@
             :key="file.id"
             type="button"
             class="message-file"
-            @click="$emit('file-click', file)"
+            @click="emit('file-click', file)"
           >
             <span class="message-file-icon">{{ getFileIconEmoji(file.type) }}</span>
             <div class="message-file-info">
@@ -116,7 +116,7 @@ const props = withDefaults(defineProps<MessageBubbleProps>(), {
   compact: false,
 });
 
-defineEmits<MessageBubbleEmits>();
+const emit = defineEmits<MessageBubbleEmits>();
 
 // Computed
 const isOwnMessage = computed(() => props.message.senderId === props.currentUserId);

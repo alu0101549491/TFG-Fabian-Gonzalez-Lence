@@ -55,6 +55,8 @@
 <script setup lang="ts">
 import {ref, computed, watch, nextTick, onMounted} from 'vue';
 
+let appTextareaIdCounter = 0;
+
 /**
  * Textarea component props
  */
@@ -121,7 +123,8 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null);
 /**
  * Generate unique textarea ID
  */
-const textareaId = computed(() => props.id || `textarea-${Math.random().toString(36).substr(2, 9)}`);
+const generatedTextareaId = `textarea-${++appTextareaIdCounter}`;
+const textareaId = computed(() => props.id || generatedTextareaId);
 
 /**
  * Character count

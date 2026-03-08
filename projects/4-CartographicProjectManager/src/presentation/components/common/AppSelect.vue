@@ -75,6 +75,8 @@
 <script setup lang="ts">
 import {computed} from 'vue';
 
+let appSelectIdCounter = 0;
+
 /**
  * Select option interface
  */
@@ -90,6 +92,8 @@ export interface SelectOption {
 export interface AppSelectProps {
   /** v-model value */
   modelValue?: string | number | null;
+  /** Select id */
+  id?: string;
   /** Options array */
   options: SelectOption[];
   /** Placeholder text */
@@ -133,7 +137,8 @@ const selectedValue = computed(() => (isEmpty.value ? '' : String(props.modelVal
 /**
  * Generate unique select ID
  */
-const selectId = computed(() => `select-${Math.random().toString(36).substr(2, 9)}`);
+const generatedSelectId = `select-${++appSelectIdCounter}`;
+const selectId = computed(() => props.id || generatedSelectId);
 
 /**
  * Handle change event

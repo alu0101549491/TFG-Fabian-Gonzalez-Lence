@@ -52,7 +52,7 @@
           :current-user-id="currentUserId"
           :show-sender="shouldShowSender(group.messages, messageIndex)"
           :show-avatar="shouldShowAvatar(group.messages, messageIndex)"
-          @file-click="(file) => $emit('file-click', file)"
+          @file-click="(file) => emit('file-click', file)"
         />
       </template>
 

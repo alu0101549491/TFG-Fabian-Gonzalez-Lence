@@ -1,8 +1,15 @@
 <!--
-  @module presentation/components/common/AppHeader
-  @description Application header with navigation, user info,
-  and notification badge. Persistent across all authenticated views.
-  @category Presentation
+  University of La Laguna
+  School of Engineering and Technology
+  Degree in Computer Engineering
+  Final Degree Project (TFG)
+
+  @author Fabián González Lence <alu0101549491@ull.edu.es>
+  @since March 8, 2026
+  @file src/presentation/components/common/AppHeader.vue
+  @desc Application header with navigation, user info, and notification badge
+  @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+  @see {@link https://typescripttutorial.net}
 -->
 <template>
   <header class="app-header">
