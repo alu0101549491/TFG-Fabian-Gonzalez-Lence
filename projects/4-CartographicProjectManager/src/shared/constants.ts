@@ -194,26 +194,24 @@ export const FILE = {
   CHUNK_SIZE_BYTES: 8 * 1024 * 1024,
 
   SUPPORTED_EXTENSIONS: {
-    DOCUMENTS: ['.pdf', '.doc', '.docx', '.txt', '.rtf'],
-    CARTOGRAPHY: ['.kml', '.kmz', '.shp', '.shx', '.dbf', '.prj'],
+    DOCUMENTS: ['.pdf', '.doc', '.docx', '.ppt', '.pptx'],
+    CARTOGRAPHY: ['.kml', '.kmz', '.shp', '.geojson'],
     IMAGES: ['.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.webp'],
     SPREADSHEETS: ['.xls', '.xlsx', '.csv'],
     CAD: ['.dwg', '.dxf'],
-    COMPRESSED: ['.zip', '.rar'],
+    COMPRESSED: ['.zip', '.rar', '.7z'],
   } as const,
 
   ALL_SUPPORTED_EXTENSIONS: [
     '.pdf',
     '.doc',
     '.docx',
-    '.txt',
-    '.rtf',
+    '.ppt',
+    '.pptx',
     '.kml',
     '.kmz',
     '.shp',
-    '.shx',
-    '.dbf',
-    '.prj',
+    '.geojson',
     '.jpg',
     '.jpeg',
     '.png',
@@ -228,6 +226,7 @@ export const FILE = {
     '.dxf',
     '.zip',
     '.rar',
+    '.7z',
   ] as const,
 
   MIME_TYPES: {
@@ -235,11 +234,12 @@ export const FILE = {
     '.doc': 'application/msword',
     '.docx':
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    '.txt': 'text/plain',
-    '.rtf': 'application/rtf',
+    '.ppt': 'application/vnd.ms-powerpoint',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     '.kml': 'application/vnd.google-earth.kml+xml',
     '.kmz': 'application/vnd.google-earth.kmz',
-    '.shp': 'application/x-shapefile',
+    '.shp': 'application/octet-stream',
+    '.geojson': 'application/geo+json',
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
     '.png': 'image/png',
@@ -254,7 +254,8 @@ export const FILE = {
     '.dwg': 'application/acad',
     '.dxf': 'application/dxf',
     '.zip': 'application/zip',
-    '.rar': 'application/vnd.rar',
+    '.rar': 'application/x-rar-compressed',
+    '.7z': 'application/x-7z-compressed',
   } as const,
 } as const;
 

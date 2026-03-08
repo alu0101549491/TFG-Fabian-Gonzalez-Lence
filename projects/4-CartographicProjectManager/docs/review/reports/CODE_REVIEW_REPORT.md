@@ -34,7 +34,7 @@ Initial review (Domain enumerations + entities) shows strong documentation disci
 
 This review report was updated after the remediation work documented in `RESOLUTION_REPORT.md`.
 
-Items marked **✅ RESOLVED (2026-03-06)** have been verified as fixed in the current codebase state and are no longer blocking the verification gates reported in `RESOLUTION_REPORT.md` (type-check, lint with 0 errors, and builds).
+Items marked **✅ RESOLVED (2026-03-06, 2026-03-08)** have been verified as fixed in the current codebase state and are no longer blocking the verification gates reported in `RESOLUTION_REPORT.md` (type-check, lint with 0 errors, and builds).
 
 **Resolved findings:**
 - D4-002: Fixed incorrect enum imports in domain repository interfaces.
@@ -44,6 +44,7 @@ Items marked **✅ RESOLVED (2026-03-06)** have been verified as fixed in the cu
 - D7-008: Fixed export PDF coordinate inclusion to correctly handle `0` coordinate values.
 - D9-001: Added server-side authorization checks before allowing WebSocket clients to join project rooms.
 - D14-001: Removed unsafe JWT secret defaults and now fail-fast when required JWT env vars are missing.
+- D14-002: Unified upload constraints (max size + allowlists) across backend constants/middleware and frontend constants/UI to prevent “UI accepts, server rejects” drift.
 - D8-001 / D8-002 / D8-003 / D8-004 / D8-005: Hardened Axios retry/refresh/cancel/typing/logging behavior to avoid interceptor crashes, prevent “hung” in-flight requests, enable global cancellation, remove unsafe response casting, and remove debug logging in the production delete path.
 
 **Partially resolved findings:**
@@ -71,7 +72,7 @@ Items marked **✅ RESOLVED (2026-03-06)** have been verified as fixed in the cu
 **Issues Found:**
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
-| D1-001 | 🟠 HIGH | src/domain/enumerations/*.ts | Multiple | **Layer boundary violation:** Domain enums include UI-focused mappings (display names, colors, icons, templates). This couples Domain to Presentation concerns and makes non-UI reuse harder. | Keep enums in Domain, move `*DisplayName`, `*Color`, `*Icon`, and message templates to Presentation (or Shared UI adapter) and import them only where needed. |
+| D1-001 | 🟠 HIGH ✅ RESOLVED (2026-03-08) | src/domain/enumerations/*.ts → src/presentation/mappings/domain-enum-ui.ts | N/A (mappings relocated) | **Resolved:** UI-focused mappings (display names, colors, icons, templates) were moved out of Domain enum modules into Presentation mappings, keeping Domain free of UI concerns. | Completed: removed `*DisplayName`, `*Color`, `*Icon`, and message-template exports from Domain enums and centralized them in `src/presentation/mappings/domain-enum-ui.ts`. |
 | D1-002 | 🟡 MEDIUM | src/domain/enumerations/task-priority.ts | 18-27 | **Requirements mismatch risk:** requirements (FR13) specify priorities High/Medium/Low, but enum adds `URGENT`. This can create inconsistencies in UI filters, validation, exports, and backend acceptance. | Either update requirements/acceptance + backend to support `URGENT`, or remove it and migrate data/UI accordingly. |
 | D1-003 | 🟡 MEDIUM | src/domain/enumerations/task-status.ts | 25-81 | **Requirements naming/flow mismatch:** spec uses “Done (pending confirmation)” then “Completed”, but enum uses `PERFORMED`. Transitions allow `PENDING → PERFORMED`, which may bypass expected work-in-progress states and can complicate confirmation logic (FR12). | Rename `PERFORMED` to `DONE` (or map explicitly at DTO boundary) and tighten transition rules to match FR11/FR12 (e.g., enforce confirmation step semantics in Application service). |
 | D1-004 | 🟡 MEDIUM | src/domain/enumerations/project-status.ts | 18-27 | **Potential requirements drift:** spec describes status as Active/Finished, but enum adds `IN_PROGRESS` and `PENDING_REVIEW`. If not consistently handled across layers, this can break filtering/export and “automatic completion” (FR24/FR25). | Confirm intended project lifecycle; if only Active/Finished is required, simplify enum or ensure all statuses are fully supported end-to-end (backend, UI, exports). |
@@ -126,7 +127,7 @@ The main risk is consistency drift between frontend/backend domain primitives. I
 **Issues Found:**
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
-| D3-001 | 🟠 HIGH | src/domain/entities/*.ts | Multiple | **Layer boundary violation:** Entities implement `toJSON()` methods that shape API-facing payloads (ISO string dates, nested serialization). This couples Domain to transport concerns and forces entities to “know” response formats. | Remove `toJSON()` from domain entities. Introduce explicit mappers/DTO assemblers in Application/Presentation (e.g., `*DtoMapper`) responsible for date formatting and payload shape. |
+| D3-001 | 🟠 HIGH ✅ RESOLVED (2026-03-08) | src/domain/entities/*.ts | N/A (methods removed) | **Resolved:** Domain entities no longer implement transport-facing `toJSON()` methods; API payload shaping remains in the boundary layer (repositories/services) where HTTP payloads are built explicitly. | Completed: removed `toJSON()` from domain entities; DTO/payload shaping continues to happen in Infrastructure repositories (explicit payload objects with ISO date conversion). |
 | D3-003 | 🟡 MEDIUM | src/domain/entities/{notification,message,permission,task-history}.ts | Multiple | **Non-deterministic ID generation inside Domain:** factory methods build IDs using `Date.now()` + `Math.random()` (and legacy `substr`) and repeat that pattern across multiple entities. This harms testability and consistency. | Generate IDs in Application (inject an `IdGenerator`/UUID provider) and pass IDs into entities, or centralize ID creation behind a domain service interface. |
 | D3-004 | 🟡 MEDIUM | src/domain/entities/{project,file}.ts | Multiple | **Vendor coupling + type-safety risk:** multiple entities encode Dropbox-specific naming (`dropboxFolderId`, `dropboxPath`). Additionally, `ProjectProps.dropboxFolderId` is optional but stored as required `string`, which can become `undefined` at runtime. | Rename to vendor-agnostic concepts (e.g., `externalFolderId`, `storagePath`) and keep Dropbox semantics in Infrastructure adapters. Make types consistent (`string | null`/`undefined`) and default safely in constructors. |
 | D3-005 | 🟡 MEDIUM | src/domain/entities/user.ts | 150-226 | **Inconsistent audit timestamp updates:** Several setters mutate entity state without calling a `touchUpdatedAt()` equivalent (e.g., `firstName`, `lastName`, `role`, `phone`, `isActive`). This makes `updatedAt` unreliable for sync and UI refresh logic. | Add a single `touchUpdatedAt()` helper and call it consistently in mutating setters, or remove `updatedAt` from entity and manage it at persistence boundaries (Prisma). |
@@ -157,19 +158,19 @@ These entities are drifting toward an “anemic domain + DTO” hybrid: they con
 - src/domain/repositories/task-history-repository.interface.ts
 - src/domain/repositories/task-repository.interface.ts
 - src/domain/repositories/user-repository.interface.ts
-- backend/src/domain/repositories/file.repository.interface.ts
-- backend/src/domain/repositories/message.repository.interface.ts
-- backend/src/domain/repositories/notification.repository.interface.ts
-- backend/src/domain/repositories/project.repository.interface.ts
-- backend/src/domain/repositories/task.repository.interface.ts
-- backend/src/domain/repositories/user.repository.interface.ts
+- backend/src/infrastructure/repositories/interfaces/file.repository.interface.ts
+- backend/src/infrastructure/repositories/interfaces/message.repository.interface.ts
+- backend/src/infrastructure/repositories/interfaces/notification.repository.interface.ts
+- backend/src/infrastructure/repositories/interfaces/project.repository.interface.ts
+- backend/src/infrastructure/repositories/interfaces/task.repository.interface.ts
+- backend/src/infrastructure/repositories/interfaces/user.repository.interface.ts
 
 **Score:** 5.8/10
 
 **Issues Found:**
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
-| D4-001 | 🟠 HIGH | backend/src/domain/repositories/*.repository.interface.ts | 15 (multiple files) | **Clean Architecture violation:** backend “Domain” repository interfaces import Prisma model types from `@prisma/client` (e.g., `import type {Project} from '@prisma/client'`). This makes the Domain layer depend on Infrastructure/persistence details and couples all upstream consumers to the database schema. | Define backend domain entities/DTOs independent of Prisma, and map Prisma models ↔ domain types in Infrastructure repositories. Alternatively, relocate these interfaces to Infrastructure if they are intentionally persistence-bound. |
+| D4-001 | 🟠 HIGH ✅ RESOLVED (2026-03-08) | backend/src/domain/repositories/*.repository.interface.ts → backend/src/infrastructure/repositories/interfaces/*.repository.interface.ts | N/A (interfaces relocated) | **Resolved:** Prisma-shaped repository interfaces were moved out of the backend “Domain” layer into Infrastructure, so the backend Domain is no longer directly coupled to `@prisma/client` types via repository contracts. | Completed: relocated the interfaces into Infrastructure (Prisma-bound), updated repository implementations to import from the new location, and removed the old Domain interfaces module. |
 | D4-002 | 🟠 HIGH ✅ RESOLVED (2026-03-06) | src/domain/repositories/{task,notification}-repository.interface.ts | 15 | **Incorrect imports break type-safety/builds:** repository interfaces import enums from entity modules (`TaskStatus`, `TaskPriority`, `NotificationType`) that are not exported by those entity files. **Resolved:** interfaces now import enums from the corresponding `../enumerations/*` modules. | Implemented: enums are imported from their actual modules (e.g., `../enumerations/task-status`, `../enumerations/task-priority`, `../enumerations/notification-type`). |
 | D4-003 | 🟡 MEDIUM | src/domain/repositories/*.interface.ts | Multiple | **Fat repository interfaces / query leakage:** interfaces include many query-specific methods (counts, multiple filtered variants, cascade deletes). This can leak persistence query patterns into Domain contracts and increase maintenance cost (each new query becomes an interface change). | Consider splitting read models (Query services) vs write repositories, or use a specification/query object pattern so the interface remains stable while queries evolve. |
 | D4-004 | 🟡 MEDIUM | src/domain/repositories/task-history-repository.interface.ts | 47 | **Weak typing for actions:** `findByTaskIdAndAction(taskId, action: string)` relies on ad-hoc strings, which encourages drift vs the `TaskHistory.action` semantics. | Introduce an `Action` enum/union for task history actions (or reuse a shared constant list) and type the repository method accordingly. |
@@ -181,7 +182,7 @@ These entities are drifting toward an “anemic domain + DTO” hybrid: they con
 - Separation between frontend and backend repository contracts is explicit (no accidental shared module coupling).
 
 **Group Notes:**
-The frontend repository layer is structurally reasonable, but it currently has at least two concrete import mistakes that should be fixed promptly (D4-002). On the backend, the presence of Prisma imports inside `backend/src/domain/repositories/*` strongly suggests the “Domain” folder is acting as a persistence schema façade rather than a Clean Architecture domain layer (D4-001).
+The frontend repository layer is structurally reasonable, but it currently has at least two concrete import mistakes that should be fixed promptly (D4-002). On the backend, repository interfaces were previously Prisma-shaped and located under `backend/src/domain/repositories/*`; these have now been relocated to `backend/src/infrastructure/repositories/interfaces/*` to keep persistence-bound contracts out of the Domain layer (D4-001).
 
 ---
 
@@ -484,7 +485,7 @@ With D13-001 resolved, the biggest improvement here is moving away from stringly
 | ID | Severity | File | Line(s) | Description | Suggested Fix |
 |----|----------|------|---------|-------------|---------------|
 | D14-001 | 🔴 CRITICAL ✅ RESOLVED (2026-03-06) | backend/src/shared/constants.ts | 48-54 | **Security misconfiguration hazard. Resolved:** JWT secrets no longer fall back to hard-coded defaults; the backend now fails fast if `JWT_SECRET` / `JWT_REFRESH_SECRET` are missing. | Implemented: removed secret defaults and introduced required-env checks for JWT secrets. |
-| D14-002 | 🟡 MEDIUM | src/shared/constants.ts + backend/src/shared/constants.ts | 191-258; 89-117 | **Frontend/backend upload rules are inconsistent:** frontend allows up to 50MB and includes additional geo/CAD extensions, while backend default max size is 10MB and its `ALLOWED_MIME_TYPES` list omits some frontend-supported types. This will produce “works in UI, fails on server” behavior. | Define a single source of truth for upload constraints (size + types) and share it (e.g., shared package or generated constants). If constraints must differ, enforce server constraints in UI and render server-driven validation errors predictably. |
+| D14-002 | 🟡 MEDIUM ✅ RESOLVED (2026-03-08) | src/shared/constants.ts + backend/src/shared/constants.ts + backend upload middleware | N/A (allowlists unified) | **Resolved:** upload constraints (max size + type allowlists) are now consistent across frontend and backend, preventing “UI accepts, server rejects” drift. Backend upload middleware reads max size + allowlists from `UPLOAD` constants, and the frontend `FILE` constants + uploader UI mirror those rules. | Implemented: single backend source of truth (`UPLOAD` constants) + frontend allowlist/UI aligned to backend. |
 | D14-003 | 🟡 MEDIUM ✅ RESOLVED (2026-03-07) | backend/src/shared/constants.ts + backend/src/server.ts | N/A (startup validation added) | **Fail-open defaults removed for critical config:** the server now validates required env at startup and uses safer production defaults for logging, reducing late failures and noisy production logs. | Completed: added startup env validation (e.g., `DATABASE_URL` required in production; `LOG_LEVEL` validated) and defaulted prod logging to `info` when unset. |
 | D14-004 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/shared/constants.ts + backend/src/server.ts | N/A (dotenv moved to entrypoint) | **Import-time side effects removed:** `dotenv.config()` no longer runs inside the shared constants module; environment loading happens once in the server entrypoint before backend modules are imported. | Completed: removed dotenv usage from constants and loaded `.env` in `server.ts` before dynamically importing the app modules. |
 | D14-005 | 🟢 LOW ✅ RESOLVED (2026-03-07) | backend/src/shared/constants.ts | N/A (header standardized) | **Header metadata mismatch resolved:** `@file` now correctly matches `backend/src/shared/constants.ts`, improving traceability in generated docs and audits. | Completed: standardized the header to use the correct `@file` path. |
@@ -1388,9 +1389,9 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D37-001** - Backend `.env` contains real Dropbox credentials (🟡 partially mitigated: `.env.railway` untracked + `.env.railway.example` added; still needs rotate + purge from git history)
 
 ### High Issues (Should Fix)
-- [ ] **D1-001** - Domain enums contain UI mappings; move to Presentation/Shared
-- [ ] **D3-001** - Domain entities implement API-facing `toJSON()`; move mapping out of Domain
-- [ ] **D4-001** - Backend “Domain” repository interfaces depend on Prisma types (`@prisma/client`)
+- [x] **D1-001** - Domain enums contain UI mappings; move to Presentation/Shared
+- [x] **D3-001** - Domain entities implement API-facing `toJSON()`; move mapping out of Domain
+- [x] **D4-001** - Backend “Domain” repository interfaces depend on Prisma types (`@prisma/client`)
 - [x] **D4-002** - Frontend repository interfaces import enums from wrong modules
 - [ ] **D5-001** - DTOs use `Date` types across (likely) JSON boundaries; define transport-safe date types + mappers
 - [x] **D7-002** - Authorization service role mismatch + admin delete bug (commented-out check)
@@ -1456,7 +1457,7 @@ Operational artifacts (logs, ad-hoc DB outputs) should not live in version contr
 - [ ] **D12-001** - Frontend TokenStorage stores JWTs in localStorage (XSS exfiltration risk)
 - [x] **D13-002** - Backup scheduler can start with empty `DATABASE_URL` config
 - [x] **D13-003** - Auth middleware role authorization is stringly-typed
-- [ ] **D14-002** - Frontend/backend upload constraints diverge (size + MIME/type lists)
+- [x] **D14-002** - Frontend/backend upload constraints diverge (size + MIME/type lists)
 - [x] **D14-003** - Backend config defaults fail open (empty DB URL, debug logging)
 - [x] **D15-002** - Backend `parsePagination()` can propagate `NaN` for invalid query params
 - [x] **D15-003** - Backend auth roles are stringly-typed in shared request/JWT types

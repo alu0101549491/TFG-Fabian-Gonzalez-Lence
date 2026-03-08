@@ -5,9 +5,9 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since February 18, 2026
- * @file backend/src/domain/repositories/message.repository.interface.ts
- * @desc Message repository interface for data access
+ * @since March 8, 2026
+ * @file backend/src/infrastructure/repositories/interfaces/message.repository.interface.ts
+ * @desc Message repository interface for Prisma-based data access
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
  */
@@ -23,6 +23,7 @@ export interface IMessageRepository {
   findBySenderId(senderId: string): Promise<Message[]>;
   create(data: Omit<Message, 'id' | 'sentAt'>): Promise<Message>;
   delete(id: string): Promise<void>;
+
   countUnreadByProjectAndUser(projectId: string, userId: string): Promise<number>;
   markAllAsRead(projectId: string, userId: string): Promise<void>;
 }

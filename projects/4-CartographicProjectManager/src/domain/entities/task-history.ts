@@ -149,21 +149,4 @@ export class TaskHistory {
       newValue: newAssignee,
     });
   }
-
-  /**
-   * Serializes the task history entity.
-   *
-   * @returns Plain object representation
-   */
-  public toJSON(): object {
-    return {
-      id: this.id,
-      taskId: this.taskId,
-      userId: this.userId,
-      action: this.action,
-      previousValue: this.previousValue,
-      newValue: this.newValue,
-      timestamp: this.timestamp.toISOString(),
-    };
-  }
 }

@@ -213,21 +213,4 @@ export class Notification {
       relatedEntityId: projectId,
     });
   }
-
-  /**
-   * Serializes the notification entity.
-   */
-  public toJSON(): object {
-    return {
-      id: this.id,
-      userId: this.userId,
-      type: this.type,
-      title: this.title,
-      message: this.message,
-      relatedEntityId: this.relatedEntityId,
-      createdAt: this.createdAt.toISOString(),
-      readAt: this.readAtValue ? this.readAtValue.toISOString() : null,
-      isRead: this.isReadValue,
-    };
-  }
 }

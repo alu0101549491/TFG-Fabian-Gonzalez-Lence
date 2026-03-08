@@ -35,20 +35,6 @@ export enum FileType {
 }
 
 /**
- * Human-readable display names for file types.
- */
-export const FileTypeDisplayName: Record<FileType, string> = {
-  [FileType.PDF]: 'PDF Document',
-  [FileType.KML]: 'KML Geographic Data',
-  [FileType.SHP]: 'Shapefile',
-  [FileType.IMAGE]: 'Image',
-  [FileType.DOCUMENT]: 'Document',
-  [FileType.SPREADSHEET]: 'Spreadsheet',
-  [FileType.CAD]: 'CAD Drawing',
-  [FileType.COMPRESSED]: 'Compressed Archive',
-};
-
-/**
  * File extensions mapped to their corresponding FileType.
  */
 export const FileExtensionToType: Record<string, FileType> = {
@@ -85,20 +71,6 @@ export const FileExtensionToType: Record<string, FileType> = {
   // Compressed
   zip: FileType.COMPRESSED,
   rar: FileType.COMPRESSED,
-};
-
-/**
- * Icon identifiers for file types (for UI rendering).
- */
-export const FileTypeIcon: Record<FileType, string> = {
-  [FileType.PDF]: 'pdf',
-  [FileType.KML]: 'map',
-  [FileType.SHP]: 'map-marked',
-  [FileType.IMAGE]: 'image',
-  [FileType.DOCUMENT]: 'file-text',
-  [FileType.SPREADSHEET]: 'table',
-  [FileType.CAD]: 'drafting-compass',
-  [FileType.COMPRESSED]: 'file-archive',
 };
 
 /**

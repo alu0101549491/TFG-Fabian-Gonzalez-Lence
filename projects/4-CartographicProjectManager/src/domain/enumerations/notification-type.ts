@@ -35,53 +35,6 @@ export enum NotificationType {
 }
 
 /**
- * Human-readable display names for notification types.
- */
-export const NotificationTypeDisplayName: Record<NotificationType, string> = {
-  [NotificationType.NEW_MESSAGE]: 'New Message',
-  [NotificationType.NEW_TASK]: 'New Task',
-  [NotificationType.TASK_STATUS_CHANGE]: 'Task Status Changed',
-  [NotificationType.FILE_RECEIVED]: 'File Received',
-  [NotificationType.PROJECT_ASSIGNED]: 'Project Assigned',
-  [NotificationType.PROJECT_FINALIZED]: 'Project Finalized',
-  [NotificationType.BACKUP_COMPLETED]: 'Backup Completed',
-  [NotificationType.BACKUP_RESTORED]: 'Backup Restored',
-};
-
-/**
- * Message templates for notification types.
- * Use placeholders like {projectName}, {taskDescription}, {status}, {fileName}, {projectCode}.
- */
-export const NotificationTypeMessageTemplate: Record<NotificationType, string> =
-  {
-    [NotificationType.NEW_MESSAGE]: 'New message in {projectName}',
-    [NotificationType.NEW_TASK]: 'New task: {taskDescription}',
-    [NotificationType.TASK_STATUS_CHANGE]:
-      "Task '{taskDescription}' changed to {status}",
-    [NotificationType.FILE_RECEIVED]: 'New file: {fileName}',
-    [NotificationType.PROJECT_ASSIGNED]:
-      "You've been assigned to project {projectCode}",
-    [NotificationType.PROJECT_FINALIZED]:
-      'Project {projectCode} has been finalized',
-    [NotificationType.BACKUP_COMPLETED]: 'System backup completed',
-    [NotificationType.BACKUP_RESTORED]: 'System restored from backup',
-  };
-
-/**
- * Icon identifiers for notification types (for UI rendering).
- */
-export const NotificationTypeIcon: Record<NotificationType, string> = {
-  [NotificationType.NEW_MESSAGE]: 'message',
-  [NotificationType.NEW_TASK]: 'task',
-  [NotificationType.TASK_STATUS_CHANGE]: 'update',
-  [NotificationType.FILE_RECEIVED]: 'file',
-  [NotificationType.PROJECT_ASSIGNED]: 'project',
-  [NotificationType.PROJECT_FINALIZED]: 'check',
-  [NotificationType.BACKUP_COMPLETED]: 'backup',
-  [NotificationType.BACKUP_RESTORED]: 'restore',
-};
-
-/**
  * Type guard to check if a value is a valid NotificationType.
  *
  * @param value - The value to check

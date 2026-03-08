@@ -13,7 +13,7 @@
  */
 
 import type {Task, TaskStatus} from '@prisma/client';
-import type {ITaskRepository} from '@domain/repositories/task.repository.interface.js';
+import type {ITaskRepository} from '@infrastructure/repositories/interfaces/task.repository.interface.js';
 import {prisma} from '../database/prisma.client.js';
 import {DatabaseError} from '@shared/errors.js';
 

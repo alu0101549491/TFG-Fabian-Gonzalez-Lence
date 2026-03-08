@@ -198,12 +198,12 @@
     <div class="file-uploader-info">
       <h5 class="file-uploader-info-title">Supported file types:</h5>
       <div class="file-uploader-info-types">
-        <span class="file-uploader-info-type"> 📄 Documents (.pdf, .doc, .docx, .txt) </span>
-        <span class="file-uploader-info-type"> 🗺️ Cartography (.shp, .kml, .geojson) </span>
-        <span class="file-uploader-info-type"> 🖼️ Images (.jpg, .png, .tiff) </span>
+        <span class="file-uploader-info-type"> 📄 Documents (.pdf, .doc, .docx, .ppt, .pptx) </span>
+        <span class="file-uploader-info-type"> 🗺️ Cartography (.shp, .kml, .kmz, .geojson) </span>
+        <span class="file-uploader-info-type"> 🖼️ Images (.jpg, .jpeg, .png, .gif, .tif, .tiff, .webp) </span>
         <span class="file-uploader-info-type"> 📊 Spreadsheets (.xls, .xlsx, .csv) </span>
         <span class="file-uploader-info-type"> 📐 CAD (.dwg, .dxf) </span>
-        <span class="file-uploader-info-type"> 📦 Compressed (.zip, .rar) </span>
+        <span class="file-uploader-info-type"> 📦 Compressed (.zip, .rar, .7z) </span>
       </div>
     </div>
   </div>
@@ -358,11 +358,11 @@ function getFileIcon(file: File): string {
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
 
   const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'bmp', 'svg', 'webp'];
-  const docExts = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'];
+  const docExts = ['pdf', 'doc', 'docx', 'ppt', 'pptx'];
   const spreadsheetExts = ['xls', 'xlsx', 'csv', 'ods'];
   const cadExts = ['dwg', 'dxf', 'dgn'];
   const archiveExts = ['zip', 'rar', '7z', 'tar', 'gz'];
-  const mapExts = ['shp', 'kml', 'kmz', 'gpx', 'geojson', 'gml'];
+  const mapExts = ['shp', 'kml', 'kmz', 'geojson'];
 
   if (imageExts.includes(ext)) return '🖼️';
   if (docExts.includes(ext)) return '📄';

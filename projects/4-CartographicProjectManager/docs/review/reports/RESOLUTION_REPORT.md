@@ -30,8 +30,11 @@ Run from `projects/4-CartographicProjectManager/backend`:
 This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REPORT.md`.
 
 ### ✅ Resolved (verified)
+- **D1-001** — Domain enums no longer contain UI-focused mappings: display names/colors/icons/templates were moved into Presentation mappings (`src/presentation/mappings/domain-enum-ui.ts`).
+- **D3-001** — Domain entities no longer implement transport-facing `toJSON()`; HTTP payload shaping remains at the boundary (repositories/services build explicit payload objects and serialize dates as needed).
 - **D2-002** — GeoCoordinates value equality now uses epsilon-based comparison (not strict `===`) to avoid brittle float equality failures.
 - **D2-003** — GeoCoordinates validation now rejects non-finite values (`NaN`/`Infinity`) before range checks.
+- **D4-001** — Backend repository interfaces are no longer incorrectly located in the “Domain” layer with Prisma coupling; Prisma-shaped repository interfaces were relocated to Infrastructure and implementations were updated accordingly.
 - **D4-002** — Incorrect enum imports in domain repository interfaces were fixed.
 - **D7-001** — Application service interfaces ↔ implementations were aligned; notification sending now consistently uses the object-shaped `sendNotification(data: SendNotificationData)` contract.
 - **D7-002** — AuthorizationService admin-role checks were standardized to `UserRole.ADMINISTRATOR`, and the commented-out admin delete check was corrected.
@@ -42,6 +45,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D9-003** — WebSocket client/server no longer use direct `console.*` debug logging in production paths; logging routes through the shared logger / debug-gated logging.
 - **D9-004** — WebSocket client `ConnectionOptions.token` is now optional to match the implementation’s `tokenProvider` fallback.
 - **D14-001** — Backend JWT secrets no longer fall back to hard-coded defaults; missing `JWT_SECRET` / `JWT_REFRESH_SECRET` now fails fast.
+- **D14-002** — Upload constraints are now unified: backend upload middleware reads max size + allowlists from `UPLOAD` constants, and the frontend `FILE` constants + `FileUploader` UI now match the backend allowlist (preventing “UI accepts, server rejects” drift).
 - **D14-003** — Backend startup now validates critical env (e.g., `DATABASE_URL` required in production; `LOG_LEVEL` validated) and production logging defaults to `info` when unset.
 - **D14-004** — Removed import-time dotenv side effects from backend constants; `.env` loading now happens in the server entrypoint before backend modules are imported.
 - **D14-005** — Backend constants header metadata was standardized; `@file` now correctly points to `backend/src/shared/constants.ts`.
@@ -142,10 +146,8 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 
 ### 🟡 Partially Resolved
 - **D7-005** — Coordinate handling was fixed to preserve valid `0` values and handle partial coordinate updates deterministically, but Dropbox-folder-id normalization to an empty string still remains in the Domain/entity path.
-- **D37-001** — Committed secret mitigation was partially applied by untracking/ignoring `backend/.env.railway` and adding a sanitized `backend/.env.railway.example`; full remediation still requires credential rotation and (if previously pushed) git history purge.
+- **D37-001** — Committed secret mitigation was partially applied: the backend now provides only environment templates (`backend/.env.example`, `backend/.env.railway.example`) and ignores real backend env files via `backend/.gitignore` (including `.env` / `.env.railway`). Note: the frontend currently tracks `.env.development` and `.env.production`, but they contain only non-secret Vite configuration keys (e.g., `VITE_API_BASE_URL`, `VITE_SOCKET_URL`). **Remaining required manual incident response:** rotate/revoke any compromised Dropbox app keys/tokens, then purge secret material from git history (e.g., via `git filter-repo`/BFG) and force-push, and ensure all clones/forks update accordingly.
 
-### ⏳ Not Addressed (still outstanding)
-- **D14-002** — Upload-rule drift between frontend and backend constraints remains.
 ### Frontend: strict TS + DTO/contract alignment
 - Realtime-store updates no longer spread nullable refs (safe narrowing before immutable updates):
   - `src/presentation/stores/project.store.ts`

@@ -426,29 +426,4 @@ export class Project {
     const diffMs = this.deliveryDateValue.getTime() - now.getTime();
     return Math.ceil(diffMs / msPerDay);
   }
-
-  /**
-   * Serializes the project entity to a plain object.
-   *
-   * @returns Plain object representation suitable for API responses
-   */
-  public toJSON(): object {
-    return {
-      id: this.id,
-      code: this.code,
-      name: this.nameValue,
-      year: this.year,
-      clientId: this.clientIdValue,
-      type: this.typeValue,
-      coordinates: this.coordinatesValue ? this.coordinatesValue.toJSON() : null,
-      contractDate: this.contractDateValue.toISOString(),
-      deliveryDate: this.deliveryDateValue.toISOString(),
-      status: this.statusValue,
-      dropboxFolderId: this.dropboxFolderIdValue,
-      specialUserIds: [...this.specialUserIdsValue],
-      createdAt: this.createdAt.toISOString(),
-      updatedAt: this.updatedAtValue.toISOString(),
-      finalizedAt: this.finalizedAtValue ? this.finalizedAtValue.toISOString() : null,
-    };
-  }
 }

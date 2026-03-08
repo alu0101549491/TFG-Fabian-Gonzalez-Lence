@@ -297,20 +297,4 @@ export class Permission {
       grantedBy,
     });
   }
-
-  /**
-   * Serializes the permission entity.
-   */
-  public toJSON(): object {
-    return {
-      id: this.id,
-      userId: this.userId,
-      projectId: this.projectId,
-      rights: Array.from(this.rightsValue),
-      sectionAccess: [...this.sectionAccessValue],
-      grantedBy: this.grantedBy,
-      grantedAt: this.grantedAt.toISOString(),
-      updatedAt: this.updatedAtValue.toISOString(),
-    };
-  }
 }

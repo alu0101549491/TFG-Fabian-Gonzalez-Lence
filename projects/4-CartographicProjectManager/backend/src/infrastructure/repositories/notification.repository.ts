@@ -13,7 +13,7 @@
  */
 
 import type {Notification} from '@prisma/client';
-import type {INotificationRepository} from '@domain/repositories/notification.repository.interface.js';
+import type {INotificationRepository} from '@infrastructure/repositories/interfaces/notification.repository.interface.js';
 import {prisma} from '../database/prisma.client.js';
 import {DatabaseError} from '@shared/errors.js';
 import {logError, logWarning} from '../../shared/logger.js';

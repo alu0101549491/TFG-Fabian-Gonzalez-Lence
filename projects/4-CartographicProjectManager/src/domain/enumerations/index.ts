@@ -7,7 +7,6 @@
 // User Role
 export {
   UserRole,
-  UserRoleDisplayName,
   isValidUserRole,
   ALL_USER_ROLES,
 } from './user-role';
@@ -15,8 +14,6 @@ export {
 // Project Status
 export {
   ProjectStatus,
-  ProjectStatusDisplayName,
-  ProjectStatusColor,
   isValidProjectStatus,
   isActiveProjectStatus,
   ALL_PROJECT_STATUSES,
@@ -25,7 +22,6 @@ export {
 // Project Type
 export {
   ProjectType,
-  ProjectTypeDisplayName,
   isValidProjectType,
   ALL_PROJECT_TYPES,
 } from './project-type';
@@ -33,8 +29,6 @@ export {
 // Task Status
 export {
   TaskStatus,
-  TaskStatusDisplayName,
-  TaskStatusColor,
   TaskStatusTransitions,
   isValidTaskStatus,
   isValidTaskStatusTransition,
@@ -45,8 +39,6 @@ export {
 // Task Priority
 export {
   TaskPriority,
-  TaskPriorityDisplayName,
-  TaskPriorityColor,
   TaskPrioritySortOrder,
   isValidTaskPriority,
   compareTaskPriority,
@@ -57,9 +49,6 @@ export {
 // Notification Type
 export {
   NotificationType,
-  NotificationTypeDisplayName,
-  NotificationTypeMessageTemplate,
-  NotificationTypeIcon,
   isValidNotificationType,
   ALL_NOTIFICATION_TYPES,
 } from './notification-type';
@@ -67,9 +56,7 @@ export {
 // File Type
 export {
   FileType,
-  FileTypeDisplayName,
   FileExtensionToType,
-  FileTypeIcon,
   isValidFileType,
   getFileTypeFromExtension,
   getExtensionsForFileType,
@@ -79,8 +66,6 @@ export {
 // Access Right
 export {
   AccessRight,
-  AccessRightDisplayName,
-  AccessRightDescription,
   isValidAccessRight,
   hasAccessRight,
   ALL_ACCESS_RIGHTS,

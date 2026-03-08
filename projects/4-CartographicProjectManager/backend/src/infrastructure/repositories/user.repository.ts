@@ -13,7 +13,7 @@
  */
 
 import type {User, UserRole} from '@prisma/client';
-import type {IUserRepository} from '@domain/repositories/user.repository.interface.js';
+import type {IUserRepository} from '@infrastructure/repositories/interfaces/user.repository.interface.js';
 import {prisma} from '../database/prisma.client.js';
 import {NotFoundError, DatabaseError} from '@shared/errors.js';
 

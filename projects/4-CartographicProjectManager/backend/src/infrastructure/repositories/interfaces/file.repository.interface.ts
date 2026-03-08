@@ -5,9 +5,9 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since February 18, 2026
- * @file backend/src/domain/repositories/file.repository.interface.ts
- * @desc File repository interface for data access
+ * @since March 8, 2026
+ * @file backend/src/infrastructure/repositories/interfaces/file.repository.interface.ts
+ * @desc File repository interface for Prisma-based data access
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
  */
