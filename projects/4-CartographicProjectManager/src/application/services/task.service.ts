@@ -44,6 +44,7 @@ import {Task} from '../../domain/entities/task';
 import {TaskHistory} from '../../domain/entities/task-history';
 import {TaskStatus, TaskStatusTransitions} from '../../domain/enumerations/task-status';
 import {NotificationType} from '../../domain/enumerations/notification-type';
+import {type TaskHistoryAction} from '../../domain/enumerations/task-history-action';
 
 /**
  * Implementation of task management operations.
@@ -557,7 +558,7 @@ export class TaskService implements ITaskService {
   private async recordHistory(
     taskId: string,
     userId: string,
-    action: string,
+    action: TaskHistoryAction,
     previousValue: TaskStatus | null,
     newValue: TaskStatus | null
   ): Promise<void> {

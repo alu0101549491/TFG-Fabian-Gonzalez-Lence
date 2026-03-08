@@ -13,7 +13,7 @@
  */
 
 import {httpClient} from '../http';
-import {Permission} from '../../domain/entities/permission';
+import {isValidProjectSection, Permission} from '../../domain/entities/permission';
 import {type AccessRight} from '../../domain/enumerations/access-right';
 import {type IPermissionRepository} from '../../domain/repositories/permission-repository.interface';
 
@@ -247,12 +247,14 @@ export class PermissionRepository implements IPermissionRepository {
    * @returns Permission domain entity
    */
   private mapToEntity(data: PermissionApiResponse): Permission {
+    const sectionAccess = (data.sectionAccess ?? []).filter(isValidProjectSection);
+
     return new Permission({
       id: data.id,
       userId: data.userId,
       projectId: data.projectId,
       rights: new Set(data.rights.map((r) => r as AccessRight)),
-      sectionAccess: data.sectionAccess || [],
+      sectionAccess,
       grantedBy: data.grantedBy,
       grantedAt: new Date(data.grantedAt),
       updatedAt: new Date(data.updatedAt),

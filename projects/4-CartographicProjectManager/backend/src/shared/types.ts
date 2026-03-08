@@ -37,11 +37,13 @@ export interface ValidationErrorDetail {
 /**
  * Pagination query parameters
  */
+export type QueryParam = string | string[] | undefined;
+
 export interface PaginationQuery {
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  order?: 'asc' | 'desc';
+  page?: QueryParam;
+  limit?: QueryParam;
+  sortBy?: QueryParam;
+  order?: QueryParam;
 }
 
 /**

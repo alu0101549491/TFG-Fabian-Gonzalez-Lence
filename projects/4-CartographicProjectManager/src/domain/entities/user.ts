@@ -76,7 +76,6 @@ export class User {
   private firstNameValue: string;
   private lastNameValue: string;
   private emailValue: string;
-  private readonly passwordHash: string;
   private roleValue: UserRole;
   private isActiveValue: boolean;
   private phoneValue: string | null;
@@ -98,7 +97,6 @@ export class User {
     this.firstNameValue = props.firstName ?? '';
     this.lastNameValue = props.lastName ?? '';
     this.emailValue = props.email;
-    this.passwordHash = props.passwordHash;
     this.roleValue = props.role;
     this.isActiveValue = props.isActive ?? true;
     this.phoneValue = props.phone ?? null;
@@ -141,6 +139,13 @@ export class User {
     }
   }
 
+  /**
+   * Updates the audit timestamp for this entity.
+   */
+  private touchUpdatedAt(): void {
+    this.updatedAtValue = new Date();
+  }
+
   // Getters and Setters for mutable properties
 
   public get username(): string {
@@ -152,6 +157,7 @@ export class User {
       throw new Error('Username cannot be empty');
     }
     this.usernameValue = value;
+    this.touchUpdatedAt();
   }
 
   public get firstName(): string {
@@ -160,6 +166,7 @@ export class User {
 
   public set firstName(value: string) {
     this.firstNameValue = value;
+    this.touchUpdatedAt();
   }
 
   public get lastName(): string {
@@ -168,6 +175,7 @@ export class User {
 
   public set lastName(value: string) {
     this.lastNameValue = value;
+    this.touchUpdatedAt();
   }
 
   public get email(): string {
@@ -183,6 +191,7 @@ export class User {
       throw new Error('Invalid email format');
     }
     this.emailValue = value;
+    this.touchUpdatedAt();
   }
 
   public get role(): UserRole {
@@ -191,6 +200,7 @@ export class User {
 
   public set role(value: UserRole) {
     this.roleValue = value;
+    this.touchUpdatedAt();
   }
 
   public get phone(): string | null {
@@ -199,6 +209,7 @@ export class User {
 
   public set phone(value: string | null) {
     this.phoneValue = value;
+    this.touchUpdatedAt();
   }
 
   public get isActive(): boolean {
@@ -207,6 +218,7 @@ export class User {
 
   public set isActive(value: boolean) {
     this.isActiveValue = value;
+    this.touchUpdatedAt();
   }
 
   public get updatedAt(): Date {
@@ -223,30 +235,10 @@ export class User {
 
   public set lastLogin(value: Date | null) {
     this.lastLoginValue = value;
+    this.touchUpdatedAt();
   }
 
   // Business Logic Methods
-
-  /**
-   * Authenticates a user by verifying the provided password.
-   *
-   * Note: This is a domain interface method. Actual password hashing
-   * and verification should be delegated to an authentication service
-   * in the application layer using bcrypt or similar.
-   *
-   * @param password - The plaintext password to verify
-   * @returns True if the password matches (to be implemented in service layer)
-   */
-  public authenticate(password: string): boolean {
-    void password;
-    void this.passwordHash;
-    // Domain entities should not contain cryptographic logic
-    // This method signature exists for domain modeling
-    // Actual implementation will be in the authentication service
-    throw new Error(
-      'Password authentication must be implemented in the application service layer'
-    );
-  }
 
   /**
    * Checks if the user has Administrator role.
@@ -280,5 +272,6 @@ export class User {
    */
   public updateLastLogin(): void {
     this.lastLoginValue = new Date();
+    this.touchUpdatedAt();
   }
 }

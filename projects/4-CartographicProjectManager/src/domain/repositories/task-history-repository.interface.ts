@@ -13,6 +13,7 @@
  */
 
 import {TaskHistory} from '../entities/task-history';
+import {TaskHistoryAction} from '../enumerations/task-history-action';
 
 /**
  * Abstraction for TaskHistory data access operations.
@@ -40,11 +41,14 @@ export interface ITaskHistoryRepository {
   /**
    * Finds all history entries for a task filtered by action type.
    * @param taskId - The task's unique ID.
-   * @param action - The action type to filter by (e.g., 'created', 'updated', 'status_changed').
+   * @param action - The action type to filter by.
    * @returns Array of history entries matching the criteria ordered by timestamp (empty if none found).
    * @throws Error if database connection fails.
    */
-  findByTaskIdAndAction(taskId: string, action: string): Promise<TaskHistory[]>;
+  findByTaskIdAndAction(
+    taskId: string,
+    action: TaskHistoryAction,
+  ): Promise<TaskHistory[]>;
 
   /**
    * Finds all history entries created by a specific user.

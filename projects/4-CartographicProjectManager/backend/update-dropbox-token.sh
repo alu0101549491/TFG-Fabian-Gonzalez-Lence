@@ -1,6 +1,13 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Script para actualizar token de Dropbox y probar la integración
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PIDFILE="${SCRIPT_DIR}/.dev-server.pid"
+
+cd "$SCRIPT_DIR"
 
 echo "============================================"
 echo "🔐 Actualizar Token de Dropbox"
@@ -61,12 +68,21 @@ echo "✅ Token actualizado en .env"
 
 echo ""
 echo "🔄 Reiniciando backend..."
-pkill -9 node 2>/dev/null
-sleep 2
+
+if [ -f "$PIDFILE" ]; then
+    OLD_PID="$(cat "$PIDFILE" || true)"
+    if [ -n "${OLD_PID}" ] && kill -0 "$OLD_PID" 2>/dev/null; then
+        echo "🛑 Deteniendo backend anterior (PID: $OLD_PID)"
+        kill "$OLD_PID" 2>/dev/null || true
+        sleep 1
+    fi
+    rm -f "$PIDFILE"
+fi
 
 # Iniciar backend en background
 npm run dev > /dev/null 2>&1 &
 BACKEND_PID=$!
+echo "$BACKEND_PID" > "$PIDFILE"
 
 echo "✅ Backend iniciado (PID: $BACKEND_PID)"
 echo "⏳ Esperando 5 segundos para que el backend arranque..."
@@ -84,5 +100,6 @@ echo "============================================"
 echo ""
 echo "Comandos útiles:"
 echo "  - Ver logs del backend: fg"
-echo "  - Detener backend: pkill -9 node"
+echo "  - Detener backend: kill \"\$(cat .dev-server.pid)\""
+echo "  - Reiniciar backend: ./restart-backend.sh"
 echo "  - Probar Dropbox de nuevo: npx tsx test-dropbox-simple.ts"

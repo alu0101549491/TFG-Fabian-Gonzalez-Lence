@@ -34,7 +34,6 @@ import {UnauthorizedError, NotFoundError, ValidationError} from './common/errors
 import {generateId, truncate} from './common/utils';
 import {Message} from '../../domain/entities/message';
 import {NotificationType} from '../../domain/enumerations/notification-type';
-import {UserRole} from '../../domain/enumerations/user-role';
 
 /**
  * Implementation of message management operations.
@@ -292,7 +291,7 @@ export class MessageService implements IMessageService {
       : await this.userRepository.findById(message.senderId);
 
     const senderName = sender?.username ?? message.senderName ?? 'System';
-    const senderRole = (sender?.role ?? (message.senderRole as UserRole) ?? UserRole.CLIENT);
+    const senderRole = sender?.role ?? message.senderRole;
 
     return {
       id: message.id,
