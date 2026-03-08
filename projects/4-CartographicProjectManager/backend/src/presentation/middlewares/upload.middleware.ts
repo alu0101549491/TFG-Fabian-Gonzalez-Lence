@@ -13,6 +13,7 @@
 
 import multer from 'multer';
 import type {Request} from 'express';
+import {BadRequestError} from '@shared/errors.js';
 
 /**
  * Maximum file size (50 MB)
@@ -48,6 +49,37 @@ const ALLOWED_EXTENSIONS = [
 ];
 
 /**
+ * Allowed MIME types.
+ *
+ * Note: Some CAD/GIS formats may be uploaded as `application/octet-stream` by clients.
+ */
+const ALLOWED_MIME_TYPES = new Set([
+  // Documents
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+
+  // Images
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/tiff',
+
+  // Archives
+  'application/zip',
+  'application/x-7z-compressed',
+  'application/vnd.rar',
+  'application/x-rar-compressed',
+
+  // Common fallback for CAD/GIS uploads
+  'application/octet-stream',
+]);
+
+/**
  * Multer storage configuration (memory storage for streaming to Dropbox)
  */
 const storage = multer.memoryStorage();
@@ -63,12 +95,22 @@ function fileFilter(
   file: Express.Multer.File,
   cb: multer.FileFilterCallback,
 ): void {
-  const ext = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+  const originalName = file.originalname.toLowerCase();
+  const lastDot = originalName.lastIndexOf('.');
+  const ext = lastDot >= 0 ? originalName.substring(lastDot) : '';
+  const mime = file.mimetype.split(';')[0]?.trim().toLowerCase() ?? '';
 
-  if (ALLOWED_EXTENSIONS.includes(ext)) {
+  const extensionAllowed = ALLOWED_EXTENSIONS.includes(ext);
+  const mimeAllowed = ALLOWED_MIME_TYPES.has(mime);
+
+  if (extensionAllowed && mimeAllowed) {
     cb(null, true);
   } else {
-    cb(new Error(`File type not allowed. Allowed types: ${ALLOWED_EXTENSIONS.join(', ')}`));
+    cb(
+      new BadRequestError(
+        `File type not allowed. Allowed extensions: ${ALLOWED_EXTENSIONS.join(', ')}`
+      )
+    );
   }
 }
 

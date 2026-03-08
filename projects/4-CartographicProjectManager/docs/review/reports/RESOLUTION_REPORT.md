@@ -69,11 +69,21 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D22-006** — File upload Dropbox path construction is now hardened: `section` is normalized/allowlisted and the Dropbox storage filename is generated server-side using the file id and a sanitized basename (original filename is preserved separately).
 - **D22-001** — Notification listing now enforces ownership/admin checks and does not allow authenticated users to fetch other users’ notifications.
 - **D22-002** — Message listing/creation now validates project access and binds `senderId` server-side from the authenticated user (no spoofed authorship).
+- **D20-001** — Backend CORS config is now validated: wildcard origin (`'*'`) is rejected (outside development) when credentials are enabled, preventing a common misconfiguration.
 - **D20-004** — Backend app bootstrap header metadata was standardized; `@file` now correctly points to `backend/src/presentation/app.ts`.
 - **D20-002** — Backend request logging is now environment-gated; `morgan('dev')` is enabled only in development.
+- **D20-003** — Backend now enables a production app-level rate limiter and configures `trust proxy` at bootstrap to reduce brute-force / request-flood risk.
 - **D21-004** — Backend route module headers were standardized (correct `@file` paths and consistent header template `@see` links).
+- **D21-003** — Audit log routes no longer instantiate a route-local `PrismaClient`; they now reuse the shared `prisma` singleton.
+- **D21-002** — Backend routes no longer mutate `req.query`/`req.params` to reuse controller handlers; sub-resource routes use consistent param names and notifications support `userId` via params or query without router-side mutation.
 - **D22-008** — Backend controller module headers were standardized; `@file` now correctly points to `backend/src/presentation/controllers/...`.
+- **D22-003** — Auth/export/project controllers no longer instantiate controller-local `PrismaClient`; they now reuse the shared `prisma` singleton.
+- **D22-004** — Backend project/task controllers now return correct auth semantics: unauthenticated requests raise `UnauthorizedError` (401) and permission denials raise `ForbiddenError` (403), reserving `NotFoundError` for missing resources.
+- **D22-005** — Backend controllers no longer use request-path `console.*` logging; operational logging routes through the shared logger.
+- **D22-007** — Backend controllers now validate integer/date parsing and safely decode URI params; malformed inputs return 400 instead of surfacing as avoidable 500s.
 - **D23-003** — Backend middleware module headers were standardized; `@file` now correctly points to `backend/src/presentation/middlewares/...`.
+- **D23-002** — Error handler no longer blindly returns `(error as any).errors`; `errors` are returned for `ValidationError` (and otherwise only in development), reducing internal-detail leakage.
+- **D23-001** — Upload middleware now validates both extension and MIME type and rejects invalid uploads with `BadRequestError` (400) instead of throwing generic errors that can surface as 500s.
 - **D7-004** — Removed the unused/mock frontend `AuthenticationService` that performed local password checks and generated placeholder tokens; auth remains backend-driven via `AuthRepository` + `auth.store.ts`.
 - **D32-001** — `CalendarView` now listens to `CalendarWidget`’s emitted `date-select` event so date selection updates `selectedDate` as intended.
 - **D32-004** — `ProjectListView` status filter now uses `ProjectStatus` enum values (typed `statusFilter`) so status filtering works.
@@ -92,6 +102,14 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D37-003** — Frontend Jest harness is now consistent with ESM + Vue 3 (setup/mocks moved to `.cjs`, config uses `setupFilesAfterEnv`, Vue transformer deps installed); `npm test` passes. ESLint flat config was updated to treat these `.cjs` files as CommonJS so `npm run lint` stays at 0 errors.
 - **D41-001** — Removed committed runtime log files under `backend/logs/` to prevent leaking operational/PII data via version control.
 - **D41-002** — Removed stray committed ad-hoc DB output artifact (command-line named file) from `backend/`.
+- **D24-004** — `AppConfirmDialog` now emits `cancel` when the modal closes via overlay/escape/X so consumers’ cleanup handlers run consistently.
+- **D24-009** — `AppHeader` notification badge is no longer hard-coded; it reads the unread count from `useNotificationStore()`.
+- **D24-001** — `AppModal` body scroll locking no longer clobbers unrelated global body styles and supports stacked modals via a shared ref-count; original styles are restored only when the last modal closes.
+- **D24-002** — `AppInput` number parsing no longer emits `0` for empty or `NaN` for invalid values; it uses `valueAsNumber` with finite checks and treats empty as `''`.
+- **D24-003** — `AppSelect` placeholder/clear logic now handles falsy values (like `0`) correctly and preserves numeric option types by mapping the selected string value back to the declared option value.
+- **D24-005** — `AppCard` now supports Space key activation (with `.prevent`) in addition to Enter when `clickable` is enabled.
+- **D24-007** — Common components now use typed `emit(...)` in templates instead of `$emit(...)`, improving event type-safety and consistency.
+- **D25-003** — Layout `AppHeader`/`AppSidebar` templates no longer use `$emit`/`$router`; navigation and events go through the typed `emit(...)` and `router.push(...)` handlers.
 
 ### 🟡 Partially Resolved
 - **D7-005** — Coordinate handling was fixed to preserve valid `0` values and handle partial coordinate updates deterministically, but Dropbox-folder-id normalization to an empty string still remains in the Domain/entity path.

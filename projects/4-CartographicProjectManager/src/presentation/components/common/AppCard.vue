@@ -23,6 +23,7 @@
     ]"
     @click="handleClick"
     @keydown.enter="handleKeydown"
+    @keydown.space.prevent="handleKeydown"
     :tabindex="clickable ? 0 : undefined"
     :role="clickable ? 'button' : undefined"
   >

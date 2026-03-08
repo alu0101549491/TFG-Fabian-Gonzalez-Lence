@@ -34,7 +34,11 @@ export class NotificationController {
         return sendError(res, 'Authentication required', HTTP_STATUS.UNAUTHORIZED);
       }
 
-      const requestedUserId = req.params.userId as string | undefined;
+      const requestedUserIdFromParams =
+        typeof req.params.userId === 'string' ? req.params.userId : undefined;
+      const requestedUserIdFromQuery =
+        typeof req.query.userId === 'string' ? req.query.userId : undefined;
+      const requestedUserId = requestedUserIdFromParams ?? requestedUserIdFromQuery;
       const isAdmin = currentUser.role === 'ADMINISTRATOR';
 
       if (!isAdmin && requestedUserId && requestedUserId !== currentUser.id) {

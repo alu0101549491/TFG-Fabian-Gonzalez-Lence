@@ -16,6 +16,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import {CORS, SERVER} from '@shared/constants.js';
 import {apiRouter} from './routes/index.js';
 import {errorHandler} from './middlewares/error-handler.middleware.js';
@@ -30,6 +31,19 @@ export function createApp(): express.Application {
   app.use(helmet());
   
   // CORS middleware
+  const corsHasWildcardOrigin =
+    CORS.ORIGIN === '*' || (Array.isArray(CORS.ORIGIN) && CORS.ORIGIN.includes('*'));
+
+  if (
+    SERVER.NODE_ENV !== 'development' &&
+    CORS.CREDENTIALS &&
+    corsHasWildcardOrigin
+  ) {
+    throw new Error(
+      'Invalid CORS configuration: credentials cannot be enabled with wildcard origin ("*")'
+    );
+  }
+
   app.use(
     cors({
       origin: CORS.ORIGIN,
@@ -40,6 +54,21 @@ export function createApp(): express.Application {
   // Body parsing middleware
   app.use(express.json({limit: '10mb'}));
   app.use(express.urlencoded({extended: true, limit: '10mb'}));
+
+  // Edge protections (production)
+  if (SERVER.NODE_ENV === 'production') {
+    // Ensure req.ip is derived from the upstream proxy in typical deployments.
+    app.set('trust proxy', 1);
+
+    app.use(
+      rateLimit({
+        windowMs: 15 * 60 * 1000,
+        limit: 1000,
+        standardHeaders: 'draft-7',
+        legacyHeaders: false,
+      })
+    );
+  }
 
   // Logging middleware
   if (SERVER.NODE_ENV === 'development') {

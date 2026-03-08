@@ -13,12 +13,12 @@
  */
 
 import { Router } from 'express';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { AuditLogController } from '../controllers/audit-log.controller.js';
 import { AuditLogRepository } from '../../infrastructure/repositories/audit-log.repository.js';
 import { authenticate, authorize } from '../../infrastructure/auth/auth.middleware.js';
+import { prisma } from '../../infrastructure/database/prisma.client.js';
 
-const prisma = new PrismaClient();
 const auditLogRepository = new AuditLogRepository(prisma);
 const auditLogController = new AuditLogController(auditLogRepository);
 

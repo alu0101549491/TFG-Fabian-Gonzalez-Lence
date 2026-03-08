@@ -13,10 +13,9 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { ExportService, ExportFormat } from '../../application/services/export.service.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../infrastructure/database/prisma.client.js';
+import { BadRequestError } from '../../shared/errors.js';
 
 /**
  * Controller for handling export HTTP requests
@@ -42,9 +41,20 @@ export class ExportController {
     try {
       const { format = 'csv', clientId, year, status } = req.query;
 
+      let parsedYear: number | undefined;
+      if (year != null) {
+        if (typeof year !== 'string') {
+          throw new BadRequestError('Invalid year query parameter');
+        }
+        parsedYear = Number.parseInt(year, 10);
+        if (!Number.isFinite(parsedYear)) {
+          throw new BadRequestError('Invalid year query parameter');
+        }
+      }
+
       const filters = {
         ...(clientId && typeof clientId === 'string' && { clientId }),
-        ...(year && { year: parseInt(year as string, 10) }),
+        ...(parsedYear != null && { year: parsedYear }),
         ...(status && typeof status === 'string' && { status }),
       };
 
@@ -94,6 +104,14 @@ export class ExportController {
           });
       }
     } catch (error) {
+      if (error instanceof BadRequestError) {
+        res.status(error.statusCode).json({
+          success: false,
+          error: error.message,
+        });
+        return;
+      }
+
       res.status(500).json({
         success: false,
         error: 'Failed to export projects',

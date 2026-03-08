@@ -55,9 +55,9 @@
         :aria-describedby="ariaDescribedBy"
         class="input-field"
         @input="handleInput"
-        @focus="$emit('focus', $event as FocusEvent)"
-        @blur="$emit('blur', $event as FocusEvent)"
-        @change="$emit('change', $event)"
+        @focus="emit('focus', $event as FocusEvent)"
+        @blur="emit('blur', $event as FocusEvent)"
+        @change="emit('change', $event)"
       />
 
       <!-- Password toggle -->
@@ -186,7 +186,20 @@ const ariaDescribedBy = computed(() => {
  */
 function handleInput(event: Event): void {
   const target = event.target as HTMLInputElement;
-  const value = props.type === 'number' ? Number(target.value) : target.value;
+
+  if (props.type === 'number') {
+    if (target.value === '') {
+      emit('update:modelValue', '');
+    } else {
+      const numericValue = target.valueAsNumber;
+      emit('update:modelValue', Number.isFinite(numericValue) ? numericValue : '');
+    }
+
+    emit('input', event);
+    return;
+  }
+
+  const value = target.value;
   emit('update:modelValue', value);
   emit('input', event);
 }

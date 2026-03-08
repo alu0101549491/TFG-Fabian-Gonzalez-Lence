@@ -39,23 +39,28 @@ projectRoutes.get('/:id/special-users/:userId/permissions', authenticate, contro
 projectRoutes.delete('/:id/special-users/:userId', authenticate, controller.removeSpecialUser.bind(controller));
 
 // Sub-resources
-projectRoutes.get('/:id/tasks', authenticate, (req, res, next) => {
-  req.query.projectId = req.params.id;
-  return taskController.getAll(req, res, next);
-});
-projectRoutes.get('/:id/messages/unread/count', authenticate, (req, res, next) => {
-  req.params.projectId = req.params.id;
-  return messageController.getUnreadCount(req, res, next);
-});
-projectRoutes.get('/:id/messages', authenticate, (req, res, next) => {
-  req.params.projectId = req.params.id;
-  return messageController.getByProjectId(req, res, next);
-});
-projectRoutes.post('/:id/messages/mark-read', authenticate, (req, res, next) => {
-  req.params.projectId = req.params.id;
-  return messageController.markAsRead(req, res, next);
-});
-projectRoutes.get('/:id/files', authenticate, (req, res, next) => {
-  req.params.projectId = req.params.id;
-  return fileController.getByProjectId(req, res, next);
-});
+projectRoutes.get(
+  '/:projectId/tasks',
+  authenticate,
+  taskController.getAll.bind(taskController)
+);
+projectRoutes.get(
+  '/:projectId/messages/unread/count',
+  authenticate,
+  messageController.getUnreadCount.bind(messageController)
+);
+projectRoutes.get(
+  '/:projectId/messages',
+  authenticate,
+  messageController.getByProjectId.bind(messageController)
+);
+projectRoutes.post(
+  '/:projectId/messages/mark-read',
+  authenticate,
+  messageController.markAsRead.bind(messageController)
+);
+projectRoutes.get(
+  '/:projectId/files',
+  authenticate,
+  fileController.getByProjectId.bind(fileController)
+);

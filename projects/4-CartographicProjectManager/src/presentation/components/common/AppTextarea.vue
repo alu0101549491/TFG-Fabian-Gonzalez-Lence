@@ -35,8 +35,8 @@
       :aria-invalid="!!error"
       class="textarea-field"
       @input="handleInput"
-      @focus="$emit('focus', $event as FocusEvent)"
-      @blur="$emit('blur', $event as FocusEvent)"
+      @focus="emit('focus', $event as FocusEvent)"
+      @blur="emit('blur', $event as FocusEvent)"
     />
 
     <!-- Footer: error/helper and counter -->

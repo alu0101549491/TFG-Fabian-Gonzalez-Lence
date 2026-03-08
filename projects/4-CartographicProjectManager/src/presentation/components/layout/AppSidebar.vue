@@ -22,7 +22,7 @@
         :to="link.path"
         class="nav-link"
         :class="{ active: isActive(link.path) }"
-        @click="$emit('close')"
+        @click="emit('close')"
       >
         <component :is="link.icon" :size="20" class="nav-icon" />
         <span v-if="!collapsed" class="nav-text">{{ link.title }}</span>
@@ -33,7 +33,7 @@
       v-if="!mobileOpen"
       type="button"
       class="collapse-toggle"
-      @click="$emit('toggle-collapse')"
+      @click="emit('toggle-collapse')"
       :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
     >
       <ChevronLeftIcon v-if="!collapsed" :size="20" />
