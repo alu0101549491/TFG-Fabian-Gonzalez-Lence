@@ -64,7 +64,7 @@
       </div>
 
       <!-- Create button -->
-      <button v-if="showCreateButton" type="button" class="task-list-create-btn" @click="$emit('create')">
+      <button v-if="showCreateButton" type="button" class="task-list-create-btn" @click="emit('create')">
         <span>+</span>
         <span>New Task</span>
       </button>
@@ -110,10 +110,10 @@
             :key="task.id"
             :task="task"
             :show-status-actions="true"
-            @click="$emit('task-click', task)"
-            @edit="$emit('task-edit', task)"
-            @delete="$emit('task-delete', task)"
-            @status-change="(id, status) => $emit('task-status-change', id, status)"
+            @click="emit('task-click', task)"
+            @edit="emit('task-edit', task)"
+            @delete="emit('task-delete', task)"
+            @status-change="(id, status) => emit('task-status-change', id, status)"
           />
         </div>
         <div v-else class="task-list-group-empty">No {{ group.label.toLowerCase() }} tasks</div>
@@ -127,10 +127,10 @@
         :key="task.id"
         :task="task"
         :show-status-actions="true"
-        @click="$emit('task-click', task)"
-        @edit="$emit('task-edit', task)"
-        @delete="$emit('task-delete', task)"
-        @status-change="(id, status) => $emit('task-status-change', id, status)"
+        @click="emit('task-click', task)"
+        @edit="emit('task-edit', task)"
+        @delete="emit('task-delete', task)"
+        @status-change="(id, status) => emit('task-status-change', id, status)"
       />
     </div>
   </div>
@@ -331,10 +331,10 @@ function getStatusLabel(status: TaskStatus): string {
  */
 function getPriorityWeight(priority: TaskPriority): number {
   const weights: Record<TaskPriority, number> = {
-    [TaskPriority.URGENT]: 1,
-    [TaskPriority.HIGH]: 2,
-    [TaskPriority.MEDIUM]: 3,
-    [TaskPriority.LOW]: 4,
+    [TaskPriority.LOW]: 1,
+    [TaskPriority.MEDIUM]: 2,
+    [TaskPriority.HIGH]: 3,
+    [TaskPriority.URGENT]: 4,
   };
   return weights[priority];
 }

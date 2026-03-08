@@ -231,7 +231,7 @@
             type="button"
             class="task-form-file-remove"
             title="Remove file"
-            @click="$emit('remove-file', file.id)"
+            @click="emit('remove-file', file.id)"
           >
             <span>✕</span>
           </button>
@@ -241,7 +241,7 @@
 
     <!-- Form actions -->
     <div class="task-form-actions">
-      <button type="button" class="task-form-btn task-form-btn-secondary" :disabled="loading" @click="$emit('cancel')">
+      <button type="button" class="task-form-btn task-form-btn-secondary" :disabled="loading" @click="emit('cancel')">
         Cancel
       </button>
 

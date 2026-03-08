@@ -1,8 +1,15 @@
 <!--
-  @module presentation/components/common/LoadingSpinner
-  @description Reusable loading indicator component.
-  Displays a spinner during async operations.
-  @category Presentation
+  University of La Laguna
+  School of Engineering and Technology
+  Degree in Computer Engineering
+  Final Degree Project (TFG)
+
+  @author Fabián González Lence <alu0101549491@ull.edu.es>
+  @since March 8, 2026
+  @file src/presentation/components/common/LoadingSpinner.vue
+  @desc Reusable loading indicator component
+  @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+  @see {@link https://typescripttutorial.net}
 -->
 <template>
   <div 
@@ -23,13 +30,11 @@ withDefaults(
     size?: 'sm' | 'md' | 'lg';
     color?: 'primary' | 'white' | 'gray';
     message?: string;
-    overlay?: boolean;
   }>(),
   {
     size: 'md',
     color: 'primary',
     message: '',
-    overlay: false,
   }
 );
 </script>
@@ -45,6 +50,7 @@ withDefaults(
 
 .spinner {
   border-radius: 50%;
+  border-style: solid;
   animation: spin 0.8s linear infinite;
 }
 
@@ -69,26 +75,23 @@ withDefaults(
 
 /* Color variants */
 .color-primary .spinner {
-  border: inherit;
-  border-color: var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #3b82f6);
+  border-color: var(--color-border);
+  border-top-color: var(--color-primary);
 }
 
 .color-white .spinner {
-  border: inherit;
   border-color: rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border-top-color: var(--color-text-inverse);
 }
 
 .color-gray .spinner {
-  border: inherit;
-  border-color: #e5e7eb;
-  border-top-color: #6b7280;
+  border-color: var(--color-border);
+  border-top-color: var(--color-text-secondary);
 }
 
 .spinner-message {
-  font-size: var(--font-size-sm, 0.875rem);
-  color: var(--color-text-secondary, #6b7280);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 .sr-only {

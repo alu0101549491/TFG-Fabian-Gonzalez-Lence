@@ -29,6 +29,7 @@
     tabindex="0"
     @click="handleClick"
     @keydown.enter="handleClick"
+    @keydown.space.prevent="handleClick"
     @dragstart="handleDragStart"
   >
     <!-- Priority indicator (left border) -->

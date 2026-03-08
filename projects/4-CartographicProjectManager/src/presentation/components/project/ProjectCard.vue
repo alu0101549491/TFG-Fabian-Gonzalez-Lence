@@ -26,6 +26,7 @@
     tabindex="0"
     @click="handleClick"
     @keydown.enter="handleClick"
+    @keydown.space.prevent="handleClick"
   >
     <!-- Status indicator bar (left edge) -->
     <div
