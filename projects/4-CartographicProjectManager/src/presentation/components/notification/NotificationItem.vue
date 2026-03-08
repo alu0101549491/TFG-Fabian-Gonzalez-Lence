@@ -24,6 +24,7 @@
     tabindex="0"
     @click="handleClick"
     @keydown.enter="handleClick"
+    @keydown.space.prevent="handleClick"
   >
     <!-- Unread indicator -->
     <div v-if="!notification.isRead" class="notification-item-unread-dot" />

@@ -15,6 +15,8 @@
 import {computed, type ComputedRef} from 'vue';
 import {useRouter} from 'vue-router';
 import {useAuthStore} from '../stores/auth.store';
+import {useNotificationStore} from '../stores/notification.store';
+import {handlePostLoginRedirect} from '../router';
 import type {UserDto, LoginCredentialsDto, RegisterCredentialsDto} from '../../application/dto';
 import {UserRole} from '../../domain/enumerations/user-role';
 import {AuthErrorCode} from '../../application/dto/auth-result.dto';
@@ -149,15 +151,10 @@ export function useAuth(): UseAuthReturn {
     const success = await store.login(credentials);
 
     if (success) {
-      // Check for redirect in query parameters (from router guard)
-      const currentRoute = router.currentRoute.value;
-      const redirect = currentRoute.query.redirect as string;
-      
-      if (redirect && redirect !== '/login') {
-        await router.push(redirect);
-      } else {
-        await router.push(ROUTES.DASHBOARD);
-      }
+      // Ensure notification cache is hydrated for the authenticated user
+      useNotificationStore().hydrateFromStorage();
+
+      handlePostLoginRedirect(router);
 
       return {success: true};
     }
@@ -228,9 +225,11 @@ export function useAuth(): UseAuthReturn {
    */
   function requireAuth(): boolean {
     if (!isAuthenticated.value) {
-      // Save intended route for redirect after login
-      sessionStorage.setItem('intended_route', router.currentRoute.value.fullPath);
-      router.push(ROUTES.LOGIN);
+      const currentPath = router.currentRoute.value.fullPath;
+      router.push({
+        name: 'login',
+        query: {redirect: currentPath},
+      });
       return false;
     }
     return true;

@@ -82,6 +82,22 @@ export class ProjectRepository implements IProjectRepository {
   private readonly baseUrl = '/projects';
 
   /**
+   * Build a URL with encoded query params.
+   *
+   * @param baseUrl - Base URL path
+   * @param params - Query parameters
+   * @returns URL with encoded query string
+   */
+  private buildUrlWithParams(
+    baseUrl: string,
+    params: Record<string, string>,
+  ): string {
+    const searchParams = new URLSearchParams(params);
+    const queryString = searchParams.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  }
+
+  /**
    * Find project by unique identifier
    *
    * @param id - Project ID
@@ -238,8 +254,9 @@ export class ProjectRepository implements IProjectRepository {
    * @returns Array of client's projects
    */
   public async findByClientId(clientId: string): Promise<Project[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {clientId});
     const response = await httpClient.get<ProjectApiResponse[]>(
-      `${this.baseUrl}?clientId=${clientId}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -251,8 +268,9 @@ export class ProjectRepository implements IProjectRepository {
    * @returns Array of accessible projects
    */
   public async findBySpecialUserId(userId: string): Promise<Project[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {specialUserId: userId});
     const response = await httpClient.get<ProjectApiResponse[]>(
-      `${this.baseUrl}?specialUserId=${userId}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -264,8 +282,9 @@ export class ProjectRepository implements IProjectRepository {
    * @returns Array of projects with specified status
    */
   public async findByStatus(status: ProjectStatus): Promise<Project[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {status});
     const response = await httpClient.get<ProjectApiResponse[]>(
-      `${this.baseUrl}?status=${status}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -277,8 +296,9 @@ export class ProjectRepository implements IProjectRepository {
    * @returns Array of projects from specified year
    */
   public async findByYear(year: number): Promise<Project[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {year: String(year)});
     const response = await httpClient.get<ProjectApiResponse[]>(
-      `${this.baseUrl}?year=${year}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -290,8 +310,9 @@ export class ProjectRepository implements IProjectRepository {
    * @returns Array of projects with specified type
    */
   public async findByType(type: ProjectType): Promise<Project[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {type});
     const response = await httpClient.get<ProjectApiResponse[]>(
-      `${this.baseUrl}?type=${type}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -314,8 +335,9 @@ export class ProjectRepository implements IProjectRepository {
    * @returns Array of active projects
    */
   public async findAllActive(): Promise<Project[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {active: 'true'});
     const response = await httpClient.get<ProjectApiResponse[]>(
-      `${this.baseUrl}?active=true`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -329,8 +351,12 @@ export class ProjectRepository implements IProjectRepository {
   public async findAllOrderedByDeliveryDate(
     ascending = true,
   ): Promise<Project[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {
+      sortBy: 'deliveryDate',
+      order: ascending ? 'asc' : 'desc',
+    });
     const response = await httpClient.get<ProjectApiResponse[]>(
-      `${this.baseUrl}?sortBy=deliveryDate&order=${ascending ? 'asc' : 'desc'}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -346,8 +372,12 @@ export class ProjectRepository implements IProjectRepository {
     startDate: Date,
     endDate: Date,
   ): Promise<Project[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {
+      deliveryDateStart: startDate.toISOString(),
+      deliveryDateEnd: endDate.toISOString(),
+    });
     const response = await httpClient.get<ProjectApiResponse[]>(
-      `${this.baseUrl}?deliveryDateStart=${startDate.toISOString()}&deliveryDateEnd=${endDate.toISOString()}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -370,8 +400,9 @@ export class ProjectRepository implements IProjectRepository {
    * @returns Number of client's projects
    */
   public async countByClientId(clientId: string): Promise<number> {
+    const url = this.buildUrlWithParams(`${this.baseUrl}/count`, {clientId});
     const response = await httpClient.get<{count: number}>(
-      `${this.baseUrl}/count?clientId=${clientId}`,
+      url,
     );
     return response.data.count;
   }
@@ -383,8 +414,9 @@ export class ProjectRepository implements IProjectRepository {
    * @returns Number of projects with status
    */
   public async countByStatus(status: ProjectStatus): Promise<number> {
+    const url = this.buildUrlWithParams(`${this.baseUrl}/count`, {status});
     const response = await httpClient.get<{count: number}>(
-      `${this.baseUrl}/count?status=${status}`,
+      url,
     );
     return response.data.count;
   }

@@ -136,7 +136,6 @@
 
 <script setup lang="ts">
 import {ref, computed, onMounted, onUnmounted} from 'vue';
-import {useRouter} from 'vue-router';
 import type {ProjectSummaryDto} from '@/application/dto';
 import {ProjectType, ProjectStatus} from '@/domain/enumerations';
 import {formatDate} from '@/shared/utils';
@@ -172,7 +171,6 @@ const props = withDefaults(defineProps<ProjectCardProps>(), {
 });
 
 const emit = defineEmits<ProjectCardEmits>();
-const router = useRouter();
 const {isAdmin, isSpecialUser, userId} = useAuth();
 
 // Actions menu state
@@ -243,7 +241,6 @@ const formattedDeliveryDate = computed(() => {
  */
 function handleClick(): void {
   emit('click', props.project);
-  router.push({name: 'project-details', params: {id: props.project.id}});
 }
 
 /**

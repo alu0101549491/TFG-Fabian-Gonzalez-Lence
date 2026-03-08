@@ -57,6 +57,71 @@ export const useAuthStore = defineStore('auth', () => {
     return Math.max(0, Math.floor(diff / 60000)); // Minutes
   });
 
+  /**
+   * Best-effort JWT `exp` parsing.
+   *
+   * @param token - JWT string
+   * @returns Expiration timestamp as a Date, or null if not parseable
+   */
+  function parseJwtExpiresAt(token: string): Date | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length < 2) return null;
+
+      const payloadB64Url = parts[1];
+      const payloadB64 = payloadB64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = payloadB64.padEnd(payloadB64.length + ((4 - (payloadB64.length % 4)) % 4), '=');
+      const json = atob(padded);
+      const payload = JSON.parse(json) as {exp?: unknown};
+
+      const exp = typeof payload.exp === 'number' ? payload.exp : null;
+      if (exp === null || !Number.isFinite(exp)) return null;
+
+      // JWT `exp` is usually seconds since epoch.
+      const expMs = exp > 1e12 ? exp : exp * 1000;
+      return new Date(expMs);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * User payload persisted to localStorage (JSON-friendly).
+   *
+   * Note: `JSON.stringify()` serializes `Date` objects as strings.
+   * Without explicit rehydration, `JSON.parse()` would produce `string` values
+   * at runtime while the app still types them as `Date`.
+   */
+  type StoredUserDto = Omit<UserDto, 'createdAt' | 'updatedAt' | 'lastLogin'> & {
+    readonly createdAt: string;
+    readonly updatedAt: string;
+    readonly lastLogin: string | null;
+  };
+
+  /**
+   * Serialize a `UserDto` into a JSON-friendly shape for storage.
+   */
+  function serializeUserForStorage(value: UserDto): StoredUserDto {
+    return {
+      ...value,
+      createdAt: value.createdAt.toISOString(),
+      updatedAt: value.updatedAt.toISOString(),
+      lastLogin: value.lastLogin ? value.lastLogin.toISOString() : null,
+    };
+  }
+
+  /**
+   * Deserialize a persisted user back into a `UserDto` with real `Date` objects.
+   */
+  function deserializeUserFromStorage(value: StoredUserDto): UserDto {
+    return {
+      ...value,
+      createdAt: new Date(value.createdAt),
+      updatedAt: new Date(value.updatedAt),
+      lastLogin: value.lastLogin ? new Date(value.lastLogin) : null,
+    };
+  }
+
   // Actions
 
   /**
@@ -100,8 +165,10 @@ export const useAuthStore = defineStore('auth', () => {
         accessToken.value = response.data.accessToken;
         refreshToken.value = response.data.refreshToken;
         
-        // Calculate expiration (JWT tokens typically expire in 7 days for access token)
-        expiresAt.value = new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
+        // Prefer the JWT "exp" claim when available; otherwise fall back to a fixed window.
+        expiresAt.value =
+          parseJwtExpiresAt(accessToken.value) ??
+          new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
         
         saveToStorage();
         return true;
@@ -175,7 +242,9 @@ export const useAuthStore = defineStore('auth', () => {
         
         accessToken.value = response.data.accessToken;
         refreshToken.value = response.data.refreshToken;
-        expiresAt.value = new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
+        expiresAt.value =
+          parseJwtExpiresAt(accessToken.value) ??
+          new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
 
         saveToStorage();
         console.log('✅ Registration successful, tokens saved to storage');
@@ -246,7 +315,9 @@ export const useAuthStore = defineStore('auth', () => {
       if (response.success && response.data) {
         accessToken.value = response.data.accessToken;
         refreshToken.value = response.data.refreshToken;
-        expiresAt.value = new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
+        expiresAt.value =
+          parseJwtExpiresAt(accessToken.value) ??
+          new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
         saveToStorage();
         return true;
       }
@@ -313,10 +384,16 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken.value);
       }
       if (refreshToken.value) {
-        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken.value);
+        sessionStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken.value);
+      }
+      if (expiresAt.value) {
+        localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.value.toISOString());
       }
       if (user.value) {
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user.value));
+        localStorage.setItem(
+          STORAGE_KEYS.USER,
+          JSON.stringify(serializeUserForStorage(user.value)),
+        );
       }
     } catch (err) {
       console.error('Failed to save to storage:', err);
@@ -329,17 +406,17 @@ export const useAuthStore = defineStore('auth', () => {
   function loadFromStorage(): void {
     try {
       const storedToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-      const storedRefresh = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      const storedRefresh = sessionStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
       const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+      const storedExpiresAt = localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
       
       if (storedToken && storedUser) {
         accessToken.value = storedToken;
         refreshToken.value = storedRefresh;
-        user.value = JSON.parse(storedUser);
-        
-        // Estimate expiration (will be validated)
-        const expiryMs = AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000;
-        expiresAt.value = new Date(Date.now() + expiryMs);
+        user.value = deserializeUserFromStorage(JSON.parse(storedUser) as StoredUserDto);
+        expiresAt.value =
+          (storedExpiresAt ? new Date(storedExpiresAt) : null) ??
+          parseJwtExpiresAt(storedToken);
       }
     } catch (err) {
       console.error('Failed to load from storage:', err);
@@ -352,8 +429,9 @@ export const useAuthStore = defineStore('auth', () => {
    */
   function clearStorage(): void {
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
   }
 
   /**

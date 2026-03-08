@@ -12,10 +12,89 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import cron from 'node-cron';
+import cron, { type ScheduledTask } from 'node-cron';
 import path from 'path';
 import { BackupService } from '../../application/services/backup.service.js';
 import { logInfo, logError } from '../../shared/logger.js';
+import {
+  loadBackupRuntimeConfig,
+  type BackupRuntimeConfig,
+} from './backup.config.js';
+
+let scheduledTask: ScheduledTask | null = null;
+
+function buildCronExpression(config: BackupRuntimeConfig): string | null {
+  if (config.frequency === 'disabled') return null;
+
+  const [hourStr, minuteStr] = config.time.split(':');
+  const hour = Number(hourStr);
+  const minute = Number(minuteStr);
+
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+    return '0 2 * * *';
+  }
+
+  switch (config.frequency) {
+    case 'daily':
+      return `${minute} ${hour} * * *`;
+    case 'weekly':
+      // Sunday (0) by default (UI does not allow selecting day-of-week)
+      return `${minute} ${hour} * * 0`;
+    case 'monthly':
+      // 1st of the month (UI does not allow selecting day-of-month)
+      return `${minute} ${hour} 1 * *`;
+    default:
+      return `${minute} ${hour} * * *`;
+  }
+}
+
+async function runBackupJob(databaseUrl: string, config: BackupRuntimeConfig): Promise<void> {
+  const backupService = new BackupService({
+    backupDir: path.join(process.cwd(), 'backups'),
+    retentionDays: config.retentionDays,
+    databaseUrl,
+  });
+
+  // Create backup
+  const backup = await backupService.createBackup('automatic');
+  logInfo(`[Scheduler] Backup created: ${backup.filename}`);
+
+  // Cleanup old backups
+  const cleanup = await backupService.cleanupOldBackups();
+  logInfo(
+    `[Scheduler] Cleanup: ${cleanup.deleted} deleted, ${cleanup.retained} retained`
+  );
+}
+
+/**
+ * Start or update the scheduled backup task based on the current config.
+ */
+export function startOrUpdateBackupScheduler(
+  databaseUrl: string,
+  config: BackupRuntimeConfig
+): void {
+  const cronExpr = buildCronExpression(config);
+
+  if (scheduledTask) {
+    scheduledTask.stop();
+    scheduledTask = null;
+  }
+
+  if (!cronExpr) {
+    logInfo('[Scheduler] Backup scheduler disabled by configuration');
+    return;
+  }
+
+  logInfo(`[Scheduler] Database backup scheduled: ${cronExpr}`);
+
+  scheduledTask = cron.schedule(cronExpr, async () => {
+    try {
+      await runBackupJob(databaseUrl, config);
+    } catch (error) {
+      logError('[Scheduler] Error in backup job:', error as Error);
+    }
+  });
+}
 
 /**
  * Initialize and start the database backup scheduler
@@ -30,43 +109,37 @@ export function initializeBackupScheduler(): void {
     return;
   }
 
-  const backupService = new BackupService({
-    backupDir: path.join(process.cwd(), 'backups'),
-    retentionDays: 30, // Keep backups for 30 days
-    databaseUrl,
-  });
-
-  // Schedule: Run every day at 2:00 AM
-  // Cron format: minute hour day month weekday
-  // '0 2 * * *' = At 02:00 every day
-  const schedule = '0 2 * * *';
-
-  logInfo(`[Scheduler] Database backup scheduled to run at 2:00 AM daily`);
-
-  cron.schedule(schedule, async () => {
-    try {
-      // Create backup
-      const backup = await backupService.createBackup();
-      logInfo(`[Scheduler] Backup created: ${backup.filename}`);
-
-      // Cleanup old backups
-      const cleanup = await backupService.cleanupOldBackups();
-      logInfo(`[Scheduler] Cleanup: ${cleanup.deleted} deleted, ${cleanup.retained} retained`);
-    } catch (error) {
-      logError('[Scheduler] Error in backup job:', error as Error);
-    }
-  });
+  loadBackupRuntimeConfig()
+    .then((config) => {
+      startOrUpdateBackupScheduler(databaseUrl, config);
+    })
+    .catch((error) => {
+      logError('[Scheduler] Failed to load backup runtime config:', error as Error);
+      // Fall back to the historical behavior
+      startOrUpdateBackupScheduler(databaseUrl, {
+        frequency: 'daily',
+        time: '02:00',
+        retentionDays: 30,
+        dropboxSyncEnabled: false,
+        lastDropboxSyncAt: null,
+      });
+    });
 
   // Run initial backup on startup if enabled
   if (process.env.RUN_BACKUP_ON_STARTUP === 'true') {
     logInfo('[Scheduler] Running initial backup on startup...');
-    backupService
-      .createBackup()
-      .then((backup) => {
-        logInfo(`[Scheduler] Startup backup created: ${backup.filename}`);
+
+    loadBackupRuntimeConfig()
+      .then(async (config) => {
+        try {
+          await runBackupJob(databaseUrl, config);
+          logInfo('[Scheduler] Startup backup job completed');
+        } catch (error) {
+          logError('[Scheduler] Error in startup backup:', error as Error);
+        }
       })
       .catch((error) => {
-        logError('[Scheduler] Error in startup backup:', error as Error);
+        logError('[Scheduler] Error loading config for startup backup:', error as Error);
       });
   }
 }

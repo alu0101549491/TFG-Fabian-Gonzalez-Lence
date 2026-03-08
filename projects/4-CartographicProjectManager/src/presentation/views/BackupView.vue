@@ -242,7 +242,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="backup in filteredBackups" :key="backup.id">
+                <tr v-for="backup in filteredBackups" :key="backup.filename">
                   <td>{{ formatBackupDate(backup.createdAt) }}</td>
                   <td>
                     <span :class="['backup-type', `type-${backup.type}`]">
@@ -343,19 +343,18 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from 'vue';
+import {ref, computed, onMounted, inject} from 'vue';
 import {useAuth} from '../composables/use-auth';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import {httpClient} from '../../infrastructure/http';
 
 // Types
 interface BackupRecord {
-  id: string;
+  filename: string;
   createdAt: Date;
   type: 'manual' | 'automatic';
   size: number;
   status: 'pending' | 'completed' | 'failed';
-  dropboxPath?: string;
 }
 
 interface ScheduleConfig {
@@ -364,8 +363,49 @@ interface ScheduleConfig {
   retentionDays: number;
 }
 
+interface BackupApiDto {
+  filename: string;
+  created: string;
+  size: number;
+  type: 'manual' | 'automatic';
+  age?: string;
+}
+
+interface ScheduleApiDto {
+  frequency: ScheduleConfig['frequency'];
+  time: string;
+  retentionDays: number;
+}
+
+interface DropboxStatusApiDto {
+  connected: boolean;
+  enabled: boolean;
+  lastSyncAt: string | null;
+}
+
+interface ToastPayload {
+  type: 'success' | 'error' | 'warning' | 'info';
+  title?: string;
+  message: string;
+  duration?: number;
+}
+
 // Composables
 const {isAdmin} = useAuth();
+
+const toast = inject<((t: ToastPayload) => void) | undefined>('toast');
+
+function notify(payload: ToastPayload): void {
+  if (toast) {
+    toast(payload);
+    return;
+  }
+
+  // Fallback (should be rare)
+  if (payload.type === 'error') {
+    console.error(payload.title ?? 'Error', payload.message);
+  }
+}
 
 // Local State
 const isLoading = ref(false);
@@ -384,24 +424,10 @@ const scheduleConfig = ref<ScheduleConfig>({
   retentionDays: 30,
 });
 
-const backupHistory = ref<BackupRecord[]>([
-  {
-    id: '1',
-    createdAt: new Date('2025-01-07T02:00:00'),
-    type: 'automatic',
-    size: 52428800, // 50 MB
-    status: 'completed',
-  },
-  {
-    id: '2',
-    createdAt: new Date('2025-01-05T14:30:00'),
-    type: 'manual',
-    size: 48234496, // 46 MB
-    status: 'completed',
-  },
-]);
+const backupHistory = ref<BackupRecord[]>([]);
 
 const dropboxConnected = ref(false);
+const dropboxSyncEnabled = ref(false);
 const lastDropboxSync = ref('Never');
 
 // Computed Properties
@@ -416,7 +442,10 @@ const totalBackupSize = computed(() => {
   return formatFileSize(totalBytes);
 });
 
-const dropboxStatus = computed(() => dropboxConnected.value ? 'Connected' : 'Not Connected');
+const dropboxStatus = computed(() => {
+  if (!dropboxConnected.value) return 'Not Connected';
+  return dropboxSyncEnabled.value ? 'Connected' : 'Connected (Sync Disabled)';
+});
 
 const dropboxStatusClass = computed(() =>
   dropboxConnected.value ? 'status-connected' : 'status-disconnected'
@@ -432,6 +461,39 @@ const filteredBackups = computed(() => {
     backup.status.toLowerCase().includes(query)
   );
 });
+
+function mapBackupDto(dto: BackupApiDto): BackupRecord {
+  return {
+    filename: dto.filename,
+    createdAt: new Date(dto.created),
+    type: dto.type,
+    size: dto.size,
+    status: 'completed',
+  };
+}
+
+async function refreshBackupHistory(): Promise<void> {
+  const response = await httpClient.get<BackupApiDto[]>('/backup/list');
+  backupHistory.value = response.data.map(mapBackupDto);
+}
+
+async function loadScheduleConfig(): Promise<void> {
+  const response = await httpClient.get<ScheduleApiDto>('/backup/schedule');
+  scheduleConfig.value = {
+    frequency: response.data.frequency,
+    time: response.data.time,
+    retentionDays: response.data.retentionDays,
+  };
+}
+
+async function loadDropboxStatus(): Promise<void> {
+  const response = await httpClient.get<DropboxStatusApiDto>('/backup/dropbox/status');
+  dropboxConnected.value = response.data.connected;
+  dropboxSyncEnabled.value = response.data.enabled;
+  lastDropboxSync.value = response.data.lastSyncAt
+    ? new Date(response.data.lastSyncAt).toLocaleString()
+    : 'Never';
+}
 
 // Methods
 /**
@@ -490,22 +552,12 @@ function formatFileSize(bytes: number): string {
 async function handleCreateBackup(): Promise<void> {
   isCreatingBackup.value = true;
   try {
-    // Simulate backup creation
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    
-    const newBackup: BackupRecord = {
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      type: 'manual',
-      size: Math.floor(Math.random() * 100000000) + 40000000,
-      status: 'completed',
-    };
-    
-    backupHistory.value.unshift(newBackup);
-    alert('Backup created successfully!');
+    await httpClient.post<BackupApiDto>('/backup/create');
+    await refreshBackupHistory();
+    notify({type: 'success', title: 'Backup', message: 'Backup created successfully.'});
   } catch (error) {
     console.error('Failed to create backup:', error);
-    alert('Failed to create backup');
+    notify({type: 'error', title: 'Backup', message: 'Failed to create backup.'});
   } finally {
     isCreatingBackup.value = false;
   }
@@ -517,12 +569,16 @@ async function handleCreateBackup(): Promise<void> {
 async function handleSaveSchedule(): Promise<void> {
   isSavingSchedule.value = true;
   try {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    alert('Schedule configuration saved successfully!');
+    await httpClient.put<ScheduleApiDto>('/backup/schedule', scheduleConfig.value);
+    await loadScheduleConfig();
+    notify({
+      type: 'success',
+      title: 'Schedule',
+      message: 'Schedule configuration saved successfully.',
+    });
   } catch (error) {
     console.error('Failed to save schedule:', error);
-    alert('Failed to save schedule');
+    notify({type: 'error', title: 'Schedule', message: 'Failed to save schedule.'});
   } finally {
     isSavingSchedule.value = false;
   }
@@ -562,11 +618,19 @@ async function handleExport(format: string): Promise<void> {
     
     // Cleanup
     URL.revokeObjectURL(downloadUrl);
-    
-    alert(`Data exported as ${format.toUpperCase()} successfully!`);
+
+    notify({
+      type: 'success',
+      title: 'Export',
+      message: `Data exported as ${format.toUpperCase()} successfully.`,
+    });
   } catch (error) {
     console.error(`Failed to export as ${format}:`, error);
-    alert(`Failed to export as ${format}. Please ensure you are logged in as an administrator.`);
+    notify({
+      type: 'error',
+      title: 'Export',
+      message: `Failed to export as ${format}. Please ensure you are logged in as an administrator.`,
+    });
   } finally {
     isExporting.value = false;
   }
@@ -577,24 +641,27 @@ async function handleExport(format: string): Promise<void> {
  */
 async function handleDropboxConnect(): Promise<void> {
   try {
-    // Simulate OAuth flow
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    dropboxConnected.value = true;
-    lastDropboxSync.value = new Date().toLocaleString();
-    alert('Dropbox connected successfully!');
+    await httpClient.post<DropboxStatusApiDto>('/backup/dropbox/connect');
+    await loadDropboxStatus();
+    notify({type: 'success', title: 'Dropbox', message: 'Dropbox sync enabled.'});
   } catch (error) {
     console.error('Failed to connect Dropbox:', error);
-    alert('Failed to connect Dropbox');
+    notify({type: 'error', title: 'Dropbox', message: 'Failed to enable Dropbox sync.'});
   }
 }
 
 /**
  * Handle Dropbox disconnection
  */
-function handleDropboxDisconnect(): void {
-  dropboxConnected.value = false;
-  lastDropboxSync.value = 'Never';
-  alert('Dropbox disconnected');
+async function handleDropboxDisconnect(): Promise<void> {
+  try {
+    await httpClient.post<DropboxStatusApiDto>('/backup/dropbox/disconnect');
+    await loadDropboxStatus();
+    notify({type: 'info', title: 'Dropbox', message: 'Dropbox sync disabled.'});
+  } catch (error) {
+    console.error('Failed to disconnect Dropbox:', error);
+    notify({type: 'error', title: 'Dropbox', message: 'Failed to disable Dropbox sync.'});
+  }
 }
 
 /**
@@ -603,12 +670,14 @@ function handleDropboxDisconnect(): void {
 async function handleDropboxSync(): Promise<void> {
   isSyncing.value = true;
   try {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    lastDropboxSync.value = new Date().toLocaleString();
-    alert('Synced to Dropbox successfully!');
+    await httpClient.post<{uploaded: number; lastSyncAt: string | null}>(
+      '/backup/dropbox/sync',
+    );
+    await loadDropboxStatus();
+    notify({type: 'success', title: 'Dropbox', message: 'Synced backups to Dropbox.'});
   } catch (error) {
     console.error('Failed to sync to Dropbox:', error);
-    alert('Failed to sync to Dropbox');
+    notify({type: 'error', title: 'Dropbox', message: 'Failed to sync backups to Dropbox.'});
   } finally {
     isSyncing.value = false;
   }
@@ -619,9 +688,23 @@ async function handleDropboxSync(): Promise<void> {
  *
  * @param {BackupRecord} backup - Backup to download
  */
-function handleDownloadBackup(backup: BackupRecord): void {
-  alert(`Downloading backup from ${formatBackupDate(backup.createdAt)}`);
-  // Implement actual download logic
+async function handleDownloadBackup(backup: BackupRecord): Promise<void> {
+  try {
+    const encoded = encodeURIComponent(backup.filename);
+    const blob = await httpClient.downloadFile(`/backup/${encoded}/download`, {
+      responseType: 'blob',
+    });
+
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = backup.filename;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error('Failed to download backup:', error);
+    notify({type: 'error', title: 'Backup', message: 'Failed to download backup.'});
+  }
 }
 
 /**
@@ -642,13 +725,19 @@ async function handleRestoreConfirm(): Promise<void> {
 
   isRestoring.value = true;
   try {
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await httpClient.post<void>('/backup/restore', {
+      filename: backupToRestore.value.filename,
+    });
     showRestoreModal.value = false;
-    alert('Backup restored successfully! The application will reload.');
+    notify({
+      type: 'success',
+      title: 'Restore',
+      message: 'Backup restored successfully. Reloading...',
+    });
     window.location.reload();
   } catch (error) {
     console.error('Failed to restore backup:', error);
-    alert('Failed to restore backup');
+    notify({type: 'error', title: 'Restore', message: 'Failed to restore backup.'});
   } finally {
     isRestoring.value = false;
   }
@@ -665,11 +754,13 @@ async function handleDeleteBackup(backup: BackupRecord): Promise<void> {
   }
 
   try {
-    backupHistory.value = backupHistory.value.filter((b) => b.id !== backup.id);
-    alert('Backup deleted successfully');
+    const encoded = encodeURIComponent(backup.filename);
+    await httpClient.delete<void>(`/backup/${encoded}`);
+    await refreshBackupHistory();
+    notify({type: 'success', title: 'Backup', message: 'Backup deleted successfully.'});
   } catch (error) {
     console.error('Failed to delete backup:', error);
-    alert('Failed to delete backup');
+    notify({type: 'error', title: 'Backup', message: 'Failed to delete backup.'});
   }
 }
 
@@ -679,10 +770,14 @@ onMounted(async () => {
 
   isLoading.value = true;
   try {
-    // Load backup history and configuration
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await Promise.all([
+      refreshBackupHistory(),
+      loadScheduleConfig(),
+      loadDropboxStatus(),
+    ]);
   } catch (error) {
     console.error('Failed to load backup data:', error);
+    notify({type: 'error', title: 'Backup', message: 'Failed to load backup data.'});
   } finally {
     isLoading.value = false;
   }

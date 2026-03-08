@@ -493,7 +493,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from 'vue';
+import {ref, computed, onMounted, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import {useAuth} from '../composables/use-auth';
 import {UserRole} from '../../domain/enumerations/user-role';
@@ -551,6 +551,87 @@ const adminForm = ref({
   autoBackupEnabled: false,
   debugModeEnabled: false,
 });
+
+type SettingsStorageNamespace = 'client' | 'special-user' | 'admin';
+
+function getUserScopedSettingsKey(namespace: SettingsStorageNamespace): string | null {
+  const userId = user.value?.id;
+  if (!userId) {
+    return null;
+  }
+
+  return `cpm_settings:${userId}:${namespace}`;
+}
+
+function safeJsonParse(raw: string | null): unknown {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function hydrateRoleSettingsFromStorage(): void {
+  const clientKey = getUserScopedSettingsKey('client');
+  if (clientKey) {
+    const parsed = safeJsonParse(localStorage.getItem(clientKey));
+    if (parsed && typeof parsed === 'object') {
+      const data = parsed as Record<string, unknown>;
+      const allowedDefaultProjectView = new Set(['grid', 'list', 'calendar']);
+      clientForm.value = {
+        defaultProjectView: allowedDefaultProjectView.has(String(data.defaultProjectView))
+          ? (String(data.defaultProjectView) as 'grid' | 'list' | 'calendar')
+          : clientForm.value.defaultProjectView,
+        autoDownloadReports: typeof data.autoDownloadReports === 'boolean'
+          ? data.autoDownloadReports
+          : clientForm.value.autoDownloadReports,
+        showCompletedProjects: typeof data.showCompletedProjects === 'boolean'
+          ? data.showCompletedProjects
+          : clientForm.value.showCompletedProjects,
+      };
+    }
+  }
+
+  const specialUserKey = getUserScopedSettingsKey('special-user');
+  if (specialUserKey) {
+    const parsed = safeJsonParse(localStorage.getItem(specialUserKey));
+    if (parsed && typeof parsed === 'object') {
+      const data = parsed as Record<string, unknown>;
+      const allowedDefaultTaskView = new Set(['kanban', 'list', 'calendar']);
+      specialUserForm.value = {
+        defaultTaskView: allowedDefaultTaskView.has(String(data.defaultTaskView))
+          ? (String(data.defaultTaskView) as 'kanban' | 'list' | 'calendar')
+          : specialUserForm.value.defaultTaskView,
+        showOnlyMyTasks: typeof data.showOnlyMyTasks === 'boolean'
+          ? data.showOnlyMyTasks
+          : specialUserForm.value.showOnlyMyTasks,
+        enableQuickComments: typeof data.enableQuickComments === 'boolean'
+          ? data.enableQuickComments
+          : specialUserForm.value.enableQuickComments,
+      };
+    }
+  }
+
+  const adminKey = getUserScopedSettingsKey('admin');
+  if (adminKey) {
+    const parsed = safeJsonParse(localStorage.getItem(adminKey));
+    if (parsed && typeof parsed === 'object') {
+      const data = parsed as Record<string, unknown>;
+      adminForm.value = {
+        autoBackupEnabled: typeof data.autoBackupEnabled === 'boolean'
+          ? data.autoBackupEnabled
+          : adminForm.value.autoBackupEnabled,
+        debugModeEnabled: typeof data.debugModeEnabled === 'boolean'
+          ? data.debugModeEnabled
+          : adminForm.value.debugModeEnabled,
+      };
+    }
+  }
+}
 
 // Computed
 const getRoleLabel = computed(() => {
@@ -655,7 +736,10 @@ async function handleClientSettingsUpdate(): Promise<void> {
     // Note: Client-specific settings (defaultProjectView, autoDownloadReports, showCompletedProjects)
     // are UI preferences that should be stored in localStorage or a separate user preferences table.
     // For now, we just show success message.
-    localStorage.setItem('clientSettings', JSON.stringify(clientForm.value));
+    const storageKey = getUserScopedSettingsKey('client');
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(clientForm.value));
+    }
     showSuccess('Client preferences saved');
   } catch (error: any) {
     showError(error.message || 'Failed to save settings');
@@ -670,7 +754,10 @@ async function handleSpecialUserSettingsUpdate(): Promise<void> {
     // Note: Special user settings (defaultTaskView, showOnlyMyTasks, enableQuickComments)
     // are UI preferences that should be stored in localStorage or a separate user preferences table.
     // For now, we store them in localStorage.
-    localStorage.setItem('specialUserSettings', JSON.stringify(specialUserForm.value));
+    const storageKey = getUserScopedSettingsKey('special-user');
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(specialUserForm.value));
+    }
     showSuccess('Collaboration preferences saved');
   } catch (error: any) {
     showError(error.message || 'Failed to save preferences');
@@ -685,7 +772,10 @@ async function handleAdminSettingsUpdate(): Promise<void> {
     // Note: Admin settings (autoBackupEnabled, debugModeEnabled) are system-level settings
     // that should be stored in a separate system configuration table.
     // For now, we store them in localStorage.
-    localStorage.setItem('adminSettings', JSON.stringify(adminForm.value));
+    const storageKey = getUserScopedSettingsKey('admin');
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(adminForm.value));
+    }
     showSuccess('Admin settings saved');
   } catch (error: any) {
     showError(error.message || 'Failed to save settings');
@@ -735,7 +825,18 @@ onMounted(() => {
     accountForm.value.email = user.value.email;
     accountForm.value.phone = user.value.phone || '';
   }
+
+  hydrateRoleSettingsFromStorage();
 });
+
+watch(
+  () => user.value?.id,
+  (newUserId, oldUserId) => {
+    if (newUserId && newUserId !== oldUserId) {
+      hydrateRoleSettingsFromStorage();
+    }
+  },
+);
 </script>
 
 <style scoped>

@@ -45,6 +45,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   Home as HomeIcon,
@@ -55,6 +56,8 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from 'lucide-vue-next';
+
+import { useAuth } from '../../composables/use-auth';
 
 defineProps<{
   collapsed?: boolean;
@@ -68,13 +71,24 @@ const emit = defineEmits<{
 
 const route = useRoute();
 
-const navLinks = [
+const { canManageBackups } = useAuth();
+
+const baseNavLinks = [
   { path: '/', title: 'Dashboard', icon: HomeIcon },
   { path: '/projects', title: 'Projects', icon: FolderIcon },
   { path: '/calendar', title: 'Calendar', icon: CalendarIcon },
   { path: '/backup', title: 'Backup', icon: DatabaseIcon },
   { path: '/settings', title: 'Settings', icon: SettingsIcon },
 ];
+
+const navLinks = computed(() => {
+  return baseNavLinks.filter((link) => {
+    if (link.path === '/backup') {
+      return canManageBackups.value;
+    }
+    return true;
+  });
+});
 
 function isActive(path: string): boolean {
   if (path === '/') {

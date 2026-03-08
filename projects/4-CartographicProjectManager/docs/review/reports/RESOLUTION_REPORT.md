@@ -32,6 +32,10 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 ### ✅ Resolved (verified)
 - **D1-001** — Domain enums no longer contain UI-focused mappings: display names/colors/icons/templates were moved into Presentation mappings (`src/presentation/mappings/domain-enum-ui.ts`).
 - **D3-001** — Domain entities no longer implement transport-facing `toJSON()`; HTTP payload shaping remains at the boundary (repositories/services build explicit payload objects and serialize dates as needed).
+- **D5-001** — Auth state persistence no longer lies about `Date` fields: user/expires timestamps are serialized as ISO strings in localStorage and explicitly rehydrated back to `Date` objects on load.
+- **D18-001** — Refresh tokens are no longer stored in `localStorage`; they are now session-scoped via `sessionStorage` (access tokens remain persisted).
+- **D18-002** — Session expiry is derived from JWT `exp` (when available) and persisted (`STORAGE_KEYS.EXPIRES_AT`) instead of being recomputed on reload.
+- **D18-006** — Notification persistence is now user-scoped (`cpm_notifications:<userId>`), rehydrates date fields, and hydrates after auth init/login to prevent cross-account state leakage.
 - **D2-002** — GeoCoordinates value equality now uses epsilon-based comparison (not strict `===`) to avoid brittle float equality failures.
 - **D2-003** — GeoCoordinates validation now rejects non-finite values (`NaN`/`Infinity`) before range checks.
 - **D4-001** — Backend repository interfaces are no longer incorrectly located in the “Domain” layer with Prisma coupling; Prisma-shaped repository interfaces were relocated to Infrastructure and implementations were updated accordingly.
@@ -57,6 +61,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D10-004** — Backend Dropbox service no longer swallows broad “path” errors: `createFolder()` only ignores explicit “already exists” conflicts and `pathExists()` only returns `false` for explicit “not found”; unexpected errors are logged and rethrown.
 - **D10-005** — Backend Dropbox integration no longer uses direct `console.log` in infra paths; it now routes operational messages through the shared logger.
 - **D11-001** — Frontend repositories’ 404 detection was made robust: “find-or-null” methods now treat both normalized `ApiError.status` and Axios-shaped `error.response.status` as 404, preventing avoidable throws/UI crashes.
+- **D11-002** — Frontend repositories now build encoded query strings using `URLSearchParams` (not raw interpolation), preventing brittle failures with ISO date filters and other reserved characters.
 - **D11-004** — Frontend and backend repositories no longer use direct `console.*` debug logging in core data paths; backend routes through the shared logger and frontend removes the noisy debug prints.
 - **D13-001** — Deadline reminder scheduler now uses the shared Prisma singleton (`prisma`) instead of constructing a separate `PrismaClient`, avoiding mixed-client workflows and reducing connection lifecycle risk.
 - **D13-002** — Backup scheduler now disables itself at startup (with a clear error log) if `DATABASE_URL` is missing, instead of running with an empty config.
@@ -69,6 +74,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D15-005** — Backend development console logging no longer throws on circular metadata; metadata serialization falls back safely when JSON stringification fails.
 - **D15-006** — Backend shared module headers were standardized; `@file` now consistently points to `backend/src/shared/*.ts`.
 - **D17-001** — Post-login redirect is now validated before navigation: the `redirect` query must be an internal route that resolves via `router.resolve()` and is denied for login; invalid inputs fall back to the dashboard.
+- **D19-001** — Redirect handling is now centralized: `useAuth()` delegates to `handlePostLoginRedirect()` (validated via `isValidRedirectTarget`), and `requireAuth()` uses the same `redirect` query mechanism (no separate `intended_route`).
 - **D36-003** — Backend auth role fields in shared type definitions are no longer stringly-typed; they are constrained to Prisma `UserRole`.
 - **D36-004** — Backend shared types header metadata is aligned (`@file backend/src/shared/types.ts`).
 - **D22-006** — File upload Dropbox path construction is now hardened: `section` is normalized/allowlisted and the Dropbox storage filename is generated server-side using the file id and a sanitized basename (original filename is preserved separately).
@@ -92,6 +98,8 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D7-004** — Removed the unused/mock frontend `AuthenticationService` that performed local password checks and generated placeholder tokens; auth remains backend-driven via `AuthRepository` + `auth.store.ts`.
 - **D32-001** — `CalendarView` now listens to `CalendarWidget`’s emitted `date-select` event so date selection updates `selectedDate` as intended.
 - **D32-004** — `ProjectListView` status filter now uses `ProjectStatus` enum values (typed `statusFilter`) so status filtering works.
+- **D32-006** — `ProjectDetailsView` tabs now have matching tab button `id`s for each tabpanel’s `aria-labelledby`, restoring correct tab/tabpanel relationships for assistive technologies.
+- **D32-007** — `ProjectDetailsView` file download/preview no longer reads tokens directly or uses ad-hoc `fetch`; it requests links via the shared HTTP client and opens new tabs safely (`noopener,noreferrer`, `opener=null`, http/https-only).
 - **D33-001** — WebSocket client connection initiation is now idempotent, preventing duplicate socket instances when connect is triggered from multiple app paths.
 - **D33-002** — App/WebSocket debug logging is now gated to dev builds (`import.meta.env.DEV`), avoiding production noise.
 - **D33-005** — Backend shutdown is now idempotent and resilient: HTTP close/disconnect errors are handled and the forced-exit timer is cleared on completion.
@@ -117,6 +125,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D24-007** — Common components now use typed `emit(...)` in templates instead of `$emit(...)`, improving event type-safety and consistency.
 - **D24-008** — `LoadingSpinner` no longer declares a dead `overlay` prop, and its styling uses design tokens without hard-coded hex fallback values.
 - **D24-010** — Common component file headers were standardized to the project’s University of La Laguna template for consistency and doc generation.
+- **D25-001** — Layout sidebar navigation is now permission-aware: admin-only links (e.g., Backup) are hidden unless the user has the required permission/role.
 - **D25-003** — Layout `AppHeader`/`AppSidebar` templates no longer use `$emit`/`$router`; navigation and events go through the typed `emit(...)` and `router.push(...)` handlers.
 - **D25-002** — `AppHeader` user dropdown now closes on click-outside, Escape, and route changes; document listeners are registered only while open and are cleaned up on close/unmount.
 - **D25-004** — Layout `AppSidebar` no longer contains an unused `computed` import (report drift cleared).
@@ -126,6 +135,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D26-001** — `ProjectSummary` clickable stat/section tiles are now keyboard-accessible: added `role="button"`, `tabindex="0"`, and Enter/Space handling; template uses typed `emit(...)` instead of `$emit(...)`.
 - **D26-007** — `ProjectSummary` delete icon button now has `aria-label`/`title`, and `statusLabel` has a safe fallback so unexpected statuses don’t render blank UI.
 - **D26-002** — `ProjectForm` date-only inputs are now timezone-safe: input formatting uses local date parts (not `toISOString()`), and submit/validation parse `YYYY-MM-DD` into a local `Date` to avoid off-by-one shifts.
+- **D26-003** — `ProjectCard` click handling is now single-responsibility: it emits `click` and no longer navigates internally, preventing double-navigation when parents also route.
 - **D27-004** — `TaskCard` now supports Space key activation (with `.prevent`) in addition to Enter when using `role="button"`.
 - **D27-005** — `TaskForm` template no longer uses `$emit` for cancel/remove-file; it now uses typed `emit(...)`.
 - **D27-006** — `TaskList` template event forwarding no longer uses `$emit`; it now forwards via typed `emit(...)`.
@@ -143,6 +153,19 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D29-002** — `FileUploader` drop zone is now keyboard-accessible with `role="button"`, focusable `tabindex`, and Enter/Space activation.
 - **D29-003** — `FileList` grid cards + table rows now support Space key activation (with `.prevent`), and templates use typed `emit(...)` instead of `$emit(...)` for consistent event contracts.
 - **D29-004** — `FileUploader` preview cleanup is now aligned with the implementation: since previews are data URLs (`readAsDataURL()`), cleanup only revokes real object URLs (`blob:`), avoiding incorrect `revokeObjectURL` calls.
+- **D30-001** — `NotificationList` groups by local calendar day keys (no UTC `toISOString()`), preventing Today/Yesterday mislabeling around timezone boundaries.
+- **D30-002** — `NotificationList` `filter-change` now emits a payload matching the UI selection (unread/tasks/messages/projects) using `isRead`, `type`, and `types` fields as appropriate.
+- **D30-003** — `NotificationList` load-more emissions are now gated with an internal in-flight flag shared across observer + scroll fallback, preventing duplicate pagination requests.
+- **D30-004** — Notification UI a11y/consistency: `NotificationItem` now supports Space-key activation, and `NotificationList` templates use typed `emit(...)` instead of `$emit(...)`.
+- **D31-001** — `CalendarWidget` day selection no longer nests interactive controls inside a `role="button"` day cell: selection is handled via a dedicated day-number `<button>` with an aria-label.
+- **D31-002** — `CalendarWidget` now enforces `maxProjectsPerDay` across projects+tasks combined; visible items use a shared budget and the “+X more” indicator matches hidden items.
+- **D31-003** — `CalendarWidget` day generation now pre-buckets projects/tasks by local day key (map lookups) instead of filtering and parsing dates per day (better scaling).
+- **D31-004** — `CalendarWidget` day keys are now stable local `YYYY-MM-DD` values (no UTC `toISOString()` key usage).
+- **D31-005** — Removed a production-noisy deep/immediate watcher that logged project updates to `console.log`.
+- **D32-008** — `SettingsView` role-specific UI preferences are now stored under per-user `localStorage` keys (`cpm_settings:<userId>:<namespace>`) and are hydrated when the authenticated user is available, preventing cross-account leakage on shared devices.
+- **D32-009** — `BackupView` no longer simulates admin backup flows: it now loads history and executes create/restore/delete/download/schedule/Dropbox actions through real backend `/api/v1/backup/*` endpoints, removing `setTimeout`/`Math.random()`/`alert(...)` success stubs.
+- **D32-002** — `CalendarView` no longer loads tasks sequentially per project; it now fetches tasks with bounded parallelism (concurrency-limited workers), reducing month-change latency and scaling better with many projects.
+- **D32-003** — `DashboardView` upcoming deadline items now support Space-key activation alongside Enter when using `role="button"`.
 
 ### 🟡 Partially Resolved
 - **D7-005** — Coordinate handling was fixed to preserve valid `0` values and handle partial coordinate updates deterministically, but Dropbox-folder-id normalization to an empty string still remains in the Domain/entity path.

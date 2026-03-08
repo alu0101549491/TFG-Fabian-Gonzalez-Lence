@@ -47,6 +47,22 @@ export class NotificationRepository implements INotificationRepository {
   private readonly baseUrl = '/notifications';
 
   /**
+   * Build a URL with encoded query params.
+   *
+   * @param baseUrl - Base URL path
+   * @param params - Query parameters
+   * @returns URL with encoded query string
+   */
+  private buildUrlWithParams(
+    baseUrl: string,
+    params: Record<string, string>,
+  ): string {
+    const searchParams = new URLSearchParams(params);
+    const queryString = searchParams.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  }
+
+  /**
    * Find notification by unique identifier
    *
    * @param id - Notification ID
@@ -110,8 +126,9 @@ export class NotificationRepository implements INotificationRepository {
    * @returns Array of user notifications
    */
   public async findByUserId(userId: string): Promise<Notification[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {userId});
     const response = await httpClient.get<NotificationApiResponse[]>(
-      `${this.baseUrl}?userId=${userId}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -129,8 +146,13 @@ export class NotificationRepository implements INotificationRepository {
     limit: number,
     offset: number,
   ): Promise<Notification[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {
+      userId,
+      limit: String(limit),
+      offset: String(offset),
+    });
     const response = await httpClient.get<NotificationApiResponse[]>(
-      `${this.baseUrl}?userId=${userId}&limit=${limit}&offset=${offset}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -142,8 +164,12 @@ export class NotificationRepository implements INotificationRepository {
    * @returns Array of unread notifications
    */
   public async findUnreadByUserId(userId: string): Promise<Notification[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {
+      userId,
+      isRead: 'false',
+    });
     const response = await httpClient.get<NotificationApiResponse[]>(
-      `${this.baseUrl}?userId=${userId}&isRead=false`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -159,8 +185,12 @@ export class NotificationRepository implements INotificationRepository {
     userId: string,
     type: NotificationType,
   ): Promise<Notification[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {
+      userId,
+      type,
+    });
     const response = await httpClient.get<NotificationApiResponse[]>(
-      `${this.baseUrl}?userId=${userId}&type=${type}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }
@@ -172,8 +202,9 @@ export class NotificationRepository implements INotificationRepository {
    * @returns Number of user notifications
    */
   public async countByUserId(userId: string): Promise<number> {
+    const url = this.buildUrlWithParams(`${this.baseUrl}/count`, {userId});
     const response = await httpClient.get<{count: number}>(
-      `${this.baseUrl}/count?userId=${userId}`,
+      url,
     );
     return response.data.count;
   }
@@ -185,8 +216,12 @@ export class NotificationRepository implements INotificationRepository {
    * @returns Number of unread notifications
    */
   public async countUnreadByUserId(userId: string): Promise<number> {
+    const url = this.buildUrlWithParams(`${this.baseUrl}/count`, {
+      userId,
+      isRead: 'false',
+    });
     const response = await httpClient.get<{count: number}>(
-      `${this.baseUrl}/count?userId=${userId}&isRead=false`,
+      url,
     );
     return response.data.count;
   }
@@ -215,7 +250,8 @@ export class NotificationRepository implements INotificationRepository {
    * @param userId - User ID
    */
   public async deleteByUserId(userId: string): Promise<void> {
-    await httpClient.delete(`${this.baseUrl}?userId=${userId}`);
+    const url = this.buildUrlWithParams(this.baseUrl, {userId});
+    await httpClient.delete(url);
   }
 
   /**
@@ -224,9 +260,10 @@ export class NotificationRepository implements INotificationRepository {
    * @param date - Cutoff date
    */
   public async deleteOlderThan(date: Date): Promise<void> {
-    await httpClient.delete(
-      `${this.baseUrl}?olderThan=${date.toISOString()}`,
-    );
+    const url = this.buildUrlWithParams(this.baseUrl, {
+      olderThan: date.toISOString(),
+    });
+    await httpClient.delete(url);
   }
 
   /**
@@ -236,8 +273,11 @@ export class NotificationRepository implements INotificationRepository {
    * @returns Array of notifications related to entity
    */
   public async findByRelatedEntityId(entityId: string): Promise<Notification[]> {
+    const url = this.buildUrlWithParams(this.baseUrl, {
+      relatedEntityId: entityId,
+    });
     const response = await httpClient.get<NotificationApiResponse[]>(
-      `${this.baseUrl}?relatedEntityId=${entityId}`,
+      url,
     );
     return response.data.map((data) => this.mapToEntity(data));
   }

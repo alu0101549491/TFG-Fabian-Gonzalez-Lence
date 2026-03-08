@@ -230,13 +230,28 @@ async function handleMonthChange(date: Date): Promise<void> {
  * Load tasks for all projects in calendar
  */
 async function loadTasksForProjects(): Promise<void> {
-  for (const project of calendarProjects.value) {
-    try {
-      await taskStore.fetchTasksByProject(project.id);
-    } catch (error) {
-      console.warn(`Failed to load tasks for project ${project.code}:`, error);
-    }
+  const projects = [...calendarProjects.value];
+  if (projects.length === 0) {
+    return;
   }
+
+  const concurrency = 5;
+  let nextIndex = 0;
+
+  const workers = Array.from({length: Math.min(concurrency, projects.length)}, async () => {
+    while (nextIndex < projects.length) {
+      const project = projects[nextIndex];
+      nextIndex += 1;
+
+      try {
+        await taskStore.fetchTasksByProject(project.id);
+      } catch (error) {
+        console.warn(`Failed to load tasks for project ${project.code}:`, error);
+      }
+    }
+  });
+
+  await Promise.all(workers);
 }
 
 /**
