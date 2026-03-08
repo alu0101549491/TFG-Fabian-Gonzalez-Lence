@@ -7,7 +7,7 @@
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since February 18, 2026
  * @file src/infrastructure/persistence/token.storage.ts
- * @desc LocalStorage-based token storage implementation for JWT authentication
+ * @desc Token storage implementation for JWT authentication (local + session storage)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  * @see {@link https://typescripttutorial.net}
  */
@@ -16,10 +16,10 @@ import type {ITokenStorage} from '../http/axios.client';
 import {STORAGE_KEYS} from '../../shared/constants';
 
 /**
- * LocalStorage-based implementation of token storage.
+ * Token storage implementation.
  *
- * Manages JWT access and refresh tokens using browser localStorage
- * for persistence across sessions.
+ * Stores access tokens in localStorage (persistent) and refresh tokens in
+ * sessionStorage (non-persistent) to reduce long-lived token exposure.
  *
  * @example
  * ```typescript
@@ -50,9 +50,9 @@ export class TokenStorage implements ITokenStorage {
    */
   public getRefreshToken(): string | null {
     try {
-      return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      return sessionStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
     } catch (error) {
-      console.error('Error reading refresh token from localStorage:', error);
+      console.error('Error reading refresh token from sessionStorage:', error);
       return null;
     }
   }
@@ -66,9 +66,9 @@ export class TokenStorage implements ITokenStorage {
   public setTokens(accessToken: string, refreshToken: string): void {
     try {
       localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      sessionStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
     } catch (error) {
-      console.error('Error storing tokens in localStorage:', error);
+      console.error('Error storing tokens in storage:', error);
     }
   }
 
@@ -78,10 +78,11 @@ export class TokenStorage implements ITokenStorage {
   public clearTokens(): void {
     try {
       localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+      sessionStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);
+      localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
     } catch (error) {
-      console.error('Error clearing tokens from localStorage:', error);
+      console.error('Error clearing tokens from storage:', error);
     }
   }
 }

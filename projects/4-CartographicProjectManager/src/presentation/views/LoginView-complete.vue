@@ -101,7 +101,8 @@
 
 <script setup lang="ts">
 import {ref, reactive, computed} from 'vue';
-import {useRouter, useRoute} from 'vue-router';
+import {useRouter} from 'vue-router';
+import {handlePostLoginRedirect} from '../router';
 import {useAuth} from '@/presentation/composables';
 import LoadingSpinner from '@/presentation/components/common/LoadingSpinner.vue';
 import {
@@ -114,7 +115,6 @@ import {
 } from 'lucide-vue-next';
 
 const router = useRouter();
-const route = useRoute();
 const {login, isLoading} = useAuth();
 
 const form = reactive({
@@ -132,8 +132,8 @@ async function handleLogin() {
   error.value = null;
   try {
     await login(form.email, form.password, form.rememberMe);
-    const redirect = (route.query.redirect as string) || '/';
-    router.push(redirect);
+    // Use the shared validated redirect helper (prevents untrusted redirects)
+    handlePostLoginRedirect(router);
   } catch (err: any) {
     error.value = err.message || 'Invalid email or password. Please try again.';
   }

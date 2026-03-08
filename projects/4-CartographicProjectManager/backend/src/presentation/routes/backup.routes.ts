@@ -24,6 +24,50 @@ const backupController = new BackupController();
  * All backup routes require administrator role
  */
 
+// Get or update runtime schedule configuration
+router.get(
+  '/schedule',
+  authenticate,
+  authorize(UserRole.ADMINISTRATOR),
+  backupController.getSchedule.bind(backupController)
+);
+
+router.put(
+  '/schedule',
+  authenticate,
+  authorize(UserRole.ADMINISTRATOR),
+  backupController.updateSchedule.bind(backupController)
+);
+
+// Dropbox backup sync
+router.get(
+  '/dropbox/status',
+  authenticate,
+  authorize(UserRole.ADMINISTRATOR),
+  backupController.getDropboxStatus.bind(backupController)
+);
+
+router.post(
+  '/dropbox/connect',
+  authenticate,
+  authorize(UserRole.ADMINISTRATOR),
+  backupController.connectDropbox.bind(backupController)
+);
+
+router.post(
+  '/dropbox/disconnect',
+  authenticate,
+  authorize(UserRole.ADMINISTRATOR),
+  backupController.disconnectDropbox.bind(backupController)
+);
+
+router.post(
+  '/dropbox/sync',
+  authenticate,
+  authorize(UserRole.ADMINISTRATOR),
+  backupController.syncDropbox.bind(backupController)
+);
+
 // Create a new backup
 router.post(
   '/create',
@@ -46,6 +90,14 @@ router.post(
   authenticate,
   authorize(UserRole.ADMINISTRATOR),
   backupController.restoreBackup.bind(backupController)
+);
+
+// Download a backup
+router.get(
+  '/:filename/download',
+  authenticate,
+  authorize(UserRole.ADMINISTRATOR),
+  backupController.downloadBackup.bind(backupController)
 );
 
 // Delete a backup

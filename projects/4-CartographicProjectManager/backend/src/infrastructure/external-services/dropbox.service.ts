@@ -431,6 +431,19 @@ export class DropboxService implements IDropboxService {
   }
 
   /**
+   * Ensure a folder exists in Dropbox.
+   *
+   * This is useful for server-side maintenance tasks (e.g., backup sync)
+   * that need to create a dedicated storage folder.
+   *
+   * @param path - Folder path to ensure
+   * @returns Folder path
+   */
+  public async ensureFolder(path: string): Promise<string> {
+    return this.createFolder(path);
+  }
+
+  /**
    * Upload large file using chunked upload session
    * @param path - Destination file path
    * @param content - File content as Buffer

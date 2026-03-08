@@ -89,14 +89,16 @@ export class BackupService {
    * Create a database backup
    * @returns Path to the created backup file
    */
-  public async createBackup(): Promise<{ filename: string; path: string; size: number }> {
+  public async createBackup(
+    type: 'manual' | 'automatic' = 'manual'
+  ): Promise<{ filename: string; path: string; size: number; type: 'manual' | 'automatic'; created: Date }> {
     try {
       // Ensure backup directory exists
       await fs.mkdir(this.config.backupDir, { recursive: true });
 
       // Generate backup filename with timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `backup_${timestamp}.sql`;
+      const filename = `backup_${type}_${timestamp}.sql`;
       const backupPath = path.join(this.config.backupDir, filename);
 
       // Extract database connection parameters from URL
@@ -154,6 +156,8 @@ export class BackupService {
         filename,
         path: backupPath,
         size: stats.size,
+        type,
+        created: stats.mtime,
       };
     } catch (error) {
       logError('[Backup] Failed to create backup:', error as Error);
@@ -239,6 +243,7 @@ export class BackupService {
       size: number;
       created: Date;
       age: string;
+      type: 'manual' | 'automatic';
     }>
   > {
     try {
@@ -265,6 +270,9 @@ export class BackupService {
               size: stats.size,
               created: stats.mtime,
               age: ageDays === 0 ? 'Today' : `${ageDays} day${ageDays > 1 ? 's' : ''} ago`,
+              type: (file.includes('_automatic_') ? 'automatic' : 'manual') as
+                | 'manual'
+                | 'automatic',
             };
           })
       );

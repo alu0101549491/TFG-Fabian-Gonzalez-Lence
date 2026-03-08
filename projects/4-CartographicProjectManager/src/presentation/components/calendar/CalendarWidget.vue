@@ -115,7 +115,7 @@
       <!-- Day cells -->
       <div
         v-for="day in calendarDays"
-        :key="day.date.toISOString()"
+        :key="day.key"
         :class="[
           'calendar-day',
           {
@@ -127,14 +127,18 @@
             'calendar-day-selected': isSelected(day.date),
           },
         ]"
-        :tabindex="day.isCurrentMonth ? 0 : -1"
-        role="button"
-        :aria-label="getDayAriaLabel(day)"
         @click="handleDayClick(day)"
-        @keydown.enter="handleDayClick(day)"
       >
         <!-- Day number -->
-        <span class="calendar-day-number">{{ day.date.getDate() }}</span>
+        <button
+          type="button"
+          class="calendar-day-number"
+          :tabindex="day.isCurrentMonth ? 0 : -1"
+          :aria-label="getDayAriaLabel(day)"
+          @click.stop="handleDayClick(day)"
+        >
+          {{ day.date.getDate() }}
+        </button>
 
         <!-- Project and Task indicators (full mode) -->
         <div
@@ -143,7 +147,7 @@
         >
           <!-- Projects -->
           <button
-            v-for="project in getVisibleProjects(day.projects)"
+            v-for="project in day.visibleProjects"
             :key="'p-' + project.id"
             type="button"
             :class="[
@@ -165,7 +169,7 @@
 
           <!-- Tasks -->
           <button
-            v-for="task in getVisibleTasks(day.tasks)"
+            v-for="task in day.visibleTasks"
             :key="'t-' + task.id"
             type="button"
             :class="[
@@ -187,10 +191,10 @@
 
           <!-- More indicator -->
           <span
-            v-if="(day.projects.length + day.tasks.length) > maxProjectsPerDay"
+            v-if="day.moreCount > 0"
             class="calendar-day-more"
           >
-            +{{ (day.projects.length + day.tasks.length) - maxProjectsPerDay }} more
+            +{{ day.moreCount }} more
           </span>
         </div>
 
@@ -411,6 +415,13 @@ const props = withDefaults(defineProps<CalendarWidgetProps>(), {
 
 const emit = defineEmits<CalendarWidgetEmits>();
 
+type CalendarDayViewModel = CalendarDayDto & {
+  key: string;
+  visibleProjects: CalendarProjectDto[];
+  visibleTasks: CalendarTaskDto[];
+  moreCount: number;
+};
+
 // State
 const currentDate = ref(new Date(props.initialDate || new Date()));
 const selectedDay = ref<CalendarDayDto | null>(null);
@@ -490,9 +501,58 @@ function checkIsToday(date: Date): boolean {
   );
 }
 
+function getLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const projectsByDayKey = computed(() => {
+  const map = new Map<string, CalendarProjectDto[]>();
+
+  for (const project of props.projects) {
+    const deliveryDate = new Date(project.deliveryDate);
+    if (!Number.isFinite(deliveryDate.getTime())) {
+      continue;
+    }
+
+    const key = getLocalDateKey(deliveryDate);
+    const existing = map.get(key);
+    if (existing) {
+      existing.push(project);
+    } else {
+      map.set(key, [project]);
+    }
+  }
+
+  return map;
+});
+
+const tasksByDayKey = computed(() => {
+  const map = new Map<string, CalendarTaskDto[]>();
+
+  for (const task of props.tasks) {
+    const dueDate = new Date(task.dueDate);
+    if (!Number.isFinite(dueDate.getTime())) {
+      continue;
+    }
+
+    const key = getLocalDateKey(dueDate);
+    const existing = map.get(key);
+    if (existing) {
+      existing.push(task);
+    } else {
+      map.set(key, [task]);
+    }
+  }
+
+  return map;
+});
+
 // Generate calendar days for current month view
-const calendarDays = computed<CalendarDayDto[]>(() => {
-  const days: CalendarDayDto[] = [];
+const calendarDays = computed<CalendarDayViewModel[]>(() => {
+  const days: CalendarDayViewModel[] = [];
   const year = currentDate.value.getFullYear();
   const month = currentDate.value.getMonth();
 
@@ -509,26 +569,28 @@ const calendarDays = computed<CalendarDayDto[]>(() => {
   // Generate 6 weeks (42 days) to ensure consistent grid
   for (let i = 0; i < 42; i++) {
     const date = addDays(startDay, i);
+    const key = getLocalDateKey(date);
     const isCurrentMonth = date.getMonth() === month;
     const dayOfWeekNum = date.getDay();
     const isWeekend = dayOfWeekNum === 0 || dayOfWeekNum === 6;
 
-    // Find projects for this day
-    const dayProjects = props.projects.filter((project) => {
-      const deliveryDate = new Date(project.deliveryDate);
-      return isSameDay(deliveryDate, date);
-    });
+    const dayProjects = projectsByDayKey.value.get(key) ?? [];
+    const dayTasks = tasksByDayKey.value.get(key) ?? [];
 
-    // Find tasks for this day
-    const dayTasks = props.tasks.filter((task) => {
-      const dueDate = new Date(task.dueDate);
-      return isSameDay(dueDate, date);
-    });
+    const maxItems = props.maxProjectsPerDay;
+    const visibleProjects = dayProjects.slice(0, maxItems);
+    const remainingBudget = Math.max(0, maxItems - visibleProjects.length);
+    const visibleTasks = dayTasks.slice(0, remainingBudget);
+    const moreCount = Math.max(0, dayProjects.length + dayTasks.length - maxItems);
 
     days.push({
+      key,
       date: new Date(date),
       projects: dayProjects,
       tasks: dayTasks,
+      visibleProjects,
+      visibleTasks,
+      moreCount,
       items: [], // Will be computed from projects and tasks
       isToday: checkIsToday(date),
       isCurrentMonth,
@@ -605,12 +667,6 @@ function isSelected(date: Date): boolean {
   return selectedDay.value ? isSameDay(selectedDay.value.date, date) : false;
 }
 
-function getVisibleProjects(
-  projects: CalendarProjectDto[],
-): CalendarProjectDto[] {
-  return projects.slice(0, props.maxProjectsPerDay);
-}
-
 function getProjectTooltip(project: CalendarProjectDto): string {
   let tooltip = `${project.code}: ${project.name}`;
   tooltip += `\nClient: ${project.clientName}`;
@@ -624,9 +680,6 @@ function getProjectTooltip(project: CalendarProjectDto): string {
   return tooltip;
 }
 
-function getVisibleTasks(tasks: CalendarTaskDto[]): CalendarTaskDto[] {
-  return tasks.slice(0, Math.max(0, props.maxProjectsPerDay));
-}
 
 function getTaskTooltip(task: CalendarTaskDto): string {
   let tooltip = `Task: ${task.description}`;
@@ -713,17 +766,6 @@ watch(
   },
 );
 
-// Watch for projects changes
-watch(
-  () => props.projects,
-  (newProjects) => {
-    console.log(`[CalendarWidget] Projects updated: ${newProjects.length} projects`);
-    if (newProjects.length > 0) {
-      console.log('[CalendarWidget] Sample project:', newProjects[0]);
-    }
-  },
-  { deep: true, immediate: true }
-);
 </script>
 
 <style scoped>

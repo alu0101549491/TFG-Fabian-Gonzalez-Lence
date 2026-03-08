@@ -41,8 +41,23 @@ export interface UseFilesReturn {
     section: string,
     onProgress?: UploadProgressCallback
   ) => Promise<FileSummaryDto | null>;
+  getTemporaryDownloadUrl: (fileId: string) => Promise<string>;
+  getPreviewUrl: (fileId: string) => Promise<string>;
   deleteFile: (fileId: string) => Promise<boolean>;
   clearError: () => void;
+}
+
+/** API response data for a file download link */
+interface FileDownloadLinkResponse {
+  downloadUrl: string;
+  filename?: string;
+  expiresAt?: string;
+}
+
+/** API response data for a file preview link */
+interface FilePreviewLinkResponse {
+  previewUrl: string;
+  filename?: string;
 }
 
 /**
@@ -202,6 +217,58 @@ export function useFiles(): UseFilesReturn {
   }
 
   /**
+   * Requests a temporary download URL for a given file.
+   *
+   * @param fileId - File ID
+   * @returns Temporary download URL
+   */
+  async function getTemporaryDownloadUrl(fileId: string): Promise<string> {
+    error.value = null;
+
+    try {
+      const response = await httpClient.get<FileDownloadLinkResponse>(
+        `/files/${fileId}/download`,
+      );
+
+      if (!response.data?.downloadUrl) {
+        throw new Error('No download URL received');
+      }
+
+      return response.data.downloadUrl;
+    } catch (err: any) {
+      error.value = err.message || 'Failed to get download link';
+      console.error('Failed to get download link:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Requests a preview URL (browser-viewable) for a given file.
+   *
+   * @param fileId - File ID
+   * @returns Preview URL
+   */
+  async function getPreviewUrl(fileId: string): Promise<string> {
+    error.value = null;
+
+    try {
+      const response = await httpClient.get<FilePreviewLinkResponse>(
+        `/files/${fileId}/preview`,
+      );
+
+      if (!response.data?.previewUrl) {
+        throw new Error('No preview URL received');
+      }
+
+      return response.data.previewUrl;
+    } catch (err: any) {
+      error.value = err.message || 'Failed to get preview link';
+      console.error('Failed to get preview link:', err);
+      throw err;
+    }
+  }
+
+  /**
    * Deletes a file
    *
    * @param fileId - File ID to delete
@@ -239,6 +306,8 @@ export function useFiles(): UseFilesReturn {
     loadFilesByProject,
     loadFilesByTask,
     uploadFile,
+    getTemporaryDownloadUrl,
+    getPreviewUrl,
     deleteFile,
     clearError,
   };

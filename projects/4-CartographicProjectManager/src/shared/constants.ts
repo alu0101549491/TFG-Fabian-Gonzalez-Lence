@@ -420,6 +420,7 @@ export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'cpm_access_token',
   REFRESH_TOKEN: 'cpm_refresh_token',
   USER: 'cpm_user',
+  EXPIRES_AT: 'cpm_expires_at',
   THEME: 'cpm_theme',
   LANGUAGE: 'cpm_language',
   SIDEBAR_COLLAPSED: 'cpm_sidebar_collapsed',

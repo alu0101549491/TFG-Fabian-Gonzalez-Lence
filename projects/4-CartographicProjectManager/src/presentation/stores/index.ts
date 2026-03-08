@@ -200,6 +200,9 @@ export async function initializeAppStores(): Promise<void> {
     if (authStore.isAuthenticated) {
       const notificationStore = useNotificationStore();
       const messageStore = useMessageStore();
+
+      // Hydrate cached notifications for this user (user-scoped persistence)
+      notificationStore.hydrateFromStorage();
       
       // Fetch unread counts in background
       Promise.all([

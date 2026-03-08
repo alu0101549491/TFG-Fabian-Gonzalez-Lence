@@ -120,6 +120,7 @@
               role="button"
               tabindex="0"
               @keydown.enter="item.type === 'project' ? goToProject(item.id) : goToProject(item.projectId!)"
+              @keydown.space.prevent="item.type === 'project' ? goToProject(item.id) : goToProject(item.projectId!)"
             >
               <div
                 class="deadline-indicator"

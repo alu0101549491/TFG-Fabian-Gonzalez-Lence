@@ -42,6 +42,7 @@
         <button
           v-for="tab in tabs"
           :key="tab.key"
+          :id="`${tab.key}-tab`"
           :class="['tab-button', {active: activeTab === tab.key}]"
           :aria-selected="activeTab === tab.key"
           :aria-controls="`${tab.key}-panel`"
@@ -553,7 +554,6 @@ import type {FileListItemDto} from '../components/file/FileList.vue';
 import type {UpdateProjectDto, FileSummaryDto} from '@/application/dto';
 import {ProjectStatus} from '@/domain/enumerations/project-status';
 import {TaskStatus} from '@/domain/enumerations/task-status';
-import {STORAGE_KEYS} from '@/shared/constants';
 import type {CreateTaskDto, UpdateTaskDto, TaskDto, TaskSummaryDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto/task-data.dto';
 
 // Composables
@@ -593,8 +593,30 @@ const {
   isLoading: filesLoading,
   loadFilesByProject,
   uploadFile: uploadFileToDropbox,
+  getTemporaryDownloadUrl,
+  getPreviewUrl,
   deleteFile,
 } = useFiles();
+
+/**
+ * Safely open an external URL in a new tab.
+ *
+ * Mitigates reverse-tabnabbing by using `noopener,noreferrer` and nulling out
+ * `opener`. Also rejects non-http(s) protocols.
+ *
+ * @param rawUrl - URL to open
+ */
+function openExternalUrlInNewTab(rawUrl: string): void {
+  const url = new URL(rawUrl);
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new Error('Unsupported URL protocol');
+  }
+
+  const openedWindow = window.open(url.toString(), '_blank', 'noopener,noreferrer');
+  if (openedWindow) {
+    openedWindow.opener = null;
+  }
+}
 
 // Local State
 type TabKey = 'overview' | 'tasks' | 'messages' | 'files';
@@ -1156,41 +1178,12 @@ async function handleFileUpload(uploads: Array<{id: string; file: File; section:
  */
 async function handleFileDownload(file: FileSummaryDto): Promise<void> {
   try {
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    
-    if (!token) {
+    if (!isAuthenticated.value) {
       throw new Error('Not authenticated');
     }
 
-    console.log('Downloading file:', file.id);
-    
-    // Get temporary download link from backend
-    const response = await fetch(`${apiUrl}/files/${file.id}/download`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Download failed:', response.status, errorText);
-      throw new Error(`Failed to get download link: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('Download response:', result);
-    
-    // Backend returns: {success: true, data: {downloadUrl, filename, expiresAt}}
-    const downloadUrl = result.data?.downloadUrl || result.downloadUrl;
-    
-    if (downloadUrl) {
-      // Open Dropbox temporary link in new tab
-      window.open(downloadUrl, '_blank');
-    } else {
-      console.error('No download URL in response:', result);
-      throw new Error('No download URL received');
-    }
+    const downloadUrl = await getTemporaryDownloadUrl(file.id);
+    openExternalUrlInNewTab(downloadUrl);
   } catch (error) {
     console.error('Failed to download file:', error);
     alert(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -1231,40 +1224,12 @@ async function handleFileDelete(file: FileSummaryDto): Promise<void> {
  */
 async function handleFilePreview(file: FileSummaryDto): Promise<void> {
   try {
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    
-    if (!token) {
+    if (!isAuthenticated.value) {
       throw new Error('Not authenticated');
     }
 
-    console.log('Previewing file:', file.id);
-    
-    // Get preview link from backend (shared link that opens in browser viewer)
-    const response = await fetch(`${apiUrl}/files/${file.id}/preview`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Preview failed:', response.status, errorText);
-      throw new Error(`Failed to get preview link: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('Preview response:', result);
-    
-    const previewUrl = result.data?.previewUrl || result.previewUrl;
-    
-    if (previewUrl) {
-      // Open Dropbox shared link in new tab (shows web viewer instead of forcing download)
-      window.open(previewUrl, '_blank');
-    } else {
-      console.error('No preview URL in response:', result);
-      throw new Error('No preview URL received');
-    }
+    const previewUrl = await getPreviewUrl(file.id);
+    openExternalUrlInNewTab(previewUrl);
   } catch (error) {
     console.error('Failed to preview file:', error);
     alert(`Failed to preview file: ${error instanceof Error ? error.message : 'Unknown error'}`);

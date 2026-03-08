@@ -14,3 +14,4 @@
 
 export * from './deadline-reminder.scheduler.js';
 export * from './backup.scheduler.js';
+export * from './backup.config.js';

@@ -25,7 +25,11 @@ import {NotificationRepository} from '../../infrastructure/repositories/notifica
 import type {Notification as DomainNotification} from '../../domain/entities/notification';
 import {isSameDay, isThisWeek, formatDate} from '../../shared/utils';
 
-const STORAGE_KEY = 'cpm_notifications';
+const STORAGE_KEY_PREFIX = 'cpm_notifications';
+
+function buildStorageKey(userId: string): string {
+  return `${STORAGE_KEY_PREFIX}:${userId}`;
+}
 
 /**
  * Notification store using Composition API.
@@ -167,18 +171,23 @@ export const useNotificationStore = defineStore('notification', () => {
   // Helper functions
   
   /**
-   * Load notifications from localStorage
+   * Load notifications from localStorage for a specific user.
    */
-  function loadFromStorage(): void {
+  function loadFromStorage(userId: string): void {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(buildStorageKey(userId));
       if (stored) {
         const data = JSON.parse(stored);
+        if (data.userId !== userId) {
+          return;
+        }
+
         if (data.notifications) {
           // Convert date strings back to Date objects
           notifications.value = data.notifications.map((n: any) => ({
             ...n,
             createdAt: new Date(n.createdAt),
+            readAt: n.readAt ? new Date(n.readAt) : null,
           }));
           unreadCount.value = notifications.value.filter(n => !n.isRead).length;
         }
@@ -189,16 +198,26 @@ export const useNotificationStore = defineStore('notification', () => {
   }
 
   /**
-   * Save notifications to localStorage
+   * Save notifications to localStorage for a specific user.
    */
-  function saveToStorage(): void {
+  function saveToStorage(userId: string): void {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      localStorage.setItem(buildStorageKey(userId), JSON.stringify({
+        userId,
         notifications: notifications.value,
       }));
     } catch (err) {
       console.error('Failed to save notifications to storage:', err);
     }
+  }
+
+  /**
+   * Hydrates notifications from storage for the current authenticated user.
+   */
+  function hydrateFromStorage(): void {
+    if (!authStore.userId) return;
+    reset();
+    loadFromStorage(authStore.userId);
   }
 
   // Actions
@@ -247,7 +266,7 @@ export const useNotificationStore = defineStore('notification', () => {
       unreadCount.value = notifications.value.filter(n => !n.isRead).length;
       
       // Save to storage
-      saveToStorage();
+      saveToStorage(authStore.userId);
       
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch notifications';
@@ -256,9 +275,6 @@ export const useNotificationStore = defineStore('notification', () => {
       isLoading.value = false;
     }
   }
-
-  // Load persisted notifications at store creation (client-side)
-  loadFromStorage();
 
   /**
    * Fetches unread count only
@@ -307,7 +323,7 @@ export const useNotificationStore = defineStore('notification', () => {
         unreadCount.value = Math.max(0, unreadCount.value - 1);
         
         // Save to storage
-        saveToStorage();
+        saveToStorage(authStore.userId);
       }
     } catch (err: any) {
       error.value = err.message || 'Failed to mark notification as read';
@@ -338,7 +354,7 @@ export const useNotificationStore = defineStore('notification', () => {
       unreadCount.value = 0;
       
       // Save to storage
-      saveToStorage();
+      saveToStorage(authStore.userId);
     } catch (err: any) {
       error.value = err.message || 'Failed to mark all as read';
       throw err;
@@ -362,6 +378,10 @@ export const useNotificationStore = defineStore('notification', () => {
         
         if (wasUnread) {
           unreadCount.value = Math.max(0, unreadCount.value - 1);
+        }
+
+        if (authStore.userId) {
+          saveToStorage(authStore.userId);
         }
       }
     } catch (err: any) {
@@ -490,6 +510,7 @@ export const useNotificationStore = defineStore('notification', () => {
     messageNotifications, // Virtual notifications for messages
     
     // Actions
+    hydrateFromStorage,
     fetchNotifications,
     fetchUnreadCount,
     markAsRead,

@@ -44,7 +44,7 @@
           type="button"
           class="notification-list-mark-all"
           title="Mark all as read"
-          @click="$emit('mark-all-read')"
+          @click="emit('mark-all-read')"
         >
           <span>✓✓</span>
           <span v-if="!compact">Mark all read</span>
@@ -99,8 +99,8 @@
             :compact="compact"
             :show-actions="!compact"
             @click="handleNotificationClick"
-            @mark-read="(id) => $emit('mark-read', id)"
-            @delete="(id) => $emit('delete', id)"
+            @mark-read="(id) => emit('mark-read', id)"
+            @delete="(id) => emit('delete', id)"
           />
         </div>
       </template>
@@ -121,7 +121,7 @@
 
     <!-- Footer (for compact/dropdown mode) -->
     <div v-if="compact && notifications.length > 0" class="notification-list-footer">
-      <button type="button" class="notification-list-view-all" @click="$emit('view-all')">
+      <button type="button" class="notification-list-view-all" @click="emit('view-all')">
         View all notifications
       </button>
     </div>
@@ -148,6 +148,7 @@ interface NotificationGroup {
  */
 export interface NotificationFilter {
   type?: NotificationType;
+  types?: NotificationType[];
   isRead?: boolean;
 }
 
@@ -206,6 +207,7 @@ const loadMoreTriggerRef = ref<HTMLElement | null>(null);
 
 // State
 const activeFilter = ref<string>('all');
+const loadMoreInFlight = ref(false);
 
 // Intersection observer for infinite scroll
 let loadMoreObserver: IntersectionObserver | null = null;
@@ -220,6 +222,21 @@ onUnmounted(() => {
   }
 });
 
+watch(() => props.loadingMore, (isLoadingMore) => {
+  if (!isLoadingMore) {
+    loadMoreInFlight.value = false;
+  }
+});
+
+function requestLoadMore(): void {
+  if (loadMoreInFlight.value || props.loadingMore || !props.hasMore) {
+    return;
+  }
+
+  loadMoreInFlight.value = true;
+  emit('load-more');
+}
+
 watch(loadMoreTriggerRef, (newRef) => {
   if (loadMoreObserver && newRef) {
     loadMoreObserver.observe(newRef);
@@ -233,7 +250,7 @@ function setupIntersectionObserver(): void {
   loadMoreObserver = new IntersectionObserver(
     (entries) => {
       if (entries[0].isIntersecting && props.hasMore && !props.loadingMore) {
-        emit('load-more');
+        requestLoadMore();
       }
     },
     {
@@ -296,15 +313,15 @@ const groupedNotifications = computed<NotificationGroup[]>(() => {
   const weekAgo = new Date(today);
   weekAgo.setDate(weekAgo.getDate() - 7);
 
-  const todayStr = today.toISOString().split('T')[0];
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const todayStr = getLocalDateKey(today);
+  const yesterdayStr = getLocalDateKey(yesterday);
 
   // Group map
   const groupMap: Record<string, NotificationDto[]> = {};
 
   for (const notification of filteredNotifications.value) {
-    const dateStr = new Date(notification.createdAt).toISOString().split('T')[0];
     const notificationDate = new Date(notification.createdAt);
+    const dateStr = getLocalDateKey(notificationDate);
 
     let groupKey: string;
 
@@ -351,14 +368,38 @@ const groupedNotifications = computed<NotificationGroup[]>(() => {
   return groups;
 });
 
+function getLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 /**
  * Emit filter change
  */
 watch(activeFilter, (newFilter) => {
   const filter: NotificationFilter = {};
 
-  if (newFilter === 'unread') {
-    filter.isRead = false;
+  switch (newFilter) {
+    case 'unread':
+      filter.isRead = false;
+      break;
+    case 'task':
+      filter.types = [
+        NotificationType.NEW_TASK,
+        NotificationType.TASK_STATUS_CHANGE,
+      ];
+      break;
+    case 'message':
+      filter.type = NotificationType.NEW_MESSAGE;
+      break;
+    case 'project':
+      filter.types = [
+        NotificationType.PROJECT_ASSIGNED,
+        NotificationType.PROJECT_FINALIZED,
+      ];
+      break;
   }
 
   emit('filter-change', filter);
@@ -375,7 +416,7 @@ function handleScroll(event: Event): void {
 
   // Load more when near bottom
   if (scrollHeight - scrollTop - clientHeight < 100) {
-    emit('load-more');
+    requestLoadMore();
   }
 }
 
