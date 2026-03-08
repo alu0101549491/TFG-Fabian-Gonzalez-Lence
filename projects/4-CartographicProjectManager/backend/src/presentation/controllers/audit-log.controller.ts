@@ -15,6 +15,7 @@
 import { Request, Response } from 'express';
 import { AuditLogRepository, AuditLogFilters } from '../../infrastructure/repositories/audit-log.repository.js';
 import { AuditAction, AuditResourceType } from '@prisma/client';
+import { BadRequestError } from '../../shared/errors.js';
 
 /**
  * Controller for handling audit log HTTP requests
@@ -65,16 +66,32 @@ export class AuditLogController {
         filters.resourceId = resourceId;
       }
       if (startDate && typeof startDate === 'string') {
-        filters.startDate = new Date(startDate);
+        const parsedStartDate = new Date(startDate);
+        if (Number.isNaN(parsedStartDate.getTime())) {
+          throw new BadRequestError('Invalid startDate query parameter');
+        }
+        filters.startDate = parsedStartDate;
       }
       if (endDate && typeof endDate === 'string') {
-        filters.endDate = new Date(endDate);
+        const parsedEndDate = new Date(endDate);
+        if (Number.isNaN(parsedEndDate.getTime())) {
+          throw new BadRequestError('Invalid endDate query parameter');
+        }
+        filters.endDate = parsedEndDate;
       }
       if (limit && typeof limit === 'string') {
-        filters.limit = parseInt(limit, 10);
+        const parsedLimit = Number.parseInt(limit, 10);
+        if (!Number.isFinite(parsedLimit) || parsedLimit < 0) {
+          throw new BadRequestError('Invalid limit query parameter');
+        }
+        filters.limit = parsedLimit;
       }
       if (offset && typeof offset === 'string') {
-        filters.offset = parseInt(offset, 10);
+        const parsedOffset = Number.parseInt(offset, 10);
+        if (!Number.isFinite(parsedOffset) || parsedOffset < 0) {
+          throw new BadRequestError('Invalid offset query parameter');
+        }
+        filters.offset = parsedOffset;
       }
 
       const auditLogs = await this.auditLogRepository.find(filters);
@@ -90,6 +107,14 @@ export class AuditLogController {
         },
       });
     } catch (error) {
+      if (error instanceof BadRequestError) {
+        res.status(error.statusCode).json({
+          success: false,
+          error: error.message,
+        });
+        return;
+      }
+
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve audit logs',
@@ -144,9 +169,24 @@ export class AuditLogController {
 
       const filters: AuditLogFilters = {
         userId,
-        limit: limit && typeof limit === 'string' ? parseInt(limit, 10) : 100,
-        offset: offset && typeof offset === 'string' ? parseInt(offset, 10) : 0,
+        limit: 100,
+        offset: 0,
       };
+
+      if (limit && typeof limit === 'string') {
+        const parsedLimit = Number.parseInt(limit, 10);
+        if (!Number.isFinite(parsedLimit) || parsedLimit < 0) {
+          throw new BadRequestError('Invalid limit query parameter');
+        }
+        filters.limit = parsedLimit;
+      }
+      if (offset && typeof offset === 'string') {
+        const parsedOffset = Number.parseInt(offset, 10);
+        if (!Number.isFinite(parsedOffset) || parsedOffset < 0) {
+          throw new BadRequestError('Invalid offset query parameter');
+        }
+        filters.offset = parsedOffset;
+      }
 
       const auditLogs = await this.auditLogRepository.find(filters);
       const total = await this.auditLogRepository.count(filters);
@@ -161,6 +201,14 @@ export class AuditLogController {
         },
       });
     } catch (error) {
+      if (error instanceof BadRequestError) {
+        res.status(error.statusCode).json({
+          success: false,
+          error: error.message,
+        });
+        return;
+      }
+
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve user audit logs',
@@ -184,9 +232,24 @@ export class AuditLogController {
       const filters: AuditLogFilters = {
         resourceType,
         resourceId,
-        limit: limit && typeof limit === 'string' ? parseInt(limit, 10) : 100,
-        offset: offset && typeof offset === 'string' ? parseInt(offset, 10) : 0,
+        limit: 100,
+        offset: 0,
       };
+
+      if (limit && typeof limit === 'string') {
+        const parsedLimit = Number.parseInt(limit, 10);
+        if (!Number.isFinite(parsedLimit) || parsedLimit < 0) {
+          throw new BadRequestError('Invalid limit query parameter');
+        }
+        filters.limit = parsedLimit;
+      }
+      if (offset && typeof offset === 'string') {
+        const parsedOffset = Number.parseInt(offset, 10);
+        if (!Number.isFinite(parsedOffset) || parsedOffset < 0) {
+          throw new BadRequestError('Invalid offset query parameter');
+        }
+        filters.offset = parsedOffset;
+      }
 
       const auditLogs = await this.auditLogRepository.find(filters);
       const total = await this.auditLogRepository.count(filters);
@@ -201,6 +264,14 @@ export class AuditLogController {
         },
       });
     } catch (error) {
+      if (error instanceof BadRequestError) {
+        res.status(error.statusCode).json({
+          success: false,
+          error: error.message,
+        });
+        return;
+      }
+
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve resource audit logs',
@@ -228,6 +299,9 @@ export class AuditLogController {
       }
 
       const days = parseInt(olderThanDays, 10);
+      if (!Number.isFinite(days) || days < 0) {
+        throw new BadRequestError('Invalid olderThanDays query parameter');
+      }
       const olderThan = new Date();
       olderThan.setDate(olderThan.getDate() - days);
 
@@ -239,6 +313,14 @@ export class AuditLogController {
         data: { deletedCount, olderThan },
       });
     } catch (error) {
+      if (error instanceof BadRequestError) {
+        res.status(error.statusCode).json({
+          success: false,
+          error: error.message,
+        });
+        return;
+      }
+
       res.status(500).json({
         success: false,
         error: 'Failed to clean up audit logs',

@@ -57,6 +57,10 @@
 <script setup lang="ts">
 import {ref, watch, computed, nextTick, onUnmounted} from 'vue';
 
+let bodyScrollLockCount = 0;
+let originalBodyOverflow: string | null = null;
+let originalBodyPaddingRight: string | null = null;
+
 /**
  * Modal component props
  */
@@ -129,19 +133,34 @@ function handleEscape(event: KeyboardEvent): void {
  * Lock body scroll
  */
 function lockBodyScroll(): void {
-  const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-  document.body.style.overflow = 'hidden';
-  if (scrollbarWidth > 0) {
-    document.body.style.paddingRight = `${scrollbarWidth}px`;
+  if (bodyScrollLockCount === 0) {
+    originalBodyOverflow = document.body.style.overflow;
+    originalBodyPaddingRight = document.body.style.paddingRight;
+
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
   }
+
+  bodyScrollLockCount += 1;
 }
 
 /**
  * Unlock body scroll
  */
 function unlockBodyScroll(): void {
-  document.body.style.overflow = '';
-  document.body.style.paddingRight = '';
+  if (bodyScrollLockCount <= 0) return;
+
+  bodyScrollLockCount -= 1;
+  if (bodyScrollLockCount > 0) return;
+
+  document.body.style.overflow = originalBodyOverflow ?? '';
+  document.body.style.paddingRight = originalBodyPaddingRight ?? '';
+
+  originalBodyOverflow = null;
+  originalBodyPaddingRight = null;
 }
 
 /**
@@ -194,15 +213,22 @@ function onAfterLeave(): void {
 }
 
 // Watch modelValue to manage body scroll and event listeners
+let didLockBodyScroll = false;
 watch(
   () => props.modelValue,
   (newValue) => {
     if (newValue) {
-      lockBodyScroll();
+      if (!didLockBodyScroll) {
+        lockBodyScroll();
+        didLockBodyScroll = true;
+      }
       document.addEventListener('keydown', handleEscape);
       document.addEventListener('keydown', handleFocusTrap);
     } else {
-      unlockBodyScroll();
+      if (didLockBodyScroll) {
+        unlockBodyScroll();
+        didLockBodyScroll = false;
+      }
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('keydown', handleFocusTrap);
     }
@@ -212,8 +238,9 @@ watch(
 
 // Cleanup on component unmount
 onUnmounted(() => {
-  if (props.modelValue) {
+  if (didLockBodyScroll) {
     unlockBodyScroll();
+    didLockBodyScroll = false;
     document.removeEventListener('keydown', handleEscape);
     document.removeEventListener('keydown', handleFocusTrap);
   }

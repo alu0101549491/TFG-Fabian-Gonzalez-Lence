@@ -16,7 +16,7 @@
       <button
         type="button"
         class="menu-toggle"
-        @click="$emit('toggle-sidebar')"
+        @click="handleToggleSidebar"
         aria-label="Toggle sidebar"
       >
         <MenuIcon :size="24" />
@@ -29,7 +29,7 @@
       <button
         type="button"
         class="icon-button"
-        @click="$router.push('/notifications')"
+        @click="goToNotifications"
         aria-label="Notifications"
       >
         <BellIcon :size="20" />
@@ -93,6 +93,14 @@ const unreadCount = computed(() => notificationStore.unreadCount);
 function goToSettings() {
   showUserMenu.value = false;
   router.push('/settings');
+}
+
+function goToNotifications() {
+  router.push('/notifications');
+}
+
+function handleToggleSidebar() {
+  emit('toggle-sidebar');
 }
 
 function handleLogout() {

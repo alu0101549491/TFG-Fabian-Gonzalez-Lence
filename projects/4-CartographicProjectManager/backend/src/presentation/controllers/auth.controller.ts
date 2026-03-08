@@ -16,12 +16,17 @@ import type {Request, Response, NextFunction} from 'express';
 import {AuthService} from '@application/services/auth.service.js';
 import {AuditService} from '@application/services/audit.service.js';
 import {AuditLogRepository} from '@infrastructure/repositories/audit-log.repository.js';
-import {PrismaClient} from '@prisma/client';
-import {sendSuccess, sendError} from '@shared/utils.js';
+import {prisma} from '@infrastructure/database/prisma.client.js';
+import {sendSuccess} from '@shared/utils.js';
 import {HTTP_STATUS} from '@shared/constants.js';
-
-const prisma = new PrismaClient();
 const auditLogRepository = new AuditLogRepository(prisma);
+
+type RequestWithUser = Request & {
+  user?: {
+    userId: string;
+    email: string;
+  };
+};
 
 /**
  * Authentication controller
@@ -106,10 +111,11 @@ export class AuthController {
   ): Promise<void> {
     try {
       // Log logout in audit trail if user is authenticated
-      if ((req as any).user) {
+      const {user} = req as RequestWithUser;
+      if (user) {
         await this.auditService.logLogout(
-          (req as any).user.userId,
-          (req as any).user.email,
+          user.userId,
+          user.email,
           req
         );
       }

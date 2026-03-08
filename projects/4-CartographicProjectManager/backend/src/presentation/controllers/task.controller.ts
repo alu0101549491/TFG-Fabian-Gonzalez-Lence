@@ -13,11 +13,12 @@
 
 import type {Request, Response, NextFunction} from 'express';
 import type {AuthenticatedRequest} from '@shared/types.js';
+import {UserRole} from '@prisma/client';
 import {TaskRepository} from '@infrastructure/repositories/task.repository.js';
 import {ProjectRepository} from '@infrastructure/repositories/project.repository.js';
 import {sendSuccess, sendError} from '@shared/utils.js';
 import {HTTP_STATUS, ERROR_MESSAGES} from '@shared/constants.js';
-import {NotFoundError} from '@shared/errors.js';
+import {BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError} from '@shared/errors.js';
 
 export class TaskController {
   private readonly taskRepository: TaskRepository;
@@ -30,7 +31,13 @@ export class TaskController {
 
   public async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {projectId, assigneeId, status} = req.query;
+      const projectId =
+        typeof req.query.projectId === 'string'
+          ? req.query.projectId
+          : typeof req.params.projectId === 'string'
+            ? req.params.projectId
+            : undefined;
+      const {assigneeId, status} = req.query;
       let tasks;
       if (projectId) tasks = await this.taskRepository.findByProjectId(projectId as string);
       else if (assigneeId) tasks = await this.taskRepository.findByAssigneeId(assigneeId as string);
@@ -58,7 +65,7 @@ export class TaskController {
       const currentUser = authReq.user;
       
       if (!currentUser) {
-        throw new NotFoundError('User not authenticated');
+        throw new UnauthorizedError('User not authenticated');
       }
 
       const {projectId, fileIds, ...taskData} = req.body;
@@ -82,23 +89,26 @@ export class TaskController {
       // - User is the project creator
       // - User is the client
       // - User is a SPECIAL_USER with permissions
-      const isAdmin = currentUser.role === 'ADMINISTRATOR';
+      const isAdmin = currentUser.role === UserRole.ADMINISTRATOR;
       const isCreator = projectData.creatorId === currentUser.id;
       const isClient = project.clientId === currentUser.id;
       const isParticipant = projectData.specialUsers?.some((su: any) => su.userId === currentUser.id);
       
       if (!isAdmin && !isCreator && !isClient && !isParticipant) {
-        throw new NotFoundError('You do not have permission to create tasks in this project');
+        throw new ForbiddenError('You do not have permission to create tasks in this project');
       }
 
       // Validate that task due date is within project date range
       if (taskData.dueDate) {
         const taskDueDate = new Date(taskData.dueDate);
+        if (Number.isNaN(taskDueDate.getTime())) {
+          throw new BadRequestError('Invalid task due date');
+        }
         const projectContractDate = new Date(project.contractDate);
         const projectDeliveryDate = new Date(project.deliveryDate);
 
         if (taskDueDate < projectContractDate || taskDueDate > projectDeliveryDate) {
-          throw new NotFoundError(
+          throw new BadRequestError(
             `Task due date must be between project contract date (${projectContractDate.toLocaleDateString()}) and delivery date (${projectDeliveryDate.toLocaleDateString()})`
           );
         }
@@ -118,7 +128,7 @@ export class TaskController {
       const currentUser = authReq.user;
       
       if (!currentUser) {
-        throw new NotFoundError('User not authenticated');
+        throw new UnauthorizedError('User not authenticated');
       }
 
       // Get existing task to check for changes
@@ -148,11 +158,14 @@ export class TaskController {
         }
 
         const taskDueDate = new Date(dueDate);
+        if (Number.isNaN(taskDueDate.getTime())) {
+          throw new BadRequestError('Invalid task due date');
+        }
         const projectContractDate = new Date(project.contractDate);
         const projectDeliveryDate = new Date(project.deliveryDate);
 
         if (taskDueDate < projectContractDate || taskDueDate > projectDeliveryDate) {
-          throw new NotFoundError(
+          throw new BadRequestError(
             `Task due date must be between project contract date (${projectContractDate.toLocaleDateString()}) and delivery date (${projectDeliveryDate.toLocaleDateString()})`
           );
         }
@@ -182,7 +195,7 @@ export class TaskController {
       const currentUser = authReq.user;
       
       if (!currentUser) {
-        throw new NotFoundError('User not authenticated');
+        throw new UnauthorizedError('User not authenticated');
       }
 
       // Get existing task to check permissions

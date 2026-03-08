@@ -44,10 +44,12 @@
 <script setup lang="ts">
 import {ref, computed} from 'vue';
 import {useAuth} from '../../composables/use-auth';
+import {useNotificationStore} from '../../stores/notification.store';
 
 const {user: currentUser, logout} = useAuth();
+const notificationStore = useNotificationStore();
 const showUserMenu = ref(false);
-const notificationCount = ref(3);
+const notificationCount = computed(() => notificationStore.unreadCount);
 
 const userName = computed(() => currentUser.value?.username ?? 'User');
 const userInitials = computed(() => {

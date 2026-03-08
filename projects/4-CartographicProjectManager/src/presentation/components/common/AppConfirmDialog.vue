@@ -18,7 +18,8 @@
     :closable="!loading"
     :close-on-overlay="!loading"
     :close-on-escape="!loading"
-    @update:model-value="$emit('update:modelValue', $event as boolean)"
+    @update:model-value="emit('update:modelValue', $event as boolean)"
+    @close="handleModalClose"
   >
     <template #title>{{ title }}</template>
 
@@ -94,6 +95,13 @@ withDefaults(defineProps<AppConfirmDialogProps>(), {
 });
 
 const emit = defineEmits<AppConfirmDialogEmits>();
+
+/**
+ * Handle modal close via overlay / escape / X.
+ */
+function handleModalClose(): void {
+  emit('cancel');
+}
 
 /**
  * Handle confirm action

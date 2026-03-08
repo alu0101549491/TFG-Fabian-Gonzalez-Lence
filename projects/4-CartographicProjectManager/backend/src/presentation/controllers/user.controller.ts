@@ -13,11 +13,12 @@
  */
 
 import type {Request, Response, NextFunction} from 'express';
+import {UserRole} from '@prisma/client';
 import {UserRepository} from '@infrastructure/repositories/user.repository.js';
 import {hashPassword} from '@infrastructure/auth/password.service.js';
-import {sendSuccess, sendError} from '@shared/utils.js';
+import {sendSuccess} from '@shared/utils.js';
 import {HTTP_STATUS, ERROR_MESSAGES} from '@shared/constants.js';
-import {NotFoundError} from '@shared/errors.js';
+import {BadRequestError, NotFoundError} from '@shared/errors.js';
 
 /**
  * User controller
@@ -40,13 +41,21 @@ export class UserController {
   ): Promise<void> {
     try {
       const {role} = req.query;
-      
-      const users = role
-        ? await this.userRepository.findByRole(role as any)
-        : await this.userRepository.findAll();
+
+      let users;
+      if (typeof role === 'string') {
+        if (!Object.values(UserRole).includes(role as UserRole)) {
+          throw new BadRequestError('Invalid role parameter');
+        }
+        users = await this.userRepository.findByRole(role as UserRole);
+      } else {
+        users = await this.userRepository.findAll();
+      }
 
       // Remove passwordHash from response
-      const usersWithoutPassword = users.map(({passwordHash, ...user}) => user);
+      const usersWithoutPassword = users.map(
+        ({passwordHash: _passwordHash, ...user}) => user
+      );
       
       sendSuccess(res, usersWithoutPassword);
     } catch (error) {
@@ -70,7 +79,7 @@ export class UserController {
         throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
       }
 
-      const {passwordHash, ...userWithoutPassword} = user;
+      const {passwordHash: _passwordHash, ...userWithoutPassword} = user;
       sendSuccess(res, userWithoutPassword);
     } catch (error) {
       next(error);
@@ -87,13 +96,20 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const user = await this.userRepository.findByEmail(decodeURIComponent(req.params.email as string));
+      let decodedEmail: string;
+      try {
+        decodedEmail = decodeURIComponent(req.params.email as string);
+      } catch {
+        throw new BadRequestError('Invalid email parameter');
+      }
+
+      const user = await this.userRepository.findByEmail(decodedEmail);
       
       if (!user) {
         throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
       }
 
-      const {passwordHash, ...userWithoutPassword} = user;
+      const {passwordHash: _passwordHash, ...userWithoutPassword} = user;
       sendSuccess(res, userWithoutPassword);
     } catch (error) {
       next(error);
@@ -110,13 +126,20 @@ export class UserController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const user = await this.userRepository.findByUsername(decodeURIComponent(req.params.username as string));
+      let decodedUsername: string;
+      try {
+        decodedUsername = decodeURIComponent(req.params.username as string);
+      } catch {
+        throw new BadRequestError('Invalid username parameter');
+      }
+
+      const user = await this.userRepository.findByUsername(decodedUsername);
       
       if (!user) {
         throw new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
       }
 
-      const {passwordHash, ...userWithoutPassword} = user;
+      const {passwordHash: _passwordHash, ...userWithoutPassword} = user;
       sendSuccess(res, userWithoutPassword);
     } catch (error) {
       next(error);
@@ -168,7 +191,7 @@ export class UserController {
         : userData;
       
       const user = await this.userRepository.update(req.params.id as string, updateData);
-      const {passwordHash, ...userWithoutPassword} = user;
+      const {passwordHash: _passwordHash, ...userWithoutPassword} = user;
       sendSuccess(res, userWithoutPassword, 'User updated successfully');
     } catch (error) {
       next(error);

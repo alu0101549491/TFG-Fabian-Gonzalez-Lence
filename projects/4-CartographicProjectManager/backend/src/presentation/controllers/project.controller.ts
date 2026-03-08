@@ -13,7 +13,8 @@
  */
 
 import type {Request, Response, NextFunction} from 'express';
-import type {Project, AccessRight} from '@prisma/client';
+import {AccessRight, UserRole} from '@prisma/client';
+import type {Project} from '@prisma/client';
 import type {AuthenticatedRequest} from '@shared/types.js';
 import {ProjectRepository} from '@infrastructure/repositories/project.repository.js';
 import {PermissionRepository} from '@infrastructure/repositories/permission.repository.js';
@@ -21,13 +22,17 @@ import {UserRepository} from '@infrastructure/repositories/user.repository.js';
 import {AuditService} from '@application/services/audit.service.js';
 import {AuditLogRepository} from '@infrastructure/repositories/audit-log.repository.js';
 import {DropboxService} from '@infrastructure/external-services/dropbox.service.js';
-import {PrismaClient} from '@prisma/client';
+import {prisma} from '@infrastructure/database/prisma.client.js';
 import {sendSuccess, generateProjectCode, sendError} from '@shared/utils.js';
 import {HTTP_STATUS, ERROR_MESSAGES} from '@shared/constants.js';
-import {NotFoundError} from '@shared/errors.js';
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from '@shared/errors.js';
 import {logDebug, logError, logInfo, logWarning} from '@shared/logger.js';
 
-const prisma = new PrismaClient();
 const auditLogRepository = new AuditLogRepository(prisma);
 
 /**
@@ -75,19 +80,30 @@ export class ProjectController {
       const currentUser = authReq.user;
       
       if (!currentUser) {
-        throw new NotFoundError('User not authenticated');
+        throw new UnauthorizedError('User not authenticated');
       }
 
       const {status, year, type, clientId, specialUserId} = req.query;
 
+      let parsedYear: number | undefined;
+      if (year != null) {
+        if (typeof year !== 'string') {
+          throw new BadRequestError('Invalid year query parameter');
+        }
+        parsedYear = Number.parseInt(year, 10);
+        if (!Number.isFinite(parsedYear)) {
+          throw new BadRequestError('Invalid year query parameter');
+        }
+      }
+
       let projects: Project[];
       
       // ADMIN: Can see all projects or filter by any criteria
-      if (currentUser.role === 'ADMINISTRATOR') {
+      if (currentUser.role === UserRole.ADMINISTRATOR) {
         if (status) {
           projects = await this.projectRepository.findByStatus(status as any);
-        } else if (year) {
-          projects = await this.projectRepository.findByYear(parseInt(year as string));
+        } else if (parsedYear != null) {
+          projects = await this.projectRepository.findByYear(parsedYear);
         } else if (type) {
           projects = await this.projectRepository.findByType(type as any);
         } else if (clientId) {
@@ -99,22 +115,22 @@ export class ProjectController {
         }
       }
       // CLIENT: Can only see their assigned projects
-      else if (currentUser.role === 'CLIENT') {
+      else if (currentUser.role === UserRole.CLIENT) {
         projects = await this.projectRepository.findByClientId(currentUser.id);
         
         // Apply additional filters if provided
         if (status) {
           projects = projects.filter(p => p.status === status);
         }
-        if (year) {
-          projects = projects.filter(p => p.year === parseInt(year as string));
+        if (parsedYear != null) {
+          projects = projects.filter(p => p.year === parsedYear);
         }
         if (type) {
           projects = projects.filter(p => p.type === type);
         }
       }
       // SPECIAL_USER: Can see projects they created + projects they have permissions for
-      else if (currentUser.role === 'SPECIAL_USER') {
+      else if (currentUser.role === UserRole.SPECIAL_USER) {
         const permissionProjects = await this.projectRepository.findBySpecialUserId(currentUser.id);
         const createdProjects = await this.projectRepository.findByCreatorId(currentUser.id);
         
@@ -127,8 +143,8 @@ export class ProjectController {
         if (status) {
           projects = projects.filter(p => p.status === status);
         }
-        if (year) {
-          projects = projects.filter(p => p.year === parseInt(year as string));
+        if (parsedYear != null) {
+          projects = projects.filter(p => p.year === parsedYear);
         }
         if (type) {
           projects = projects.filter(p => p.type === type);
@@ -159,7 +175,7 @@ export class ProjectController {
       const currentUser = authReq.user;
       
       if (!currentUser) {
-        throw new NotFoundError('User not authenticated');
+        throw new UnauthorizedError('User not authenticated');
       }
 
       const project = await this.projectRepository.findById(req.params.id as string);
@@ -171,11 +187,11 @@ export class ProjectController {
       // Access control: Check if user has permission to view this project
       let hasAccess = false;
       
-      if (currentUser.role === 'ADMINISTRATOR') {
+      if (currentUser.role === UserRole.ADMINISTRATOR) {
         hasAccess = true;
-      } else if (currentUser.role === 'CLIENT' && project.clientId === currentUser.id) {
+      } else if (currentUser.role === UserRole.CLIENT && project.clientId === currentUser.id) {
         hasAccess = true;
-      } else if (currentUser.role === 'SPECIAL_USER') {
+      } else if (currentUser.role === UserRole.SPECIAL_USER) {
         const projectData = project as any;
         const isCreator = projectData.creatorId === currentUser.id;
         const hasPermission = projectData.specialUsers?.some((su: any) => su.userId === currentUser.id);
@@ -183,11 +199,11 @@ export class ProjectController {
       }
 
       if (!hasAccess) {
-        throw new NotFoundError(ERROR_MESSAGES.PROJECT_NOT_FOUND);
+        throw new ForbiddenError(ERROR_MESSAGES.FORBIDDEN);
       }
 
       // Get user's permissions for this project
-      const permissions = await this.getUserPermissions(currentUser.id, project.id, currentUser.role as string, project.clientId);
+      const permissions = await this.getUserPermissions(currentUser.id, project.id, currentUser.role, project.clientId);
 
       sendSuccess(res, {
         ...project,
@@ -208,7 +224,14 @@ export class ProjectController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const project = await this.projectRepository.findByCode(decodeURIComponent(req.params.code as string));
+      let decodedCode: string;
+      try {
+        decodedCode = decodeURIComponent(req.params.code as string);
+      } catch {
+        throw new BadRequestError('Invalid code parameter');
+      }
+
+      const project = await this.projectRepository.findByCode(decodedCode);
       
       if (!project) {
         throw new NotFoundError(ERROR_MESSAGES.PROJECT_NOT_FOUND);
@@ -234,7 +257,7 @@ export class ProjectController {
       const currentUser = authReq.user;
       
       if (!currentUser) {
-        throw new NotFoundError('User not authenticated');
+        throw new UnauthorizedError('User not authenticated');
       }
 
       const {year, ...projectData} = req.body;
@@ -273,7 +296,7 @@ export class ProjectController {
       });
       
       // If the creator is a SPECIAL_USER, automatically add them as a participant
-      if (currentUser.role === 'SPECIAL_USER') {
+      if (currentUser.role === UserRole.SPECIAL_USER) {
         await this.projectRepository.addSpecialUser(project.id, currentUser.id);
         
         // Automatically grant full permissions to the creator
@@ -313,7 +336,7 @@ export class ProjectController {
       const currentUser = authReq.user;
       
       if (!currentUser) {
-        throw new NotFoundError('User not authenticated');
+        throw new UnauthorizedError('User not authenticated');
       }
 
       const projectId = req.params.id as string;
@@ -332,7 +355,7 @@ export class ProjectController {
       // Allow if admin or creator
       const projectData = existingProject as any;
       if (currentUser.role !== 'ADMINISTRATOR' && projectData.creatorId !== currentUser.id) {
-        throw new NotFoundError('You do not have permission to update this project');
+        throw new ForbiddenError('You do not have permission to update this project');
       }
 
       const project = await this.projectRepository.update(projectId, req.body);
@@ -383,7 +406,7 @@ export class ProjectController {
       const currentUser = authReq.user;
       
       if (!currentUser) {
-        throw new NotFoundError('User not authenticated');
+        throw new UnauthorizedError('User not authenticated');
       }
 
       const projectId = req.params.id as string;
@@ -401,7 +424,7 @@ export class ProjectController {
       // Allow if admin or creator
       const projectData = existingProject as any;
       if (currentUser.role !== 'ADMINISTRATOR' && projectData.creatorId !== currentUser.id) {
-        throw new NotFoundError('You do not have permission to delete this project');
+        throw new ForbiddenError('You do not have permission to delete this project');
       }
 
       await this.projectRepository.delete(projectId);
@@ -675,7 +698,7 @@ export class ProjectController {
   private async getUserPermissions(
     userId: string,
     projectId: string,
-    userRole: string,
+    userRole: UserRole,
     projectClientId: string
   ): Promise<{
     canEdit: boolean;
@@ -688,7 +711,7 @@ export class ProjectController {
     canManageParticipants: boolean;
   }> {
     // Administrator has all permissions
-    if (userRole === 'ADMINISTRATOR') {
+    if (userRole === UserRole.ADMINISTRATOR) {
       return {
         canEdit: true,
         canDelete: true,
@@ -702,7 +725,7 @@ export class ProjectController {
     }
 
     // Client has most permissions on their projects
-    if (userRole === 'CLIENT' && projectClientId === userId) {
+    if (userRole === UserRole.CLIENT && projectClientId === userId) {
       return {
         canEdit: true,
         canDelete: false, // Only admin can delete
@@ -716,19 +739,19 @@ export class ProjectController {
     }
 
     // Special user permissions from database
-    if (userRole === 'SPECIAL_USER') {
+    if (userRole === UserRole.SPECIAL_USER) {
       const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
       
       if (permission) {
         const rights = permission.rights;
         return {
-          canEdit: rights.includes('EDIT'),
-          canDelete: rights.includes('DELETE'),
+          canEdit: rights.includes(AccessRight.EDIT),
+          canDelete: rights.includes(AccessRight.DELETE),
           canFinalize: false, // Special users cannot finalize
-          canCreateTask: rights.includes('EDIT'),
-          canSendMessage: rights.includes('SEND_MESSAGE'),
-          canUploadFile: rights.includes('UPLOAD'),
-          canDownloadFile: rights.includes('DOWNLOAD') || rights.includes('VIEW'),
+          canCreateTask: rights.includes(AccessRight.EDIT),
+          canSendMessage: rights.includes(AccessRight.SEND_MESSAGE),
+          canUploadFile: rights.includes(AccessRight.UPLOAD),
+          canDownloadFile: rights.includes(AccessRight.DOWNLOAD) || rights.includes(AccessRight.VIEW),
           canManageParticipants: false,
         };
       }

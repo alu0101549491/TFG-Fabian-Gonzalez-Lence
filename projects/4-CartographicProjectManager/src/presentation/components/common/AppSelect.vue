@@ -31,20 +31,20 @@
     <div :class="['select-container', `select-${size}`]">
       <select
         :id="selectId"
-        :value="modelValue"
+        :value="selectedValue"
         :disabled="disabled"
         :required="required"
         :aria-invalid="!!error"
         class="select-field"
         @change="handleChange"
       >
-        <option v-if="placeholder" value="" disabled :selected="!modelValue">
+        <option v-if="placeholder" value="" disabled :selected="isEmpty">
           {{ placeholder }}
         </option>
         <option
           v-for="option in options"
           :key="option.value"
-          :value="option.value"
+          :value="String(option.value)"
           :disabled="option.disabled"
         >
           {{ option.label }}
@@ -56,7 +56,7 @@
 
       <!-- Clear button -->
       <button
-        v-if="clearable && modelValue"
+        v-if="clearable && !isEmpty"
         type="button"
         class="select-clear"
         aria-label="Clear selection"
@@ -118,7 +118,7 @@ export interface AppSelectEmits {
   (e: 'change', value: string | number | null): void;
 }
 
-withDefaults(defineProps<AppSelectProps>(), {
+const props = withDefaults(defineProps<AppSelectProps>(), {
   size: 'md',
   disabled: false,
   required: false,
@@ -126,6 +126,9 @@ withDefaults(defineProps<AppSelectProps>(), {
 });
 
 const emit = defineEmits<AppSelectEmits>();
+
+const isEmpty = computed(() => props.modelValue == null || props.modelValue === '');
+const selectedValue = computed(() => (isEmpty.value ? '' : String(props.modelValue)));
 
 /**
  * Generate unique select ID
@@ -137,7 +140,16 @@ const selectId = computed(() => `select-${Math.random().toString(36).substr(2, 9
  */
 function handleChange(event: Event): void {
   const target = event.target as HTMLSelectElement;
-  const value = target.value || null;
+
+  if (target.value === '') {
+    emit('update:modelValue', null);
+    emit('change', null);
+    return;
+  }
+
+  const matchedOption = props.options.find((option) => String(option.value) === target.value);
+  const value = matchedOption ? matchedOption.value : target.value;
+
   emit('update:modelValue', value);
   emit('change', value);
 }
