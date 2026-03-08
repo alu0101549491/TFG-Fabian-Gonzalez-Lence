@@ -646,15 +646,32 @@ export function useNavigation() {
  */
 export function handlePostLoginRedirect(router: Router): void {
   const route = router.currentRoute.value;
-  const redirect = route.query.redirect as string | undefined;
+  const redirectParam = route.query.redirect;
+  const redirect = Array.isArray(redirectParam) ? redirectParam[0] : redirectParam;
 
-  if (redirect && redirect !== '/login') {
-    // Redirect to intended route
+  if (isValidRedirectTarget(router, redirect)) {
     router.push(redirect);
-  } else {
-    // Default to dashboard
-    router.push({name: 'dashboard'});
+    return;
   }
+
+  router.push({name: 'dashboard'});
+}
+
+function isValidRedirectTarget(router: Router, redirect: unknown): redirect is string {
+  if (typeof redirect !== 'string') return false;
+
+  const trimmed = redirect.trim();
+  if (trimmed.length === 0) return false;
+
+  if (!trimmed.startsWith('/')) return false;
+  if (trimmed.startsWith('//')) return false;
+  if (trimmed === '/login') return false;
+
+  const resolved = router.resolve(trimmed);
+  if (resolved.matched.length === 0) return false;
+  if (resolved.name === 'login') return false;
+
+  return true;
 }
 
 // ============================================

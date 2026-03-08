@@ -402,7 +402,10 @@ function validateField(field: string): void {
     case 'deliveryDate':
       if (!form.deliveryDate) {
         errors.deliveryDate = 'Delivery date is required';
-      } else if (form.contractDate && new Date(form.deliveryDate) < new Date(form.contractDate)) {
+      } else if (
+        form.contractDate &&
+        parseDateOnlyInput(form.deliveryDate) < parseDateOnlyInput(form.contractDate)
+      ) {
         errors.deliveryDate = 'Delivery date must be after contract date';
       }
       break;
@@ -471,8 +474,29 @@ watch(
  * Format date for input[type="date"]
  */
 function formatDateForInput(date: Date | string): string {
-  const d = new Date(date);
-  return d.toISOString().split('T')[0];
+  const dateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+  let d: Date;
+  if (typeof date === 'string' && dateOnlyRegex.test(date)) {
+    d = parseDateOnlyInput(date);
+  } else {
+    d = new Date(date);
+  }
+
+  if (!Number.isFinite(d.getTime())) {
+    return '';
+  }
+
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function pad2(value: number): string {
+  return value.toString().padStart(2, '0');
+}
+
+function parseDateOnlyInput(value: string): Date {
+  const [year, month, day] = value.split('-').map((part) => parseInt(part, 10));
+  return new Date(year, month - 1, day);
 }
 
 /**
@@ -488,8 +512,8 @@ function handleSubmit(): void {
       id: props.project!.id,
       name: form.name,
       type: form.type as ProjectType,
-      contractDate: new Date(form.contractDate),
-      deliveryDate: new Date(form.deliveryDate),
+      contractDate: parseDateOnlyInput(form.contractDate),
+      deliveryDate: parseDateOnlyInput(form.deliveryDate),
       coordinateX: form.coordinateX ?? null,
       coordinateY: form.coordinateY ?? null,
     };
@@ -501,8 +525,8 @@ function handleSubmit(): void {
       year: form.year,
       clientId: form.clientId,
       type: form.type as ProjectType,
-      contractDate: new Date(form.contractDate),
-      deliveryDate: new Date(form.deliveryDate),
+      contractDate: parseDateOnlyInput(form.contractDate),
+      deliveryDate: parseDateOnlyInput(form.deliveryDate),
       coordinateX: form.coordinateX ?? null,
       coordinateY: form.coordinateY ?? null,
       dropboxFolderId: '',

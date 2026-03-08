@@ -32,10 +32,15 @@
           'file-uploader-dropzone-disabled': uploading,
         },
       ]"
+      role="button"
+      :tabindex="uploading ? -1 : 0"
+      :aria-disabled="uploading"
       @dragover.prevent="handleDragOver"
       @dragleave.prevent="handleDragLeave"
       @drop.prevent="handleDrop"
       @click="triggerFileInput"
+      @keydown.enter="triggerFileInput"
+      @keydown.space.prevent="triggerFileInput"
     >
       <input
         ref="fileInputRef"
@@ -433,19 +438,25 @@ function handleFileSelect(event: Event): void {
 /**
  * Queue management
  */
+function revokePreviewUrl(preview: string | null): void {
+  if (!preview) return;
+
+  // Previews are currently created via FileReader.readAsDataURL().
+  // Only object URLs created via URL.createObjectURL() should be revoked.
+  if (preview.startsWith('blob:')) {
+    URL.revokeObjectURL(preview);
+  }
+}
+
 function removeFromQueue(index: number): void {
   const item = fileQueue.value[index];
-  if (item.preview) {
-    URL.revokeObjectURL(item.preview);
-  }
+  revokePreviewUrl(item.preview);
   fileQueue.value.splice(index, 1);
 }
 
 function clearQueue(): void {
   fileQueue.value.forEach((item) => {
-    if (item.preview) {
-      URL.revokeObjectURL(item.preview);
-    }
+    revokePreviewUrl(item.preview);
   });
   fileQueue.value = [];
   emit('clear');
@@ -484,9 +495,7 @@ function startUpload(): void {
 // Cleanup
 onUnmounted(() => {
   fileQueue.value.forEach((item) => {
-    if (item.preview) {
-      URL.revokeObjectURL(item.preview);
-    }
+    revokePreviewUrl(item.preview);
   });
 });
 </script>

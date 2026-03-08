@@ -113,7 +113,6 @@ export interface MessageListProps {
  */
 export interface MessageListEmits {
   (e: 'load-more'): void;
-  (e: 'message-read', messageId: string): void;
   (e: 'file-click', file: FileSummaryDto): void;
   (e: 'scroll-to-bottom'): void;
 }
@@ -176,13 +175,33 @@ watch(loadMoreTriggerRef, (newRef) => {
   }
 });
 
+function pad2(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+function getLocalDateKey(date: Date): string {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function parseLocalDateKey(dateStr: string): Date | null {
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  return new Date(year, monthIndex, day);
+}
+
 // Group messages by date
 const groupedMessages = computed<DateGroup[]>(() => {
   const groups: DateGroup[] = [];
   let currentDate = '';
 
   for (const message of props.messages) {
-    const messageDate = new Date(message.sentAt).toISOString().split('T')[0];
+    const messageDate = getLocalDateKey(new Date(message.sentAt));
 
     if (messageDate !== currentDate) {
       currentDate = messageDate;
@@ -220,14 +239,14 @@ watch(
  * Format date for separator
  */
 function formatDateSeparator(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = parseLocalDateKey(dateStr) ?? new Date(dateStr);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
   // Simple date formatting
-  const todayStr = today.toISOString().split('T')[0];
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const todayStr = getLocalDateKey(today);
+  const yesterdayStr = getLocalDateKey(yesterday);
 
   if (dateStr === todayStr) {
     return 'Today';

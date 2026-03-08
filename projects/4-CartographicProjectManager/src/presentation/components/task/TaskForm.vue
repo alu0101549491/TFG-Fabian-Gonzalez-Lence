@@ -40,7 +40,10 @@
       </div>
 
       <!-- Confirm/Reject for PERFORMED→COMPLETED (admin only) -->
-      <div v-if="selectedNewStatus === 'COMPLETED' && task?.status === 'PERFORMED' && canConfirm" class="task-form-status-comment">
+      <div
+        v-if="selectedNewStatus === TaskStatus.COMPLETED && task?.status === TaskStatus.PERFORMED && canConfirm"
+        class="task-form-status-comment"
+      >
         <label class="task-form-label">
           Confirmation Feedback
           <span class="task-form-optional">(Optional)</span>
@@ -403,7 +406,29 @@ function getPriorityColor(priority: TaskPriority): string {
  * Format date for input
  */
 function formatDateForInput(date: Date | string): string {
-  return new Date(date).toISOString().split('T')[0];
+  const dateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+  let d: Date;
+  if (typeof date === 'string' && dateOnlyRegex.test(date)) {
+    d = parseDateOnlyInput(date);
+  } else {
+    d = new Date(date);
+  }
+
+  if (!Number.isFinite(d.getTime())) {
+    return '';
+  }
+
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function pad2(value: number): string {
+  return value.toString().padStart(2, '0');
+}
+
+function parseDateOnlyInput(value: string): Date {
+  const [year, month, day] = value.split('-').map((part) => parseInt(part, 10));
+  return new Date(year, month - 1, day);
 }
 
 /**
@@ -443,7 +468,7 @@ function validateField(field: string): void {
       if (!form.dueDate) {
         errors.dueDate = 'Due date is required';
       } else if (props.projectContractDate && props.projectDeliveryDate) {
-        const dueDate = new Date(form.dueDate);
+        const dueDate = parseDateOnlyInput(form.dueDate);
         const contractDate = new Date(props.projectContractDate);
         const deliveryDate = new Date(props.projectDeliveryDate);
         
@@ -517,7 +542,7 @@ function handleSubmit(): void {
       comments: form.comments || undefined,
       assigneeId: form.assigneeId,
       priority: form.priority as TaskPriority,
-      dueDate: new Date(form.dueDate),
+      dueDate: parseDateOnlyInput(form.dueDate),
     };
     emit('submit', updateData);
   } else {
@@ -527,7 +552,7 @@ function handleSubmit(): void {
       comments: form.comments || undefined,
       assigneeId: form.assigneeId,
       priority: form.priority as TaskPriority,
-      dueDate: new Date(form.dueDate),
+      dueDate: parseDateOnlyInput(form.dueDate),
     };
     emit('submit', createData);
   }
