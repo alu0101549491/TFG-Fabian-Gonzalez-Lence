@@ -347,6 +347,7 @@ import {ref, computed, onMounted, inject} from 'vue';
 import {useAuth} from '../composables/use-auth';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import {httpClient} from '../../infrastructure/http';
+import {TOAST_KEY} from '@/presentation/keys/toast.key';
 
 // Types
 interface BackupRecord {
@@ -393,7 +394,7 @@ interface ToastPayload {
 // Composables
 const {isAdmin} = useAuth();
 
-const toast = inject<((t: ToastPayload) => void) | undefined>('toast');
+const toast = inject(TOAST_KEY, undefined);
 
 function notify(payload: ToastPayload): void {
   if (toast) {

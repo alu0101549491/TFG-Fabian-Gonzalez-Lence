@@ -212,7 +212,7 @@
 <script setup lang="ts">
 import {ref, computed, watch, onUnmounted} from 'vue';
 import {FILE} from '@/shared/constants';
-import {formatFileSize} from '@/shared/utils';
+import {formatFileSize, generateId} from '@/shared/utils';
 
 /**
  * Upload progress info from parent component
@@ -308,13 +308,6 @@ const acceptString = computed(() => props.acceptedExtensions.join(','));
 
 // Pending files (not yet uploaded)
 const pendingFiles = computed(() => fileQueue.value.filter((i) => i.status === 'pending'));
-
-/**
- * Generate unique ID
- */
-function generateId(): string {
-  return `file-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
 
 /**
  * Validate file

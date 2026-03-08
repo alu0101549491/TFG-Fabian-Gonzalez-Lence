@@ -206,7 +206,8 @@ const listRef = ref<HTMLElement | null>(null);
 const loadMoreTriggerRef = ref<HTMLElement | null>(null);
 
 // State
-const activeFilter = ref<string>('all');
+type NotificationFilterKey = 'all' | 'unread' | 'task' | 'message' | 'project';
+const activeFilter = ref<NotificationFilterKey>('all');
 const loadMoreInFlight = ref(false);
 
 // Intersection observer for infinite scroll

@@ -301,25 +301,34 @@ const filteredProjects = computed(() => {
     result = result.filter((p) => p.type === typeFilter.value);
   }
 
-  // Sort
-  result.sort((a, b) => {
-    if (sortBy.value === 'code') {
-      return a.code.localeCompare(b.code);
-    }
-    if (sortBy.value === 'name') {
-      return a.name.localeCompare(b.name);
-    }
-    if (sortBy.value === 'deliveryDate') {
-      return new Date(a.deliveryDate).getTime() - new Date(b.deliveryDate).getTime();
-    }
-    if (sortBy.value === 'createdAt') {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
-    // updatedAt (default)
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  const projectsWithSortKeys = result.map((project) => {
+    return {
+      project,
+      deliveryDateMs: new Date(project.deliveryDate).getTime(),
+      createdAtMs: new Date(project.createdAt).getTime(),
+      updatedAtMs: new Date(project.updatedAt).getTime(),
+    };
   });
 
-  return result;
+  // Sort
+  projectsWithSortKeys.sort((a, b) => {
+    if (sortBy.value === 'code') {
+      return a.project.code.localeCompare(b.project.code);
+    }
+    if (sortBy.value === 'name') {
+      return a.project.name.localeCompare(b.project.name);
+    }
+    if (sortBy.value === 'deliveryDate') {
+      return a.deliveryDateMs - b.deliveryDateMs;
+    }
+    if (sortBy.value === 'createdAt') {
+      return b.createdAtMs - a.createdAtMs;
+    }
+    // updatedAt (default)
+    return b.updatedAtMs - a.updatedAtMs;
+  });
+
+  return projectsWithSortKeys.map(({ project }) => project);
 });
 
 const emptyStateTitle = computed(() => {

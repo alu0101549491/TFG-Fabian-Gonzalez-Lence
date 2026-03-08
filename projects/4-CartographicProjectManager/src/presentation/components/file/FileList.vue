@@ -316,7 +316,6 @@ export interface FileListEmits {
   (e: 'file-preview', file: FileListItemDto): void;
   (e: 'file-delete', file: FileListItemDto): void;
   (e: 'section-change', section: string): void;
-  (e: 'upload-click'): void;
 }
 
 const props = withDefaults(defineProps<FileListProps>(), {
@@ -372,23 +371,32 @@ const filteredFiles = computed(() => {
 
   // Sort
   const [sortField, sortOrder] = sortBy.value.split('-');
-  result.sort((a, b) => {
-    let comparison = 0;
+  const isAsc = sortOrder === 'asc';
 
-    switch (sortField) {
-      case 'name':
-        comparison = a.name.localeCompare(b.name);
-        break;
-      case 'date':
-        comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
-        break;
-      case 'size':
-        comparison = a.sizeInBytes - b.sizeInBytes;
-        break;
-    }
+  if (sortField === 'date') {
+    const filesWithSortKeys = result.map((file) => ({
+      file,
+      uploadedAtMs: new Date(file.uploadedAt).getTime(),
+    }));
 
-    return sortOrder === 'asc' ? comparison : -comparison;
-  });
+    filesWithSortKeys.sort((a, b) => (isAsc ? 1 : -1) * (a.uploadedAtMs - b.uploadedAtMs));
+    result = filesWithSortKeys.map((item) => item.file);
+  } else {
+    result.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortField) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'size':
+          comparison = a.sizeInBytes - b.sizeInBytes;
+          break;
+      }
+
+      return isAsc ? comparison : -comparison;
+    });
+  }
 
   return result;
 });
@@ -602,26 +610,6 @@ function formatRelativeDate(date: Date): string {
   color: var(--color-primary-600);
   background-color: var(--color-bg-primary);
   box-shadow: var(--shadow-sm);
-}
-
-.file-list-upload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  height: 36px;
-  padding: 0 var(--spacing-4);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: white;
-  background-color: var(--color-primary-600);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-}
-
-.file-list-upload-btn:hover {
-  background-color: var(--color-primary-700);
 }
 
 /* Section tabs */
@@ -1052,10 +1040,6 @@ function formatRelativeDate(date: Date): string {
 
   .file-list-actions {
     justify-content: space-between;
-  }
-
-  .file-list-upload-btn span:last-child {
-    display: none;
   }
 
   .file-list-table {

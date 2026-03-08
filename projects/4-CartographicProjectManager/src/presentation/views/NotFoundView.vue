@@ -59,12 +59,16 @@ const goHome = () => {
   justify-content: center;
   min-height: 100vh;
   padding: 2rem;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-500) 0%,
+    var(--color-error-500) 100%
+  );
 }
 
 .error-container {
   text-align: center;
-  color: white;
+  color: var(--color-text-inverse);
   max-width: 600px;
 }
 
@@ -105,27 +109,27 @@ const goHome = () => {
   padding: 0.75rem 2rem;
   font-size: 1rem;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--button-radius);
   cursor: pointer;
   font-weight: 600;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .back-button {
-  color: #f5576c;
-  background: white;
+  color: var(--color-error-500);
+  background: var(--color-bg-primary);
 }
 
 .home-button {
-  color: white;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid white;
+  color: var(--color-text-inverse);
+  background: transparent;
+  border: 2px solid var(--color-text-inverse);
 }
 
 .back-button:hover,
 .home-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 .back-button:active,

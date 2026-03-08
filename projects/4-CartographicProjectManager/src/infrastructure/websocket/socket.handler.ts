@@ -366,7 +366,7 @@ export class SocketHandler {
    * @example
    * ```typescript
    * handler.connect({
-   *   token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  *   token: '<JWT_ACCESS_TOKEN>',
    *   userId: 'user-123',
    *   autoConnect: true,
    *   debug: process.env.NODE_ENV === 'development'

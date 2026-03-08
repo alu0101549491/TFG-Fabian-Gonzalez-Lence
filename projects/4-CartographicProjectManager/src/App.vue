@@ -128,6 +128,8 @@ import AppHeader from '@/presentation/components/layout/AppHeader.vue';
 import AppSidebar from '@/presentation/components/layout/AppSidebar.vue';
 import LoadingSpinner from '@/presentation/components/common/LoadingSpinner.vue';
 import {socketHandler} from '@/infrastructure/websocket';
+import {TOAST_KEY} from '@/presentation/keys/toast.key';
+import {generateId} from '@/shared/utils';
 
 /**
  * Toast notification interface
@@ -155,6 +157,7 @@ const isInitializing = ref(true);
 const sidebarCollapsed = ref(false);
 const mobileSidebarOpen = ref(false);
 const toasts = ref<Toast[]>([]);
+const toastTimeoutsById = new Map<string, number>();
 
 // Layout detection
 const isBlankLayout = computed(() => {
@@ -191,14 +194,15 @@ watch(route, () => {
  * @param {Omit<Toast, 'id'>} toast - Toast configuration
  */
 function addToast(toast: Omit<Toast, 'id'>): void {
-  const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  const id = generateId();
   const newToast: Toast = {...toast, id};
   toasts.value.push(newToast);
 
   // Auto-remove after duration
   const duration = toast.duration ?? 5000;
   if (duration > 0) {
-    setTimeout(() => removeToast(id), duration);
+    const timeoutId = window.setTimeout(() => removeToast(id), duration);
+    toastTimeoutsById.set(id, timeoutId);
   }
 }
 
@@ -208,6 +212,12 @@ function addToast(toast: Omit<Toast, 'id'>): void {
  * @param {string} id - Toast identifier
  */
 function removeToast(id: string): void {
+  const timeoutId = toastTimeoutsById.get(id);
+  if (timeoutId !== undefined) {
+    window.clearTimeout(timeoutId);
+    toastTimeoutsById.delete(id);
+  }
+
   const index = toasts.value.findIndex((t) => t.id === id);
   if (index !== -1) {
     toasts.value.splice(index, 1);
@@ -231,7 +241,7 @@ function getToastIcon(type: Toast['type']): string {
 }
 
 // Provide toast function to child components
-provide('toast', addToast);
+provide(TOAST_KEY, addToast);
 
 /**
  * Handle logout action
@@ -376,6 +386,11 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
+
+  for (const timeoutId of toastTimeoutsById.values()) {
+    window.clearTimeout(timeoutId);
+  }
+  toastTimeoutsById.clear();
 });
 </script>
 

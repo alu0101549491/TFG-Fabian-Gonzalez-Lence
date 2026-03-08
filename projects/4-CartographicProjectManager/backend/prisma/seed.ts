@@ -20,6 +20,18 @@ const prisma = new PrismaClient();
  * Main seed function
  */
 async function main(): Promise<void> {
+  if (process.env.NODE_ENV !== 'development') {
+    throw new Error(
+      'Refusing to run destructive dev seed unless NODE_ENV=development.'
+    );
+  }
+
+  if (process.env.SEED_CONFIRM !== 'I_UNDERSTAND') {
+    throw new Error(
+      'Refusing to run destructive dev seed without explicit confirmation. Set SEED_CONFIRM=I_UNDERSTAND to proceed.'
+    );
+  }
+
   console.log('🌱 Starting database seed...');
 
   // Clear existing data

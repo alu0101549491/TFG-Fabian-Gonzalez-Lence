@@ -77,6 +77,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D19-001** — Redirect handling is now centralized: `useAuth()` delegates to `handlePostLoginRedirect()` (validated via `isValidRedirectTarget`), and `requireAuth()` uses the same `redirect` query mechanism (no separate `intended_route`).
 - **D36-003** — Backend auth role fields in shared type definitions are no longer stringly-typed; they are constrained to Prisma `UserRole`.
 - **D36-004** — Backend shared types header metadata is aligned (`@file backend/src/shared/types.ts`).
+- **D36-005** — Frontend `vite-env.d.ts` header was standardized to the University/TFG template (Vite reference directive preserved).
 - **D22-006** — File upload Dropbox path construction is now hardened: `section` is normalized/allowlisted and the Dropbox storage filename is generated server-side using the file id and a sanitized basename (original filename is preserved separately).
 - **D22-001** — Notification listing now enforces ownership/admin checks and does not allow authenticated users to fetch other users’ notifications.
 - **D22-002** — Message listing/creation now validates project access and binds `senderId` server-side from the authenticated user (no spoofed authorship).
@@ -98,6 +99,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D7-004** — Removed the unused/mock frontend `AuthenticationService` that performed local password checks and generated placeholder tokens; auth remains backend-driven via `AuthRepository` + `auth.store.ts`.
 - **D32-001** — `CalendarView` now listens to `CalendarWidget`’s emitted `date-select` event so date selection updates `selectedDate` as intended.
 - **D32-004** — `ProjectListView` status filter now uses `ProjectStatus` enum values (typed `statusFilter`) so status filtering works.
+- **D32-005** — `ProjectListView` sorting no longer repeatedly constructs `Date` objects in the comparator; it precomputes numeric timestamp sort keys once per computed evaluation.
 - **D32-006** — `ProjectDetailsView` tabs now have matching tab button `id`s for each tabpanel’s `aria-labelledby`, restoring correct tab/tabpanel relationships for assistive technologies.
 - **D32-007** — `ProjectDetailsView` file download/preview no longer reads tokens directly or uses ad-hoc `fetch`; it requests links via the shared HTTP client and opens new tabs safely (`noopener,noreferrer`, `opener=null`, http/https-only).
 - **D33-001** — WebSocket client connection initiation is now idempotent, preventing duplicate socket instances when connect is triggered from multiple app paths.
@@ -105,7 +107,15 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D33-005** — Backend shutdown is now idempotent and resilient: HTTP close/disconnect errors are handled and the forced-exit timer is cleared on completion.
 - **D33-006** — Backend server metadata/logging consistency: `@file` path corrected and `unhandledRejection` logging no longer casts unknown values to `Error`.
 - **D33-007** — Frontend `unhandledrejection` handler no longer suppresses default browser reporting in development (`preventDefault()` is production-only).
+- **D33-003** — Toast provider now uses a typed `InjectionKey` (`TOAST_KEY`) instead of a string key, improving type-safety and avoiding collisions.
+- **D33-004** — Toast IDs now use the shared crypto-based UUID generator and auto-dismiss timers are tracked/cleared on removal and unmount.
+- **D34-003** — Frontend barrel exports (`src/{application,domain,presentation,infrastructure}/**/index.ts`) now use the standard University/TFG header template (no `@module`-only headers).
+- **D34-004** — Backend barrel exports (`backend/src/**/index.ts`) now have consistent header metadata; `@file` matches the real repo-relative path (`backend/src/...`).
+- **D35-001** — Public PWA/icon assets are now shipped and referenced correctly: added `favicon.ico`, `apple-touch-icon.png`, `pwa-192x192.png`, and `pwa-512x512.png` under `public/`, updated `index.html` icon links to be base-path friendly, and populated the PWA manifest `icons` + `includeAssets` list.
+- **D35-002** — Frontend `public/robots.txt` now defaults to a restrictive crawl policy (`Disallow: /`) to avoid accidental indexing of authenticated SPA routes.
+- **D35-003** — Removed `public/.gitkeep` so internal notes are no longer shipped as publicly served assets (notes moved into docs).
 - **D38-002** — Production seed no longer uses or logs a default password; it now requires `SEED_ADMIN_PASSWORD` (and optionally `SEED_ADMIN_EMAIL`).
+- **D38-003** — Dev seed is now guarded: it refuses to run unless `NODE_ENV=development` and `SEED_CONFIRM=I_UNDERSTAND` are set, preventing accidental destructive seeding against non-dev databases.
 - **D39-001** — Dropbox refresh-token helper script now masks tokens by default; printing full secrets requires explicit `--print-full`.
 - **D39-002** — Dropbox token update instructions no longer include token-like prefixes; examples use placeholders.
 - **D37-002** — Railway/Nixpacks start commands no longer run production seeding on every process start; startup now runs migrations + server only.
@@ -142,6 +152,8 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D27-001** — Fixed TaskList priority sorting: adjusted `TaskPriority` weight mapping so “Priority (Low → High)” sorts Low→Urgent when ascending (and the reverse when descending), matching the UI label.
 - **D27-003** — `TaskForm` template no longer compares `TaskStatus` via string literals; it now uses enum comparisons (`TaskStatus.COMPLETED` / `TaskStatus.PERFORMED`).
 - **D27-002** — `TaskForm` dueDate date-only handling is now timezone-safe: input formatting uses local date parts, and validation/submit parse `YYYY-MM-DD` into a local `Date` to avoid off-by-one shifts.
+- **D27-007** — `TaskHistory` action rendering now uses a centralized action normalizer/parser with explicit known-action mappings and a safe fallback.
+- **D27-008** — `TaskHistory` value-change rendering no longer uses truthiness checks, so empty-string changes are rendered correctly.
 - **D28-001** — `MessageList` message grouping and Today/Yesterday labels now use local calendar date keys (no UTC `toISOString()`), preventing timezone mis-grouping.
 - **D28-002** — `MessageBubble` sender initials computation is now safe for whitespace-heavy/empty names (trim + split on whitespace + fallback), preventing runtime errors.
 - **D28-003** — `MessageInput` Enter-to-send now guards IME composition (`event.isComposing` / keyCode 229) to prevent accidental sends mid-composition.
@@ -153,10 +165,14 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D29-002** — `FileUploader` drop zone is now keyboard-accessible with `role="button"`, focusable `tabindex`, and Enter/Space activation.
 - **D29-003** — `FileList` grid cards + table rows now support Space key activation (with `.prevent`), and templates use typed `emit(...)` instead of `$emit(...)` for consistent event contracts.
 - **D29-004** — `FileUploader` preview cleanup is now aligned with the implementation: since previews are data URLs (`readAsDataURL()`), cleanup only revokes real object URLs (`blob:`), avoiding incorrect `revokeObjectURL` calls.
+- **D29-005** — `FileUploader` queue item IDs no longer use `Math.random()`; they now use the shared crypto-based `generateId()` UUID utility.
+- **D29-006** — `FileList` date sorting no longer parses `Date` values inside the comparator loop; it precomputes numeric timestamp sort keys once per computed evaluation.
+- **D29-007** — `FileList` no longer exposes a dead `upload-click` emit or unused `.file-list-upload-btn` styles; the component contract matches the rendered template.
 - **D30-001** — `NotificationList` groups by local calendar day keys (no UTC `toISOString()`), preventing Today/Yesterday mislabeling around timezone boundaries.
 - **D30-002** — `NotificationList` `filter-change` now emits a payload matching the UI selection (unread/tasks/messages/projects) using `isRead`, `type`, and `types` fields as appropriate.
 - **D30-003** — `NotificationList` load-more emissions are now gated with an internal in-flight flag shared across observer + scroll fallback, preventing duplicate pagination requests.
 - **D30-004** — Notification UI a11y/consistency: `NotificationItem` now supports Space-key activation, and `NotificationList` templates use typed `emit(...)` instead of `$emit(...)`.
+- **D30-005** — `NotificationList` filter state is now strongly typed (`'all' | 'unread' | 'task' | 'message' | 'project'`), preventing typo-driven filter drift.
 - **D31-001** — `CalendarWidget` day selection no longer nests interactive controls inside a `role="button"` day cell: selection is handled via a dedicated day-number `<button>` with an aria-label.
 - **D31-002** — `CalendarWidget` now enforces `maxProjectsPerDay` across projects+tasks combined; visible items use a shared budget and the “+X more” indicator matches hidden items.
 - **D31-003** — `CalendarWidget` day generation now pre-buckets projects/tasks by local day key (map lookups) instead of filtering and parsing dates per day (better scaling).
@@ -164,6 +180,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D31-005** — Removed a production-noisy deep/immediate watcher that logged project updates to `console.log`.
 - **D32-008** — `SettingsView` role-specific UI preferences are now stored under per-user `localStorage` keys (`cpm_settings:<userId>:<namespace>`) and are hydrated when the authenticated user is available, preventing cross-account leakage on shared devices.
 - **D32-009** — `BackupView` no longer simulates admin backup flows: it now loads history and executes create/restore/delete/download/schedule/Dropbox actions through real backend `/api/v1/backup/*` endpoints, removing `setTimeout`/`Math.random()`/`alert(...)` success stubs.
+- **D32-010** — Forbidden/NotFound error pages no longer use hard-coded hex colors/gradients; they now reference the shared CSS design tokens (gradients/text/button colors/shadows/radius).
 - **D32-002** — `CalendarView` no longer loads tasks sequentially per project; it now fetches tasks with bounded parallelism (concurrency-limited workers), reducing month-change latency and scaling better with many projects.
 - **D32-003** — `DashboardView` upcoming deadline items now support Space-key activation alongside Enter when using `role="button"`.
 

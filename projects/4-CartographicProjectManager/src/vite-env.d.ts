@@ -1,10 +1,18 @@
-/// <reference types="vite/client" />
-
 /**
- * @module vite-env
- * @description Type declarations for Vite-specific environment variables
- * and module imports (.vue files).
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since March 8, 2026
+ * @file src/vite-env.d.ts
+ * @desc Ambient declarations for Vite and Vue SFC modules.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
+
+/// <reference types="vite/client" />
 
 declare module '*.vue' {
   import type { DefineComponent } from 'vue';

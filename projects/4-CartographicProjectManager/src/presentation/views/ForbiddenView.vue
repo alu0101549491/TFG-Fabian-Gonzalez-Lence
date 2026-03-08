@@ -50,12 +50,16 @@ const goBack = () => {
   justify-content: center;
   min-height: 100vh;
   padding: 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-500) 0%,
+    var(--color-primary-800) 100%
+  );
 }
 
 .error-container {
   text-align: center;
-  color: white;
+  color: var(--color-text-inverse);
   max-width: 600px;
 }
 
@@ -88,10 +92,10 @@ const goBack = () => {
 .back-button {
   padding: 0.75rem 2rem;
   font-size: 1rem;
-  color: #667eea;
-  background: white;
+  color: var(--color-text-link);
+  background: var(--color-bg-primary);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--button-radius);
   cursor: pointer;
   font-weight: 600;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -99,7 +103,7 @@ const goBack = () => {
 
 .back-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 .back-button:active {
