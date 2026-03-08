@@ -1,9 +1,15 @@
 /**
- * @module application
- * @description Barrel export for the entire Application layer.
- * The Application layer contains service interfaces, service
- * implementations, and Data Transfer Objects (DTOs).
- * @category Application
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since March 8, 2026
+ * @file src/application/index.ts
+ * @desc Barrel exports for the Application layer.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export * from './interfaces';

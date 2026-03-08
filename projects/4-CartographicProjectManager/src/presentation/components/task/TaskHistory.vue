@@ -56,10 +56,16 @@
           <p class="task-history-action">{{ formatAction(entry) }}</p>
 
           <!-- Value change (if applicable) -->
-          <div v-if="entry.previousValue || entry.newValue" class="task-history-change">
-            <span v-if="entry.previousValue" class="task-history-old-value">{{ formatValue(entry.previousValue) }}</span>
-            <span v-if="entry.previousValue && entry.newValue" class="task-history-arrow">→</span>
-            <span v-if="entry.newValue" class="task-history-new-value">{{ formatValue(entry.newValue) }}</span>
+          <div
+            v-if="hasValue(entry.previousValue) || hasValue(entry.newValue)"
+            class="task-history-change"
+          >
+            <span v-if="hasValue(entry.previousValue)" class="task-history-old-value">{{ formatValue(entry.previousValue) }}</span>
+            <span
+              v-if="hasValue(entry.previousValue) && hasValue(entry.newValue)"
+              class="task-history-arrow"
+            >→</span>
+            <span v-if="hasValue(entry.newValue)" class="task-history-new-value">{{ formatValue(entry.newValue) }}</span>
           </div>
 
         </div>
@@ -90,66 +96,124 @@ withDefaults(defineProps<TaskHistoryProps>(), {
  * Get action type for styling
  */
 function getActionType(action: string): 'create' | 'status' | 'update' | 'confirm' | 'reject' {
-  const lowercaseAction = action.toLowerCase();
-
-  if (lowercaseAction.includes('create')) return 'create';
-  if (lowercaseAction.includes('status')) return 'status';
-  if (lowercaseAction.includes('confirm') || lowercaseAction.includes('complete')) return 'confirm';
-  if (lowercaseAction.includes('reject')) return 'reject';
-  return 'update';
+  const parsed = parseTaskHistoryAction(action);
+  switch (parsed.kind) {
+    case 'CREATED':
+      return 'create';
+    case 'STATUS_CHANGED':
+      return 'status';
+    case 'CONFIRMED':
+      return 'confirm';
+    case 'REJECTED':
+      return 'reject';
+    default:
+      return 'update';
+  }
 }
 
 /**
  * Format action for display
  */
 function formatAction(entry: TaskHistoryEntryDto): string {
-  const action = entry.action.toLowerCase();
-
-  // Common action patterns
-  if (action.includes('create')) {
-    return 'created this task';
-  }
-  if (action.includes('status_change') || action.includes('status change')) {
-    return 'changed the status';
-  }
-  if (action.includes('confirm')) {
-    return 'confirmed and completed the task';
-  }
-  if (action.includes('reject')) {
-    return 'rejected and returned the task';
-  }
-  if (action.includes('assign')) {
-    return 'reassigned the task';
-  }
-  if (action.includes('priority')) {
-    return 'changed the priority';
-  }
-  if (action.includes('due_date') || action.includes('due date')) {
-    return 'changed the due date';
-  }
-  if (action.includes('description')) {
-    return 'updated the description';
-  }
-  if (action.includes('comment')) {
-    return 'added a comment';
-  }
-  if (action.includes('file')) {
-    if (action.includes('add') || action.includes('attach')) {
+  const parsed = parseTaskHistoryAction(entry.action);
+  switch (parsed.kind) {
+    case 'CREATED':
+      return 'created this task';
+    case 'STATUS_CHANGED':
+      return 'changed the status';
+    case 'CONFIRMED':
+      return 'confirmed and completed the task';
+    case 'REJECTED':
+      return 'rejected and returned the task';
+    case 'ASSIGNED':
+      return 'reassigned the task';
+    case 'PRIORITY_CHANGED':
+      return 'changed the priority';
+    case 'DUE_DATE_CHANGED':
+      return 'changed the due date';
+    case 'DESCRIPTION_UPDATED':
+      return 'updated the description';
+    case 'COMMENT_ADDED':
+      return 'added a comment';
+    case 'FILE_ATTACHED':
       return 'attached a file';
-    }
-    if (action.includes('remove') || action.includes('delete')) {
+    case 'FILE_REMOVED':
       return 'removed a file';
-    }
+    default:
+      return parsed.normalized
+        .toLowerCase()
+        .replace(/_/g, ' ');
   }
+}
 
-  // Default: capitalize the action
-  return action.replace(/_/g, ' ');
+type ParsedTaskHistoryAction =
+  | {kind: 'CREATED'; normalized: string}
+  | {kind: 'STATUS_CHANGED'; normalized: string}
+  | {kind: 'CONFIRMED'; normalized: string}
+  | {kind: 'REJECTED'; normalized: string}
+  | {kind: 'ASSIGNED'; normalized: string}
+  | {kind: 'PRIORITY_CHANGED'; normalized: string}
+  | {kind: 'DUE_DATE_CHANGED'; normalized: string}
+  | {kind: 'DESCRIPTION_UPDATED'; normalized: string}
+  | {kind: 'COMMENT_ADDED'; normalized: string}
+  | {kind: 'FILE_ATTACHED'; normalized: string}
+  | {kind: 'FILE_REMOVED'; normalized: string}
+  | {kind: 'UNKNOWN'; normalized: string};
+
+function normalizeActionKey(action: string): string {
+  return action.trim().toUpperCase().replace(/\s+/g, '_');
+}
+
+function parseTaskHistoryAction(action: string): ParsedTaskHistoryAction {
+  const normalized = normalizeActionKey(action);
+
+  switch (normalized) {
+    case 'CREATED':
+    case 'CREATE':
+      return {kind: 'CREATED', normalized};
+    case 'STATUS_CHANGED':
+    case 'STATUS_CHANGE':
+    case 'STATUS_CHANGE_REQUESTED':
+      return {kind: 'STATUS_CHANGED', normalized};
+    case 'CONFIRMED':
+    case 'COMPLETED':
+      return {kind: 'CONFIRMED', normalized};
+    case 'REJECTED':
+      return {kind: 'REJECTED', normalized};
+    case 'ASSIGNED':
+    case 'REASSIGNED':
+      return {kind: 'ASSIGNED', normalized};
+    case 'PRIORITY_CHANGED':
+      return {kind: 'PRIORITY_CHANGED', normalized};
+    case 'DUE_DATE_CHANGED':
+      return {kind: 'DUE_DATE_CHANGED', normalized};
+    case 'DESCRIPTION_UPDATED':
+      return {kind: 'DESCRIPTION_UPDATED', normalized};
+    case 'COMMENT_ADDED':
+      return {kind: 'COMMENT_ADDED', normalized};
+    case 'FILE_ATTACHED':
+    case 'FILE_ADDED':
+      return {kind: 'FILE_ATTACHED', normalized};
+    case 'FILE_REMOVED':
+    case 'FILE_DELETED':
+      return {kind: 'FILE_REMOVED', normalized};
+    default:
+      return {kind: 'UNKNOWN', normalized};
+  }
+}
+
+function hasValue(value: string | null | undefined): value is string {
+  return value !== null && value !== undefined;
 }
 
 /**
  * Format value for display
  */
 function formatValue(value: string): string {
+  if (value === '') {
+    return '(empty)';
+  }
+
   // Check if it's a status value
   const statusLabels: Record<string, string> = {
     PENDING: 'Pending',

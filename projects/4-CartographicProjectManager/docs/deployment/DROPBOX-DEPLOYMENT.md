@@ -41,7 +41,7 @@ Use a single Dropbox Business account to store all project files centrally.
 
 ```bash
 # Production .env (NEVER commit to git)
-DROPBOX_ACCESS_TOKEN=sl.your-production-token-here
+DROPBOX_ACCESS_TOKEN=sl.<DROPBOX_ACCESS_TOKEN>
 
 # All projects will be stored in:
 # /CartographicProjects/PROJ-001/
@@ -408,7 +408,7 @@ Based on a cartographic company managing client projects:
 
 ```bash
 # Production .env
-DROPBOX_ACCESS_TOKEN=sl.B...[company business token]
+DROPBOX_ACCESS_TOKEN=sl.<DROPBOX_ACCESS_TOKEN>
 
 # Storage structure:
 # /CartographicProjects/
@@ -434,17 +434,17 @@ DROPBOX_ACCESS_TOKEN=sl.B...[company business token]
 
 ### Development
 ```bash
-DROPBOX_ACCESS_TOKEN=sl.dev-token-here
+DROPBOX_ACCESS_TOKEN=sl.<DROPBOX_ACCESS_TOKEN>
 ```
 
 ### Staging
 ```bash
-DROPBOX_ACCESS_TOKEN=sl.staging-token-here
+DROPBOX_ACCESS_TOKEN=sl.<DROPBOX_ACCESS_TOKEN>
 ```
 
 ### Production
 ```bash
-DROPBOX_ACCESS_TOKEN=sl.production-token-here
+DROPBOX_ACCESS_TOKEN=sl.<DROPBOX_ACCESS_TOKEN>
 ```
 
 **Important:** Use separate Dropbox apps for each environment to avoid mixing data.

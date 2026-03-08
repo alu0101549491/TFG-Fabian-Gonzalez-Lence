@@ -1,9 +1,0 @@
-# PWA Icons
-# Generate icons using: https://realfavicongenerator.net/
-# Or use: npx pwa-asset-generator <source-image> public --manifest manifest.json
-#
-# Required files:
-# - pwa-192x192.png
-# - pwa-512x512.png
-# - favicon.ico
-# - apple-touch-icon.png
