@@ -209,22 +209,4 @@ export class Message {
       type: 'SYSTEM',
     });
   }
-
-  /**
-   * Serializes the message entity.
-   *
-   * @returns Plain object representation
-   */
-  public toJSON(): object {
-    return {
-      id: this.id,
-      projectId: this.projectId,
-      senderId: this.senderId,
-      content: this.contentValue,
-      type: this.type,
-      sentAt: this.sentAt.toISOString(),
-      fileIds: [...this.fileIdsValue],
-      readByUserIds: [...this.readByUserIdsValue],
-    };
-  }
 }

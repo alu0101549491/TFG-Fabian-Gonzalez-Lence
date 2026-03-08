@@ -12,5 +12,5 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-export * from './repositories/index.js';
 export * from './value-objects/index.js';
+

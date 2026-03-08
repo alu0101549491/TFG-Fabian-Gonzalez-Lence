@@ -27,16 +27,6 @@ export enum ProjectType {
 }
 
 /**
- * Human-readable display names for project types.
- */
-export const ProjectTypeDisplayName: Record<ProjectType, string> = {
-  [ProjectType.RESIDENTIAL]: 'Residential',
-  [ProjectType.COMMERCIAL]: 'Commercial',
-  [ProjectType.INDUSTRIAL]: 'Industrial',
-  [ProjectType.PUBLIC]: 'Public',
-};
-
-/**
  * Type guard to check if a value is a valid ProjectType.
  *
  * @param value - The value to check

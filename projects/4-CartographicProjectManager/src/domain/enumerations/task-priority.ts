@@ -27,26 +27,6 @@ export enum TaskPriority {
 }
 
 /**
- * Human-readable display names for task priorities.
- */
-export const TaskPriorityDisplayName: Record<TaskPriority, string> = {
-  [TaskPriority.LOW]: 'Low',
-  [TaskPriority.MEDIUM]: 'Medium',
-  [TaskPriority.HIGH]: 'High',
-  [TaskPriority.URGENT]: 'Urgent',
-};
-
-/**
- * UI color mappings for task priorities.
- */
-export const TaskPriorityColor: Record<TaskPriority, string> = {
-  [TaskPriority.LOW]: 'green',
-  [TaskPriority.MEDIUM]: 'yellow',
-  [TaskPriority.HIGH]: 'red',
-  [TaskPriority.URGENT]: 'darkred',
-};
-
-/**
  * Sort order values for task priorities (lower number = higher priority).
  */
 export const TaskPrioritySortOrder: Record<TaskPriority, number> = {

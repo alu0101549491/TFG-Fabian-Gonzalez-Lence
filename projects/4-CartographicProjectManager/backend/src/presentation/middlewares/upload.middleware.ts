@@ -14,70 +14,10 @@
 import multer from 'multer';
 import type {Request} from 'express';
 import {BadRequestError} from '@shared/errors.js';
+import {UPLOAD} from '@shared/constants.js';
 
-/**
- * Maximum file size (50 MB)
- */
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
-
-/**
- * Allowed file extensions
- */
-const ALLOWED_EXTENSIONS = [
-  '.pdf',
-  '.doc',
-  '.docx',
-  '.xls',
-  '.xlsx',
-  '.ppt',
-  '.pptx',
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.gif',
-  '.tif',
-  '.tiff',
-  '.zip',
-  '.rar',
-  '.7z',
-  '.dwg',
-  '.dxf',
-  '.shp',
-  '.kml',
-  '.kmz',
-  '.geojson',
-];
-
-/**
- * Allowed MIME types.
- *
- * Note: Some CAD/GIS formats may be uploaded as `application/octet-stream` by clients.
- */
-const ALLOWED_MIME_TYPES = new Set([
-  // Documents
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-
-  // Images
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/tiff',
-
-  // Archives
-  'application/zip',
-  'application/x-7z-compressed',
-  'application/vnd.rar',
-  'application/x-rar-compressed',
-
-  // Common fallback for CAD/GIS uploads
-  'application/octet-stream',
-]);
+const ALLOWED_EXTENSIONS: readonly string[] = UPLOAD.ALLOWED_EXTENSIONS;
+const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set(UPLOAD.ALLOWED_MIME_TYPES);
 
 /**
  * Multer storage configuration (memory storage for streaming to Dropbox)
@@ -120,7 +60,7 @@ function fileFilter(
 export const uploadSingle = multer({
   storage,
   limits: {
-    fileSize: MAX_FILE_SIZE,
+    fileSize: UPLOAD.MAX_FILE_SIZE,
   },
   fileFilter,
 }).single('file');
@@ -131,7 +71,7 @@ export const uploadSingle = multer({
 export const uploadMultiple = multer({
   storage,
   limits: {
-    fileSize: MAX_FILE_SIZE,
+    fileSize: UPLOAD.MAX_FILE_SIZE,
   },
   fileFilter,
 }).array('files', 10); // Max 10 files at once

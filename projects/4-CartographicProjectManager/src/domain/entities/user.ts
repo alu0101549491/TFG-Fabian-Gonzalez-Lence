@@ -281,26 +281,4 @@ export class User {
   public updateLastLogin(): void {
     this.lastLoginValue = new Date();
   }
-
-  /**
-   * Serializes the user entity to a plain object.
-   * Excludes sensitive data like password hash.
-   *
-   * @returns Plain object representation suitable for API responses
-   */
-  public toJSON(): object {
-    return {
-      id: this.id,
-      username: this.usernameValue,
-      firstName: this.firstNameValue,
-      lastName: this.lastNameValue,
-      email: this.emailValue,
-      role: this.roleValue,
-      isActive: this.isActiveValue,
-      phone: this.phoneValue,
-      createdAt: this.createdAt.toISOString(),
-      updatedAt: this.updatedAtValue.toISOString(),
-      lastLogin: this.lastLoginValue ? this.lastLoginValue.toISOString() : null,
-    };
-  }
 }

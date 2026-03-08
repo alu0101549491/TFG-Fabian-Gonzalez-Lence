@@ -13,7 +13,7 @@
  */
 
 import type {File, FileType} from '@prisma/client';
-import type {IFileRepository} from '@domain/repositories/file.repository.interface.js';
+import type {IFileRepository} from '@infrastructure/repositories/interfaces/file.repository.interface.js';
 import {prisma} from '../database/prisma.client.js';
 import {DatabaseError} from '@shared/errors.js';
 

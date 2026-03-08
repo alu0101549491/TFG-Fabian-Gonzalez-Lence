@@ -26,15 +26,6 @@ export enum UserRole {
 }
 
 /**
- * Human-readable display names for user roles.
- */
-export const UserRoleDisplayName: Record<UserRole, string> = {
-  [UserRole.ADMINISTRATOR]: 'Administrator',
-  [UserRole.CLIENT]: 'Client',
-  [UserRole.SPECIAL_USER]: 'Special User',
-};
-
-/**
  * Type guard to check if a value is a valid UserRole.
  *
  * @param value - The value to check

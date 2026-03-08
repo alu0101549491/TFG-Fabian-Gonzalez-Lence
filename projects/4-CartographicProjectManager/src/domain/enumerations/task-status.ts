@@ -36,28 +36,6 @@ export enum TaskStatus {
 }
 
 /**
- * Human-readable display names for task statuses.
- */
-export const TaskStatusDisplayName: Record<TaskStatus, string> = {
-  [TaskStatus.PENDING]: 'Pending',
-  [TaskStatus.IN_PROGRESS]: 'In Progress',
-  [TaskStatus.PARTIAL]: 'Partial',
-  [TaskStatus.PERFORMED]: 'Performed',
-  [TaskStatus.COMPLETED]: 'Completed',
-};
-
-/**
- * UI color mappings for task statuses.
- */
-export const TaskStatusColor: Record<TaskStatus, string> = {
-  [TaskStatus.PENDING]: 'gray',
-  [TaskStatus.IN_PROGRESS]: 'blue',
-  [TaskStatus.PARTIAL]: 'orange',
-  [TaskStatus.PERFORMED]: 'purple',
-  [TaskStatus.COMPLETED]: 'green',
-};
-
-/**
  * Defines valid transitions from each task status.
  */
 export const TaskStatusTransitions: Record<TaskStatus, TaskStatus[]> = {

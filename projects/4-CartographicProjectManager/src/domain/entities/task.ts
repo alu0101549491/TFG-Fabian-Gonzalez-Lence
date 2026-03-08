@@ -440,28 +440,4 @@ export class Task {
   public isPending(): boolean {
     return this.statusValue !== TaskStatus.COMPLETED;
   }
-
-  /**
-   * Serializes the task entity.
-   *
-   * @returns Plain object representation
-   */
-  public toJSON(): object {
-    return {
-      id: this.id,
-      projectId: this.projectId,
-      creatorId: this.creatorId,
-      assigneeId: this.assigneeIdValue,
-      description: this.descriptionValue,
-      status: this.statusValue,
-      priority: this.priorityValue,
-      dueDate: this.dueDateValue.toISOString(),
-      fileIds: [...this.fileIdsValue],
-      comments: this.commentsValue,
-      createdAt: this.createdAt.toISOString(),
-      updatedAt: this.updatedAtValue.toISOString(),
-      completedAt: this.completedAtValue ? this.completedAtValue.toISOString() : null,
-      confirmedAt: this.confirmedAtValue ? this.confirmedAtValue.toISOString() : null,
-    };
-  }
 }

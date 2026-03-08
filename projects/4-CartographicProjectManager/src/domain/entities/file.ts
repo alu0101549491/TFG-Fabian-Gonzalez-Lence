@@ -227,22 +227,4 @@ export class File {
 
     return fileType;
   }
-
-  /**
-   * Serializes the file entity.
-   */
-  public toJSON(): object {
-    return {
-      id: this.id,
-      name: this.name,
-      dropboxPath: this.dropboxPath,
-      type: this.type,
-      sizeInBytes: this.sizeInBytes,
-      uploadedBy: this.uploadedBy,
-      uploadedAt: this.uploadedAt.toISOString(),
-      projectId: this.projectId,
-      taskId: this.taskId,
-      messageId: this.messageId,
-    };
-  }
 }

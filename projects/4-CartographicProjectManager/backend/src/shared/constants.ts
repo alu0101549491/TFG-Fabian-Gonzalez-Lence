@@ -94,8 +94,34 @@ export const WEBSOCKET = {
  */
 
 export const UPLOAD = {
-  MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE || '10485760', 10), // 10MB
+  MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE || '52428800', 10), // 50MB
   UPLOAD_DIR: process.env.UPLOAD_DIR || './uploads',
+  ALLOWED_EXTENSIONS: [
+    '.pdf',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+    '.ppt',
+    '.pptx',
+    '.csv',
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.gif',
+    '.tif',
+    '.tiff',
+    '.webp',
+    '.zip',
+    '.rar',
+    '.7z',
+    '.dwg',
+    '.dxf',
+    '.shp',
+    '.kml',
+    '.kmz',
+    '.geojson',
+  ],
   ALLOWED_MIME_TYPES: [
     // Documents
     'application/pdf',
@@ -104,6 +130,9 @@ export const UPLOAD = {
     // Spreadsheets
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    // Presentations
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     'text/csv',
     // Images
     'image/jpeg',
@@ -114,12 +143,18 @@ export const UPLOAD = {
     // Geographic
     'application/vnd.google-earth.kml+xml',
     'application/vnd.google-earth.kmz',
+    'application/geo+json',
+    'application/json',
     // CAD
     'application/acad',
     'application/dxf',
     // Compressed
     'application/zip',
+    'application/x-7z-compressed',
+    'application/vnd.rar',
     'application/x-rar-compressed',
+    // Fallback for CAD/GIS uploads from some clients
+    'application/octet-stream',
   ],
 } as const;
 

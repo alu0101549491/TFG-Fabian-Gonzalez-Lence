@@ -13,7 +13,7 @@
  */
 
 import type {Message} from '@prisma/client';
-import type {IMessageRepository} from '@domain/repositories/message.repository.interface.js';
+import type {IMessageRepository} from '@infrastructure/repositories/interfaces/message.repository.interface.js';
 import {prisma} from '../database/prisma.client.js';
 import {DatabaseError} from '@shared/errors.js';
 

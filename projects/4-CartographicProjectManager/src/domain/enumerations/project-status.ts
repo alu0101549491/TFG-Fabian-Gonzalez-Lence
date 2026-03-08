@@ -27,27 +27,6 @@ export enum ProjectStatus {
 }
 
 /**
- * Human-readable display names for project statuses.
- */
-export const ProjectStatusDisplayName: Record<ProjectStatus, string> = {
-  [ProjectStatus.ACTIVE]: 'Active',
-  [ProjectStatus.IN_PROGRESS]: 'In Progress',
-  [ProjectStatus.PENDING_REVIEW]: 'Pending Review',
-  [ProjectStatus.FINALIZED]: 'Finalized',
-};
-
-/**
- * UI color mappings for project statuses.
- * These colors provide visual feedback in the user interface.
- */
-export const ProjectStatusColor: Record<ProjectStatus, string> = {
-  [ProjectStatus.ACTIVE]: 'blue',
-  [ProjectStatus.IN_PROGRESS]: 'blue',
-  [ProjectStatus.PENDING_REVIEW]: 'yellow',
-  [ProjectStatus.FINALIZED]: 'gray',
-};
-
-/**
  * Type guard to check if a value is a valid ProjectStatus.
  *
  * @param value - The value to check

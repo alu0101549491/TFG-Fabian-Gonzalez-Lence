@@ -13,7 +13,7 @@
  */
 
 import type {Project, ProjectStatus, ProjectType} from '@prisma/client';
-import type {IProjectRepository} from '@domain/repositories/project.repository.interface.js';
+import type {IProjectRepository} from '@infrastructure/repositories/interfaces/project.repository.interface.js';
 import {prisma} from '../database/prisma.client.js';
 import {DatabaseError} from '@shared/errors.js';
 import {logDebug, logError} from '../../shared/logger.js';

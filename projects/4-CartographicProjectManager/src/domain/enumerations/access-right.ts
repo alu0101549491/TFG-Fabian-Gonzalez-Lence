@@ -32,30 +32,6 @@ export enum AccessRight {
 }
 
 /**
- * Human-readable display names for access rights.
- */
-export const AccessRightDisplayName: Record<AccessRight, string> = {
-  [AccessRight.VIEW]: 'View',
-  [AccessRight.DOWNLOAD]: 'Download',
-  [AccessRight.EDIT]: 'Edit',
-  [AccessRight.DELETE]: 'Delete',
-  [AccessRight.UPLOAD]: 'Upload',
-  [AccessRight.SEND_MESSAGE]: 'Send Message',
-};
-
-/**
- * Descriptions for access rights.
- */
-export const AccessRightDescription: Record<AccessRight, string> = {
-  [AccessRight.VIEW]: 'Can view project data and files',
-  [AccessRight.DOWNLOAD]: 'Can download project files',
-  [AccessRight.EDIT]: 'Can edit project data and tasks',
-  [AccessRight.DELETE]: 'Can delete project elements',
-  [AccessRight.UPLOAD]: 'Can upload files to the project',
-  [AccessRight.SEND_MESSAGE]: 'Can send messages in the project',
-};
-
-/**
  * Type guard to check if a value is a valid AccessRight.
  *
  * @param value - The value to check
