@@ -15,6 +15,7 @@
 import {httpClient} from '../http';
 import {Message} from '../../domain/entities/message';
 import {type IMessageRepository} from '../../domain/repositories/message-repository.interface';
+import {isValidUserRole, UserRole} from '../../domain/enumerations/user-role';
 
 /**
  * API response type for message data from backend
@@ -32,7 +33,7 @@ interface MessageApiResponse {
     id: string;
     username: string;
     email: string;
-    role: string;
+    role: unknown;
   };
 }
 
@@ -290,12 +291,17 @@ export class MessageRepository implements IMessageRepository {
    * @returns Message domain entity
    */
   private mapToEntity(data: MessageApiResponse): Message {
+    const senderRoleRaw = data.sender?.role;
+    const senderRole = isValidUserRole(senderRoleRaw)
+      ? senderRoleRaw
+      : UserRole.CLIENT;
+
     return new Message({
       id: data.id,
       projectId: data.projectId,
       senderId: data.senderId,
       senderName: data.sender?.username || 'Unknown User',
-      senderRole: data.sender?.role || 'CLIENT',
+      senderRole,
       content: data.content,
       sentAt: new Date(data.sentAt),
       fileIds: data.fileIds || [],

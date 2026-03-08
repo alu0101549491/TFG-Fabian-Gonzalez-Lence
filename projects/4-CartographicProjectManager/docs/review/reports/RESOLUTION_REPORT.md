@@ -32,6 +32,10 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 ### ✅ Resolved (verified)
 - **D1-001** — Domain enums no longer contain UI-focused mappings: display names/colors/icons/templates were moved into Presentation mappings (`src/presentation/mappings/domain-enum-ui.ts`).
 - **D3-001** — Domain entities no longer implement transport-facing `toJSON()`; HTTP payload shaping remains at the boundary (repositories/services build explicit payload objects and serialize dates as needed).
+- **D3-005** — `User.updatedAt` is now maintained consistently: mutating setters and `updateLastLogin()` call a shared `touchUpdatedAt()` helper.
+- **D3-006** — Removed the unsafe placeholder `User.authenticate()` method that always threw; password verification remains in the application/backend authentication flow.
+- **D3-008** — `Message.senderRole` is now typed as `UserRole` end-to-end (Domain entity + repository/store mapping), removing `any` casts and preventing role drift.
+- **D3-009** — `Permission.sectionAccess` is now typed and validated against a constrained `ProjectSection` union (from `PROJECT_SECTIONS`), preventing invalid section strings from leaking into the domain model.
 - **D5-001** — Auth state persistence no longer lies about `Date` fields: user/expires timestamps are serialized as ISO strings in localStorage and explicitly rehydrated back to `Date` objects on load.
 - **D18-001** — Refresh tokens are no longer stored in `localStorage`; they are now session-scoped via `sessionStorage` (access tokens remain persisted).
 - **D18-002** — Session expiry is derived from JWT `exp` (when available) and persisted (`STORAGE_KEYS.EXPIRES_AT`) instead of being recomputed on reload.
@@ -40,6 +44,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D2-003** — GeoCoordinates validation now rejects non-finite values (`NaN`/`Infinity`) before range checks.
 - **D4-001** — Backend repository interfaces are no longer incorrectly located in the “Domain” layer with Prisma coupling; Prisma-shaped repository interfaces were relocated to Infrastructure and implementations were updated accordingly.
 - **D4-002** — Incorrect enum imports in domain repository interfaces were fixed.
+- **D4-004** — Task history action filtering now uses a typed `TaskHistoryAction` allowlist/union instead of an untyped `string`, reducing drift in filtering calls.
 - **D7-001** — Application service interfaces ↔ implementations were aligned; notification sending now consistently uses the object-shaped `sendNotification(data: SendNotificationData)` contract.
 - **D7-002** — AuthorizationService admin-role checks were standardized to `UserRole.ADMINISTRATOR`, and the commented-out admin delete check was corrected.
 - **D7-003** — Backend backup/restore no longer uses shell-interpolated `exec`; commands are executed with argument arrays and secrets are passed via environment (`PGPASSWORD`).
@@ -109,15 +114,19 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D33-007** — Frontend `unhandledrejection` handler no longer suppresses default browser reporting in development (`preventDefault()` is production-only).
 - **D33-003** — Toast provider now uses a typed `InjectionKey` (`TOAST_KEY`) instead of a string key, improving type-safety and avoiding collisions.
 - **D33-004** — Toast IDs now use the shared crypto-based UUID generator and auto-dismiss timers are tracked/cleared on removal and unmount.
+- **D34-002** — Removed the unused, weakly-typed store WebSocket wiring helper (`setupStoreWebSocketListeners(socketHandler?: any)`) from `src/presentation/stores/index.ts` to avoid drift and dead-code risk.
 - **D34-003** — Frontend barrel exports (`src/{application,domain,presentation,infrastructure}/**/index.ts`) now use the standard University/TFG header template (no `@module`-only headers).
 - **D34-004** — Backend barrel exports (`backend/src/**/index.ts`) now have consistent header metadata; `@file` matches the real repo-relative path (`backend/src/...`).
 - **D35-001** — Public PWA/icon assets are now shipped and referenced correctly: added `favicon.ico`, `apple-touch-icon.png`, `pwa-192x192.png`, and `pwa-512x512.png` under `public/`, updated `index.html` icon links to be base-path friendly, and populated the PWA manifest `icons` + `includeAssets` list.
 - **D35-002** — Frontend `public/robots.txt` now defaults to a restrictive crawl policy (`Disallow: /`) to avoid accidental indexing of authenticated SPA routes.
 - **D35-003** — Removed `public/.gitkeep` so internal notes are no longer shipped as publicly served assets (notes moved into docs).
+- **D36-001** — Frontend Vite env typings were aligned with real usage: `ImportMetaEnv` now declares `VITE_SOCKET_URL` and `VITE_APP_VERSION` (and removes the stale `VITE_WS_BASE_URL`), reducing misconfiguration risk.
+- **D36-002** — Backend pagination boundary typing was corrected: `PaginationQuery.page`/`limit` no longer pretend to be numbers (Express query params arrive as strings/arrays) and numeric pagination is obtained via explicit parsing/validation.
 - **D38-002** — Production seed no longer uses or logs a default password; it now requires `SEED_ADMIN_PASSWORD` (and optionally `SEED_ADMIN_EMAIL`).
 - **D38-003** — Dev seed is now guarded: it refuses to run unless `NODE_ENV=development` and `SEED_CONFIRM=I_UNDERSTAND` are set, preventing accidental destructive seeding against non-dev databases.
 - **D39-001** — Dropbox refresh-token helper script now masks tokens by default; printing full secrets requires explicit `--print-full`.
 - **D39-002** — Dropbox token update instructions no longer include token-like prefixes; examples use placeholders.
+- **D39-003** — Backend helper scripts no longer use broad `pkill -9 node` or hard-coded absolute paths; they now use script-relative paths and a pidfile (`.dev-server.pid`) for safer stop/start behavior.
 - **D37-002** — Railway/Nixpacks start commands no longer run production seeding on every process start; startup now runs migrations + server only.
 - **D37-004** — Frontend `.env.example` no longer includes `VITE_DROPBOX_ACCESS_TOKEN` (no encouragement of client-side third-party access tokens).
 - **D40-002** — Docs now consistently describe the implemented auth model (tokens returned in JSON; clients send `Authorization: Bearer <token>`). Backend now exposes `POST /api/v1/auth/refresh` to match the frontend refresh workflow.

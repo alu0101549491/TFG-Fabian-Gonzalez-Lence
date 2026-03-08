@@ -12,6 +12,8 @@
  * @see {@link https://typescripttutorial.net}
  */
 
+import {isValidUserRole, UserRole} from '../enumerations/user-role';
+
 /**
  * Message type literal.
  */
@@ -30,7 +32,7 @@ export interface MessageProps {
   /** Sender name (denormalized for display) */
   senderName?: string;
   /** Sender role (denormalized for display) */
-  senderRole?: string;
+  senderRole?: UserRole;
   /** Message body */
   content: string;
   /** Message type */
@@ -67,7 +69,7 @@ export class Message {
   public readonly projectId: string;
   public readonly senderId: string;
   public readonly senderName: string;
-  public readonly senderRole: string;
+  public readonly senderRole: UserRole;
   private contentValue: string;
   public readonly type: MessageType;
   public readonly sentAt: Date;
@@ -87,7 +89,7 @@ export class Message {
     this.projectId = props.projectId;
     this.senderId = props.senderId;
     this.senderName = props.senderName ?? 'Unknown User';
-    this.senderRole = props.senderRole ?? 'CLIENT';
+    this.senderRole = props.senderRole ?? UserRole.CLIENT;
     this.contentValue = props.content;
     this.type = props.type ?? 'NORMAL';
     this.fileIdsValue = props.fileIds ?? [];
@@ -110,6 +112,10 @@ export class Message {
     }
     if (!props.content || props.content.trim() === '') {
       throw new Error('Message content is required');
+    }
+
+    if (props.senderRole !== undefined && !isValidUserRole(props.senderRole)) {
+      throw new Error('Sender role is invalid');
     }
   }
 

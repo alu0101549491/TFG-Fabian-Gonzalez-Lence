@@ -21,6 +21,7 @@ import {useAuthStore} from './auth.store';
 import {useProjectStore} from './project.store';
 import {MessageRepository} from '../../infrastructure/repositories/message.repository';
 import type {Message} from '../../domain/entities/message';
+import {isValidUserRole, UserRole} from '../../domain/enumerations/user-role';
 import {socketHandler} from '../../infrastructure/websocket';
 
 /**
@@ -60,7 +61,7 @@ export const useMessageStore = defineStore('message', () => {
       projectId: message.projectId,
       senderId: message.senderId,
       senderName: message.senderName,
-      senderRole: message.senderRole as any,
+      senderRole: message.senderRole,
       content: message.content,
       sentAt: message.sentAt,
       fileIds: message.fileIds,
@@ -353,13 +354,16 @@ export const useMessageStore = defineStore('message', () => {
   function initializeWebSocket(): void {
     // Subscribe to new message events
     socketHandler.onMessage((payload: any) => {
+      const senderRoleRaw = payload.sender?.role;
+      const senderRole = isValidUserRole(senderRoleRaw) ? senderRoleRaw : UserRole.CLIENT;
+
       // Map the backend message (Prisma Message with sender relation) to MessageDto format
       const messageDto: MessageDto = {
         id: payload.id,
         projectId: payload.projectId,
         senderId: payload.senderId,
         senderName: payload.sender?.username || 'Unknown User',
-        senderRole: payload.sender?.role || 'CLIENT',
+        senderRole,
         content: payload.content,
         sentAt: new Date(payload.sentAt),
         fileIds: payload.fileIds || [],

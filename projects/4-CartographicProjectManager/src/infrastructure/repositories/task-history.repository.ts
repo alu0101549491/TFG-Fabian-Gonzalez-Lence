@@ -15,6 +15,7 @@
 import {httpClient} from '../http';
 import {TaskHistory} from '../../domain/entities/task-history';
 import {type ITaskHistoryRepository} from '../../domain/repositories/task-history-repository.interface';
+import {type TaskHistoryAction} from '../../domain/enumerations/task-history-action';
 
 /**
  * API response type for task history data from backend
@@ -80,7 +81,7 @@ export class TaskHistoryRepository implements ITaskHistoryRepository {
    */
   public async findByTaskIdAndAction(
     taskId: string,
-    action: string,
+    action: TaskHistoryAction,
   ): Promise<TaskHistory[]> {
     const response = await httpClient.get<TaskHistoryApiResponse[]>(
       `/tasks/${taskId}/history?action=${encodeURIComponent(action)}`,

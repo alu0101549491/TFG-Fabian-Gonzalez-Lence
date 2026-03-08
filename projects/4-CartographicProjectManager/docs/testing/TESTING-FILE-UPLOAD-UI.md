@@ -24,7 +24,7 @@ La integración de Dropbox está completamente implementada y lista para probar 
 ### 1. Inicia el Backend (si no está corriendo)
 
 ```bash
-cd /home/fabian/MyStuff/TFG-Fabian-Gonzalez-Lence/projects/4-CartographicProjectManager/backend
+cd projects/4-CartographicProjectManager/backend
 npm run dev
 ```
 
@@ -36,7 +36,7 @@ curl http://localhost:3000/api/v1/health
 ### 2. Inicia el Frontend
 
 ```bash
-cd /home/fabian/MyStuff/TFG-Fabian-Gonzalez-Lence/projects/4-CartographicProjectManager
+cd projects/4-CartographicProjectManager
 npm run dev
 ```
 

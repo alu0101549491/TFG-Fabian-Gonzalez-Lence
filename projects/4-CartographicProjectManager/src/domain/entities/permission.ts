@@ -29,6 +29,18 @@ export const PROJECT_SECTIONS = [
 ] as const;
 
 /**
+ * Project section names supported by this domain model.
+ */
+export type ProjectSection = (typeof PROJECT_SECTIONS)[number];
+
+/**
+ * Type guard for project sections.
+ */
+export function isValidProjectSection(value: unknown): value is ProjectSection {
+  return PROJECT_SECTIONS.includes(value as ProjectSection);
+}
+
+/**
  * Properties for creating a Permission entity.
  */
 export interface PermissionProps {
@@ -41,7 +53,7 @@ export interface PermissionProps {
   /** Granted access rights */
   rights: Set<AccessRight>;
   /** Specific sections accessible */
-  sectionAccess?: string[];
+  sectionAccess?: ProjectSection[];
   /** Admin who granted permissions */
   grantedBy: string;
   /** When permissions were set */
@@ -74,7 +86,7 @@ export class Permission {
   public readonly userId: string;
   public readonly projectId: string;
   private rightsValue: Set<AccessRight>;
-  private sectionAccessValue: string[];
+  private sectionAccessValue: ProjectSection[];
   public readonly grantedBy: string;
   public readonly grantedAt: Date;
   private updatedAtValue: Date;
@@ -114,6 +126,13 @@ export class Permission {
     if (!props.grantedBy || props.grantedBy.trim() === '') {
       throw new Error('Granted by (admin) is required');
     }
+
+    if (
+      props.sectionAccess !== undefined
+      && props.sectionAccess.some((section) => !isValidProjectSection(section))
+    ) {
+      throw new Error('Section access contains invalid values');
+    }
   }
 
   // Getters
@@ -122,7 +141,7 @@ export class Permission {
     return new Set(this.rightsValue);
   }
 
-  public get sectionAccess(): string[] {
+  public get sectionAccess(): ProjectSection[] {
     return [...this.sectionAccessValue];
   }
 
@@ -216,7 +235,7 @@ export class Permission {
    *
    * @param section - Section name
    */
-  public grantSectionAccess(section: string): void {
+  public grantSectionAccess(section: ProjectSection): void {
     if (!this.sectionAccessValue.includes(section)) {
       this.sectionAccessValue.push(section);
       this.touchUpdatedAt();
@@ -228,7 +247,7 @@ export class Permission {
    *
    * @param section - Section name
    */
-  public revokeSectionAccess(section: string): void {
+  public revokeSectionAccess(section: ProjectSection): void {
     const index = this.sectionAccessValue.indexOf(section);
     if (index !== -1) {
       this.sectionAccessValue.splice(index, 1);
@@ -242,7 +261,7 @@ export class Permission {
    * @param section - Section to check
    * @returns True if has access (empty sectionAccess = all access)
    */
-  public canAccessSection(section: string): boolean {
+  public canAccessSection(section: ProjectSection): boolean {
     // Empty array means all sections accessible
     if (this.sectionAccessValue.length === 0) {
       return true;

@@ -165,7 +165,7 @@ npm run db:seed
 ### Port 3000 already in use
 ```bash
 # Find and kill process using port 3000
-lsof -ti:3000 | xargs kill -9
+lsof -ti:3000 | xargs kill
 # Then restart backend
 cd backend
 npm run dev
