@@ -75,7 +75,7 @@
     <div v-if="sections && sections.length > 0" class="file-list-sections">
       <button
         :class="['file-list-section-tab', {active: !activeSectionInternal}]"
-        @click="activeSectionInternal = ''"
+        @click="setActiveSection('')"
       >
         All Files
         <span class="file-list-section-count">{{ files.length }}</span>
@@ -129,8 +129,9 @@
         class="file-card"
         role="button"
         tabindex="0"
-        @click="$emit('file-click', file)"
-        @keydown.enter="$emit('file-click', file)"
+        @click="emit('file-click', file)"
+        @keydown.enter="emit('file-click', file)"
+        @keydown.space.prevent="emit('file-click', file)"
       >
         <!-- File icon/preview -->
         <div class="file-card-preview">
@@ -157,7 +158,7 @@
             class="file-card-action"
             title="Download"
             aria-label="Download file"
-            @click="$emit('file-download', file)"
+            @click="emit('file-download', file)"
           >
             ⬇️
           </button>
@@ -167,7 +168,7 @@
             class="file-card-action"
             title="Preview"
             aria-label="Preview file"
-            @click="$emit('file-preview', file)"
+            @click="emit('file-preview', file)"
           >
             👁️
           </button>
@@ -177,7 +178,7 @@
             class="file-card-action file-card-action-danger"
             title="Delete"
             aria-label="Delete file"
-            @click="$emit('file-delete', file)"
+            @click="emit('file-delete', file)"
           >
             🗑️
           </button>
@@ -204,8 +205,9 @@
             :key="file.id"
             class="file-list-row"
             tabindex="0"
-            @click="$emit('file-click', file)"
-            @keydown.enter="$emit('file-click', file)"
+            @click="emit('file-click', file)"
+            @keydown.enter="emit('file-click', file)"
+            @keydown.space.prevent="emit('file-click', file)"
           >
             <td class="file-list-td-name">
               <span
@@ -228,7 +230,7 @@
                 class="file-list-action"
                 title="Download"
                 aria-label="Download file"
-                @click="$emit('file-download', file)"
+                @click="emit('file-download', file)"
               >
                 ⬇️
               </button>
@@ -238,7 +240,7 @@
                 class="file-list-action"
                 title="Preview"
                 aria-label="Preview file"
-                @click="$emit('file-preview', file)"
+                @click="emit('file-preview', file)"
               >
                 👁️
               </button>
@@ -248,7 +250,7 @@
                 class="file-list-action file-list-action-danger"
                 title="Delete"
                 aria-label="Delete file"
-                @click="$emit('file-delete', file)"
+                @click="emit('file-delete', file)"
               >
                 🗑️
               </button>

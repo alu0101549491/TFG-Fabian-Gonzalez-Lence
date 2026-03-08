@@ -64,6 +64,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D15-003** — Backend shared auth/JWT request types now use Prisma `UserRole` instead of free-form strings.
 - **D15-005** — Backend development console logging no longer throws on circular metadata; metadata serialization falls back safely when JSON stringification fails.
 - **D15-006** — Backend shared module headers were standardized; `@file` now consistently points to `backend/src/shared/*.ts`.
+- **D17-001** — Post-login redirect is now validated before navigation: the `redirect` query must be an internal route that resolves via `router.resolve()` and is denied for login; invalid inputs fall back to the dashboard.
 - **D36-003** — Backend auth role fields in shared type definitions are no longer stringly-typed; they are constrained to Prisma `UserRole`.
 - **D36-004** — Backend shared types header metadata is aligned (`@file backend/src/shared/types.ts`).
 - **D22-006** — File upload Dropbox path construction is now hardened: `section` is normalized/allowlisted and the Dropbox storage filename is generated server-side using the file id and a sanitized basename (original filename is preserved separately).
@@ -120,12 +121,24 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D26-005** — `ProjectForm` template no longer uses `$emit`; Cancel now uses typed `emit('cancel')`.
 - **D26-001** — `ProjectSummary` clickable stat/section tiles are now keyboard-accessible: added `role="button"`, `tabindex="0"`, and Enter/Space handling; template uses typed `emit(...)` instead of `$emit(...)`.
 - **D26-007** — `ProjectSummary` delete icon button now has `aria-label`/`title`, and `statusLabel` has a safe fallback so unexpected statuses don’t render blank UI.
+- **D26-002** — `ProjectForm` date-only inputs are now timezone-safe: input formatting uses local date parts (not `toISOString()`), and submit/validation parse `YYYY-MM-DD` into a local `Date` to avoid off-by-one shifts.
 - **D27-004** — `TaskCard` now supports Space key activation (with `.prevent`) in addition to Enter when using `role="button"`.
 - **D27-005** — `TaskForm` template no longer uses `$emit` for cancel/remove-file; it now uses typed `emit(...)`.
 - **D27-006** — `TaskList` template event forwarding no longer uses `$emit`; it now forwards via typed `emit(...)`.
 - **D27-001** — Fixed TaskList priority sorting: adjusted `TaskPriority` weight mapping so “Priority (Low → High)” sorts Low→Urgent when ascending (and the reverse when descending), matching the UI label.
+- **D27-003** — `TaskForm` template no longer compares `TaskStatus` via string literals; it now uses enum comparisons (`TaskStatus.COMPLETED` / `TaskStatus.PERFORMED`).
+- **D27-002** — `TaskForm` dueDate date-only handling is now timezone-safe: input formatting uses local date parts, and validation/submit parse `YYYY-MM-DD` into a local `Date` to avoid off-by-one shifts.
+- **D28-001** — `MessageList` message grouping and Today/Yesterday labels now use local calendar date keys (no UTC `toISOString()`), preventing timezone mis-grouping.
+- **D28-002** — `MessageBubble` sender initials computation is now safe for whitespace-heavy/empty names (trim + split on whitespace + fallback), preventing runtime errors.
+- **D28-003** — `MessageInput` Enter-to-send now guards IME composition (`event.isComposing` / keyCode 229) to prevent accidental sends mid-composition.
 - **D28-004** — `MessageBubble` attachment clicks now use typed `emit('file-click', file)` in the template.
 - **D28-005** — `MessageList` file-click forwarding now uses typed `emit('file-click', file)`.
+- **D28-006** — Removed unused message component emits (`message-read` / `retry`) so public event contracts match actual behavior.
+- **D28-007** — `MessageBubble` read-status styling now uses a success design token (`var(--color-success-200)`) instead of a hard-coded hex value.
+- **D29-001** — `FileList` “All Files” tab now routes through `setActiveSection('')`, consistently emitting `section-change` to avoid parent/child state desync.
+- **D29-002** — `FileUploader` drop zone is now keyboard-accessible with `role="button"`, focusable `tabindex`, and Enter/Space activation.
+- **D29-003** — `FileList` grid cards + table rows now support Space key activation (with `.prevent`), and templates use typed `emit(...)` instead of `$emit(...)` for consistent event contracts.
+- **D29-004** — `FileUploader` preview cleanup is now aligned with the implementation: since previews are data URLs (`readAsDataURL()`), cleanup only revokes real object URLs (`blob:`), avoiding incorrect `revokeObjectURL` calls.
 
 ### 🟡 Partially Resolved
 - **D7-005** — Coordinate handling was fixed to preserve valid `0` values and handle partial coordinate updates deterministically, but Dropbox-folder-id normalization to an empty string still remains in the Domain/entity path.

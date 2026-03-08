@@ -241,6 +241,10 @@ function handleBlur(): void {
  * Handle keyboard shortcuts
  */
 function handleKeyDown(event: KeyboardEvent): void {
+  if (event.isComposing || event.keyCode === 229) {
+    return;
+  }
+
   // Enter to send (without Shift)
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault();

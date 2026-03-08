@@ -107,7 +107,6 @@ export interface MessageBubbleProps {
  */
 export interface MessageBubbleEmits {
   (e: 'file-click', file: FileSummaryDto): void;
-  (e: 'retry', message: MessageDto): void;
 }
 
 const props = withDefaults(defineProps<MessageBubbleProps>(), {
@@ -122,12 +121,19 @@ const emit = defineEmits<MessageBubbleEmits>();
 const isOwnMessage = computed(() => props.message.senderId === props.currentUserId);
 
 const senderInitials = computed(() => {
-  const name = props.message.senderName || '';
-  const parts = name.split(' ');
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
+  const name = (props.message.senderName ?? '').trim();
+  if (!name) {
+    return '?';
   }
-  return name.slice(0, 2).toUpperCase();
+
+  const parts = name.split(/\s+/);
+  if (parts.length >= 2) {
+    const firstInitial = parts[0]?.[0] ?? '';
+    const secondInitial = parts[1]?.[0] ?? '';
+    return (firstInitial + secondInitial).toUpperCase();
+  }
+
+  return parts[0].slice(0, 2).toUpperCase();
 });
 
 const roleLabel = computed(() => {
@@ -377,7 +383,7 @@ function getFileIconEmoji(fileType: FileType): string {
 }
 
 .message-bubble-own .message-status-read {
-  color: #a7f3d0;
+  color: var(--color-success-200);
 }
 
 /* Compact mode */
