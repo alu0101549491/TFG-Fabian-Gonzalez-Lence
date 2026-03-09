@@ -63,6 +63,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D8-004** — Axios response typing was made consistent: interceptor no longer returns a casted pseudo-response, and upload helpers map `BackendApiResponse<T>` to `ApiResponse<T>` without unsafe casts.
 - **D8-005** — Removed `console.log` debug output from the Axios delete path to avoid leaking payloads in production.
 - **D10-002** — Client-side Dropbox integration and any frontend token-env guidance were removed; the frontend no longer supports shipping Dropbox credentials and relies on backend `/api/v1/files/*` endpoints.
+- **D10-003** — The frontend Dropbox metadata mapping path that could produce invalid dates was removed along with the client-side Dropbox module; date parsing now occurs only at backend/API boundaries.
 - **D10-004** — Backend Dropbox service no longer swallows broad “path” errors: `createFolder()` only ignores explicit “already exists” conflicts and `pathExists()` only returns `false` for explicit “not found”; unexpected errors are logged and rethrown.
 - **D10-005** — Backend Dropbox integration no longer uses direct `console.log` in infra paths; it now routes operational messages through the shared logger.
 - **D11-001** — Frontend repositories’ 404 detection was made robust: “find-or-null” methods now treat both normalized `ApiError.status` and Axios-shaped `error.response.status` as 404, preventing avoidable throws/UI crashes.
@@ -76,8 +77,10 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D15-001** — Frontend `generateId()` now generates RFC 4122 v4 UUIDs using Web Crypto (`crypto.randomUUID()`/`crypto.getRandomValues`) instead of `Math.random()`.
 - **D15-002** — Backend `parsePagination()` no longer propagates `NaN` for invalid/non-numeric `page`/`limit`; it safely falls back to defaults.
 - **D15-003** — Backend shared auth/JWT request types now use Prisma `UserRole` instead of free-form strings.
+- **D15-004** — Frontend `deepClone()` now prefers `structuredClone()` and falls back to a safer clone implementation (handles circular refs and common built-ins; avoids silently stripping class prototypes).
 - **D15-005** — Backend development console logging no longer throws on circular metadata; metadata serialization falls back safely when JSON stringification fails.
 - **D15-006** — Backend shared module headers were standardized; `@file` now consistently points to `backend/src/shared/*.ts`.
+- **D16-001** — Frontend styles no longer load Google Fonts via CSS `@import`; the render-blocking import was removed (fonts are loaded via HTML `<link>` tags instead).
 - **D17-001** — Post-login redirect is now validated before navigation: the `redirect` query must be an internal route that resolves via `router.resolve()` and is denied for login; invalid inputs fall back to the dashboard.
 - **D19-001** — Redirect handling is now centralized: `useAuth()` delegates to `handlePostLoginRedirect()` (validated via `isValidRedirectTarget`), and `requireAuth()` uses the same `redirect` query mechanism (no separate `intended_route`).
 - **D36-003** — Backend auth role fields in shared type definitions are no longer stringly-typed; they are constrained to Prisma `UserRole`.
@@ -192,9 +195,10 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D32-010** — Forbidden/NotFound error pages no longer use hard-coded hex colors/gradients; they now reference the shared CSS design tokens (gradients/text/button colors/shadows/radius).
 - **D32-002** — `CalendarView` no longer loads tasks sequentially per project; it now fetches tasks with bounded parallelism (concurrency-limited workers), reducing month-change latency and scaling better with many projects.
 - **D32-003** — `DashboardView` upcoming deadline items now support Space-key activation alongside Enter when using `role="button"`.
+- **D7-005** — Dropbox folder IDs no longer normalize to `''` in the frontend domain/DTO path: the `Project` entity normalizes missing values to `null`, DTOs accept/return nullable Dropbox folder data, repositories map `null` to `''` only at the backend API boundary, and Dropbox URL generation is guarded.
+- **D7-006** — Upload section handling is now canonical and allowlisted end-to-end: the frontend constrains upload `section` to `ProjectSectionId` (derived from `PROJECT_SECTIONS`) and removes string-literal defaults (`PROJECT_SECTIONS.MESSAGES`), while the backend upload controller normalizes/allowlists the section and sanitizes filename/path segments before building Dropbox paths.
 
 ### 🟡 Partially Resolved
-- **D7-005** — Coordinate handling was fixed to preserve valid `0` values and handle partial coordinate updates deterministically, but Dropbox-folder-id normalization to an empty string still remains in the Domain/entity path.
 - **D37-001** — Committed secret mitigation was partially applied: the backend now provides only environment templates (`backend/.env.example`, `backend/.env.railway.example`) and ignores real backend env files via `backend/.gitignore` (including `.env` / `.env.railway`). Note: the frontend currently tracks `.env.development` and `.env.production`, but they contain only non-secret Vite configuration keys (e.g., `VITE_API_BASE_URL`, `VITE_SOCKET_URL`). **Remaining required manual incident response:** rotate/revoke any compromised Dropbox app keys/tokens, then purge secret material from git history (e.g., via `git filter-repo`/BFG) and force-push, and ensure all clones/forks update accordingly.
 
 ### Frontend: strict TS + DTO/contract alignment

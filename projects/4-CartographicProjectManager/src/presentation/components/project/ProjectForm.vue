@@ -529,7 +529,6 @@ function handleSubmit(): void {
       deliveryDate: parseDateOnlyInput(form.deliveryDate),
       coordinateX: form.coordinateX ?? null,
       coordinateY: form.coordinateY ?? null,
-      dropboxFolderId: '',
     };
     emit('submit', createData);
   }

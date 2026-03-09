@@ -627,6 +627,11 @@ export class ProjectService implements IProjectService {
     const client = await this.userRepository.findById(project.clientId);
     const clientName = client ? client.username : 'Unknown';
 
+    const dropboxFolderId = project.dropboxFolderId;
+    const dropboxFolderUrl = dropboxFolderId
+      ? `https://www.dropbox.com/home${dropboxFolderId}`
+      : null;
+
     return {
       id: project.id,
       code: project.code,
@@ -641,8 +646,8 @@ export class ProjectService implements IProjectService {
       contractDate: project.contractDate,
       deliveryDate: project.deliveryDate,
       status: project.status,
-      dropboxFolderId: project.dropboxFolderId,
-      dropboxFolderUrl: `https://www.dropbox.com/home${project.dropboxFolderId}`,
+      dropboxFolderId: dropboxFolderId,
+      dropboxFolderUrl: dropboxFolderUrl,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       finalizedAt: project.finalizedAt,

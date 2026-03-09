@@ -17,6 +17,7 @@ import {FileRepository} from '../../infrastructure/repositories/file.repository'
 import type {File} from '../../domain/entities/file';
 import type {FileSummaryDto} from '../../application/dto';
 import {httpClient} from '../../infrastructure/http';
+import type {ProjectSectionId} from '../../shared/constants';
 
 /**
  * Upload progress callback
@@ -38,7 +39,7 @@ export interface UseFilesReturn {
   uploadFile: (
     fileToUpload: globalThis.File,
     projectId: string,
-    section: string,
+    section: ProjectSectionId,
     onProgress?: UploadProgressCallback
   ) => Promise<FileSummaryDto | null>;
   getTemporaryDownloadUrl: (fileId: string) => Promise<string>;
@@ -163,7 +164,7 @@ export function useFiles(): UseFilesReturn {
   async function uploadFile(
     fileToUpload: globalThis.File,
     projectId: string,
-    section: string,
+    section: ProjectSectionId,
     onProgress?: UploadProgressCallback
   ): Promise<FileSummaryDto | null> {
     error.value = null;

@@ -188,7 +188,6 @@ export class ProjectRepository implements IProjectRepository {
       coordinateY: data.coordinateY,
       contractDate: data.contractDate.toISOString(),
       deliveryDate: data.deliveryDate.toISOString(),
-      dropboxFolderId: data.dropboxFolderId || '',
     };
 
     const response = await httpClient.post<ProjectApiResponse>(
@@ -219,7 +218,7 @@ export class ProjectRepository implements IProjectRepository {
       contractDate: project.contractDate.toISOString(),
       deliveryDate: project.deliveryDate.toISOString(),
       status: project.status,
-      dropboxFolderId: project.dropboxFolderId,
+      dropboxFolderId: project.dropboxFolderId ?? '',
     };
     
     // Include optional fields only if they have values
@@ -469,7 +468,7 @@ export class ProjectRepository implements IProjectRepository {
       contractDate: project.contractDate.toISOString(),
       deliveryDate: project.deliveryDate.toISOString(),
       status: project.status,
-      dropboxFolderId: project.dropboxFolderId,
+      dropboxFolderId: project.dropboxFolderId ?? '',
       specialUserIds: project.specialUserIds,
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString(),

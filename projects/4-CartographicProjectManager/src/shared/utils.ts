@@ -1075,23 +1075,76 @@ export function findWithIndex<T>(
  * ```
  */
 export function deepClone<T>(obj: T): T {
-  if (obj === null || typeof obj !== 'object') return obj;
-
-  if (obj instanceof Date) return new Date(obj.getTime()) as T;
-
-  if (obj instanceof Array) return obj.map((item) => deepClone(item)) as T;
-
-  if (obj instanceof Object) {
-    const clonedObj: Record<string, unknown> = {};
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        clonedObj[key] = deepClone((obj as Record<string, unknown>)[key]);
-      }
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(obj);
+    } catch {
+      // Fall back to a conservative clone for JSON-like objects.
     }
-    return clonedObj as T;
   }
 
-  return obj;
+  const seen = new WeakMap<object, unknown>();
+
+  const cloneValue = <U>(value: U): U => {
+    if (value === null || typeof value !== 'object') {
+      return value;
+    }
+
+    const existing = seen.get(value as object);
+    if (existing !== undefined) {
+      return existing as U;
+    }
+
+    if (value instanceof Date) {
+      const copy = new Date(value.getTime()) as unknown as U;
+      seen.set(value, copy);
+      return copy;
+    }
+
+    if (value instanceof Array) {
+      const copy: unknown[] = [];
+      seen.set(value, copy);
+      for (const item of value) {
+        copy.push(cloneValue(item));
+      }
+      return copy as unknown as U;
+    }
+
+    if (value instanceof Map) {
+      const copy = new Map<unknown, unknown>();
+      seen.set(value, copy);
+      for (const [k, v] of value.entries()) {
+        copy.set(k, cloneValue(v));
+      }
+      return copy as unknown as U;
+    }
+
+    if (value instanceof Set) {
+      const copy = new Set<unknown>();
+      seen.set(value, copy);
+      for (const v of value.values()) {
+        copy.add(cloneValue(v));
+      }
+      return copy as unknown as U;
+    }
+
+    const proto = Object.getPrototypeOf(value);
+    const isPlainObject = proto === Object.prototype || proto === null;
+    if (!isPlainObject) {
+      // Avoid stripping prototypes for class instances; return by reference.
+      return value;
+    }
+
+    const copy: Record<string, unknown> = Object.create(proto);
+    seen.set(value, copy);
+    for (const [key, propValue] of Object.entries(value as Record<string, unknown>)) {
+      copy[key] = cloneValue(propValue);
+    }
+
+    return copy as unknown as U;
+  };
+
+  return cloneValue(obj);
 }
 
 /**
