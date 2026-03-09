@@ -1063,7 +1063,7 @@ img {
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   :root {
-    --color-border-primary: #000;
-    --color-text-secondary: #000;
+    --color-border-primary: var(--color-text-primary);
+    --color-text-secondary: var(--color-text-primary);
   }
 }

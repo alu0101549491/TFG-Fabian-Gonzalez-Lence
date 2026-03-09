@@ -14,13 +14,37 @@
 
 import {Router} from 'express';
 import {NotificationController} from '../controllers/notification.controller.js';
-import {authenticate} from '@infrastructure/auth/auth.middleware.js';
+import {
+	authenticate,
+	authorizeNotificationOwnerOrAdmin,
+	authorizeUserIdParamOrQueryOrAdmin,
+} from '@infrastructure/auth/auth.middleware.js';
 
 export const notificationRoutes = Router();
 const controller = new NotificationController();
 
 // Support both query param and path param for userId (handled in controller)
-notificationRoutes.get('/', authenticate, controller.getByUserId.bind(controller));
-notificationRoutes.get('/user/:userId', authenticate, controller.getByUserId.bind(controller));
-notificationRoutes.put('/:id/read', authenticate, controller.markAsRead.bind(controller));
-notificationRoutes.delete('/:id', authenticate, controller.delete.bind(controller));
+notificationRoutes.get(
+	'/',
+	authenticate,
+	authorizeUserIdParamOrQueryOrAdmin('userId'),
+	controller.getByUserId.bind(controller),
+);
+notificationRoutes.get(
+	'/user/:userId',
+	authenticate,
+	authorizeUserIdParamOrQueryOrAdmin('userId'),
+	controller.getByUserId.bind(controller),
+);
+notificationRoutes.put(
+	'/:id/read',
+	authenticate,
+	authorizeNotificationOwnerOrAdmin('id'),
+	controller.markAsRead.bind(controller),
+);
+notificationRoutes.delete(
+	'/:id',
+	authenticate,
+	authorizeNotificationOwnerOrAdmin('id'),
+	controller.delete.bind(controller),
+);

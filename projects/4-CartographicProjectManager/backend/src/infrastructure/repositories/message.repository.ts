@@ -29,6 +29,16 @@ export class MessageRepository implements IMessageRepository {
     }
   }
 
+  public async countByProjectId(projectId: string): Promise<number> {
+    try {
+      return await prisma.message.count({
+        where: {projectId},
+      });
+    } catch (error) {
+      throw new DatabaseError('Failed to count messages by project ID');
+    }
+  }
+
   public async findByProjectId(projectId: string): Promise<Message[]> {
     try {
       return await prisma.message.findMany({
@@ -38,6 +48,24 @@ export class MessageRepository implements IMessageRepository {
       });
     } catch (error) {
       throw new DatabaseError('Failed to find messages by project ID');
+    }
+  }
+
+  public async findByProjectIdPaginated(
+    projectId: string,
+    limit: number,
+    offset: number,
+  ): Promise<Message[]> {
+    try {
+      return await prisma.message.findMany({
+        where: {projectId},
+        include: {sender: true},
+        orderBy: {sentAt: 'asc'},
+        take: limit,
+        skip: offset,
+      });
+    } catch (error) {
+      throw new DatabaseError('Failed to find paginated messages by project ID');
     }
   }
 

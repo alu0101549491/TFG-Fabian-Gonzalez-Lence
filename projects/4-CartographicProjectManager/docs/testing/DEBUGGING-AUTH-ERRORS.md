@@ -136,7 +136,7 @@ Test if backend is accessible:
 
 ```bash
 # From project root
-curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/health
 ```
 
 Should return:

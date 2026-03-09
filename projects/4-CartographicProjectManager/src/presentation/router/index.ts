@@ -23,7 +23,6 @@ import {
 } from 'vue-router';
 import {useAuthStore} from '../stores';
 import {UserRole} from '../../domain/enumerations/user-role';
-import {ProjectRepository} from '../../infrastructure/repositories/project.repository';
 
 // ============================================
 // ROUTE META INTERFACE EXTENSION
@@ -362,9 +361,11 @@ router.beforeEach(async (
     const userRole = authStore.user?.role;
 
     if (!userRole || !requiredRoles.includes(userRole)) {
-      console.warn(
-        `Access denied: User role "${userRole}" not authorized for ${String(to.name)}`
-      );
+      if (import.meta.env.DEV) {
+        console.warn(
+          `Access denied: User role "${userRole}" not authorized for ${String(to.name)}`
+        );
+      }
       return next({name: 'forbidden'});
     }
   }
@@ -373,44 +374,10 @@ router.beforeEach(async (
   // 4. Project-specific access control
   // ==========================================
   if (requiresProjectAccess && isAuthenticated) {
-    const projectId = to.params.id as string;
-
-    if (projectId && authStore.userId) {
-      try {
-        const projectRepository = new ProjectRepository();
-        
-        // Admin has access to all projects
-        if (authStore.isAdmin) {
-          // Allow admin access
-        } else {
-          // Fetch project with participants to verify access
-          const projectData = await projectRepository.getProjectWithParticipants(projectId);
-          if (!projectData) {
-            return next({ name: 'projects' });
-          }
-          
-          // Check if user is client
-          const isClient = projectData.client?.id === authStore.userId;
-          
-          // Check if user is the creator
-          const isCreator = (projectData as any).creatorId === authStore.userId;
-          
-          // Check if user is a special user participant
-          const isSpecialUser = projectData.specialUsers?.some(
-            su => su.userId === authStore.userId
-          );
-          
-          if (!isClient && !isSpecialUser && !isCreator) {
-            console.warn(`Access denied: User ${authStore.userId} cannot access project ${projectId}`);
-            return next({ name: 'forbidden' });
-          }
-        }
-      } catch (error: any) {
-        console.error('Failed to verify project access:', error);
-        // If project doesn't exist or error occurs, redirect to projects list
-        return next({ name: 'projects' });
-      }
-    }
+    // Intentionally avoid performing client-side project authorization checks here.
+    // This guard previously fetched project/participant data and relied on brittle
+    // DTO assumptions (`any`, hidden fields). Authorization is enforced server-side;
+    // views/stores should react to 403/404 responses as needed.
   }
 
   // ==========================================
@@ -448,14 +415,18 @@ router.afterEach((to: RouteLocationNormalized) => {
  * @param error - Navigation error
  */
 router.onError((error: Error) => {
-  console.error('[Router] Navigation error:', error);
+  if (import.meta.env.DEV) {
+    console.error('[Router] Navigation error:', error);
+  }
 
   // Handle chunk loading errors (e.g., after deployment with cache)
   if (
     error.message.includes('Failed to fetch dynamically imported module') ||
     error.message.includes('Importing a module script failed')
   ) {
-    console.warn('[Router] Chunk loading failed, reloading page...');
+    if (import.meta.env.DEV) {
+      console.warn('[Router] Chunk loading failed, reloading page...');
+    }
     window.location.reload();
   }
 });

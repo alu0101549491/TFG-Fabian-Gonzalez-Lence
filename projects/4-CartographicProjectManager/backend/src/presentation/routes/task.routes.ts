@@ -14,13 +14,17 @@
 
 import {Router} from 'express';
 import {TaskController} from '../controllers/task.controller.js';
-import {authenticate} from '@infrastructure/auth/auth.middleware.js';
+import {
+	authenticate,
+	authorizeProjectMemberOrAdminFromBody,
+	authorizeTaskMemberOrAdmin,
+} from '@infrastructure/auth/auth.middleware.js';
 
 export const taskRoutes = Router();
 const controller = new TaskController();
 
 taskRoutes.get('/', authenticate, controller.getAll.bind(controller));
-taskRoutes.get('/:id', authenticate, controller.getById.bind(controller));
-taskRoutes.post('/', authenticate, controller.create.bind(controller));
-taskRoutes.put('/:id', authenticate, controller.update.bind(controller));
-taskRoutes.delete('/:id', authenticate, controller.delete.bind(controller));
+taskRoutes.get('/:id', authenticate, authorizeTaskMemberOrAdmin('id'), controller.getById.bind(controller));
+taskRoutes.post('/', authenticate, authorizeProjectMemberOrAdminFromBody('projectId'), controller.create.bind(controller));
+taskRoutes.put('/:id', authenticate, authorizeTaskMemberOrAdmin('id'), controller.update.bind(controller));
+taskRoutes.delete('/:id', authenticate, authorizeTaskMemberOrAdmin('id'), controller.delete.bind(controller));

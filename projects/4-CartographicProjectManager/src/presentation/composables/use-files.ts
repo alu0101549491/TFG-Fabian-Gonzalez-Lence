@@ -61,6 +61,24 @@ interface FilePreviewLinkResponse {
   filename?: string;
 }
 
+/** API response data for an uploaded file */
+interface UploadedFileApiDto {
+  id: string;
+  name: string;
+  type: FileSummaryDto['type'];
+  sizeInBytes: number;
+  uploadedAt: string;
+  uploadedBy: string;
+  projectId: string;
+  dropboxPath: string;
+  mimeType: string;
+}
+
+/** API response data for the file upload endpoint */
+interface FileUploadResponse {
+  file: UploadedFileApiDto;
+}
+
 /**
  * Composable for file management
  *
@@ -170,7 +188,7 @@ export function useFiles(): UseFilesReturn {
     error.value = null;
 
     try {
-      const response = await httpClient.uploadFile<{file: any}>(
+      const response = await httpClient.uploadFile<FileUploadResponse>(
         '/files/upload',
         fileToUpload,
         {projectId, section},
@@ -186,9 +204,7 @@ export function useFiles(): UseFilesReturn {
         }
       );
 
-      // Backend returns: {success: true, data: {file: {...}}, message: "..."}
-      // After interceptor: response.data = {success: true, data: {file: {...}}, message: "..."}
-      const fileData = (response.data as any)?.data?.file || response.data?.file;
+      const fileData = response.data.file;
 
       if (fileData) {
         const uploadedFile: FileSummaryDto = {
@@ -197,7 +213,7 @@ export function useFiles(): UseFilesReturn {
           type: fileData.type,
           sizeInBytes: fileData.sizeInBytes,
           humanReadableSize: formatFileSize(fileData.sizeInBytes),
-          uploadedAt: fileData.uploadedAt,
+          uploadedAt: new Date(fileData.uploadedAt),
           uploadedBy: fileData.uploadedBy,
           uploaderName: 'You',
           downloadUrl: `/files/${fileData.id}/download`,

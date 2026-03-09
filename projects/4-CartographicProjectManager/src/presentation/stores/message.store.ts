@@ -13,7 +13,7 @@
  */
 
 import {defineStore} from 'pinia';
-import {ref, computed} from 'vue';
+import {ref, computed, onScopeDispose} from 'vue';
 import type {
   MessageDto,
 } from '../../application/dto';
@@ -42,6 +42,9 @@ export const useMessageStore = defineStore('message', () => {
   const authStore = useAuthStore();
   const projectStore = useProjectStore();
   const messageRepository = new MessageRepository();
+
+  const DEFAULT_PAGE_LIMIT = 20;
+  const isDev = import.meta.env.DEV;
   
   // State
   const messagesByProject = ref<Map<string, MessageDto[]>>(new Map());
@@ -69,7 +72,7 @@ export const useMessageStore = defineStore('message', () => {
       readByUserIds: message.readByUserIds,
       isRead: authStore.userId ? message.readByUserIds.includes(authStore.userId) : false,
       isSystemMessage: message.type === 'SYSTEM',
-      type: message.type as any,
+      type: message.type,
     };
   }
 
@@ -139,28 +142,39 @@ export const useMessageStore = defineStore('message', () => {
     currentProjectId.value = projectId;
 
     try {
-      // Fetch messages from backend
-      const messageEntities = await messageRepository.findByProjectId(projectId);
-      const messages = messageEntities.map(mapEntityToDto);
+      const existingPagination = paginationByProject.value.get(projectId);
+      const limit = existingPagination?.limit ?? DEFAULT_PAGE_LIMIT;
 
-      const existingMessages = loadMore 
-        ? (messagesByProject.value.get(projectId) ?? [])
-        : [];
-      
-      messagesByProject.value.set(projectId, [
-        ...existingMessages,
-        ...messages,
-      ]);
-      
+      if (loadMore && existingPagination && !existingPagination.hasMore) {
+        return;
+      }
+
+      const existingMessages = messagesByProject.value.get(projectId) ?? [];
+      const offset = loadMore ? existingMessages.length : 0;
+
+      const total = await messageRepository.countByProjectId(projectId);
+      const messageEntities = await messageRepository.findByProjectIdPaginated(projectId, limit, offset);
+      const pageMessages = messageEntities.map(mapEntityToDto);
+
+      const mergedMessages = loadMore
+        ? (() => {
+          const byId = new Map<string, MessageDto>(existingMessages.map((m) => [m.id, m]));
+          pageMessages.forEach((m) => byId.set(m.id, m));
+          return Array.from(byId.values());
+        })()
+        : pageMessages;
+
+      messagesByProject.value.set(projectId, mergedMessages);
+
+      const hasMore = offset + pageMessages.length < total;
       paginationByProject.value.set(projectId, {
-        total: messages.length,
-        page: 1,
-        limit: 20,
-        hasMore: false,
+        total,
+        page: Math.floor(offset / limit) + 1,
+        limit,
+        hasMore,
       });
-      
-      // Update unread count
-      const unread = messages.filter(m => !m.isRead).length;
+
+      const unread = mergedMessages.filter((m) => !m.isRead).length;
       unreadCounts.value.set(projectId, unread);
       
     } catch (err: any) {
@@ -188,7 +202,9 @@ export const useMessageStore = defineStore('message', () => {
       const allProjects = projectStore.projects;
       
       if (allProjects.length === 0) {
-        console.warn('[MessageStore] ⚠️ No projects found, cannot fetch unread counts');
+        if (isDev) {
+          console.warn('[MessageStore] ⚠️ No projects found, cannot fetch unread counts');
+        }
         return;
       }
       
@@ -201,7 +217,9 @@ export const useMessageStore = defineStore('message', () => {
           );
           return {projectId: project.id, count};
         } catch (err) {
-          console.warn(`Failed to fetch unread count for project ${project.id}:`, err);
+          if (isDev) {
+            console.warn(`Failed to fetch unread count for project ${project.id}:`, err);
+          }
           return {projectId: project.id, count: 0};
         }
       });
@@ -215,10 +233,14 @@ export const useMessageStore = defineStore('message', () => {
       
       const totalUnread = results.reduce((sum, {count}) => sum + count, 0);
       if (totalUnread > 0) {
-        console.log('[MessageStore] 📨 Fetched unread counts:', totalUnread, 'total unread messages across', results.length, 'projects');
+        if (isDev) {
+          console.log('[MessageStore] 📨 Fetched unread counts:', totalUnread, 'total unread messages across', results.length, 'projects');
+        }
       }
     } catch (err: any) {
-      console.error('[MessageStore] Failed to fetch unread counts:', err);
+      if (isDev) {
+        console.error('[MessageStore] Failed to fetch unread counts:', err);
+      }
     }
   }
 
@@ -266,31 +288,42 @@ export const useMessageStore = defineStore('message', () => {
   /**
    * Marks a message as read
    */
-  async function markAsRead(messageId: string, projectId?: string): Promise<void> {
+  async function markAsRead(_messageId: string, projectId?: string): Promise<void> {
     if (!authStore.userId) return;
 
     const pid = projectId || projectStore.currentProjectId || currentProjectId.value;
     if (!pid) return;
 
     try {
-      // Note: This marks individual message - backend endpoint may need adjustment
-      // For now, mark all messages in project as read
       await messageRepository.markAsReadByProjectAndUser(pid, authStore.userId);
       
       // Update local state
       const messages = messagesByProject.value.get(pid);
       if (messages) {
-        const index = messages.findIndex(m => m.id === messageId);
-        if (index !== -1 && !messages[index].isRead) {
-          const updated = messages.map((m, i) => (i === index ? {...m, isRead: true} : m));
-          messagesByProject.value.set(pid, updated);
+        const userId = authStore.userId;
+        const updated = messages.map((m) => {
+          if (m.isRead) {
+            return m;
+          }
 
-          const currentCount = unreadCounts.value.get(pid) ?? 0;
-          unreadCounts.value.set(pid, Math.max(0, currentCount - 1));
-        }
+          const nextReadByUserIds = m.readByUserIds.includes(userId)
+            ? m.readByUserIds
+            : [...m.readByUserIds, userId];
+
+          return {
+            ...m,
+            isRead: true,
+            readByUserIds: nextReadByUserIds,
+          };
+        });
+
+        messagesByProject.value.set(pid, updated);
+        unreadCounts.value.set(pid, 0);
       }
     } catch (err: any) {
-      console.error('Failed to mark message as read:', err);
+      if (isDev) {
+        console.error('Failed to mark message as read:', err);
+      }
     }
   }
 
@@ -309,7 +342,22 @@ export const useMessageStore = defineStore('message', () => {
       // Update local state
       const messages = messagesByProject.value.get(pid);
       if (messages) {
-        messagesByProject.value.set(pid, messages.map(m => ({...m, isRead: true})));
+        const userId = authStore.userId;
+        messagesByProject.value.set(pid, messages.map((m) => {
+          if (m.isRead) {
+            return m;
+          }
+
+          const nextReadByUserIds = m.readByUserIds.includes(userId)
+            ? m.readByUserIds
+            : [...m.readByUserIds, userId];
+
+          return {
+            ...m,
+            isRead: true,
+            readByUserIds: nextReadByUserIds,
+          };
+        }));
         unreadCounts.value.set(pid, 0);
       }
     } catch (err: any) {
@@ -353,7 +401,7 @@ export const useMessageStore = defineStore('message', () => {
    */
   function initializeWebSocket(): void {
     // Subscribe to new message events
-    socketHandler.onMessage((payload: any) => {
+    const messageSubscription = socketHandler.onMessage((payload: any) => {
       const senderRoleRaw = payload.sender?.role;
       const senderRole = isValidUserRole(senderRoleRaw) ? senderRoleRaw : UserRole.CLIENT;
 
@@ -377,8 +425,13 @@ export const useMessageStore = defineStore('message', () => {
     });
 
     // Subscribe to unread count updates
-    socketHandler.onUnreadCount((payload: any) => {
+    const unreadCountSubscription = socketHandler.onUnreadCount((payload: any) => {
       handleUnreadCountUpdate(payload);
+    });
+
+    onScopeDispose(() => {
+      messageSubscription.unsubscribe();
+      unreadCountSubscription.unsubscribe();
     });
   }
 

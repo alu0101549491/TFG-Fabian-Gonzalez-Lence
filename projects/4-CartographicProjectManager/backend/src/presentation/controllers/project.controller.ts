@@ -13,7 +13,8 @@
  */
 
 import type {Request, Response, NextFunction} from 'express';
-import {AccessRight, UserRole} from '@prisma/client';
+import {AccessRight, UserRole, TaskStatus} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 import type {Project} from '@prisma/client';
 import type {AuthenticatedRequest} from '@shared/types.js';
 import {ProjectRepository} from '@infrastructure/repositories/project.repository.js';
@@ -156,6 +157,155 @@ export class ProjectController {
       }
 
       sendSuccess(res, projects);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/v1/projects/summaries
+   * Get all accessible projects with denormalized summary fields to avoid N+1 client calls.
+   */
+  public async getSummaries(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const currentUser = authReq.user;
+
+      if (!currentUser) {
+        throw new UnauthorizedError('User not authenticated');
+      }
+
+      const {status, year, type, clientId, specialUserId} = req.query;
+
+      let parsedYear: number | undefined;
+      if (year != null) {
+        if (typeof year !== 'string') {
+          throw new BadRequestError('Invalid year query parameter');
+        }
+        parsedYear = Number.parseInt(year, 10);
+        if (!Number.isFinite(parsedYear)) {
+          throw new BadRequestError('Invalid year query parameter');
+        }
+      }
+
+      const where: Prisma.ProjectWhereInput = {};
+
+      if (typeof status === 'string') {
+        where.status = status as any;
+      }
+      if (parsedYear != null) {
+        where.year = parsedYear;
+      }
+      if (typeof type === 'string') {
+        where.type = type as any;
+      }
+
+      if (currentUser.role === UserRole.ADMINISTRATOR) {
+        if (typeof clientId === 'string') {
+          where.clientId = clientId;
+        }
+        if (typeof specialUserId === 'string') {
+          where.specialUsers = {
+            some: {userId: specialUserId},
+          };
+        }
+      } else if (currentUser.role === UserRole.CLIENT) {
+        where.clientId = currentUser.id;
+      } else if (currentUser.role === UserRole.SPECIAL_USER) {
+        where.OR = [
+          {creatorId: currentUser.id},
+          {specialUsers: {some: {userId: currentUser.id}}},
+        ];
+      } else {
+        sendSuccess(res, []);
+        return;
+      }
+
+      const projects = await prisma.project.findMany({
+        where,
+        include: {
+          client: {
+            select: {
+              username: true,
+            },
+          },
+          specialUsers: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const projectIds = projects.map((p) => p.id);
+      if (projectIds.length === 0) {
+        sendSuccess(res, []);
+        return;
+      }
+
+      const pendingTaskCounts = await prisma.task.groupBy({
+        by: ['projectId'],
+        where: {
+          projectId: {in: projectIds},
+          status: {in: [TaskStatus.PENDING, TaskStatus.IN_PROGRESS]},
+        },
+        _count: {
+          _all: true,
+        },
+      });
+
+      const unreadMessageCounts = await prisma.message.groupBy({
+        by: ['projectId'],
+        where: {
+          projectId: {in: projectIds},
+          senderId: {not: currentUser.id},
+          NOT: {
+            readByUserIds: {
+              has: currentUser.id,
+            },
+          },
+        },
+        _count: {
+          _all: true,
+        },
+      });
+
+      const pendingTaskCountByProjectId = new Map(
+        pendingTaskCounts.map((row) => [row.projectId, row._count._all]),
+      );
+      const unreadMessageCountByProjectId = new Map(
+        unreadMessageCounts.map((row) => [row.projectId, row._count._all]),
+      );
+
+      const summaries = projects.map((project) => {
+        const specialUserCount = project.specialUsers?.length ?? 0;
+        const participantCount = specialUserCount + 1;
+
+        return {
+          id: project.id,
+          code: project.code,
+          name: project.name,
+          clientId: project.clientId,
+          clientName: project.client?.username ?? 'Unknown Client',
+          type: project.type,
+          deliveryDate: project.deliveryDate,
+          status: project.status,
+          pendingTasksCount: pendingTaskCountByProjectId.get(project.id) ?? 0,
+          unreadMessagesCount: unreadMessageCountByProjectId.get(project.id) ?? 0,
+          participantCount,
+          createdAt: project.createdAt,
+          updatedAt: project.updatedAt,
+        };
+      });
+
+      sendSuccess(res, summaries);
     } catch (error) {
       next(error);
     }

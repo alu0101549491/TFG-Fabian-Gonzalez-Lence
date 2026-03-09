@@ -14,10 +14,20 @@
 
 import {Router} from 'express';
 import {MessageController} from '../controllers/message.controller.js';
-import {authenticate} from '@infrastructure/auth/auth.middleware.js';
+import {authenticate, authorizeProjectMemberOrAdmin, authorizeProjectMemberOrAdminFromBody} from '@infrastructure/auth/auth.middleware.js';
 
 export const messageRoutes = Router();
 const controller = new MessageController();
 
-messageRoutes.get('/project/:projectId', authenticate, controller.getByProjectId.bind(controller));
-messageRoutes.post('/', authenticate, controller.create.bind(controller));
+messageRoutes.get(
+	'/project/:projectId',
+	authenticate,
+	authorizeProjectMemberOrAdmin('projectId'),
+	controller.getByProjectId.bind(controller),
+);
+messageRoutes.post(
+	'/',
+	authenticate,
+	authorizeProjectMemberOrAdminFromBody('projectId'),
+	controller.create.bind(controller),
+);

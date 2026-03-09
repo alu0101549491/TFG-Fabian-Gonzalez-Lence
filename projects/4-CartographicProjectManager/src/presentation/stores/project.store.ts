@@ -45,6 +45,7 @@ export const useProjectStore = defineStore('project', () => {
   const userRepository = new UserRepository();
   const taskRepository = new TaskRepository();
   const messageRepository = new MessageRepository();
+  const isDev = import.meta.env.DEV;
   
   // State
   const projects = ref<ProjectSummaryDto[]>([]);
@@ -161,7 +162,9 @@ export const useProjectStore = defineStore('project', () => {
         clientName = client.username;
       }
     } catch (err) {
-      console.warn(`Failed to fetch client name for project ${project.id}:`, err);
+      if (isDev) {
+        console.warn(`Failed to fetch client name for project ${project.id}:`, err);
+      }
     }
 
     // Fetch pending tasks count
@@ -175,7 +178,9 @@ export const useProjectStore = defineStore('project', () => {
       pendingTasksCount = pendingTasks.length;
       hasPendingTasks = pendingTasksCount > 0;
     } catch (err) {
-      console.warn(`Failed to fetch tasks for project ${project.id}:`, err);
+      if (isDev) {
+        console.warn(`Failed to fetch tasks for project ${project.id}:`, err);
+      }
     }
 
     // Fetch unread messages count
@@ -188,7 +193,9 @@ export const useProjectStore = defineStore('project', () => {
         );
       }
     } catch (err) {
-      console.warn(`Failed to fetch unread messages for project ${project.id}:`, err);
+      if (isDev) {
+        console.warn(`Failed to fetch unread messages for project ${project.id}:`, err);
+      }
     }
 
     return {
@@ -235,23 +242,40 @@ export const useProjectStore = defineStore('project', () => {
         filters.value = {...filters.value, ...newFilters};
       }
 
-      // Fetch projects from backend
-      let projectEntities: Project[];
-      
-      if (filters.value.status) {
-        projectEntities = await projectRepository.findByStatus(filters.value.status);
-      } else if (filters.value.clientId) {
-        projectEntities = await projectRepository.findByClientId(filters.value.clientId);
-      } else if (filters.value.year) {
-        projectEntities = await projectRepository.findByYear(filters.value.year);
-      } else {
-        projectEntities = await projectRepository.findAll();
-      }
+      const summaries = await projectRepository.findSummaries({
+        status: filters.value.status ?? undefined,
+        year: filters.value.year ?? undefined,
+        type: filters.value.type ?? undefined,
+        clientId: filters.value.clientId ?? undefined,
+      });
 
-      // Map to DTOs with denormalized data
-      projects.value = await Promise.all(
-        projectEntities.map(project => mapProjectToSummaryDto(project))
-      );
+      projects.value = summaries.map((summary) => {
+        const deliveryDate = new Date(summary.deliveryDate);
+        const createdAt = new Date(summary.createdAt);
+        const updatedAt = new Date(summary.updatedAt);
+
+        return {
+          id: summary.id,
+          code: summary.code,
+          name: summary.name,
+          clientId: summary.clientId,
+          clientName: summary.clientName,
+          type: summary.type,
+          deliveryDate,
+          status: summary.status,
+          hasPendingTasks: summary.pendingTasksCount > 0,
+          pendingTasksCount: summary.pendingTasksCount,
+          unreadMessagesCount: summary.unreadMessagesCount,
+          participantCount: summary.participantCount,
+          statusColor: summary.status === ProjectStatus.ACTIVE ? 'green' : 'gray',
+          isOverdue: deliveryDate < new Date() && summary.status !== ProjectStatus.FINALIZED,
+          daysUntilDelivery: Math.ceil(
+            (deliveryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          ),
+          createdAt,
+          updatedAt,
+        };
+      });
 
       pagination.value = {
         total: projects.value.length,
@@ -260,7 +284,9 @@ export const useProjectStore = defineStore('project', () => {
         totalPages: Math.ceil(projects.value.length / 10),
       };
     } catch (err: any) {
-      console.error('Failed to fetch projects:', err);
+      if (isDev) {
+        console.error('Failed to fetch projects:', err);
+      }
       error.value = err.message || 'Failed to fetch projects';
       throw err;
     } finally {
@@ -292,7 +318,7 @@ export const useProjectStore = defineStore('project', () => {
         code: projectWithDetails.code,
         name: projectWithDetails.name,
         year: projectWithDetails.year,
-        type: projectWithDetails.type as any,
+        type: projectWithDetails.type,
         description: null,
         clientId: projectWithDetails.clientId,
         clientName: projectWithDetails.client?.username ?? 'Unknown Client',
@@ -300,7 +326,7 @@ export const useProjectStore = defineStore('project', () => {
         coordinateY: projectWithDetails.coordinateY,
         contractDate: new Date(projectWithDetails.contractDate),
         deliveryDate: new Date(projectWithDetails.deliveryDate),
-        status: projectWithDetails.status as any,
+        status: projectWithDetails.status,
         dropboxFolderId:
           typeof projectWithDetails.dropboxFolderId === 'string' &&
           projectWithDetails.dropboxFolderId.trim().length > 0
@@ -321,7 +347,7 @@ export const useProjectStore = defineStore('project', () => {
           userId: projectWithDetails.client.id,
           username: projectWithDetails.client.username,
           email: projectWithDetails.client.email,
-          role: projectWithDetails.client.role as any,
+          role: projectWithDetails.client.role,
           participantType: 'client',
           permissions: [],
           joinedAt: new Date(projectWithDetails.client.createdAt),
@@ -336,7 +362,7 @@ export const useProjectStore = defineStore('project', () => {
               userId: su.user.id,
               username: su.user.username,
               email: su.user.email,
-              role: su.user.role as any,
+              role: su.user.role,
               participantType: 'special_user',
               permissions: (su.accessRights || []).map((right) => right as AccessRight),
               joinedAt: new Date(su.user.createdAt),
@@ -366,11 +392,11 @@ export const useProjectStore = defineStore('project', () => {
         sections: [],
         totalFilesCount: 0,
         currentUserPermissions: {
-          canEdit: authStore.isAdmin || (projectWithDetails as any).creatorId === authStore.userId,
-          canDelete: authStore.isAdmin || (projectWithDetails as any).creatorId === authStore.userId,
-          canFinalize: authStore.isAdmin || (projectWithDetails as any).creatorId === authStore.userId,
+          canEdit: authStore.isAdmin || projectWithDetails.creatorId === authStore.userId,
+          canDelete: authStore.isAdmin || projectWithDetails.creatorId === authStore.userId,
+          canFinalize: authStore.isAdmin || projectWithDetails.creatorId === authStore.userId,
           canCreateTask: authStore.isAdmin 
-            || (projectWithDetails as any).creatorId === authStore.userId
+            || projectWithDetails.creatorId === authStore.userId
             || projectWithDetails.clientId === authStore.userId
             || participants.some(p => p.userId === authStore.userId),
           canSendMessage: true,
@@ -404,12 +430,16 @@ export const useProjectStore = defineStore('project', () => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    console.log(`[ProjectStore] fetchCalendarProjects: ${start.toISOString()} to ${end.toISOString()}`);
+    if (isDev) {
+      console.log(`[ProjectStore] fetchCalendarProjects: ${start.toISOString()} to ${end.toISOString()}`);
+    }
 
     try {
       // Fetch all projects from backend
       const projectEntities = await projectRepository.findAll();
-      console.log(`[ProjectStore] Found ${projectEntities.length} total projects`);
+      if (isDev) {
+        console.log(`[ProjectStore] Found ${projectEntities.length} total projects`);
+      }
       
       // Filter by delivery date range and map to calendar DTOs
       calendarProjects.value = projectEntities
@@ -417,10 +447,12 @@ export const useProjectStore = defineStore('project', () => {
           const deliveryDate = new Date(p.deliveryDate);
           deliveryDate.setHours(0, 0, 0, 0);
           const inRange = deliveryDate >= start && deliveryDate <= end;
-          if (inRange) {
-            console.log(`[ProjectStore] ✅ Project ${p.code} delivery: ${deliveryDate.toLocaleDateString()} is in range`);
-          } else {
-            console.log(`[ProjectStore] ❌ Project ${p.code} delivery: ${deliveryDate.toLocaleDateString()} is NOT in range`);
+          if (isDev) {
+            if (inRange) {
+              console.log(`[ProjectStore] ✅ Project ${p.code} delivery: ${deliveryDate.toLocaleDateString()} is in range`);
+            } else {
+              console.log(`[ProjectStore] ❌ Project ${p.code} delivery: ${deliveryDate.toLocaleDateString()} is NOT in range`);
+            }
           }
           return inRange;
         })
@@ -434,9 +466,13 @@ export const useProjectStore = defineStore('project', () => {
           statusColor: p.status === ProjectStatus.ACTIVE ? 'green' : 'gray',
         }));
       
-      console.log(`[ProjectStore] Filtered to ${calendarProjects.value.length} projects in date range`);
+      if (isDev) {
+        console.log(`[ProjectStore] Filtered to ${calendarProjects.value.length} projects in date range`);
+      }
     } catch (err: any) {
-      console.error('Failed to fetch calendar projects:', err);
+      if (isDev) {
+        console.error('Failed to fetch calendar projects:', err);
+      }
     }
   }
 
@@ -470,7 +506,9 @@ export const useProjectStore = defineStore('project', () => {
       
       return savedProject.id;
     } catch (err: any) {
-      console.error('Failed to create project:', err);
+      if (isDev) {
+        console.error('Failed to create project:', err);
+      }
       error.value = err.message || 'Failed to create project';
       return null;
     } finally {
@@ -482,10 +520,14 @@ export const useProjectStore = defineStore('project', () => {
    * Updates an existing project
    */
   async function updateProject(data: UpdateProjectDto): Promise<boolean> {
-    console.log('[ProjectStore] updateProject called with data:', data);
+    if (isDev) {
+      console.log('[ProjectStore] updateProject called with data:', data);
+    }
     
     if (!authStore.userId) {
-      console.error('[ProjectStore] Cannot update - user not authenticated');
+      if (isDev) {
+        console.error('[ProjectStore] Cannot update - user not authenticated');
+      }
       return false;
     }
 
@@ -494,14 +536,18 @@ export const useProjectStore = defineStore('project', () => {
 
     try {
       // Fetch current project entity
-      console.log(`[ProjectStore] Fetching current project entity for ${data.id}...`);
+      if (isDev) {
+        console.log(`[ProjectStore] Fetching current project entity for ${data.id}...`);
+      }
       const currentProjectEntity = await projectRepository.findById(data.id);
       
       if (!currentProjectEntity) {
         throw new Error(`Project with id ${data.id} not found`);
       }
       
-      console.log('[ProjectStore] Current project entity:', currentProjectEntity);
+      if (isDev) {
+        console.log('[ProjectStore] Current project entity:', currentProjectEntity);
+      }
       
       // Build props object from current entity using getters
       const projectProps = {
@@ -540,10 +586,12 @@ export const useProjectStore = defineStore('project', () => {
       
       // Merge with update data (excluding coordinateX/coordinateY as they're now in coordinates)
       const {coordinateX, coordinateY, ...restData} = data;
-      console.log('[ProjectStore] restData after destructuring:', restData);
-      console.log('[ProjectStore] restData.contractDate:', restData.contractDate);
-      console.log('[ProjectStore] restData.deliveryDate:', restData.deliveryDate);
-      console.log('[ProjectStore] updatedCoordinates:', updatedCoordinates);
+      if (isDev) {
+        console.log('[ProjectStore] restData after destructuring:', restData);
+        console.log('[ProjectStore] restData.contractDate:', restData.contractDate);
+        console.log('[ProjectStore] restData.deliveryDate:', restData.deliveryDate);
+        console.log('[ProjectStore] updatedCoordinates:', updatedCoordinates);
+      }
       
       const updatedProps = {
         ...projectProps,
@@ -552,43 +600,61 @@ export const useProjectStore = defineStore('project', () => {
         id: data.id, // Ensure ID is preserved
       };
       
-      console.log('[ProjectStore] Merged props for new Project:', updatedProps);
-      console.log('[ProjectStore] updatedProps.name:', updatedProps.name);
-      console.log('[ProjectStore] updatedProps.status:', updatedProps.status);
-      console.log('[ProjectStore] updatedProps.contractDate:', updatedProps.contractDate);
-      console.log('[ProjectStore] updatedProps.coordinates:', updatedProps.coordinates);
+      if (isDev) {
+        console.log('[ProjectStore] Merged props for new Project:', updatedProps);
+        console.log('[ProjectStore] updatedProps.name:', updatedProps.name);
+        console.log('[ProjectStore] updatedProps.status:', updatedProps.status);
+        console.log('[ProjectStore] updatedProps.contractDate:', updatedProps.contractDate);
+        console.log('[ProjectStore] updatedProps.coordinates:', updatedProps.coordinates);
+      }
       
       const updatedProject = new Project(updatedProps);
-      console.log('[ProjectStore] Updated project object:', updatedProject);
+      if (isDev) {
+        console.log('[ProjectStore] Updated project object:', updatedProject);
+      }
 
       // Save to backend
-      console.log('[ProjectStore] Sending update to backend...');
+      if (isDev) {
+        console.log('[ProjectStore] Sending update to backend...');
+      }
       const savedProject = await projectRepository.update(updatedProject);
-      console.log('[ProjectStore] Backend response:', savedProject);
+      if (isDev) {
+        console.log('[ProjectStore] Backend response:', savedProject);
+      }
       
       // Update local state
       const index = projects.value.findIndex(p => p.id === data.id);
-      console.log(`[ProjectStore] Updating local state at index ${index}...`);
+      if (isDev) {
+        console.log(`[ProjectStore] Updating local state at index ${index}...`);
+      }
       if (index !== -1) {
         projects.value[index] = await mapProjectToSummaryDto(savedProject);
-        console.log('[ProjectStore] Local state updated');
+        if (isDev) {
+          console.log('[ProjectStore] Local state updated');
+        }
       }
       
       // Update current project if it's the one being edited
       if (currentProject.value?.project.id === data.id) {
-        console.log('[ProjectStore] Refreshing current project view...');
+        if (isDev) {
+          console.log('[ProjectStore] Refreshing current project view...');
+        }
         await fetchProjectById(data.id);
       }
       
-      console.log('✅ [ProjectStore] Project updated successfully');
+      if (isDev) {
+        console.log('✅ [ProjectStore] Project updated successfully');
+      }
       return true;
     } catch (err: any) {
-      console.error('❌ [ProjectStore] Error updating project:', err);
-      console.error('[ProjectStore] Error details:', {
-        message: err.message,
-        stack: err.stack,
-        data: data
-      });
+      if (isDev) {
+        console.error('❌ [ProjectStore] Error updating project:', err);
+        console.error('[ProjectStore] Error details:', {
+          message: err.message,
+          stack: err.stack,
+          data: data
+        });
+      }
       error.value = err.message || 'Failed to update project';
       return false;
     } finally {
@@ -601,36 +667,50 @@ export const useProjectStore = defineStore('project', () => {
    */
   async function deleteProject(projectId: string): Promise<boolean> {
     if (!authStore.userId) {
-      console.error('Cannot delete project: User not authenticated');
+      if (isDev) {
+        console.error('Cannot delete project: User not authenticated');
+      }
       error.value = 'User not authenticated';
       return false;
     }
 
     try {
-      console.log(`[ProjectStore] Deleting project ${projectId}...`);
+      if (isDev) {
+        console.log(`[ProjectStore] Deleting project ${projectId}...`);
+      }
       
       await projectRepository.delete(projectId);
-      console.log(`[ProjectStore] Project ${projectId} deleted from backend`);
+      if (isDev) {
+        console.log(`[ProjectStore] Project ${projectId} deleted from backend`);
+      }
       
       const index = projects.value.findIndex(p => p.id === projectId);
       if (index !== -1) {
         projects.value.splice(index, 1);
         pagination.value.total--;
-        console.log(`[ProjectStore] Project removed from local state (index: ${index})`);
+        if (isDev) {
+          console.log(`[ProjectStore] Project removed from local state (index: ${index})`);
+        }
       } else {
-        console.warn(`[ProjectStore] Project ${projectId} not found in local state`);
+        if (isDev) {
+          console.warn(`[ProjectStore] Project ${projectId} not found in local state`);
+        }
       }
       
       if (currentProjectId.value === projectId) {
         currentProject.value = null;
-        console.log(`[ProjectStore] Cleared current project`);
+        if (isDev) {
+          console.log(`[ProjectStore] Cleared current project`);
+        }
       }
       
       error.value = null;
       return true;
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to delete project';
-      console.error(`[ProjectStore] Error deleting project:`, err);
+      if (isDev) {
+        console.error(`[ProjectStore] Error deleting project:`, err);
+      }
       error.value = errorMessage;
       return false;
     }
@@ -640,10 +720,14 @@ export const useProjectStore = defineStore('project', () => {
    * Finalizes a project (admin only)
    */
   async function finalizeProject(projectId: string): Promise<boolean> {
-    console.log(`[ProjectStore] Attempting to finalize project: ${projectId}`);
+    if (isDev) {
+      console.log(`[ProjectStore] Attempting to finalize project: ${projectId}`);
+    }
     
     if (!authStore.userId) {
-      console.error('[ProjectStore] Cannot finalize - user not authenticated');
+      if (isDev) {
+        console.error('[ProjectStore] Cannot finalize - user not authenticated');
+      }
       return false;
     }
 
@@ -657,14 +741,20 @@ export const useProjectStore = defineStore('project', () => {
       } as UpdateProjectDto);
       
       if (result) {
-        console.log(`✅ [ProjectStore] Project ${projectId} finalized successfully`);
+        if (isDev) {
+          console.log(`✅ [ProjectStore] Project ${projectId} finalized successfully`);
+        }
       } else {
-        console.error(`❌ [ProjectStore] Failed to finalize project ${projectId}`);
+        if (isDev) {
+          console.error(`❌ [ProjectStore] Failed to finalize project ${projectId}`);
+        }
       }
       
       return result;
     } catch (err: any) {
-      console.error('[ProjectStore] Exception while finalizing project:', err);
+      if (isDev) {
+        console.error('[ProjectStore] Exception while finalizing project:', err);
+      }
       error.value = err.message || 'Failed to finalize project';
       return false;
     } finally {

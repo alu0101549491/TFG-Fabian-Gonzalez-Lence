@@ -83,6 +83,27 @@ export class MessageController {
     return false;
   }
 
+  private parseOptionalNonNegativeInt(value: unknown): number | null {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      return null;
+    }
+
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  private parseOptionalPositiveInt(value: unknown): number | null {
+    const parsed = this.parseOptionalNonNegativeInt(value);
+    if (parsed === null || parsed === 0) {
+      return null;
+    }
+    return parsed;
+  }
+
   public async getByProjectId(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const authReq = req as AuthenticatedRequest;
@@ -98,8 +119,42 @@ export class MessageController {
         return sendError(res, 'You do not have permission to view messages for this project', HTTP_STATUS.FORBIDDEN);
       }
 
-      const messages = await this.messageRepository.findByProjectId(projectId);
+      const limitRaw = req.query.limit;
+      const offsetRaw = req.query.offset;
+      const limit = this.parseOptionalPositiveInt(limitRaw);
+      const offset = this.parseOptionalNonNegativeInt(offsetRaw);
+
+      const shouldPaginate = limit !== null || offset !== null;
+      const effectiveLimit = Math.min(limit ?? 20, 100);
+      const effectiveOffset = offset ?? 0;
+
+      const messages = shouldPaginate
+        ? await this.messageRepository.findByProjectIdPaginated(projectId, effectiveLimit, effectiveOffset)
+        : await this.messageRepository.findByProjectId(projectId);
+
       sendSuccess(res, messages);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async countByProjectId(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const currentUser = authReq.user;
+
+      if (!currentUser) {
+        return sendError(res, 'Authentication required', HTTP_STATUS.UNAUTHORIZED);
+      }
+
+      const projectId = req.params.projectId as string;
+      const canView = await this.canViewProjectMessages(currentUser.id, currentUser.role, projectId);
+      if (!canView) {
+        return sendError(res, 'You do not have permission to view messages for this project', HTTP_STATUS.FORBIDDEN);
+      }
+
+      const count = await this.messageRepository.countByProjectId(projectId);
+      sendSuccess(res, {count});
     } catch (error) {
       next(error);
     }

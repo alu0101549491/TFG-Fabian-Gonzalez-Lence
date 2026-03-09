@@ -19,7 +19,9 @@ import type {Message} from '@prisma/client';
  */
 export interface IMessageRepository {
   findById(id: string): Promise<Message | null>;
+  countByProjectId(projectId: string): Promise<number>;
   findByProjectId(projectId: string): Promise<Message[]>;
+  findByProjectIdPaginated(projectId: string, limit: number, offset: number): Promise<Message[]>;
   findBySenderId(senderId: string): Promise<Message[]>;
   create(data: Omit<Message, 'id' | 'sentAt'>): Promise<Message>;
   delete(id: string): Promise<void>;
