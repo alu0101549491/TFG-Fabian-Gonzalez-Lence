@@ -207,7 +207,7 @@ These were marked as TODOs but are **not blocking** for core functionality:
 - 📦 Backup compression (can use uncompressed backups)
 - 📦 Automated backup scheduler (can run manually)  
 - 📧 Email service (console logging works for dev)
-- ☁️ Dropbox integration (can use local storage)
+- ☁️ Dropbox integration is optional (when configured, files can be stored in Dropbox; otherwise the backend can use local uploads)
 
 ### Database Optimizations
 - 🔍 Query indexes (queries work, just slower at scale)

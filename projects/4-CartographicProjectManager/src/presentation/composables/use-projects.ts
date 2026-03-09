@@ -203,6 +203,7 @@ export function useProjects(): UseProjectsReturn {
    * @returns Result with created project or error
    */
   async function createProject(data: CreateProjectDto): Promise<CreateProjectResult> {
+    // UX-only guard: the backend must still enforce authorization.
     if (!isAdmin.value && !isSpecialUser.value) {
       return {success: false, error: 'Only administrators and special users can create projects'};
     }

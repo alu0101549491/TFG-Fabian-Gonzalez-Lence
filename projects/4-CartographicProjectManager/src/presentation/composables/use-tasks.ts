@@ -74,6 +74,7 @@ export interface UseTasksReturn {
 
   // Task Stats
   totalTasks: ComputedRef<number>;
+  /** Count of tasks that are not completed (i.e., `status !== COMPLETED`). */
   pendingCount: ComputedRef<number>;
   completedCount: ComputedRef<number>;
   overdueCount: ComputedRef<number>;

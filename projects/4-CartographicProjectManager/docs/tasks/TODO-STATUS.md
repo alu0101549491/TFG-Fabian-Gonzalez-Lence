@@ -1,7 +1,7 @@
 # TODO Status Report
 
-**Updated: February 19, 2026**  
-**Status: Backend Authentication & Infrastructure IMPLEMENTED ✅**
+**Updated: March 9, 2026**  
+**Status: Backend + Frontend Integration IMPLEMENTED ✅**
 
 ## 🎉 Major Update: Backend is Production-Ready!
 
@@ -13,7 +13,7 @@ All authentication and infrastructure TODOs have been resolved. The backend API 
 - ✅ WebSocket support
 - ✅ All API endpoints
 
-**See [BACKEND-IMPLEMENTATION.md](./BACKEND-IMPLEMENTATION.md) for complete details.**
+**See [INTEGRATION.md](../development/INTEGRATION.md) and [BACKEND-IMPLEMENTATION.md](../development/BACKEND-IMPLEMENTATION.md) for complete details.**
 
 ---
 
@@ -48,75 +48,9 @@ All authentication and infrastructure TODOs have been resolved. The backend API 
     - Role-based authorization
   - **Database**: Full Prisma ORM integration with PostgreSQL
 
-### 4. **Frontend Auth Service Documentation** 🆕
-- **Status**: ✅ UPDATED
-- **Location**: `src/application/services/authentication.service.ts`
-- **Changes**: Replaced all misleading TODOs with clear documentation that:
-  - bcrypt and JWT are **backend responsibilities**
-  - Frontend service makes HTTP calls to backend
-  - Current code is mock/placeholder for development
-  - References to actual backend implementations provided
-
----
-
-## 🔄 Backend-Dependent TODOs (NOW READY FOR INTEGRATION)
-
-These TODOs require backend API implementation and cannot be completed in the frontend alone:
-
-### Stores (Mock Data Replacement)
-All store TODOs are placeholders for actual API calls:
-
-- **project.store.ts** (7 TODOs):
-  - `fetchProjects()` - line 161
-  - `fetchProjectById()` - line 238
-  - `fetchProjectsForCalendar()` - line 314
-  - `createProject()` - line 356
-  - `updateProject()` - line 400
-  - `deleteProject()` - line 430
-  - `finalizeProject()` - line 462
-
-- **message.store.ts** (5 TODOs):
-  - `fetchMessagesByProject()` - line 122
-  - `sendMessage()` - line 193
-  - `markMessageAsRead()` - line 225
-  - `deleteMessage()` - line 268
-  - `fetchUnreadCount()` - line 299
-
-- **task.store.ts** (6 TODOs):
-  - `fetchTasksByProject()` - line 147
-  - `createTask()` - line 214
-  - `updateTask()` - line 244
-  - `deleteTask()` - line 265
-  - `changeTaskStatus()` - line 308
-  - `fetchTaskHistory()` - line 348
-  - `assignTask()` - line 392
-  - `unassignTask()` - line 438
-
-- **notification.store.ts** (5 TODOs):
-  - `fetchNotifications()` - line 142
-  - `markAsRead()` - line 232
-  - `markAllAsRead()` - line 252
-  - `deleteNotification()` - line 310
-  - `fetchUnreadCount()` - line 283
-
-### Views
-- **DashboardView.vue** - line 470: Mock statistics API call
-- **ProjectListView.vue** - line 339: Mock project list API call
-- **router/index.ts** - line 363: Authorization service check
-
-**Action Required**: These will be automatically enabled when the backend API is deployed by uncommenting the service calls and removing the mock data sections.
-
-## 🔐 Authentication TODOs (Backend Implementation)
-
-Located in `src/application/services/authentication.service.ts`:
-
-- **Password hashing** - line 265, 442
-  - Requires: bcrypt library
-  - Current: Placeholder returning plain password
-  
-- **Password verification** - line 83, 433
-  - Requires: bcrypt.compare()
-  - Current: Simple string comparison
+### 4. Frontend integration status
+- **Status**: ✅ IMPLEMENTED
+- **Summary**: The frontend uses repositories/stores that call the backend API endpoints directly (no mock-data TODO workflow).
   
 - **JWT token generation** - line 424
   - Requires: jsonwebtoken library

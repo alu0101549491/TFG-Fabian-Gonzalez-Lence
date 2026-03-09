@@ -223,42 +223,12 @@ curl http://localhost:3000/api/v1/health
 
 ## 🔗 Frontend-Backend Integration
 
-### Current Frontend Status
+The frontend is integrated with the backend API.
 
-The frontend authentication service (`src/application/services/authentication.service.ts`) currently has:
-- ❌ Mock authentication (no real API calls)
-- ✅ Placeholder code for bcrypt/JWT (with documentation that backend handles this)
+- Stores and repositories use real HTTP calls to `/api/v1/*` endpoints.
+- Authentication uses the backend auth endpoints (`/api/v1/auth/*`) and the shared HTTP client.
 
-### To Enable Real Backend Integration
-
-Update frontend stores to use HTTP repositories instead of mock data:
-
-#### Example: Update auth.store.ts
-
-**Current (Mock)**:
-```typescript
-async function login(credentials: LoginCredentialsDto): Promise<void> {
-  // Mock implementation
-  const user = mockUsers.find(u => u.email === credentials.email);
-  // ...
-}
-```
-
-**Updated (Real API)**:
-```typescript
-import {httpClient} from '@/infrastructure/http';
-
-async function login(credentials: LoginCredentialsDto): Promise<void> {
-  try {
-    const response = await httpClient.post('/auth/login', credentials);
-    currentUser.value = response.data.user;
-    token.value = response.data.accessToken;
-    // Store token in localStorage/cookies
-  } catch (error) {
-    // Handle error
-  }
-}
-```
+For a consolidated view of the integration status and verification steps, see `docs/development/INTEGRATION.md`.
 
 ### API Base URL Configuration
 

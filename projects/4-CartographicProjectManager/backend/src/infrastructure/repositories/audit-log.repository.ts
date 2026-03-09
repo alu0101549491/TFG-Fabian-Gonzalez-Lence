@@ -14,6 +14,7 @@
 
 import { PrismaClient, AuditAction, AuditResourceType } from '@prisma/client';
 import { DatabaseError } from '../../shared/errors.js';
+import { logError } from '../../shared/logger.js';
 
 /**
  * Interface for audit log creation data
@@ -83,7 +84,13 @@ export class AuditLogRepository {
         },
       });
     } catch (error) {
-      throw new DatabaseError(`Failed to create audit log: ${(error as Error).message}`);
+      logError('Failed to create audit log', error as Error, {
+        userId: data.userId,
+        action: data.action,
+        resourceType: data.resourceType,
+        resourceId: data.resourceId,
+      });
+      throw new DatabaseError('Failed to create audit log');
     }
   }
 
@@ -126,7 +133,13 @@ export class AuditLogRepository {
         skip: filters.offset || 0,
       });
     } catch (error) {
-      throw new DatabaseError(`Failed to find audit logs: ${(error as Error).message}`);
+      logError('Failed to find audit logs', error as Error, {
+        userId: filters.userId,
+        action: filters.action,
+        resourceType: filters.resourceType,
+        resourceId: filters.resourceId,
+      });
+      throw new DatabaseError('Failed to find audit logs');
     }
   }
 
@@ -142,7 +155,8 @@ export class AuditLogRepository {
         where: { id },
       });
     } catch (error) {
-      throw new DatabaseError(`Failed to find audit log by ID: ${(error as Error).message}`);
+      logError('Failed to find audit log by ID', error as Error, {id});
+      throw new DatabaseError('Failed to find audit log by ID');
     }
   }
 
@@ -180,7 +194,13 @@ export class AuditLogRepository {
 
       return await this.prisma.auditLog.count({ where });
     } catch (error) {
-      throw new DatabaseError(`Failed to count audit logs: ${(error as Error).message}`);
+      logError('Failed to count audit logs', error as Error, {
+        userId: filters.userId,
+        action: filters.action,
+        resourceType: filters.resourceType,
+        resourceId: filters.resourceId,
+      });
+      throw new DatabaseError('Failed to count audit logs');
     }
   }
 
@@ -201,7 +221,10 @@ export class AuditLogRepository {
       });
       return result.count;
     } catch (error) {
-      throw new DatabaseError(`Failed to delete old audit logs: ${(error as Error).message}`);
+      logError('Failed to delete old audit logs', error as Error, {
+        olderThan: olderThan.toISOString(),
+      });
+      throw new DatabaseError('Failed to delete old audit logs');
     }
   }
 }

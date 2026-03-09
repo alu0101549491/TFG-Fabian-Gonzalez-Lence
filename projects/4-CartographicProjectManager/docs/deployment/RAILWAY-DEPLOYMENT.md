@@ -161,7 +161,8 @@ MAX_FILE_SIZE=52428800
 UPLOAD_DIR=./uploads
 ```
 
-#### Dropbox Integration (from Part 1)
+#### Dropbox Integration (Optional)
+If you want file storage backed by Dropbox, configure these variables. If you don't set them, the backend can still run and can use local uploads via `UPLOAD_DIR`.
 ```bash
 DROPBOX_APP_KEY=<your_app_key>
 DROPBOX_APP_SECRET=<your_app_secret>
