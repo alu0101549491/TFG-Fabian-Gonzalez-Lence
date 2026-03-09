@@ -41,6 +41,7 @@
             type="button"
             class="project-form-generate-btn"
             title="Generate project code"
+            :disabled="isGeneratingCode"
             @click="generateCode"
           >
             🔄
@@ -252,9 +253,10 @@
 </template>
 
 <script setup lang="ts">
-import {reactive, computed, watch, onMounted} from 'vue';
+import {reactive, computed, watch, onMounted, ref} from 'vue';
 import type {ProjectDto, ProjectSummaryDto, CreateProjectDto, UpdateProjectDto} from '@/application/dto';
 import {ProjectType} from '@/domain/enumerations';
+import {ProjectRepository} from '@/infrastructure/repositories/project.repository';
 
 /**
  * ProjectForm component props
@@ -285,6 +287,24 @@ const props = withDefaults(defineProps<ProjectFormProps>(), {
 });
 
 const emit = defineEmits<ProjectFormEmits>();
+
+const projectRepository = new ProjectRepository();
+const isGeneratingCode = ref(false);
+
+let codeGenerationCounter = 0;
+
+function getNextSequenceCandidate(): number {
+  const cryptoApi = globalThis.crypto;
+
+  if (cryptoApi?.getRandomValues) {
+    const values = new Uint32Array(1);
+    cryptoApi.getRandomValues(values);
+    return (values[0] % 999) + 1;
+  }
+
+  codeGenerationCounter = (codeGenerationCounter + 1) % 999;
+  return ((Date.now() + codeGenerationCounter) % 999) + 1;
+}
 
 // Form state
 const form = reactive({
@@ -450,11 +470,36 @@ function validateAllFields(): boolean {
 /**
  * Generate project code
  */
-function generateCode(): void {
+async function generateCode(): Promise<void> {
+  if (isGeneratingCode.value) {
+    return;
+  }
+
+  isGeneratingCode.value = true;
+  errors.code = '';
+
   const year = form.year || new Date().getFullYear();
-  const sequence = Math.floor(Math.random() * 999) + 1;
-  form.code = `CART-${year}-${sequence.toString().padStart(3, '0')}`;
-  validateField('code');
+  const maxAttempts = 20;
+
+  try {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const sequence = getNextSequenceCandidate();
+      const candidate = `CART-${year}-${sequence.toString().padStart(3, '0')}`;
+
+      const exists = await projectRepository.existsByCode(candidate);
+      if (!exists) {
+        form.code = candidate;
+        validateField('code');
+        return;
+      }
+    }
+
+    errors.code = 'Unable to generate a unique code. Please enter one manually.';
+  } catch {
+    errors.code = 'Unable to check code uniqueness. Please enter a code manually.';
+  } finally {
+    isGeneratingCode.value = false;
+  }
 }
 
 /**

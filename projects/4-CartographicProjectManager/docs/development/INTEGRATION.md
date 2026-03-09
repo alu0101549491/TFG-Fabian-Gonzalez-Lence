@@ -246,9 +246,9 @@ API returns 401 → httpClient intercepts
 
 ## 📚 Additional Resources
 
-- [Backend API Documentation](./backend/README.md)
-- [Backend Setup Guide](./backend/SETUP.md)
-- [Frontend Architecture](./docs/ARCHITECTURE.md)
+- [Backend API Documentation](../../backend/README.md)
+- [Backend Setup Guide](../../backend/SETUP.md)
+- [Frontend Architecture](./ARCHITECTURE.md)
 
 ## ✨ Summary
 

@@ -149,7 +149,7 @@ export function useUsers(): UseUsersReturn {
   const clientCount = computed(() => clients.value.length);
   const specialUserCount = computed(() => specialUsers.value.length);
 
-  // Permissions
+  // Permissions (UX-only; backend remains the authorization source of truth)
   const canManageUsers = computed(() => isAdmin.value);
   const canDeleteUsers = computed(() => isAdmin.value);
 
@@ -192,6 +192,7 @@ export function useUsers(): UseUsersReturn {
    * @returns Creation result
    */
   async function createUser(userData: CreateUserDto): Promise<CreateUserResult> {
+    // UX-only guard: backend authorization must still enforce this.
     if (!canManageUsers.value) {
       return {
         success: false,
@@ -222,6 +223,7 @@ export function useUsers(): UseUsersReturn {
     id: string,
     userData: UpdateUserDto,
   ): Promise<UpdateUserResult> {
+    // UX-only guard: backend authorization must still enforce this.
     if (!canEditUser(id)) {
       return {
         success: false,
@@ -248,6 +250,7 @@ export function useUsers(): UseUsersReturn {
    * @returns Deletion result
    */
   async function deleteUser(id: string): Promise<DeleteUserResult> {
+    // UX-only guard: backend authorization must still enforce this.
     if (!canDeleteUsers.value) {
       return {
         success: false,

@@ -3,7 +3,45 @@
 # Cartographic Project Manager - Backend Quick Start
 # This script helps you get the backend server up and running quickly
 
-set -e  # Exit on error
+set -euo pipefail
+
+mask_database_url() {
+    local url="$1"
+    # mask password if present: scheme://user:pass@host/... -> scheme://user:***@host/...
+    echo "$url" | sed -E 's#(://[^/:@]+):([^@]+)@#\1:***@#'
+}
+
+extract_database_host() {
+    local url="$1"
+    # naive extraction of host between @ and / or end; handles scheme://user:pass@host:port/db
+    echo "$url" | sed -E 's#^[a-zA-Z]+://([^@]+@)?([^/]+).*$#\2#'
+}
+
+read_database_url_from_env_file() {
+    local env_file="$1"
+    if [ ! -f "$env_file" ]; then
+        return 1
+    fi
+
+    local line
+    line=$(grep -E '^DATABASE_URL=' "$env_file" | head -n 1 || true)
+    if [ -z "$line" ]; then
+        return 1
+    fi
+
+    local value
+    value="${line#DATABASE_URL=}"
+    value="${value%\"}"
+    value="${value#\"}"
+    value="${value%\'}"
+    value="${value#\'}"
+
+    if [ -z "$value" ]; then
+        return 1
+    fi
+
+    echo "$value"
+}
 
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║                                                                ║"
@@ -39,17 +77,46 @@ else
     echo "✅ .env file exists"
 fi
 
+NODE_ENV_VALUE="${NODE_ENV:-development}"
+if [ "$NODE_ENV_VALUE" != "development" ]; then
+    echo "❌ Safety guard: this setup script is intended for development only."
+    echo "   Current NODE_ENV: $NODE_ENV_VALUE"
+    echo "   Refusing to continue to avoid accidental destructive operations."
+    exit 1
+fi
+
+DATABASE_URL_VALUE="$(read_database_url_from_env_file .env || true)"
+if [ -z "${DATABASE_URL_VALUE:-}" ]; then
+    echo "❌ Missing DATABASE_URL in .env"
+    echo "   Please set DATABASE_URL in .env before continuing."
+    exit 1
+fi
+
+DB_HOST="$(extract_database_host "$DATABASE_URL_VALUE")"
+echo ""
+echo "🔒 Safety check: database target"
+echo "   DATABASE_URL: $(mask_database_url "$DATABASE_URL_VALUE")"
+echo "   Host: $DB_HOST"
+echo ""
+echo "   This script will run Prisma migrations (and may seed data if you opt in)."
+echo "   Ensure DATABASE_URL points to a disposable development database."
+echo ""
+if [ "${SETUP_CONFIRM:-}" != "I_UNDERSTAND" ]; then
+    read -p "Type I_UNDERSTAND to continue: " -r </dev/tty
+    if [ "${REPLY:-}" != "I_UNDERSTAND" ]; then
+        echo "Aborted."
+        exit 1
+    fi
+fi
+
 echo ""
 echo "🗄️  Step 3: Setting up database..."
 
-# Check if PostgreSQL is accessible
-echo "   Checking database connection..."
-if npx prisma db pull --force 2>/dev/null; then
-    echo "   ✅ Database connection successful"
-elif npx prisma db push 2>/dev/null; then
-    echo "   ✅ Database schema pushed successfully"
+echo "   Checking database connection via Prisma..."
+if npx prisma migrate status >/dev/null 2>&1; then
+    echo "   ✅ Prisma can reach the database"
 else
-    echo "   ⚠️  Could not connect to database automatically"
+    echo "   ⚠️  Could not verify database connection automatically"
     echo "   Please make sure PostgreSQL is running and DATABASE_URL is correct"
     echo ""
     echo "   Quick PostgreSQL setup:"
@@ -100,6 +167,6 @@ echo "   npm test            - Run tests"
 echo ""
 echo "📚 Documentation:"
 echo "   - API Documentation: http://localhost:3000/api/v1/docs (when running)"
-echo "   - Backend Guide: ../docs/BACKEND-IMPLEMENTATION.md"
+echo "   - Backend Guide: ../docs/development/BACKEND-IMPLEMENTATION.md"
 echo "   - Prisma Schema: prisma/schema.prisma"
 echo ""

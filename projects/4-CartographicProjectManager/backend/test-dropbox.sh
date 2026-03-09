@@ -3,6 +3,19 @@
 # Test Dropbox Integration
 # Este script prueba la integración de Dropbox en el backend
 
+set -euo pipefail
+
+require_command() {
+    local cmd="$1"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "❌ Missing required command: $cmd" >&2
+        exit 1
+    fi
+}
+
+require_command curl
+require_command jq
+
 echo "======================================"
 echo "🧪 Dropbox Integration Test"
 echo "======================================"
@@ -10,28 +23,40 @@ echo ""
 
 # 1. Verificar que el backend está corriendo
 echo "1️⃣  Verificando que el backend está activo..."
-HEALTH_CHECK=$(curl -s http://localhost:3000/api/v1/health 2>/dev/null)
-if [ $? -eq 0 ]; then
+HEALTH_BODY_FILE=$(mktemp)
+HEALTH_STATUS=$(curl -sS -o "$HEALTH_BODY_FILE" -w "%{http_code}" http://localhost:3000/api/v1/health 2>/dev/null || true)
+if [[ "$HEALTH_STATUS" =~ ^2 ]]; then
     echo "✅ Backend corriendo correctamente"
-    echo "   Respuesta: $HEALTH_CHECK"
+    echo -n "   Respuesta: "
+    cat "$HEALTH_BODY_FILE"
 else
     echo "❌ Error: El backend no está corriendo"
     echo "   Ejecuta: npm run dev en el directorio backend"
+    rm -f "$HEALTH_BODY_FILE"
     exit 1
 fi
+rm -f "$HEALTH_BODY_FILE"
 echo ""
 
 # 2. Login para obtener token
 echo "2️⃣  Obteniendo token de autenticación..."
-LOGIN_RESPONSE=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
+LOGIN_BODY_FILE=$(mktemp)
+LOGIN_STATUS=$(curl -sS -o "$LOGIN_BODY_FILE" -w "%{http_code}" -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@cartography.com","password":"REDACTED"}')
+    -d '{"email":"admin@cartographic.com","password":"REDACTED"}')
 
-TOKEN=$(echo $LOGIN_RESPONSE | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+if [[ ! "$LOGIN_STATUS" =~ ^2 ]]; then
+    echo "❌ Error: No se pudo autenticar (HTTP $LOGIN_STATUS)" >&2
+    cat "$LOGIN_BODY_FILE" >&2
+    rm -f "$LOGIN_BODY_FILE"
+    exit 1
+fi
+
+TOKEN=$(jq -r '.data.accessToken // .accessToken // empty' < "$LOGIN_BODY_FILE")
+rm -f "$LOGIN_BODY_FILE"
 
 if [ -z "$TOKEN" ]; then
     echo "❌ Error: No se pudo obtener el token de autenticación"
-    echo "   Respuesta: $LOGIN_RESPONSE"
     echo ""
     echo "   Asegúrate de que existe el usuario admin en la base de datos:"
     echo "   cd backend && npm run prisma:seed"
@@ -53,10 +78,19 @@ echo ""
 
 # 4. Obtener un proyecto para asociar el archivo
 echo "4️⃣  Obteniendo lista de proyectos..."
-PROJECTS=$(curl -s -X GET http://localhost:3000/api/v1/projects \
+PROJECTS_BODY_FILE=$(mktemp)
+PROJECTS_STATUS=$(curl -sS -o "$PROJECTS_BODY_FILE" -w "%{http_code}" -X GET http://localhost:3000/api/v1/projects \
   -H "Authorization: Bearer $TOKEN")
 
-PROJECT_ID=$(echo $PROJECTS | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
+if [[ ! "$PROJECTS_STATUS" =~ ^2 ]]; then
+    echo "❌ Error: No se pudo obtener la lista de proyectos (HTTP $PROJECTS_STATUS)" >&2
+    cat "$PROJECTS_BODY_FILE" >&2
+    rm -f "$PROJECTS_BODY_FILE"
+    exit 1
+fi
+
+PROJECT_ID=$(jq -r '(.data // .projects // [])[0].id // empty' < "$PROJECTS_BODY_FILE")
+rm -f "$PROJECTS_BODY_FILE"
 
 if [ -z "$PROJECT_ID" ]; then
     echo "⚠️  No hay proyectos en la base de datos"
@@ -69,46 +103,56 @@ echo ""
 
 # 5. Subir archivo a Dropbox
 echo "5️⃣  Subiendo archivo a Dropbox..."
-UPLOAD_RESPONSE=$(curl -s -X POST http://localhost:3000/api/v1/files/upload \
+UPLOAD_BODY_FILE=$(mktemp)
+UPLOAD_STATUS=$(curl -sS -o "$UPLOAD_BODY_FILE" -w "%{http_code}" -X POST http://localhost:3000/api/v1/files/upload \
   -H "Authorization: Bearer $TOKEN" \
   -F "file=@$TEST_FILE" \
   -F "projectId=$PROJECT_ID" \
   -F "section=Messages")
 
 echo "Respuesta del servidor:"
-echo "$UPLOAD_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$UPLOAD_RESPONSE"
+jq . < "$UPLOAD_BODY_FILE" 2>/dev/null || cat "$UPLOAD_BODY_FILE"
 echo ""
 
 # Verificar si el upload fue exitoso
-if echo "$UPLOAD_RESPONSE" | grep -q '"success":true'; then
+if [[ "$UPLOAD_STATUS" =~ ^2 ]]; then
     echo "✅ ¡Archivo subido exitosamente a Dropbox!"
+
+    FILE_ID=$(jq -r '.data.file.id // .data.id // .file.id // .id // empty' < "$UPLOAD_BODY_FILE")
     
-    FILE_ID=$(echo $UPLOAD_RESPONSE | grep -o '"id":"[^"]*' | cut -d'"' -f4)
-    
-    if [ ! -z "$FILE_ID" ]; then
+    if [ -n "$FILE_ID" ]; then
         echo ""
         echo "6️⃣  Probando descarga del archivo..."
-        DOWNLOAD_RESPONSE=$(curl -s -X GET "http://localhost:3000/api/v1/files/$FILE_ID/download" \
+        DOWNLOAD_BODY_FILE=$(mktemp)
+        DOWNLOAD_STATUS=$(curl -sS -o "$DOWNLOAD_BODY_FILE" -w "%{http_code}" -X GET "http://localhost:3000/api/v1/files/$FILE_ID/download" \
           -H "Authorization: Bearer $TOKEN")
-        
-        if echo "$DOWNLOAD_RESPONSE" | grep -q 'downloadUrl'; then
+
+        if [[ "$DOWNLOAD_STATUS" =~ ^2 ]]; then
             echo "✅ Link de descarga generado correctamente"
-            DOWNLOAD_URL=$(echo $DOWNLOAD_RESPONSE | grep -o '"downloadUrl":"[^"]*' | cut -d'"' -f4)
-            echo "   URL: ${DOWNLOAD_URL:0:80}..."
+            DOWNLOAD_URL=$(jq -r '.data.downloadUrl // .downloadUrl // empty' < "$DOWNLOAD_BODY_FILE")
+            if [ -n "$DOWNLOAD_URL" ]; then
+                echo "   URL: ${DOWNLOAD_URL:0:80}..."
+            else
+                echo "⚠️  Respuesta sin downloadUrl"
+            fi
         else
             echo "⚠️  No se pudo generar el link de descarga"
         fi
+
+        rm -f "$DOWNLOAD_BODY_FILE"
     fi
 else
     echo "❌ Error al subir archivo"
     
     # Verificar si es problema de Dropbox token
-    if echo "$UPLOAD_RESPONSE" | grep -q "not configured"; then
+    if grep -qi "not configured" "$UPLOAD_BODY_FILE"; then
         echo ""
         echo "💡 El servicio de Dropbox no está configurado"
         echo "   Verifica que DROPBOX_ACCESS_TOKEN esté en el archivo .env"
     fi
 fi
+
+rm -f "$UPLOAD_BODY_FILE"
 
 # Limpiar archivo temporal
 rm -f $TEST_FILE

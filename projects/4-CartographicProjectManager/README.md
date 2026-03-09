@@ -47,7 +47,7 @@ This project follows a **Layered Architecture with Clean Architecture** principl
 
 Dependencies flow **inward** (Presentation → Application → Domain ← Infrastructure), following the Dependency Inversion Principle.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architectural documentation.
+See [docs/development/ARCHITECTURE.md](docs/development/ARCHITECTURE.md) for detailed architectural documentation.
 
 ## Tech Stack
 
@@ -174,7 +174,7 @@ src/
 
 ## Documentation
 
-- [Architecture Guide](docs/ARCHITECTURE.md)
-- [Dropbox Integration Setup](docs/DROPBOX-INTEGRATION.md)
-- [Dropbox Deployment Guide](docs/DROPBOX-DEPLOYMENT.md) - Production strategies
+- [Architecture Guide](docs/development/ARCHITECTURE.md)
+- [Dropbox Integration Setup](docs/development/DROPBOX-INTEGRATION.md)
+- [Dropbox Deployment Guide](docs/deployment/DROPBOX-DEPLOYMENT.md) - Production strategies
 - API docs: Run `npm run doc` → `docs/` directory

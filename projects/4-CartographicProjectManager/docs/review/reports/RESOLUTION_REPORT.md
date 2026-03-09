@@ -76,6 +76,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D11-002** — Frontend repositories now build encoded query strings using `URLSearchParams` (not raw interpolation), preventing brittle failures with ISO date filters and other reserved characters.
 - **D11-003** — Backend TaskRepository is now strictly typed: repository methods return explicit Prisma payload types (no `any`), and computed `creatorName`/`assigneeName` fields are added at the controller response boundary rather than inside the repository.
 - **D11-004** — Frontend and backend repositories no longer use direct `console.*` debug logging in core data paths; backend routes through the shared logger and frontend removes the noisy debug prints.
+- **D11-006** — AuditLogRepository no longer embeds raw database error text into `DatabaseError` messages; detailed errors are logged via the shared logger and outward errors use stable, user-safe messages.
 - **D13-001** — Deadline reminder scheduler now uses the shared Prisma singleton (`prisma`) instead of constructing a separate `PrismaClient`, avoiding mixed-client workflows and reducing connection lifecycle risk.
 - **D13-002** — Backup scheduler now disables itself at startup (with a clear error log) if `DATABASE_URL` is missing, instead of running with an empty config.
 - **D13-003** — Backend authorization middleware now uses typed Prisma `UserRole` (no stringly-typed role checks); admin checks use `UserRole.ADMINISTRATOR`.
@@ -94,6 +95,8 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D17-003** — Router navigation error logging is now gated to development builds (`import.meta.env.DEV`), reducing production console noise while keeping chunk-reload behavior unchanged.
 - **D19-001** — Redirect handling is now centralized: `useAuth()` delegates to `handlePostLoginRedirect()` (validated via `isValidRedirectTarget`), and `requireAuth()` uses the same `redirect` query mechanism (no separate `intended_route`).
 - **D19-002** — File upload response handling is now strictly typed: the upload composable uses a single `ApiResponse<{ file: ... }>` shape (no `any` and no `data.data.file || data.file` guessing) and rehydrates `uploadedAt` to a `Date` when building the `FileSummaryDto`.
+- **D19-003** — `useTasks()` transitions are sourced from the domain `TaskStatusTransitions` mapping, and `pendingCount` is explicitly documented as “non-completed tasks” (`status !== COMPLETED`) to avoid semantic drift.
+- **D19-004** — Composable permission checks are now explicitly labeled as UX-only guards (not authorization) to avoid a false sense of security; the backend remains the source of truth for permission enforcement.
 - **D36-003** — Backend auth role fields in shared type definitions are no longer stringly-typed; they are constrained to Prisma `UserRole`.
 - **D36-004** — Backend shared types header metadata is aligned (`@file backend/src/shared/types.ts`).
 - **D36-005** — Frontend `vite-env.d.ts` header was standardized to the University/TFG template (Vite reference directive preserved).
@@ -142,6 +145,10 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D39-001** — Dropbox refresh-token helper script now masks tokens by default; printing full secrets requires explicit `--print-full`.
 - **D39-002** — Dropbox token update instructions no longer include token-like prefixes; examples use placeholders.
 - **D39-003** — Backend helper scripts no longer use broad `pkill -9 node` or hard-coded absolute paths; they now use script-relative paths and a pidfile (`.dev-server.pid`) for safer stop/start behavior.
+- **D39-004** — Backend setup script no longer uses destructive `prisma db pull --force` / `db push` as a connectivity check; it now enforces `NODE_ENV=development`, prints masked DB target info, requires explicit confirmation (`SETUP_CONFIRM=I_UNDERSTAND`), and uses `prisma migrate status` as a non-destructive check.
+- **D39-005** — Dropbox integration test script now uses the correct seeded admin email and robust JSON parsing: it checks for `curl`/`jq`, captures HTTP status codes reliably, and extracts `data.accessToken`/IDs via `jq` with clear errors.
+- **D39-006** — Upload endpoint test script now validates required tools (`curl`, `jq`) and uses reliable HTTP status capture (`curl -sS -o ... -w '%{http_code}'`) rather than grepping `curl -v` output; JSON parsing tolerates both `data.*` and top-level shapes.
+- **D39-007** — Script hygiene standardized: `test-large-upload.ts` now imports internal modules using ESM `.js` extensions, and `backend/scripts/check-messages.ts` now includes the standard University/TFG file header.
 - **D37-002** — Railway/Nixpacks start commands no longer run production seeding on every process start; startup now runs migrations + server only.
 - **D37-004** — Frontend `.env.example` no longer includes `VITE_DROPBOX_ACCESS_TOKEN` (no encouragement of client-side third-party access tokens).
 - **D37-005** — Playwright E2E `baseURL` is now configurable via `PLAYWRIGHT_BASE_URL` with a safe localhost default.
@@ -149,6 +156,9 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D40-004** — Docs no longer include token-like Dropbox strings or recommend client-side Dropbox tokens; guidance now uses placeholders and backend-only credentials.
 - **D40-005** — Debugging guide health check now uses the real endpoint (`/api/v1/health`) instead of `/health`.
 - **D40-006** — Backend setup docs now match the implemented file upload route (`POST /api/v1/files/upload`), aligning endpoint references across docs.
+- **D40-003** — Docs now consistently reflect that frontend ↔ backend integration is complete; stale “mock auth/stores” guidance was removed and docs now link to the integration guide as the source of truth.
+- **D40-008** — Docs now consistently describe Dropbox as optional and align Railway guidance with the actual start pipeline (migrate + start; no seed-on-start).
+- **D40-001** — Broken doc links were fixed to match the current docs layout (architecture/Dropbox docs and integration guide links now point to `docs/development/*` and `docs/deployment/*` as appropriate).
 - **D37-003** — Frontend Jest harness is now consistent with ESM + Vue 3 (setup/mocks moved to `.cjs`, config uses `setupFilesAfterEnv`, Vue transformer deps installed); `npm test` passes. ESLint flat config was updated to treat these `.cjs` files as CommonJS so `npm run lint` stays at 0 errors.
 - **D41-001** — Removed committed runtime log files under `backend/logs/` to prevent leaking operational/PII data via version control.
 - **D41-002** — Removed stray committed ad-hoc DB output artifact (command-line named file) from `backend/`.
@@ -169,6 +179,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D25-005** — Layout component file headers were standardized; the missing second `@see` link was added for consistency.
 - **D26-004** — `ProjectCard` now supports Space key activation (with `.prevent`) in addition to Enter when using `role="button"`.
 - **D26-005** — `ProjectForm` template no longer uses `$emit`; Cancel now uses typed `emit('cancel')`.
+- **D26-006** — `ProjectForm` code generation no longer relies on `Math.random()`; it generates crypto-based candidates (with deterministic fallback) and validates uniqueness via `ProjectRepository.existsByCode(...)` before setting the form code.
 - **D26-001** — `ProjectSummary` clickable stat/section tiles are now keyboard-accessible: added `role="button"`, `tabindex="0"`, and Enter/Space handling; template uses typed `emit(...)` instead of `$emit(...)`.
 - **D26-007** — `ProjectSummary` delete icon button now has `aria-label`/`title`, and `statusLabel` has a safe fallback so unexpected statuses don’t render blank UI.
 - **D26-002** — `ProjectForm` date-only inputs are now timezone-safe: input formatting uses local date parts (not `toISOString()`), and submit/validation parse `YYYY-MM-DD` into a local `Date` to avoid off-by-one shifts.

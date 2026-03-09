@@ -2,15 +2,38 @@
 
 # Script para probar upload de archivos con el endpoint real
 
+set -euo pipefail
+
+require_command() {
+  local cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "❌ Missing required command: $cmd" >&2
+    exit 1
+  fi
+}
+
+require_command curl
+require_command jq
+
 echo "🧪 Testing File Upload Endpoint"
 echo "======================================="
 
 # 1. Login y obtener token
 echo "1️⃣ Logging in..."
-TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
+LOGIN_BODY_FILE=$(mktemp)
+LOGIN_STATUS=$(curl -sS -o "$LOGIN_BODY_FILE" -w "%{http_code}" -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@cartographic.com","password":"REDACTED"}' \
-  | jq -r '.data.accessToken')
+  -d '{"email":"admin@cartographic.com","password":"REDACTED"}')
+
+if [[ ! "$LOGIN_STATUS" =~ ^2 ]]; then
+  echo "❌ Failed to login (HTTP $LOGIN_STATUS)" >&2
+  cat "$LOGIN_BODY_FILE" >&2
+  rm -f "$LOGIN_BODY_FILE"
+  exit 1
+fi
+
+TOKEN=$(jq -r '.data.accessToken // .accessToken // empty' < "$LOGIN_BODY_FILE")
+rm -f "$LOGIN_BODY_FILE"
 
 if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
   echo "❌ Failed to login"
@@ -22,12 +45,21 @@ echo "✅ Token obtained: ${TOKEN:0:20}..."
 # 2. Obtener primer proyecto
 echo ""
 echo "2️⃣ Getting project..."
-PROJECT=$(curl -s \
+PROJECT_BODY_FILE=$(mktemp)
+PROJECT_STATUS=$(curl -sS -o "$PROJECT_BODY_FILE" -w "%{http_code}" \
   -H "Authorization: Bearer $TOKEN" \
   http://localhost:3000/api/v1/projects)
 
-PROJECT_ID=$(echo $PROJECT | jq -r '.data[0].id')
-PROJECT_CODE=$(echo $PROJECT | jq -r '.data[0].code')
+if [[ ! "$PROJECT_STATUS" =~ ^2 ]]; then
+  echo "❌ Failed to get project list (HTTP $PROJECT_STATUS)" >&2
+  cat "$PROJECT_BODY_FILE" >&2
+  rm -f "$PROJECT_BODY_FILE"
+  exit 1
+fi
+
+PROJECT_ID=$(jq -r '(.data // .projects // [])[0].id // empty' < "$PROJECT_BODY_FILE")
+PROJECT_CODE=$(jq -r '(.data // .projects // [])[0].code // empty' < "$PROJECT_BODY_FILE")
+rm -f "$PROJECT_BODY_FILE"
 
 if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
   echo "❌ Failed to get project"
@@ -118,22 +150,22 @@ echo "   Project ID: $PROJECT_ID"
 echo "   Section: Messages"
 echo ""
 
-RESPONSE=$(curl -v -X POST http://localhost:3000/api/v1/files/upload \
+UPLOAD_BODY_FILE=$(mktemp)
+UPLOAD_STATUS=$(curl -sS -o "$UPLOAD_BODY_FILE" -w "%{http_code}" -X POST http://localhost:3000/api/v1/files/upload \
   -H "Authorization: Bearer $TOKEN" \
   -F "file=@$TEST_FILE" \
   -F "projectId=$PROJECT_ID" \
-  -F "section=Messages" \
-  2>&1)
+  -F "section=Messages")
 
-echo "$RESPONSE"
+cat "$UPLOAD_BODY_FILE"
 echo ""
 
 # Check if successful
-if echo "$RESPONSE" | grep -q "200\|201"; then
+if [[ "$UPLOAD_STATUS" =~ ^2 ]]; then
   echo "✅ Upload successful!"
   
   # Parse file ID
-  FILE_ID=$(echo "$RESPONSE" | grep -oP '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+  FILE_ID=$(jq -r '.data.file.id // .data.id // .file.id // .id // empty' < "$UPLOAD_BODY_FILE")
   
   if [ -n "$FILE_ID" ]; then
     echo "✅ File ID: $FILE_ID"
@@ -141,18 +173,26 @@ if echo "$RESPONSE" | grep -q "200\|201"; then
     # 5. Try to download
     echo ""
     echo "5️⃣ Getting download link..."
-    DOWNLOAD=$(curl -s \
+    DOWNLOAD_BODY_FILE=$(mktemp)
+    DOWNLOAD_STATUS=$(curl -sS -o "$DOWNLOAD_BODY_FILE" -w "%{http_code}" \
       -H "Authorization: Bearer $TOKEN" \
       http://localhost:3000/api/v1/files/$FILE_ID/download)
-    
-    echo "$DOWNLOAD" | jq
+
+    if [[ "$DOWNLOAD_STATUS" =~ ^2 ]]; then
+      jq . < "$DOWNLOAD_BODY_FILE"
+    else
+      echo "❌ Failed to get download link (HTTP $DOWNLOAD_STATUS)" >&2
+      cat "$DOWNLOAD_BODY_FILE" >&2
+    fi
+
+    rm -f "$DOWNLOAD_BODY_FILE"
   fi
 else
-  echo "❌ Upload failed!"
-  echo ""
-  echo "Response details:"
-  echo "$RESPONSE" | grep -A 20 "< HTTP"
+  echo "❌ Upload failed! (HTTP $UPLOAD_STATUS)" >&2
+  cat "$UPLOAD_BODY_FILE" >&2
 fi
+
+rm -f "$UPLOAD_BODY_FILE"
 
 # Cleanup
 rm -f $TEST_FILE

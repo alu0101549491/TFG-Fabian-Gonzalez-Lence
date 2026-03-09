@@ -2,7 +2,7 @@
  * Test DropboxService with timeout configuration
  */
 
-import {DropboxService} from './src/infrastructure/external-services/dropbox.service';
+import {DropboxService} from './src/infrastructure/external-services/dropbox.service.js';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 

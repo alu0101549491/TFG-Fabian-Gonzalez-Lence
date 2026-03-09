@@ -4,8 +4,8 @@ Backend REST API server for the Cartographic Project Manager application, built 
 
 > **📚 NEW: Comprehensive Documentation Available!**
 >
-> - **[Backend Implementation Guide](../docs/BACKEND-IMPLEMENTATION.md)** - Complete feature reference, authentication details, and integration guide
-> - **[Implementation Summary](../docs/IMPLEMENTATION-SUMMARY.md)** - What's been implemented and how to use it
+> - **[Backend Implementation Guide](../docs/development/BACKEND-IMPLEMENTATION.md)** - Complete feature reference, authentication details, and integration guide
+> - **[Implementation Summary](../docs/development/IMPLEMENTATION-SUMMARY.md)** - What's been implemented and how to use it
 > - **[Quick Start](#-quick-start)** - Get running in 5 minutes
 >
 > **✅ Status**: Production-ready with bcrypt password hashing, JWT authentication, and complete API
