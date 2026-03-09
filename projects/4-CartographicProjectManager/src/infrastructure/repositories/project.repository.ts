@@ -17,6 +17,7 @@ import {Project} from '../../domain/entities/project';
 import {GeoCoordinates} from '../../domain/value-objects/geo-coordinates';
 import {type ProjectStatus} from '../../domain/enumerations/project-status';
 import {type ProjectType} from '../../domain/enumerations/project-type';
+import {type UserRole} from '../../domain/enumerations/user-role';
 import {type IProjectRepository} from '../../domain/repositories/project-repository.interface';
 import type {CreateProjectDto} from '../../application/dto/project-data.dto';
 
@@ -27,7 +28,7 @@ interface UserApiResponse {
   id: string;
   username: string;
   email: string;
-  role: string;
+  role: UserRole;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,23 +48,43 @@ interface SpecialUserProjectApiResponse {
  */
 interface ProjectApiResponse {
   id: string;
+  creatorId: string;
   code: string;
   name: string;
   year: number;
   clientId: string;
-  type: string;
+  type: ProjectType;
   coordinateX: number | null;
   coordinateY: number | null;
   contractDate: string;
   deliveryDate: string;
-  status: string;
-  dropboxFolderId: string;
+  status: ProjectStatus;
+  dropboxFolderId: string | null;
   specialUserIds: string[];
   createdAt: string;
   updatedAt: string;
   finalizedAt: string | null;
   client?: UserApiResponse;
   specialUsers?: SpecialUserProjectApiResponse[];
+}
+
+/**
+ * API response type for project summary data from backend.
+ */
+interface ProjectSummaryApiResponse {
+  id: string;
+  code: string;
+  name: string;
+  clientId: string;
+  clientName: string;
+  type: ProjectType;
+  deliveryDate: string;
+  status: ProjectStatus;
+  pendingTasksCount: number;
+  unreadMessagesCount: number;
+  participantCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -80,6 +101,39 @@ interface ProjectApiResponse {
  */
 export class ProjectRepository implements IProjectRepository {
   private readonly baseUrl = '/projects';
+
+  /**
+   * Find project summaries (denormalized list payload) to avoid N+1 client calls.
+   */
+  public async findSummaries(filters?: {
+    status?: ProjectStatus;
+    year?: number;
+    type?: ProjectType;
+    clientId?: string;
+    specialUserId?: string;
+  }): Promise<ProjectSummaryApiResponse[]> {
+    const params: Record<string, string> = {};
+
+    if (filters?.status) {
+      params.status = filters.status;
+    }
+    if (filters?.year != null) {
+      params.year = String(filters.year);
+    }
+    if (filters?.type) {
+      params.type = filters.type;
+    }
+    if (filters?.clientId) {
+      params.clientId = filters.clientId;
+    }
+    if (filters?.specialUserId) {
+      params.specialUserId = filters.specialUserId;
+    }
+
+    const url = this.buildUrlWithParams(`${this.baseUrl}/summaries`, params);
+    const response = await httpClient.get<ProjectSummaryApiResponse[]>(url);
+    return response.data;
+  }
 
   /**
    * Build a URL with encoded query params.

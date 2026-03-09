@@ -14,27 +14,63 @@
 
 import {Router} from 'express';
 import {FileController} from '../controllers/file.controller.js';
-import {authenticate} from '@infrastructure/auth/auth.middleware.js';
+import {
+	authenticate,
+	authorizeFileMemberOrAdmin,
+	authorizeProjectMemberOrAdmin,
+	authorizeProjectMemberOrAdminFromBody,
+} from '@infrastructure/auth/auth.middleware.js';
 import {uploadSingle} from '../middlewares/upload.middleware.js';
 
 export const fileRoutes = Router();
 const controller = new FileController();
 
 // Get files by project
-fileRoutes.get('/project/:projectId', authenticate, controller.getByProjectId.bind(controller));
+fileRoutes.get(
+	'/project/:projectId',
+	authenticate,
+	authorizeProjectMemberOrAdmin('projectId'),
+	controller.getByProjectId.bind(controller),
+);
 
 // Get single file
-fileRoutes.get('/:id', authenticate, controller.getById.bind(controller));
+fileRoutes.get(
+	'/:id',
+	authenticate,
+	authorizeFileMemberOrAdmin('id'),
+	controller.getById.bind(controller),
+);
 
 // Upload file (with multer middleware)
-fileRoutes.post('/upload', authenticate, uploadSingle, controller.upload.bind(controller));
+fileRoutes.post(
+	'/upload',
+	authenticate,
+	uploadSingle,
+	authorizeProjectMemberOrAdminFromBody('projectId'),
+	controller.upload.bind(controller),
+);
 
 // Download file (get temporary link)
-fileRoutes.get('/:id/download', authenticate, controller.download.bind(controller));
+fileRoutes.get(
+	'/:id/download',
+	authenticate,
+	authorizeFileMemberOrAdmin('id'),
+	controller.download.bind(controller),
+);
 
 // Preview file (get shared link for web viewer)
-fileRoutes.get('/:id/preview', authenticate, controller.preview.bind(controller));
+fileRoutes.get(
+	'/:id/preview',
+	authenticate,
+	authorizeFileMemberOrAdmin('id'),
+	controller.preview.bind(controller),
+);
 
 // Delete file
-fileRoutes.delete('/:id', authenticate, controller.delete.bind(controller));
+fileRoutes.delete(
+	'/:id',
+	authenticate,
+	authorizeFileMemberOrAdmin('id'),
+	controller.delete.bind(controller),
+);
 

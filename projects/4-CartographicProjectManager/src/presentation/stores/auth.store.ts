@@ -28,6 +28,8 @@ const authRepository = new AuthRepository();
  * Manages user session, tokens, and authentication state with localStorage persistence.
  */
 export const useAuthStore = defineStore('auth', () => {
+  const isDev = import.meta.env.DEV;
+
   // State
   const user = ref<UserDto | null>(null);
   const accessToken = ref<string | null>(null);
@@ -178,7 +180,9 @@ export const useAuthStore = defineStore('auth', () => {
         return false;
       }
     } catch (err: any) {
-      console.error('Login error:', err);
+      if (isDev) {
+        console.error('Login error:', err);
+      }
       
       if (err.response?.status === 401) {
         error.value = 'Invalid email or password';
@@ -247,15 +251,21 @@ export const useAuthStore = defineStore('auth', () => {
           new Date(Date.now() + AUTH.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
 
         saveToStorage();
-        console.log('✅ Registration successful, tokens saved to storage');
+        if (isDev) {
+          console.log('✅ Registration successful, tokens saved to storage');
+        }
         return true;
       } else {
         error.value = response.message || 'Registration failed';
-        console.error('❌ Registration failed:', response.message);
+        if (isDev) {
+          console.error('❌ Registration failed:', response.message);
+        }
         return false;
       }
     } catch (err: any) {
-      console.error('Registration error:', err);
+      if (isDev) {
+        console.error('Registration error:', err);
+      }
       
       if (err.response?.status === 409) {
         const message = err.response?.data?.message || '';
@@ -295,7 +305,9 @@ export const useAuthStore = defineStore('auth', () => {
       
       clearAuth();
     } catch (err: any) {
-      console.error('Logout error:', err);
+      if (isDev) {
+        console.error('Logout error:', err);
+      }
       // Clear anyway even if API call fails
       clearAuth();
     } finally {
@@ -324,7 +336,9 @@ export const useAuthStore = defineStore('auth', () => {
       
       return false;
     } catch (err) {
-      console.error('Session refresh error:', err);
+      if (isDev) {
+        console.error('Session refresh error:', err);
+      }
       return false;
     }
   }
@@ -381,22 +395,24 @@ export const useAuthStore = defineStore('auth', () => {
   function saveToStorage(): void {
     try {
       if (accessToken.value) {
-        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken.value);
+        sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken.value);
       }
       if (refreshToken.value) {
         sessionStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken.value);
       }
       if (expiresAt.value) {
-        localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.value.toISOString());
+        sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.value.toISOString());
       }
       if (user.value) {
-        localStorage.setItem(
+        sessionStorage.setItem(
           STORAGE_KEYS.USER,
           JSON.stringify(serializeUserForStorage(user.value)),
         );
       }
     } catch (err) {
-      console.error('Failed to save to storage:', err);
+      if (isDev) {
+        console.error('Failed to save to storage:', err);
+      }
     }
   }
 
@@ -405,10 +421,30 @@ export const useAuthStore = defineStore('auth', () => {
    */
   function loadFromStorage(): void {
     try {
-      const storedToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      const storedToken =
+        sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ??
+        localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
       const storedRefresh = sessionStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-      const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
-      const storedExpiresAt = localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
+      const storedUser =
+        sessionStorage.getItem(STORAGE_KEYS.USER) ??
+        localStorage.getItem(STORAGE_KEYS.USER);
+      const storedExpiresAt =
+        sessionStorage.getItem(STORAGE_KEYS.EXPIRES_AT) ??
+        localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
+
+      // If we loaded legacy persistent auth state, migrate it into session storage.
+      if (storedToken && localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) === storedToken) {
+        sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, storedToken);
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      }
+      if (storedUser && localStorage.getItem(STORAGE_KEYS.USER) === storedUser) {
+        sessionStorage.setItem(STORAGE_KEYS.USER, storedUser);
+        localStorage.removeItem(STORAGE_KEYS.USER);
+      }
+      if (storedExpiresAt && localStorage.getItem(STORAGE_KEYS.EXPIRES_AT) === storedExpiresAt) {
+        sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, storedExpiresAt);
+        localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
+      }
       
       if (storedToken && storedUser) {
         accessToken.value = storedToken;
@@ -419,7 +455,9 @@ export const useAuthStore = defineStore('auth', () => {
           parseJwtExpiresAt(storedToken);
       }
     } catch (err) {
-      console.error('Failed to load from storage:', err);
+      if (isDev) {
+        console.error('Failed to load from storage:', err);
+      }
       clearStorage();
     }
   }
@@ -428,8 +466,13 @@ export const useAuthStore = defineStore('auth', () => {
    * Clears all auth data from localStorage
    */
   function clearStorage(): void {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     sessionStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.USER);
+    sessionStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
+
+    // Cleanup any legacy persistent auth state.
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
     localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
   }

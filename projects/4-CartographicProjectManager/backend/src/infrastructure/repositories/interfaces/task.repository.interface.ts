@@ -12,19 +12,38 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import type {Task, TaskStatus} from '@prisma/client';
+import type {Prisma, Task, TaskStatus} from '@prisma/client';
+
+export type TaskWithDetails = Prisma.TaskGetPayload<{
+  include: {
+    project: true;
+    creator: true;
+    assignee: true;
+    files: {include: {file: true}};
+  };
+}>;
+
+export type TaskWithUsers = Prisma.TaskGetPayload<{
+  include: {
+    project: true;
+    creator: true;
+    assignee: true;
+  };
+}>;
 
 /**
  * Task repository interface
  */
 export interface ITaskRepository {
-  findById(id: string): Promise<Task | null>;
-  findAll(): Promise<Task[]>;
-  findByProjectId(projectId: string): Promise<Task[]>;
-  findByAssigneeId(assigneeId: string): Promise<Task[]>;
-  findByCreatorId(creatorId: string): Promise<Task[]>;
-  findByStatus(status: TaskStatus): Promise<Task[]>;
-  create(data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completedAt' | 'confirmedAt'>): Promise<Task>;
+  findById(id: string): Promise<TaskWithDetails | null>;
+  findAll(): Promise<TaskWithUsers[]>;
+  findByProjectId(projectId: string): Promise<TaskWithUsers[]>;
+  findByAssigneeId(assigneeId: string): Promise<TaskWithUsers[]>;
+  findByCreatorId(creatorId: string): Promise<TaskWithUsers[]>;
+  findByStatus(status: TaskStatus): Promise<TaskWithUsers[]>;
+  create(
+    data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completedAt' | 'confirmedAt'>,
+  ): Promise<TaskWithUsers>;
   update(id: string, data: Partial<Task>): Promise<Task>;
   delete(id: string): Promise<void>;
   addFile(taskId: string, fileId: string): Promise<void>;

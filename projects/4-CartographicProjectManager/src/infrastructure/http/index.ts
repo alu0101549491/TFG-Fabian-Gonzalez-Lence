@@ -23,8 +23,9 @@ export type {
   DownloadProgress,
   ApiResponse,
   ApiError,
-  ITokenStorage,
 } from './axios.client';
+
+export type {ITokenStorage} from '../persistence/token.storage.interface';
 
 // Export class
 export {AxiosClient} from './axios.client';

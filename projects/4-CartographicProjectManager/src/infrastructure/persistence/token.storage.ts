@@ -12,14 +12,14 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import type {ITokenStorage} from '../http/axios.client';
+import type {ITokenStorage} from './token.storage.interface';
 import {STORAGE_KEYS} from '../../shared/constants';
 
 /**
  * Token storage implementation.
  *
- * Stores access tokens in localStorage (persistent) and refresh tokens in
- * sessionStorage (non-persistent) to reduce long-lived token exposure.
+ * Stores access + refresh tokens in sessionStorage (session-scoped) to reduce
+ * long-lived token exposure from persistent storage.
  *
  * @example
  * ```typescript
@@ -30,15 +30,24 @@ import {STORAGE_KEYS} from '../../shared/constants';
  */
 export class TokenStorage implements ITokenStorage {
   /**
-   * Retrieve the current access token from localStorage
+   * Retrieve the current access token from sessionStorage
    *
    * @returns The access token or null if not available
    */
   public getAccessToken(): string | null {
     try {
-      return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      const sessionToken = sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      if (sessionToken) return sessionToken;
+
+      const legacyToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      if (legacyToken) {
+        sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, legacyToken);
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      }
+
+      return legacyToken;
     } catch (error) {
-      console.error('Error reading access token from localStorage:', error);
+      console.error('Error reading access token from sessionStorage:', error);
       return null;
     }
   }
@@ -65,7 +74,7 @@ export class TokenStorage implements ITokenStorage {
    */
   public setTokens(accessToken: string, refreshToken: string): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+      sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
       sessionStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
     } catch (error) {
       console.error('Error storing tokens in storage:', error);
@@ -77,8 +86,11 @@ export class TokenStorage implements ITokenStorage {
    */
   public clearTokens(): void {
     try {
-      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
       sessionStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+
+      // Cleanup any legacy persistent auth state.
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);
       localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
     } catch (error) {

@@ -13,7 +13,7 @@
 
 import type {Request, Response, NextFunction} from 'express';
 import type {AuthenticatedRequest} from '@shared/types.js';
-import {UserRole} from '@prisma/client';
+import {TaskStatus, UserRole} from '@prisma/client';
 import {TaskRepository} from '@infrastructure/repositories/task.repository.js';
 import {ProjectRepository} from '@infrastructure/repositories/project.repository.js';
 import {sendSuccess, sendError} from '@shared/utils.js';
@@ -41,9 +41,16 @@ export class TaskController {
       let tasks;
       if (projectId) tasks = await this.taskRepository.findByProjectId(projectId as string);
       else if (assigneeId) tasks = await this.taskRepository.findByAssigneeId(assigneeId as string);
-      else if (status) tasks = await this.taskRepository.findByStatus(status as any);
+      else if (status && typeof status === 'string') {
+        tasks = await this.taskRepository.findByStatus(status as TaskStatus);
+      }
       else tasks = await this.taskRepository.findAll();
-      sendSuccess(res, tasks);
+      const tasksWithNames = tasks.map(task => ({
+        ...task,
+        creatorName: task.creator.username,
+        assigneeName: task.assignee?.username ?? null,
+      }));
+      sendSuccess(res, tasksWithNames);
     } catch (error) {
       next(error);
     }
@@ -116,7 +123,12 @@ export class TaskController {
 
       // Create task without fileIds (which is not a Prisma field)
       const task = await this.taskRepository.create({projectId, ...taskData});
-      sendSuccess(res, task, 'Task created successfully', HTTP_STATUS.CREATED);
+      const taskWithNames = {
+        ...task,
+        creatorName: task.creator.username,
+        assigneeName: task.assignee?.username ?? null,
+      };
+      sendSuccess(res, taskWithNames, 'Task created successfully', HTTP_STATUS.CREATED);
     } catch (error) {
       next(error);
     }

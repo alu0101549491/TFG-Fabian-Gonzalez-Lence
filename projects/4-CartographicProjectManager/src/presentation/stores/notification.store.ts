@@ -38,6 +38,7 @@ function buildStorageKey(userId: string): string {
 export const useNotificationStore = defineStore('notification', () => {
   const authStore = useAuthStore();
   const notificationRepository = new NotificationRepository();
+  const isDev = import.meta.env.DEV;
   
   // Lazy-loaded stores to avoid circular dependencies
   let messageStore: ReturnType<typeof useMessageStore> | null = null;
@@ -193,7 +194,9 @@ export const useNotificationStore = defineStore('notification', () => {
         }
       }
     } catch (err) {
-      console.error('Failed to load notifications from storage:', err);
+      if (isDev) {
+        console.error('Failed to load notifications from storage:', err);
+      }
     }
   }
 
@@ -207,7 +210,9 @@ export const useNotificationStore = defineStore('notification', () => {
         notifications: notifications.value,
       }));
     } catch (err) {
-      console.error('Failed to save notifications to storage:', err);
+      if (isDev) {
+        console.error('Failed to save notifications to storage:', err);
+      }
     }
   }
 
@@ -286,7 +291,9 @@ export const useNotificationStore = defineStore('notification', () => {
       unreadCount.value = await notificationRepository.countUnreadByUserId(authStore.userId);
     } catch (err: any) {
       // Silent fail for count fetch
-      console.error('Failed to fetch unread count:', err);
+      if (isDev) {
+        console.error('Failed to fetch unread count:', err);
+      }
     }
   }
 
@@ -422,7 +429,9 @@ export const useNotificationStore = defineStore('notification', () => {
   async function requestNotificationPermission(): Promise<boolean> {
     const BrowserNotification = globalThis.Notification;
     if (typeof BrowserNotification === 'undefined') {
-      console.warn('Browser does not support notifications');
+      if (isDev) {
+        console.warn('Browser does not support notifications');
+      }
       return false;
     }
 

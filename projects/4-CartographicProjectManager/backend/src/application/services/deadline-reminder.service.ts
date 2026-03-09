@@ -12,7 +12,7 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import { PrismaClient } from '@prisma/client';
+import {PrismaClient, NotificationType} from '@prisma/client';
 import { NotificationRepository } from '../../infrastructure/repositories/notification.repository.js';
 import { logInfo, logError } from '../../shared/logger.js';
 
@@ -35,6 +35,63 @@ export class DeadlineReminderService {
   private prisma: PrismaClient;
   private notificationRepository: NotificationRepository;
   private config: DeadlineReminderConfig;
+
+  /**
+   * Returns local start/end bounds for the provided date.
+   *
+   * @param date - Date used to compute day bounds
+   * @returns Start and end of the local day
+   */
+  private static getLocalDayBounds(date: Date): {start: Date; end: Date} {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+
+    return {start, end};
+  }
+
+  /**
+   * Checks whether an equivalent notification has already been created today.
+   *
+   * This provides an idempotency guard when the scheduler reruns.
+   *
+   * @param now - Current timestamp
+   * @param userId - Target user
+   * @param type - Notification type
+   * @param projectId - Optional project id
+   * @param title - Notification title
+   * @param message - Notification message
+   * @returns True if a matching notification exists for the current day
+   */
+  private async hasSentToday(
+    now: Date,
+    userId: string,
+    type: NotificationType,
+    projectId: string | null,
+    title: string,
+    message: string,
+  ): Promise<boolean> {
+    const {start, end} = DeadlineReminderService.getLocalDayBounds(now);
+
+    const existing = await this.prisma.notification.findFirst({
+      where: {
+        userId,
+        type,
+        projectId: projectId ?? undefined,
+        title,
+        message,
+        createdAt: {
+          gte: start,
+          lte: end,
+        },
+      },
+      select: {id: true},
+    });
+
+    return existing != null;
+  }
 
   /**
    * Creates an instance of DeadlineReminderService
@@ -105,27 +162,53 @@ export class DeadlineReminderService {
       });
 
       for (const task of tasks) {
+        const title = `Task due in ${days} day${days > 1 ? 's' : ''}`;
+
         // Notify the assignee
-        await this.notificationRepository.create({
-          userId: task.assigneeId,
-          type: 'TASK_STATUS_CHANGE',
-          title: `Task due in ${days} day${days > 1 ? 's' : ''}`,
-          message: `Task "${task.description}" in project "${task.project.name}" is due on ${task.dueDate.toLocaleDateString()}`,
-          projectId: task.projectId,
-        });
+        const assigneeMessage = `Task "${task.description}" in project "${task.project.name}" is due on ${task.dueDate.toLocaleDateString()}`;
+        const shouldSendToAssignee = !(await this.hasSentToday(
+          now,
+          task.assigneeId,
+          NotificationType.TASK_STATUS_CHANGE,
+          task.projectId,
+          title,
+          assigneeMessage,
+        ));
+
+        if (shouldSendToAssignee) {
+          await this.notificationRepository.create({
+            userId: task.assigneeId,
+            type: NotificationType.TASK_STATUS_CHANGE,
+            title,
+            message: assigneeMessage,
+            projectId: task.projectId,
+          });
+          remindersSent += 1;
+        }
 
         // Also notify the creator if different from assignee
         if (task.creatorId !== task.assigneeId) {
-          await this.notificationRepository.create({
-            userId: task.creatorId,
-            type: 'TASK_STATUS_CHANGE',
-            title: `Task due in ${days} day${days > 1 ? 's' : ''}`,
-            message: `Task "${task.description}" assigned to ${task.assignee.username} is due on ${task.dueDate.toLocaleDateString()}`,
-            projectId: task.projectId,
-          });
-        }
+          const creatorMessage = `Task "${task.description}" assigned to ${task.assignee.username} is due on ${task.dueDate.toLocaleDateString()}`;
+          const shouldSendToCreator = !(await this.hasSentToday(
+            now,
+            task.creatorId,
+            NotificationType.TASK_STATUS_CHANGE,
+            task.projectId,
+            title,
+            creatorMessage,
+          ));
 
-        remindersSent += task.creatorId !== task.assigneeId ? 2 : 1;
+          if (shouldSendToCreator) {
+            await this.notificationRepository.create({
+              userId: task.creatorId,
+              type: NotificationType.TASK_STATUS_CHANGE,
+              title,
+              message: creatorMessage,
+              projectId: task.projectId,
+            });
+            remindersSent += 1;
+          }
+        }
       }
     }
 
@@ -188,14 +271,27 @@ export class DeadlineReminderService {
 
         // Send notifications to all relevant users
         for (const userId of usersToNotify) {
-          await this.notificationRepository.create({
+          const title = `Project delivery in ${days} day${days > 1 ? 's' : ''}`;
+          const message = `Project "${project.name}" (${project.code}) is due for delivery on ${project.deliveryDate.toLocaleDateString()}`;
+          const shouldSend = !(await this.hasSentToday(
+            now,
             userId,
-            type: 'PROJECT_ASSIGNED',
-            title: `Project delivery in ${days} day${days > 1 ? 's' : ''}`,
-            message: `Project "${project.name}" (${project.code}) is due for delivery on ${project.deliveryDate.toLocaleDateString()}`,
-            projectId: project.id,
-          });
-          remindersSent++;
+            NotificationType.PROJECT_ASSIGNED,
+            project.id,
+            title,
+            message,
+          ));
+
+          if (shouldSend) {
+            await this.notificationRepository.create({
+              userId,
+              type: NotificationType.PROJECT_ASSIGNED,
+              title,
+              message,
+              projectId: project.id,
+            });
+            remindersSent++;
+          }
         }
       }
     }

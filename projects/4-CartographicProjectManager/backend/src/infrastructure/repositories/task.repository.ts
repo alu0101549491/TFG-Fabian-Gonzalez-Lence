@@ -12,16 +12,33 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import type {Task, TaskStatus} from '@prisma/client';
+import type {Prisma, Task, TaskStatus} from '@prisma/client';
 import type {ITaskRepository} from '@infrastructure/repositories/interfaces/task.repository.interface.js';
 import {prisma} from '../database/prisma.client.js';
 import {DatabaseError} from '@shared/errors.js';
+
+type TaskWithDetails = Prisma.TaskGetPayload<{
+  include: {
+    project: true;
+    creator: true;
+    assignee: true;
+    files: {include: {file: true}};
+  };
+}>;
+
+type TaskWithUsers = Prisma.TaskGetPayload<{
+  include: {
+    project: true;
+    creator: true;
+    assignee: true;
+  };
+}>;
 
 /**
  * Task repository implementation
  */
 export class TaskRepository implements ITaskRepository {
-  public async findById(id: string): Promise<Task | null> {
+  public async findById(id: string): Promise<TaskWithDetails | null> {
     try {
       return await prisma.task.findUnique({
         where: {id},
@@ -37,7 +54,7 @@ export class TaskRepository implements ITaskRepository {
     }
   }
 
-  public async findAll(): Promise<Task[]> {
+  public async findAll(): Promise<TaskWithUsers[]> {
     try {
       return await prisma.task.findMany({
         include: {project: true, creator: true, assignee: true},
@@ -48,45 +65,40 @@ export class TaskRepository implements ITaskRepository {
     }
   }
 
-  public async findByProjectId(projectId: string): Promise<any[]> {
+  public async findByProjectId(projectId: string): Promise<TaskWithUsers[]> {
     try {
-      const tasks = await prisma.task.findMany({
+      return await prisma.task.findMany({
         where: {projectId},
-        include: {creator: true, assignee: true},
+        include: {project: true, creator: true, assignee: true},
       });
-      return tasks.map(task => ({
-        ...task,
-        creatorName: task.creator.username,
-        assigneeName: task.assignee.username,
-      }));
     } catch (error) {
       throw new DatabaseError('Failed to find tasks by project ID');
     }
   }
 
-  public async findByAssigneeId(assigneeId: string): Promise<Task[]> {
+  public async findByAssigneeId(assigneeId: string): Promise<TaskWithUsers[]> {
     try {
       return await prisma.task.findMany({
         where: {assigneeId},
-        include: {project: true, creator: true},
+        include: {project: true, creator: true, assignee: true},
       });
     } catch (error) {
       throw new DatabaseError('Failed to find tasks by assignee ID');
     }
   }
 
-  public async findByCreatorId(creatorId: string): Promise<Task[]> {
+  public async findByCreatorId(creatorId: string): Promise<TaskWithUsers[]> {
     try {
       return await prisma.task.findMany({
         where: {creatorId},
-        include: {project: true, assignee: true},
+        include: {project: true, creator: true, assignee: true},
       });
     } catch (error) {
       throw new DatabaseError('Failed to find tasks by creator ID');
     }
   }
 
-  public async findByStatus(status: TaskStatus): Promise<Task[]> {
+  public async findByStatus(status: TaskStatus): Promise<TaskWithUsers[]> {
     try {
       return await prisma.task.findMany({
         where: {status},
@@ -97,17 +109,14 @@ export class TaskRepository implements ITaskRepository {
     }
   }
 
-  public async create(data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completedAt' | 'confirmedAt'>): Promise<any> {
+  public async create(
+    data: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completedAt' | 'confirmedAt'>,
+  ): Promise<TaskWithUsers> {
     try {
-      const task = await prisma.task.create({
+      return await prisma.task.create({
         data,
-        include: {creator: true, assignee: true},
+        include: {project: true, creator: true, assignee: true},
       });
-      return {
-        ...task,
-        creatorName: task.creator.username,
-        assigneeName: task.assignee.username,
-      };
     } catch (error) {
       throw new DatabaseError('Failed to create task');
     }

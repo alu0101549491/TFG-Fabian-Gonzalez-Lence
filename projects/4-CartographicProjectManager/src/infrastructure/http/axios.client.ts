@@ -19,6 +19,8 @@ import axios, {
   InternalAxiosRequestConfig,
 } from 'axios';
 
+import type {ITokenStorage} from '../persistence/token.storage.interface';
+
 /**
  * API base URL from environment variables
  */
@@ -145,35 +147,6 @@ export interface ApiError {
   message: string;
   /** Additional error details */
   details?: Record<string, unknown>;
-}
-
-/**
- * Token storage interface to be implemented by presentation layer
- */
-export interface ITokenStorage {
-  /**
-   * Retrieve the current access token
-   * @returns The access token or null if not available
-   */
-  getAccessToken(): string | null;
-
-  /**
-   * Retrieve the current refresh token
-   * @returns The refresh token or null if not available
-   */
-  getRefreshToken(): string | null;
-
-  /**
-   * Store new access and refresh tokens
-   * @param accessToken - The new access token
-   * @param refreshToken - The new refresh token
-   */
-  setTokens(accessToken: string, refreshToken: string): void;
-
-  /**
-   * Clear all stored tokens
-   */
-  clearTokens(): void;
 }
 
 /**

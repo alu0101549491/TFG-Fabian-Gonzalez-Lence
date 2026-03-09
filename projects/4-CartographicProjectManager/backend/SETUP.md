@@ -100,7 +100,7 @@ Server will be running at `http://localhost:3000`
 
 ### Files (Protected)
 - `GET /api/v1/files/project/:projectId` - Get project files
-- `POST /api/v1/files` - Upload file
+- `POST /api/v1/files/upload` - Upload file
 - `DELETE /api/v1/files/:id` - Delete file
 
 ## 🔐 Authentication

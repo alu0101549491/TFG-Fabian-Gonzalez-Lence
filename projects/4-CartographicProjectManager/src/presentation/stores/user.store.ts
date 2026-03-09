@@ -30,6 +30,7 @@ import {UserRepository} from '../../infrastructure/repositories/user.repository'
  */
 export const useUserStore = defineStore('user', () => {
   const userRepository = new UserRepository();
+  const isDev = import.meta.env.DEV;
 
   // State
   const users = ref<UserSummaryDto[]>([]);
@@ -103,7 +104,9 @@ export const useUserStore = defineStore('user', () => {
       users.value = await userRepository.getAllUsers(filterOptions);
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch users';
-      console.error('Error fetching users:', err);
+      if (isDev) {
+        console.error('Error fetching users:', err);
+      }
     } finally {
       isLoading.value = false;
     }
@@ -122,7 +125,9 @@ export const useUserStore = defineStore('user', () => {
       currentUser.value = await userRepository.getUserById(id);
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch user';
-      console.error('Error fetching user:', err);
+      if (isDev) {
+        console.error('Error fetching user:', err);
+      }
     } finally {
       isLoading.value = false;
     }
@@ -158,7 +163,9 @@ export const useUserStore = defineStore('user', () => {
       }
     } catch (err: any) {
       error.value = err.message || 'Failed to create user';
-      console.error('Error creating user:', err);
+      if (isDev) {
+        console.error('Error creating user:', err);
+      }
       return false;
     } finally {
       isLoading.value = false;
@@ -205,7 +212,9 @@ export const useUserStore = defineStore('user', () => {
       }
     } catch (err: any) {
       error.value = err.message || 'Failed to update user';
-      console.error('Error updating user:', err);
+      if (isDev) {
+        console.error('Error updating user:', err);
+      }
       return false;
     } finally {
       isLoading.value = false;
@@ -241,7 +250,9 @@ export const useUserStore = defineStore('user', () => {
       }
     } catch (err: any) {
       error.value = err.message || 'Failed to delete user';
-      console.error('Error deleting user:', err);
+      if (isDev) {
+        console.error('Error deleting user:', err);
+      }
       return false;
     } finally {
       isLoading.value = false;

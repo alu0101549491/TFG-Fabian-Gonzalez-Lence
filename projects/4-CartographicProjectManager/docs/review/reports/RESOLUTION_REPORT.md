@@ -37,9 +37,15 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D3-008** — `Message.senderRole` is now typed as `UserRole` end-to-end (Domain entity + repository/store mapping), removing `any` casts and preventing role drift.
 - **D3-009** — `Permission.sectionAccess` is now typed and validated against a constrained `ProjectSection` union (from `PROJECT_SECTIONS`), preventing invalid section strings from leaking into the domain model.
 - **D5-001** — Auth state persistence no longer lies about `Date` fields: user/expires timestamps are serialized as ISO strings in localStorage and explicitly rehydrated back to `Date` objects on load.
-- **D18-001** — Refresh tokens are no longer stored in `localStorage`; they are now session-scoped via `sessionStorage` (access tokens remain persisted).
+- **D18-001** — Refresh tokens are no longer stored in `localStorage`; token storage is now session-scoped via `sessionStorage`.
+- **D12-001** — Auth tokens are no longer persisted in `localStorage`; access/refresh tokens are session-scoped in `sessionStorage` with migration/cleanup of legacy `localStorage` keys.
+- **D12-002** — `ITokenStorage` is now defined in a dedicated persistence interface module (`src/infrastructure/persistence/token.storage.interface.ts`), removing the persistence → HTTP dependency edge; the HTTP barrel re-exports the type for API stability.
 - **D18-002** — Session expiry is derived from JWT `exp` (when available) and persisted (`STORAGE_KEYS.EXPIRES_AT`) instead of being recomputed on reload.
+- **D18-003** — Project permission/participant mapping is now typed: the project details API response includes `creatorId` and enum-typed fields so the store no longer relies on `any` or hidden-field assumptions.
+- **D18-004** — Project list summaries no longer trigger N+1 backend requests: a backend `GET /projects/summaries` endpoint returns client name + pending task counts + unread message counts in a small number of queries, and the project store consumes it directly.
+- **D18-005** — Message pagination/read-state are now consistent with backend operations: backend supports `limit`/`offset` pagination and a per-project total count endpoint; the message store uses real pagination (no full-list merge) and project-level mark-read updates mark all local messages/read counts to avoid drift.
 - **D18-006** — Notification persistence is now user-scoped (`cpm_notifications:<userId>`), rehydrates date fields, and hydrates after auth init/login to prevent cross-account state leakage.
+- **D18-007** — Store console logging is now dev-gated (`import.meta.env.DEV`), and message-store WebSocket subscriptions are retained and cleaned up on store-scope disposal via `onScopeDispose()`.
 - **D2-002** — GeoCoordinates value equality now uses epsilon-based comparison (not strict `===`) to avoid brittle float equality failures.
 - **D2-003** — GeoCoordinates validation now rejects non-finite values (`NaN`/`Infinity`) before range checks.
 - **D4-001** — Backend repository interfaces are no longer incorrectly located in the “Domain” layer with Prisma coupling; Prisma-shaped repository interfaces were relocated to Infrastructure and implementations were updated accordingly.
@@ -68,6 +74,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D10-005** — Backend Dropbox integration no longer uses direct `console.log` in infra paths; it now routes operational messages through the shared logger.
 - **D11-001** — Frontend repositories’ 404 detection was made robust: “find-or-null” methods now treat both normalized `ApiError.status` and Axios-shaped `error.response.status` as 404, preventing avoidable throws/UI crashes.
 - **D11-002** — Frontend repositories now build encoded query strings using `URLSearchParams` (not raw interpolation), preventing brittle failures with ISO date filters and other reserved characters.
+- **D11-003** — Backend TaskRepository is now strictly typed: repository methods return explicit Prisma payload types (no `any`), and computed `creatorName`/`assigneeName` fields are added at the controller response boundary rather than inside the repository.
 - **D11-004** — Frontend and backend repositories no longer use direct `console.*` debug logging in core data paths; backend routes through the shared logger and frontend removes the noisy debug prints.
 - **D13-001** — Deadline reminder scheduler now uses the shared Prisma singleton (`prisma`) instead of constructing a separate `PrismaClient`, avoiding mixed-client workflows and reducing connection lifecycle risk.
 - **D13-002** — Backup scheduler now disables itself at startup (with a clear error log) if `DATABASE_URL` is missing, instead of running with an empty config.
@@ -81,8 +88,12 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D15-005** — Backend development console logging no longer throws on circular metadata; metadata serialization falls back safely when JSON stringification fails.
 - **D15-006** — Backend shared module headers were standardized; `@file` now consistently points to `backend/src/shared/*.ts`.
 - **D16-001** — Frontend styles no longer load Google Fonts via CSS `@import`; the render-blocking import was removed (fonts are loaded via HTML `<link>` tags instead).
+- **D16-002** — High-contrast CSS overrides no longer hard-code `#000`; they now reference existing design tokens (`var(--color-text-primary)`) to keep overrides within the token system.
 - **D17-001** — Post-login redirect is now validated before navigation: the `redirect` query must be an internal route that resolves via `router.resolve()` and is denied for login; invalid inputs fall back to the dashboard.
+- **D17-002** — Router guard no longer performs a client-side project access fetch or relies on brittle DTO assumptions (`any`/hidden fields). Project authorization is enforced server-side; the guard is now minimal and avoids navigation-time data fetches.
+- **D17-003** — Router navigation error logging is now gated to development builds (`import.meta.env.DEV`), reducing production console noise while keeping chunk-reload behavior unchanged.
 - **D19-001** — Redirect handling is now centralized: `useAuth()` delegates to `handlePostLoginRedirect()` (validated via `isValidRedirectTarget`), and `requireAuth()` uses the same `redirect` query mechanism (no separate `intended_route`).
+- **D19-002** — File upload response handling is now strictly typed: the upload composable uses a single `ApiResponse<{ file: ... }>` shape (no `any` and no `data.data.file || data.file` guessing) and rehydrates `uploadedAt` to a `Date` when building the `FileSummaryDto`.
 - **D36-003** — Backend auth role fields in shared type definitions are no longer stringly-typed; they are constrained to Prisma `UserRole`.
 - **D36-004** — Backend shared types header metadata is aligned (`@file backend/src/shared/types.ts`).
 - **D36-005** — Frontend `vite-env.d.ts` header was standardized to the University/TFG template (Vite reference directive preserved).
@@ -93,6 +104,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D20-004** — Backend app bootstrap header metadata was standardized; `@file` now correctly points to `backend/src/presentation/app.ts`.
 - **D20-002** — Backend request logging is now environment-gated; `morgan('dev')` is enabled only in development.
 - **D20-003** — Backend now enables a production app-level rate limiter and configures `trust proxy` at bootstrap to reduce brute-force / request-flood risk.
+- **D21-001** — Coarse authorization is now expressed at the routing boundary via reusable policy middleware (project membership/admin; task/file membership via lookup; notification owner/admin; self/admin userId access) wired into project/task/file/message/notification routers.
 - **D21-004** — Backend route module headers were standardized (correct `@file` paths and consistent header template `@see` links).
 - **D21-003** — Audit log routes no longer instantiate a route-local `PrismaClient`; they now reuse the shared `prisma` singleton.
 - **D21-002** — Backend routes no longer mutate `req.query`/`req.params` to reuse controller handlers; sub-resource routes use consistent param names and notifications support `userId` via params or query without router-side mutation.
@@ -132,8 +144,11 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D39-003** — Backend helper scripts no longer use broad `pkill -9 node` or hard-coded absolute paths; they now use script-relative paths and a pidfile (`.dev-server.pid`) for safer stop/start behavior.
 - **D37-002** — Railway/Nixpacks start commands no longer run production seeding on every process start; startup now runs migrations + server only.
 - **D37-004** — Frontend `.env.example` no longer includes `VITE_DROPBOX_ACCESS_TOKEN` (no encouragement of client-side third-party access tokens).
+- **D37-005** — Playwright E2E `baseURL` is now configurable via `PLAYWRIGHT_BASE_URL` with a safe localhost default.
 - **D40-002** — Docs now consistently describe the implemented auth model (tokens returned in JSON; clients send `Authorization: Bearer <token>`). Backend now exposes `POST /api/v1/auth/refresh` to match the frontend refresh workflow.
 - **D40-004** — Docs no longer include token-like Dropbox strings or recommend client-side Dropbox tokens; guidance now uses placeholders and backend-only credentials.
+- **D40-005** — Debugging guide health check now uses the real endpoint (`/api/v1/health`) instead of `/health`.
+- **D40-006** — Backend setup docs now match the implemented file upload route (`POST /api/v1/files/upload`), aligning endpoint references across docs.
 - **D37-003** — Frontend Jest harness is now consistent with ESM + Vue 3 (setup/mocks moved to `.cjs`, config uses `setupFilesAfterEnv`, Vue transformer deps installed); `npm test` passes. ESLint flat config was updated to treat these `.cjs` files as CommonJS so `npm run lint` stays at 0 errors.
 - **D41-001** — Removed committed runtime log files under `backend/logs/` to prevent leaking operational/PII data via version control.
 - **D41-002** — Removed stray committed ad-hoc DB output artifact (command-line named file) from `backend/`.
@@ -197,6 +212,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D32-003** — `DashboardView` upcoming deadline items now support Space-key activation alongside Enter when using `role="button"`.
 - **D7-005** — Dropbox folder IDs no longer normalize to `''` in the frontend domain/DTO path: the `Project` entity normalizes missing values to `null`, DTOs accept/return nullable Dropbox folder data, repositories map `null` to `''` only at the backend API boundary, and Dropbox URL generation is guarded.
 - **D7-006** — Upload section handling is now canonical and allowlisted end-to-end: the frontend constrains upload `section` to `ProjectSectionId` (derived from `PROJECT_SECTIONS`) and removes string-literal defaults (`PROJECT_SECTIONS.MESSAGES`), while the backend upload controller normalizes/allowlists the section and sanitizes filename/path segments before building Dropbox paths.
+- **D7-007** — Deadline reminder notifications now use Prisma’s canonical `NotificationType` values (no string literals), and reminder sending is idempotent per day: before creating a reminder notification, the service checks whether an equivalent notification was already created today to prevent duplicate reminders on scheduler reruns.
 
 ### 🟡 Partially Resolved
 - **D37-001** — Committed secret mitigation was partially applied: the backend now provides only environment templates (`backend/.env.example`, `backend/.env.railway.example`) and ignores real backend env files via `backend/.gitignore` (including `.env` / `.env.railway`). Note: the frontend currently tracks `.env.development` and `.env.production`, but they contain only non-secret Vite configuration keys (e.g., `VITE_API_BASE_URL`, `VITE_SOCKET_URL`). **Remaining required manual incident response:** rotate/revoke any compromised Dropbox app keys/tokens, then purge secret material from git history (e.g., via `git filter-repo`/BFG) and force-push, and ensure all clones/forks update accordingly.
