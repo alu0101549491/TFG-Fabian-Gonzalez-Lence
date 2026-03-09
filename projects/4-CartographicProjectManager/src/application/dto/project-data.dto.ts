@@ -42,8 +42,8 @@ export interface CreateProjectDto {
   readonly contractDate: Date;
   /** Project deadline (must be >= contractDate) */
   readonly deliveryDate: Date;
-  /** Dropbox folder path or ID */
-  readonly dropboxFolderId: string;
+  /** Dropbox folder path or ID (optional; may be assigned server-side) */
+  readonly dropboxFolderId?: string | null;
 }
 
 /**
@@ -66,8 +66,8 @@ export interface UpdateProjectDto {
   readonly contractDate?: Date;
   /** Updated delivery date */
   readonly deliveryDate?: Date;
-  /** Updated Dropbox folder */
-  readonly dropboxFolderId?: string;
+  /** Updated Dropbox folder (nullable to clear) */
+  readonly dropboxFolderId?: string | null;
   /** Updated project status */
   readonly status?: ProjectStatus;
 }

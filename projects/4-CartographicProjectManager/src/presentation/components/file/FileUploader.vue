@@ -211,7 +211,7 @@
 
 <script setup lang="ts">
 import {ref, computed, watch, onUnmounted} from 'vue';
-import {FILE} from '@/shared/constants';
+import {FILE, PROJECT_SECTIONS, isProjectSectionId, type ProjectSectionId} from '@/shared/constants';
 import {formatFileSize, generateId} from '@/shared/utils';
 
 /**
@@ -243,9 +243,9 @@ export interface FileUploaderProps {
   /** Project ID for upload */
   projectId: string;
   /** Available sections */
-  sections: string[];
+  sections: ProjectSectionId[];
   /** Default selected section */
-  defaultSection?: string;
+  defaultSection?: ProjectSectionId;
   /** Maximum file size in bytes */
   maxFileSize?: number;
   /** Maximum number of files */
@@ -262,14 +262,14 @@ export interface FileUploaderProps {
  * FileUploader component emits
  */
 export interface FileUploaderEmits {
-  (e: 'upload', files: {id: string; file: File; section: string}[]): void;
+  (e: 'upload', files: {id: string; file: File; section: ProjectSectionId}[]): void;
   (e: 'cancel', fileId: string): void;
   (e: 'retry', fileId: string): void;
   (e: 'clear'): void;
 }
 
 const props = withDefaults(defineProps<FileUploaderProps>(), {
-  defaultSection: '',
+  defaultSection: PROJECT_SECTIONS.MESSAGES,
   maxFileSize: FILE.MAX_SIZE_BYTES,
   maxFiles: 10,
   acceptedExtensions: () => Object.values(FILE.SUPPORTED_EXTENSIONS).flat(),
@@ -283,9 +283,24 @@ const emit = defineEmits<FileUploaderEmits>();
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
 // State
-const selectedSection = ref(props.defaultSection || props.sections[0] || '');
+const selectedSection = ref<ProjectSectionId>(props.defaultSection);
 const isDragging = ref(false);
 const fileQueue = ref<QueueItem[]>([]);
+
+watch(
+  [() => props.sections, () => props.defaultSection],
+  ([sections, defaultSection]) => {
+    const desired =
+      (isProjectSectionId(defaultSection) ? defaultSection : null) ??
+      sections[0] ??
+      PROJECT_SECTIONS.MESSAGES;
+
+    if (!sections.includes(selectedSection.value)) {
+      selectedSection.value = desired;
+    }
+  },
+  {immediate: true},
+);
 
 // Watch upload progress from parent
 watch(
@@ -473,7 +488,9 @@ function retryUpload(fileId: string): void {
  * Start upload
  */
 function startUpload(): void {
-  const filesToUpload = pendingFiles.value.map((item) => ({    id: item.id,    file: item.file,
+  const filesToUpload = pendingFiles.value.map((item) => ({
+    id: item.id,
+    file: item.file,
     section: selectedSection.value,
   }));
 

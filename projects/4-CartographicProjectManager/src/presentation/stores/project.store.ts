@@ -301,8 +301,12 @@ export const useProjectStore = defineStore('project', () => {
         contractDate: new Date(projectWithDetails.contractDate),
         deliveryDate: new Date(projectWithDetails.deliveryDate),
         status: projectWithDetails.status as any,
-        dropboxFolderId: projectWithDetails.dropboxFolderId,
-        dropboxFolderUrl: '',
+        dropboxFolderId:
+          typeof projectWithDetails.dropboxFolderId === 'string' &&
+          projectWithDetails.dropboxFolderId.trim().length > 0
+            ? projectWithDetails.dropboxFolderId
+            : null,
+        dropboxFolderUrl: null,
         createdAt: new Date(projectWithDetails.createdAt),
         updatedAt: new Date(projectWithDetails.updatedAt),
         finalizedAt: projectWithDetails.finalizedAt ? new Date(projectWithDetails.finalizedAt) : null,

@@ -42,7 +42,7 @@ export interface ProjectProps {
   /** Current project status */
   status?: ProjectStatus;
   /** Dropbox folder path or ID (optional, can be set later) */
-  dropboxFolderId?: string;
+  dropboxFolderId?: string | null;
   /** List of linked special user IDs */
   specialUserIds?: string[];
   /** Record creation timestamp */
@@ -94,7 +94,7 @@ export class Project {
   private contractDateValue: Date;
   private deliveryDateValue: Date;
   private statusValue: ProjectStatus;
-  private dropboxFolderIdValue: string;
+  private dropboxFolderIdValue: string | null;
   private specialUserIdsValue: string[];
   public readonly createdAt: Date;
   private updatedAtValue: Date;
@@ -119,7 +119,7 @@ export class Project {
     this.contractDateValue = props.contractDate;
     this.deliveryDateValue = props.deliveryDate;
     this.statusValue = props.status ?? ProjectStatus.ACTIVE;
-    this.dropboxFolderIdValue = props.dropboxFolderId ?? '';
+    this.dropboxFolderIdValue = Project.normalizeDropboxFolderId(props.dropboxFolderId);
     this.specialUserIdsValue = props.specialUserIds ?? [];
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAtValue = props.updatedAt ?? new Date();
@@ -247,16 +247,28 @@ export class Project {
     this.touchUpdatedAt();
   }
 
-  public get dropboxFolderId(): string {
+  public get dropboxFolderId(): string | null {
     return this.dropboxFolderIdValue;
   }
 
-  public set dropboxFolderId(value: string) {
-    if (!value || value.trim() === '') {
-      throw new Error('Dropbox folder ID cannot be empty');
-    }
-    this.dropboxFolderIdValue = value;
+  public set dropboxFolderId(value: string | null) {
+    this.dropboxFolderIdValue = Project.normalizeDropboxFolderId(value);
     this.touchUpdatedAt();
+  }
+
+  /**
+   * Normalizes Dropbox folder IDs so "missing" is represented as null.
+   *
+   * @param value - Folder ID/path input
+   * @returns Normalized folder ID/path or null
+   */
+  private static normalizeDropboxFolderId(value: string | null | undefined): string | null {
+    if (value == null) {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
   }
 
   public get specialUserIds(): string[] {

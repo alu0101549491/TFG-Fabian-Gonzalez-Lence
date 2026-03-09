@@ -222,7 +222,7 @@
           <FileUploader
             v-if="canUploadFiles && currentProject.project.status !== ProjectStatus.FINALIZED"
             :project-id="currentProject.project.id"
-            :sections="currentProject.sections.map(s => s.name)"
+            :sections="uploadSections"
             :max-file-size="50 * 1024 * 1024"
             :accepted-extensions="['.pdf', '.dwg', '.dxf', '.shp', '.jpg', '.png', '.doc', '.docx', '.zip']"
             :uploading="isUploadingFiles"
@@ -555,6 +555,7 @@ import type {UpdateProjectDto, FileSummaryDto} from '@/application/dto';
 import {ProjectStatus} from '@/domain/enumerations/project-status';
 import {TaskStatus} from '@/domain/enumerations/task-status';
 import type {CreateTaskDto, UpdateTaskDto, TaskDto, TaskSummaryDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto/task-data.dto';
+import {PROJECT_SECTIONS, isProjectSectionId, type ProjectSectionId} from '@/shared/constants';
 
 // Composables
 const router = useRouter();
@@ -659,6 +660,15 @@ const canCreateTask = computed(() =>
 const canUploadFiles = computed(() => 
   currentProject.value?.currentUserPermissions?.canUploadFile ?? false
 );
+
+const uploadSections = computed<ProjectSectionId[]>(() => {
+  const sections =
+    currentProject.value?.sections
+      ?.map((s) => s.name)
+      .filter(isProjectSectionId) ?? [];
+
+  return sections.length > 0 ? sections : [PROJECT_SECTIONS.MESSAGES];
+});
 
 const filteredTasks = computed(() => {
   if (!taskStatusFilter.value) return projectTasks.value;
@@ -1058,7 +1068,7 @@ async function handleMessageSend(payload: {content: string; files: File[]}): Pro
           const uploadedFile = await uploadFileToDropbox(
             file,
             currentProject.value.project.id,
-            'Messages',
+            PROJECT_SECTIONS.MESSAGES,
             (progress) => {
               console.log(`Upload progress for ${file.name}: ${progress}%`);
             }
@@ -1112,7 +1122,9 @@ async function handleMessageSend(payload: {content: string; files: File[]}): Pro
  *
  * @param {Array<{file: File, section: string}>} uploads - Files to upload with their sections
  */
-async function handleFileUpload(uploads: Array<{id: string; file: File; section: string}>): Promise<void> {
+async function handleFileUpload(
+  uploads: Array<{id: string; file: File; section: ProjectSectionId}>,
+): Promise<void> {
   if (!currentProject.value) return;
 
   isUploadingFiles.value = true;
@@ -1137,7 +1149,7 @@ async function handleFileUpload(uploads: Array<{id: string; file: File; section:
         const uploadedFile = await uploadFileToDropbox(
           file,
           currentProject.value.project.id,
-          section,
+          isProjectSectionId(section) ? section : PROJECT_SECTIONS.MESSAGES,
           (progress) => {
             progressItem.progress = progress;
           }

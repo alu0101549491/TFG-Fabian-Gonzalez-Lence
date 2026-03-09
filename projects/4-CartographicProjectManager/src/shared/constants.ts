@@ -102,6 +102,26 @@ export const PROJECT_SECTIONS = {
 } as const;
 
 /**
+ * Canonical internal project section identifier.
+ *
+ * Keep this aligned with backend allowlists that normalize upload sections.
+ */
+export type ProjectSectionId =
+  (typeof PROJECT_SECTIONS)[keyof typeof PROJECT_SECTIONS];
+
+/**
+ * Type guard for project section identifiers.
+ *
+ * @param value - Value to validate
+ * @returns True when value is a canonical section identifier
+ */
+export function isProjectSectionId(value: unknown): value is ProjectSectionId {
+  return (Object.values(PROJECT_SECTIONS) as readonly string[]).includes(
+    value as string,
+  );
+}
+
+/**
  * Project status colors for UI visualization
  */
 export const PROJECT_STATUS_COLORS = {

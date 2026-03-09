@@ -53,10 +53,10 @@ export interface ProjectDto {
   readonly deliveryDate: Date;
   /** Current project status */
   readonly status: ProjectStatus;
-  /** Dropbox folder ID/path */
-  readonly dropboxFolderId: string;
-  /** Generated Dropbox web URL for folder */
-  readonly dropboxFolderUrl: string;
+  /** Dropbox folder ID/path (null when not available) */
+  readonly dropboxFolderId: string | null;
+  /** Generated Dropbox web URL for folder (null when not available) */
+  readonly dropboxFolderUrl: string | null;
   /** Project creation timestamp */
   readonly createdAt: Date;
   /** Last update timestamp */
