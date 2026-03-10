@@ -33,6 +33,14 @@ fileRoutes.get(
 	controller.getByProjectId.bind(controller),
 );
 
+// Sync files from Dropbox to database
+fileRoutes.post(
+	'/project/:projectId/sync',
+	authenticate,
+	authorizeProjectMemberOrAdmin('projectId'),
+	controller.syncFromDropbox.bind(controller),
+);
+
 // Get single file
 fileRoutes.get(
 	'/:id',

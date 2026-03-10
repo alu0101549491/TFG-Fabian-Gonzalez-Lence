@@ -492,28 +492,34 @@ export class FileController {
       '.pdf': 'PDF',
       '.doc': 'DOCUMENT',
       '.docx': 'DOCUMENT',
+      '.txt': 'DOCUMENT',
+      '.rtf': 'DOCUMENT',
+      '.csv': 'SPREADSHEET',
       '.xls': 'SPREADSHEET',
       '.xlsx': 'SPREADSHEET',
-      '.ppt': 'PRESENTATION',
-      '.pptx': 'PRESENTATION',
+      '.ods': 'SPREADSHEET',
       '.jpg': 'IMAGE',
       '.jpeg': 'IMAGE',
       '.png': 'IMAGE',
       '.gif': 'IMAGE',
+      '.bmp': 'IMAGE',
+      '.svg': 'IMAGE',
       '.tif': 'IMAGE',
       '.tiff': 'IMAGE',
       '.zip': 'COMPRESSED',
       '.rar': 'COMPRESSED',
       '.7z': 'COMPRESSED',
+      '.tar': 'COMPRESSED',
+      '.gz': 'COMPRESSED',
+      '.kmz': 'COMPRESSED',
       '.dwg': 'CAD',
       '.dxf': 'CAD',
-      '.shp': 'GIS',
-      '.kml': 'GIS',
-      '.kmz': 'GIS',
-      '.geojson': 'GIS',
+      '.shp': 'SHP',
+      '.kml': 'KML',
+      '.geojson': 'DOCUMENT',
     };
 
-    return typeMap[ext] || 'OTHER';
+    return typeMap[ext] || 'DOCUMENT';
   }
 
   /**
@@ -534,5 +540,148 @@ export class FileController {
       projectId: file.projectId,
       mimeType: file.mimeType,
     };
+  }
+
+  /**
+   * Sync files from Dropbox to database
+   * Lists all files in the project's Dropbox folder and creates database entries for any that are missing
+   */
+  public async syncFromDropbox(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!this.dropboxService) {
+        sendError(res, 'Dropbox service not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        return;
+      }
+
+      const projectId = req.params.projectId as string;
+
+      // Check if user has permission to manage files in this project
+      const canManage = await this.canUploadToProject(req.user!.id, projectId);
+      if (!canManage) {
+        sendError(res, 'You do not have permission to sync files for this project', HTTP_STATUS.FORBIDDEN);
+        return;
+      }
+
+      // Get project to get project code
+      const project = await this.projectRepository.findById(projectId);
+      if (!project) {
+        sendError(res, 'Project not found', HTTP_STATUS.NOT_FOUND);
+        return;
+      }
+
+      logInfo('Starting Dropbox file sync', {projectId, projectCode: project.code, userId: req.user!.id});
+
+      // Get all files from Dropbox
+      const dropboxPath = this.dropboxService.getProjectFolderPath(project.code);
+      const dropboxFiles = await this.dropboxService.listFiles(dropboxPath);
+
+      logDebug('Files found in Dropbox', {projectId, count: dropboxFiles.length});
+
+      // Get all existing files from database for this project
+      const dbFiles = await this.fileRepository.findByProjectId(projectId);
+      const dbFilePaths = new Set(dbFiles.map((f) => f.dropboxPath));
+
+      let syncedCount = 0;
+      let skippedCount = 0;
+
+      // Create database entries for files that don't exist in DB
+      for (const dropboxFile of dropboxFiles) {
+        if (dbFilePaths.has(dropboxFile.path)) {
+          skippedCount++;
+          continue;
+        }
+
+        try {
+          // Extract section from path (e.g., /CartographicProjects/PROJ-001/Plans/file.pdf -> Plans)
+          const pathParts = dropboxFile.path.split('/');
+          const sectionIndex = pathParts.findIndex((part) => part === project.code) + 1;
+          const section = sectionIndex < pathParts.length ? pathParts[sectionIndex] : 'Messages';
+
+          // Determine file type based on section or extension
+          const fileType = this.determineFileType(dropboxFile.name);
+
+          // Create file entry
+          const fileData = {
+            id: uuidv4(),
+            filename: dropboxFile.name,
+            originalName: dropboxFile.name,
+            dropboxPath: dropboxFile.path,
+            type: fileType,
+            size: dropboxFile.size,
+            mimeType: this.getMimeTypeFromFilename(dropboxFile.name),
+            projectId,
+            uploadedBy: req.user!.id, // Attribute to current user performing the sync
+            uploadedAt: dropboxFile.modifiedAt,
+          };
+
+          await this.fileRepository.create(fileData);
+          syncedCount++;
+
+          logDebug('File synced from Dropbox', {
+            projectId,
+            fileName: dropboxFile.name,
+            dropboxPath: dropboxFile.path,
+          });
+        } catch (error) {
+          const normalizedError =
+            error instanceof Error ? error : new Error(String(error));
+          logError('Failed to sync individual file from Dropbox', normalizedError, {
+            projectId,
+            fileName: dropboxFile.name,
+            dropboxPath: dropboxFile.path,
+          });
+          // Continue with other files
+        }
+      }
+
+      logInfo('Dropbox file sync completed', {
+        projectId,
+        projectCode: project.code,
+        totalDropboxFiles: dropboxFiles.length,
+        syncedCount,
+        skippedCount,
+      });
+
+      sendSuccess(res, {
+        totalFiles: dropboxFiles.length,
+        synced: syncedCount,
+        skipped: skippedCount,
+      }, `Successfully synced ${syncedCount} file(s) from Dropbox`);
+    } catch (error) {
+      const normalizedError =
+        error instanceof Error ? error : new Error(String(error));
+      logError('Dropbox file sync failed', normalizedError, {
+        userId: req.user?.id,
+        projectId: req.params.projectId,
+      });
+      next(error);
+    }
+  }
+
+  /**
+   * Get MIME type from filename extension
+   * @param filename - Filename to analyze
+   * @returns MIME type string
+   * @private
+   */
+  private getMimeTypeFromFilename(filename: string): string {
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.txt': 'text/plain',
+      '.csv': 'text/csv',
+      '.zip': 'application/zip',
+      '.dwg': 'application/acad',
+      '.dxf': 'application/dxf',
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
   }
 }

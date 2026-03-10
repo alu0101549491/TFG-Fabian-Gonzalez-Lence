@@ -577,8 +577,30 @@ export class ProjectController {
         throw new ForbiddenError('You do not have permission to delete this project');
       }
 
+      // Delete project from database
       await this.projectRepository.delete(projectId);
-  logInfo('Project deleted successfully', {projectId});
+      logInfo('Project deleted successfully', {projectId});
+      
+      // Delete Dropbox folder if service is available
+      if (this.dropboxService && existingProject.code) {
+        try {
+          const dropboxPath = this.dropboxService.getProjectFolderPath(existingProject.code);
+          await this.dropboxService.deleteFolder(dropboxPath);
+          logInfo('Dropbox folder deleted successfully', {
+            projectId,
+            projectCode: existingProject.code,
+            dropboxPath,
+          });
+        } catch (dropboxError) {
+          // Log error but don't fail the request if Dropbox deletion fails
+          const normalizedError =
+            dropboxError instanceof Error ? dropboxError : new Error(String(dropboxError));
+          logError('Failed to delete Dropbox folder for project', normalizedError, {
+            projectId,
+            projectCode: existingProject.code,
+          });
+        }
+      }
       
       // Log project deletion in audit trail
       await this.auditService.logProjectDeletion(

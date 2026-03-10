@@ -230,6 +230,30 @@
             @upload="handleFileUpload"
           />
 
+          <div class="sync-dropbox-section">
+            <div class="sync-dropbox-buttons">
+              <button
+                class="btn-sync-dropbox"
+                :disabled="isSyncingFiles"
+                @click="handleSyncFromDropbox"
+                title="Sync files uploaded directly to Dropbox"
+              >
+                <span v-if="!isSyncingFiles">⟳</span>
+                <span v-else>⏳</span>
+                <span>{{ isSyncingFiles ? 'Syncing...' : 'Sync from Dropbox' }}</span>
+              </button>
+              <button
+                class="btn-open-dropbox"
+                @click="openDropboxFolder"
+                title="Open project folder in Dropbox"
+              >
+                <span>📂</span>
+                <span>Open in Dropbox</span>
+              </button>
+            </div>
+            <p class="sync-info">Click to sync files uploaded directly to Dropbox</p>
+          </div>
+
           <FileList
             :files="projectFilesForList"
             :loading="filesLoading"
@@ -409,7 +433,7 @@
             <TaskForm
               :task="selectedTask"
               :assignees="availableAssignees"
-              :can-confirm="isAdmin"
+              :can-confirm="selectedTask?.canConfirm ?? false"
               :project-contract-date="currentProject.project.contractDate"
               :project-delivery-date="currentProject.project.deliveryDate"
               @submit="handleTaskEditSubmit"
@@ -595,6 +619,7 @@ const {
   isLoading: filesLoading,
   loadFilesByProject,
   uploadFile: uploadFileToDropbox,
+  syncFilesFromDropbox,
   getTemporaryDownloadUrl,
   getPreviewUrl,
   deleteFile,
@@ -640,6 +665,7 @@ const showDeleteModal = ref(false);
 const isFinalizing = ref(false);
 const isDeleting = ref(false);
 const isUploadingFiles = ref(false);
+const isSyncingFiles = ref(false);
 const uploadProgress = ref<FileUploadProgressDto[]>([]);
 
 // Computed Properties
@@ -1185,6 +1211,44 @@ async function handleFileUpload(
 }
 
 /**
+ * Handle sync from Dropbox
+ * Syncs files uploaded directly to Dropbox
+ */
+async function handleSyncFromDropbox(): Promise<void> {
+  if (!currentProject.value) return;
+
+  isSyncingFiles.value = true;
+
+  try {
+    const result = await syncFilesFromDropbox(currentProject.value.project.id);
+    
+    if (result.synced > 0) {
+      alert(`Successfully synced ${result.synced} file(s) from Dropbox.\n\nTotal files: ${result.totalFiles}\nNewly synced: ${result.synced}\nAlready in database: ${result.skipped}`);
+    } else {
+      alert(`No new files to sync.\n\nAll ${result.totalFiles} file(s) in Dropbox are already in the database.`);
+    }
+  } catch (error) {
+    console.error('Failed to sync from Dropbox:', error);
+    alert(`Failed to sync from Dropbox: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    isSyncingFiles.value = false;
+  }
+}
+
+/**
+ * Open Dropbox folder in new tab
+ * Opens the project's Dropbox folder in the browser
+ */
+function openDropboxFolder(): void {
+  if (!currentProject.value) return;
+  
+  const projectCode = currentProject.value.project.code;
+  const dropboxUrl = `https://www.dropbox.com/home/Aplicaciones/CARTO-PROJECT-MANAGER/CartographicProjects/${encodeURIComponent(projectCode)}`;
+  
+  window.open(dropboxUrl, '_blank', 'noopener,noreferrer');
+}
+
+/**
  * Handle file download
  *
  * @param {FileSummaryDto} file - File to download
@@ -1575,6 +1639,96 @@ onUnmounted(async () => {
 .panel-subtitle {
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-4);
+}
+
+/* Sync from Dropbox Section */
+.sync-dropbox-section {
+  margin: var(--spacing-4) 0;
+  padding: var(--spacing-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.sync-dropbox-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.btn-sync-dropbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-all);
+  white-space: nowrap;
+}
+
+.btn-sync-dropbox:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-sync-dropbox:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-sync-dropbox:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-sync-dropbox span:first-child {
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.btn-open-dropbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: #0061fe;
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-all);
+  white-space: nowrap;
+}
+
+.btn-open-dropbox:hover {
+  background: #0052d9;
+  transform: translateY(-1px);
+}
+
+.btn-open-dropbox:active {
+  transform: translateY(0);
+}
+
+.btn-open-dropbox span:first-child {
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.sync-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
 }
 
 .panel-actions {
