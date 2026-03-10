@@ -104,10 +104,35 @@
             <span class="project-summary-stat-label">Tasks Completed</span>
           </div>
           <div
-            v-if="taskStats.pending > 0"
+            v-if="tasksLeftToDo > 0"
             class="project-summary-stat-badge project-summary-stat-badge-warning"
           >
-            {{ taskStats.pending }} pending
+            {{ tasksLeftToDo }} pending
+          </div>
+        </div>
+
+        <!-- Pending Tasks Stat -->
+        <div
+          class="project-summary-stat project-summary-stat-clickable"
+          :class="{ 'project-summary-stat-highlight': tasksLeftToDo > 0 }"
+          role="button"
+          tabindex="0"
+          @click="emit('view-tasks')"
+          @keydown.enter="emit('view-tasks')"
+          @keydown.space.prevent="emit('view-tasks')"
+        >
+          <div class="project-summary-stat-icon project-summary-stat-icon-pending">
+            <span>📋</span>
+          </div>
+          <div class="project-summary-stat-content">
+            <span class="project-summary-stat-value"> {{ tasksLeftToDo }} </span>
+            <span class="project-summary-stat-label">Pending Tasks</span>
+          </div>
+          <div
+            v-if="tasksLeftToDo > 0"
+            class="project-summary-stat-badge project-summary-stat-badge-warning"
+          >
+            To Do
           </div>
         </div>
 
@@ -275,8 +300,9 @@
 <script setup lang="ts">
 import {computed} from 'vue';
 import type {ProjectDetailsDto} from '@/application/dto';
-import {ProjectStatus, ProjectType, UserRole} from '@/domain/enumerations';
+import {ProjectStatus, UserRole} from '@/domain/enumerations';
 import {formatDate, daysUntil} from '@/shared/utils';
+import {ProjectTypeDisplayName} from '../../mappings/domain-enum-ui';
 
 /**
  * ProjectSummary component props
@@ -314,9 +340,12 @@ const participants = computed(() => props.projectDetails.participants);
 const sections = computed(() => props.projectDetails.sections);
 const permissions = computed(() => props.projectDetails.currentUserPermissions);
 
+// Computed - tasks to do (pending + in progress)
+const tasksLeftToDo = computed(() => taskStats.value.pending + taskStats.value.inProgress);
+
 // Computed - status
 const isFinalized = computed(() => project.value.status === ProjectStatus.FINALIZED);
-const canFinalize = computed(() => taskStats.value.pending === 0);
+const canFinalize = computed(() => tasksLeftToDo.value === 0);
 
 const daysUntilDelivery = computed(() => daysUntil(project.value.deliveryDate));
 const isOverdue = computed(() => daysUntilDelivery.value < 0 && !isFinalized.value);
@@ -339,15 +368,7 @@ const statusColor = computed(() => {
   return 'green';
 });
 
-const typeLabel = computed(() => {
-  const labels: Record<ProjectType, string> = {
-    [ProjectType.RESIDENTIAL]: 'Residential',
-    [ProjectType.COMMERCIAL]: 'Commercial',
-    [ProjectType.INDUSTRIAL]: 'Industrial',
-    [ProjectType.PUBLIC]: 'Public',
-  };
-  return labels[project.value.type];
-});
+const typeLabel = computed(() => ProjectTypeDisplayName[project.value.type]);
 
 const formattedContractDate = computed(() => formatDate(project.value.contractDate, 'dd MMMM yyyy'));
 const formattedDeliveryDate = computed(() => formatDate(project.value.deliveryDate, 'dd MMMM yyyy'));
@@ -585,6 +606,23 @@ function getRoleLabel(role: UserRole): string {
   outline-offset: 2px;
 }
 
+.project-summary-stat-highlight {
+  background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-bg-primary) 100%);
+  border-color: var(--color-primary-300);
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: var(--color-primary-300);
+    box-shadow: var(--shadow-sm);
+  }
+  50% {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+  }
+}
+
 .project-summary-stat-icon {
   display: flex;
   align-items: center;
@@ -599,6 +637,11 @@ function getRoleLabel(role: UserRole): string {
 .project-summary-stat-icon-tasks {
   background-color: var(--color-primary-100);
   color: var(--color-primary-600);
+}
+
+.project-summary-stat-icon-pending {
+  background-color: var(--color-warning-100);
+  color: var(--color-warning-600);
 }
 
 .project-summary-stat-icon-messages {

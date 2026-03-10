@@ -42,6 +42,7 @@ export interface UseFilesReturn {
     section: ProjectSectionId,
     onProgress?: UploadProgressCallback
   ) => Promise<FileSummaryDto | null>;
+  syncFilesFromDropbox: (projectId: string) => Promise<{synced: number; skipped: number; totalFiles: number}>;
   getTemporaryDownloadUrl: (fileId: string) => Promise<string>;
   getPreviewUrl: (fileId: string) => Promise<string>;
   deleteFile: (fileId: string) => Promise<boolean>;
@@ -310,6 +311,34 @@ export function useFiles(): UseFilesReturn {
   }
 
   /**
+   * Syncs files from Dropbox to the database
+   * This will fetch all files from Dropbox and create database entries for any missing files
+   *
+   * @param projectId - Project ID to sync files for
+   * @returns Sync statistics (synced, skipped, total)
+   */
+  async function syncFilesFromDropbox(projectId: string): Promise<{synced: number; skipped: number; totalFiles: number}> {
+    error.value = null;
+
+    try {
+      const response = await httpClient.post<{
+        synced: number;
+        skipped: number;
+        totalFiles: number;
+      }>(`/files/project/${projectId}/sync`, {});
+
+      // Reload files to get the newly synced ones
+      await loadFilesByProject(projectId);
+
+      return response.data;
+    } catch (err: any) {
+      error.value = err.message || 'Failed to sync files from Dropbox';
+      console.error('Failed to sync files from Dropbox:', err);
+      throw err;
+    }
+  }
+
+  /**
    * Clears error state
    */
   function clearError(): void {
@@ -323,6 +352,7 @@ export function useFiles(): UseFilesReturn {
     loadFilesByProject,
     loadFilesByTask,
     uploadFile,
+    syncFilesFromDropbox,
     getTemporaryDownloadUrl,
     getPreviewUrl,
     deleteFile,

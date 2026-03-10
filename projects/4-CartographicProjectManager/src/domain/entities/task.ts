@@ -275,12 +275,12 @@ export class Task {
   /**
    * Marks task as done (awaiting confirmation).
    *
-   * @param userId - User marking as performed (must be assignee)
-   * @throws {Error} If user is not assignee or status invalid
+   * @param userId - User marking as performed (must be creator or assignee)
+   * @throws {Error} If user is not creator/assignee or status invalid
    */
   public markAsPerformed(userId: string): void {
-    if (userId !== this.assigneeIdValue) {
-      throw new Error('Only the assignee can mark the task as performed');
+    if (userId !== this.assigneeIdValue && userId !== this.creatorId) {
+      throw new Error('Only the task creator or assignee can mark the task as performed');
     }
 
     if (!isValidTaskStatusTransition(this.statusValue, TaskStatus.PERFORMED)) {
@@ -295,12 +295,12 @@ export class Task {
   /**
    * Confirms task completion.
    *
-   * @param userId - User confirming (must be task creator)
+   * @param userId - User confirming (must be task creator or assignee)
    * @throws {Error} If user cannot confirm
    */
   public confirm(userId: string): void {
     if (!this.canBeConfirmedBy(userId)) {
-      throw new Error('Only the task creator can confirm completion');
+      throw new Error('Only the task creator or assignee can confirm completion');
     }
 
     if (this.statusValue !== TaskStatus.PERFORMED) {
@@ -315,12 +315,12 @@ export class Task {
   /**
    * Rejects a performed task, returning it to PENDING.
    *
-   * @param userId - User rejecting (must be task creator)
+   * @param userId - User rejecting (must be task creator or assignee)
    * @throws {Error} If user cannot reject or status invalid
    */
   public rejectConfirmation(userId: string): void {
-    if (userId !== this.creatorId) {
-      throw new Error('Only the task creator can reject completion');
+    if (userId !== this.creatorId && userId !== this.assigneeIdValue) {
+      throw new Error('Only the task creator or assignee can reject completion');
     }
 
     if (this.statusValue !== TaskStatus.PERFORMED) {
@@ -337,10 +337,11 @@ export class Task {
    * Checks if user can confirm this task.
    *
    * @param userId - User ID to check
-   * @returns True if user is the creator and status is PERFORMED
+   * @returns True if user is the creator or assignee and status is PERFORMED
    */
   public canBeConfirmedBy(userId: string): boolean {
-    return userId === this.creatorId && this.statusValue === TaskStatus.PERFORMED;
+    return (userId === this.creatorId || userId === this.assigneeIdValue) && 
+           this.statusValue === TaskStatus.PERFORMED;
   }
 
   /**

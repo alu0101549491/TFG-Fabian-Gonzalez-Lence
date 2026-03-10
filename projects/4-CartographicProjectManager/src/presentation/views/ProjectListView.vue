@@ -674,8 +674,14 @@ onMounted(async () => {
   box-shadow: var(--shadow-xl);
   max-width: 600px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content .modal-body {
   overflow-y: auto;
+  flex: 1;
 }
 
 .modal-small {

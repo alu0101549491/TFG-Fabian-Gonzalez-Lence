@@ -91,7 +91,7 @@ export const useTaskStore = defineStore('task', () => {
       isOverdue,
       canModify: authStore.isAdmin || task.creatorId === authStore.userId || task.assigneeId === authStore.userId,
       canDelete: authStore.isAdmin || task.creatorId === authStore.userId,
-      canConfirm: authStore.isAdmin,
+      canConfirm: authStore.isAdmin || task.creatorId === authStore.userId || task.assigneeId === authStore.userId,
       canChangeStatus: authStore.isAdmin || task.creatorId === authStore.userId || task.assigneeId === authStore.userId,
       allowedStatusTransitions: getValidTransitions(task.status),
     };
@@ -102,6 +102,25 @@ export const useTaskStore = defineStore('task', () => {
    */
   function getValidTransitions(currentStatus: TaskStatus): TaskStatus[] {
     return TaskStatusTransitions[currentStatus] || [];
+  }
+
+  /**
+   * Helper to update task statistics in project store for a given project
+   */
+  function updateProjectTaskStats(projectId: string): void {
+    // Only update if this is the current project in the project store
+    if (!projectStore.currentProject || projectStore.currentProject.project.id !== projectId) {
+      return;
+    }
+
+    const tasks = tasksByProject.value.get(projectId) ?? [];
+    projectStore.currentProject.taskStats = {
+      total: tasks.length,
+      pending: tasks.filter(t => t.status === TaskStatus.PENDING).length,
+      inProgress: tasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length,
+      completed: tasks.filter(t => t.status === TaskStatus.COMPLETED).length,
+      overdue: tasks.filter(t => t.isOverdue).length,
+    };
   }
 
   // Getters
@@ -217,6 +236,9 @@ export const useTaskStore = defineStore('task', () => {
         limit: 20,
         totalPages: Math.ceil(tasks.length / 20),
       };
+
+      // Update project store's taskStats if this is the current project
+      updateProjectTaskStats(projectId);
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch tasks';
       throw err;
@@ -301,6 +323,9 @@ export const useTaskStore = defineStore('task', () => {
       tasksByProject.value.set(data.projectId, [...tasks, newTask]);
       pagination.value.total++;
 
+      // Update task statistics
+      updateProjectTaskStats(data.projectId);
+
       return newTask;
     } catch (err: any) {
       error.value = err.message || 'Failed to create task';
@@ -346,6 +371,9 @@ export const useTaskStore = defineStore('task', () => {
           if (currentTask.value?.id === data.id) {
             currentTask.value = updatedTask;
           }
+
+          // Update task statistics
+          updateProjectTaskStats(projectId);
           
           return updatedTask;
         }
@@ -383,6 +411,9 @@ export const useTaskStore = defineStore('task', () => {
           if (currentTask.value?.id === taskId) {
             currentTask.value = null;
           }
+
+          // Update task statistics
+          updateProjectTaskStats(projectId);
           
           return true;
         }
@@ -436,6 +467,9 @@ export const useTaskStore = defineStore('task', () => {
           if (currentTask.value?.id === taskId) {
             currentTask.value = updatedTask;
           }
+
+          // Update task statistics (important for status changes!)
+          updateProjectTaskStats(projectId);
           
           return true;
         }
@@ -474,8 +508,8 @@ export const useTaskStore = defineStore('task', () => {
         // Use the entity's confirm method
         taskEntity.confirm(authStore.userId);
       } else {
-        // Reject: change back to PENDING or IN_PROGRESS
-        taskEntity.changeStatus(TaskStatus.PENDING, authStore.userId);
+        // Reject: use the entity's rejectConfirmation method
+        taskEntity.rejectConfirmation(authStore.userId);
         if (feedback) {
           taskEntity.comments = feedback;
         }
@@ -494,6 +528,9 @@ export const useTaskStore = defineStore('task', () => {
           if (currentTask.value?.id === taskId) {
             currentTask.value = updatedTask;
           }
+
+          // Update task statistics
+          updateProjectTaskStats(projectId);
           
           return true;
         }

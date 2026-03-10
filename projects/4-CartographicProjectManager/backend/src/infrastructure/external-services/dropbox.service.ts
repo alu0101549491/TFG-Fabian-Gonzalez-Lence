@@ -151,6 +151,19 @@ export interface IDropboxService {
    * @returns Section folder path
    */
   getSectionPath(projectCode: string, section: string): string;
+
+  /**
+   * List all files in a folder recursively
+   * @param path - Folder path to list
+   * @returns Array of file metadata
+   */
+  listFiles(path: string): Promise<DropboxFileMetadata[]>;
+
+  /**
+   * Delete a folder and all its contents
+   * @param path - Folder path to delete
+   */
+  deleteFolder(path: string): Promise<void>;
 }
 
 /**
@@ -672,5 +685,77 @@ export class DropboxService implements IDropboxService {
         : new Date(),
       contentHash: fileEntry.content_hash,
     };
+  }
+
+  /**
+   * List all files in a folder recursively
+   * @param path - Folder path to list
+   * @returns Array of file metadata
+   */
+  public async listFiles(path: string): Promise<DropboxFileMetadata[]> {
+    return this.executeWithRetry(async () => {
+      const allFiles: DropboxFileMetadata[] = [];
+      let hasMore = true;
+      let cursor: string | undefined;
+
+      while (hasMore) {
+        const response = cursor
+          ? await this.client.filesListFolderContinue({cursor})
+          : await this.client.filesListFolder({
+              path,
+              recursive: true,
+              include_deleted: false,
+            });
+
+        // Filter out folders, only include files
+        const files = response.result.entries
+          .filter((entry) => entry['.tag'] === 'file')
+          .map((entry) => this.mapToFileMetadata(entry as files.FileMetadata));
+
+        allFiles.push(...files);
+        hasMore = response.result.has_more;
+        cursor = response.result.cursor;
+      }
+
+      return allFiles;
+    });
+  }
+
+  /**
+   * Delete a folder and all its contents
+   * @param path - Folder path to delete
+   */
+  public async deleteFolder(path: string): Promise<void> {
+    return this.executeWithRetry(async () => {
+      try {
+        await this.client.filesDeleteV2({path});
+        logInfo('Dropbox folder deleted successfully', {path});
+      } catch (error: unknown) {
+        const err = error as {
+          error?: {
+            error?: {
+              '.tag'?: string;
+              path_lookup?: {
+                '.tag'?: string;
+              };
+            };
+          };
+        };
+
+        const deleteErrorTag = err.error?.error?.['.tag'];
+        const lookupErrorTag = err.error?.error?.path_lookup?.['.tag'];
+
+        // Ignore error if folder doesn't exist (already deleted)
+        if (deleteErrorTag === 'path_lookup' && lookupErrorTag === 'not_found') {
+          logWarning('Dropbox folder not found during deletion (already deleted)', {path});
+          return;
+        }
+
+        const normalizedError =
+          error instanceof Error ? error : new Error(String(error));
+        logError('Failed to delete Dropbox folder', normalizedError, {path});
+        throw error;
+      }
+    });
   }
 }
