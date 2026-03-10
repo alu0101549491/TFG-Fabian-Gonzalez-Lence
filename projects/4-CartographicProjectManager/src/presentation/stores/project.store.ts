@@ -244,13 +244,16 @@ export const useProjectStore = defineStore('project', () => {
         filters.value = {...filters.value, ...newFilters};
       }
 
+      console.log('🔍 [ProjectStore] fetchProjects called - fetching summaries...');
       const summaries = await projectRepository.findSummaries({
         status: filters.value.status ?? undefined,
         year: filters.value.year ?? undefined,
         type: filters.value.type ?? undefined,
         clientId: filters.value.clientId ?? undefined,
       });
+      console.log(`🔍 [ProjectStore] fetchProjects: received ${summaries.length} project summaries`, summaries);
 
+      console.log(`🔍 [ProjectStore] fetchProjects: mapping ${summaries.length} summaries to view models`);
       projects.value = summaries.map((summary) => {
         const deliveryDate = new Date(summary.deliveryDate);
         const createdAt = new Date(summary.createdAt);
