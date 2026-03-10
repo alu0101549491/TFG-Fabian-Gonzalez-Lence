@@ -305,6 +305,13 @@ export class ProjectController {
         };
       });
 
+      logDebug(`🔍 getSummaries: returning ${summaries.length} project summaries for user ${currentUser.id} (${currentUser.role})`, {
+        userId: currentUser.id,
+        userRole: currentUser.role,
+        summaryCount: summaries.length,
+        projectCodes: summaries.map(s => s.code),
+      });
+
       sendSuccess(res, summaries);
     } catch (error) {
       next(error);
