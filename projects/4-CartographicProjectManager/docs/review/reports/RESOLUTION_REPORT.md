@@ -26,6 +26,15 @@ Run from `projects/4-CartographicProjectManager/backend`:
 
 ## Key Fixes
 
+### March 10, 2026 — Gate restoration
+- Fixed the remaining frontend TypeScript build blocker by ensuring summary task types match UI expectations:
+  - `src/presentation/view-models/task.view-model.ts`: `TaskSummaryViewModel` now includes the UI convenience field `isOverdue` so `TaskCard.vue` can safely style overdue tasks.
+- Fixed the single blocking frontend ESLint error (`@typescript-eslint/no-empty-object-type`):
+  - `src/application/dto/user-data.dto.ts`: replaced `export interface UserSummaryDto extends UserBaseDto {}` with `export type UserSummaryDto = UserBaseDto;`.
+- Verified the backend CRITICAL remediations are present and unchanged:
+  - JWT secrets fail-fast when missing (`backend/src/shared/constants.ts`).
+  - WebSocket project-room joins are authorization-guarded (`backend/src/infrastructure/websocket/socket.server.ts`).
+
 ## Code Review Issue Mapping
 This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REPORT.md`.
 

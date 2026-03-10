@@ -43,7 +43,7 @@ export interface UserDataDto extends UserBaseDto {
 /**
  * User summary for list views
  */
-export interface UserSummaryDto extends UserBaseDto {}
+export type UserSummaryDto = UserBaseDto;
 
 /**
  * DTO for creating a new user
