@@ -14,6 +14,7 @@
 
 import {TaskStatus} from '../../domain/enumerations/task-status';
 import {TaskPriority} from '../../domain/enumerations/task-priority';
+import type {TaskHistoryAction} from '../../domain/enumerations/task-history-action';
 import {FileSummaryDto} from './file-data.dto';
 import type {TaskSummaryDto} from './project-details.dto';
 
@@ -123,18 +124,6 @@ export interface TaskDto {
   readonly completedAt: Date | null;
   /** Confirmation timestamp (if confirmed) */
   readonly confirmedAt: Date | null;
-  /** Whether task is past due date */
-  readonly isOverdue: boolean;
-  /** Whether current user can modify task */
-  readonly canModify: boolean;
-  /** Whether current user can delete task */
-  readonly canDelete: boolean;
-  /** Whether current user can confirm task */
-  readonly canConfirm: boolean;
-  /** Whether current user can change status */
-  readonly canChangeStatus: boolean;
-  /** Valid status transitions from current status */
-  readonly allowedStatusTransitions: TaskStatus[];
 }
 
 /**
@@ -144,7 +133,7 @@ export interface TaskHistoryEntryDto {
   /** Unique history entry ID */
   readonly id: string;
   /** Action performed (e.g., "CREATED", "STATUS_CHANGED", "UPDATED") */
-  readonly action: string;
+  readonly action: TaskHistoryAction;
   /** Previous value (if applicable) */
   readonly previousValue: string | null;
   /** New value */
@@ -227,8 +216,6 @@ export interface CalendarTaskDto {
   readonly priority: TaskPriority;
   /** Assignee name */
   readonly assigneeName: string;
-  /** Whether task is overdue */
-  readonly isOverdue: boolean;
 }
 
 /**

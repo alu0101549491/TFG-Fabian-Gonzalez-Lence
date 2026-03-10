@@ -138,7 +138,7 @@
 
 <script setup lang="ts">
 import {ref, computed} from 'vue';
-import type {TaskDto, TaskSummaryDto} from '@/application/dto';
+import type {TaskViewModel, TaskSummaryViewModel} from '@/presentation/view-models/task.view-model';
 import {TaskStatus, TaskPriority} from '@/domain/enumerations';
 import {TASK_STATUS_COLORS} from '@/shared/constants';
 import TaskCard from './TaskCard.vue';
@@ -159,7 +159,7 @@ export interface TaskFilters {
  */
 export interface TaskListProps {
   /** Tasks to display */
-  tasks: TaskDto[] | TaskSummaryDto[];
+  tasks: Array<TaskViewModel | TaskSummaryViewModel>;
   /** Loading state */
   loading?: boolean;
   /** View mode */
@@ -178,9 +178,9 @@ export interface TaskListProps {
  * TaskList component emits
  */
 export interface TaskListEmits {
-  (e: 'task-click', task: TaskDto | TaskSummaryDto): void;
-  (e: 'task-edit', task: TaskDto | TaskSummaryDto): void;
-  (e: 'task-delete', task: TaskDto | TaskSummaryDto): void;
+  (e: 'task-click', task: TaskViewModel | TaskSummaryViewModel): void;
+  (e: 'task-edit', task: TaskViewModel | TaskSummaryViewModel): void;
+  (e: 'task-delete', task: TaskViewModel | TaskSummaryViewModel): void;
   (e: 'task-status-change', taskId: string, newStatus: TaskStatus): void;
   (e: 'create'): void;
   (e: 'filter-change', filters: TaskFilters): void;
@@ -241,7 +241,6 @@ const statusOptions = computed(() => [
 ]);
 
 const priorityOptions = computed(() => [
-  {value: TaskPriority.URGENT, label: 'Urgent'},
   {value: TaskPriority.HIGH, label: 'High'},
   {value: TaskPriority.MEDIUM, label: 'Medium'},
   {value: TaskPriority.LOW, label: 'Low'},
@@ -331,10 +330,9 @@ function getStatusLabel(status: TaskStatus): string {
  */
 function getPriorityWeight(priority: TaskPriority): number {
   const weights: Record<TaskPriority, number> = {
-    [TaskPriority.LOW]: 1,
+    [TaskPriority.HIGH]: 1,
     [TaskPriority.MEDIUM]: 2,
-    [TaskPriority.HIGH]: 3,
-    [TaskPriority.URGENT]: 4,
+    [TaskPriority.LOW]: 3,
   };
   return weights[priority];
 }

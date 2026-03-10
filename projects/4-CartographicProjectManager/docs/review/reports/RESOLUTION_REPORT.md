@@ -32,25 +32,45 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 ### ✅ Resolved (verified)
 - **D1-001** — Domain enums no longer contain UI-focused mappings: display names/colors/icons/templates were moved into Presentation mappings (`src/presentation/mappings/domain-enum-ui.ts`).
 - **D3-001** — Domain entities no longer implement transport-facing `toJSON()`; HTTP payload shaping remains at the boundary (repositories/services build explicit payload objects and serialize dates as needed).
+- **D3-003** — Domain entity factory methods no longer generate IDs via `Date.now()`/`Math.random()`; they now use the shared crypto-safe `generateId()` helper (keeping `history_`/`perm_`/`msg_`/`notif_` prefixes).
+- **D3-004** — Dropbox folder identifiers are now type-safe where optional: `Project.dropboxFolderId` uses `string | null` and normalizes empty/undefined values to `null`, preventing `undefined` from leaking into runtime state.
+- **D3-007** — Domain no longer serializes tasks via `toJSON()` (see D3-001), eliminating the “domain serialization drops display fields” drift risk; display shaping is done at DTO/boundary layers.
+- **D3-010** — Permission DTO boundaries use array payloads for access rights; Infrastructure mappers convert to/from the Domain’s internal `Set<AccessRight>` representation.
 - **D3-005** — `User.updatedAt` is now maintained consistently: mutating setters and `updateLastLogin()` call a shared `touchUpdatedAt()` helper.
 - **D3-006** — Removed the unsafe placeholder `User.authenticate()` method that always threw; password verification remains in the application/backend authentication flow.
 - **D3-008** — `Message.senderRole` is now typed as `UserRole` end-to-end (Domain entity + repository/store mapping), removing `any` casts and preventing role drift.
 - **D3-009** — `Permission.sectionAccess` is now typed and validated against a constrained `ProjectSection` union (from `PROJECT_SECTIONS`), preventing invalid section strings from leaking into the domain model.
 - **D5-001** — Auth state persistence no longer lies about `Date` fields: user/expires timestamps are serialized as ISO strings in localStorage and explicitly rehydrated back to `Date` objects on load.
+- **D5-002** — Application DTOs no longer include UI/view-model fields (e.g., `statusColor`, `isOverdue`, `daysUntilDelivery`, `can*`, `allowedStatusTransitions`). UI convenience fields were moved into Presentation ViewModels and derived at the UI layer.
+- **D5-006** — Shared user DTO fields were consolidated via `UserBaseDto` and reused across `UserDataDto`/`UserSummaryDto` and the auth payload `UserDto`; `user-data.dto.ts` header metadata was standardized to match the project template.
+- **D5-005** — DTO definition modules are now declarative: auth/validation helper and factory functions were moved into `src/application/auth/*` and `src/application/validation/*` helper modules; the DTO barrel re-exports them for API stability.
+- **D5-004** — Weak stringly-typed DTO fields were tightened: `CalendarItemDto.statusColor` now uses the `ProjectStatusColor` union, and `TaskHistoryEntryDto.action` is constrained to the `TaskHistoryAction` allowlist (normalized at mapping time).
+- **D5-003** — DTO contracts are now vendor-agnostic: Dropbox-specific names/codes were replaced with generic storage naming (`storageFolderId`/`storageFolderUrl`, `storagePath`, `STORAGE_PROVIDER_ERROR`).
+- **D6-004** — `ProjectService.getProjectsForCalendar(...)` now accepts ISO 8601 date strings and performs centralized parsing/validation before applying date-range filtering, avoiding `Date`-typed boundary params.
+- **D6-003** — Authorization permission boundaries are now transport-friendly: `IAuthorizationService.getProjectPermissions(...)` returns `AccessRight[]` instead of `Set<AccessRight>`, with internal conversions kept inside services/consumers.
+- **D6-002** — Application service interfaces no longer encode Dropbox/vendor-specific semantics: the Dropbox-coupled `file-service.interface.ts` was removed, and `src/application/interfaces` contains no `dropbox*` naming.
+- **D6-001** — Application services share a concrete error taxonomy: missing interface-documented error classes (`BusinessLogicError`, `StorageError`) were added and `ApplicationServiceError` is exported; business-rule failures now throw `BusinessLogicError` (alias of `BusinessRuleError`).
 - **D18-001** — Refresh tokens are no longer stored in `localStorage`; token storage is now session-scoped via `sessionStorage`.
 - **D12-001** — Auth tokens are no longer persisted in `localStorage`; access/refresh tokens are session-scoped in `sessionStorage` with migration/cleanup of legacy `localStorage` keys.
 - **D12-002** — `ITokenStorage` is now defined in a dedicated persistence interface module (`src/infrastructure/persistence/token.storage.interface.ts`), removing the persistence → HTTP dependency edge; the HTTP barrel re-exports the type for API stability.
+- **D12-003** — Prisma query logging is now disabled outside development and no longer logs raw SQL text; Prisma `$on` event hooks use official Prisma event types (no `as never` casts).
 - **D18-002** — Session expiry is derived from JWT `exp` (when available) and persisted (`STORAGE_KEYS.EXPIRES_AT`) instead of being recomputed on reload.
 - **D18-003** — Project permission/participant mapping is now typed: the project details API response includes `creatorId` and enum-typed fields so the store no longer relies on `any` or hidden-field assumptions.
 - **D18-004** — Project list summaries no longer trigger N+1 backend requests: a backend `GET /projects/summaries` endpoint returns client name + pending task counts + unread message counts in a small number of queries, and the project store consumes it directly.
 - **D18-005** — Message pagination/read-state are now consistent with backend operations: backend supports `limit`/`offset` pagination and a per-project total count endpoint; the message store uses real pagination (no full-list merge) and project-level mark-read updates mark all local messages/read counts to avoid drift.
 - **D18-006** — Notification persistence is now user-scoped (`cpm_notifications:<userId>`), rehydrates date fields, and hydrates after auth init/login to prevent cross-account state leakage.
 - **D18-007** — Store console logging is now dev-gated (`import.meta.env.DEV`), and message-store WebSocket subscriptions are retained and cleaned up on store-scope disposal via `onScopeDispose()`.
+- **D2-001** — GeoCoordinates boundary representation is now consistent across frontend/backend: the frontend VO serializes to the canonical `{x, y}` shape (x = longitude, y = latitude) and provides explicit helpers for both `{x, y}` and `{latitude, longitude}`.
 - **D2-002** — GeoCoordinates value equality now uses epsilon-based comparison (not strict `===`) to avoid brittle float equality failures.
 - **D2-003** — GeoCoordinates validation now rejects non-finite values (`NaN`/`Infinity`) before range checks.
+- **D1-003** — Task lifecycle semantics were tightened: `PENDING → PERFORMED` is no longer allowed, and `PERFORMED` is treated/displayed as “Done (Pending Confirmation)” with completion handled via the confirm/reject flow.
+- **D1-002** — Task priority now matches FR13: removed the unsupported `URGENT` priority and updated UI options/mappings to use only `HIGH`/`MEDIUM`/`LOW`.
+- **D1-004** — Project status requirements were aligned with the implemented lifecycle: the specification now documents `ACTIVE`/`IN_PROGRESS`/`PENDING_REVIEW`/`FINALIZED` while preserving the “Active vs Finished” semantics used by FR24/FR25.
 - **D4-001** — Backend repository interfaces are no longer incorrectly located in the “Domain” layer with Prisma coupling; Prisma-shaped repository interfaces were relocated to Infrastructure and implementations were updated accordingly.
 - **D4-002** — Incorrect enum imports in domain repository interfaces were fixed.
+- **D4-003** — Domain repository interfaces no longer expose many query-specific methods; query-object `find`/`count` APIs were introduced to avoid interface explosion and reduce query leakage.
 - **D4-004** — Task history action filtering now uses a typed `TaskHistoryAction` allowlist/union instead of an untyped `string`, reducing drift in filtering calls.
+- **D4-005** — Backend repository interfaces now include per-method JSDoc, aligning documentation quality across interface layers.
 - **D7-001** — Application service interfaces ↔ implementations were aligned; notification sending now consistently uses the object-shaped `sendNotification(data: SendNotificationData)` contract.
 - **D7-002** — AuthorizationService admin-role checks were standardized to `UserRole.ADMINISTRATOR`, and the commented-out admin delete check was corrected.
 - **D7-003** — Backend backup/restore no longer uses shell-interpolated `exec`; commands are executed with argument arrays and secrets are passed via environment (`PGPASSWORD`).
@@ -76,6 +96,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D11-002** — Frontend repositories now build encoded query strings using `URLSearchParams` (not raw interpolation), preventing brittle failures with ISO date filters and other reserved characters.
 - **D11-003** — Backend TaskRepository is now strictly typed: repository methods return explicit Prisma payload types (no `any`), and computed `creatorName`/`assigneeName` fields are added at the controller response boundary rather than inside the repository.
 - **D11-004** — Frontend and backend repositories no longer use direct `console.*` debug logging in core data paths; backend routes through the shared logger and frontend removes the noisy debug prints.
+- **D11-005** — Frontend user repositories no longer mix paradigms: UI/admin CRUD operations were extracted to a dedicated `UserManagementRepository` with consistent throw-on-failure semantics, and `UserRepository` remains focused on the domain `IUserRepository` contract.
 - **D11-006** — AuditLogRepository no longer embeds raw database error text into `DatabaseError` messages; detailed errors are logged via the shared logger and outward errors use stable, user-safe messages.
 - **D13-001** — Deadline reminder scheduler now uses the shared Prisma singleton (`prisma`) instead of constructing a separate `PrismaClient`, avoiding mixed-client workflows and reducing connection lifecycle risk.
 - **D13-002** — Backup scheduler now disables itself at startup (with a clear error log) if `DATABASE_URL` is missing, instead of running with an empty config.
@@ -90,6 +111,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D15-006** — Backend shared module headers were standardized; `@file` now consistently points to `backend/src/shared/*.ts`.
 - **D16-001** — Frontend styles no longer load Google Fonts via CSS `@import`; the render-blocking import was removed (fonts are loaded via HTML `<link>` tags instead).
 - **D16-002** — High-contrast CSS overrides no longer hard-code `#000`; they now reference existing design tokens (`var(--color-text-primary)`) to keep overrides within the token system.
+- **D16-003** — Removed the global `* { margin: 0; padding: 0; }` reset to avoid unintended side-effects; normalization now targets `body` and lists while keeping the universal `box-sizing` reset.
 - **D17-001** — Post-login redirect is now validated before navigation: the `redirect` query must be an internal route that resolves via `router.resolve()` and is denied for login; invalid inputs fall back to the dashboard.
 - **D17-002** — Router guard no longer performs a client-side project access fetch or relies on brittle DTO assumptions (`any`/hidden fields). Project authorization is enforced server-side; the guard is now minimal and avoids navigation-time data fetches.
 - **D17-003** — Router navigation error logging is now gated to development builds (`import.meta.env.DEV`), reducing production console noise while keeping chunk-reload behavior unchanged.
@@ -100,6 +122,7 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D36-003** — Backend auth role fields in shared type definitions are no longer stringly-typed; they are constrained to Prisma `UserRole`.
 - **D36-004** — Backend shared types header metadata is aligned (`@file backend/src/shared/types.ts`).
 - **D36-005** — Frontend `vite-env.d.ts` header was standardized to the University/TFG template (Vite reference directive preserved).
+- **D37-001** — Committed secret material was purged from git history: the previously committed `backend/.env.railway` file was removed from all refs and garbage-collected locally. The repo now tracks only env templates (`backend/.env.example`, `backend/.env.railway.example`) and ignores real env files via `backend/.gitignore`. Note: any secrets ever committed must still be rotated/revoked; history purge does not undo credential compromise.
 - **D22-006** — File upload Dropbox path construction is now hardened: `section` is normalized/allowlisted and the Dropbox storage filename is generated server-side using the file id and a sanitized basename (original filename is preserved separately).
 - **D22-001** — Notification listing now enforces ownership/admin checks and does not allow authenticated users to fetch other users’ notifications.
 - **D22-002** — Message listing/creation now validates project access and binds `senderId` server-side from the authenticated user (no spoofed authorship).
@@ -142,6 +165,8 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D36-002** — Backend pagination boundary typing was corrected: `PaginationQuery.page`/`limit` no longer pretend to be numbers (Express query params arrive as strings/arrays) and numeric pagination is obtained via explicit parsing/validation.
 - **D38-002** — Production seed no longer uses or logs a default password; it now requires `SEED_ADMIN_PASSWORD` (and optionally `SEED_ADMIN_EMAIL`).
 - **D38-003** — Dev seed is now guarded: it refuses to run unless `NODE_ENV=development` and `SEED_CONFIRM=I_UNDERSTAND` are set, preventing accidental destructive seeding against non-dev databases.
+- **D38-004** — Message attachments/read receipts remain denormalized arrays, but are now explicitly documented in the Prisma schema and enforced as set-like collections in application code; message creation de-duplicates and validates `fileIds` against existing project files.
+- **D38-005** — Audit/permission attribution fields (`Permission.grantedBy`, `AuditLog.userId`) remain non-relational by design to preserve auditability; this rationale is now explicitly documented in the Prisma schema.
 - **D39-001** — Dropbox refresh-token helper script now masks tokens by default; printing full secrets requires explicit `--print-full`.
 - **D39-002** — Dropbox token update instructions no longer include token-like prefixes; examples use placeholders.
 - **D39-003** — Backend helper scripts no longer use broad `pkill -9 node` or hard-coded absolute paths; they now use script-relative paths and a pidfile (`.dev-server.pid`) for safer stop/start behavior.
@@ -224,9 +249,6 @@ This section maps the remediation work back to the issue IDs in `CODE_REVIEW_REP
 - **D7-005** — Dropbox folder IDs no longer normalize to `''` in the frontend domain/DTO path: the `Project` entity normalizes missing values to `null`, DTOs accept/return nullable Dropbox folder data, repositories map `null` to `''` only at the backend API boundary, and Dropbox URL generation is guarded.
 - **D7-006** — Upload section handling is now canonical and allowlisted end-to-end: the frontend constrains upload `section` to `ProjectSectionId` (derived from `PROJECT_SECTIONS`) and removes string-literal defaults (`PROJECT_SECTIONS.MESSAGES`), while the backend upload controller normalizes/allowlists the section and sanitizes filename/path segments before building Dropbox paths.
 - **D7-007** — Deadline reminder notifications now use Prisma’s canonical `NotificationType` values (no string literals), and reminder sending is idempotent per day: before creating a reminder notification, the service checks whether an equivalent notification was already created today to prevent duplicate reminders on scheduler reruns.
-
-### 🟡 Partially Resolved
-- **D37-001** — Committed secret mitigation was partially applied: the backend now provides only environment templates (`backend/.env.example`, `backend/.env.railway.example`) and ignores real backend env files via `backend/.gitignore` (including `.env` / `.env.railway`). Note: the frontend currently tracks `.env.development` and `.env.production`, but they contain only non-secret Vite configuration keys (e.g., `VITE_API_BASE_URL`, `VITE_SOCKET_URL`). **Remaining required manual incident response:** rotate/revoke any compromised Dropbox app keys/tokens, then purge secret material from git history (e.g., via `git filter-repo`/BFG) and force-push, and ensure all clones/forks update accordingly.
 
 ### Frontend: strict TS + DTO/contract alignment
 - Realtime-store updates no longer spread nullable refs (safe narrowing before immutable updates):

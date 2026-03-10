@@ -125,7 +125,7 @@
 
 <script setup lang="ts">
 import {ref, computed, onMounted, onUnmounted} from 'vue';
-import type {TaskDto, TaskSummaryDto} from '@/application/dto';
+import type {TaskViewModel, TaskSummaryViewModel} from '@/presentation/view-models/task.view-model';
 import {TaskStatus, TaskPriority} from '@/domain/enumerations';
 import {formatDate, truncate} from '@/shared/utils';
 import {TASK_PRIORITY_COLORS, TASK_STATUS_COLORS, TASK} from '@/shared/constants';
@@ -136,7 +136,7 @@ import {useAuth} from '@/presentation/composables';
  */
 export interface TaskCardProps {
   /** Task data */
-  task: TaskDto | TaskSummaryDto;
+  task: TaskViewModel | TaskSummaryViewModel;
   /** Compact display mode */
   compact?: boolean;
   /** Show quick status actions */
@@ -151,10 +151,10 @@ export interface TaskCardProps {
  * TaskCard component emits
  */
 export interface TaskCardEmits {
-  (e: 'click', task: TaskDto | TaskSummaryDto): void;
+  (e: 'click', task: TaskViewModel | TaskSummaryViewModel): void;
   (e: 'status-change', taskId: string, newStatus: TaskStatus): void;
-  (e: 'edit', task: TaskDto | TaskSummaryDto): void;
-  (e: 'delete', task: TaskDto | TaskSummaryDto): void;
+  (e: 'edit', task: TaskViewModel | TaskSummaryViewModel): void;
+  (e: 'delete', task: TaskViewModel | TaskSummaryViewModel): void;
 }
 
 const props = withDefaults(defineProps<TaskCardProps>(), {
@@ -197,14 +197,14 @@ const isFullTask = computed(() => 'canModify' in props.task);
 
 const canEdit = computed(() => {
   if (isFullTask.value) {
-    return (props.task as TaskDto).canModify;
+    return (props.task as TaskViewModel).canModify;
   }
   return isAdmin.value;
 });
 
 const canDelete = computed(() => {
   if (isFullTask.value) {
-    return (props.task as TaskDto).canDelete;
+    return (props.task as TaskViewModel).canDelete;
   }
   return isAdmin.value && !isCompleted.value;
 });
@@ -213,14 +213,14 @@ const showActions = computed(() => canEdit.value || canDelete.value);
 
 const filesCount = computed(() => {
   if ('files' in props.task) {
-    return (props.task as TaskDto).files.length;
+    return (props.task as TaskViewModel).files.length;
   }
   return 0;
 });
 
 const validTransitions = computed(() => {
   if (isFullTask.value) {
-    return (props.task as TaskDto).allowedStatusTransitions || [];
+    return (props.task as TaskViewModel).allowedStatusTransitions || [];
   }
   const transitions = TASK.STATUS_TRANSITIONS[props.task.status] || [];
   return transitions as unknown as TaskStatus[];
@@ -237,7 +237,6 @@ const priorityColor = computed(() => TASK_PRIORITY_COLORS[props.task.priority]);
 
 const priorityLabel = computed(() => {
   const labels: Record<TaskPriority, string> = {
-    [TaskPriority.URGENT]: 'Urgent',
     [TaskPriority.HIGH]: 'High',
     [TaskPriority.MEDIUM]: 'Medium',
     [TaskPriority.LOW]: 'Low',

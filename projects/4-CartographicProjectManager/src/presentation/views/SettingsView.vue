@@ -497,12 +497,12 @@ import {ref, computed, onMounted, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import {useAuth} from '../composables/use-auth';
 import {UserRole} from '../../domain/enumerations/user-role';
-import {UserRepository} from '../../infrastructure/repositories/user.repository';
+import {UserManagementRepository} from '../../infrastructure/repositories/user-management.repository';
 import type {UpdateUserDto} from '../../application/dto/user-data.dto';
 
 const router = useRouter();
 const {user, isAdmin, isClient, isSpecialUser, logout} = useAuth();
-const userRepository = new UserRepository();
+const userRepository = new UserManagementRepository();
 
 // State
 const isUpdating = ref(false);

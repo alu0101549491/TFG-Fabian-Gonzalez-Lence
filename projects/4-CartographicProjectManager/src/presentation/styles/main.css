@@ -29,8 +29,6 @@
 *::before,
 *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 html {
@@ -41,6 +39,7 @@ html {
 }
 
 body {
+  margin: 0;
   font-family: var(--font-family-sans);
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
@@ -101,6 +100,8 @@ table {
 ol,
 ul {
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 /**

@@ -15,7 +15,7 @@
 import {FileType} from '../../domain/enumerations/file-type';
 
 /**
- * Project sections for file organization in Dropbox.
+ * Project sections for file organization in the storage provider.
  */
 export enum ProjectSection {
   /** Reports and supporting annexes */
@@ -38,8 +38,8 @@ export enum FileErrorCode {
   INVALID_FORMAT = 'INVALID_FORMAT',
   /** Upload operation failed */
   UPLOAD_FAILED = 'UPLOAD_FAILED',
-  /** Dropbox API error occurred */
-  DROPBOX_ERROR = 'DROPBOX_ERROR',
+  /** Storage provider API error occurred */
+  STORAGE_PROVIDER_ERROR = 'STORAGE_PROVIDER_ERROR',
   /** User doesn't have permission to upload/download */
   PERMISSION_DENIED = 'PERMISSION_DENIED',
 }
@@ -86,8 +86,8 @@ export interface FileDto {
   readonly id: string;
   /** Original filename */
   readonly name: string;
-  /** Dropbox file path */
-  readonly dropboxPath: string;
+  /** Storage provider file path */
+  readonly storagePath: string;
   /** File type classification */
   readonly type: FileType;
   /** MIME type */
@@ -110,7 +110,7 @@ export interface FileDto {
   readonly messageId: string | null;
   /** Project section (if organized) */
   readonly section: ProjectSection | null;
-  /** Dropbox download URL */
+  /** Download URL */
   readonly downloadUrl: string;
   /** Preview URL for images (if applicable) */
   readonly previewUrl: string | null;

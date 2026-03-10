@@ -15,7 +15,11 @@
 import {httpClient} from '../http';
 import {File} from '../../domain/entities/file';
 import {type FileType} from '../../domain/enumerations/file-type';
-import {type IFileRepository} from '../../domain/repositories/file-repository.interface';
+import {
+  type FileCountQuery,
+  type FileFindQuery,
+  type IFileRepository,
+} from '../../domain/repositories/file-repository.interface';
 
 /**
  * API response type for file metadata from backend
@@ -47,6 +51,18 @@ interface FileApiResponse {
  */
 export class FileRepository implements IFileRepository {
   private readonly baseUrl = '/files';
+
+  /**
+   * Build a URL with encoded query params.
+   */
+  private buildUrlWithParams(
+    baseUrl: string,
+    params: Record<string, string>,
+  ): string {
+    const searchParams = new URLSearchParams(params);
+    const queryString = searchParams.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  }
 
   /**
    * Find file by unique identifier
@@ -89,6 +105,68 @@ export class FileRepository implements IFileRepository {
    */
   public async delete(id: string): Promise<void> {
     await httpClient.delete(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Find files matching a query object.
+   */
+  public async find(query: FileFindQuery): Promise<File[]> {
+    const {projectId, taskId, messageId, type, uploadedBy} = query;
+
+    const scopeIds = [projectId, taskId, messageId].filter(Boolean);
+    if (scopeIds.length > 1) {
+      throw new Error('Unsupported query: only one of projectId/taskId/messageId can be provided');
+    }
+
+    if (projectId) {
+      const params: Record<string, string> = {};
+      if (type) params.type = type;
+      const url = this.buildUrlWithParams(`/projects/${projectId}/files`, params);
+      const response = await httpClient.get<FileApiResponse[]>(url);
+      return response.data.map((data) => this.mapToEntity(data));
+    }
+
+    if (taskId) {
+      const response = await httpClient.get<FileApiResponse[]>(
+        `/tasks/${taskId}/files`,
+      );
+      return response.data.map((data) => this.mapToEntity(data));
+    }
+
+    if (messageId) {
+      const response = await httpClient.get<FileApiResponse[]>(
+        `/messages/${messageId}/files`,
+      );
+      return response.data.map((data) => this.mapToEntity(data));
+    }
+
+    if (uploadedBy) {
+      const url = this.buildUrlWithParams(this.baseUrl, {uploadedBy});
+      const response = await httpClient.get<FileApiResponse[]>(url);
+      return response.data.map((data) => this.mapToEntity(data));
+    }
+
+    throw new Error('Unsupported query: expected projectId, taskId, messageId, or uploadedBy');
+  }
+
+  /**
+   * Count files matching a query object.
+   */
+  public async count(query: FileCountQuery): Promise<number> {
+    const {projectId, taskId} = query;
+    if (projectId) {
+      const response = await httpClient.get<{count: number}>(
+        `/projects/${projectId}/files/count`,
+      );
+      return response.data.count;
+    }
+    if (taskId) {
+      const response = await httpClient.get<{count: number}>(
+        `/tasks/${taskId}/files/count`,
+      );
+      return response.data.count;
+    }
+    throw new Error('Unsupported query: count requires projectId or taskId');
   }
 
   /**

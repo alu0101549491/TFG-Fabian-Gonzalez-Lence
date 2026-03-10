@@ -16,6 +16,7 @@ import type {AuthenticatedRequest} from '@shared/types.js';
 import {MessageRepository} from '@infrastructure/repositories/message.repository.js';
 import {PermissionRepository} from '@infrastructure/repositories/permission.repository.js';
 import {ProjectRepository} from '@infrastructure/repositories/project.repository.js';
+import {prisma} from '@infrastructure/database/prisma.client.js';
 import {sendSuccess, sendError} from '@shared/utils.js';
 import {HTTP_STATUS} from '@shared/constants.js';
 import {emitToProject} from '@infrastructure/websocket/index.js';
@@ -190,9 +191,25 @@ export class MessageController {
         return sendError(res, 'You do not have permission to send messages to this project', HTTP_STATUS.FORBIDDEN);
       }
 
-      const sanitizedFileIds = Array.isArray(fileIds)
-        ? (fileIds.filter((id): id is string => typeof id === 'string') as string[])
-        : [];
+      const rawFileIds = Array.isArray(fileIds) ? fileIds.filter((id): id is string => typeof id === 'string') : [];
+      const uniqueFileIds = [...new Set(rawFileIds)];
+
+      const sanitizedFileIds =
+        uniqueFileIds.length === 0
+          ? []
+          : (
+              await prisma.file.findMany({
+                where: {
+                  id: {in: uniqueFileIds},
+                  projectId,
+                },
+                select: {id: true},
+              })
+            ).map((file) => file.id);
+
+      if (sanitizedFileIds.length !== uniqueFileIds.length) {
+        return sendError(res, 'One or more fileIds are invalid for this project', HTTP_STATUS.BAD_REQUEST);
+      }
 
       const message = await this.messageRepository.create({
         projectId,

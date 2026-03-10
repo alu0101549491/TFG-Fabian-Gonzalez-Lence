@@ -258,7 +258,8 @@
 
 <script setup lang="ts">
 import {ref, reactive, computed, onMounted} from 'vue';
-import type {TaskDto, CreateTaskDto, UpdateTaskDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto';
+import type {CreateTaskDto, UpdateTaskDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto';
+import type {TaskViewModel} from '@/presentation/view-models/task.view-model';
 import {TaskStatus, TaskPriority} from '@/domain/enumerations';
 import {TASK, TASK_PRIORITY_COLORS, TASK_STATUS_COLORS} from '@/shared/constants';
 import {formatFileSize} from '@/shared/utils';
@@ -268,7 +269,7 @@ import {formatFileSize} from '@/shared/utils';
  */
 export interface TaskFormProps {
   /** Task to edit (undefined for create mode) */
-  task?: TaskDto;
+  task?: TaskViewModel;
   /** Project ID (required for create mode) */
   projectId?: string;
   /** Available assignees (project participants) */
@@ -334,7 +335,6 @@ const currentStatusBgColor = computed(() => (props.task ? `${TASK_STATUS_COLORS[
 const currentStatusLabel = computed(() => (props.task ? getStatusLabel(props.task.status) : ''));
 
 const priorityOptions = computed(() => [
-  {value: TaskPriority.URGENT, label: '🔴 Urgent'},
   {value: TaskPriority.HIGH, label: '🟠 High'},
   {value: TaskPriority.MEDIUM, label: '🟡 Medium'},
   {value: TaskPriority.LOW, label: '🟢 Low'},
@@ -387,7 +387,6 @@ function getStatusColor(status: TaskStatus): string {
  */
 function getPriorityLabel(priority: TaskPriority): string {
   const labels: Record<TaskPriority, string> = {
-    [TaskPriority.URGENT]: 'Urgent',
     [TaskPriority.HIGH]: 'High',
     [TaskPriority.MEDIUM]: 'Medium',
     [TaskPriority.LOW]: 'Low',

@@ -286,7 +286,15 @@ model Message {
   senderId     String
   content      String
   sentAt       DateTime @default(now())
+  /// Denormalized read receipts (user IDs).
+  /// Stored as an inline array for simplicity; application code treats this as a set (no duplicates).
+  /// If read tracking or message volume grows, consider normalizing to a join table.
   readByUserIds String[] @default([])
+
+  /// Denormalized message attachments (file IDs).
+  /// Stored as an inline array for simplicity; application code validates that referenced files exist
+  /// and belong to the same project, and treats this as a set (no duplicates).
+  /// If attachments per message grow, consider normalizing to a join table.
   fileIds      String[] @default([])
   
   // Relations
@@ -362,6 +370,9 @@ model Permission {
   projectId  String
   rights     AccessRight[]
   grantedAt  DateTime    @default(now())
+
+  /// Attribution user ID (who granted the permission).
+  /// Intentionally not a relation to preserve historical auditability even if users are deleted.
   grantedBy  String
   
   // Relations
@@ -379,6 +390,9 @@ model Permission {
 
 model AuditLog {
   id             String            @id @default(uuid())
+
+  /// Actor user ID (nullable for system/background actions).
+  /// Intentionally not a relation to preserve logs even if users are deleted.
   userId         String?
   action         AuditAction
   resourceType   AuditResourceType

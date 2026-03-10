@@ -13,10 +13,10 @@
  */
 
 export type {IUserRepository} from './user-repository.interface';
-export type {IProjectRepository} from './project-repository.interface';
-export type {ITaskRepository} from './task-repository.interface';
-export type {IMessageRepository} from './message-repository.interface';
+export type {IProjectRepository, ProjectFindQuery} from './project-repository.interface';
+export type {ITaskRepository, TaskFindQuery, TaskCountQuery} from './task-repository.interface';
+export type {IMessageRepository, MessageFindQuery, MessageCountQuery} from './message-repository.interface';
 export type {INotificationRepository} from './notification-repository.interface';
-export type {IFileRepository} from './file-repository.interface';
+export type {IFileRepository, FileFindQuery, FileCountQuery} from './file-repository.interface';
 export type {IPermissionRepository} from './permission-repository.interface';
 export type {ITaskHistoryRepository} from './task-history-repository.interface';

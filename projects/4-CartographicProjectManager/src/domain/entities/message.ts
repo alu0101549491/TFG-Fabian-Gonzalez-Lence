@@ -13,6 +13,7 @@
  */
 
 import {isValidUserRole, UserRole} from '../enumerations/user-role';
+import {generateId} from '../../shared/utils';
 
 /**
  * Message type literal.
@@ -206,7 +207,7 @@ export class Message {
    * @returns New Message instance
    */
   public static createSystemMessage(projectId: string, content: string): Message {
-    const id = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `msg_${generateId()}`;
     return new Message({
       id,
       projectId,

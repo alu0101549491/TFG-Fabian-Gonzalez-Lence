@@ -554,7 +554,8 @@ import type {FileListItemDto} from '../components/file/FileList.vue';
 import type {UpdateProjectDto, FileSummaryDto} from '@/application/dto';
 import {ProjectStatus} from '@/domain/enumerations/project-status';
 import {TaskStatus} from '@/domain/enumerations/task-status';
-import type {CreateTaskDto, UpdateTaskDto, TaskDto, TaskSummaryDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto/task-data.dto';
+import type {CreateTaskDto, UpdateTaskDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto/task-data.dto';
+import type {TaskViewModel, TaskSummaryViewModel} from '@/presentation/view-models/task.view-model';
 import {PROJECT_SECTIONS, isProjectSectionId, type ProjectSectionId} from '@/shared/constants';
 
 // Composables
@@ -633,7 +634,7 @@ const showEditModal = ref(false);
 const showCreateTaskModal = ref(false);
 const showTaskDetailsModal = ref(false);
 const showTaskEditModal = ref(false);
-const selectedTask = ref<TaskDto | null>(null);
+const selectedTask = ref<TaskViewModel | null>(null);
 const showFinalizeModal = ref(false);
 const showDeleteModal = ref(false);
 const isFinalizing = ref(false);
@@ -924,9 +925,9 @@ async function handleTaskCreate(taskData: CreateTaskDto | UpdateTaskDto): Promis
 /**
  * Handle task click - shows read-only preview
  *
- * @param {TaskDto} task - Clicked task
+ * @param {TaskViewModel | TaskSummaryViewModel} task - Clicked task
  */
-function handleTaskClick(task: TaskDto | TaskSummaryDto): void {
+function handleTaskClick(task: TaskViewModel | TaskSummaryViewModel): void {
   const resolvedTask = 'projectId' in task ? task : (projectTasks.value.find((t) => t.id === task.id) ?? null);
   if (!resolvedTask) return;
 
@@ -937,9 +938,9 @@ function handleTaskClick(task: TaskDto | TaskSummaryDto): void {
 /**
  * Handle task edit - opens edit modal
  *
- * @param {TaskDto} task - Task to edit
+ * @param {TaskViewModel | TaskSummaryViewModel} task - Task to edit
  */
-function handleTaskEdit(task: TaskDto | TaskSummaryDto): void {
+function handleTaskEdit(task: TaskViewModel | TaskSummaryViewModel): void {
   const resolvedTask = 'projectId' in task ? task : (projectTasks.value.find((t) => t.id === task.id) ?? null);
   if (!resolvedTask) return;
 
@@ -1033,9 +1034,9 @@ async function handleConfirmTask(data: ConfirmTaskDto): Promise<void> {
 /**
  * Handle task deletion
  *
- * @param {TaskDto} task - Task to delete
+ * @param {TaskViewModel | TaskSummaryViewModel} task - Task to delete
  */
-function handleTaskDelete(task: TaskDto | TaskSummaryDto): void {
+function handleTaskDelete(task: TaskViewModel | TaskSummaryViewModel): void {
   const resolvedTask = 'projectId' in task ? task : (projectTasks.value.find((t) => t.id === task.id) ?? null);
   if (!resolvedTask) return;
 

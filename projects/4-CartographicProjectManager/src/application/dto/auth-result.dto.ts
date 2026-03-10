@@ -13,6 +13,7 @@
  */
 
 import {UserRole} from '../../domain/enumerations/user-role';
+import type {UserBaseDto} from './user-data.dto';
 
 /**
  * Authentication error codes for programmatic error handling.
@@ -43,29 +44,17 @@ export enum AuthErrorCode {
 /**
  * User information returned after authentication (excludes sensitive data like password hash).
  */
-export interface UserDto {
-  /** Unique user identifier */
-  readonly id: string;
-  /** Unique username */
-  readonly username: string;
-  /** User email address */
-  readonly email: string;
+export interface UserDto extends UserBaseDto {
   /** User's first name */
   readonly firstName: string;
   /** User's last name */
   readonly lastName: string;
-  /** User role in the system */
-  readonly role: UserRole;
   /** Whether account is active */
   readonly isActive: boolean;
-  /** Phone number (optional) */
-  readonly phone: string | null;
   /** Account creation timestamp */
   readonly createdAt: Date;
   /** Last update timestamp */
   readonly updatedAt: Date;
-  /** Last successful login timestamp */
-  readonly lastLogin: Date | null;
 }
 
 /**
@@ -140,50 +129,4 @@ export interface SessionDto {
   readonly expiresAt: Date;
   /** Whether the session is still valid */
   readonly isValid: boolean;
-}
-
-/**
- * Creates a successful authentication result.
- * @param accessToken - JWT access token
- * @param refreshToken - JWT refresh token
- * @param expiresAt - Token expiration timestamp
- * @param user - Authenticated user information
- * @returns A successful AuthResultDto
- */
-export function createSuccessAuthResult(
-  accessToken: string,
-  refreshToken: string,
-  expiresAt: Date,
-  user: UserDto,
-): AuthResultDto {
-  return {
-    success: true,
-    accessToken,
-    refreshToken,
-    expiresAt,
-    user,
-    error: null,
-    errorCode: null,
-  };
-}
-
-/**
- * Creates a failed authentication result.
- * @param error - Human-readable error message
- * @param errorCode - Programmatic error code
- * @returns A failed AuthResultDto
- */
-export function createFailedAuthResult(
-  error: string,
-  errorCode: AuthErrorCode,
-): AuthResultDto {
-  return {
-    success: false,
-    accessToken: null,
-    refreshToken: null,
-    expiresAt: null,
-    user: null,
-    error,
-    errorCode,
-  };
 }

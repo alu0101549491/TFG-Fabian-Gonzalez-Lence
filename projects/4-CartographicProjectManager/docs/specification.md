@@ -209,7 +209,7 @@ The administrator can enable/disable the following permissions individually for 
 | **Coordinate Y** | Numeric | Geographic coordinate Y (latitude) | No |
 | **Contract Date** | Date | Project start date | Yes |
 | **Delivery Date** | Date | Completion deadline | Yes |
-| **Status** | Enum | Active / Finished | Yes (default: Active) |
+| **Status** | Enum | Active / In Progress / Pending Review / Finished | Yes (default: Active) |
 | **Special Users** | Multiple relationship | List of linked special users | No |
 | **Creation Date** | Timestamp | Record creation date and time | Yes (auto) |
 | **Last Modification** | Timestamp | Last update date and time | Yes (auto) |

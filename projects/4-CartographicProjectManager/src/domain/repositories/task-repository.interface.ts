@@ -16,6 +16,25 @@ import {Task} from '../entities/task';
 import {TaskPriority} from '../enumerations/task-priority';
 import {TaskStatus} from '../enumerations/task-status';
 
+/** Query parameters for task lookups. */
+export interface TaskFindQuery {
+  /** Filter tasks by project id. */
+  projectId?: string;
+  /** Filter tasks by assignee id. */
+  assigneeId?: string;
+  /** Filter tasks by creator id. */
+  creatorId?: string;
+  /** Filter tasks by status. */
+  status?: TaskStatus;
+  /** Filter tasks by priority. */
+  priority?: TaskPriority;
+  /** If true, return only overdue tasks. */
+  overdue?: boolean;
+}
+
+/** Query parameters for task counts. */
+export type TaskCountQuery = TaskFindQuery;
+
 /**
  * Abstraction for Task data access operations.
  * Implemented by infrastructure layer repositories.
@@ -53,119 +72,22 @@ export interface ITaskRepository {
   delete(id: string): Promise<void>;
 
   /**
-   * Finds all tasks belonging to a specific project.
-   * @param projectId - The project's unique ID.
-   * @returns Array of tasks within the project (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findByProjectId(projectId: string): Promise<Task[]>;
-
-  /**
-   * Finds all tasks assigned to a specific user.
-   * @param userId - The assignee's unique ID.
-   * @returns Array of tasks assigned to the user (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findByAssigneeId(userId: string): Promise<Task[]>;
-
-  /**
-   * Finds all tasks created by a specific user.
-   * @param userId - The creator's unique ID.
-   * @returns Array of tasks created by the user (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findByCreatorId(userId: string): Promise<Task[]>;
-
-  /**
-   * Finds all tasks in a project with a specific status.
-   * @param projectId - The project's unique ID.
-   * @param status - The task status to filter by.
+   * Finds tasks matching the provided query.
+   *
+   * @param query - Query object.
    * @returns Array of tasks matching the criteria (empty if none found).
    * @throws Error if database connection fails.
    */
-  findByProjectIdAndStatus(
-    projectId: string,
-    status: TaskStatus,
-  ): Promise<Task[]>;
+  find(query: TaskFindQuery): Promise<Task[]>;
 
   /**
-   * Finds all tasks in a project with a specific priority.
-   * @param projectId - The project's unique ID.
-   * @param priority - The task priority to filter by.
-   * @returns Array of tasks matching the criteria (empty if none found).
+   * Counts tasks matching the provided query.
+   *
+   * @param query - Query object.
+   * @returns The count of tasks matching the criteria.
    * @throws Error if database connection fails.
    */
-  findByProjectIdAndPriority(
-    projectId: string,
-    priority: TaskPriority,
-  ): Promise<Task[]>;
-
-  /**
-   * Finds all tasks assigned to a user with a specific status.
-   * @param userId - The assignee's unique ID.
-   * @param status - The task status to filter by.
-   * @returns Array of tasks matching the criteria (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findByAssigneeIdAndStatus(
-    userId: string,
-    status: TaskStatus,
-  ): Promise<Task[]>;
-
-  /**
-   * Finds all overdue tasks across all projects.
-   * @returns Array of overdue tasks (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findOverdue(): Promise<Task[]>;
-
-  /**
-   * Finds all overdue tasks in a specific project.
-   * @param projectId - The project's unique ID.
-   * @returns Array of overdue tasks in the project (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findOverdueByProjectId(projectId: string): Promise<Task[]>;
-
-  /**
-   * Finds all overdue tasks assigned to a specific user.
-   * @param userId - The assignee's unique ID.
-   * @returns Array of overdue tasks assigned to the user (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findOverdueByAssigneeId(userId: string): Promise<Task[]>;
-
-  /**
-   * Counts the total number of tasks in a project.
-   * @param projectId - The project's unique ID.
-   * @returns The count of tasks in the project.
-   * @throws Error if database connection fails.
-   */
-  countByProjectId(projectId: string): Promise<number>;
-
-  /**
-   * Counts the number of pending tasks in a project.
-   * @param projectId - The project's unique ID.
-   * @returns The count of pending tasks in the project.
-   * @throws Error if database connection fails.
-   */
-  countPendingByProjectId(projectId: string): Promise<number>;
-
-  /**
-   * Counts the total number of tasks assigned to a user.
-   * @param userId - The assignee's unique ID.
-   * @returns The count of tasks assigned to the user.
-   * @throws Error if database connection fails.
-   */
-  countByAssigneeId(userId: string): Promise<number>;
-
-  /**
-   * Counts the number of pending tasks assigned to a user.
-   * @param userId - The assignee's unique ID.
-   * @returns The count of pending tasks assigned to the user.
-   * @throws Error if database connection fails.
-   */
-  countPendingByAssigneeId(userId: string): Promise<number>;
+  count(query: TaskCountQuery): Promise<number>;
 
   /**
    * Deletes all tasks belonging to a project (cascade delete).

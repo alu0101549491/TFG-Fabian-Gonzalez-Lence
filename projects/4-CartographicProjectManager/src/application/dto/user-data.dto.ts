@@ -9,14 +9,15 @@
  * @file src/application/dto/user-data.dto.ts
  * @desc DTOs for user management operations
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import type {UserRole} from '../../domain/enumerations/user-role';
 
 /**
- * Complete user information DTO
+ * Base user DTO fields shared across user views.
  */
-export interface UserDataDto {
+export interface UserBaseDto {
   /** Unique user identifier */
   readonly id: string;
   /** Username */
@@ -27,29 +28,22 @@ export interface UserDataDto {
   readonly role: UserRole;
   /** Phone number */
   readonly phone: string | null;
-  /** Account creation date */
-  readonly createdAt: Date;
   /** Last login timestamp */
   readonly lastLogin: Date | null;
 }
 
 /**
+ * Complete user information DTO
+ */
+export interface UserDataDto extends UserBaseDto {
+  /** Account creation date */
+  readonly createdAt: Date;
+}
+
+/**
  * User summary for list views
  */
-export interface UserSummaryDto {
-  /** Unique user identifier */
-  readonly id: string;
-  /** Username */
-  readonly username: string;
-  /** Email address */
-  readonly email: string;
-  /** User role */
-  readonly role: UserRole;
-  /** Phone number */
-  readonly phone: string | null;
-  /** Last login timestamp */
-  readonly lastLogin: Date | null;
-}
+export interface UserSummaryDto extends UserBaseDto {}
 
 /**
  * DTO for creating a new user

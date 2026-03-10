@@ -17,6 +17,7 @@ import {
   READ_ONLY_ACCESS_RIGHTS,
   ALL_ACCESS_RIGHTS,
 } from '../enumerations/access-right';
+import {generateId} from '../../shared/utils';
 
 /**
  * Project sections that can have access control.
@@ -284,7 +285,7 @@ export class Permission {
     projectId: string,
     grantedBy: string
   ): Permission {
-    const id = `perm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `perm_${generateId()}`;
     return new Permission({
       id,
       userId,
@@ -307,7 +308,7 @@ export class Permission {
     projectId: string,
     grantedBy: string
   ): Permission {
-    const id = `perm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `perm_${generateId()}`;
     return new Permission({
       id,
       userId,

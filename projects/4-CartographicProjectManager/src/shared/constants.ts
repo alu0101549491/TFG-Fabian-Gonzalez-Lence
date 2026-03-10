@@ -151,10 +151,10 @@ export const TASK = {
   COMMENTS_MAX_LENGTH: 2000,
 
   STATUS_TRANSITIONS: {
-    PENDING: ['IN_PROGRESS', 'PARTIAL', 'PERFORMED'],
+    PENDING: ['IN_PROGRESS'],
     IN_PROGRESS: ['PENDING', 'PARTIAL', 'PERFORMED'],
-    PARTIAL: ['PENDING', 'IN_PROGRESS', 'PERFORMED'],
-    PERFORMED: ['COMPLETED', 'PENDING'],
+    PARTIAL: ['IN_PROGRESS', 'PERFORMED'],
+    PERFORMED: [],
     COMPLETED: [],
   } as const,
 } as const;
@@ -163,7 +163,6 @@ export const TASK = {
  * Task priority colors for UI visualization
  */
 export const TASK_PRIORITY_COLORS = {
-  URGENT: '#DC2626',
   HIGH: '#EA580C',
   MEDIUM: '#CA8A04',
   LOW: '#16A34A',

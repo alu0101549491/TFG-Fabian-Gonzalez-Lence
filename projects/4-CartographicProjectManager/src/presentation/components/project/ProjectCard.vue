@@ -136,7 +136,7 @@
 
 <script setup lang="ts">
 import {ref, computed, onMounted, onUnmounted} from 'vue';
-import type {ProjectSummaryDto} from '@/application/dto';
+import type {ProjectSummaryViewModel} from '@/presentation/view-models/project.view-model';
 import {ProjectType, ProjectStatus} from '@/domain/enumerations';
 import {formatDate} from '@/shared/utils';
 import {useAuth} from '@/presentation/composables';
@@ -146,7 +146,7 @@ import {useAuth} from '@/presentation/composables';
  */
 export interface ProjectCardProps {
   /** Project data */
-  project: ProjectSummaryDto;
+  project: ProjectSummaryViewModel;
   /** Compact display mode */
   compact?: boolean;
   /** Show action buttons */
@@ -159,9 +159,9 @@ export interface ProjectCardProps {
  * ProjectCard component emits
  */
 export interface ProjectCardEmits {
-  (e: 'click', project: ProjectSummaryDto): void;
-  (e: 'edit', project: ProjectSummaryDto): void;
-  (e: 'delete', project: ProjectSummaryDto): void;
+  (e: 'click', project: ProjectSummaryViewModel): void;
+  (e: 'edit', project: ProjectSummaryViewModel): void;
+  (e: 'delete', project: ProjectSummaryViewModel): void;
 }
 
 const props = withDefaults(defineProps<ProjectCardProps>(), {

@@ -15,8 +15,6 @@
 import {defineStore} from 'pinia';
 import {ref, computed} from 'vue';
 import type {
-  ProjectSummaryDto,
-  ProjectDetailsDto,
   ProjectFilterDto,
   CalendarProjectDto,
   CreateProjectDto,
@@ -24,6 +22,10 @@ import type {
   ParticipantDto,
   ProjectDto,
 } from '../../application/dto';
+import type {
+  ProjectDetailsViewModel,
+  ProjectSummaryViewModel,
+} from '../view-models/project.view-model';
 import {ProjectStatus} from '../../domain/enumerations/project-status';
 import {AccessRight} from '../../domain/enumerations/access-right';
 import {useAuthStore} from './auth.store';
@@ -48,8 +50,8 @@ export const useProjectStore = defineStore('project', () => {
   const isDev = import.meta.env.DEV;
   
   // State
-  const projects = ref<ProjectSummaryDto[]>([]);
-  const currentProject = ref<ProjectDetailsDto | null>(null);
+  const projects = ref<ProjectSummaryViewModel[]>([]);
+  const currentProject = ref<ProjectDetailsViewModel | null>(null);
   const calendarProjects = ref<CalendarProjectDto[]>([]);
   const pagination = ref({
     total: 0,
@@ -153,11 +155,11 @@ export const useProjectStore = defineStore('project', () => {
   /**
    * Maps a Project entity to ProjectSummaryDto with denormalized data
    */
-  async function mapProjectToSummaryDto(project: Project): Promise<ProjectSummaryDto> {
+  async function mapProjectToSummaryDto(project: Project): Promise<ProjectSummaryViewModel> {
     // Fetch client name
     let clientName = 'Unknown Client';
     try {
-      const client = await userRepository.getUserById(project.clientId);
+      const client = await userRepository.findById(project.clientId);
       if (client) {
         clientName = client.username;
       }
@@ -171,7 +173,7 @@ export const useProjectStore = defineStore('project', () => {
     let pendingTasksCount = 0;
     let hasPendingTasks = false;
     try {
-      const tasks = await taskRepository.findByProjectId(project.id);
+      const tasks = await taskRepository.find({projectId: project.id});
       const pendingTasks = tasks.filter(
         t => t.status === TaskStatus.PENDING || t.status === TaskStatus.IN_PROGRESS
       );
@@ -187,10 +189,10 @@ export const useProjectStore = defineStore('project', () => {
     let unreadMessagesCount = 0;
     try {
       if (authStore.userId) {
-        unreadMessagesCount = await messageRepository.countUnreadByProjectAndUser(
-          project.id,
-          authStore.userId
-        );
+        unreadMessagesCount = await messageRepository.count({
+          projectId: project.id,
+          unreadForUserId: authStore.userId,
+        });
       }
     } catch (err) {
       if (isDev) {
@@ -327,12 +329,12 @@ export const useProjectStore = defineStore('project', () => {
         contractDate: new Date(projectWithDetails.contractDate),
         deliveryDate: new Date(projectWithDetails.deliveryDate),
         status: projectWithDetails.status,
-        dropboxFolderId:
+        storageFolderId:
           typeof projectWithDetails.dropboxFolderId === 'string' &&
           projectWithDetails.dropboxFolderId.trim().length > 0
             ? projectWithDetails.dropboxFolderId
             : null,
-        dropboxFolderUrl: null,
+        storageFolderUrl: null,
         createdAt: new Date(projectWithDetails.createdAt),
         updatedAt: new Date(projectWithDetails.updatedAt),
         finalizedAt: projectWithDetails.finalizedAt ? new Date(projectWithDetails.finalizedAt) : null,
@@ -463,7 +465,6 @@ export const useProjectStore = defineStore('project', () => {
           deliveryDate: p.deliveryDate,
           status: p.status,
           hasPendingTasks: false, // Will be calculated if needed
-          statusColor: p.status === ProjectStatus.ACTIVE ? 'green' : 'gray',
         }));
       
       if (isDev) {
@@ -585,7 +586,7 @@ export const useProjectStore = defineStore('project', () => {
       }
       
       // Merge with update data (excluding coordinateX/coordinateY as they're now in coordinates)
-      const {coordinateX, coordinateY, ...restData} = data;
+      const {coordinateX, coordinateY, storageFolderId, ...restData} = data;
       if (isDev) {
         console.log('[ProjectStore] restData after destructuring:', restData);
         console.log('[ProjectStore] restData.contractDate:', restData.contractDate);
@@ -597,6 +598,8 @@ export const useProjectStore = defineStore('project', () => {
         ...projectProps,
         ...restData,
         coordinates: updatedCoordinates,
+        dropboxFolderId:
+          storageFolderId !== undefined ? storageFolderId : projectProps.dropboxFolderId,
         id: data.id, // Ensure ID is preserved
       };
       

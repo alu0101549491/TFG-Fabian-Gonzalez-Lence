@@ -14,6 +14,30 @@
 
 import {Message} from '../entities/message';
 
+/** Query parameters for message lookups. */
+export interface MessageFindQuery {
+  /** Filter messages by project id. */
+  projectId?: string;
+  /** Filter messages by sender id. */
+  senderId?: string;
+  /** If provided with projectId, returns only messages unread by the user. */
+  unreadForUserId?: string;
+  /** Pagination: maximum number of records to return. */
+  limit?: number;
+  /** Pagination: number of records to skip. */
+  offset?: number;
+  /** If true, returns the latest messages (backend-specific optimization). */
+  latest?: boolean;
+}
+
+/** Query parameters for message counts. */
+export interface MessageCountQuery {
+  /** Count messages within a project. */
+  projectId: string;
+  /** If provided, counts unread messages for the user within the project. */
+  unreadForUserId?: string;
+}
+
 /**
  * Abstraction for Message data access operations.
  * Implemented by infrastructure layer repositories.
@@ -51,89 +75,31 @@ export interface IMessageRepository {
   delete(id: string): Promise<void>;
 
   /**
-   * Finds all messages belonging to a specific project.
-   * @param projectId - The project's unique ID.
-   * @returns Array of messages within the project ordered by sentAt (empty if none found).
+   * Finds messages matching the provided query.
+   *
+   * @param query - Query object.
+   * @returns Array of messages matching the criteria (empty if none found).
    * @throws Error if database connection fails.
    */
-  findByProjectId(projectId: string): Promise<Message[]>;
+  find(query: MessageFindQuery): Promise<Message[]>;
 
   /**
-   * Finds messages in a project with pagination.
-   * @param projectId - The project's unique ID.
-   * @param limit - Maximum number of messages to return.
-   * @param offset - Number of messages to skip.
-   * @returns Array of paginated messages ordered by sentAt (empty if none found).
-   * @throws Error if database connection fails or invalid pagination parameters.
-   */
-  findByProjectIdPaginated(
-    projectId: string,
-    limit: number,
-    offset: number,
-  ): Promise<Message[]>;
-
-  /**
-   * Finds all messages sent by a specific user.
-   * @param senderId - The sender's unique ID.
-   * @returns Array of messages sent by the user ordered by sentAt (empty if none found).
+   * Counts messages matching the provided query.
+   *
+   * @param query - Query object.
+   * @returns Count of messages.
    * @throws Error if database connection fails.
    */
-  findBySenderId(senderId: string): Promise<Message[]>;
-
-  /**
-   * Finds all messages in a project sent by a specific user.
-   * @param projectId - The project's unique ID.
-   * @param senderId - The sender's unique ID.
-   * @returns Array of messages matching the criteria ordered by sentAt (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findByProjectIdAndSenderId(
-    projectId: string,
-    senderId: string,
-  ): Promise<Message[]>;
-
-  /**
-   * Counts the total number of messages in a project.
-   * @param projectId - The project's unique ID.
-   * @returns The count of messages in the project.
-   * @throws Error if database connection fails.
-   */
-  countByProjectId(projectId: string): Promise<number>;
-
-  /**
-   * Counts the number of unread messages for a user in a project.
-   * @param projectId - The project's unique ID.
-   * @param userId - The user's unique ID.
-   * @returns The count of unread messages.
-   * @throws Error if database connection fails.
-   */
-  countUnreadByProjectAndUser(
-    projectId: string,
-    userId: string,
-  ): Promise<number>;
-
-  /**
-   * Finds all unread messages for a user in a project.
-   * @param projectId - The project's unique ID.
-   * @param userId - The user's unique ID.
-   * @returns Array of unread messages ordered by sentAt (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findUnreadByProjectAndUser(
-    projectId: string,
-    userId: string,
-  ): Promise<Message[]>;
+  count(query: MessageCountQuery): Promise<number>;
 
   /**
    * Marks messages as read for a user in a project.
+   *
    * @param projectId - The project's unique ID.
    * @param userId - The user's unique ID.
    * @throws Error if database operation fails.
    */
-  markAsReadByProjectAndUser(
-    projectId: string,
-    userId: string,
-  ): Promise<void>;
+  markAsReadByProjectAndUser(projectId: string, userId: string): Promise<void>;
 
   /**
    * Deletes all messages in a project (cascade delete).
@@ -142,12 +108,5 @@ export interface IMessageRepository {
    */
   deleteByProjectId(projectId: string): Promise<void>;
 
-  /**
-   * Finds the most recent messages in a project.
-   * @param projectId - The project's unique ID.
-   * @param limit - Maximum number of messages to return.
-   * @returns Array of the latest messages ordered by sentAt descending (empty if none found).
-   * @throws Error if database connection fails or invalid limit.
-   */
-  findLatestByProjectId(projectId: string, limit: number): Promise<Message[]>;
+  // Intentionally no additional ad-hoc query methods. Use `find`/`count`.
 }

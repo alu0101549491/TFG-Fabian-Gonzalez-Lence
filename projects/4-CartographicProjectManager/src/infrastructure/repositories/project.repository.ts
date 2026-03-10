@@ -18,7 +18,10 @@ import {GeoCoordinates} from '../../domain/value-objects/geo-coordinates';
 import {type ProjectStatus} from '../../domain/enumerations/project-status';
 import {type ProjectType} from '../../domain/enumerations/project-type';
 import {type UserRole} from '../../domain/enumerations/user-role';
-import {type IProjectRepository} from '../../domain/repositories/project-repository.interface';
+import {
+  type IProjectRepository,
+  type ProjectFindQuery,
+} from '../../domain/repositories/project-repository.interface';
 import type {CreateProjectDto} from '../../application/dto/project-data.dto';
 
 /**
@@ -101,6 +104,36 @@ interface ProjectSummaryApiResponse {
  */
 export class ProjectRepository implements IProjectRepository {
   private readonly baseUrl = '/projects';
+
+  /**
+   * Find projects matching a query object.
+   */
+  public async find(query?: ProjectFindQuery): Promise<Project[]> {
+    const params: Record<string, string> = {};
+
+    if (query?.clientId) {
+      params.clientId = query.clientId;
+    }
+    if (query?.specialUserId) {
+      params.specialUserId = query.specialUserId;
+    }
+    if (query?.status) {
+      params.status = query.status;
+    }
+    if (query?.year != null) {
+      params.year = String(query.year);
+    }
+    if (query?.type) {
+      params.type = query.type;
+    }
+    if (query?.active != null) {
+      params.active = String(query.active);
+    }
+
+    const url = this.buildUrlWithParams(this.baseUrl, params);
+    const response = await httpClient.get<ProjectApiResponse[]>(url);
+    return response.data.map((data) => this.mapToEntity(data));
+  }
 
   /**
    * Find project summaries (denormalized list payload) to avoid N+1 client calls.

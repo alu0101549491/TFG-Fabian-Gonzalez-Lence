@@ -229,7 +229,6 @@ function formatValue(value: string): string {
 
   // Check if it's a priority value
   const priorityLabels: Record<string, string> = {
-    URGENT: 'Urgent',
     HIGH: 'High',
     MEDIUM: 'Medium',
     LOW: 'Low',

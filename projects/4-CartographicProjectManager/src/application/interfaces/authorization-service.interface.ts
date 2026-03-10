@@ -199,13 +199,13 @@ export interface IAuthorizationService {
    * Gets the complete set of permissions a user has for a project.
    * @param userId - The unique identifier of the user
    * @param projectId - The unique identifier of the project
-   * @returns Set of access rights the user has for the project
+   * @returns List of access rights the user has for the project
    * @throws {NotFoundError} If user or project doesn't exist
    */
   getProjectPermissions(
     userId: string,
     projectId: string,
-  ): Promise<Set<AccessRight>>;
+  ): Promise<AccessRight[]>;
 
   /**
    * Gets the role of a specific user in the system.

@@ -230,7 +230,8 @@ import {useProjects} from '../composables/use-projects';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import ProjectCard from '../components/project/ProjectCard.vue';
 import ProjectForm from '../components/project/ProjectForm.vue';
-import type {ProjectSummaryDto, CreateProjectDto, UpdateProjectDto, ProjectDto} from '@/application/dto';
+import type {CreateProjectDto, UpdateProjectDto, ProjectDto} from '@/application/dto';
+import type {ProjectSummaryViewModel} from '@/presentation/view-models/project.view-model';
 import {UserRepository} from '@/infrastructure/repositories/user.repository';
 import {UserRole} from '@/domain/enumerations/user-role';
 import {ProjectStatus} from '@/domain/enumerations/project-status';
@@ -259,9 +260,9 @@ const sortBy = ref<'updatedAt' | 'createdAt' | 'deliveryDate' | 'code' | 'name'>
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
-const editingProject = ref<ProjectSummaryDto | null>(null);
+const editingProject = ref<ProjectSummaryViewModel | null>(null);
 const editingProjectFull = ref<ProjectDto | null>(null);
-const projectToDelete = ref<ProjectSummaryDto | null>(null);
+const projectToDelete = ref<ProjectSummaryViewModel | null>(null);
 const isDeleting = ref(false);
 const clients = ref<Array<{id: string; name: string}>>([]);
 
@@ -398,9 +399,9 @@ function closeModals(): void {
 /**
  * Handle edit project action
  *
- * @param {ProjectSummaryDto} project - Project to edit
+ * @param {ProjectSummaryViewModel} project - Project to edit
  */
-async function handleEditProject(project: ProjectSummaryDto): Promise<void> {
+async function handleEditProject(project: ProjectSummaryViewModel): Promise<void> {
   editingProject.value = project;
   // Fetch full project details with all fields
   await loadProject(project.id);
@@ -441,9 +442,9 @@ async function handleProjectSubmit(
 /**
  * Start delete project flow
  *
- * @param {ProjectSummaryDto} project - Project to delete
+ * @param {ProjectSummaryViewModel} project - Project to delete
  */
-function handleDeleteStart(project: ProjectSummaryDto): void {
+function handleDeleteStart(project: ProjectSummaryViewModel): void {
   projectToDelete.value = project;
   showDeleteModal.value = true;
 }

@@ -16,14 +16,15 @@ import {computed, ref, type ComputedRef, type Ref} from 'vue';
 import {useProjectStore} from '../stores/project.store';
 import {useAuth} from './use-auth';
 import type {
-  ProjectSummaryDto,
-  ProjectDetailsDto,
   ProjectFilterDto,
   CreateProjectDto,
   UpdateProjectDto,
   CalendarProjectDto,
 } from '../../application/dto';
-import {getProjectStatusColor as getStatusColor} from '../../shared/utils';
+import type {
+  ProjectDetailsViewModel,
+  ProjectSummaryViewModel,
+} from '../view-models/project.view-model';
 
 /**
  * Result of project creation
@@ -62,16 +63,16 @@ export interface DeleteProjectResult {
  */
 export interface UseProjectsReturn {
   // Lists
-  projects: ComputedRef<ProjectSummaryDto[]>;
-  activeProjects: ComputedRef<ProjectSummaryDto[]>;
-  finalizedProjects: ComputedRef<ProjectSummaryDto[]>;
-  overdueProjects: ComputedRef<ProjectSummaryDto[]>;
+  projects: ComputedRef<ProjectSummaryViewModel[]>;
+  activeProjects: ComputedRef<ProjectSummaryViewModel[]>;
+  finalizedProjects: ComputedRef<ProjectSummaryViewModel[]>;
+  overdueProjects: ComputedRef<ProjectSummaryViewModel[]>;
   calendarProjects: ComputedRef<CalendarProjectDto[]>;
-  filteredProjects: ComputedRef<ProjectSummaryDto[]>;
-  projectsDueThisWeek: ComputedRef<ProjectSummaryDto[]>;
+  filteredProjects: ComputedRef<ProjectSummaryViewModel[]>;
+  projectsDueThisWeek: ComputedRef<ProjectSummaryViewModel[]>;
 
   // Current Project
-  currentProject: ComputedRef<ProjectDetailsDto | null>;
+  currentProject: ComputedRef<ProjectDetailsViewModel | null>;
   currentProjectId: ComputedRef<string | null>;
   hasCurrentProject: ComputedRef<boolean>;
 
@@ -104,8 +105,8 @@ export interface UseProjectsReturn {
   loadCalendarProjects: (startDate: Date, endDate: Date) => Promise<void>;
 
   // Utilities
-  getProjectById: (projectId: string) => ProjectSummaryDto | undefined;
-  getProjectStatusColor: (project: ProjectSummaryDto) => string;
+  getProjectById: (projectId: string) => ProjectSummaryViewModel | undefined;
+  getProjectStatusColor: (project: ProjectSummaryViewModel) => string;
   clearError: () => void;
 }
 
@@ -298,7 +299,7 @@ export function useProjects(): UseProjectsReturn {
    * @param projectId - Project unique identifier
    * @returns Project summary or undefined if not found
    */
-  function getProjectById(projectId: string): ProjectSummaryDto | undefined {
+  function getProjectById(projectId: string): ProjectSummaryViewModel | undefined {
     return projects.value.find((p) => p.id === projectId);
   }
 
@@ -308,8 +309,8 @@ export function useProjects(): UseProjectsReturn {
    * @param project - Project summary
    * @returns CSS color value or variable
    */
-  function getProjectStatusColor(project: ProjectSummaryDto): string {
-    return getStatusColor(project.status, project.hasPendingTasks);
+  function getProjectStatusColor(project: ProjectSummaryViewModel): string {
+    return project.statusColor;
   }
 
   /**

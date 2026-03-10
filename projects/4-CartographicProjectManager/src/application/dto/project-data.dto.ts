@@ -16,11 +16,6 @@ import {ProjectType} from '../../domain/enumerations/project-type';
 import {ProjectStatus} from '../../domain/enumerations/project-status';
 
 /**
- * Project status color indicators for UI.
- */
-export type ProjectStatusColor = 'red' | 'green' | 'yellow' | 'gray';
-
-/**
  * Input DTO for creating a new project (all required fields).
  */
 export interface CreateProjectDto {
@@ -42,8 +37,8 @@ export interface CreateProjectDto {
   readonly contractDate: Date;
   /** Project deadline (must be >= contractDate) */
   readonly deliveryDate: Date;
-  /** Dropbox folder path or ID (optional; may be assigned server-side) */
-  readonly dropboxFolderId?: string | null;
+  /** Storage folder path or id (optional; may be assigned server-side) */
+  readonly storageFolderId?: string | null;
 }
 
 /**
@@ -66,8 +61,8 @@ export interface UpdateProjectDto {
   readonly contractDate?: Date;
   /** Updated delivery date */
   readonly deliveryDate?: Date;
-  /** Updated Dropbox folder (nullable to clear) */
-  readonly dropboxFolderId?: string | null;
+  /** Updated storage folder (nullable to clear) */
+  readonly storageFolderId?: string | null;
   /** Updated project status */
   readonly status?: ProjectStatus;
 }
@@ -112,12 +107,6 @@ export interface ProjectSummaryDto {
   readonly unreadMessagesCount: number;
   /** Total number of participants (client + special users) */
   readonly participantCount: number;
-  /** Status indicator color for UI */
-  readonly statusColor: ProjectStatusColor;
-  /** Whether delivery date has passed */
-  readonly isOverdue: boolean;
-  /** Days remaining until delivery (negative if overdue) */
-  readonly daysUntilDelivery: number;
   /** Project creation timestamp */
   readonly createdAt: Date;
   /** Last update timestamp */
@@ -144,10 +133,6 @@ export interface CalendarProjectDto {
   readonly hasPendingTasks: boolean;
   /** Number of pending tasks */
   readonly pendingTasksCount?: number;
-  /** Whether project is overdue */
-  readonly isOverdue?: boolean;
-  /** Status indicator color for UI */
-  readonly statusColor: ProjectStatusColor;
 }
 
 /**
