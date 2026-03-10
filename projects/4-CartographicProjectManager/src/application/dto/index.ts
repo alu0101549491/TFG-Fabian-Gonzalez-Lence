@@ -25,7 +25,7 @@ export {AuthErrorCode} from './auth-result.dto';
 export {
   createSuccessAuthResult,
   createFailedAuthResult,
-} from './auth-result.dto';
+} from '../auth/auth-result.helpers';
 
 // Validation DTOs
 export type {
@@ -40,7 +40,7 @@ export {
   invalidResult,
   createError,
   mergeValidationResults,
-} from './validation-result.dto';
+} from '../validation/validation-result.helpers';
 
 // File DTOs
 export type {
@@ -65,7 +65,6 @@ export type {
   CalendarProjectDto,
   ProjectFilterDto,
   ProjectListResponseDto,
-  ProjectStatusColor,
 } from './project-data.dto';
 
 // Project Details DTOs

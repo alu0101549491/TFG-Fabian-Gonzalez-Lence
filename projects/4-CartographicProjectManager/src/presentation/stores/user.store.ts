@@ -22,14 +22,14 @@ import type {
   UpdateUserDto,
 } from '../../application/dto';
 import {UserRole} from '../../domain/enumerations/user-role';
-import {UserRepository} from '../../infrastructure/repositories/user.repository';
+import {UserManagementRepository} from '../../infrastructure/repositories/user-management.repository';
 
 /**
  * User management store using Composition API.
  * Manages user list, creation, update, and deletion operations.
  */
 export const useUserStore = defineStore('user', () => {
-  const userRepository = new UserRepository();
+  const userRepository = new UserManagementRepository();
   const isDev = import.meta.env.DEV;
 
   // State
@@ -144,23 +144,17 @@ export const useUserStore = defineStore('user', () => {
     error.value = null;
 
     try {
-      const result = await userRepository.createUser(userData);
+      const createdUser = await userRepository.createUser(userData);
 
-      if (result.success && result.user) {
-        // Add to local list
-        users.value.push({
-          id: result.user.id,
-          username: result.user.username,
-          email: result.user.email,
-          role: result.user.role,
-          phone: result.user.phone,
-          lastLogin: result.user.lastLogin,
-        });
-        return true;
-      } else {
-        error.value = result.error || 'Failed to create user';
-        return false;
-      }
+      users.value.push({
+        id: createdUser.id,
+        username: createdUser.username,
+        email: createdUser.email,
+        role: createdUser.role,
+        phone: createdUser.phone,
+        lastLogin: createdUser.lastLogin,
+      });
+      return true;
     } catch (err: any) {
       error.value = err.message || 'Failed to create user';
       if (isDev) {
@@ -184,32 +178,27 @@ export const useUserStore = defineStore('user', () => {
     error.value = null;
 
     try {
-      const result = await userRepository.updateUser(id, userData);
+      const updatedUser = await userRepository.updateUser(id, userData);
 
-      if (result.success && result.user) {
-        // Update in local list
-        const index = users.value.findIndex((u) => u.id === id);
-        if (index !== -1) {
-          users.value[index] = {
-            id: result.user.id,
-            username: result.user.username,
-            email: result.user.email,
-            role: result.user.role,
-            phone: result.user.phone,
-            lastLogin: result.user.lastLogin,
-          };
-        }
-
-        // Update current user if it's the same
-        if (currentUser.value?.id === id) {
-          currentUser.value = result.user;
-        }
-
-        return true;
-      } else {
-        error.value = result.error || 'Failed to update user';
-        return false;
+      // Update in local list
+      const index = users.value.findIndex((u) => u.id === id);
+      if (index !== -1) {
+        users.value[index] = {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          phone: updatedUser.phone,
+          lastLogin: updatedUser.lastLogin,
+        };
       }
+
+      // Update current user if it's the same
+      if (currentUser.value?.id === id) {
+        currentUser.value = updatedUser;
+      }
+
+      return true;
     } catch (err: any) {
       error.value = err.message || 'Failed to update user';
       if (isDev) {
@@ -232,22 +221,17 @@ export const useUserStore = defineStore('user', () => {
     error.value = null;
 
     try {
-      const result = await userRepository.deleteUser(id);
+      await userRepository.deleteUser(id);
 
-      if (result.success) {
-        // Remove from local list
-        users.value = users.value.filter((u) => u.id !== id);
+      // Remove from local list
+      users.value = users.value.filter((u) => u.id !== id);
 
-        // Clear current user if it's the deleted one
-        if (currentUser.value?.id === id) {
-          currentUser.value = null;
-        }
-
-        return true;
-      } else {
-        error.value = result.error || 'Failed to delete user';
-        return false;
+      // Clear current user if it's the deleted one
+      if (currentUser.value?.id === id) {
+        currentUser.value = null;
       }
+
+      return true;
     } catch (err: any) {
       error.value = err.message || 'Failed to delete user';
       if (isDev) {

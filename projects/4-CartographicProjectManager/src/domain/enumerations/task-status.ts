@@ -17,10 +17,10 @@
  *
  * Task Status Flow:
  * PENDING ←→ IN_PROGRESS ←→ PARTIAL
- *    ↓            ↓            ↓
- *    └─────────→ PERFORMED ←───┘
- *                   ↓
- *              COMPLETED (terminal)
+ *                      ↓        ↓
+ *                      └────→ PERFORMED (pending confirmation)
+ *                                 ↓
+ *                            COMPLETED (terminal)
  */
 export enum TaskStatus {
   /** Task has been created but not started. */
@@ -41,8 +41,6 @@ export enum TaskStatus {
 export const TaskStatusTransitions: Record<TaskStatus, TaskStatus[]> = {
   [TaskStatus.PENDING]: [
     TaskStatus.IN_PROGRESS,
-    TaskStatus.PARTIAL,
-    TaskStatus.PERFORMED,
   ],
   [TaskStatus.IN_PROGRESS]: [
     TaskStatus.PENDING,
@@ -50,11 +48,10 @@ export const TaskStatusTransitions: Record<TaskStatus, TaskStatus[]> = {
     TaskStatus.PERFORMED,
   ],
   [TaskStatus.PARTIAL]: [
-    TaskStatus.PENDING,
     TaskStatus.IN_PROGRESS,
     TaskStatus.PERFORMED,
   ],
-  [TaskStatus.PERFORMED]: [TaskStatus.COMPLETED, TaskStatus.PENDING],
+  [TaskStatus.PERFORMED]: [],
   [TaskStatus.COMPLETED]: [],
 };
 

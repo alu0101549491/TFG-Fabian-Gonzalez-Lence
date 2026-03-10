@@ -124,7 +124,7 @@ export class BackupService implements IBackupService {
 
     try {
       // Collect record counts using available repository APIs.
-      const projects = await this.projectRepository.findAll();
+      const projects = await this.projectRepository.find();
       const users = await this.userRepository.findAll();
 
       let taskCount = 0;
@@ -132,9 +132,9 @@ export class BackupService implements IBackupService {
       let fileCount = 0;
 
       for (const project of projects) {
-        taskCount += await this.taskRepository.countByProjectId(project.id);
-        messageCount += await this.messageRepository.countByProjectId(project.id);
-        fileCount += await this.fileRepository.countByProjectId(project.id);
+        taskCount += await this.taskRepository.count({projectId: project.id});
+        messageCount += await this.messageRepository.count({projectId: project.id});
+        fileCount += await this.fileRepository.count({projectId: project.id});
       }
 
       metadata.recordCounts = {

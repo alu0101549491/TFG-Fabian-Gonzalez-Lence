@@ -106,7 +106,8 @@ import {useTaskStore} from '../stores';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import CalendarWidget from '../components/calendar/CalendarWidget.vue';
 import ProjectCard from '../components/project/ProjectCard.vue';
-import type {CalendarTaskDto, CalendarProjectDto, ProjectSummaryDto} from '@/application/dto';
+import type {CalendarTaskDto, CalendarProjectDto} from '@/application/dto';
+import type {ProjectSummaryViewModel} from '@/presentation/view-models/project.view-model';
 
 // Composables
 const router = useRouter();
@@ -139,7 +140,6 @@ const calendarTasks = computed<CalendarTaskDto[]>(() => {
         status: task.status,
         priority: task.priority,
         assigneeName: task.assigneeName,
-        isOverdue: task.isOverdue,
       });
     }
   }
@@ -158,7 +158,7 @@ const formatSelectedDate = computed(() => {
   });
 });
 
-const projectsOnDate = computed<ProjectSummaryDto[]>(() => {
+const projectsOnDate = computed<ProjectSummaryViewModel[]>(() => {
   if (!selectedDate.value) return [];
 
   const targetDate = new Date(selectedDate.value);

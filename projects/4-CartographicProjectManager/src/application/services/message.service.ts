@@ -132,10 +132,13 @@ export class MessageService implements IMessageService {
       throw new UnauthorizedError('You do not have permission to access messages in this project');
     }
 
-    const allMessages = await this.messageRepository.findByProjectId(projectId);
+    const allMessages = await this.messageRepository.find({projectId});
     const filtered = this.applyFilters(allMessages, userId, filters);
     const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
-    const unreadCount = await this.messageRepository.countUnreadByProjectAndUser(projectId, userId);
+    const unreadCount = await this.messageRepository.count({
+      projectId,
+      unreadForUserId: userId,
+    });
 
     const messageDtos = await Promise.all(items.map((m) => this.mapToDto(m, userId)));
     return {messages: messageDtos, total, page, limit, totalPages, unreadCount};
@@ -154,8 +157,8 @@ export class MessageService implements IMessageService {
     }
 
     const messages = filters?.projectId
-      ? await this.messageRepository.findByProjectIdAndSenderId(filters.projectId, userId)
-      : await this.messageRepository.findBySenderId(userId);
+      ? await this.messageRepository.find({projectId: filters.projectId, senderId: userId})
+      : await this.messageRepository.find({senderId: userId});
 
     const filtered = this.applyFilters(messages, userId, filters);
     const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
@@ -216,7 +219,7 @@ export class MessageService implements IMessageService {
       throw new UnauthorizedError('You do not have permission to access messages in this project');
     }
 
-    return await this.messageRepository.countUnreadByProjectAndUser(projectId, userId);
+    return await this.messageRepository.count({projectId, unreadForUserId: userId});
   }
 
   /**

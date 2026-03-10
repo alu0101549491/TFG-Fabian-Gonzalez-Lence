@@ -14,7 +14,11 @@
 
 import {httpClient} from '../http';
 import {Message} from '../../domain/entities/message';
-import {type IMessageRepository} from '../../domain/repositories/message-repository.interface';
+import {
+  type IMessageRepository,
+  type MessageCountQuery,
+  type MessageFindQuery,
+} from '../../domain/repositories/message-repository.interface';
 import {isValidUserRole, UserRole} from '../../domain/enumerations/user-role';
 
 /**
@@ -51,6 +55,18 @@ interface MessageApiResponse {
  */
 export class MessageRepository implements IMessageRepository {
   private readonly baseUrl = '/messages';
+
+  /**
+   * Build a URL with encoded query params.
+   */
+  private buildUrlWithParams(
+    baseUrl: string,
+    params: Record<string, string>,
+  ): string {
+    const searchParams = new URLSearchParams(params);
+    const queryString = searchParams.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  }
 
   /**
    * Find message by unique identifier
@@ -131,6 +147,77 @@ export class MessageRepository implements IMessageRepository {
    */
   public async delete(id: string): Promise<void> {
     await httpClient.delete(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Find messages matching a query object.
+   */
+  public async find(query: MessageFindQuery): Promise<Message[]> {
+    const {
+      projectId,
+      senderId,
+      unreadForUserId,
+      limit,
+      offset,
+      latest,
+    } = query;
+
+    if (unreadForUserId && !projectId) {
+      throw new Error('Unsupported query: unreadForUserId requires projectId');
+    }
+
+    if (unreadForUserId && projectId) {
+      const url = this.buildUrlWithParams(
+        `/projects/${projectId}/messages/unread`,
+        {userId: unreadForUserId},
+      );
+      const response = await httpClient.get<MessageApiResponse[]>(url);
+      return response.data.map((data) => this.mapToEntity(data));
+    }
+
+    if (projectId) {
+      const params: Record<string, string> = {};
+      if (senderId) params.senderId = senderId;
+      if (latest) params.latest = 'true';
+      if (limit != null) params.limit = String(limit);
+      if (offset != null) params.offset = String(offset);
+
+      const url = this.buildUrlWithParams(
+        `/projects/${projectId}/messages`,
+        params,
+      );
+      const response = await httpClient.get<MessageApiResponse[]>(url);
+      return response.data.map((data) => this.mapToEntity(data));
+    }
+
+    if (senderId) {
+      const url = this.buildUrlWithParams(this.baseUrl, {senderId});
+      const response = await httpClient.get<MessageApiResponse[]>(url);
+      return response.data.map((data) => this.mapToEntity(data));
+    }
+
+    throw new Error('Unsupported query: expected projectId and/or senderId');
+  }
+
+  /**
+   * Count messages matching a query object.
+   */
+  public async count(query: MessageCountQuery): Promise<number> {
+    const {projectId, unreadForUserId} = query;
+
+    if (unreadForUserId) {
+      const url = this.buildUrlWithParams(
+        `/projects/${projectId}/messages/unread/count`,
+        {userId: unreadForUserId},
+      );
+      const response = await httpClient.get<{count: number}>(url);
+      return response.data.count;
+    }
+
+    const response = await httpClient.get<{count: number}>(
+      `/projects/${projectId}/messages/count`,
+    );
+    return response.data.count;
   }
 
   /**

@@ -124,16 +124,16 @@ export interface IProjectService {
   /**
    * Retrieves projects within a date range for calendar display.
    * @param userId - The unique identifier of the user
-   * @param startDate - Start date of the range
-   * @param endDate - End date of the range
+   * @param startDate - Start date of the range (ISO 8601 string)
+   * @param endDate - End date of the range (ISO 8601 string)
    * @returns Array of projects with calendar-specific data
    * @throws {NotFoundError} If user doesn't exist
    * @throws {ValidationError} If date range is invalid
    */
   getProjectsForCalendar(
     userId: string,
-    startDate: Date,
-    endDate: Date,
+    startDate: string,
+    endDate: string,
   ): Promise<CalendarProjectDto[]>;
 
   /**

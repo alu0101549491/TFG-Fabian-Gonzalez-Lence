@@ -351,7 +351,7 @@ export class AuthorizationService implements IAuthorizationService {
   public async getProjectPermissions(
     userId: string,
     projectId: string
-  ): Promise<Set<AccessRight>> {
+  ): Promise<AccessRight[]> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} not found`);
 
@@ -368,23 +368,23 @@ export class AuthorizationService implements IAuthorizationService {
       rights.add(AccessRight.DELETE);
       rights.add(AccessRight.UPLOAD);
       rights.add(AccessRight.SEND_MESSAGE);
-      return rights;
+      return Array.from(rights);
     }
 
     // Client has view and download access to assigned projects
     if (user.role === UserRole.CLIENT && project.clientId === userId) {
       rights.add(AccessRight.VIEW);
       rights.add(AccessRight.DOWNLOAD);
-      return rights;
+      return Array.from(rights);
     }
 
     // Special User gets rights from permissions
     const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
     if (permission) {
-      return permission.rights;
+      return Array.from(permission.rights);
     }
 
-    return rights;
+    return Array.from(rights);
   }
 
   /**

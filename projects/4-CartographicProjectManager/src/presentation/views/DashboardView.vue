@@ -547,7 +547,7 @@ async function fetchUserTasks(): Promise<void> {
   if (!userId.value) return;
   
   try {
-    userTasks.value = await taskRepository.findByAssigneeId(userId.value);
+    userTasks.value = await taskRepository.find({assigneeId: userId.value});
   } catch (error) {
     console.error('Failed to fetch user tasks:', error);
     userTasks.value = [];

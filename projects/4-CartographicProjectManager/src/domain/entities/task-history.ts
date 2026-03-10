@@ -13,6 +13,7 @@
  */
 
 import {TaskStatus} from '../enumerations/task-status';
+import {generateId} from '../../shared/utils';
 
 /**
  * Properties for creating a TaskHistory entity.
@@ -113,7 +114,7 @@ export class TaskHistory {
     previousStatus: TaskStatus,
     newStatus: TaskStatus
   ): TaskHistory {
-    const id = `history_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `history_${generateId()}`;
     return new TaskHistory({
       id,
       taskId,
@@ -139,7 +140,7 @@ export class TaskHistory {
     previousAssignee: string,
     newAssignee: string
   ): TaskHistory {
-    const id = `history_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `history_${generateId()}`;
     return new TaskHistory({
       id,
       taskId,

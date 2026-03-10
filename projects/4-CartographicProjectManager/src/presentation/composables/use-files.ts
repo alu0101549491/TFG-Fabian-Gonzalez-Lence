@@ -140,7 +140,7 @@ export function useFiles(): UseFilesReturn {
     error.value = null;
 
     try {
-      const fileEntities = await fileRepository.findByProjectId(projectId);
+      const fileEntities = await fileRepository.find({projectId});
       files.value = fileEntities.map(mapEntityToDto);
     } catch (err: any) {
       error.value = err.message || 'Failed to load files';
@@ -160,7 +160,7 @@ export function useFiles(): UseFilesReturn {
     error.value = null;
 
     try {
-      const fileEntities = await fileRepository.findByTaskId(taskId);
+      const fileEntities = await fileRepository.find({taskId});
       files.value = fileEntities.map(mapEntityToDto);
     } catch (err: any) {
       error.value = err.message || 'Failed to load files';

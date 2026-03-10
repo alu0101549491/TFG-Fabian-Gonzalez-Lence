@@ -15,6 +15,23 @@
 import {File} from '../entities/file';
 import {FileType} from '../enumerations/file-type';
 
+/** Query parameters for file lookups. */
+export interface FileFindQuery {
+  /** Filter files by project id. */
+  projectId?: string;
+  /** Filter files by task id. */
+  taskId?: string;
+  /** Filter files by message id. */
+  messageId?: string;
+  /** Filter files by file type. */
+  type?: FileType;
+  /** Filter files by uploader id. */
+  uploadedBy?: string;
+}
+
+/** Query parameters for file counts. */
+export type FileCountQuery = FileFindQuery;
+
 /**
  * Abstraction for File metadata data access operations.
  * Actual file content is managed through the Dropbox service.
@@ -46,61 +63,22 @@ export interface IFileRepository {
   delete(id: string): Promise<void>;
 
   /**
-   * Finds all files attached to a specific project.
-   * @param projectId - The project's unique ID.
-   * @returns Array of files attached to the project (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findByProjectId(projectId: string): Promise<File[]>;
-
-  /**
-   * Finds all files attached to a specific task.
-   * @param taskId - The task's unique ID.
-   * @returns Array of files attached to the task (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findByTaskId(taskId: string): Promise<File[]>;
-
-  /**
-   * Finds all files attached to a specific message.
-   * @param messageId - The message's unique ID.
-   * @returns Array of files attached to the message (empty if none found).
-   * @throws Error if database connection fails.
-   */
-  findByMessageId(messageId: string): Promise<File[]>;
-
-  /**
-   * Finds all files in a project of a specific type.
-   * @param projectId - The project's unique ID.
-   * @param type - The file type to filter by.
+   * Finds files matching the provided query.
+   *
+   * @param query - Query object.
    * @returns Array of files matching the criteria (empty if none found).
    * @throws Error if database connection fails.
    */
-  findByProjectIdAndType(projectId: string, type: FileType): Promise<File[]>;
+  find(query: FileFindQuery): Promise<File[]>;
 
   /**
-   * Finds all files uploaded by a specific user.
-   * @param userId - The uploader's unique ID.
-   * @returns Array of files uploaded by the user (empty if none found).
+   * Counts files matching the provided query.
+   *
+   * @param query - Query object.
+   * @returns Count of files.
    * @throws Error if database connection fails.
    */
-  findByUploadedBy(userId: string): Promise<File[]>;
-
-  /**
-   * Counts the total number of files in a project.
-   * @param projectId - The project's unique ID.
-   * @returns The count of files in the project.
-   * @throws Error if database connection fails.
-   */
-  countByProjectId(projectId: string): Promise<number>;
-
-  /**
-   * Counts the total number of files attached to a task.
-   * @param taskId - The task's unique ID.
-   * @returns The count of files attached to the task.
-   * @throws Error if database connection fails.
-   */
-  countByTaskId(taskId: string): Promise<number>;
+  count(query: FileCountQuery): Promise<number>;
 
   /**
    * Deletes all files in a project (cascade delete).
@@ -123,19 +101,5 @@ export interface IFileRepository {
    */
   deleteByMessageId(messageId: string): Promise<void>;
 
-  /**
-   * Finds a file by its Dropbox path.
-   * @param dropboxPath - The Dropbox path of the file.
-   * @returns The found file metadata or null if not found.
-   * @throws Error if database connection fails.
-   */
-  findByDropboxPath(dropboxPath: string): Promise<File | null>;
-
-  /**
-   * Checks if a file with the given Dropbox path exists.
-   * @param dropboxPath - The Dropbox path to check.
-   * @returns True if a file with the path exists, false otherwise.
-   * @throws Error if database connection fails.
-   */
-  existsByDropboxPath(dropboxPath: string): Promise<boolean>;
+  // Intentionally no additional ad-hoc query methods. Use `find`/`count`.
 }

@@ -152,8 +152,12 @@ export const useMessageStore = defineStore('message', () => {
       const existingMessages = messagesByProject.value.get(projectId) ?? [];
       const offset = loadMore ? existingMessages.length : 0;
 
-      const total = await messageRepository.countByProjectId(projectId);
-      const messageEntities = await messageRepository.findByProjectIdPaginated(projectId, limit, offset);
+      const total = await messageRepository.count({projectId});
+      const messageEntities = await messageRepository.find({
+        projectId,
+        limit,
+        offset,
+      });
       const pageMessages = messageEntities.map(mapEntityToDto);
 
       const mergedMessages = loadMore
@@ -211,10 +215,10 @@ export const useMessageStore = defineStore('message', () => {
       // Fetch unread count for each project
       const countPromises = allProjects.map(async (project) => {
         try {
-          const count = await messageRepository.countUnreadByProjectAndUser(
-            project.id,
-            authStore.userId!
-          );
+          const count = await messageRepository.count({
+            projectId: project.id,
+            unreadForUserId: authStore.userId!,
+          });
           return {projectId: project.id, count};
         } catch (err) {
           if (isDev) {

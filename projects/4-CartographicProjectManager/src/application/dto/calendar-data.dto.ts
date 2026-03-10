@@ -34,10 +34,6 @@ export interface CalendarItemDto {
   readonly subtitle: string;
   /** Date to display on calendar */
   readonly date: Date;
-  /** Status color indicator */
-  readonly statusColor: string;
-  /** Whether item is overdue */
-  readonly isOverdue: boolean;
   /** Original project data (if type === 'project') */
   readonly project?: CalendarProjectDto;
   /** Original task data (if type === 'task') */

@@ -38,13 +38,13 @@ import {
 } from '../../domain/repositories';
 import {INotificationService} from '../interfaces/notification-service.interface';
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
-import {NotFoundError, ValidationError, BusinessRuleError, UnauthorizedError} from './common/errors';
+import {NotFoundError, ValidationError, BusinessLogicError, UnauthorizedError} from './common/errors';
 import {generateId} from './common/utils';
 import {Task} from '../../domain/entities/task';
 import {TaskHistory} from '../../domain/entities/task-history';
 import {TaskStatus, TaskStatusTransitions} from '../../domain/enumerations/task-status';
 import {NotificationType} from '../../domain/enumerations/notification-type';
-import {type TaskHistoryAction} from '../../domain/enumerations/task-history-action';
+import {isValidTaskHistoryAction, type TaskHistoryAction} from '../../domain/enumerations/task-history-action';
 
 /**
  * Implementation of task management operations.
@@ -128,7 +128,7 @@ export class TaskService implements ITaskService {
       relatedTaskId: task.id,
     });
 
-    return this.mapToDto(task, creatorId);
+      return this.mapToDto(task);
   }
 
   /**
@@ -175,7 +175,7 @@ export class TaskService implements ITaskService {
     // Record history
     await this.recordHistory(task.id, userId, 'UPDATED', null, null);
 
-    return this.mapToDto(task, userId);
+      return this.mapToDto(task);
   }
 
   /**
@@ -193,7 +193,7 @@ export class TaskService implements ITaskService {
     }
 
     if (task.status === TaskStatus.COMPLETED) {
-      throw new BusinessRuleError('Cannot delete a completed task');
+      throw new BusinessLogicError('Cannot delete a completed task');
     }
 
     await this.taskRepository.delete(taskId);
@@ -216,7 +216,7 @@ export class TaskService implements ITaskService {
       throw new UnauthorizedError('You do not have permission to access this task');
     }
 
-    return this.mapToDto(task, userId);
+      return this.mapToDto(task);
   }
 
   /**
@@ -232,7 +232,7 @@ export class TaskService implements ITaskService {
       throw new UnauthorizedError('You do not have permission to access this project');
     }
 
-    const allTasks = await this.taskRepository.findByProjectId(projectId);
+    const allTasks = await this.taskRepository.find({projectId});
     const filtered = this.applyFilters(allTasks, filters);
     const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
 
@@ -255,7 +255,7 @@ export class TaskService implements ITaskService {
       throw new NotFoundError(`User ${assigneeId} not found`);
     }
 
-    const allTasks = await this.taskRepository.findByAssigneeId(assigneeId);
+    const allTasks = await this.taskRepository.find({assigneeId});
     const filtered = this.applyFilters(allTasks, filters);
     const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
     const summaries = await Promise.all(items.map((t) => this.mapToSummaryDto(t)));
@@ -274,7 +274,7 @@ export class TaskService implements ITaskService {
       throw new NotFoundError(`User ${creatorId} not found`);
     }
 
-    const allTasks = await this.taskRepository.findByCreatorId(creatorId);
+    const allTasks = await this.taskRepository.find({creatorId});
     const filtered = this.applyFilters(allTasks, filters);
     const {items, page, limit, total, totalPages} = this.paginate(filtered, filters);
     const summaries = await Promise.all(items.map((t) => this.mapToSummaryDto(t)));
@@ -290,7 +290,7 @@ export class TaskService implements ITaskService {
       throw new NotFoundError(`User ${userId} not found`);
     }
 
-    const tasks = await this.taskRepository.findOverdueByAssigneeId(userId);
+    const tasks = await this.taskRepository.find({assigneeId: userId, overdue: true});
     return Promise.all(tasks.map((t) => this.mapToSummaryDto(t)));
   }
 
@@ -303,7 +303,7 @@ export class TaskService implements ITaskService {
       throw new NotFoundError(`Project ${projectId} not found`);
     }
 
-    return await this.taskRepository.countPendingByProjectId(projectId);
+    return await this.taskRepository.count({projectId, status: TaskStatus.PENDING});
   }
 
   /**
@@ -325,12 +325,12 @@ export class TaskService implements ITaskService {
     }
 
     if (data.newStatus === TaskStatus.COMPLETED) {
-      throw new BusinessRuleError('Use confirmTask to complete a task');
+      throw new BusinessLogicError('Use confirmTask to complete a task');
     }
 
     const validTransitions = TaskStatusTransitions[task.status];
     if (!validTransitions.includes(data.newStatus)) {
-      throw new BusinessRuleError(
+      throw new BusinessLogicError(
         `Invalid status transition from ${task.status} to ${data.newStatus}`
       );
     }
@@ -368,7 +368,7 @@ export class TaskService implements ITaskService {
       });
     }
 
-    return this.mapToDto(task, userId);
+      return this.mapToDto(task);
   }
 
   /**
@@ -386,7 +386,7 @@ export class TaskService implements ITaskService {
     }
 
     if (task.status !== TaskStatus.PERFORMED) {
-      throw new BusinessRuleError('Only tasks in PERFORMED status can be confirmed');
+      throw new BusinessLogicError('Only tasks in PERFORMED status can be confirmed');
     }
 
     if (data.confirmed) {
@@ -418,7 +418,7 @@ export class TaskService implements ITaskService {
       relatedTaskId: task.id,
     });
 
-    return this.mapToDto(task, userId);
+    return this.mapToDto(task);
   }
 
   /**
@@ -485,7 +485,9 @@ export class TaskService implements ITaskService {
 
     return history.map((h) => ({
       id: h.id,
-      action: h.action,
+      action: (isValidTaskHistoryAction(h.action)
+        ? h.action
+        : 'UPDATED') satisfies TaskHistoryAction,
       previousValue: h.previousValue,
       newValue: h.newValue,
       userId: h.userId,
@@ -578,7 +580,7 @@ export class TaskService implements ITaskService {
   /**
    * Maps task entity to DTO.
    */
-  private async mapToDto(task: Task, userId: string): Promise<TaskDto> {
+  private async mapToDto(task: Task): Promise<TaskDto> {
     const project = await this.projectRepository.findById(task.projectId);
     if (!project) {
       throw new NotFoundError(`Project ${task.projectId} not found`);
@@ -608,22 +610,6 @@ export class TaskService implements ITaskService {
       }),
     );
 
-    const canModify = await this.authorizationService.canModifyTask(userId, task.id);
-    const canDelete = await this.authorizationService.canDeleteTask(userId, task.id);
-    const canConfirm = await this.authorizationService.canConfirmTask(userId, task.id);
-
-    const allowedTransitions = TaskStatusTransitions[task.status];
-    const transitionChecks = await Promise.all(
-      allowedTransitions.map(async (next) => {
-        const ok = await this.authorizationService.canChangeTaskStatus(userId, task.id, next);
-        return ok ? next : null;
-      }),
-    );
-
-    const allowedStatusTransitions = transitionChecks.filter(
-      (s): s is TaskStatus => s !== null,
-    );
-
     return {
       id: task.id,
       projectId: task.projectId,
@@ -644,12 +630,6 @@ export class TaskService implements ITaskService {
       updatedAt: task.updatedAt,
       completedAt: task.completedAt,
       confirmedAt: task.confirmedAt,
-      isOverdue: task.isOverdue(),
-      canModify,
-      canDelete,
-      canConfirm,
-      canChangeStatus: allowedStatusTransitions.length > 0,
-      allowedStatusTransitions,
     };
   }
 
@@ -669,7 +649,6 @@ export class TaskService implements ITaskService {
       status: task.status,
       priority: task.priority,
       dueDate: task.dueDate,
-      isOverdue: task.isOverdue(),
       hasAttachments: task.fileIds.length > 0,
       attachmentCount: task.fileIds.length,
       createdAt: task.createdAt,

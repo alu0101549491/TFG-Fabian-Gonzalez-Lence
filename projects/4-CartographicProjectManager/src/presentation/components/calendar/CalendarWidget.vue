@@ -153,8 +153,8 @@
             :class="[
               'calendar-item',
               'calendar-project',
-              `calendar-project-${project.statusColor}`,
-              {'calendar-project-overdue': project.isOverdue},
+              `calendar-project-${getProjectStatusColor(project)}`,
+              {'calendar-project-overdue': isProjectOverdue(project)},
             ]"
             :title="getProjectTooltip(project)"
             @click.stop="handleProjectClick(project)"
@@ -162,7 +162,7 @@
             <span class="calendar-item-icon">📦</span>
             <span class="calendar-item-name">{{ project.code }}</span>
             <AlertCircleIcon
-              v-if="project.isOverdue || project.hasPendingTasks"
+              v-if="isProjectOverdue(project) || project.hasPendingTasks"
               class="calendar-item-warning"
             />
           </button>
@@ -176,7 +176,7 @@
               'calendar-item',
               'calendar-task',
               `calendar-task-priority-${task.priority.toLowerCase()}`,
-              {'calendar-task-overdue': task.isOverdue},
+              {'calendar-task-overdue': isTaskOverdue(task)},
             ]"
             :title="getTaskTooltip(task)"
             @click.stop="handleTaskClick(task)"
@@ -184,7 +184,7 @@
             <span class="calendar-item-icon">✓</span>
             <span class="calendar-item-name">{{ truncateText(task.description, 20) }}</span>
             <AlertCircleIcon
-              v-if="task.isOverdue"
+              v-if="isTaskOverdue(task)"
               class="calendar-item-warning"
             />
           </button>
@@ -207,7 +207,7 @@
           <span
             v-for="project in day.projects.slice(0, 2)"
             :key="'p-' + project.id"
-            :class="['calendar-dot', 'calendar-dot-project', `calendar-dot-${project.statusColor}`]"
+            :class="['calendar-dot', 'calendar-dot-project', `calendar-dot-${getProjectStatusColor(project)}`]"
             title="Project"
           />
           <!-- Task dots -->
@@ -262,7 +262,7 @@
             :class="[
               'calendar-details-item',
               'calendar-details-project',
-              `calendar-details-project-${project.statusColor}`,
+              `calendar-details-project-${getProjectStatusColor(project)}`,
             ]"
             @click="handleProjectClick(project)"
           >
@@ -276,7 +276,7 @@
             </div>
             <div class="calendar-details-item-meta">
               <span
-                v-if="project.isOverdue"
+                v-if="isProjectOverdue(project)"
                 class="calendar-details-item-overdue"
               >
                 Overdue
@@ -300,7 +300,7 @@
               'calendar-details-item',
               'calendar-details-task',
               `calendar-details-task-priority-${task.priority.toLowerCase()}`,
-              {'calendar-details-task-overdue': task.isOverdue},
+              {'calendar-details-task-overdue': isTaskOverdue(task)},
             ]"
             @click="handleTaskClick(task)"
           >
@@ -315,7 +315,7 @@
               <span class="calendar-details-item-project">{{ task.projectCode }}</span>
               <span class="calendar-details-item-assignee">{{ task.assigneeName }}</span>
               <span
-                v-if="task.isOverdue"
+                v-if="isTaskOverdue(task)"
                 class="calendar-details-item-overdue"
               >
                 Overdue
@@ -357,6 +357,7 @@ import type {
 } from '@/application/dto';
 import {addDays, isSameDay} from '@/shared/utils';
 import LoadingSpinner from '@/presentation/components/common/LoadingSpinner.vue';
+import {ProjectStatus, TaskStatus} from '@/domain/enumerations';
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -667,11 +668,30 @@ function isSelected(date: Date): boolean {
   return selectedDay.value ? isSameDay(selectedDay.value.date, date) : false;
 }
 
+function isProjectOverdue(project: CalendarProjectDto): boolean {
+  const deliveryDate = new Date(project.deliveryDate);
+  if (!Number.isFinite(deliveryDate.getTime())) return false;
+  return deliveryDate < new Date() && project.status !== ProjectStatus.FINALIZED;
+}
+
+function getProjectStatusColor(project: CalendarProjectDto): string {
+  if (project.status === ProjectStatus.FINALIZED) return 'gray';
+  if (isProjectOverdue(project)) return 'red';
+  if (project.hasPendingTasks) return 'yellow';
+  return 'green';
+}
+
+function isTaskOverdue(task: CalendarTaskDto): boolean {
+  const dueDate = new Date(task.dueDate);
+  if (!Number.isFinite(dueDate.getTime())) return false;
+  return dueDate < new Date() && task.status !== TaskStatus.COMPLETED;
+}
+
 function getProjectTooltip(project: CalendarProjectDto): string {
   let tooltip = `${project.code}: ${project.name}`;
   tooltip += `\nClient: ${project.clientName}`;
 
-  if (project.isOverdue) {
+  if (isProjectOverdue(project)) {
     tooltip += '\n⚠️ Overdue';
   } else if (project.hasPendingTasks) {
     tooltip += `\n⚠️ ${project.pendingTasksCount} pending tasks`;
@@ -687,7 +707,7 @@ function getTaskTooltip(task: CalendarTaskDto): string {
   tooltip += `\nAssigned to: ${task.assigneeName}`;
   tooltip += `\nPriority: ${task.priority}`;
 
-  if (task.isOverdue) {
+  if (isTaskOverdue(task)) {
     tooltip += '\n⚠️ Overdue';
   }
 

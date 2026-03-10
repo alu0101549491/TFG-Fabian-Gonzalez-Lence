@@ -12,18 +12,16 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {PrismaClient} from '@prisma/client';
+import {Prisma, PrismaClient} from '@prisma/client';
 import {logInfo, logError} from '@shared/logger.js';
 
 /**
  * Prisma client instance
  */
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
+
 export const prisma = new PrismaClient({
   log: [
-    {
-      emit: 'event',
-      level: 'query',
-    },
     {
       emit: 'event',
       level: 'error',
@@ -32,30 +30,41 @@ export const prisma = new PrismaClient({
       emit: 'event',
       level: 'warn',
     },
+    ...(IS_DEVELOPMENT
+      ? [
+          {
+            emit: 'event',
+            level: 'query',
+          } as const,
+        ]
+      : []),
   ],
 });
 
 /**
  * Log query events in development
  */
-prisma.$on('query' as never, (e: {query: string; duration: number}) => {
-  if (process.env.NODE_ENV === 'development') {
-    logInfo(`Query: ${e.query} - Duration: ${e.duration}ms`);
-  }
-});
+if (IS_DEVELOPMENT) {
+  prisma.$on('query', (event: Prisma.QueryEvent) => {
+    logInfo('Prisma query executed', {
+      durationMs: event.duration,
+      target: event.target,
+    });
+  });
+}
 
 /**
  * Log error events
  */
-prisma.$on('error' as never, (e: {message: string}) => {
-  logError('Prisma error:', new Error(e.message));
+prisma.$on('error', (event: Prisma.LogEvent) => {
+  logError('Prisma error event', new Error(event.message));
 });
 
 /**
  * Log warn events
  */
-prisma.$on('warn' as never, (e: {message: string}) => {
-  logInfo(`Prisma warning: ${e.message}`);
+prisma.$on('warn', (event: Prisma.LogEvent) => {
+  logInfo('Prisma warning event', {message: event.message});
 });
 
 /**

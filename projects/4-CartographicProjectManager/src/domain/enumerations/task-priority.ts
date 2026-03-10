@@ -22,18 +22,15 @@ export enum TaskPriority {
   MEDIUM = 'MEDIUM',
   /** Important task requiring prompt attention. */
   HIGH = 'HIGH',
-  /** Critical task requiring immediate action. */
-  URGENT = 'URGENT',
 }
 
 /**
  * Sort order values for task priorities (lower number = higher priority).
  */
 export const TaskPrioritySortOrder: Record<TaskPriority, number> = {
-  [TaskPriority.URGENT]: 1,
-  [TaskPriority.HIGH]: 2,
-  [TaskPriority.MEDIUM]: 3,
-  [TaskPriority.LOW]: 4,
+  [TaskPriority.HIGH]: 1,
+  [TaskPriority.MEDIUM]: 2,
+  [TaskPriority.LOW]: 3,
 };
 
 /**
@@ -63,10 +60,9 @@ export function compareTaskPriority(a: TaskPriority, b: TaskPriority): number {
 export const ALL_TASK_PRIORITIES = Object.values(TaskPriority);
 
 /**
- * Array of task priorities ordered by urgency (most urgent first).
+ * Array of task priorities ordered by urgency (highest first).
  */
 export const TASK_PRIORITIES_BY_URGENCY = [
-  TaskPriority.URGENT,
   TaskPriority.HIGH,
   TaskPriority.MEDIUM,
   TaskPriority.LOW,

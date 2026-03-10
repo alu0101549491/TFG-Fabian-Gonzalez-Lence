@@ -1314,8 +1314,8 @@ export function getProjectStatusColor(
  *
  * @example
  * ```typescript
- * getTaskPriorityColor('URGENT');
- * // '#DC2626'
+ * getTaskPriorityColor('HIGH');
+ * // '#EA580C'
  * ```
  */
 export function getTaskPriorityColor(priority: string): string {

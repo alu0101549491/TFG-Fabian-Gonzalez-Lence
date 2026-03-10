@@ -15,12 +15,12 @@
 import {defineStore} from 'pinia';
 import {ref, computed} from 'vue';
 import type {
-  TaskDto,
   TaskFilterDto,
   CreateTaskDto,
   UpdateTaskDto,
   TaskHistoryEntryDto,
 } from '../../application/dto';
+import type {TaskViewModel} from '../view-models/task.view-model';
 import {TaskStatus, TaskStatusTransitions} from '../../domain/enumerations/task-status';
 import {TaskPriority} from '../../domain/enumerations/task-priority';
 import {useAuthStore} from './auth.store';
@@ -40,8 +40,8 @@ export const useTaskStore = defineStore('task', () => {
   const projectRepository = new ProjectRepository();
   
   // State
-  const tasksByProject = ref<Map<string, TaskDto[]>>(new Map());
-  const currentTask = ref<TaskDto | null>(null);
+  const tasksByProject = ref<Map<string, TaskViewModel[]>>(new Map());
+  const currentTask = ref<TaskViewModel | null>(null);
   const taskHistory = ref<TaskHistoryEntryDto[]>([]);
   const filters = ref<TaskFilterDto>({});
   const statusFilter = ref<TaskStatus | null>(null);
@@ -58,13 +58,13 @@ export const useTaskStore = defineStore('task', () => {
   const error = ref<string | null>(null);
 
   /**
-   * Helper function to map Task entity to TaskDto
+   * Helper function to map Task entity to TaskViewModel
    */
   function mapEntityToDto(
     task: Task, 
     projectCode?: string, 
     projectName?: string
-  ): TaskDto {
+  ): TaskViewModel {
     const now = new Date();
     const isOverdue = task.dueDate < now && task.status !== TaskStatus.COMPLETED;
     
@@ -144,7 +144,7 @@ export const useTaskStore = defineStore('task', () => {
 
   const highPriorityTasks = computed(() =>
     currentProjectTasks.value.filter(
-      t => t.priority === TaskPriority.HIGH || t.priority === TaskPriority.URGENT
+      t => t.priority === TaskPriority.HIGH
     )
   );
 
@@ -207,7 +207,7 @@ export const useTaskStore = defineStore('task', () => {
       }
 
       // Fetch tasks from backend
-      const taskEntities = await taskRepository.findByProjectId(projectId);
+      const taskEntities = await taskRepository.find({projectId});
       const tasks = taskEntities.map(task => mapEntityToDto(task, projectCode, projectName));
 
       tasksByProject.value.set(projectId, tasks);
@@ -273,7 +273,7 @@ export const useTaskStore = defineStore('task', () => {
   /**
    * Creates a new task
    */
-  async function createTask(data: CreateTaskDto): Promise<TaskDto | null> {
+  async function createTask(data: CreateTaskDto): Promise<TaskViewModel | null> {
     if (!authStore.userId) return null;
 
     isSaving.value = true;
@@ -313,7 +313,7 @@ export const useTaskStore = defineStore('task', () => {
   /**
    * Updates an existing task
    */
-  async function updateTask(data: UpdateTaskDto): Promise<TaskDto | null> {
+  async function updateTask(data: UpdateTaskDto): Promise<TaskViewModel | null> {
     if (!authStore.userId) return null;
 
     isSaving.value = true;
@@ -541,7 +541,7 @@ export const useTaskStore = defineStore('task', () => {
   /**
    * Sets current task
    */
-  function setCurrentTask(task: TaskDto | null): void {
+  function setCurrentTask(task: TaskViewModel | null): void {
     currentTask.value = task;
   }
 
@@ -550,7 +550,7 @@ export const useTaskStore = defineStore('task', () => {
    */
   function handleTaskCreated(payload: any): void {
     const tasks = tasksByProject.value.get(payload.projectId) ?? [];
-    tasksByProject.value.set(payload.projectId, [...tasks, payload as TaskDto]);
+    tasksByProject.value.set(payload.projectId, [...tasks, payload as TaskViewModel]);
     pagination.value.total++;
   }
 

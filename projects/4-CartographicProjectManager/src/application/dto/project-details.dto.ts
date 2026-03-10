@@ -19,7 +19,6 @@ import {TaskPriority} from '../../domain/enumerations/task-priority';
 import {UserRole} from '../../domain/enumerations/user-role';
 import {AccessRight} from '../../domain/enumerations/access-right';
 import {FileSummaryDto} from './file-data.dto';
-import {ProjectStatusColor} from './project-data.dto';
 
 /**
  * Complete project information for detail view.
@@ -53,10 +52,10 @@ export interface ProjectDto {
   readonly deliveryDate: Date;
   /** Current project status */
   readonly status: ProjectStatus;
-  /** Dropbox folder ID/path (null when not available) */
-  readonly dropboxFolderId: string | null;
-  /** Generated Dropbox web URL for folder (null when not available) */
-  readonly dropboxFolderUrl: string | null;
+  /** Storage folder id/path (null when not available) */
+  readonly storageFolderId: string | null;
+  /** Storage web URL for the folder (null when not available) */
+  readonly storageFolderUrl: string | null;
   /** Project creation timestamp */
   readonly createdAt: Date;
   /** Last update timestamp */
@@ -87,8 +86,6 @@ export interface TaskSummaryDto {
   readonly priority: TaskPriority;
   /** Task due date */
   readonly dueDate: Date;
-  /** Whether task is overdue */
-  readonly isOverdue: boolean;
   /** Whether task has file attachments */
   readonly hasAttachments: boolean;
   /** Number of file attachments */
@@ -222,11 +219,4 @@ export interface ProjectDetailsDto {
 
   /** Current user's permissions */
   readonly currentUserPermissions: ProjectPermissionsDto;
-
-  /** UI status indicators */
-  readonly statusColor: ProjectStatusColor;
-  /** Whether project is past delivery date */
-  readonly isOverdue: boolean;
-  /** Days remaining until delivery (negative if overdue) */
-  readonly daysUntilDelivery: number;
 }

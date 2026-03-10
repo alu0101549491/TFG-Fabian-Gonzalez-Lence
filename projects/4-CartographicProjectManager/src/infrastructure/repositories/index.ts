@@ -14,6 +14,7 @@
 
 // Export repository classes
 export {UserRepository} from './user.repository';
+export {UserManagementRepository} from './user-management.repository';
 export {ProjectRepository} from './project.repository';
 export {TaskRepository} from './task.repository';
 export {TaskHistoryRepository} from './task-history.repository';

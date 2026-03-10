@@ -469,7 +469,7 @@ export class ExportService implements IExportService {
    * Fetches projects based on filters.
    */
   private async fetchProjects(filters: ExportFiltersDto): Promise<unknown[]> {
-    const projects = await this.projectRepository.findAll();
+    const projects = await this.projectRepository.find();
 
     const filtered = projects.filter((p) => {
       if (filters.projectIds && !filters.projectIds.includes(p.id)) return false;
@@ -508,7 +508,7 @@ export class ExportService implements IExportService {
     const tasksByProject = await Promise.all(
       projectIds.map(async (projectId) => ({
         projectId,
-        tasks: await this.taskRepository.findByProjectId(projectId),
+        tasks: await this.taskRepository.find({projectId}),
       })),
     );
 
@@ -551,7 +551,7 @@ export class ExportService implements IExportService {
     const messagesByProject = await Promise.all(
       projectIds.map(async (projectId) => ({
         projectId,
-        messages: await this.messageRepository.findByProjectId(projectId),
+        messages: await this.messageRepository.find({projectId}),
       })),
     );
 
@@ -582,9 +582,9 @@ export class ExportService implements IExportService {
     const reports = await Promise.all(
       projects.map(async (p) => {
         const [tasks, messages, files, client] = await Promise.all([
-          this.taskRepository.findByProjectId(p.id),
-          this.messageRepository.findByProjectId(p.id),
-          filters.includeAttachments ? this.fileRepository.findByProjectId(p.id) : Promise.resolve([]),
+          this.taskRepository.find({projectId: p.id}),
+          this.messageRepository.find({projectId: p.id}),
+          filters.includeAttachments ? this.fileRepository.find({projectId: p.id}) : Promise.resolve([]),
           this.userRepository.findById(p.clientId),
         ]);
 

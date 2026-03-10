@@ -15,12 +15,12 @@
 import {computed, ref, type ComputedRef, type Ref} from 'vue';
 import {useTaskStore, useProjectStore} from '../stores';
 import type {
-  TaskDto,
   TaskFilterDto,
   CreateTaskDto,
   UpdateTaskDto,
   TaskHistoryEntryDto,
 } from '../../application/dto';
+import type {TaskViewModel} from '../view-models/task.view-model';
 import {TaskStatus, TaskStatusTransitions} from '../../domain/enumerations/task-status';
 import {TaskPriority} from '../../domain/enumerations/task-priority';
 import {
@@ -40,7 +40,7 @@ export interface CreateTaskResult {
   /** Whether operation was successful */
   success: boolean;
   /** Created task if successful */
-  task?: TaskDto;
+  task?: TaskViewModel;
   /** Error message if failed */
   error?: string;
 }
@@ -52,7 +52,7 @@ export interface UpdateTaskResult {
   /** Whether operation was successful */
   success: boolean;
   /** Updated task if successful */
-  task?: TaskDto;
+  task?: TaskViewModel;
   /** Error message if failed */
   error?: string;
 }
@@ -62,15 +62,15 @@ export interface UpdateTaskResult {
  */
 export interface UseTasksReturn {
   // Tasks
-  tasks: ComputedRef<TaskDto[]>;
-  currentTask: ComputedRef<TaskDto | null>;
+  tasks: ComputedRef<TaskViewModel[]>;
+  currentTask: ComputedRef<TaskViewModel | null>;
   hasCurrentTask: ComputedRef<boolean>;
 
   // Filtered/Sorted Tasks
-  filteredTasks: ComputedRef<TaskDto[]>;
-  tasksByStatus: ComputedRef<Map<TaskStatus, TaskDto[]>>;
-  tasksByPriority: ComputedRef<Map<TaskPriority, TaskDto[]>>;
-  overdueTasks: ComputedRef<TaskDto[]>;
+  filteredTasks: ComputedRef<TaskViewModel[]>;
+  tasksByStatus: ComputedRef<Map<TaskStatus, TaskViewModel[]>>;
+  tasksByPriority: ComputedRef<Map<TaskPriority, TaskViewModel[]>>;
+  overdueTasks: ComputedRef<TaskViewModel[]>;
 
   // Task Stats
   totalTasks: ComputedRef<number>;
@@ -107,8 +107,8 @@ export interface UseTasksReturn {
   // Status Actions
   changeStatus: (taskId: string, newStatus: TaskStatus, comment?: string) => Promise<boolean>;
   confirmTask: (taskId: string, confirmed: boolean, feedback?: string) => Promise<boolean>;
-  getValidTransitions: (task: TaskDto) => TaskStatus[];
-  canTransitionTo: (task: TaskDto, status: TaskStatus) => boolean;
+  getValidTransitions: (task: TaskViewModel) => TaskStatus[];
+  canTransitionTo: (task: TaskViewModel, status: TaskStatus) => boolean;
 
   // Filter/Sort Actions
   setFilters: (filters: Partial<TaskFilterDto>) => void;
@@ -116,10 +116,10 @@ export interface UseTasksReturn {
   setSorting: (sortBy: TaskSortOption, order?: 'asc' | 'desc') => void;
 
   // Current Task Actions
-  selectTask: (task: TaskDto | null) => void;
+  selectTask: (task: TaskViewModel | null) => void;
 
   // Utilities
-  getTaskById: (taskId: string) => TaskDto | undefined;
+  getTaskById: (taskId: string) => TaskViewModel | undefined;
   getTaskPriorityColor: (priority: TaskPriority) => string;
   getTaskStatusColor: (status: TaskStatus) => string;
   clearError: () => void;
@@ -172,10 +172,9 @@ export function useTasks(): UseTasksReturn {
    */
   function getPriorityWeight(priority: TaskPriority): number {
     const weights: Record<TaskPriority, number> = {
-      [TaskPriority.URGENT]: 1,
-      [TaskPriority.HIGH]: 2,
-      [TaskPriority.MEDIUM]: 3,
-      [TaskPriority.LOW]: 4,
+      [TaskPriority.HIGH]: 1,
+      [TaskPriority.MEDIUM]: 2,
+      [TaskPriority.LOW]: 3,
     };
     return weights[priority] ?? 5;
   }
@@ -243,7 +242,7 @@ export function useTasks(): UseTasksReturn {
 
   // Grouped tasks
   const tasksByStatus = computed(() => {
-    const grouped = new Map<TaskStatus, TaskDto[]>();
+    const grouped = new Map<TaskStatus, TaskViewModel[]>();
 
     Object.values(TaskStatus).forEach((status) => {
       grouped.set(
@@ -256,7 +255,7 @@ export function useTasks(): UseTasksReturn {
   });
 
   const tasksByPriority = computed(() => {
-    const grouped = new Map<TaskPriority, TaskDto[]>();
+    const grouped = new Map<TaskPriority, TaskViewModel[]>();
 
     Object.values(TaskPriority).forEach((priority) => {
       grouped.set(
@@ -361,14 +360,14 @@ export function useTasks(): UseTasksReturn {
   /**
    * Gets valid status transitions for a task
    */
-  function getValidTransitions(task: TaskDto): TaskStatus[] {
+  function getValidTransitions(task: TaskViewModel): TaskStatus[] {
     return TaskStatusTransitions[task.status] ?? [];
   }
 
   /**
    * Checks if task can transition to a status
    */
-  function canTransitionTo(task: TaskDto, status: TaskStatus): boolean {
+  function canTransitionTo(task: TaskViewModel, status: TaskStatus): boolean {
     const validTransitions = getValidTransitions(task);
     return validTransitions.includes(status);
   }
@@ -400,14 +399,14 @@ export function useTasks(): UseTasksReturn {
   /**
    * Selects a task as current
    */
-  function selectTask(task: TaskDto | null): void {
+  function selectTask(task: TaskViewModel | null): void {
     store.setCurrentTask(task);
   }
 
   /**
    * Finds a task by ID
    */
-  function getTaskById(taskId: string): TaskDto | undefined {
+  function getTaskById(taskId: string): TaskViewModel | undefined {
     return tasks.value.find((t) => t.id === taskId);
   }
 

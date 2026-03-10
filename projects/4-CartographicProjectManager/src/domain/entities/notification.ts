@@ -14,6 +14,7 @@
 
 import {NotificationType} from '../enumerations/notification-type';
 import {TaskStatus} from '../enumerations/task-status';
+import {generateId} from '../../shared/utils';
 
 /**
  * Properties for creating a Notification entity.
@@ -145,7 +146,7 @@ export class Notification {
     taskDescription: string,
     taskId: string
   ): Notification {
-    const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `notif_${generateId()}`;
     return new Notification({
       id,
       userId,
@@ -164,7 +165,7 @@ export class Notification {
     projectName: string,
     projectId: string
   ): Notification {
-    const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `notif_${generateId()}`;
     return new Notification({
       id,
       userId,
@@ -184,7 +185,7 @@ export class Notification {
     newStatus: TaskStatus,
     taskId: string
   ): Notification {
-    const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `notif_${generateId()}`;
     return new Notification({
       id,
       userId,
@@ -203,7 +204,7 @@ export class Notification {
     projectCode: string,
     projectId: string
   ): Notification {
-    const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `notif_${generateId()}`;
     return new Notification({
       id,
       userId,

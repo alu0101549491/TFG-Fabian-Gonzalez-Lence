@@ -16,7 +16,11 @@ import {httpClient} from '../http';
 import {Task} from '../../domain/entities/task';
 import {TaskStatus} from '../../domain/enumerations/task-status';
 import {TaskPriority} from '../../domain/enumerations/task-priority';
-import {type ITaskRepository} from '../../domain/repositories/task-repository.interface';
+import {
+  type ITaskRepository,
+  type TaskCountQuery,
+  type TaskFindQuery,
+} from '../../domain/repositories/task-repository.interface';
 
 /**
  * API response type for task data from backend
@@ -54,6 +58,18 @@ interface TaskApiResponse {
  */
 export class TaskRepository implements ITaskRepository {
   private readonly baseUrl = '/tasks';
+
+  /**
+   * Build a URL with encoded query params.
+   */
+  private buildUrlWithParams(
+    baseUrl: string,
+    params: Record<string, string>,
+  ): string {
+    const searchParams = new URLSearchParams(params);
+    const queryString = searchParams.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  }
 
   /**
    * Find task by unique identifier
@@ -134,6 +150,88 @@ export class TaskRepository implements ITaskRepository {
    */
   public async delete(id: string): Promise<void> {
     await httpClient.delete(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Find tasks matching a query object.
+   */
+  public async find(query: TaskFindQuery): Promise<Task[]> {
+    const {
+      projectId,
+      assigneeId,
+      creatorId,
+      status,
+      priority,
+      overdue,
+    } = query;
+
+    if (projectId && (assigneeId || creatorId)) {
+      throw new Error(
+        'Unsupported query: projectId cannot be combined with assigneeId/creatorId',
+      );
+    }
+
+    if (projectId) {
+      const params: Record<string, string> = {};
+      if (status) params.status = status;
+      if (priority) params.priority = priority;
+      if (overdue != null) params.overdue = String(overdue);
+
+      const url = this.buildUrlWithParams(`/projects/${projectId}/tasks`, params);
+      const response = await httpClient.get<TaskApiResponse[]>(url);
+      return response.data.map((data) => this.mapToEntity(data));
+    }
+
+    const params: Record<string, string> = {};
+    if (assigneeId) params.assigneeId = assigneeId;
+    if (creatorId) params.creatorId = creatorId;
+    if (status) params.status = status;
+    if (priority) params.priority = priority;
+    if (overdue != null) params.overdue = String(overdue);
+
+    const url = this.buildUrlWithParams(this.baseUrl, params);
+    const response = await httpClient.get<TaskApiResponse[]>(url);
+    return response.data.map((data) => this.mapToEntity(data));
+  }
+
+  /**
+   * Count tasks matching a query object.
+   */
+  public async count(query: TaskCountQuery): Promise<number> {
+    const {projectId, assigneeId, creatorId, status, overdue} = query;
+
+    if (projectId && (assigneeId || creatorId)) {
+      throw new Error(
+        'Unsupported query: projectId cannot be combined with assigneeId/creatorId',
+      );
+    }
+
+    if (projectId) {
+      const params: Record<string, string> = {};
+      if (status) params.status = status;
+      if (overdue != null) params.overdue = String(overdue);
+
+      const url = this.buildUrlWithParams(
+        `/projects/${projectId}/tasks/count`,
+        params,
+      );
+      const response = await httpClient.get<{count: number}>(url);
+      return response.data.count;
+    }
+
+    if (!assigneeId && !creatorId) {
+      throw new Error('Unsupported query: count requires projectId, assigneeId, or creatorId');
+    }
+
+    const params: Record<string, string> = {};
+    if (assigneeId) params.assigneeId = assigneeId;
+    if (creatorId) params.creatorId = creatorId;
+    if (status) params.status = status;
+    if (overdue != null) params.overdue = String(overdue);
+
+    const url = this.buildUrlWithParams(`${this.baseUrl}/count`, params);
+    const response = await httpClient.get<{count: number}>(url);
+    return response.data.count;
   }
 
   /**

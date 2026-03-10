@@ -54,7 +54,7 @@ export const TaskStatusDisplayName: Record<TaskStatus, string> = {
   PENDING: 'Pending',
   IN_PROGRESS: 'In Progress',
   PARTIAL: 'Partial',
-  PERFORMED: 'Performed',
+  PERFORMED: 'Done (Pending Confirmation)',
   COMPLETED: 'Completed',
 };
 
@@ -70,14 +70,12 @@ export const TaskPriorityDisplayName: Record<TaskPriority, string> = {
   LOW: 'Low',
   MEDIUM: 'Medium',
   HIGH: 'High',
-  URGENT: 'Urgent',
 };
 
 export const TaskPriorityColor: Record<TaskPriority, string> = {
   LOW: 'green',
   MEDIUM: 'yellow',
   HIGH: 'red',
-  URGENT: 'darkred',
 };
 
 export const NotificationTypeDisplayName: Record<NotificationType, string> = {

@@ -217,15 +217,33 @@ export class GeoCoordinates {
   }
 
   /**
-   * Returns a plain object representation suitable for JSON serialization.
+   * Returns a plain object representation using X/Y notation.
+   *
+   * This is the canonical JSON shape for this project (matches the backend VO).
+   * X is longitude, Y is latitude.
+   *
+   * @returns Object with x and y properties
+   */
+  public toObject(): GeoCoordinatesXY {
+    return {x: this.longitude, y: this.latitude};
+  }
+
+  /**
+   * Returns a plain object representation using latitude/longitude notation.
    *
    * @returns Object with latitude and longitude properties
    */
-  public toJSON(): GeoCoordinatesProps {
-    return {
-      latitude: this.latitude,
-      longitude: this.longitude,
-    };
+  public toLatLngObject(): GeoCoordinatesProps {
+    return {latitude: this.latitude, longitude: this.longitude};
+  }
+
+  /**
+   * JSON serialization hook.
+   *
+   * @returns Canonical JSON representation ({x, y})
+   */
+  public toJSON(): GeoCoordinatesXY {
+    return this.toObject();
   }
 
   /**

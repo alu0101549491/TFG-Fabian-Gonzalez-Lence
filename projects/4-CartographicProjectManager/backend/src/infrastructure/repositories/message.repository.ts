@@ -85,6 +85,7 @@ export class MessageRepository implements IMessageRepository {
       return await prisma.message.create({
         data: {
           ...data,
+          fileIds: [...new Set(data.fileIds)],
           // Automatically mark message as read by sender
           readByUserIds: [data.senderId],
         },

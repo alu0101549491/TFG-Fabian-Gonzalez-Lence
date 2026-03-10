@@ -40,12 +40,13 @@ import {
 } from '../../domain/repositories';
 import {INotificationService} from '../interfaces/notification-service.interface';
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
-import {UnauthorizedError, NotFoundError, ValidationError, BusinessRuleError, ConflictError} from './common/errors';
+import {UnauthorizedError, NotFoundError, ValidationError, BusinessLogicError, ConflictError} from './common/errors';
 import {generateId} from './common/utils';
 import {Project} from '../../domain/entities/project';
 import {Permission} from '../../domain/entities/permission';
 import {UserRole} from '../../domain/enumerations/user-role';
 import {ProjectStatus} from '../../domain/enumerations/project-status';
+import {TaskStatus} from '../../domain/enumerations/task-status';
 import {AccessRight} from '../../domain/enumerations/access-right';
 import {NotificationType} from '../../domain/enumerations/notification-type';
 import {GeoCoordinates} from '../../domain/value-objects/geo-coordinates';
@@ -102,7 +103,7 @@ export class ProjectService implements IProjectService {
       contractDate: data.contractDate,
       deliveryDate: data.deliveryDate,
       status: ProjectStatus.ACTIVE,
-      dropboxFolderId: data.dropboxFolderId,
+      dropboxFolderId: data.storageFolderId,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -146,7 +147,7 @@ export class ProjectService implements IProjectService {
     if (data.clientId !== undefined) project.clientId = data.clientId;
     if (data.contractDate !== undefined) project.contractDate = data.contractDate;
     if (data.deliveryDate !== undefined) project.deliveryDate = data.deliveryDate;
-    if (data.dropboxFolderId !== undefined) project.dropboxFolderId = data.dropboxFolderId;
+    if (data.storageFolderId !== undefined) project.dropboxFolderId = data.storageFolderId;
     if (data.status !== undefined) project.status = data.status;
     if (data.coordinateX !== undefined || data.coordinateY !== undefined) {
       const nextX =
@@ -182,7 +183,7 @@ export class ProjectService implements IProjectService {
     }
 
     if (project.status === ProjectStatus.FINALIZED) {
-      throw new BusinessRuleError('Cannot delete a finalized project');
+      throw new BusinessLogicError('Cannot delete a finalized project');
     }
 
     await this.projectRepository.delete(projectId);
@@ -233,10 +234,10 @@ export class ProjectService implements IProjectService {
 
     let projects: Project[];
 
-    if (user.role === UserRole.ADMINISTRATOR) {
-      projects = await this.projectRepository.findAll();
+      if (user.role === UserRole.ADMINISTRATOR) {
+        projects = await this.projectRepository.find();
     } else if (user.role === UserRole.CLIENT) {
-      projects = await this.projectRepository.findByClientId(userId);
+        projects = await this.projectRepository.find({clientId: userId});
     } else {
       // Special User - find projects via permissions
       const permissions = await this.permissionRepository.findByUserId(userId);
@@ -262,7 +263,7 @@ export class ProjectService implements IProjectService {
    * Retrieves all projects in the system with optional filtering (admin only).
    */
   public async getAllProjects(filters?: ProjectFilterDto): Promise<ProjectListResponseDto> {
-    const projects = await this.projectRepository.findAll();
+    const projects = await this.projectRepository.find();
     const summaries = await Promise.all(projects.map(p => this.mapToSummaryDto(p)));
 
     const limit = filters?.limit || 20;
@@ -294,18 +295,53 @@ export class ProjectService implements IProjectService {
    */
   public async getProjectsForCalendar(
     userId: string,
-    startDate: Date,
-    endDate: Date
+    startDate: string,
+    endDate: string
   ): Promise<CalendarProjectDto[]> {
-    if (startDate >= endDate) {
+    const parsedStartDate = new Date(startDate);
+    const parsedEndDate = new Date(endDate);
+
+    const errors: Array<ReturnType<typeof createError>> = [];
+
+    if (!Number.isFinite(parsedStartDate.getTime())) {
+      errors.push(
+        createError(
+          'startDate',
+          'Start date must be a valid ISO date string',
+          ValidationErrorCode.INVALID_DATE,
+          startDate,
+        ),
+      );
+    }
+
+    if (!Number.isFinite(parsedEndDate.getTime())) {
+      errors.push(
+        createError(
+          'endDate',
+          'End date must be a valid ISO date string',
+          ValidationErrorCode.INVALID_DATE,
+          endDate,
+        ),
+      );
+    }
+
+    if (errors.length > 0) {
+      throw new ValidationError('Invalid date range', errors);
+    }
+
+    if (parsedStartDate >= parsedEndDate) {
       throw new ValidationError('Invalid date range', [
-        createError('dateRange', 'Start date must be before end date', ValidationErrorCode.DATE_RANGE_INVALID),
+        createError(
+          'dateRange',
+          'Start date must be before end date',
+          ValidationErrorCode.DATE_RANGE_INVALID,
+        ),
       ]);
     }
 
     const filters: ProjectFilterDto = {
-      startDate,
-      endDate,
+      startDate: parsedStartDate,
+      endDate: parsedEndDate,
     };
 
     const result = await this.getProjectsByUser(userId, filters);
@@ -317,7 +353,6 @@ export class ProjectService implements IProjectService {
       deliveryDate: p.deliveryDate,
       status: p.status,
       hasPendingTasks: p.hasPendingTasks,
-      statusColor: this.getStatusColor(p.status),
     }));
   }
 
@@ -521,9 +556,12 @@ export class ProjectService implements IProjectService {
     }
 
     // Check no pending tasks
-    const pendingCount = await this.taskRepository.countPendingByProjectId(projectId);
+    const pendingCount = await this.taskRepository.count({
+      projectId,
+      status: TaskStatus.PENDING,
+    });
     if (pendingCount > 0) {
-      throw new BusinessRuleError(`Cannot finalize project with ${pendingCount} pending tasks`);
+      throw new BusinessLogicError(`Cannot finalize project with ${pendingCount} pending tasks`);
     }
 
     project.status = ProjectStatus.FINALIZED;
@@ -558,7 +596,7 @@ export class ProjectService implements IProjectService {
     }
 
     if (project.status !== ProjectStatus.FINALIZED) {
-      throw new BusinessRuleError('Project is not finalized');
+      throw new BusinessLogicError('Project is not finalized');
     }
 
     project.status = ProjectStatus.ACTIVE;
@@ -602,24 +640,6 @@ export class ProjectService implements IProjectService {
   }
 
   /**
-   * Gets status color for UI display.
-   */
-  private getStatusColor(status: ProjectStatus): 'red' | 'green' | 'yellow' | 'gray' {
-    switch (status) {
-      case ProjectStatus.ACTIVE:
-        return 'green';
-      case ProjectStatus.IN_PROGRESS:
-        return 'yellow';
-      case ProjectStatus.PENDING_REVIEW:
-        return 'yellow';
-      case ProjectStatus.FINALIZED:
-        return 'gray';
-      default:
-        return 'gray';
-    }
-  }
-
-  /**
    * Maps project entity to DTO.
    */
   private async mapToDto(project: Project): Promise<ProjectDto> {
@@ -627,9 +647,9 @@ export class ProjectService implements IProjectService {
     const client = await this.userRepository.findById(project.clientId);
     const clientName = client ? client.username : 'Unknown';
 
-    const dropboxFolderId = project.dropboxFolderId;
-    const dropboxFolderUrl = dropboxFolderId
-      ? `https://www.dropbox.com/home${dropboxFolderId}`
+    const storageFolderId = project.dropboxFolderId;
+    const storageFolderUrl = storageFolderId
+      ? `https://www.dropbox.com/home${storageFolderId}`
       : null;
 
     return {
@@ -646,8 +666,8 @@ export class ProjectService implements IProjectService {
       contractDate: project.contractDate,
       deliveryDate: project.deliveryDate,
       status: project.status,
-      dropboxFolderId: dropboxFolderId,
-      dropboxFolderUrl: dropboxFolderUrl,
+      storageFolderId: storageFolderId,
+      storageFolderUrl: storageFolderUrl,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       finalizedAt: project.finalizedAt,
@@ -663,7 +683,10 @@ export class ProjectService implements IProjectService {
     const clientName = client ? client.username : 'Unknown';
 
     // Get pending tasks count
-    const pendingTasksCount = await this.taskRepository.countPendingByProjectId(project.id);
+    const pendingTasksCount = await this.taskRepository.count({
+      projectId: project.id,
+      status: TaskStatus.PENDING,
+    });
     
     // Get unread messages count (placeholder - needs implementation)
     const unreadMessagesCount = 0;
@@ -671,10 +694,6 @@ export class ProjectService implements IProjectService {
     // Count participants
     const participantCount = 1 + project.specialUserIds.length; // client + special users
     
-    // Calculate delivery status
-    const daysUntilDelivery = Math.ceil((project.deliveryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    const isOverdue = daysUntilDelivery < 0;
-
     return {
       id: project.id,
       code: project.code,
@@ -688,9 +707,6 @@ export class ProjectService implements IProjectService {
       pendingTasksCount,
       unreadMessagesCount,
       participantCount,
-      statusColor: this.getStatusColor(project.status),
-      isOverdue,
-      daysUntilDelivery,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
     };
@@ -701,14 +717,14 @@ export class ProjectService implements IProjectService {
    */
   private async mapToDetailsDto(project: Project, userId: string): Promise<ProjectDetailsDto> {
     // Get tasks, messages, files counts
-    const tasks = await this.taskRepository.findByProjectId(project.id);
-    const messages = await this.messageRepository.countByProjectId(project.id);
-    const files = await this.fileRepository.countByProjectId(project.id);
+    const tasks = await this.taskRepository.find({projectId: project.id});
+    const messages = await this.messageRepository.count({projectId: project.id});
+    const files = await this.fileRepository.count({projectId: project.id});
     const participants = await this.getProjectParticipants(project.id, userId);
     const accessRights = await this.authorizationService.getProjectPermissions(userId, project.id);
     const projectDto = await this.mapToDto(project);
 
-    // Convert Set<AccessRight> to ProjectPermissionsDto
+    // Convert AccessRight[] to ProjectPermissionsDto
     const userPermissions = this.convertToProjectPermissions(accessRights);
 
     // This needs to be refactored to match ProjectDetailsDto structure
@@ -724,25 +740,23 @@ export class ProjectService implements IProjectService {
       sections: [],
       totalFilesCount: files,
       currentUserPermissions: userPermissions,
-      statusColor: this.getStatusColor(project.status),
-      isOverdue: project.deliveryDate < new Date(),
-      daysUntilDelivery: Math.ceil((project.deliveryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
     } as ProjectDetailsDto;
   }
 
   /**
-   * Converts a Set of AccessRights to ProjectPermissionsDto.
+   * Converts a list of AccessRights to ProjectPermissionsDto.
    */
-  private convertToProjectPermissions(accessRights: Set<AccessRight>): ProjectPermissionsDto {
+  private convertToProjectPermissions(accessRights: ReadonlyArray<AccessRight>): ProjectPermissionsDto {
+    const rightsSet = new Set(accessRights);
     return {
-      canEdit: accessRights.has(AccessRight.EDIT),
-      canDelete: accessRights.has(AccessRight.DELETE),
-      canFinalize: accessRights.has(AccessRight.EDIT), // Finalize requires edit permission
-      canCreateTask: accessRights.has(AccessRight.EDIT),
-      canSendMessage: accessRights.has(AccessRight.SEND_MESSAGE),
-      canUploadFile: accessRights.has(AccessRight.UPLOAD),
-      canDownloadFile: accessRights.has(AccessRight.DOWNLOAD),
-      canManageParticipants: accessRights.has(AccessRight.EDIT) && accessRights.has(AccessRight.DELETE),
+      canEdit: rightsSet.has(AccessRight.EDIT),
+      canDelete: rightsSet.has(AccessRight.DELETE),
+      canFinalize: rightsSet.has(AccessRight.EDIT), // Finalize requires edit permission
+      canCreateTask: rightsSet.has(AccessRight.EDIT),
+      canSendMessage: rightsSet.has(AccessRight.SEND_MESSAGE),
+      canUploadFile: rightsSet.has(AccessRight.UPLOAD),
+      canDownloadFile: rightsSet.has(AccessRight.DOWNLOAD),
+      canManageParticipants: rightsSet.has(AccessRight.EDIT) && rightsSet.has(AccessRight.DELETE),
     };
   }
 }

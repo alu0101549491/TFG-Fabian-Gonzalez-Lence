@@ -79,3 +79,42 @@ export class ConflictError extends Error {
     Object.setPrototypeOf(this, ConflictError.prototype);
   }
 }
+
+/**
+ * Error thrown when a storage-related operation fails.
+ */
+export class StorageError extends Error {
+  public readonly code = 'STORAGE_ERROR';
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'StorageError';
+    Object.setPrototypeOf(this, StorageError.prototype);
+  }
+}
+
+/**
+ * Error thrown when a business logic rule is violated.
+ *
+ * @deprecated Prefer {@link BusinessRuleError}. This alias exists to match
+ * legacy interface documentation and keep the error taxonomy consistent.
+ */
+export class BusinessLogicError extends BusinessRuleError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BusinessLogicError';
+    Object.setPrototypeOf(this, BusinessLogicError.prototype);
+  }
+}
+
+/**
+ * Union of known application-layer service errors.
+ */
+export type ApplicationServiceError =
+  | UnauthorizedError
+  | NotFoundError
+  | ValidationError
+  | BusinessRuleError
+  | BusinessLogicError
+  | ConflictError
+  | StorageError;
