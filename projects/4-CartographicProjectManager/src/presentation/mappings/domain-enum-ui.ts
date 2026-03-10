@@ -44,10 +44,18 @@ export const ProjectStatusColor: Record<ProjectStatus, string> = {
 };
 
 export const ProjectTypeDisplayName: Record<ProjectType, string> = {
-  RESIDENTIAL: 'Residential',
-  COMMERCIAL: 'Commercial',
-  INDUSTRIAL: 'Industrial',
-  PUBLIC: 'Public',
+  TOPOGRAPHY: 'Topography',
+  CADASTRE: 'Cadastre',
+  GIS: 'GIS',
+  HYDROLOGY: 'Hydrology',
+  CIVIL_ENGINEERING: 'Civil Engineering',
+  ENVIRONMENTAL_DOCUMENT: 'Environmental Document',
+  STUDY_OF_ALTERNATIVES: 'Study of Alternatives',
+  GEOLOGICAL_STUDY: 'Geological Study',
+  HYDROGEOLOGICAL_STUDY: 'Hydrogeological Study',
+  RISK_STUDY: 'Risk Study',
+  CONSTRUCTION_MANAGEMENT: 'Construction Management',
+  MISCELLANEOUS: 'Miscellaneous',
 };
 
 export const TaskStatusDisplayName: Record<TaskStatus, string> = {

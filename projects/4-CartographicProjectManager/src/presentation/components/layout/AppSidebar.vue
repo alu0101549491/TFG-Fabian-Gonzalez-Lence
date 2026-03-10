@@ -153,6 +153,45 @@ function handleOverlayClick(event: MouseEvent): void {
 
 .nav-icon {
   flex-shrink: 0;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px;
+  min-height: 20px;
+  max-width: 20px;
+  max-height: 20px;
+}
+
+.nav-icon :deep(svg) {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px;
+  min-height: 20px;
+  max-width: 20px;
+  max-height: 20px;
+}
+
+.collapsed .nav-link {
+  justify-content: center;
+  padding: var(--spacing-3) var(--spacing-2);
+}
+
+.collapsed .nav-icon {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px;
+  min-height: 20px;
+  max-width: 20px;
+  max-height: 20px;
+  margin: 0;
+}
+
+.collapsed .nav-icon :deep(svg) {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px;
+  min-height: 20px;
+  max-width: 20px;
+  max-height: 20px;
 }
 
 .collapsed .nav-text {
@@ -174,6 +213,16 @@ function handleOverlayClick(event: MouseEvent): void {
   cursor: pointer;
   color: var(--color-text-secondary);
   transition: var(--transition-colors);
+}
+
+.collapse-toggle :deep(svg) {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px;
+  min-height: 20px;
+  max-width: 20px;
+  max-height: 20px;
+  flex-shrink: 0;
 }
 
 .collapse-toggle:hover {
