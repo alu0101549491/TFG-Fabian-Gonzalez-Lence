@@ -1009,10 +1009,28 @@ watch(
 }
 
 .calendar-day-number {
+  /* Reset button styles */
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  /* Custom styles */
+  display: inline-block;
+  font-family: var(--font-family-sans);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
   margin-bottom: var(--spacing-1);
+  text-align: center;
+}
+
+.calendar-day-number:hover {
+  opacity: 0.8;
+}
+
+.calendar-day-number:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .calendar-day-today .calendar-day-number {
@@ -1037,16 +1055,20 @@ watch(
 
 /* Common item styles */
 .calendar-item {
+  /* Reset button styles */
+  padding: 2px 4px;
+  background: none;
+  cursor: pointer;
+  line-height: 1;
+  /* Custom styles */
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
-  padding: 2px 4px;
   font-size: 10px;
   font-weight: var(--font-weight-medium);
   color: white;
   border-radius: var(--radius-sm);
   border: none;
-  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1076,34 +1098,34 @@ watch(
 
 /* Project styles */
 .calendar-project-green {
-  background-color: var(--color-success-500);
+  background-color: var(--color-success-500) !important;
 }
 .calendar-project-yellow {
-  background-color: var(--color-warning-500);
+  background-color: var(--color-warning-500) !important;
 }
 .calendar-project-red {
-  background-color: var(--color-error-500);
+  background-color: var(--color-error-500) !important;
 }
 .calendar-project-gray {
-  background-color: var(--color-gray-400);
+  background-color: var(--color-gray-400) !important;
 }
 
 /* Task styles - priority based colors */
 .calendar-task-priority-low {
-  background-color: var(--color-info-500);
+  background-color: var(--color-info-500) !important;
 }
 .calendar-task-priority-medium {
-  background-color: var(--color-primary-500);
+  background-color: var(--color-primary-500) !important;
 }
 .calendar-task-priority-high {
-  background-color: var(--color-warning-600);
+  background-color: var(--color-warning-600) !important;
 }
 .calendar-task-priority-urgent {
-  background-color: var(--color-error-600);
+  background-color: var(--color-error-600) !important;
 }
 
 .calendar-task-overdue {
-  background-color: var(--color-error-700);
+  background-color: var(--color-error-700) !important;
 }
 
 .calendar-day-more {

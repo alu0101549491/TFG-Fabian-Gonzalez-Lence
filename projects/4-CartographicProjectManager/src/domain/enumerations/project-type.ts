@@ -16,14 +16,30 @@
  * Represents the type classification of a cartographic project.
  */
 export enum ProjectType {
-  /** Residential area cartographic work. */
-  RESIDENTIAL = 'RESIDENTIAL',
-  /** Commercial zone cartographic work. */
-  COMMERCIAL = 'COMMERCIAL',
-  /** Industrial area cartographic work. */
-  INDUSTRIAL = 'INDUSTRIAL',
-  /** Public infrastructure cartographic work. */
-  PUBLIC = 'PUBLIC',
+  /** Topographic survey and mapping work. */
+  TOPOGRAPHY = 'TOPOGRAPHY',
+  /** Cadastral mapping and land registry work. */
+  CADASTRE = 'CADASTRE',
+  /** Geographic Information System projects. */
+  GIS = 'GIS',
+  /** Hydrological studies and water resource mapping. */
+  HYDROLOGY = 'HYDROLOGY',
+  /** Civil engineering projects and infrastructure. */
+  CIVIL_ENGINEERING = 'CIVIL_ENGINEERING',
+  /** Environmental impact assessment documents. */
+  ENVIRONMENTAL_DOCUMENT = 'ENVIRONMENTAL_DOCUMENT',
+  /** Study of project alternatives and feasibility. */
+  STUDY_OF_ALTERNATIVES = 'STUDY_OF_ALTERNATIVES',
+  /** Geological surveys and terrain analysis. */
+  GEOLOGICAL_STUDY = 'GEOLOGICAL_STUDY',
+  /** Hydrogeological studies and groundwater mapping. */
+  HYDROGEOLOGICAL_STUDY = 'HYDROGEOLOGICAL_STUDY',
+  /** Risk assessment and hazard mapping studies. */
+  RISK_STUDY = 'RISK_STUDY',
+  /** Construction project management and oversight. */
+  CONSTRUCTION_MANAGEMENT = 'CONSTRUCTION_MANAGEMENT',
+  /** Miscellaneous or other types of projects. */
+  MISCELLANEOUS = 'MISCELLANEOUS',
 }
 
 /**

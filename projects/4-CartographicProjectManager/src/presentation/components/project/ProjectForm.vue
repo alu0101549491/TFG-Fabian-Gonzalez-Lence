@@ -30,7 +30,7 @@
             type="text"
             class="project-form-input"
             :class="{'project-form-input-error': errors.code}"
-            placeholder="CART-2026-001"
+            placeholder="e.g., CART-2026-001 or any unique code"
             :disabled="isEditMode"
             :readonly="isEditMode"
             required
@@ -48,7 +48,7 @@
           </button>
         </div>
         <p v-if="errors.code" class="project-form-error">{{ errors.code }}</p>
-        <p v-else class="project-form-hint">Format: CART-YYYY-NNN</p>
+        <p v-else class="project-form-hint">Enter a unique project code or use the generate button</p>
       </div>
 
       <!-- Year -->
@@ -326,10 +326,18 @@ const touched = reactive<Record<string, boolean>>({});
 const isEditMode = computed(() => !!props.project);
 
 const typeOptions = computed(() => [
-  {value: ProjectType.RESIDENTIAL, label: 'Residential'},
-  {value: ProjectType.COMMERCIAL, label: 'Commercial'},
-  {value: ProjectType.INDUSTRIAL, label: 'Industrial'},
-  {value: ProjectType.PUBLIC, label: 'Public'},
+  {value: ProjectType.TOPOGRAPHY, label: 'Topography'},
+  {value: ProjectType.CADASTRE, label: 'Cadastre'},
+  {value: ProjectType.GIS, label: 'GIS'},
+  {value: ProjectType.HYDROLOGY, label: 'Hydrology'},
+  {value: ProjectType.CIVIL_ENGINEERING, label: 'Civil Engineering'},
+  {value: ProjectType.ENVIRONMENTAL_DOCUMENT, label: 'Environmental Document'},
+  {value: ProjectType.STUDY_OF_ALTERNATIVES, label: 'Study of Alternatives'},
+  {value: ProjectType.GEOLOGICAL_STUDY, label: 'Geological Study'},
+  {value: ProjectType.HYDROGEOLOGICAL_STUDY, label: 'Hydrogeological Study'},
+  {value: ProjectType.RISK_STUDY, label: 'Risk Study'},
+  {value: ProjectType.CONSTRUCTION_MANAGEMENT, label: 'Construction Management'},
+  {value: ProjectType.MISCELLANEOUS, label: 'Miscellaneous'},
 ]);
 
 const isFormValid = computed(() => {
@@ -380,8 +388,8 @@ function validateField(field: string): void {
     case 'code':
       if (!form.code) {
         errors.code = 'Project code is required';
-      } else if (!/^CART-\d{4}-\d{3}$/.test(form.code)) {
-        errors.code = 'Invalid format. Use CART-YYYY-NNN (e.g., CART-2026-001)';
+      } else if (form.code.length > 50) {
+        errors.code = 'Project code must be 50 characters or less';
       }
       break;
 
