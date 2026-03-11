@@ -51,7 +51,7 @@ Este archivo fue creado automáticamente por el test de integración.`;
 
     const testBuffer = Buffer.from(testContent, 'utf-8');
     const testFileName = 'test-file.txt';
-    const filePath = `${projectPath}/Messages/${testFileName}`;
+    const filePath = `${projectPath}/ReportAndAnnexes/${testFileName}`;
 
     console.log(`📤 Subiendo archivo: ${filePath}`);
     const uploadResult = await dropboxService.uploadFile(filePath, testBuffer);

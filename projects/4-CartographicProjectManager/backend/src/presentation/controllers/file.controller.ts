@@ -79,9 +79,8 @@ export class FileController {
       'Specifications',
       'Budget',
       'Tasks',
-      'Messages',
     ]);
-    return allowedSections.has(normalized) ? normalized : 'Messages';
+    return allowedSections.has(normalized) ? normalized : 'ReportAndAnnexes';
   }
 
   private buildDropboxStorageFilename(originalName: string, fileId: string): string {

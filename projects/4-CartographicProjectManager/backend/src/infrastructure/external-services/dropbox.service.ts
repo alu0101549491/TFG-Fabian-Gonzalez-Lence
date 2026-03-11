@@ -35,7 +35,6 @@ const PROJECT_SECTIONS = [
   'Specifications',
   'Budget',
   'Tasks',
-  'Messages',
 ] as const;
 
 /**
