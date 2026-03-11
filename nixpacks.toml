@@ -1,0 +1,16 @@
+# Nixpacks configuration for Railway deployment (Monorepo)
+# Backend is at: projects/4-CartographicProjectManager/backend
+[phases.setup]
+nixPkgs = ["nodejs_20", "openssl", "postgresql"]
+
+[phases.install]
+cmds = ["npm ci --prefix projects/4-CartographicProjectManager/backend"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm run start"
+
+[variables]
+NODE_ENV = "production"
