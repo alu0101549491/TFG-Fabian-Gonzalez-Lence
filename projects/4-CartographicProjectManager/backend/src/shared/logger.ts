@@ -32,7 +32,8 @@ function safeSerializeMetadata(metadata: Record<string, unknown>): string {
 const productionFormat = winston.format.combine(
   winston.format.timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
   winston.format.errors({stack: true}),
-  winston.format.printf(({level, message, timestamp, error, ...metadata}) => {
+  winston.format.printf((info) => {
+    const {level, message, timestamp, error, ...metadata} = info as any;
     let log = `${timestamp} [${level}]: ${message}`;
     
     if (error) {
