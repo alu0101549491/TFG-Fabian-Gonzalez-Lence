@@ -694,7 +694,7 @@ const uploadSections = computed<ProjectSectionId[]>(() => {
       ?.map((s) => s.name)
       .filter(isProjectSectionId) ?? [];
 
-  return sections.length > 0 ? sections : [PROJECT_SECTIONS.MESSAGES];
+  return sections.length > 0 ? sections : [PROJECT_SECTIONS.REPORT_AND_ANNEXES];
 });
 
 const filteredTasks = computed(() => {
@@ -1176,7 +1176,7 @@ async function handleFileUpload(
         const uploadedFile = await uploadFileToDropbox(
           file,
           currentProject.value.project.id,
-          isProjectSectionId(section) ? section : PROJECT_SECTIONS.MESSAGES,
+          isProjectSectionId(section) ? section : PROJECT_SECTIONS.REPORT_AND_ANNEXES,
           (progress) => {
             progressItem.progress = progress;
           }

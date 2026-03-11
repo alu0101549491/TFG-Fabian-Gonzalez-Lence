@@ -269,7 +269,7 @@ export interface FileUploaderEmits {
 }
 
 const props = withDefaults(defineProps<FileUploaderProps>(), {
-  defaultSection: PROJECT_SECTIONS.MESSAGES,
+  defaultSection: PROJECT_SECTIONS.REPORT_AND_ANNEXES,
   maxFileSize: FILE.MAX_SIZE_BYTES,
   maxFiles: 10,
   acceptedExtensions: () => Object.values(FILE.SUPPORTED_EXTENSIONS).flat(),
@@ -293,7 +293,7 @@ watch(
     const desired =
       (isProjectSectionId(defaultSection) ? defaultSection : null) ??
       sections[0] ??
-      PROJECT_SECTIONS.MESSAGES;
+      PROJECT_SECTIONS.REPORT_AND_ANNEXES;
 
     if (!sections.includes(selectedSection.value)) {
       selectedSection.value = desired;
