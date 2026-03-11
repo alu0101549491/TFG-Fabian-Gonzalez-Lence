@@ -27,6 +27,30 @@ function safeSerializeMetadata(metadata: Record<string, unknown>): string {
 }
 
 /**
+ * Production log format with explicit error details
+ */
+const productionFormat = winston.format.combine(
+  winston.format.timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
+  winston.format.errors({stack: true}),
+  winston.format.printf(({level, message, timestamp, error, ...metadata}) => {
+    let log = `${timestamp} [${level}]: ${message}`;
+    
+    if (error) {
+      log += `\n  ERROR NAME: ${error.name || 'Unknown'}`;
+      log += `\n  ERROR MESSAGE: ${error.message || 'No message'}`;
+      if (error.code) log += `\n  ERROR CODE: ${error.code}`;
+      if (error.stack) log += `\n  STACK TRACE:\n${error.stack}`;
+    }
+    
+    if (Object.keys(metadata).length > 0) {
+      log += `\n  METADATA: ${JSON.stringify(metadata, null, 2)}`;
+    }
+    
+    return log;
+  })
+);
+
+/**
  * Winston logger format configuration
  */
 const logFormat = winston.format.combine(
@@ -75,7 +99,7 @@ export const logger = winston.createLogger({
  */
 logger.add(
   new winston.transports.Console({
-    format: SERVER.NODE_ENV === 'production' ? logFormat : consoleFormat,
+    format: SERVER.NODE_ENV === 'production' ? productionFormat : consoleFormat,
   })
 );
 
