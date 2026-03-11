@@ -6,7 +6,7 @@
   "main": "projects/4-CartographicProjectManager/backend/dist/server.js",
   "scripts": {
     "build": "cd projects/4-CartographicProjectManager/backend && npm ci && npx prisma generate && npm run build && npm run build:seed",
-    "start": "cd projects/4-CartographicProjectManager/backend && npx prisma migrate resolve --rolled-back \"20260311201627_fix_project_type_enum\" 2>/dev/null || true && npx prisma migrate deploy && npm run prisma:seed:production && node dist/server.js",
+    "start": "cd projects/4-CartographicProjectManager/backend && npx prisma migrate resolve --rolled-back \"20260311201627_fix_project_type_enum\" 2>/dev/null || true && npx prisma migrate resolve --rolled-back \"20260311202500_migrate_and_fix_project_type_enum\" 2>/dev/null || true && npx prisma migrate deploy && npm run prisma:seed:production && node dist/server.js",
     "railway:build": "npm run build",
     "railway:start": "npm run start"
   },
