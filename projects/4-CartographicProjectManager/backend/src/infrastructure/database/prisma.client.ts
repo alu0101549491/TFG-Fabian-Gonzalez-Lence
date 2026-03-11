@@ -57,7 +57,10 @@ if (IS_DEVELOPMENT) {
  * Log error events
  */
 prisma.$on('error', (event: Prisma.LogEvent) => {
-  logError('Prisma error event', new Error(event.message));
+  logError('Prisma error event', new Error(event.message), {
+    timestamp: event.timestamp,
+    target: event.target,
+  });
 });
 
 /**

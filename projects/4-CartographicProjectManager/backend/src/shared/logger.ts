@@ -101,7 +101,17 @@ export function logError(
   error?: Error,
   meta?: object
 ): void {
-  logger.error(message, {error: error?.stack, ...meta});
+  logger.error(message, {
+    error: error
+      ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          ...(error as any),
+        }
+      : undefined,
+    ...meta,
+  });
 }
 
 /**
