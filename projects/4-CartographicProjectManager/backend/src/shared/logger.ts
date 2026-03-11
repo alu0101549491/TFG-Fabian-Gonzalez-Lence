@@ -70,15 +70,14 @@ export const logger = winston.createLogger({
 });
 
 /**
- * Add console transport in development
+ * Add console transport for Railway logs visibility
+ * Railway captures stdout/stderr, not file logs
  */
-if (SERVER.NODE_ENV !== 'production') {
-  logger.add(
-    new winston.transports.Console({
-      format: consoleFormat,
-    })
-  );
-}
+logger.add(
+  new winston.transports.Console({
+    format: SERVER.NODE_ENV === 'production' ? logFormat : consoleFormat,
+  })
+);
 
 /**
  * Log info message
