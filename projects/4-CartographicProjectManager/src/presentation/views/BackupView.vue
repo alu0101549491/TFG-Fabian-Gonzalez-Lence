@@ -71,14 +71,6 @@
               <div class="stat-label">Total Size</div>
             </div>
           </div>
-
-          <div class="stat-card">
-            <div class="stat-icon">☁️</div>
-            <div class="stat-content">
-              <div class="stat-value">{{ dropboxStatus }}</div>
-              <div class="stat-label">Dropbox Sync</div>
-            </div>
-          </div>
         </section>
 
         <!-- Main Content Grid -->
@@ -173,43 +165,6 @@
                 <span class="export-icon">📋</span>
                 <span class="export-label">Export as PDF</span>
                 <span class="export-description">Project reports</span>
-              </button>
-            </div>
-          </section>
-
-          <!-- Dropbox Synchronization -->
-          <section class="backup-section dropbox-section">
-            <h2>Dropbox Synchronization</h2>
-            <p class="section-description">
-              Status: <strong :class="dropboxStatusClass">{{ dropboxStatus }}</strong>
-            </p>
-
-            <div v-if="dropboxConnected" class="dropbox-info">
-              <p>Last sync: {{ lastDropboxSync }}</p>
-              <div class="dropbox-actions">
-                <button
-                  @click="handleDropboxSync"
-                  class="button-secondary"
-                  :disabled="isSyncing"
-                >
-                  {{ isSyncing ? 'Syncing...' : 'Sync Now' }}
-                </button>
-                <button
-                  @click="handleDropboxDisconnect"
-                  class="button-ghost"
-                >
-                  Disconnect
-                </button>
-              </div>
-            </div>
-
-            <div v-else class="dropbox-connect">
-              <p>Connect your Dropbox account to automatically sync backups</p>
-              <button
-                @click="handleDropboxConnect"
-                class="button-primary"
-              >
-                Connect Dropbox
               </button>
             </div>
           </section>
@@ -378,12 +333,6 @@ interface ScheduleApiDto {
   retentionDays: number;
 }
 
-interface DropboxStatusApiDto {
-  connected: boolean;
-  enabled: boolean;
-  lastSyncAt: string | null;
-}
-
 interface ToastPayload {
   type: 'success' | 'error' | 'warning' | 'info';
   title?: string;
@@ -413,7 +362,6 @@ const isLoading = ref(false);
 const isCreatingBackup = ref(false);
 const isSavingSchedule = ref(false);
 const isExporting = ref(false);
-const isSyncing = ref(false);
 const isRestoring = ref(false);
 const searchQuery = ref('');
 const showRestoreModal = ref(false);
@@ -427,10 +375,6 @@ const scheduleConfig = ref<ScheduleConfig>({
 
 const backupHistory = ref<BackupRecord[]>([]);
 
-const dropboxConnected = ref(false);
-const dropboxSyncEnabled = ref(false);
-const lastDropboxSync = ref('Never');
-
 // Computed Properties
 const lastBackupDate = computed(() => {
   if (backupHistory.value.length === 0) return 'Never';
@@ -442,15 +386,6 @@ const totalBackupSize = computed(() => {
   const totalBytes = backupHistory.value.reduce((sum, b) => sum + b.size, 0);
   return formatFileSize(totalBytes);
 });
-
-const dropboxStatus = computed(() => {
-  if (!dropboxConnected.value) return 'Not Connected';
-  return dropboxSyncEnabled.value ? 'Connected' : 'Connected (Sync Disabled)';
-});
-
-const dropboxStatusClass = computed(() =>
-  dropboxConnected.value ? 'status-connected' : 'status-disconnected'
-);
 
 const filteredBackups = computed(() => {
   if (!searchQuery.value) return backupHistory.value;
@@ -485,15 +420,6 @@ async function loadScheduleConfig(): Promise<void> {
     time: response.data.time,
     retentionDays: response.data.retentionDays,
   };
-}
-
-async function loadDropboxStatus(): Promise<void> {
-  const response = await httpClient.get<DropboxStatusApiDto>('/backup/dropbox/status');
-  dropboxConnected.value = response.data.connected;
-  dropboxSyncEnabled.value = response.data.enabled;
-  lastDropboxSync.value = response.data.lastSyncAt
-    ? new Date(response.data.lastSyncAt).toLocaleString()
-    : 'Never';
 }
 
 // Methods
@@ -638,53 +564,6 @@ async function handleExport(format: string): Promise<void> {
 }
 
 /**
- * Handle Dropbox connection
- */
-async function handleDropboxConnect(): Promise<void> {
-  try {
-    await httpClient.post<DropboxStatusApiDto>('/backup/dropbox/connect');
-    await loadDropboxStatus();
-    notify({type: 'success', title: 'Dropbox', message: 'Dropbox sync enabled.'});
-  } catch (error) {
-    console.error('Failed to connect Dropbox:', error);
-    notify({type: 'error', title: 'Dropbox', message: 'Failed to enable Dropbox sync.'});
-  }
-}
-
-/**
- * Handle Dropbox disconnection
- */
-async function handleDropboxDisconnect(): Promise<void> {
-  try {
-    await httpClient.post<DropboxStatusApiDto>('/backup/dropbox/disconnect');
-    await loadDropboxStatus();
-    notify({type: 'info', title: 'Dropbox', message: 'Dropbox sync disabled.'});
-  } catch (error) {
-    console.error('Failed to disconnect Dropbox:', error);
-    notify({type: 'error', title: 'Dropbox', message: 'Failed to disable Dropbox sync.'});
-  }
-}
-
-/**
- * Handle Dropbox sync
- */
-async function handleDropboxSync(): Promise<void> {
-  isSyncing.value = true;
-  try {
-    await httpClient.post<{uploaded: number; lastSyncAt: string | null}>(
-      '/backup/dropbox/sync',
-    );
-    await loadDropboxStatus();
-    notify({type: 'success', title: 'Dropbox', message: 'Synced backups to Dropbox.'});
-  } catch (error) {
-    console.error('Failed to sync to Dropbox:', error);
-    notify({type: 'error', title: 'Dropbox', message: 'Failed to sync backups to Dropbox.'});
-  } finally {
-    isSyncing.value = false;
-  }
-}
-
-/**
  * Handle backup download
  *
  * @param {BackupRecord} backup - Backup to download
@@ -774,7 +653,6 @@ onMounted(async () => {
     await Promise.all([
       refreshBackupHistory(),
       loadScheduleConfig(),
-      loadDropboxStatus(),
     ]);
   } catch (error) {
     console.error('Failed to load backup data:', error);
