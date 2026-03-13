@@ -23,6 +23,28 @@ import {
 export const notificationRoutes = Router();
 const controller = new NotificationController();
 
+// Count endpoint (used by frontend unread badge logic)
+notificationRoutes.get(
+	'/count',
+	authenticate,
+	authorizeUserIdParamOrQueryOrAdmin('userId'),
+	controller.count.bind(controller),
+);
+
+// Mark all as read (optional helper used by some clients)
+notificationRoutes.post(
+	'/mark-all-read',
+	authenticate,
+	controller.markAllAsRead.bind(controller),
+);
+
+// Create notification (admin-only; primarily for internal tooling/testing)
+notificationRoutes.post(
+	'/',
+	authenticate,
+	controller.create.bind(controller),
+);
+
 // Support both query param and path param for userId (handled in controller)
 notificationRoutes.get(
 	'/',
@@ -41,6 +63,20 @@ notificationRoutes.put(
 	authenticate,
 	authorizeNotificationOwnerOrAdmin('id'),
 	controller.markAsRead.bind(controller),
+);
+// Alias to match frontend repository contract
+notificationRoutes.post(
+  '/:id/read',
+  authenticate,
+  authorizeNotificationOwnerOrAdmin('id'),
+  controller.markAsRead.bind(controller),
+);
+
+notificationRoutes.get(
+  '/:id',
+  authenticate,
+  authorizeNotificationOwnerOrAdmin('id'),
+  controller.getById.bind(controller),
 );
 notificationRoutes.delete(
 	'/:id',

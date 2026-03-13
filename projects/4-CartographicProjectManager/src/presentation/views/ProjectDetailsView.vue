@@ -257,6 +257,7 @@
           <FileList
             :files="projectFilesForList"
             :loading="filesLoading"
+            :sections="uploadSections"
             :can-delete="canManageCurrentProject"
             :current-user-id="userId ?? undefined"
             :is-admin="isAdmin"
@@ -694,7 +695,14 @@ const uploadSections = computed<ProjectSectionId[]>(() => {
       ?.map((s) => s.name)
       .filter(isProjectSectionId) ?? [];
 
-  return sections.length > 0 ? sections : [PROJECT_SECTIONS.REPORT_AND_ANNEXES];
+  return sections.length > 0
+    ? sections
+    : [
+        PROJECT_SECTIONS.REPORT_AND_ANNEXES,
+        PROJECT_SECTIONS.PLANS,
+        PROJECT_SECTIONS.SPECIFICATIONS,
+        PROJECT_SECTIONS.BUDGET,
+      ];
 });
 
 const filteredTasks = computed(() => {

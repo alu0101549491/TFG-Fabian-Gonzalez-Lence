@@ -249,22 +249,27 @@ export const useNotificationStore = defineStore('notification', () => {
 
     try {
       const page = loadMore ? pagination.value.page + 1 : 1;
+      const limit = pagination.value.limit;
+      const offset = loadMore ? notifications.value.length : 0;
 
-      // Fetch notifications from backend
-      const notificationEntities = await notificationRepository.findByUserId(authStore.userId);
-     const fetchedNotifications = notificationEntities.map(mapEntityToDto);
+      const notificationEntities = await notificationRepository.findByUserIdPaginated(
+        authStore.userId,
+        limit,
+        offset,
+      );
+      const fetchedNotifications = notificationEntities.map(mapEntityToDto);
 
       if (loadMore) {
         notifications.value = [...notifications.value, ...fetchedNotifications];
       } else {
         notifications.value = fetchedNotifications;
       }
-      
+
       pagination.value = {
-        total: fetchedNotifications.length,
-        page: page,
-        limit: 20,
-        hasMore: false,
+        total: notifications.value.length,
+        page,
+        limit,
+        hasMore: fetchedNotifications.length === limit,
       };
       
       // Update unread count

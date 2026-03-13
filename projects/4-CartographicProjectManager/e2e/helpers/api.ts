@@ -97,6 +97,26 @@ export interface TaskDto {
   readonly status: string;
 }
 
+export interface CreateNotificationPayload {
+  readonly userId?: string;
+  readonly type: 'NEW_MESSAGE' | 'NEW_TASK' | 'TASK_STATUS_CHANGE' | 'FILE_RECEIVED' | 'PROJECT_ASSIGNED' | 'PROJECT_FINALIZED';
+  readonly title: string;
+  readonly message: string;
+  readonly relatedEntityId?: string | null;
+}
+
+export interface NotificationDto {
+  readonly id: string;
+  readonly userId: string;
+  readonly type: string;
+  readonly title: string;
+  readonly message: string;
+  readonly relatedEntityId: string | null;
+  readonly createdAt: string;
+  readonly isRead: boolean;
+  readonly readAt: string | null;
+}
+
 interface BackendApiEnvelope<T> {
   readonly success: boolean;
   readonly data: T;
@@ -209,6 +229,23 @@ export class CpmApiClient {
 
   public async deleteTask(taskId: string): Promise<void> {
     const response = await this.request.delete(`tasks/${taskId}`, {
+      headers: this.authHeaders(),
+    });
+
+    await CpmApiClient.assertOk(response);
+  }
+
+  public async createNotification(payload: CreateNotificationPayload): Promise<NotificationDto> {
+    const response = await this.request.post('notifications', {
+      headers: this.authHeaders(),
+      data: payload,
+    });
+
+    return CpmApiClient.parseEnvelope<NotificationDto>(response);
+  }
+
+  public async deleteNotification(notificationId: string): Promise<void> {
+    const response = await this.request.delete(`notifications/${notificationId}`, {
       headers: this.authHeaders(),
     });
 

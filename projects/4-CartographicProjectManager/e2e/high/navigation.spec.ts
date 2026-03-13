@@ -22,7 +22,7 @@ test.describe('Navigation (high)', () => {
 
   test('sidebar routes work and logout returns to login', async ({page}) => {
     await page.goto('');
-    await expect(page.getByRole('heading', {name: 'Dashboard'})).toBeVisible();
+    await expect(page.getByRole('heading', {name: 'Dashboard', exact: true})).toBeVisible();
 
     await page.getByRole('link', {name: 'Projects', exact: true}).click();
     await expect(page).toHaveURL(/\/projects(\?|$)/);
@@ -38,5 +38,9 @@ test.describe('Navigation (high)', () => {
     await page.getByRole('button', {name: 'Logout'}).click();
     await expect(page).toHaveURL(/\/login(\?|$)/);
     await expect(page.getByRole('button', {name: 'Sign In'})).toBeVisible();
+
+    // After logout, protected routes must be blocked.
+    await page.goto('projects');
+    await expect(page).toHaveURL(/\/login\?redirect=(%2Fprojects|\/projects)/);
   });
 });

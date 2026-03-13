@@ -617,6 +617,7 @@ function handleNotificationClick(notification: NotificationDto): void {
 .notification-list-content {
   flex: 1;
   overflow-y: auto;
+  max-height: 90vh;
 }
 
 .notification-list-compact .notification-list-content {

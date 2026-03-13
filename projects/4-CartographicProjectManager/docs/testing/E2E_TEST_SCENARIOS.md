@@ -1426,15 +1426,15 @@ This section is auto-generated from the scenario headings in this file.
 
 **Checklist (all scenarios):**
 - [ ] AUTH-001 (P0) — Login (admin) success + redirect to dashboard
-- [ ] AUTH-002 (P0) — Login with redirect query returns to original destination
-- [ ] AUTH-003 (P0) — Unauthenticated access to protected route redirects to login
+- [x] AUTH-002 (P0) — Login with redirect query returns to original destination
+- [x] AUTH-003 (P0) — Unauthenticated access to protected route redirects to login
 - [ ] AUTH-004 (P1) — Authenticated user cannot access guest-only routes
 - [ ] AUTH-005 (P0) — Login fails with invalid credentials
 - [ ] AUTH-006 (P2) — Remember-me behavior persists session (if implemented)
-- [ ] AUTH-007 (P0) — Logout clears session and blocks protected pages
+- [x] AUTH-007 (P0) — Logout clears session and blocks protected pages
 - [ ] AUTH-008 (P1) — Registration success path
 - [ ] AUTH-009 (P2) — Registration validation errors
-- [ ] AUTH-010 (P1) — Direct navigation to unknown route shows NotFound
+- [x] AUTH-010 (P1) — Direct navigation to unknown route shows NotFound
 - [ ] AUTH-011 (P1) — Invalid/unsafe redirect query is ignored (open-redirect hardening)
 - [ ] AUTH-012 (P0) — Refreshing an authenticated page preserves session
 - [ ] AUTH-013 (P0) — Manual navigation to protected route after logout is blocked
@@ -1445,17 +1445,17 @@ This section is auto-generated from the scenario headings in this file.
 - [ ] NAV-005 (P1) — Header notifications badge reflects unread count
 - [ ] NAV-006 (P2) — User dropdown opens/closes (click outside, Escape)
 - [ ] NAV-007 (P2) — Sidebar link click closes sidebar (mobile + desktop)
-- [ ] DASH-001 (P0) — Dashboard loads core widgets
+- [x] DASH-001 (P0) — Dashboard loads core widgets
 - [ ] DASH-002 (P1) — Unread message counter visible for projects (spec FR17)
-- [ ] DASH-003 (P1) — Create new project entry point visibility (role-based)
-- [ ] DASH-004 (P0) — Recent project click navigates to details
-- [ ] PROJ-001 (P0) — Projects list loads and shows cards
+- [x] DASH-003 (P1) — Create new project entry point visibility (role-based)
+- [x] DASH-004 (P0) — Recent project click navigates to details
+- [x] PROJ-001 (P0) — Projects list loads and shows cards
 - [ ] PROJ-002 (P2) — Search filters project list
 - [ ] PROJ-003 (P2) — Filter by status/type and sort order
 - [ ] PROJ-004 (P0) — Create project (admin)
 - [ ] PROJ-005 (P1) — Create project validation errors
-- [ ] PROJ-006 (P1) — Edit project (admin)
-- [ ] PROJ-007 (P1) — Delete project (admin) requires confirmation
+- [x] PROJ-006 (P1) — Edit project (admin)
+- [x] PROJ-007 (P1) — Delete project (admin) requires confirmation
 - [ ] PROJ-008 (P0) — Client data isolation: client cannot see other clients’ projects (spec FR6)
 - [ ] PROJ-009 (P0) — Non-admin cannot see project create/edit/delete controls
 - [ ] PROJ-010 (P2) — Project list empty state is friendly and actionable
@@ -1493,7 +1493,7 @@ This section is auto-generated from the scenario headings in this file.
 - [ ] MSG-009 (P2) — Typing indicator shown during other user typing (real-time)
 - [ ] MSG-010 (P1) — Cannot send empty/whitespace-only message
 - [ ] MSG-011 (P2) — Message send failure shows error and allows retry (network failure)
-- [ ] FILE-001 (P0) — Files tab shows sections and existing files
+- [x] FILE-001 (P0) — Files tab shows sections and existing files
 - [ ] FILE-002 (P0) — Upload file via browse
 - [ ] FILE-003 (P1) — Upload via drag & drop
 - [ ] FILE-004 (P1) — Upload validation: file too large is rejected
@@ -1511,23 +1511,23 @@ This section is auto-generated from the scenario headings in this file.
 - [ ] FILE-016 (P2) — Section selection defaults safely when missing/invalid
 - [ ] FILE-017 (P0) — Non-authorized user cannot upload/delete files (spec FR28)
 - [ ] FILE-018 (P1) — Upload technical formats (PDF/KML/SHP/images) (spec FR19)
-- [ ] NOTIF-001 (P0) — Notifications page loads and lists notifications
-- [ ] NOTIF-002 (P2) — Filter notifications (type/status)
-- [ ] NOTIF-003 (P1) — Mark single notification as read
-- [ ] NOTIF-004 (P1) — Mark all as read
-- [ ] NOTIF-005 (P2) — Delete notification
-- [ ] NOTIF-006 (P2) — Load more pagination
-- [ ] NOTIF-007 (P0) — Navigate to related entity from notification
+- [x] NOTIF-001 (P0) — Notifications page loads and lists notifications
+- [x] NOTIF-002 (P2) — Filter notifications (type/status)
+- [x] NOTIF-003 (P1) — Mark single notification as read
+- [x] NOTIF-004 (P1) — Mark all as read
+- [x] NOTIF-005 (P2) — Delete notification
+- [x] NOTIF-006 (P2) — Load more pagination
+- [x] NOTIF-007 (P0) — Navigate to related entity from notification
 - [ ] NOTIF-008 (P3) — (GAP/Optional) WhatsApp notifications toggle & behavior (spec FR21)
-- [ ] NOTIF-009 (P3) — Notifications empty state
-- [ ] CAL-001 (P0) — Calendar view loads projects/tasks on dates
-- [ ] CAL-002 (P1) — Changing month reloads calendar data
-- [ ] CAL-003 (P0) — Click project entry navigates to project details
-- [ ] CAL-004 (P1) — Click task navigates to project tasks tab with task focused
-- [ ] CAL-005 (P2) — Selecting a date shows projects for that date
-- [ ] CAL-006 (P0) — Client calendar only shows client-visible projects (spec FR6)
-- [ ] BACKUP-001 (P0) — Non-admin blocked from backup route
-- [ ] BACKUP-002 (P0) — Admin can open backup page and see controls
+- [x] NOTIF-009 (P3) — Notifications empty state
+- [x] CAL-001 (P0) — Calendar view loads projects/tasks on dates
+- [x] CAL-002 (P1) — Changing month reloads calendar data
+- [x] CAL-003 (P0) — Click project entry navigates to project details
+- [x] CAL-004 (P1) — Click task navigates to project tasks tab with task focused
+- [x] CAL-005 (P2) — Selecting a date shows projects for that date
+- [x] CAL-006 (P0) — Client calendar only shows client-visible projects (spec FR6)
+- [x] BACKUP-001 (P0) — Non-admin blocked from backup route
+- [x] BACKUP-002 (P0) — Admin can open backup page and see controls
 - [ ] BACKUP-003 (P1) — Create manual backup
 - [ ] BACKUP-004 (P2) — Configure schedule (frequency/time/retention)
 - [ ] BACKUP-005 (P1) — Export data (CSV/Excel/PDF)
@@ -1535,12 +1535,12 @@ This section is auto-generated from the scenario headings in this file.
 - [ ] BACKUP-007 (P1) — Restore backup requires confirmation
 - [ ] BACKUP-008 (P2) — Delete backup requires confirmation
 - [ ] BACKUP-009 (P2) — Export/backup failures show clear error (no silent failure)
-- [ ] USERS-001 (P0) — Non-admin blocked from users route
-- [ ] USERS-002 (P0) — Admin can view user list
-- [ ] USERS-003 (P1) — Create user (admin)
-- [ ] USERS-004 (P1) — Edit user role/status
-- [ ] USERS-005 (P1) — Delete user blocked for self
-- [ ] USERS-006 (P2) — Filters: role, active-only, search
+- [x] USERS-001 (P0) — Non-admin blocked from users route
+- [x] USERS-002 (P0) — Admin can view user list
+- [x] USERS-003 (P1) — Create user (admin)
+- [x] USERS-004 (P1) — Edit user role/status
+- [x] USERS-005 (P1) — Delete user blocked for self
+- [x] USERS-006 (P2) — Filters: role, active-only, search
 - [ ] USERS-007 (P2) — User creation validation (required fields, email format)
 - [ ] SET-001 (P1) — Settings page loads current user profile fields
 - [ ] SET-002 (P1) — Update profile fields
@@ -1548,7 +1548,7 @@ This section is auto-generated from the scenario headings in this file.
 - [ ] SET-004 (P2) — Toggle notification preferences
 - [ ] SET-005 (P2) — Role-specific settings sections visible appropriately
 - [ ] SET-006 (P2) — Invalid email update rejected
-- [ ] SEC-001 (P0) — Admin-only routes redirect to forbidden for non-admin
+- [x] SEC-001 (P0) — Admin-only routes redirect to forbidden for non-admin
 - [ ] SEC-002 (P2) — Direct access to `/forbidden` renders access denied page
 - [ ] SEC-003 (P0) — Client cannot access another client’s project details by URL (spec FR6)
 - [ ] SEC-004 (P1) — Special user permission restrictions (spec FR26) (GAP)

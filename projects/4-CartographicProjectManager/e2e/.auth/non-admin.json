@@ -6,19 +6,19 @@
       "localStorage": [
         {
           "name": "cpm_refresh_token",
-          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZmI3NGYxYy02MGE4LTQyNTktOWRhMS03OTQ3NDI3ZDBmNzkiLCJlbWFpbCI6InB3LWUyZS1ub24tYWRtaW5AZXhhbXBsZS5jb20iLCJyb2xlIjoiQ0xJRU5UIiwiaWF0IjoxNzczNDAyMjc2LCJleHAiOjE3NzU5OTQyNzZ9.cheoMiTc4EO64Mq9iHP9X6Qrqw73mXYwwcrhgHhzwAA"
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZmI3NGYxYy02MGE4LTQyNTktOWRhMS03OTQ3NDI3ZDBmNzkiLCJlbWFpbCI6InB3LWUyZS1ub24tYWRtaW5AZXhhbXBsZS5jb20iLCJyb2xlIjoiQ0xJRU5UIiwiaWF0IjoxNzczNDE0Njk4LCJleHAiOjE3NzYwMDY2OTh9.V5fnpoD4TL9gecyYR3-1CG5CLsTxz1vXPh4YiAxflgI"
         },
         {
           "name": "cpm_access_token",
-          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZmI3NGYxYy02MGE4LTQyNTktOWRhMS03OTQ3NDI3ZDBmNzkiLCJlbWFpbCI6InB3LWUyZS1ub24tYWRtaW5AZXhhbXBsZS5jb20iLCJyb2xlIjoiQ0xJRU5UIiwiaWF0IjoxNzczNDAyMjc2LCJleHAiOjE3NzQwMDcwNzZ9.GzPbvK3xJb0nExNZP7uDCFfLQr8LdaaOAo4C7ag5Tyk"
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZmI3NGYxYy02MGE4LTQyNTktOWRhMS03OTQ3NDI3ZDBmNzkiLCJlbWFpbCI6InB3LWUyZS1ub24tYWRtaW5AZXhhbXBsZS5jb20iLCJyb2xlIjoiQ0xJRU5UIiwiaWF0IjoxNzczNDE0Njk4LCJleHAiOjE3NzQwMTk0OTh9.YRl48pAqhEVB3jKmZ1tMwHCPb_SHMww6ns29SAiG8Zw"
         },
         {
           "name": "cpm_user",
-          "value": "{\"id\":\"5fb74f1c-60a8-4259-9da1-7947427d0f79\",\"username\":\"pw-e2e-non-admin\",\"email\":\"pw-e2e-non-admin@example.com\",\"firstName\":\"\",\"lastName\":\"\",\"role\":\"CLIENT\",\"isActive\":true,\"phone\":null,\"createdAt\":\"2026-03-13T11:44:36.973Z\",\"updatedAt\":\"2026-03-13T11:44:36.973Z\",\"lastLogin\":null}"
+          "value": "{\"id\":\"5fb74f1c-60a8-4259-9da1-7947427d0f79\",\"username\":\"pw-e2e-non-admin\",\"email\":\"pw-e2e-non-admin@example.com\",\"firstName\":\"\",\"lastName\":\"\",\"role\":\"CLIENT\",\"isActive\":true,\"phone\":null,\"createdAt\":\"2026-03-13T11:44:36.973Z\",\"updatedAt\":\"2026-03-13T11:44:36.973Z\",\"lastLogin\":\"2026-03-13T15:11:15.908Z\"}"
         },
         {
           "name": "cpm_expires_at",
-          "value": "2026-03-20T11:44:36.000Z"
+          "value": "2026-03-20T15:11:38.000Z"
         }
       ]
     }

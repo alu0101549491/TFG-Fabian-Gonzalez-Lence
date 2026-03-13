@@ -83,6 +83,16 @@ test.describe('Auth + route guards (critical)', () => {
     await expect(page.getByText("You don't have permission to access this resource.")).toBeVisible();
   });
 
+  test('blocks non-admin user from /users and redirects to /forbidden', async ({page}) => {
+    await loginAsNonAdmin(page);
+
+    await page.goto('users');
+
+    await expect(page).toHaveURL(/\/forbidden(\?|$)/);
+    await expect(page.getByRole('heading', {name: 'Access Forbidden'})).toBeVisible();
+    await expect(page.getByText("You don't have permission to access this resource.")).toBeVisible();
+  });
+
   test('shows NotFound page for unknown route', async ({page}) => {
     await page.goto('this-route-does-not-exist');
 
