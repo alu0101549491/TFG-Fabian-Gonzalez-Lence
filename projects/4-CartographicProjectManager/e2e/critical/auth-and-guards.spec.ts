@@ -12,9 +12,12 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {test, expect, type Page} from '@playwright/test';
+import {test, expect, request, type Page} from '@playwright/test';
 
 import {DEV_ACCOUNTS, login, register} from '../helpers/auth';
+import {CpmApiClient} from '../helpers/api';
+import {getApiBaseUrl} from '../helpers/e2e-paths.ts';
+import {uniqueNonce} from '../helpers/test-data';
 
 async function loginAsNonAdmin(page: Page): Promise<void> {
   const candidates = [DEV_ACCOUNTS.CLIENT, DEV_ACCOUNTS.SPECIAL];
@@ -156,5 +159,80 @@ test.describe('Auth + route guards (critical)', () => {
 
     await expect(page.getByText('404')).toBeVisible();
     await expect(page.getByRole('heading', {name: 'Page Not Found'})).toBeVisible();
+  });
+
+  test('AUTH-008: registration success path', async ({page}) => {
+    const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+    const {client: adminApi} = await CpmApiClient.login(apiContext, DEV_ACCOUNTS.ADMIN);
+
+    const nonce = uniqueNonce('pw-auth-008');
+    const email = `pw-auth-008-${nonce}@example.com`;
+    const password = `pw-auth-008-${nonce}`;
+    const username = `pw-auth-008-${nonce}`;
+
+    let createdUserId: string | null = null;
+    try {
+      await register(page, {username, email, password});
+
+      // Register flow auto-logs in and navigates away from /register.
+      await expect(page.getByRole('heading', {name: 'Dashboard', exact: true})).toBeVisible();
+
+      const rawUser = await page.evaluate(() => window.sessionStorage.getItem('cpm_user'));
+      const parsed = rawUser ? (JSON.parse(rawUser) as {id?: string}) : null;
+      createdUserId = parsed?.id ?? null;
+      expect(createdUserId, 'registered user id stored in sessionStorage').toBeTruthy();
+    } finally {
+      if (createdUserId) {
+        try {
+          await adminApi.deleteUser(createdUserId);
+        } catch {
+          // Ignore.
+        }
+      }
+      await apiContext.dispose();
+    }
+  });
+
+  test('AUTH-009: blocks registration submit with invalid email (native validation)', async ({page}) => {
+    await page.goto('register');
+
+    await page.locator('#username').fill('pw-auth-009-invalid-email');
+    await page.locator('#email').fill('not-an-email');
+    await page.locator('#password').fill('pw-auth-009-pass');
+    await page.locator('#confirmPassword').fill('pw-auth-009-pass');
+
+    const emailValidity = await page
+      .locator('#email')
+      .evaluate((el) => (el as HTMLInputElement).validity.valid);
+    expect(emailValidity).toBe(false);
+
+    const submitButton = page.getByRole('button', {name: 'Create Account'});
+    await expect(submitButton).toBeEnabled();
+
+    await submitButton.click();
+
+    await expect(page).toHaveURL(/\/register(\?|$)/);
+    await expect(page.getByRole('heading', {name: 'Dashboard', exact: true})).not.toBeVisible();
+    await expect(page.locator('[role="alert"]')).toHaveCount(0);
+  });
+
+  test('AUTH-009: shows validation error when passwords do not match', async ({page}) => {
+    await page.goto('register');
+
+    await page.locator('#username').fill('pw-auth-009-mismatch');
+    await page.locator('#email').fill('pw-auth-009-mismatch@example.com');
+    await page.locator('#password').fill('pw-auth-009-pass');
+    await page.locator('#confirmPassword').fill('pw-auth-009-pass-typo');
+
+    const submitButton = page.getByRole('button', {name: 'Create Account'});
+    await expect(submitButton).toBeEnabled();
+
+    await submitButton.click();
+
+    const errorAlert = page.locator('[role="alert"]');
+    await expect(errorAlert).toBeVisible();
+    await expect(errorAlert).toContainText('Passwords do not match');
+    await expect(page).toHaveURL(/\/register(\?|$)/);
+    await expect(page.getByRole('heading', {name: 'Dashboard', exact: true})).not.toBeVisible();
   });
 });

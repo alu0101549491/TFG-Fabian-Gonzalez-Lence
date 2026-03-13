@@ -360,6 +360,226 @@ test.describe('Projects CRUD (critical)', () => {
       await apiContext.dispose();
     }
   });
+
+  test('PDET-001: project details route loads and shows tabs', async ({projectDetailsPage}) => {
+    const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+
+    const nonce = uniqueNonce('pw-project-details');
+    const code = `PW-${new Date().getFullYear()}-${nonce.slice(-6)}`;
+
+    const {client: adminApi} = await CpmApiClient.login(apiContext, DEV_ACCOUNTS.ADMIN);
+    const clientId = await resolveClientId(adminApi);
+
+    const project = await adminApi.createProject({
+      year: new Date().getFullYear(),
+      code,
+      name: `PW Details Project ${nonce}`,
+      clientId,
+      type: 'GIS',
+      coordinateX: null,
+      coordinateY: null,
+      contractDate: daysFromToday(0).toISOString(),
+      deliveryDate: daysFromToday(7).toISOString(),
+    });
+
+    try {
+      await projectDetailsPage.goto(project.id);
+      await expect(projectDetailsPage.page.getByRole('tab', {name: 'Overview'})).toBeVisible();
+      await expect(projectDetailsPage.page.getByRole('tab', {name: 'Tasks'})).toBeVisible();
+      await expect(projectDetailsPage.page.getByRole('tab', {name: 'Messages'})).toBeVisible();
+      await expect(projectDetailsPage.page.getByRole('tab', {name: 'Files'})).toBeVisible();
+    } finally {
+      try {
+        await adminApi.deleteProject(project.id);
+      } catch {
+        // Ignore.
+      }
+      await apiContext.dispose();
+    }
+  });
+
+  test('PDET-002: finalize project disabled until tasks completed', async ({projectDetailsPage}) => {
+    const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+
+    const nonce = uniqueNonce('pw-project-finalize-guard');
+    const code = `PW-${new Date().getFullYear()}-${nonce.slice(-6)}`;
+
+    const {client: adminApi, session: adminSession} = await CpmApiClient.login(
+      apiContext,
+      DEV_ACCOUNTS.ADMIN,
+    );
+    const clientId = await resolveClientId(adminApi);
+
+    const project = await adminApi.createProject({
+      year: new Date().getFullYear(),
+      code,
+      name: `PW Finalize Guard Project ${nonce}`,
+      clientId,
+      type: 'GIS',
+      coordinateX: null,
+      coordinateY: null,
+      contractDate: daysFromToday(0).toISOString(),
+      deliveryDate: daysFromToday(7).toISOString(),
+    });
+
+    const description = `PW Task Guard ${nonce.slice(-10)}`;
+
+    const task = await adminApi.createTask({
+      projectId: project.id,
+      creatorId: adminSession.user.id,
+      assigneeId: adminSession.user.id,
+      description,
+      status: 'PENDING',
+      priority: 'HIGH',
+      dueDate: daysFromToday(5).toISOString(),
+      comments: null,
+    });
+
+    try {
+      await projectDetailsPage.goto(project.id);
+      await projectDetailsPage.openTasksTab();
+
+      const finalizeButton = projectDetailsPage.page
+        .locator('.project-summary-actions')
+        .getByRole('button', {name: /Finalize/});
+      await expect(finalizeButton).toBeVisible();
+
+      const card = projectDetailsPage.taskCardByDescription(description);
+      await expect(card).toBeVisible();
+      await expect(card.getByText('Pending')).toBeVisible();
+
+      // When there are pending/in-progress tasks, finalization is blocked.
+      await expect(finalizeButton).toBeDisabled();
+      await expect(finalizeButton).toHaveAttribute('title', 'Complete all tasks before finalizing');
+
+      // Complete the task through the edit modal.
+      await card.getByRole('button', {name: 'Task actions'}).click();
+      await card.getByRole('button', {name: 'Edit'}).click();
+
+      const editDialog = projectDetailsPage.page.getByRole('dialog', {name: 'Edit Task'});
+      await expect(editDialog).toBeVisible();
+      await editDialog.getByRole('button', {name: 'In Progress'}).click();
+      await editDialog.getByRole('button', {name: 'Apply Status Change'}).click();
+      await expect(editDialog).toBeHidden();
+      await expect(card.getByText('In Progress')).toBeVisible();
+
+      await card.getByRole('button', {name: 'Task actions'}).click();
+      await card.getByRole('button', {name: 'Edit'}).click();
+      await expect(editDialog).toBeVisible();
+      await editDialog.getByRole('button', {name: 'Performed'}).click();
+      await editDialog.getByRole('button', {name: 'Apply Status Change'}).click();
+      await expect(editDialog).toBeHidden();
+      await expect(card.getByText('Performed')).toBeVisible();
+
+      await card.getByRole('button', {name: 'Task actions'}).click();
+      await card.getByRole('button', {name: 'Edit'}).click();
+      await expect(editDialog).toBeVisible();
+      await editDialog.getByRole('button', {name: 'Completed'}).click();
+      await editDialog.getByRole('button', {name: 'Confirm & Complete'}).click();
+      await expect(editDialog).toBeHidden();
+      await expect(card.getByText('Completed')).toBeVisible();
+
+      // After all tasks are completed, finalization becomes available.
+      await expect(finalizeButton).toBeEnabled();
+      await expect(finalizeButton).toHaveAttribute('title', 'Finalize project');
+    } finally {
+      try {
+        await adminApi.deleteTask(task.id);
+      } catch {
+        // Ignore if deleted by cascade.
+      }
+      try {
+        await adminApi.deleteProject(project.id);
+      } catch {
+        // Ignore.
+      }
+      await apiContext.dispose();
+    }
+  });
+
+  test('PDET-003: finalize project succeeds for finalizable project', async ({projectDetailsPage}) => {
+    const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+
+    const nonce = uniqueNonce('pw-project-finalize-success');
+    const code = `PW-${new Date().getFullYear()}-${nonce.slice(-6)}`;
+
+    const {client: adminApi, session: adminSession} = await CpmApiClient.login(
+      apiContext,
+      DEV_ACCOUNTS.ADMIN,
+    );
+    const clientId = await resolveClientId(adminApi);
+
+    const project = await adminApi.createProject({
+      year: new Date().getFullYear(),
+      code,
+      name: `PW Finalize Success Project ${nonce}`,
+      clientId,
+      type: 'GIS',
+      coordinateX: null,
+      coordinateY: null,
+      contractDate: daysFromToday(0).toISOString(),
+      deliveryDate: daysFromToday(7).toISOString(),
+    });
+
+    const task = await adminApi.createTask({
+      projectId: project.id,
+      creatorId: adminSession.user.id,
+      assigneeId: adminSession.user.id,
+      description: `PW Completed Task ${nonce.slice(-10)}`,
+      status: 'COMPLETED',
+      priority: 'MEDIUM',
+      dueDate: daysFromToday(5).toISOString(),
+      comments: null,
+    });
+
+    try {
+      await projectDetailsPage.goto(project.id);
+
+      const finalizeButton = projectDetailsPage.page
+        .locator('.project-summary-actions')
+        .getByRole('button', {name: /Finalize/});
+      await expect(finalizeButton).toBeEnabled();
+
+      await finalizeButton.click();
+      const finalizeDialog = projectDetailsPage.page.getByRole('dialog', {name: 'Finalize Project'});
+      await expect(finalizeDialog).toBeVisible();
+      await expect(finalizeDialog.getByText('✓ All tasks completed')).toBeVisible();
+
+      await finalizeDialog.getByRole('button', {name: 'Finalize Project'}).click();
+      await expect(finalizeDialog).toBeHidden();
+
+      await expect(projectDetailsPage.page.locator('.project-summary-status')).toHaveText('Finalized');
+      await expect(finalizeButton).toBeHidden();
+
+      // Implemented behavior: messaging input becomes disabled when project is finalized.
+      await projectDetailsPage.page.getByRole('tab', {name: 'Messages'}).click();
+      await expect(projectDetailsPage.page.getByPlaceholder('Type a message...')).toBeDisabled();
+    } finally {
+      try {
+        await adminApi.deleteTask(task.id);
+      } catch {
+        // Ignore if deleted by cascade.
+      }
+      try {
+        await adminApi.deleteProject(project.id);
+      } catch {
+        // Ignore.
+      }
+      await apiContext.dispose();
+    }
+  });
+
+  test('PDET-005: invalid project id shows a safe error state (no crash)', async ({page}) => {
+    await page.goto('projects/does-not-exist');
+
+    await expect(page.getByRole('heading', {name: 'Project not found'})).toBeVisible();
+    await expect(page.getByText('The requested project could not be loaded.')).toBeVisible();
+    await expect(page.getByRole('tab', {name: 'Overview'})).toHaveCount(0);
+
+    await page.getByRole('button', {name: 'Go Back'}).click();
+    await page.waitForURL((url) => url.pathname.endsWith('/projects'));
+    await expect(page.getByRole('button', {name: 'Create new project'})).toBeVisible();
+  });
 });
 
 test.describe('Projects permissions (critical)', () => {
@@ -526,6 +746,75 @@ test.describe('Projects data isolation (critical)', () => {
       }
       try {
         await adminApi.deleteUser(clientSessionB.user.id);
+      } catch {
+        // Ignore.
+      }
+      await apiContext.dispose();
+    }
+  });
+});
+
+test.describe('Finalized project visibility (critical)', () => {
+  test('PROJ-013: finalized projects remain visible and accessible for clients', async ({page}) => {
+    const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+
+    const nonce = uniqueNonce('pw-project-finalized');
+    const code = `PW-${new Date().getFullYear()}-${nonce.slice(-6)}`;
+    const name = `PW Finalized Project ${nonce}`;
+
+    const clientEmail = `pw-finalized-${nonce}@example.com`;
+    const clientPassword = `pw-finalized-${nonce}`;
+    const clientUsername = `pw-finalized-${nonce}`;
+
+    const {client: adminApi} = await CpmApiClient.login(apiContext, DEV_ACCOUNTS.ADMIN);
+
+    const clientSession = await adminApi.register({
+      username: clientUsername,
+      email: clientEmail,
+      password: clientPassword,
+    });
+
+    const project = await adminApi.createProject({
+      year: new Date().getFullYear(),
+      code,
+      name,
+      clientId: clientSession.user.id,
+      type: 'GIS',
+      coordinateX: null,
+      coordinateY: null,
+      contractDate: daysFromToday(0).toISOString(),
+      deliveryDate: daysFromToday(7).toISOString(),
+    });
+
+    await adminApi.updateProject(project.id, {status: 'FINALIZED'});
+
+    try {
+      await page.goto('login');
+      await login(page, {email: clientEmail, password: clientPassword});
+
+      await page.goto('projects');
+      await expect(page.getByRole('heading', {name: 'Projects'})).toBeVisible();
+
+      await page.getByLabel('Search projects').fill(code);
+
+      const card = page.locator('.project-card').filter({
+        has: page.locator('.project-card-code-text', {hasText: code}),
+      });
+      await expect(card).toBeVisible();
+      await expect(card.locator('.project-card-finalized-badge')).toBeVisible();
+
+      await card.click();
+      await expect(page.getByRole('button', {name: 'Go back to projects list'})).toBeVisible();
+      await expect(page.getByRole('heading', {name})).toBeVisible();
+      await expect(page.locator('main')).toContainText(code);
+    } finally {
+      try {
+        await adminApi.deleteProject(project.id);
+      } catch {
+        // Ignore.
+      }
+      try {
+        await adminApi.deleteUser(clientSession.user.id);
       } catch {
         // Ignore.
       }

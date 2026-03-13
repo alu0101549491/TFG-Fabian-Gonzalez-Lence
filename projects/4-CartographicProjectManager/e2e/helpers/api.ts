@@ -122,6 +122,19 @@ export interface CreateNotificationPayload {
   readonly relatedEntityId?: string | null;
 }
 
+export interface CreateMessagePayload {
+  readonly projectId: string;
+  readonly content: string;
+  readonly fileIds?: string[];
+}
+
+export interface MessageDto {
+  readonly id: string;
+  readonly projectId: string;
+  readonly senderId: string;
+  readonly content: string;
+}
+
 export interface NotificationDto {
   readonly id: string;
   readonly userId: string;
@@ -268,6 +281,15 @@ export class CpmApiClient {
     });
 
     return CpmApiClient.parseEnvelope<NotificationDto>(response);
+  }
+
+  public async createMessage(payload: CreateMessagePayload): Promise<MessageDto> {
+    const response = await this.request.post('messages', {
+      headers: this.authHeaders(),
+      data: payload,
+    });
+
+    return CpmApiClient.parseEnvelope<MessageDto>(response);
   }
 
   public async deleteNotification(notificationId: string): Promise<void> {

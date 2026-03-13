@@ -28,13 +28,17 @@ export class ProjectDetailsPage {
 
   public async openTasksTab(): Promise<void> {
     await this.page.getByRole('tab', {name: 'Tasks'}).click();
-    await expect(this.page.getByRole('heading', {name: 'Tasks'})).toBeVisible();
+    await expect(this.page.getByRole('heading', {name: 'Tasks', exact: true})).toBeVisible();
   }
 
   public async clickNewTask(): Promise<void> {
-    await this.page.getByRole('button', {name: '+ New Task'}).click();
-    await expect(this.page.getByRole('dialog')).toBeVisible();
-    await expect(this.page.getByRole('heading', {name: 'Create New Task'})).toBeVisible();
+    await this.page
+      .locator('#tasks-panel .panel-actions')
+      .getByRole('button', {name: '+ New Task'})
+      .click();
+    const dialog = this.page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('#create-task-title')).toBeVisible();
   }
 
   public taskCardByDescription(description: string): Locator {

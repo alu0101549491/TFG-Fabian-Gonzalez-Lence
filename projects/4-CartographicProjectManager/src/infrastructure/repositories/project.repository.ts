@@ -67,6 +67,16 @@ interface ProjectApiResponse {
   createdAt: string;
   updatedAt: string;
   finalizedAt: string | null;
+  currentUserPermissions?: {
+    canEdit: boolean;
+    canDelete: boolean;
+    canFinalize: boolean;
+    canCreateTask: boolean;
+    canSendMessage: boolean;
+    canUploadFile: boolean;
+    canDownloadFile: boolean;
+    canManageParticipants: boolean;
+  };
   client?: UserApiResponse;
   specialUsers?: SpecialUserProjectApiResponse[];
 }

@@ -142,6 +142,70 @@ test.describe('Dashboard (medium)', () => {
         await apiContext.dispose();
       }
     });
+
+    test('DASH-002: unread message counter visible for projects (spec FR17)', async ({page}) => {
+      const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+      const nonce = uniqueNonce('pw-dash-002');
+
+      const {client: adminApi} = await CpmApiClient.login(apiContext, DEV_ACCOUNTS.ADMIN);
+
+      const email = `pw-dash-002-${nonce}@example.com`;
+      const password = `pw-dash-002-${nonce}`;
+      const username = `pw-dash-002-${nonce}`;
+
+      let createdUserId: string | null = null;
+
+      const code = `PW-DASH-${nonce.slice(-8)}`;
+      const name = `PW Dashboard Unread ${nonce}`;
+
+      const registered = await adminApi.register({username, email, password});
+      createdUserId = registered.user.id;
+
+      const project = await adminApi.createProject({
+        year: new Date().getFullYear(),
+        code,
+        name,
+        clientId: createdUserId,
+        type: 'GIS',
+        coordinateX: null,
+        coordinateY: null,
+        contractDate: daysFromToday(0).toISOString(),
+        deliveryDate: daysFromToday(7).toISOString(),
+      });
+
+      try {
+        const clientApi = new CpmApiClient(apiContext, registered.accessToken);
+        await clientApi.createMessage({
+          projectId: project.id,
+          content: `PW unread seed ${nonce}`,
+        });
+
+        await page.goto('');
+
+        const recentProjects = page.locator('section.dashboard-section.recent-projects');
+        const projectCard = recentProjects.locator('article.project-card', {hasText: code});
+
+        await expect(projectCard).toBeVisible();
+        await expect(
+          projectCard.locator('.project-card-counter-primary', {hasText: '1'}),
+        ).toBeVisible();
+      } finally {
+        try {
+          await adminApi.deleteProject(project.id);
+        } catch {
+          // Ignore.
+        }
+
+        if (createdUserId) {
+          try {
+            await adminApi.deleteUser(createdUserId);
+          } catch {
+            // Ignore.
+          }
+        }
+        await apiContext.dispose();
+      }
+    });
   });
 
   test.describe('non-admin', () => {

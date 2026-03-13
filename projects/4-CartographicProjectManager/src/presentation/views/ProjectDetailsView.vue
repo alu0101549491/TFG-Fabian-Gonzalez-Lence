@@ -1330,8 +1330,10 @@ async function loadProjectData(): Promise<void> {
   }
   
   try {
+    // Load project first so dependent stores (e.g., taskStats updates) can safely
+    // reference the current project.
+    await loadProject(projectId.value);
     await Promise.all([
-      loadProject(projectId.value),
       loadTasksByProject(projectId.value),
       loadMessagesByProject(projectId.value),
       loadFilesByProject(projectId.value),

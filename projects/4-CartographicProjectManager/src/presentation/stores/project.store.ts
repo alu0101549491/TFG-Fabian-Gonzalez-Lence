@@ -345,10 +345,44 @@ export const useProjectStore = defineStore('project', () => {
 
       // Map participants from backend data
       const participants: ParticipantDto[] = [];
+      const participantIds = new Set<string>();
+
+      const addParticipant = (participant: ParticipantDto): void => {
+        if (participantIds.has(participant.userId)) {
+          return;
+        }
+        participantIds.add(participant.userId);
+        participants.push(participant);
+      };
+
+      // Add project owner/creator as participant (enables assigning tasks to admin/creator)
+      if (projectWithDetails.creatorId) {
+        try {
+          const creator = await userRepository.findById(projectWithDetails.creatorId);
+          if (creator) {
+            addParticipant({
+              userId: creator.id,
+              username: creator.username,
+              email: creator.email,
+              role: creator.role,
+              participantType: 'owner',
+              permissions: [],
+              joinedAt: creator.createdAt,
+            });
+          }
+        } catch (err) {
+          if (isDev) {
+            console.warn(
+              `Failed to fetch project creator ${projectWithDetails.creatorId}:`,
+              err,
+            );
+          }
+        }
+      }
 
       // Add client as participant
       if (projectWithDetails.client) {
-        participants.push({
+        addParticipant({
           userId: projectWithDetails.client.id,
           username: projectWithDetails.client.username,
           email: projectWithDetails.client.email,
@@ -363,7 +397,7 @@ export const useProjectStore = defineStore('project', () => {
       if (projectWithDetails.specialUsers && Array.isArray(projectWithDetails.specialUsers)) {
         projectWithDetails.specialUsers.forEach((su) => {
           if (su.user) {
-            participants.push({
+            addParticipant({
               userId: su.user.id,
               username: su.user.username,
               email: su.user.email,
@@ -396,17 +430,17 @@ export const useProjectStore = defineStore('project', () => {
         participants,
         sections: [],
         totalFilesCount: 0,
-        currentUserPermissions: {
+        currentUserPermissions: projectWithDetails.currentUserPermissions ?? {
           canEdit: authStore.isAdmin || projectWithDetails.creatorId === authStore.userId,
           canDelete: authStore.isAdmin || projectWithDetails.creatorId === authStore.userId,
           canFinalize: authStore.isAdmin || projectWithDetails.creatorId === authStore.userId,
-          canCreateTask: authStore.isAdmin 
+          canCreateTask: authStore.isAdmin
             || projectWithDetails.creatorId === authStore.userId
             || projectWithDetails.clientId === authStore.userId
             || participants.some(p => p.userId === authStore.userId),
           canSendMessage: true,
-          canUploadFile: true,
-          canDownloadFile: true,
+          canUploadFile: false,
+          canDownloadFile: false,
           canManageParticipants: authStore.isAdmin,
         },
         statusColor: projectSummary?.statusColor || 'gray',

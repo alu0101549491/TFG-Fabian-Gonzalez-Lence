@@ -1432,8 +1432,8 @@ This section is auto-generated from the scenario headings in this file.
 - [x] AUTH-005 (P0) — Login fails with invalid credentials
 - [ ] AUTH-006 (P2) — Remember-me behavior persists session (if implemented)
 - [x] AUTH-007 (P0) — Logout clears session and blocks protected pages
-- [ ] AUTH-008 (P1) — Registration success path
-- [ ] AUTH-009 (P2) — Registration validation errors
+- [x] AUTH-008 (P1) — Registration success path
+- [x] AUTH-009 (P2) — Registration validation errors
 - [x] AUTH-010 (P1) — Direct navigation to unknown route shows NotFound
 - [x] AUTH-011 (P1) — Invalid/unsafe redirect query is ignored (open-redirect hardening)
 - [x] AUTH-012 (P0) — Refreshing an authenticated page preserves session
@@ -1446,7 +1446,7 @@ This section is auto-generated from the scenario headings in this file.
 - [x] NAV-006 (P2) — User dropdown opens/closes (click outside, Escape)
 - [x] NAV-007 (P2) — Sidebar link click closes sidebar (mobile + desktop)
 - [x] DASH-001 (P0) — Dashboard loads core widgets
-- [ ] DASH-002 (P1) — Unread message counter visible for projects (spec FR17)
+- [x] DASH-002 (P1) — Unread message counter visible for projects (spec FR17)
 - [x] DASH-003 (P1) — Create new project entry point visibility (role-based)
 - [x] DASH-004 (P0) — Recent project click navigates to details
 - [x] PROJ-001 (P0) — Projects list loads and shows cards
@@ -1461,55 +1461,55 @@ This section is auto-generated from the scenario headings in this file.
 - [x] PROJ-010 (P2) — Project list empty state is friendly and actionable
 - [x] PROJ-011 (P2) — Cancel out of create/edit modal leaves data unchanged
 - [ ] PROJ-012 (P1) — Special user project creation (implementation divergence)
-- [ ] PROJ-013 (P1) — Finalized projects remain visible for historical consultation (spec FR25)
-- [ ] PDET-001 (P0) — Project details route loads and shows tabs
-- [ ] PDET-002 (P0) — Finalize project disabled until tasks completed
-- [ ] PDET-003 (P1) — Finalize project succeeds for finalizable project
+- [x] PROJ-013 (P1) — Finalized projects remain visible for historical consultation (spec FR25)
+- [x] PDET-001 (P0) — Project details route loads and shows tabs
+- [x] PDET-002 (P0) — Finalize project disabled until tasks completed
+- [x] PDET-003 (P1) — Finalize project succeeds for finalizable project
 - [ ] PDET-004 (P2) — Tab navigation persists (direct anchors/query if implemented)
-- [ ] PDET-005 (P0) — Invalid project id shows a safe error state (no crash)
+- [x] PDET-005 (P0) — Invalid project id shows a safe error state (no crash)
 - [ ] PDET-006 (P2) — Automatic completion after last task completion (spec FR24) (GAP)
-- [ ] TASK-001 (P0) — View task list + filter by status
-- [ ] TASK-002 (P0) — Create task (admin)
-- [ ] TASK-003 (P1) — Create task (client assigns to admin)
-- [ ] TASK-004 (P1) — Task form validation (required fields, length)
-- [ ] TASK-005 (P1) — Edit task updates fields
-- [ ] TASK-006 (P0) — Delete task permissions (spec FR10)
-- [ ] TASK-007 (P1) — Allowed status transitions enforced by UI
-- [ ] TASK-008 (P0) — Mark as Done (PERFORMED) triggers confirmation requirement (spec FR12)
-- [ ] TASK-009 (P0) — Confirm completion transitions PERFORMED → COMPLETED
-- [ ] TASK-010 (P1) — Reject completion keeps task non-completed
+- [x] TASK-001 (P0) — View task list + filter by status
+- [x] TASK-002 (P0) — Create task (admin)
+- [x] TASK-003 (P1) — Create task (client assigns to admin)
+- [x] TASK-004 (P1) — Task form validation (required fields, length)
+- [x] TASK-005 (P1) — Edit task updates fields
+- [x] TASK-006 (P0) — Delete task permissions (spec FR10)
+- [x] TASK-007 (P1) — Allowed status transitions enforced by UI
+- [x] TASK-008 (P0) — Mark as Done (PERFORMED) triggers confirmation requirement (spec FR12)
+- [x] TASK-009 (P0) — Confirm completion transitions PERFORMED → COMPLETED
+- [x] TASK-010 (P1) — Reject completion keeps task non-completed
 - [ ] TASK-011 (P1) — Task attachments during create/edit (spec FR14)
 - [ ] TASK-012 (P2) — Completed tasks are read-only for status transitions
-- [ ] TASK-013 (P1) — PERFORMED tasks cannot be advanced without confirmation
+- [x] TASK-013 (P1) — PERFORMED tasks cannot be advanced without confirmation
 - [ ] TASK-014 (P2) — Task list handles “no tasks” state cleanly
-- [ ] MSG-001 (P0) — View project message list
-- [ ] MSG-002 (P0) — Send message (text)
+- [x] MSG-001 (P0) — View project message list
+- [x] MSG-002 (P0) — Send message (text)
 - [ ] MSG-003 (P2) — Shift+Enter inserts newline (no send)
 - [ ] MSG-004 (P1) — Send message with attachments (max 5)
 - [ ] MSG-005 (P2) — Drag & drop attachments into message input
-- [ ] MSG-006 (P1) — Messaging disabled when project FINALIZED
-- [ ] MSG-007 (P1) — Unread messages become “read” after viewing (spec FR15/FR17)
+- [x] MSG-006 (P1) — Messaging disabled when project FINALIZED
+- [x] MSG-007 (P1) — Unread messages become “read” after viewing (spec FR15/FR17)
 - [ ] MSG-008 (P2) — New messages indicator + jump to latest
 - [ ] MSG-009 (P2) — Typing indicator shown during other user typing (real-time)
-- [ ] MSG-010 (P1) — Cannot send empty/whitespace-only message
+- [x] MSG-010 (P1) — Cannot send empty/whitespace-only message
 - [ ] MSG-011 (P2) — Message send failure shows error and allows retry (network failure)
 - [x] FILE-001 (P0) — Files tab shows sections and existing files
-- [ ] FILE-002 (P0) — Upload file via browse
+- [x] FILE-002 (P0) — Upload file via browse
 - [ ] FILE-003 (P1) — Upload via drag & drop
-- [ ] FILE-004 (P1) — Upload validation: file too large is rejected
-- [ ] FILE-005 (P1) — Upload validation: disallowed extension rejected
+- [x] FILE-004 (P1) — Upload validation: file too large is rejected
+- [x] FILE-005 (P1) — Upload validation: disallowed extension rejected
 - [ ] FILE-006 (P2) — Max file queue size (default 10) enforced
 - [ ] FILE-007 (P2) — Retry failed upload
 - [ ] FILE-008 (P2) — Cancel in-progress upload
-- [ ] FILE-009 (P0) — Download file from list
+- [x] FILE-009 (P0) — Download file from list
 - [ ] FILE-010 (P2) — Preview file (if implemented)
-- [ ] FILE-011 (P1) — Delete file requires confirmation and removes entry
+- [x] FILE-011 (P1) — Delete file requires confirmation and removes entry
 - [ ] FILE-012 (P2) — Search and sort within file list
 - [ ] FILE-013 (P3) — Toggle grid/list view
 - [ ] FILE-014 (P1) — Sync Dropbox files updates list
 - [ ] FILE-015 (P2) — Open Dropbox folder action
 - [ ] FILE-016 (P2) — Section selection defaults safely when missing/invalid
-- [ ] FILE-017 (P0) — Non-authorized user cannot upload/delete files (spec FR28)
+- [x] FILE-017 (P0) — Non-authorized user cannot upload/delete files (spec FR28)
 - [ ] FILE-018 (P1) — Upload technical formats (PDF/KML/SHP/images) (spec FR19)
 - [x] NOTIF-001 (P0) — Notifications page loads and lists notifications
 - [x] NOTIF-002 (P2) — Filter notifications (type/status)
@@ -1550,7 +1550,7 @@ This section is auto-generated from the scenario headings in this file.
 - [ ] SET-006 (P2) — Invalid email update rejected
 - [x] SEC-001 (P0) — Admin-only routes redirect to forbidden for non-admin
 - [ ] SEC-002 (P2) — Direct access to `/forbidden` renders access denied page
-- [ ] SEC-003 (P0) — Client cannot access another client’s project details by URL (spec FR6)
+- [x] SEC-003 (P0) — Client cannot access another client’s project details by URL (spec FR6)
 - [ ] SEC-004 (P1) — Special user permission restrictions (spec FR26) (GAP)
 - [ ] RT-001 (P1) — New message appears in other session without refresh
 - [ ] RT-002 (P1) — Task status change syncs to other session
