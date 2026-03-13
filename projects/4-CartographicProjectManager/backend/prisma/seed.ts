@@ -11,6 +11,8 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  */
 
+import 'dotenv/config';
+
 import {PrismaClient} from '@prisma/client';
 import bcrypt from 'bcrypt';
 
@@ -100,7 +102,7 @@ async function main(): Promise<void> {
       name: 'Residential Urbanization Los Pinos',
       year: 2025,
       clientId: client1.id,
-      type: 'RESIDENTIAL',
+      type: 'TOPOGRAPHY',
       coordinateX: -16.2518,
       coordinateY: 28.4636,
       contractDate: new Date('2025-01-15'),
@@ -116,7 +118,7 @@ async function main(): Promise<void> {
       name: 'Commercial Center Plaza Mayor',
       year: 2025,
       clientId: client2.id,
-      type: 'COMMERCIAL',
+      type: 'CADASTRE',
       coordinateX: -16.3195,
       coordinateY: 28.4792,
       contractDate: new Date('2025-02-01'),

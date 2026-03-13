@@ -140,7 +140,7 @@ echo "🌱 Step 6: Seeding database..."
 read -p "Do you want to seed the database with sample data? (y/N) " -n 1 -r </dev/tty
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    npm run prisma:seed || echo "⚠️  Seeding failed - continuing anyway"
+    NODE_ENV=development SEED_CONFIRM=I_UNDERSTAND npm run prisma:seed || echo "⚠️  Seeding failed - continuing anyway"
 else
     echo "Skipping database seeding"
 fi

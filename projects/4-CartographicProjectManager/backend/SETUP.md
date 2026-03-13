@@ -50,8 +50,12 @@ npm run prisma:generate
 npm run prisma:migrate
 
 # Seed with sample data
-npm run prisma:seed
+SEED_CONFIRM=I_UNDERSTAND npm run prisma:seed
 ```
+
+Note: The dev seed is destructive (it clears tables). It refuses to run unless:
+- `NODE_ENV=development`
+- `SEED_CONFIRM=I_UNDERSTAND`
 
 ### 4. Start Development Server
 

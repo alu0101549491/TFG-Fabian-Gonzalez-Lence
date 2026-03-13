@@ -41,13 +41,16 @@ test.describe('Feature Name', () => {
 
 The Playwright configuration is in `playwright.config.ts` at the project root.
 
-- **Base URL**: `http://localhost:5173` (Vite dev server)
+- **Base URL**: `http://localhost:5173/4-CartographicProjectManager/` (Vite dev server, subpath)
 - **Browsers**: Chromium, Firefox, WebKit
 - **Test Directory**: `./e2e`
 
+This project also uses a `globalSetup` hook to generate reusable authenticated
+storage states under `e2e/.auth/`.
+
 ## Tips
 
-- The `baseURL` is configured, so you can use relative paths: `await page.goto('/')`
+- The `baseURL` is configured, so you can use relative paths: `await page.goto('projects')`
 - Tests run in parallel by default
 - Use `test.only()` to run a single test during development
 - Use `page.pause()` to debug tests interactively

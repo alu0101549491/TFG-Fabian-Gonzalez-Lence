@@ -12,21 +12,60 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {test, expect} from '@playwright/test';
+import {test, expect, type Page} from '@playwright/test';
 
-import {DEV_ACCOUNTS, login} from '../helpers/auth';
+import {DEV_ACCOUNTS, login, register} from '../helpers/auth';
+
+async function loginAsNonAdmin(page: Page): Promise<void> {
+  const candidates = [DEV_ACCOUNTS.CLIENT, DEV_ACCOUNTS.SPECIAL];
+  for (const credentials of candidates) {
+    try {
+      await login(page, credentials);
+      return;
+    } catch {
+      // Try next candidate.
+    }
+  }
+
+  const fallbackEmail =
+    process.env.PW_E2E_NON_ADMIN_EMAIL || 'pw-e2e-non-admin@example.com';
+  const fallbackPassword =
+    process.env.PW_E2E_NON_ADMIN_PASSWORD || 'pw-e2e-non-admin';
+  const fallbackUsername =
+    process.env.PW_E2E_NON_ADMIN_USERNAME || 'pw-e2e-non-admin';
+
+  try {
+    await login(page, {email: fallbackEmail, password: fallbackPassword});
+    return;
+  } catch {
+    // Try creating it if it doesn't exist.
+  }
+
+  try {
+    await register(page, {
+      username: fallbackUsername,
+      email: fallbackEmail,
+      password: fallbackPassword,
+    });
+    return;
+  } catch {
+    // If registration failed due to duplication or transient UI errors, try login again.
+  }
+
+  await login(page, {email: fallbackEmail, password: fallbackPassword});
+}
 
 test.describe('Auth + route guards (critical)', () => {
   test('redirects unauthenticated user to /login with redirect param', async ({page}) => {
-    await page.goto('/projects');
+    await page.goto('projects');
 
-    await expect(page).toHaveURL(/\/login\?redirect=%2Fprojects/);
+    await expect(page).toHaveURL(/\/login\?redirect=(%2Fprojects|\/projects)/);
     await expect(page.getByRole('button', {name: 'Sign In'})).toBeVisible();
   });
 
   test('logs in and returns to original destination via redirect', async ({page}) => {
-    await page.goto('/projects');
-    await expect(page).toHaveURL(/\/login\?redirect=%2Fprojects/);
+    await page.goto('projects');
+    await expect(page).toHaveURL(/\/login\?redirect=(%2Fprojects|\/projects)/);
 
     await login(page, DEV_ACCOUNTS.ADMIN);
 
@@ -35,9 +74,9 @@ test.describe('Auth + route guards (critical)', () => {
   });
 
   test('blocks non-admin user from /backup and redirects to /forbidden', async ({page}) => {
-    await login(page, DEV_ACCOUNTS.CLIENT);
+    await loginAsNonAdmin(page);
 
-    await page.goto('/backup');
+    await page.goto('backup');
 
     await expect(page).toHaveURL(/\/forbidden(\?|$)/);
     await expect(page.getByRole('heading', {name: 'Access Forbidden'})).toBeVisible();
@@ -45,7 +84,7 @@ test.describe('Auth + route guards (critical)', () => {
   });
 
   test('shows NotFound page for unknown route', async ({page}) => {
-    await page.goto('/this-route-does-not-exist');
+    await page.goto('this-route-does-not-exist');
 
     await expect(page.getByText('404')).toBeVisible();
     await expect(page.getByRole('heading', {name: 'Page Not Found'})).toBeVisible();
