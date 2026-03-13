@@ -1425,41 +1425,41 @@ This section is auto-generated from the scenario headings in this file.
 - USERS: 7
 
 **Checklist (all scenarios):**
-- [ ] AUTH-001 (P0) — Login (admin) success + redirect to dashboard
+- [x] AUTH-001 (P0) — Login (admin) success + redirect to dashboard
 - [x] AUTH-002 (P0) — Login with redirect query returns to original destination
 - [x] AUTH-003 (P0) — Unauthenticated access to protected route redirects to login
-- [ ] AUTH-004 (P1) — Authenticated user cannot access guest-only routes
-- [ ] AUTH-005 (P0) — Login fails with invalid credentials
+- [x] AUTH-004 (P1) — Authenticated user cannot access guest-only routes
+- [x] AUTH-005 (P0) — Login fails with invalid credentials
 - [ ] AUTH-006 (P2) — Remember-me behavior persists session (if implemented)
 - [x] AUTH-007 (P0) — Logout clears session and blocks protected pages
 - [ ] AUTH-008 (P1) — Registration success path
 - [ ] AUTH-009 (P2) — Registration validation errors
 - [x] AUTH-010 (P1) — Direct navigation to unknown route shows NotFound
-- [ ] AUTH-011 (P1) — Invalid/unsafe redirect query is ignored (open-redirect hardening)
-- [ ] AUTH-012 (P0) — Refreshing an authenticated page preserves session
-- [ ] AUTH-013 (P0) — Manual navigation to protected route after logout is blocked
-- [ ] NAV-001 (P0) — Sidebar shows allowed nav items by role
-- [ ] NAV-002 (P2) — Sidebar active state highlights current route
-- [ ] NAV-003 (P3) — Sidebar collapse hides labels but keeps icons
-- [ ] NAV-004 (P1) — Mobile sidebar overlay closes on outside click
-- [ ] NAV-005 (P1) — Header notifications badge reflects unread count
-- [ ] NAV-006 (P2) — User dropdown opens/closes (click outside, Escape)
-- [ ] NAV-007 (P2) — Sidebar link click closes sidebar (mobile + desktop)
+- [x] AUTH-011 (P1) — Invalid/unsafe redirect query is ignored (open-redirect hardening)
+- [x] AUTH-012 (P0) — Refreshing an authenticated page preserves session
+- [x] AUTH-013 (P0) — Manual navigation to protected route after logout is blocked
+- [x] NAV-001 (P0) — Sidebar shows allowed nav items by role
+- [x] NAV-002 (P2) — Sidebar active state highlights current route
+- [x] NAV-003 (P3) — Sidebar collapse hides labels but keeps icons
+- [x] NAV-004 (P1) — Mobile sidebar overlay closes on outside click
+- [x] NAV-005 (P1) — Header notifications badge reflects unread count
+- [x] NAV-006 (P2) — User dropdown opens/closes (click outside, Escape)
+- [x] NAV-007 (P2) — Sidebar link click closes sidebar (mobile + desktop)
 - [x] DASH-001 (P0) — Dashboard loads core widgets
 - [ ] DASH-002 (P1) — Unread message counter visible for projects (spec FR17)
 - [x] DASH-003 (P1) — Create new project entry point visibility (role-based)
 - [x] DASH-004 (P0) — Recent project click navigates to details
 - [x] PROJ-001 (P0) — Projects list loads and shows cards
-- [ ] PROJ-002 (P2) — Search filters project list
-- [ ] PROJ-003 (P2) — Filter by status/type and sort order
-- [ ] PROJ-004 (P0) — Create project (admin)
-- [ ] PROJ-005 (P1) — Create project validation errors
+- [x] PROJ-002 (P2) — Search filters project list
+- [x] PROJ-003 (P2) — Filter by status/type and sort order
+- [x] PROJ-004 (P0) — Create project (admin)
+- [x] PROJ-005 (P1) — Create project validation errors
 - [x] PROJ-006 (P1) — Edit project (admin)
 - [x] PROJ-007 (P1) — Delete project (admin) requires confirmation
-- [ ] PROJ-008 (P0) — Client data isolation: client cannot see other clients’ projects (spec FR6)
-- [ ] PROJ-009 (P0) — Non-admin cannot see project create/edit/delete controls
-- [ ] PROJ-010 (P2) — Project list empty state is friendly and actionable
-- [ ] PROJ-011 (P2) — Cancel out of create/edit modal leaves data unchanged
+- [x] PROJ-008 (P0) — Client data isolation: client cannot see other clients’ projects (spec FR6)
+- [x] PROJ-009 (P0) — Non-admin cannot see project create/edit/delete controls
+- [x] PROJ-010 (P2) — Project list empty state is friendly and actionable
+- [x] PROJ-011 (P2) — Cancel out of create/edit modal leaves data unchanged
 - [ ] PROJ-012 (P1) — Special user project creation (implementation divergence)
 - [ ] PROJ-013 (P1) — Finalized projects remain visible for historical consultation (spec FR25)
 - [ ] PDET-001 (P0) — Project details route loads and shows tabs

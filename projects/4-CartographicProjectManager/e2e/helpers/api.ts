@@ -55,7 +55,20 @@ export interface CreateProjectPayload {
   readonly code: string;
   readonly name: string;
   readonly clientId: string;
-  readonly type: 'TOPOGRAPHY' | 'CARTOGRAPHY' | 'GIS' | 'CADASTRE' | 'OTHER';
+  readonly type:
+    | 'TOPOGRAPHY'
+    | 'CADASTRE'
+    | 'GIS'
+    | 'HYDROLOGY'
+    | 'INDUSTRIAL'
+    | 'CIVIL_ENGINEERING'
+    | 'ENVIRONMENTAL_DOCUMENT'
+    | 'STUDY_OF_ALTERNATIVES'
+    | 'GEOLOGICAL_STUDY'
+    | 'HYDROGEOLOGICAL_STUDY'
+    | 'RISK_STUDY'
+    | 'CONSTRUCTION_MANAGEMENT'
+    | 'MISCELLANEOUS';
   readonly coordinateX: number | null;
   readonly coordinateY: number | null;
   readonly contractDate: string;
@@ -66,6 +79,10 @@ export interface ProjectDto {
   readonly id: string;
   readonly code: string;
   readonly name: string;
+}
+
+export interface UpdateProjectPayload {
+  readonly status?: 'ACTIVE' | 'IN_PROGRESS' | 'PENDING_REVIEW' | 'FINALIZED';
 }
 
 export interface ProjectListDto {
@@ -180,6 +197,15 @@ export class CpmApiClient {
   public async deleteProject(projectId: string): Promise<void> {
     const response = await this.request.delete(`projects/${projectId}`, {
       headers: this.authHeaders(),
+    });
+
+    await CpmApiClient.assertOk(response);
+  }
+
+  public async updateProject(projectId: string, payload: UpdateProjectPayload): Promise<void> {
+    const response = await this.request.put(`projects/${projectId}`, {
+      headers: this.authHeaders(),
+      data: payload,
     });
 
     await CpmApiClient.assertOk(response);

@@ -56,6 +56,16 @@ async function loginAsNonAdmin(page: Page): Promise<void> {
 }
 
 test.describe('Auth + route guards (critical)', () => {
+  test('logs in successfully (admin) and lands on dashboard', async ({page}) => {
+    await page.goto('login');
+
+    await login(page, DEV_ACCOUNTS.ADMIN);
+
+    await expect(page).toHaveURL(/\/(\?|$)/);
+    await expect(page.getByRole('heading', {name: 'Dashboard', exact: true})).toBeVisible();
+    await expect(page.getByRole('link', {name: 'Projects', exact: true})).toBeVisible();
+  });
+
   test('redirects unauthenticated user to /login with redirect param', async ({page}) => {
     await page.goto('projects');
 
@@ -71,6 +81,54 @@ test.describe('Auth + route guards (critical)', () => {
 
     await expect(page).toHaveURL(/\/projects(\?|$)/);
     await expect(page.getByRole('heading', {name: 'Projects'})).toBeVisible();
+  });
+
+  test('redirects authenticated user away from guest-only routes (/login, /register)', async ({page}) => {
+    await login(page, DEV_ACCOUNTS.ADMIN);
+
+    await page.goto('login');
+    await expect.poll(() => page.url()).not.toContain('/login');
+    await expect(page.getByRole('heading', {name: 'Dashboard'})).toBeVisible();
+
+    await page.goto('register');
+    await expect.poll(() => page.url()).not.toContain('/register');
+    await expect(page.getByRole('heading', {name: 'Dashboard'})).toBeVisible();
+  });
+
+  test('shows error and stays on /login for invalid credentials', async ({page}) => {
+    await page.goto('login');
+
+    await page.getByLabel('Email').fill('pw-e2e-invalid@example.com');
+    await page.getByLabel('Password', {exact: true}).fill('pw-e2e-invalid');
+    await page.getByRole('button', {name: 'Sign In'}).click();
+
+    const errorAlert = page.locator('[role="alert"]');
+    await expect(errorAlert).toBeVisible();
+    await expect(errorAlert).toContainText(/invalid|unauthoriz|incorrect/i);
+    await expect(page).toHaveURL(/\/login(\?|$)/);
+    await expect(page.getByRole('heading', {name: 'Dashboard'})).not.toBeVisible();
+  });
+
+  test('preserves authenticated session after refresh', async ({page}) => {
+    await login(page, DEV_ACCOUNTS.ADMIN);
+
+    await page.goto('projects');
+    await expect(page.getByRole('heading', {name: 'Projects'})).toBeVisible();
+
+    await page.reload();
+
+    await expect(page).not.toHaveURL(/\/login(\?|$)/);
+    await expect(page.getByRole('heading', {name: 'Projects'})).toBeVisible();
+  });
+
+  test('ignores unsafe redirect query after login (open redirect hardening)', async ({page}) => {
+    await page.goto('login?redirect=https://example.com');
+    await expect(page).toHaveURL(/\/login\?redirect=/);
+
+    await login(page, DEV_ACCOUNTS.ADMIN);
+
+    await expect(page).not.toHaveURL(/example\.com/);
+    await expect(page.getByRole('heading', {name: 'Dashboard', exact: true})).toBeVisible();
   });
 
   test('blocks non-admin user from /backup and redirects to /forbidden', async ({page}) => {
