@@ -42,11 +42,10 @@ This document summarizes the currently implemented Playwright E2E automation for
   - Setup: `e2e/setup/global-setup.ts`
   - Teardown: `e2e/setup/global-teardown.ts` (no-op for now)
   - Output storage states:
-    - `e2e/.auth/admin.json`
-    - `e2e/.auth/non-admin.json`
+    - Defaults to an OS temp folder (override with `PW_AUTH_DIR`)
 
 - Shared helpers:
-  - `e2e/helpers/auth.ts` (UI login + registration fallback)
+  - `e2e/helpers/auth.ts` (UI login + registration fallback; credentials via `PW_E2E_*` env vars)
   - `e2e/helpers/api.ts` (backend seeding/cleanup)
   - `e2e/helpers/test-data.ts` (unique nonces + dates)
   - `e2e/helpers/e2e-paths.ts` (shared paths + base URL helpers)

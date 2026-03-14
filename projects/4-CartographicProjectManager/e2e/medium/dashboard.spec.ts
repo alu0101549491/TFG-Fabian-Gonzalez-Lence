@@ -14,6 +14,8 @@
 
 // Leave exactly 1 blank line before imports
 
+import {randomBytes} from 'node:crypto';
+
 import {request, type Page} from '@playwright/test';
 
 import {test, expect} from '../fixtures/test';
@@ -150,7 +152,7 @@ test.describe('Dashboard (medium)', () => {
       const {client: adminApi} = await CpmApiClient.login(apiContext, DEV_ACCOUNTS.ADMIN);
 
       const email = `pw-dash-002-${nonce}@example.com`;
-      const password = `pw-dash-002-${nonce}`;
+      const password = randomBytes(18).toString('base64url');
       const username = `pw-dash-002-${nonce}`;
 
       let createdUserId: string | null = null;

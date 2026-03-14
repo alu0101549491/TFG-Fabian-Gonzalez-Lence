@@ -35,10 +35,29 @@ export interface RegisterCredentials {
 /**
  * Known dev accounts displayed by the CPM login page.
  */
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (typeof value === 'string' && value.length > 0) return value;
+
+  throw new Error(
+    `[e2e] Missing required environment variable: ${name}. ` +
+      'Set it in your shell or in projects/4-CartographicProjectManager/.env before running Playwright.',
+  );
+}
+
 export const DEV_ACCOUNTS = {
-  ADMIN: {email: 'admin@cartographic.com', password: 'REDACTED'},
-  CLIENT: {email: 'client@example.com', password: 'REDACTED'},
-  SPECIAL: {email: 'special@cartographic.com', password: 'REDACTED'},
+  ADMIN: {
+    email: process.env.PW_E2E_ADMIN_EMAIL || 'admin@cartographic.com',
+    password: requireEnv('PW_E2E_ADMIN_PASSWORD'),
+  },
+  CLIENT: {
+    email: process.env.PW_E2E_CLIENT_EMAIL || 'client@example.com',
+    password: requireEnv('PW_E2E_CLIENT_PASSWORD'),
+  },
+  SPECIAL: {
+    email: process.env.PW_E2E_SPECIAL_EMAIL || 'special@cartographic.com',
+    password: requireEnv('PW_E2E_SPECIAL_PASSWORD'),
+  },
 } as const satisfies Record<string, Credentials>;
 
 async function waitForAuthOutcome(page: Page): Promise<void> {

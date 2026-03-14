@@ -12,23 +12,24 @@
  * @see {@link https://typescripttutorial.net}
  */
 
+import os from 'node:os';
 import path from 'node:path';
 
 import type {FullConfig} from '@playwright/test';
 
-export const AUTH_STATE_ADMIN_PATH = path.join(
-  process.cwd(),
-  'e2e',
-  '.auth',
-  'admin.json',
-);
+const DEFAULT_AUTH_DIR = path.join(os.tmpdir(), 'cpm-playwright-auth');
 
-export const AUTH_STATE_NON_ADMIN_PATH = path.join(
-  process.cwd(),
-  'e2e',
-  '.auth',
-  'non-admin.json',
-);
+/**
+ * Directory where Playwright stores authenticated storage states.
+ *
+ * Defaults to an OS temp directory to avoid committing/scanning JWTs inside the repo.
+ * Can be overridden via `PW_AUTH_DIR`.
+ */
+export const AUTH_DIR = process.env.PW_AUTH_DIR || DEFAULT_AUTH_DIR;
+
+export const AUTH_STATE_ADMIN_PATH = path.join(AUTH_DIR, 'admin.json');
+
+export const AUTH_STATE_NON_ADMIN_PATH = path.join(AUTH_DIR, 'non-admin.json');
 
 export const DEFAULT_UI_BASE_URL =
   'http://localhost:5173/4-CartographicProjectManager/';

@@ -46,7 +46,25 @@ The Playwright configuration is in `playwright.config.ts` at the project root.
 - **Test Directory**: `./e2e`
 
 This project also uses a `globalSetup` hook to generate reusable authenticated
-storage states under `e2e/.auth/`.
+storage states.
+
+By default they are written to an OS temp folder (to avoid committing/scanning
+JWTs inside the repo). You can override the location via `PW_AUTH_DIR`.
+
+### Required env vars (E2E accounts)
+
+The E2E suite logs in using seeded dev accounts. Provide the passwords via
+environment variables (or `projects/4-CartographicProjectManager/.env`).
+
+- `PW_E2E_ADMIN_PASSWORD`
+- `PW_E2E_CLIENT_PASSWORD`
+- `PW_E2E_SPECIAL_PASSWORD`
+
+Optional (emails default to seeded ones):
+
+- `PW_E2E_ADMIN_EMAIL`
+- `PW_E2E_CLIENT_EMAIL`
+- `PW_E2E_SPECIAL_EMAIL`
 
 ## Tips
 
