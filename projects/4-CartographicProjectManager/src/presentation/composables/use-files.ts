@@ -24,6 +24,12 @@ import type {ProjectSectionId} from '../../shared/constants';
  */
 export type UploadProgressCallback = (progress: number) => void;
 
+/** Optional request options for upload operations. */
+export interface UploadRequestOptions {
+  /** Optional AbortSignal to cancel the upload. */
+  readonly signal?: AbortSignal;
+}
+
 /**
  * Return interface for useFiles composable
  */
@@ -40,7 +46,8 @@ export interface UseFilesReturn {
     fileToUpload: globalThis.File,
     projectId: string,
     section: ProjectSectionId,
-    onProgress?: UploadProgressCallback
+    onProgress?: UploadProgressCallback,
+    options?: UploadRequestOptions
   ) => Promise<FileSummaryDto | null>;
   syncFilesFromDropbox: (projectId: string) => Promise<{synced: number; skipped: number; totalFiles: number}>;
   getTemporaryDownloadUrl: (fileId: string) => Promise<string>;
@@ -184,7 +191,8 @@ export function useFiles(): UseFilesReturn {
     fileToUpload: globalThis.File,
     projectId: string,
     section: ProjectSectionId,
-    onProgress?: UploadProgressCallback
+    onProgress?: UploadProgressCallback,
+    options?: UploadRequestOptions
   ): Promise<FileSummaryDto | null> {
     error.value = null;
 
@@ -202,6 +210,7 @@ export function useFiles(): UseFilesReturn {
               onProgress(percentCompleted);
             }
           },
+          signal: options?.signal,
         }
       );
 

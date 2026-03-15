@@ -569,6 +569,46 @@ test.describe('Projects CRUD (critical)', () => {
     }
   });
 
+  test('PDET-004: tab navigation persists via query param on refresh', async ({page}) => {
+    const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+
+    const nonce = uniqueNonce('pw-project-tab');
+    const code = `PW-${new Date().getFullYear()}-${nonce.slice(-6)}`;
+
+    const {client: adminApi} = await CpmApiClient.login(apiContext, DEV_ACCOUNTS.ADMIN);
+    const clientId = await resolveClientId(adminApi);
+
+    const project = await adminApi.createProject({
+      year: new Date().getFullYear(),
+      code,
+      name: `PW Tab Persist ${nonce}`,
+      clientId,
+      type: 'GIS',
+      coordinateX: null,
+      coordinateY: null,
+      contractDate: daysFromToday(0).toISOString(),
+      deliveryDate: daysFromToday(7).toISOString(),
+    });
+
+    try {
+      await page.goto(`projects/${project.id}?tab=files`);
+      await expect(page).toHaveURL(new RegExp(`/projects/${project.id}\\?tab=files`));
+      await expect(page.getByRole('heading', {name: 'Project Files'})).toBeVisible();
+
+      await page.reload();
+
+      await expect(page).toHaveURL(new RegExp(`/projects/${project.id}\\?tab=files`));
+      await expect(page.getByRole('heading', {name: 'Project Files'})).toBeVisible();
+    } finally {
+      try {
+        await adminApi.deleteProject(project.id);
+      } catch {
+        // Ignore.
+      }
+      await apiContext.dispose();
+    }
+  });
+
   test('PDET-005: invalid project id shows a safe error state (no crash)', async ({page}) => {
     await page.goto('projects/does-not-exist');
 
@@ -580,9 +620,147 @@ test.describe('Projects CRUD (critical)', () => {
     await page.waitForURL((url) => url.pathname.endsWith('/projects'));
     await expect(page.getByRole('button', {name: 'Create new project'})).toBeVisible();
   });
+
+  test('PDET-006: prompts to finalize after completing the last pending task', async ({projectDetailsPage}) => {
+    const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+
+    const nonce = uniqueNonce('pw-project-auto-finalize');
+    const code = `PW-${new Date().getFullYear()}-${nonce.slice(-6)}`;
+
+    const {client: adminApi, session: adminSession} = await CpmApiClient.login(
+      apiContext,
+      DEV_ACCOUNTS.ADMIN,
+    );
+    const clientId = await resolveClientId(adminApi);
+
+    const project = await adminApi.createProject({
+      year: new Date().getFullYear(),
+      code,
+      name: `PW Auto Finalize Prompt ${nonce}`,
+      clientId,
+      type: 'GIS',
+      coordinateX: null,
+      coordinateY: null,
+      contractDate: daysFromToday(0).toISOString(),
+      deliveryDate: daysFromToday(7).toISOString(),
+    });
+
+    const description = `PW Finalize Prompt Task ${nonce.slice(-10)}`;
+    const task = await adminApi.createTask({
+      projectId: project.id,
+      creatorId: adminSession.user.id,
+      assigneeId: adminSession.user.id,
+      description,
+      status: 'PERFORMED',
+      priority: 'MEDIUM',
+      dueDate: daysFromToday(5).toISOString(),
+      comments: null,
+    });
+
+    try {
+      await projectDetailsPage.goto(project.id);
+      await projectDetailsPage.openTasksTab();
+
+      const card = projectDetailsPage.taskCardByDescription(description);
+      await expect(card).toBeVisible();
+      await expect(card.locator('.task-card-status')).toHaveText('Performed');
+
+      await card.getByRole('button', {name: 'Task actions'}).click();
+      await card.getByRole('button', {name: 'Edit'}).click();
+
+      const editDialog = projectDetailsPage.page.getByRole('dialog', {name: 'Edit Task'});
+      await expect(editDialog).toBeVisible();
+
+      await editDialog.getByRole('button', {name: 'Completed'}).click();
+      await editDialog.getByRole('button', {name: 'Confirm & Complete'}).click();
+      await expect(editDialog).toBeHidden();
+
+      const finalizeDialog = projectDetailsPage.page.getByRole('dialog', {name: 'Finalize Project'});
+      await expect(finalizeDialog).toBeVisible();
+      await expect(finalizeDialog.getByText('✓ All tasks completed')).toBeVisible();
+    } finally {
+      try {
+        await adminApi.deleteTask(task.id);
+      } catch {
+        // Ignore if deleted by cascade.
+      }
+      try {
+        await adminApi.deleteProject(project.id);
+      } catch {
+        // Ignore.
+      }
+      await apiContext.dispose();
+    }
+  });
 });
 
 test.describe('Projects permissions (critical)', () => {
+  test('PROJ-012: special user can create a project (implementation divergence)', async ({page}) => {
+    const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+
+    const nonce = uniqueNonce('pw-proj-012');
+    const code = `PW-${new Date().getFullYear()}-${nonce.slice(-6)}`;
+    const name = `PW Special Project ${nonce}`;
+
+    const specialEmail = `pw-special-${nonce}@example.com`;
+    const specialPassword = `pw-special-${nonce}`;
+
+    const {client: adminApi} = await CpmApiClient.login(apiContext, DEV_ACCOUNTS.ADMIN);
+
+    const specialUser = await adminApi.createUser({
+      username: `pw-special-${nonce}`,
+      email: specialEmail,
+      password: specialPassword,
+      role: 'SPECIAL_USER',
+    });
+
+    try {
+      await page.goto('login');
+      await login(page, {email: specialEmail, password: specialPassword});
+
+      await page.goto('projects');
+      await expect(page.getByRole('heading', {name: 'Projects', exact: true})).toBeVisible();
+
+      await page.getByRole('button', {name: 'Create new project'}).click();
+
+      const dialog = page.getByRole('dialog');
+      await expect(dialog.getByRole('heading', {name: 'Create New Project'})).toBeVisible();
+
+      await dialog.locator('#project-code').fill(code);
+      await dialog.locator('#project-year').fill(String(new Date().getFullYear()));
+      await dialog.locator('#project-name').fill(name);
+
+      const clientOptions = dialog.locator('#project-client option');
+      await expect
+        .poll(async () => clientOptions.count(), {timeout: 10_000})
+        .toBeGreaterThan(1);
+      await dialog.locator('#project-client').selectOption({index: 1});
+      await dialog.locator('#project-type').selectOption('GIS');
+
+      await dialog
+        .locator('#project-contract-date')
+        .fill(toDateInputValue(daysFromToday(0)));
+      await dialog
+        .locator('#project-delivery-date')
+        .fill(toDateInputValue(daysFromToday(7)));
+
+      await dialog.getByRole('button', {name: 'Create Project'}).click();
+
+      await page.waitForURL((url) => url.pathname.includes('/projects/'));
+      await expect(page.getByRole('button', {name: 'Go back to projects list'})).toBeVisible();
+      await expect(page.getByRole('heading', {name})).toBeVisible();
+      await expect(page.locator('main')).toContainText(code);
+    } finally {
+      await deleteProjectByCode(adminApi, code);
+      try {
+        await adminApi.deleteUser(specialUser.id);
+      } catch {
+        // Ignore.
+      }
+      await apiContext.dispose();
+    }
+  });
+
   test('PROJ-009: non-admin cannot see project create/edit/delete controls', async ({page}) => {
     const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
 

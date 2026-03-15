@@ -149,6 +149,17 @@
                 </div>
               </label>
 
+              <label class="checkbox-label">
+                <input
+                  v-model="notificationForm.whatsappNotifications"
+                  type="checkbox"
+                />
+                <div class="checkbox-content">
+                  <span class="checkbox-title">WhatsApp Notifications (Optional)</span>
+                  <span class="checkbox-description">Send task assignment alerts to your WhatsApp (sandbox in dev/test)</span>
+                </div>
+              </label>
+
               <!-- Client-specific notifications -->
               <label v-if="isClient" class="checkbox-label">
                 <input
@@ -525,6 +536,7 @@ const accountForm = ref({
 // Notification form
 const notificationForm = ref({
   emailNotifications: true,
+  whatsappNotifications: false,
   projectUpdates: true,
   deliveryReminders: true,
   taskAssignments: true,
@@ -552,7 +564,7 @@ const adminForm = ref({
   debugModeEnabled: false,
 });
 
-type SettingsStorageNamespace = 'client' | 'special-user' | 'admin';
+type SettingsStorageNamespace = 'client' | 'special-user' | 'admin' | 'notifications';
 
 function getUserScopedSettingsKey(namespace: SettingsStorageNamespace): string | null {
   const userId = user.value?.id;
@@ -576,6 +588,37 @@ function safeJsonParse(raw: string | null): unknown {
 }
 
 function hydrateRoleSettingsFromStorage(): void {
+  const notificationsKey = getUserScopedSettingsKey('notifications');
+  if (notificationsKey) {
+    const parsed = safeJsonParse(localStorage.getItem(notificationsKey));
+    if (parsed && typeof parsed === 'object') {
+      const data = parsed as Record<string, unknown>;
+      notificationForm.value = {
+        emailNotifications: typeof data.emailNotifications === 'boolean'
+          ? data.emailNotifications
+          : notificationForm.value.emailNotifications,
+        whatsappNotifications: typeof data.whatsappNotifications === 'boolean'
+          ? data.whatsappNotifications
+          : notificationForm.value.whatsappNotifications,
+        projectUpdates: typeof data.projectUpdates === 'boolean'
+          ? data.projectUpdates
+          : notificationForm.value.projectUpdates,
+        deliveryReminders: typeof data.deliveryReminders === 'boolean'
+          ? data.deliveryReminders
+          : notificationForm.value.deliveryReminders,
+        taskAssignments: typeof data.taskAssignments === 'boolean'
+          ? data.taskAssignments
+          : notificationForm.value.taskAssignments,
+        systemAlerts: typeof data.systemAlerts === 'boolean'
+          ? data.systemAlerts
+          : notificationForm.value.systemAlerts,
+        newUserRegistrations: typeof data.newUserRegistrations === 'boolean'
+          ? data.newUserRegistrations
+          : notificationForm.value.newUserRegistrations,
+      };
+    }
+  }
+
   const clientKey = getUserScopedSettingsKey('client');
   if (clientKey) {
     const parsed = safeJsonParse(localStorage.getItem(clientKey));
@@ -709,20 +752,14 @@ async function handleNotificationUpdate(): Promise<void> {
   try {
     if (!user.value) return;
 
-    // For now, notification preferences are not stored in the backend
-    // This is a placeholder for future implementation
-    const updateData: UpdateUserDto = {};
-
-    // Skip API call if no data to update
-    if (Object.keys(updateData).length === 0) {
-      showSuccess('Notification preferences saved locally');
-      return;
+    const storageKey = getUserScopedSettingsKey('notifications');
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(notificationForm.value));
     }
 
-    // Update in backend (when notification fields are added to backend)
-    await userRepository.updateUser(user.value.id, updateData);
-    
-    showSuccess('Notification preferences saved');
+    // Intentionally stored locally: notification preferences are UI-level settings.
+    // External integrations (e.g., WhatsApp) are optional and verified via sandbox in E2E.
+    showSuccess('Notification preferences saved locally');
   } catch (error: any) {
     showError(error.message || 'Failed to save preferences');
   } finally {

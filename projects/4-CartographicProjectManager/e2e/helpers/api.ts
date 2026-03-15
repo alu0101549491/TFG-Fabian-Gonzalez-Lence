@@ -26,6 +26,14 @@ export interface RegisterCredentials {
   readonly phone?: string;
 }
 
+export interface CreateUserPayload {
+  readonly username: string;
+  readonly email: string;
+  readonly password: string;
+  readonly role: 'ADMINISTRATOR' | 'CLIENT' | 'SPECIAL_USER';
+  readonly phone?: string;
+}
+
 export interface AuthUser {
   readonly id: string;
   readonly username: string;
@@ -188,6 +196,15 @@ export class CpmApiClient {
     });
 
     return CpmApiClient.parseEnvelope<AuthSession>(response);
+  }
+
+  public async createUser(payload: CreateUserPayload): Promise<UserDto> {
+    const response = await this.request.post('users', {
+      headers: this.authHeaders(),
+      data: payload,
+    });
+
+    return CpmApiClient.parseEnvelope<UserDto>(response);
   }
 
   public async createProject(payload: CreateProjectPayload): Promise<ProjectDto> {

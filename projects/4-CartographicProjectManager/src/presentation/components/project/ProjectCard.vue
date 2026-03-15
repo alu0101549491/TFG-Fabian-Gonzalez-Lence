@@ -224,10 +224,18 @@ const statusLabel = computed(() => {
 
 const typeLabel = computed(() => {
   const labels: Record<ProjectType, string> = {
-    [ProjectType.RESIDENTIAL]: 'Residential',
-    [ProjectType.COMMERCIAL]: 'Commercial',
-    [ProjectType.INDUSTRIAL]: 'Industrial',
-    [ProjectType.PUBLIC]: 'Public',
+    [ProjectType.TOPOGRAPHY]: 'Topography',
+    [ProjectType.CADASTRE]: 'Cadastre',
+    [ProjectType.GIS]: 'GIS',
+    [ProjectType.HYDROLOGY]: 'Hydrology',
+    [ProjectType.CIVIL_ENGINEERING]: 'Civil Engineering',
+    [ProjectType.ENVIRONMENTAL_DOCUMENT]: 'Environmental Document',
+    [ProjectType.STUDY_OF_ALTERNATIVES]: 'Study of Alternatives',
+    [ProjectType.GEOLOGICAL_STUDY]: 'Geological Study',
+    [ProjectType.HYDROGEOLOGICAL_STUDY]: 'Hydrogeological Study',
+    [ProjectType.RISK_STUDY]: 'Risk Study',
+    [ProjectType.CONSTRUCTION_MANAGEMENT]: 'Construction Management',
+    [ProjectType.MISCELLANEOUS]: 'Miscellaneous',
   };
   return labels[props.project.type] || props.project.type;
 });

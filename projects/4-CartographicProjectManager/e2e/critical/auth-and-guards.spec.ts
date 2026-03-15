@@ -124,6 +124,23 @@ test.describe('Auth + route guards (critical)', () => {
     await expect(page.getByRole('heading', {name: 'Projects'})).toBeVisible();
   });
 
+  test('AUTH-006: remember-me enabled keeps the session after reload', async ({page}) => {
+    await page.goto('login');
+
+    await page.getByLabel('Email').fill(DEV_ACCOUNTS.ADMIN.email);
+    await page.getByLabel('Password', {exact: true}).fill(DEV_ACCOUNTS.ADMIN.password);
+    await page.getByLabel('Remember me').check();
+
+    await page.getByRole('button', {name: 'Sign In'}).click();
+    await expect(page).toHaveURL(/\/(\?|$)/);
+    await expect(page.getByRole('heading', {name: 'Dashboard', exact: true})).toBeVisible();
+
+    await page.reload();
+
+    await expect(page).not.toHaveURL(/\/login(\?|$)/);
+    await expect(page.getByRole('heading', {name: 'Dashboard', exact: true})).toBeVisible();
+  });
+
   test('ignores unsafe redirect query after login (open redirect hardening)', async ({page}) => {
     await page.goto('login?redirect=https://example.com');
     await expect(page).toHaveURL(/\/login\?redirect=/);

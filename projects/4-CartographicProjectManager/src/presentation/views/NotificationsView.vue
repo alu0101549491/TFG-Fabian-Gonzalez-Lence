@@ -76,7 +76,6 @@ import type {NotificationDto} from '@/application/dto';
 const {
   notifications,
   unreadNotifications,
-  unreadCount,
   isLoading,
   hasMore,
   fetchNotifications,

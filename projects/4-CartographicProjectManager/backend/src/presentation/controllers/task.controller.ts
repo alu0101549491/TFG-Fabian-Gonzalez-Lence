@@ -16,6 +16,9 @@ import type {AuthenticatedRequest} from '@shared/types.js';
 import {TaskStatus, UserRole} from '@prisma/client';
 import {TaskRepository} from '@infrastructure/repositories/task.repository.js';
 import {ProjectRepository} from '@infrastructure/repositories/project.repository.js';
+import {prisma} from '@infrastructure/database/prisma.client.js';
+import {emitToProject} from '@infrastructure/websocket/index.js';
+import {PermissionRepository} from '@infrastructure/repositories/permission.repository.js';
 import {sendSuccess, sendError} from '@shared/utils.js';
 import {HTTP_STATUS, ERROR_MESSAGES} from '@shared/constants.js';
 import {BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError} from '@shared/errors.js';
@@ -23,10 +26,17 @@ import {BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError} from 
 export class TaskController {
   private readonly taskRepository: TaskRepository;
   private readonly projectRepository: ProjectRepository;
+  private readonly permissionRepository: PermissionRepository;
 
   public constructor() {
     this.taskRepository = new TaskRepository();
     this.projectRepository = new ProjectRepository();
+    this.permissionRepository = new PermissionRepository();
+  }
+
+  private async hasSpecialUserRight(userId: string, projectId: string, right: 'EDIT' | 'DELETE'): Promise<boolean> {
+    const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
+    return Boolean(permission && permission.rights.includes(right));
   }
 
   public async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -49,6 +59,9 @@ export class TaskController {
         ...task,
         creatorName: task.creator.username,
         assigneeName: task.assignee?.username ?? null,
+        fileIds: Array.isArray((task as any).files)
+          ? (task as any).files.map((tf: any) => tf.fileId)
+          : [],
       }));
       sendSuccess(res, tasksWithNames);
     } catch (error) {
@@ -60,7 +73,12 @@ export class TaskController {
     try {
       const task = await this.taskRepository.findById(req.params.id as string);
       if (!task) throw new NotFoundError(ERROR_MESSAGES.TASK_NOT_FOUND);
-      sendSuccess(res, task);
+      sendSuccess(res, {
+        ...task,
+        creatorName: task.creator.username,
+        assigneeName: task.assignee?.username ?? null,
+        fileIds: task.files?.map((tf) => tf.fileId) ?? [],
+      });
     } catch (error) {
       next(error);
     }
@@ -95,13 +113,17 @@ export class TaskController {
       // - User is ADMINISTRATOR
       // - User is the project creator
       // - User is the client
-      // - User is a SPECIAL_USER with permissions
+      // - User is a SPECIAL_USER with EDIT permission
       const isAdmin = currentUser.role === UserRole.ADMINISTRATOR;
       const isCreator = projectData.creatorId === currentUser.id;
       const isClient = project.clientId === currentUser.id;
-      const isParticipant = projectData.specialUsers?.some((su: any) => su.userId === currentUser.id);
-      
-      if (!isAdmin && !isCreator && !isClient && !isParticipant) {
+      const isSpecialUser = currentUser.role === UserRole.SPECIAL_USER;
+
+      const hasEditPermission = isSpecialUser
+        ? await this.hasSpecialUserRight(currentUser.id, projectId, 'EDIT')
+        : false;
+
+      if (!isAdmin && !isCreator && !isClient && !(isSpecialUser && hasEditPermission)) {
         throw new ForbiddenError('You do not have permission to create tasks in this project');
       }
 
@@ -123,11 +145,44 @@ export class TaskController {
 
       // Create task without fileIds (which is not a Prisma field)
       const task = await this.taskRepository.create({projectId, ...taskData});
+
+      const requestedFileIds: string[] = Array.isArray(fileIds)
+        ? fileIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
+        : [];
+
+      if (requestedFileIds.length > 0) {
+        // Validate files belong to this project.
+        const matchingFiles = await prisma.file.findMany({
+          where: {
+            id: {in: requestedFileIds},
+            projectId,
+          },
+          select: {id: true},
+        });
+
+        if (matchingFiles.length !== requestedFileIds.length) {
+          throw new BadRequestError('One or more attached files are invalid for this project');
+        }
+
+        for (const fileId of requestedFileIds) {
+          await this.taskRepository.addFile(task.id, fileId);
+        }
+      }
+
+      const taskDetails = await this.taskRepository.findById(task.id);
+      if (!taskDetails) {
+        throw new NotFoundError(ERROR_MESSAGES.TASK_NOT_FOUND);
+      }
+
       const taskWithNames = {
-        ...task,
-        creatorName: task.creator.username,
-        assigneeName: task.assignee?.username ?? null,
+        ...taskDetails,
+        creatorName: taskDetails.creator.username,
+        assigneeName: taskDetails.assignee?.username ?? null,
+        fileIds: taskDetails.files?.map((tf) => tf.fileId) ?? [],
       };
+
+      // Emit real-time event to project participants.
+      emitToProject(projectId, 'task:created', taskWithNames);
       sendSuccess(res, taskWithNames, 'Task created successfully', HTTP_STATUS.CREATED);
     } catch (error) {
       next(error);
@@ -149,18 +204,30 @@ export class TaskController {
         throw new NotFoundError(ERROR_MESSAGES.TASK_NOT_FOUND);
       }
 
-      // Permission check: Admin, task creator, or task assignee can update
-      const canUpdate = currentUser.role === 'ADMINISTRATOR' 
-        || existingTask.creatorId === currentUser.id 
+      // Permission check:
+      // - Admin can update
+      // - Clients/other roles: creator or assignee can update
+      // - Special users: require EDIT permission (or be project creator)
+      let canUpdate = currentUser.role === 'ADMINISTRATOR'
+        || existingTask.creatorId === currentUser.id
         || existingTask.assigneeId === currentUser.id;
+
+      if (currentUser.role === 'SPECIAL_USER') {
+        const project = await this.projectRepository.findById(existingTask.projectId);
+        const isProjectCreator = Boolean(project && (project as any).creatorId === currentUser.id);
+        const hasEditPermission = await this.hasSpecialUserRight(currentUser.id, existingTask.projectId, 'EDIT');
+        canUpdate = canUpdate && (isProjectCreator || hasEditPermission);
+      }
       
       if (!canUpdate) {
         sendError(res, 'You do not have permission to update this task', HTTP_STATUS.FORBIDDEN);
         return;
       }
       
-      // Extract only fields that can be updated (exclude id, createdAt, updatedAt, fileIds, etc.)
-      const {assigneeId, description, status, priority, dueDate, comments, completedAt, confirmedAt} = req.body;
+      // Extract only fields that can be updated
+      const {assigneeId, description, status, priority, dueDate, comments, completedAt, confirmedAt, fileIds} = req.body;
+
+      const previousStatus = existingTask.status;
       
       // If dueDate is being updated, validate it's within project date range
       if (dueDate) {
@@ -195,7 +262,76 @@ export class TaskController {
       };
       
       const task = await this.taskRepository.update(req.params.id as string, taskData);
-      sendSuccess(res, task, 'Task updated successfully');
+
+      if (Array.isArray(fileIds)) {
+        const requestedFileIds = fileIds.filter(
+          (id: unknown): id is string => typeof id === 'string' && id.trim().length > 0,
+        );
+
+        const matchingFiles = await prisma.file.findMany({
+          where: {
+            id: {in: requestedFileIds},
+            projectId: existingTask.projectId,
+          },
+          select: {id: true},
+        });
+
+        if (matchingFiles.length !== requestedFileIds.length) {
+          throw new BadRequestError('One or more attached files are invalid for this project');
+        }
+
+        const existingFileIds = existingTask.files?.map((tf) => tf.fileId) ?? [];
+        const requested = new Set(requestedFileIds);
+        const existing = new Set(existingFileIds);
+
+        for (const fileId of requestedFileIds) {
+          if (!existing.has(fileId)) {
+            await this.taskRepository.addFile(existingTask.id, fileId);
+          }
+        }
+
+        for (const fileId of existingFileIds) {
+          if (!requested.has(fileId)) {
+            await this.taskRepository.removeFile(existingTask.id, fileId);
+          }
+        }
+      }
+
+      const taskDetails = await this.taskRepository.findById(existingTask.id);
+      if (!taskDetails) {
+        throw new NotFoundError(ERROR_MESSAGES.TASK_NOT_FOUND);
+      }
+
+      // Emit real-time events.
+      if (status && status !== previousStatus) {
+        emitToProject(existingTask.projectId, 'task:status-changed', {
+          taskId: existingTask.id,
+          projectId: existingTask.projectId,
+          previousStatus,
+          newStatus: status,
+          changedBy: currentUser.id,
+        });
+      }
+
+      // Emit a general update event as well (useful for clients that don't handle the specialized status event).
+      emitToProject(existingTask.projectId, 'task:updated', {
+        ...taskDetails,
+        projectId: existingTask.projectId,
+        creatorName: taskDetails.creator.username,
+        assigneeName: taskDetails.assignee?.username ?? null,
+        fileIds: taskDetails.files?.map((tf) => tf.fileId) ?? [],
+      });
+
+      sendSuccess(
+        res,
+        {
+          ...taskDetails,
+          creatorName: taskDetails.creator.username,
+          assigneeName: taskDetails.assignee?.username ?? null,
+          fileIds: taskDetails.files?.map((tf) => tf.fileId) ?? [],
+        },
+        'Task updated successfully',
+      );
     } catch (error) {
       next(error);
     }
@@ -216,9 +352,19 @@ export class TaskController {
         throw new NotFoundError(ERROR_MESSAGES.TASK_NOT_FOUND);
       }
 
-      // Permission check: Only admin or task creator can delete
-      const canDelete = currentUser.role === 'ADMINISTRATOR' 
+      // Permission check:
+      // - Admin can delete
+      // - Others: only task creator can delete
+      // - Special users: require DELETE permission (or be project creator)
+      let canDelete = currentUser.role === 'ADMINISTRATOR'
         || existingTask.creatorId === currentUser.id;
+
+      if (currentUser.role === 'SPECIAL_USER') {
+        const project = await this.projectRepository.findById(existingTask.projectId);
+        const isProjectCreator = Boolean(project && (project as any).creatorId === currentUser.id);
+        const hasDeletePermission = await this.hasSpecialUserRight(currentUser.id, existingTask.projectId, 'DELETE');
+        canDelete = canDelete && (isProjectCreator || hasDeletePermission);
+      }
       
       if (!canDelete) {
         sendError(res, 'You do not have permission to delete this task', HTTP_STATUS.FORBIDDEN);
@@ -226,6 +372,11 @@ export class TaskController {
       }
 
       await this.taskRepository.delete(req.params.id as string);
+
+      emitToProject(existingTask.projectId, 'task:deleted', {
+        taskId: existingTask.id,
+        projectId: existingTask.projectId,
+      });
       sendSuccess(res, null, 'Task deleted successfully', HTTP_STATUS.NO_CONTENT);
     } catch (error) {
       next(error);

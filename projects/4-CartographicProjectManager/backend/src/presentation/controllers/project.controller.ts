@@ -930,7 +930,7 @@ export class ProjectController {
           canCreateTask: rights.includes(AccessRight.EDIT),
           canSendMessage: rights.includes(AccessRight.SEND_MESSAGE),
           canUploadFile: rights.includes(AccessRight.UPLOAD),
-          canDownloadFile: rights.includes(AccessRight.DOWNLOAD) || rights.includes(AccessRight.VIEW),
+          canDownloadFile: rights.includes(AccessRight.DOWNLOAD),
           canManageParticipants: false,
         };
       }
@@ -943,7 +943,7 @@ export class ProjectController {
         canCreateTask: false,
         canSendMessage: false,
         canUploadFile: false,
-        canDownloadFile: true, // Can at least view
+        canDownloadFile: false,
         canManageParticipants: false,
       };
     }

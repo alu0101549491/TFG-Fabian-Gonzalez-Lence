@@ -13,7 +13,7 @@
  */
 
 import {defineStore} from 'pinia';
-import {ref, computed} from 'vue';
+import {ref, computed, onScopeDispose} from 'vue';
 import type {
   TaskFilterDto,
   CreateTaskDto,
@@ -21,13 +21,16 @@ import type {
   TaskHistoryEntryDto,
 } from '../../application/dto';
 import type {TaskViewModel} from '../view-models/task.view-model';
-import {TaskStatus, TaskStatusTransitions} from '../../domain/enumerations/task-status';
+import {TaskStatus, TaskStatusTransitions, isValidTaskStatus} from '../../domain/enumerations/task-status';
 import {TaskPriority} from '../../domain/enumerations/task-priority';
 import {useAuthStore} from './auth.store';
 import {useProjectStore} from './project.store';
 import {TaskRepository} from '../../infrastructure/repositories/task.repository';
 import {ProjectRepository} from '../../infrastructure/repositories/project.repository';
 import {Task} from '../../domain/entities/task';
+import {isValidTaskPriority} from '../../domain/enumerations/task-priority';
+import {socketHandler} from '../../infrastructure/websocket';
+import {http} from '../../infrastructure/http';
 
 /**
  * Task store using Composition API.
@@ -38,6 +41,57 @@ export const useTaskStore = defineStore('task', () => {
   const projectStore = useProjectStore();
   const taskRepository = new TaskRepository();
   const projectRepository = new ProjectRepository();
+
+  function getNotificationSettingsStorageKey(userId: string): string {
+    return `cpm_settings:${userId}:notifications`;
+  }
+
+  function isWhatsAppNotificationsEnabled(): boolean {
+    const userId = authStore.userId;
+    if (!userId || typeof window === 'undefined') {
+      return false;
+    }
+
+    const raw = window.localStorage.getItem(getNotificationSettingsStorageKey(userId));
+    if (!raw) {
+      return false;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as {whatsappNotifications?: unknown};
+      return parsed?.whatsappNotifications === true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function maybeSendWhatsAppSandboxForTaskAssignment(payload: any): Promise<void> {
+    const userId = authStore.userId;
+    if (!userId) return;
+    if (!payload || typeof payload !== 'object') return;
+
+    if (!isWhatsAppNotificationsEnabled()) return;
+
+    const assigneeId = typeof payload.assigneeId === 'string' ? payload.assigneeId : '';
+    if (!assigneeId || assigneeId !== userId) return;
+
+    const description = typeof payload.description === 'string' ? payload.description : 'New task';
+    const taskId = typeof payload.id === 'string' ? payload.id : null;
+    const projectId = typeof payload.projectId === 'string' ? payload.projectId : null;
+
+    try {
+      await http.post('/whatsapp/sandbox/send', {
+        toUserId: userId,
+        text: `Task assigned: ${description}`,
+        meta: {
+          taskId,
+          projectId,
+        },
+      });
+    } catch {
+      // Sandbox integration should never break task real-time updates.
+    }
+  }
   
   // State
   const tasksByProject = ref<Map<string, TaskViewModel[]>>(new Map());
@@ -57,6 +111,58 @@ export const useTaskStore = defineStore('task', () => {
   const isSaving = ref(false);
   const error = ref<string | null>(null);
 
+  function mapSocketTaskPayloadToViewModel(payload: any): TaskViewModel | null {
+    if (!payload || typeof payload !== 'object') return null;
+    if (typeof payload.id !== 'string' || typeof payload.projectId !== 'string') return null;
+
+    const status: TaskStatus = isValidTaskStatus(payload.status)
+      ? payload.status
+      : TaskStatus.PENDING;
+
+    const priority: TaskPriority = isValidTaskPriority(payload.priority)
+      ? payload.priority
+      : TaskPriority.MEDIUM;
+
+    const dueDate = payload.dueDate ? new Date(payload.dueDate) : new Date();
+    const createdAt = payload.createdAt ? new Date(payload.createdAt) : new Date();
+    const updatedAt = payload.updatedAt ? new Date(payload.updatedAt) : new Date();
+    const completedAt = payload.completedAt ? new Date(payload.completedAt) : null;
+    const confirmedAt = payload.confirmedAt ? new Date(payload.confirmedAt) : null;
+
+    const current = projectStore.currentProject;
+    const project =
+      projectStore.projects.find((p) => p.id === payload.projectId) ??
+      (current && current.project.id === payload.projectId ? current.project : null);
+
+    const projectCode = project?.code;
+    const projectName = project?.name;
+
+    try {
+      const taskEntity = new Task({
+        id: payload.id,
+        projectId: payload.projectId,
+        creatorId: payload.creatorId ?? 'unknown',
+        creatorName: payload.creatorName,
+        assigneeId: payload.assigneeId ?? 'unknown',
+        assigneeName: payload.assigneeName,
+        description: payload.description ?? '(no description)',
+        status,
+        priority,
+        dueDate,
+        fileIds: Array.isArray(payload.fileIds) ? payload.fileIds : [],
+        comments: payload.comments ?? null,
+        createdAt,
+        updatedAt,
+        completedAt,
+        confirmedAt,
+      });
+
+      return mapEntityToDto(taskEntity, projectCode, projectName);
+    } catch {
+      return null;
+    }
+  }
+
   /**
    * Helper function to map Task entity to TaskViewModel
    */
@@ -67,6 +173,28 @@ export const useTaskStore = defineStore('task', () => {
   ): TaskViewModel {
     const now = new Date();
     const isOverdue = task.dueDate < now && task.status !== TaskStatus.COMPLETED;
+
+    const projectPermissions = projectStore.currentProject?.currentUserPermissions;
+    const specialUserCanEdit = authStore.isSpecialUser
+      ? (projectPermissions?.canCreateTask ?? false)
+      : true;
+    const specialUserCanDelete = authStore.isSpecialUser
+      ? (projectPermissions?.canDelete ?? false)
+      : true;
+
+    const isAdmin = authStore.isAdmin;
+    const isCreator = task.creatorId === authStore.userId;
+    const isAssignee = task.assigneeId === authStore.userId;
+
+    const baseCanModify = isAdmin || isCreator || isAssignee;
+    const baseCanDelete = isAdmin || isCreator;
+    const baseCanConfirm = isAdmin || isCreator || isAssignee;
+    const baseCanChangeStatus = isAdmin || isCreator || isAssignee;
+
+    const canModify = baseCanModify && (!authStore.isSpecialUser || specialUserCanEdit);
+    const canDelete = baseCanDelete && (!authStore.isSpecialUser || specialUserCanDelete);
+    const canConfirm = baseCanConfirm && (!authStore.isSpecialUser || specialUserCanEdit);
+    const canChangeStatus = baseCanChangeStatus && (!authStore.isSpecialUser || specialUserCanEdit);
     
     return {
       id: task.id,
@@ -89,10 +217,10 @@ export const useTaskStore = defineStore('task', () => {
       completedAt: task.completedAt || null,
       confirmedAt: task.confirmedAt || null,
       isOverdue,
-      canModify: authStore.isAdmin || task.creatorId === authStore.userId || task.assigneeId === authStore.userId,
-      canDelete: authStore.isAdmin || task.creatorId === authStore.userId,
-      canConfirm: authStore.isAdmin || task.creatorId === authStore.userId || task.assigneeId === authStore.userId,
-      canChangeStatus: authStore.isAdmin || task.creatorId === authStore.userId || task.assigneeId === authStore.userId,
+      canModify,
+      canDelete,
+      canConfirm,
+      canChangeStatus,
       allowedStatusTransitions: getValidTransitions(task.status),
     };
   }
@@ -114,13 +242,13 @@ export const useTaskStore = defineStore('task', () => {
     }
 
     const tasks = tasksByProject.value.get(projectId) ?? [];
-    projectStore.currentProject.taskStats = {
+    projectStore.setCurrentProjectTaskStats(projectId, {
       total: tasks.length,
       pending: tasks.filter(t => t.status === TaskStatus.PENDING).length,
       inProgress: tasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length,
       completed: tasks.filter(t => t.status === TaskStatus.COMPLETED).length,
       overdue: tasks.filter(t => t.isOverdue).length,
-    };
+    });
   }
 
   // Getters
@@ -589,6 +717,8 @@ export const useTaskStore = defineStore('task', () => {
     const tasks = tasksByProject.value.get(payload.projectId) ?? [];
     tasksByProject.value.set(payload.projectId, [...tasks, payload as TaskViewModel]);
     pagination.value.total++;
+
+    void maybeSendWhatsAppSandboxForTaskAssignment(payload);
   }
 
   /**
@@ -599,12 +729,20 @@ export const useTaskStore = defineStore('task', () => {
     const index = tasks.findIndex(t => t.id === payload.id);
     
     if (index !== -1) {
-      tasks[index] = {...tasks[index], ...payload};
+      const previousAssigneeId = (tasks[index] as any)?.assigneeId;
+
+      const mapped = mapSocketTaskPayloadToViewModel(payload);
+      tasks[index] = mapped ? mapped : {...tasks[index], ...payload};
       tasksByProject.value.set(payload.projectId, [...tasks]);
       
       const existingCurrentTask = currentTask.value;
       if (existingCurrentTask && existingCurrentTask.id === payload.id) {
         currentTask.value = {...existingCurrentTask, ...payload};
+      }
+
+      const nextAssigneeId = (payload as any)?.assigneeId;
+      if (previousAssigneeId !== nextAssigneeId) {
+        void maybeSendWhatsAppSandboxForTaskAssignment(payload);
       }
     }
   }
@@ -640,6 +778,55 @@ export const useTaskStore = defineStore('task', () => {
       }
     }
   }
+
+  /**
+   * Initialize WebSocket listeners for real-time task updates.
+   */
+  function initializeWebSocket(): void {
+    const createdSub = socketHandler.onTaskCreated((payload: any) => {
+      const mapped = mapSocketTaskPayloadToViewModel(payload);
+      handleTaskCreated(mapped ?? payload);
+    });
+
+    const updatedSub = socketHandler.onTaskUpdated((payload: any) => {
+      handleTaskUpdated(payload);
+    });
+
+    const deletedSub = socketHandler.onTaskDeleted((payload: any) => {
+      if (payload && payload.taskId && payload.projectId) {
+        handleTaskDeleted({taskId: payload.taskId, projectId: payload.projectId});
+      }
+    });
+
+    const statusChangedSub = socketHandler.onTaskStatusChanged((payload: any) => {
+      handleTaskStatusChanged(payload);
+    });
+
+    const confirmedSub = socketHandler.onTaskConfirmed((payload: any) => {
+      if (!payload || typeof payload !== 'object') return;
+      const tasks = tasksByProject.value.get(payload.projectId) ?? [];
+      const index = tasks.findIndex((t) => t.id === payload.taskId);
+      if (index === -1) return;
+
+      tasks[index] = {
+        ...tasks[index],
+        status: TaskStatus.COMPLETED,
+        confirmedAt: payload.confirmedAt ? new Date(payload.confirmedAt) : tasks[index].confirmedAt,
+      };
+      tasksByProject.value.set(payload.projectId, [...tasks]);
+    });
+
+    onScopeDispose(() => {
+      createdSub.unsubscribe();
+      updatedSub.unsubscribe();
+      deletedSub.unsubscribe();
+      statusChangedSub.unsubscribe();
+      confirmedSub.unsubscribe();
+    });
+  }
+
+  // Initialize WebSocket listeners when store is created.
+  initializeWebSocket();
 
   /**
    * Clears all tasks for a project

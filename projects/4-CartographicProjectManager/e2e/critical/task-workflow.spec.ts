@@ -204,6 +204,240 @@ test.describe('Tasks workflow (critical)', () => {
       }
     });
 
+    test('TASK-011: task attachments during create show in task details', async ({projectDetailsPage, page}) => {
+      const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+
+      const {client: adminApi, session: adminSession} = await CpmApiClient.login(
+        apiContext,
+        DEV_ACCOUNTS.ADMIN,
+      );
+
+      const nonce = uniqueNonce('pw-task-011');
+      const clientId = await resolveClientId(adminApi);
+      const project = await adminApi.createProject({
+        year: new Date().getFullYear(),
+        code: `PW-TASK-${nonce.slice(-8)}`,
+        name: `PW Task Attachments ${nonce}`,
+        clientId,
+        type: 'GIS',
+        coordinateX: null,
+        coordinateY: null,
+        contractDate: daysFromToday(0).toISOString(),
+        deliveryDate: daysFromToday(10).toISOString(),
+      });
+
+      const uploadedFileName = `pw-task-attach-${nonce.slice(-6)}.pdf`;
+      const uploadedFileId = `pw-task-file-${nonce.slice(-10)}`;
+      const nowIso = new Date().toISOString();
+
+      const filesForProject: Array<{
+        id: string;
+        name: string;
+        dropboxPath: string;
+        type: string;
+        sizeInBytes: number;
+        uploadedBy: string;
+        uploadedAt: string;
+        projectId: string;
+        taskId: string | null;
+        messageId: string | null;
+      }> = [];
+
+      const tasksForProject: Array<{
+        id: string;
+        projectId: string;
+        creatorId: string;
+        creatorName: string;
+        assigneeId: string;
+        assigneeName: string;
+        description: string;
+        status: string;
+        priority: string;
+        dueDate: string;
+        fileIds: string[];
+        comments: string | null;
+        createdAt: string;
+        updatedAt: string;
+        completedAt: string | null;
+        confirmedAt: string | null;
+      }> = [];
+
+      let capturedTaskCreateBody: null | {
+        projectId?: string;
+        creatorId?: string;
+        assigneeId?: string;
+        description?: string;
+        status?: string;
+        priority?: string;
+        dueDate?: string;
+        fileIds?: string[];
+        comments?: string | null;
+      } = null;
+
+      await page.route(
+        new RegExp(`/api/v1/projects/${project.id}/files(\\?.*)?$`),
+        async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({success: true, data: filesForProject}),
+          });
+        },
+      );
+
+      await page.route('**/api/v1/files/upload', async (route) => {
+        filesForProject.push({
+          id: uploadedFileId,
+          name: uploadedFileName,
+          dropboxPath: `/mock/${project.id}/${uploadedFileName}`,
+          type: 'PDF',
+          sizeInBytes: 9,
+          uploadedBy: adminSession.user.id,
+          uploadedAt: nowIso,
+          projectId: project.id,
+          taskId: null,
+          messageId: null,
+        });
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              file: {
+                id: uploadedFileId,
+                name: uploadedFileName,
+                type: 'PDF',
+                sizeInBytes: 9,
+                uploadedAt: nowIso,
+                uploadedBy: adminSession.user.id,
+                projectId: project.id,
+                dropboxPath: `/mock/${project.id}/${uploadedFileName}`,
+                mimeType: 'application/pdf',
+              },
+            },
+          }),
+        });
+      });
+
+      await page.route(
+        new RegExp(`/api/v1/projects/${project.id}/tasks(\\?.*)?$`),
+        async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({success: true, data: tasksForProject}),
+          });
+        },
+      );
+
+      await page.route(new RegExp('/api/v1/tasks(\\?.*)?$'), async (route) => {
+        if (route.request().method() !== 'POST') {
+          await route.fallback();
+          return;
+        }
+
+        const bodyText = route.request().postData() || '{}';
+        capturedTaskCreateBody = JSON.parse(bodyText) as typeof capturedTaskCreateBody;
+
+        const taskId = `pw-task-011-${nonce}`;
+        const createdTask = {
+          id: taskId,
+          projectId: project.id,
+          creatorId: capturedTaskCreateBody?.creatorId ?? adminSession.user.id,
+          creatorName: adminSession.user.username,
+          assigneeId: capturedTaskCreateBody?.assigneeId ?? adminSession.user.id,
+          assigneeName: adminSession.user.username,
+          description: capturedTaskCreateBody?.description ?? `PW Attachments ${nonce}`,
+          status: capturedTaskCreateBody?.status ?? 'PENDING',
+          priority: capturedTaskCreateBody?.priority ?? 'MEDIUM',
+          dueDate: capturedTaskCreateBody?.dueDate ?? daysFromToday(5).toISOString(),
+          fileIds: Array.isArray(capturedTaskCreateBody?.fileIds)
+            ? (capturedTaskCreateBody?.fileIds as string[])
+            : [],
+          comments: (capturedTaskCreateBody?.comments as string | null | undefined) ?? null,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+          completedAt: null,
+          confirmedAt: null,
+        };
+
+        tasksForProject.push(createdTask);
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({success: true, data: createdTask}),
+        });
+      });
+
+      const description = `PW Task Attach ${nonce.slice(-10)}`;
+
+      try {
+        await projectDetailsPage.goto(project.id);
+        await projectDetailsPage.openTasksTab();
+
+        await projectDetailsPage.clickNewTask();
+        const createDialog = page.getByRole('dialog', {name: 'Create New Task'});
+
+        await createDialog.locator('#task-description').fill(description);
+        await createDialog.locator('#task-assignee').selectOption({index: 1});
+        await createDialog.locator('#task-priority').selectOption('HIGH');
+        await createDialog
+          .locator('#task-due-date')
+          .fill(daysFromToday(6).toISOString().slice(0, 10));
+
+        const fileInput = createDialog.getByLabel('Attach files');
+        await fileInput.setInputFiles({
+          name: uploadedFileName,
+          mimeType: 'application/pdf',
+          buffer: Buffer.from('%PDF-1.4\n%pw\n'),
+        });
+
+        await expect(createDialog.locator('.task-form-file-name')).toHaveText(uploadedFileName);
+
+        const tasksReloadPromise = page.waitForResponse((response) => {
+          return (
+            response.request().method() === 'GET' &&
+            new RegExp(`/api/v1/projects/${project.id}/tasks(\\?.*)?$`).test(response.url())
+          );
+        });
+        const filesReloadPromise = page.waitForResponse((response) => {
+          return (
+            response.request().method() === 'GET' &&
+            new RegExp(`/api/v1/projects/${project.id}/files(\\?.*)?$`).test(response.url())
+          );
+        });
+
+        await createDialog.getByRole('button', {name: 'Create Task'}).click();
+
+        await Promise.all([tasksReloadPromise, filesReloadPromise]);
+
+        await expect(projectDetailsPage.taskCardByDescription(description)).toBeVisible();
+
+        if (!capturedTaskCreateBody) {
+          throw new Error('Expected task create request body to be captured.');
+        }
+
+        expect(capturedTaskCreateBody.projectId).toBe(project.id);
+        expect(capturedTaskCreateBody.fileIds).toEqual([uploadedFileId]);
+
+        await projectDetailsPage.taskCardByDescription(description).click();
+        const detailsDialog = page.getByRole('dialog', {name: 'Task Details'});
+
+        await expect(detailsDialog.getByRole('heading', {name: 'Attachments'})).toBeVisible();
+        await expect(detailsDialog.getByRole('button', {name: uploadedFileName})).toBeVisible();
+      } finally {
+        try {
+          await adminApi.deleteProject(project.id);
+        } catch {
+          // Ignore.
+        }
+        await apiContext.dispose();
+      }
+    });
+
     test('TASK-005: edit task updates fields', async ({projectDetailsPage}) => {
       const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
 
@@ -268,6 +502,109 @@ test.describe('Tasks workflow (critical)', () => {
         } catch {
           // Ignore if deleted by cascade.
         }
+        try {
+          await adminApi.deleteProject(project.id);
+        } catch {
+          // Ignore.
+        }
+        await apiContext.dispose();
+      }
+    });
+
+    test('TASK-012: completed tasks are read-only for status transitions', async ({
+      projectDetailsPage,
+    }) => {
+      const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+
+      const {client: adminApi, session: adminSession} = await CpmApiClient.login(
+        apiContext,
+        DEV_ACCOUNTS.ADMIN,
+      );
+
+      const nonce = uniqueNonce('pw-task-012');
+      const clientId = await resolveClientId(adminApi);
+
+      const project = await adminApi.createProject({
+        year: new Date().getFullYear(),
+        code: `PW-TASK-${nonce.slice(-8)}`,
+        name: `PW Task Completed Readonly ${nonce}`,
+        clientId,
+        type: 'GIS',
+        coordinateX: null,
+        coordinateY: null,
+        contractDate: daysFromToday(0).toISOString(),
+        deliveryDate: daysFromToday(10).toISOString(),
+      });
+
+      const description = `PW Completed Readonly ${nonce.slice(-10)}`;
+
+      const task = await adminApi.createTask({
+        projectId: project.id,
+        creatorId: adminSession.user.id,
+        assigneeId: adminSession.user.id,
+        description,
+        status: 'COMPLETED',
+        priority: 'LOW',
+        dueDate: daysFromToday(5).toISOString(),
+        comments: null,
+      });
+
+      try {
+        await projectDetailsPage.goto(project.id);
+        await projectDetailsPage.openTasksTab();
+
+        const card = projectDetailsPage.taskCardByDescription(description);
+        await expect(card).toBeVisible();
+
+        // Completed tasks should not expose quick status transition buttons.
+        await expect(card.locator('.task-card-status-actions')).toHaveCount(0);
+        await expect(card.locator('.task-card-status-btn')).toHaveCount(0);
+      } finally {
+        try {
+          await adminApi.deleteTask(task.id);
+        } catch {
+          // Ignore if deleted by cascade.
+        }
+        try {
+          await adminApi.deleteProject(project.id);
+        } catch {
+          // Ignore.
+        }
+        await apiContext.dispose();
+      }
+    });
+
+    test('TASK-014: task list handles “no tasks” state cleanly', async ({
+      projectDetailsPage,
+    }) => {
+      const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
+
+      const {client: adminApi} = await CpmApiClient.login(apiContext, DEV_ACCOUNTS.ADMIN);
+
+      const nonce = uniqueNonce('pw-task-014');
+      const clientId = await resolveClientId(adminApi);
+
+      const project = await adminApi.createProject({
+        year: new Date().getFullYear(),
+        code: `PW-TASK-${nonce.slice(-8)}`,
+        name: `PW Task Empty ${nonce}`,
+        clientId,
+        type: 'GIS',
+        coordinateX: null,
+        coordinateY: null,
+        contractDate: daysFromToday(0).toISOString(),
+        deliveryDate: daysFromToday(10).toISOString(),
+      });
+
+      try {
+        await projectDetailsPage.goto(project.id);
+        await projectDetailsPage.openTasksTab();
+
+        await expect(projectDetailsPage.page.locator('.task-list-empty-title')).toContainText(
+          'No tasks yet',
+        );
+        await expect(projectDetailsPage.page.locator('.task-card')).toHaveCount(0);
+      } finally {
         try {
           await adminApi.deleteProject(project.id);
         } catch {

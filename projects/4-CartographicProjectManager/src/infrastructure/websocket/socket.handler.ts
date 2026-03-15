@@ -91,6 +91,12 @@ export enum ServerEvent {
   FILE_UPLOADED = 'file:uploaded',
   FILE_DELETED = 'file:deleted',
 
+  // Presence events
+  PRESENCE_TYPING = 'presence:typing',
+  PRESENCE_STOP_TYPING = 'presence:stop-typing',
+  PRESENCE_ONLINE = 'presence:online',
+  PRESENCE_OFFLINE = 'presence:offline',
+
   // System events
   CONNECT = 'connect',
   DISCONNECT = 'disconnect',
@@ -214,6 +220,26 @@ export interface FilePayload {
   uploadedBy: string;
   /** Upload timestamp */
   uploadedAt: string;
+}
+
+/**
+ * Presence typing payload
+ */
+export interface PresenceTypingPayload {
+  /** Project where the typing activity happens */
+  projectId: string;
+  /** User currently typing */
+  userId: string;
+}
+
+/**
+ * Presence online/offline payload
+ */
+export interface PresenceOnlinePayload {
+  /** Project where the presence change happened */
+  projectId: string;
+  /** User who came online/offline */
+  userId: string;
 }
 
 /**
@@ -660,6 +686,54 @@ export class SocketHandler {
   }
 
   /**
+   * Subscribe to presence typing events
+   *
+   * @param callback - Callback function to invoke when another user starts typing
+   * @returns Subscription handle for unsubscribing
+   */
+  public onPresenceTyping(
+    callback: EventCallback<PresenceTypingPayload>,
+  ): Subscription {
+    return this.addEventListener(ServerEvent.PRESENCE_TYPING, callback);
+  }
+
+  /**
+   * Subscribe to presence stop-typing events
+   *
+   * @param callback - Callback function to invoke when another user stops typing
+   * @returns Subscription handle for unsubscribing
+   */
+  public onPresenceStopTyping(
+    callback: EventCallback<PresenceTypingPayload>,
+  ): Subscription {
+    return this.addEventListener(ServerEvent.PRESENCE_STOP_TYPING, callback);
+  }
+
+  /**
+   * Subscribe to presence online events
+   *
+   * @param callback - Callback function invoked when another user comes online
+   * @returns Subscription handle for unsubscribing
+   */
+  public onPresenceOnline(
+    callback: EventCallback<PresenceOnlinePayload>,
+  ): Subscription {
+    return this.addEventListener(ServerEvent.PRESENCE_ONLINE, callback);
+  }
+
+  /**
+   * Subscribe to presence offline events
+   *
+   * @param callback - Callback function invoked when another user goes offline
+   * @returns Subscription handle for unsubscribing
+   */
+  public onPresenceOffline(
+    callback: EventCallback<PresenceOnlinePayload>,
+  ): Subscription {
+    return this.addEventListener(ServerEvent.PRESENCE_OFFLINE, callback);
+  }
+
+  /**
    * Subscribe to connection state changes
    *
    * @param callback - Callback function invoked when connection state changes
@@ -836,6 +910,22 @@ export class SocketHandler {
 
     this.socket.on(ServerEvent.FILE_DELETED, (data) => {
       this.emitToListeners(ServerEvent.FILE_DELETED, data);
+    });
+
+    this.socket.on(ServerEvent.PRESENCE_TYPING, (data) => {
+      this.emitToListeners(ServerEvent.PRESENCE_TYPING, data);
+    });
+
+    this.socket.on(ServerEvent.PRESENCE_STOP_TYPING, (data) => {
+      this.emitToListeners(ServerEvent.PRESENCE_STOP_TYPING, data);
+    });
+
+    this.socket.on(ServerEvent.PRESENCE_ONLINE, (data) => {
+      this.emitToListeners(ServerEvent.PRESENCE_ONLINE, data);
+    });
+
+    this.socket.on(ServerEvent.PRESENCE_OFFLINE, (data) => {
+      this.emitToListeners(ServerEvent.PRESENCE_OFFLINE, data);
     });
   }
 

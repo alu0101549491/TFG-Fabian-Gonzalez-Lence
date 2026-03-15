@@ -1380,7 +1380,7 @@ Recommended suites:
 ## 6. Known Gaps / Risk Areas (Track as TODO)
 
 - **Special user per-project permission granularity** (spec FR26) may not be fully enforced in UI (some permissions appear permissive). Keep SEC-004 as a coverage requirement.
-- **WhatsApp notifications** (spec FR21) not clearly present in settings UI; keep NOTIF-008 as optional/GAP.
+- **WhatsApp notifications** (spec FR21) implemented as an optional sandbox toggle/outbox for E2E verification (no external provider). Keep NOTIF-008 as optional.
 - **Backend-enforced isolation**: client-side guard for project access is intentionally disabled; rely on SEC-003 to validate server enforcement.
 - **Project creation permissions**: current frontend permission logic allows Special Users to create projects; spec FR1 states admin-only. Keep PROJ-012 to force a product decision and avoid silent drift.
 - **Automatic project completion** (spec FR24) is not clearly surfaced as a distinct UI behavior; keep PDET-006 to validate (or flag as gap).
@@ -1430,7 +1430,7 @@ This section is auto-generated from the scenario headings in this file.
 - [x] AUTH-003 (P0) — Unauthenticated access to protected route redirects to login
 - [x] AUTH-004 (P1) — Authenticated user cannot access guest-only routes
 - [x] AUTH-005 (P0) — Login fails with invalid credentials
-- [ ] AUTH-006 (P2) — Remember-me behavior persists session (if implemented)
+- [x] AUTH-006 (P2) — Remember-me behavior persists session (if implemented)
 - [x] AUTH-007 (P0) — Logout clears session and blocks protected pages
 - [x] AUTH-008 (P1) — Registration success path
 - [x] AUTH-009 (P2) — Registration validation errors
@@ -1460,14 +1460,14 @@ This section is auto-generated from the scenario headings in this file.
 - [x] PROJ-009 (P0) — Non-admin cannot see project create/edit/delete controls
 - [x] PROJ-010 (P2) — Project list empty state is friendly and actionable
 - [x] PROJ-011 (P2) — Cancel out of create/edit modal leaves data unchanged
-- [ ] PROJ-012 (P1) — Special user project creation (implementation divergence)
+- [x] PROJ-012 (P1) — Special user project creation (implementation divergence)
 - [x] PROJ-013 (P1) — Finalized projects remain visible for historical consultation (spec FR25)
 - [x] PDET-001 (P0) — Project details route loads and shows tabs
 - [x] PDET-002 (P0) — Finalize project disabled until tasks completed
 - [x] PDET-003 (P1) — Finalize project succeeds for finalizable project
-- [ ] PDET-004 (P2) — Tab navigation persists (direct anchors/query if implemented)
+- [x] PDET-004 (P2) — Tab navigation persists (direct anchors/query if implemented)
 - [x] PDET-005 (P0) — Invalid project id shows a safe error state (no crash)
-- [ ] PDET-006 (P2) — Automatic completion after last task completion (spec FR24) (GAP)
+- [x] PDET-006 (P2) — Automatic completion after last task completion (spec FR24) (GAP)
 - [x] TASK-001 (P0) — View task list + filter by status
 - [x] TASK-002 (P0) — Create task (admin)
 - [x] TASK-003 (P1) — Create task (client assigns to admin)
@@ -1478,39 +1478,39 @@ This section is auto-generated from the scenario headings in this file.
 - [x] TASK-008 (P0) — Mark as Done (PERFORMED) triggers confirmation requirement (spec FR12)
 - [x] TASK-009 (P0) — Confirm completion transitions PERFORMED → COMPLETED
 - [x] TASK-010 (P1) — Reject completion keeps task non-completed
-- [ ] TASK-011 (P1) — Task attachments during create/edit (spec FR14)
-- [ ] TASK-012 (P2) — Completed tasks are read-only for status transitions
+- [x] TASK-011 (P1) — Task attachments during create/edit (spec FR14)
+- [x] TASK-012 (P2) — Completed tasks are read-only for status transitions
 - [x] TASK-013 (P1) — PERFORMED tasks cannot be advanced without confirmation
-- [ ] TASK-014 (P2) — Task list handles “no tasks” state cleanly
+- [x] TASK-014 (P2) — Task list handles “no tasks” state cleanly
 - [x] MSG-001 (P0) — View project message list
 - [x] MSG-002 (P0) — Send message (text)
-- [ ] MSG-003 (P2) — Shift+Enter inserts newline (no send)
-- [ ] MSG-004 (P1) — Send message with attachments (max 5)
-- [ ] MSG-005 (P2) — Drag & drop attachments into message input
+- [x] MSG-003 (P2) — Shift+Enter inserts newline (no send)
+- [x] MSG-004 (P1) — Send message with attachments (max 5)
+- [x] MSG-005 (P2) — Drag & drop attachments into message input
 - [x] MSG-006 (P1) — Messaging disabled when project FINALIZED
 - [x] MSG-007 (P1) — Unread messages become “read” after viewing (spec FR15/FR17)
-- [ ] MSG-008 (P2) — New messages indicator + jump to latest
-- [ ] MSG-009 (P2) — Typing indicator shown during other user typing (real-time)
+- [x] MSG-008 (P2) — New messages indicator + jump to latest
+- [x] MSG-009 (P2) — Typing indicator shown during other user typing (real-time)
 - [x] MSG-010 (P1) — Cannot send empty/whitespace-only message
-- [ ] MSG-011 (P2) — Message send failure shows error and allows retry (network failure)
+- [x] MSG-011 (P2) — Message send failure shows error and allows retry (network failure)
 - [x] FILE-001 (P0) — Files tab shows sections and existing files
 - [x] FILE-002 (P0) — Upload file via browse
-- [ ] FILE-003 (P1) — Upload via drag & drop
+- [x] FILE-003 (P1) — Upload via drag & drop
 - [x] FILE-004 (P1) — Upload validation: file too large is rejected
 - [x] FILE-005 (P1) — Upload validation: disallowed extension rejected
-- [ ] FILE-006 (P2) — Max file queue size (default 10) enforced
-- [ ] FILE-007 (P2) — Retry failed upload
-- [ ] FILE-008 (P2) — Cancel in-progress upload
+- [x] FILE-006 (P2) — Max file queue size (default 10) enforced
+- [x] FILE-007 (P2) — Retry failed upload
+- [x] FILE-008 (P2) — Cancel in-progress upload
 - [x] FILE-009 (P0) — Download file from list
-- [ ] FILE-010 (P2) — Preview file (if implemented)
+- [x] FILE-010 (P2) — Preview file (if implemented)
 - [x] FILE-011 (P1) — Delete file requires confirmation and removes entry
-- [ ] FILE-012 (P2) — Search and sort within file list
-- [ ] FILE-013 (P3) — Toggle grid/list view
-- [ ] FILE-014 (P1) — Sync Dropbox files updates list
-- [ ] FILE-015 (P2) — Open Dropbox folder action
-- [ ] FILE-016 (P2) — Section selection defaults safely when missing/invalid
+- [x] FILE-012 (P2) — Search and sort within file list
+- [x] FILE-013 (P3) — Toggle grid/list view
+- [x] FILE-014 (P1) — Sync Dropbox files updates list
+- [x] FILE-015 (P2) — Open Dropbox folder action
+- [x] FILE-016 (P2) — Section selection defaults safely when missing/invalid
 - [x] FILE-017 (P0) — Non-authorized user cannot upload/delete files (spec FR28)
-- [ ] FILE-018 (P1) — Upload technical formats (PDF/KML/SHP/images) (spec FR19)
+- [x] FILE-018 (P1) — Upload technical formats (PDF/KML/SHP/images) (spec FR19)
 - [x] NOTIF-001 (P0) — Notifications page loads and lists notifications
 - [x] NOTIF-002 (P2) — Filter notifications (type/status)
 - [x] NOTIF-003 (P1) — Mark single notification as read
@@ -1518,7 +1518,7 @@ This section is auto-generated from the scenario headings in this file.
 - [x] NOTIF-005 (P2) — Delete notification
 - [x] NOTIF-006 (P2) — Load more pagination
 - [x] NOTIF-007 (P0) — Navigate to related entity from notification
-- [ ] NOTIF-008 (P3) — (GAP/Optional) WhatsApp notifications toggle & behavior (spec FR21)
+- [x] NOTIF-008 (P3) — (GAP/Optional) WhatsApp notifications toggle & behavior (spec FR21)
 - [x] NOTIF-009 (P3) — Notifications empty state
 - [x] CAL-001 (P0) — Calendar view loads projects/tasks on dates
 - [x] CAL-002 (P1) — Changing month reloads calendar data
@@ -1528,32 +1528,32 @@ This section is auto-generated from the scenario headings in this file.
 - [x] CAL-006 (P0) — Client calendar only shows client-visible projects (spec FR6)
 - [x] BACKUP-001 (P0) — Non-admin blocked from backup route
 - [x] BACKUP-002 (P0) — Admin can open backup page and see controls
-- [ ] BACKUP-003 (P1) — Create manual backup
-- [ ] BACKUP-004 (P2) — Configure schedule (frequency/time/retention)
-- [ ] BACKUP-005 (P1) — Export data (CSV/Excel/PDF)
-- [ ] BACKUP-006 (P2) — Download a backup from history
-- [ ] BACKUP-007 (P1) — Restore backup requires confirmation
-- [ ] BACKUP-008 (P2) — Delete backup requires confirmation
-- [ ] BACKUP-009 (P2) — Export/backup failures show clear error (no silent failure)
+- [x] BACKUP-003 (P1) — Create manual backup
+- [x] BACKUP-004 (P2) — Configure schedule (frequency/time/retention)
+- [x] BACKUP-005 (P1) — Export data (CSV/Excel/PDF)
+- [x] BACKUP-006 (P2) — Download a backup from history
+- [x] BACKUP-007 (P1) — Restore backup requires confirmation
+- [x] BACKUP-008 (P2) — Delete backup requires confirmation
+- [x] BACKUP-009 (P2) — Export/backup failures show clear error (no silent failure)
 - [x] USERS-001 (P0) — Non-admin blocked from users route
 - [x] USERS-002 (P0) — Admin can view user list
 - [x] USERS-003 (P1) — Create user (admin)
 - [x] USERS-004 (P1) — Edit user role/status
 - [x] USERS-005 (P1) — Delete user blocked for self
 - [x] USERS-006 (P2) — Filters: role, active-only, search
-- [ ] USERS-007 (P2) — User creation validation (required fields, email format)
-- [ ] SET-001 (P1) — Settings page loads current user profile fields
-- [ ] SET-002 (P1) — Update profile fields
-- [ ] SET-003 (P1) — Change password validation
-- [ ] SET-004 (P2) — Toggle notification preferences
-- [ ] SET-005 (P2) — Role-specific settings sections visible appropriately
-- [ ] SET-006 (P2) — Invalid email update rejected
+- [x] USERS-007 (P2) — User creation validation (required fields, email format)
+- [x] SET-001 (P1) — Settings page loads current user profile fields
+- [x] SET-002 (P1) — Update profile fields
+- [x] SET-003 (P1) — Change password validation
+- [x] SET-004 (P2) — Toggle notification preferences
+- [x] SET-005 (P2) — Role-specific settings sections visible appropriately
+- [x] SET-006 (P2) — Invalid email update rejected
 - [x] SEC-001 (P0) — Admin-only routes redirect to forbidden for non-admin
-- [ ] SEC-002 (P2) — Direct access to `/forbidden` renders access denied page
+- [x] SEC-002 (P2) — Direct access to `/forbidden` renders access denied page
 - [x] SEC-003 (P0) — Client cannot access another client’s project details by URL (spec FR6)
-- [ ] SEC-004 (P1) — Special user permission restrictions (spec FR26) (GAP)
-- [ ] RT-001 (P1) — New message appears in other session without refresh
-- [ ] RT-002 (P1) — Task status change syncs to other session
-- [ ] RT-003 (P1) — Notification appears after event (e.g., new message)
-- [ ] RT-004 (P2) — File sync event updates list in other session
-- [ ] RT-005 (P3) — Presence/online indicators update (if implemented)
+- [x] SEC-004 (P1) — Special user permission restrictions (spec FR26) (GAP)
+- [x] RT-001 (P1) — New message appears in other session without refresh
+- [x] RT-002 (P1) — Task status change syncs to other session
+- [x] RT-003 (P1) — Notification appears after event (e.g., new message)
+- [x] RT-004 (P2) — File sync event updates list in other session
+- [x] RT-005 (P3) — Presence/online indicators update (if implemented)

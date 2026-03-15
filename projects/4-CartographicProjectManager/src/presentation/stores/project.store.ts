@@ -21,6 +21,7 @@ import type {
   UpdateProjectDto,
   ParticipantDto,
   ProjectDto,
+  TaskStatsDto,
 } from '../../application/dto';
 import type {
   ProjectDetailsViewModel,
@@ -431,16 +432,13 @@ export const useProjectStore = defineStore('project', () => {
         sections: [],
         totalFilesCount: 0,
         currentUserPermissions: projectWithDetails.currentUserPermissions ?? {
-          canEdit: authStore.isAdmin || projectWithDetails.creatorId === authStore.userId,
-          canDelete: authStore.isAdmin || projectWithDetails.creatorId === authStore.userId,
-          canFinalize: authStore.isAdmin || projectWithDetails.creatorId === authStore.userId,
-          canCreateTask: authStore.isAdmin
-            || projectWithDetails.creatorId === authStore.userId
-            || projectWithDetails.clientId === authStore.userId
-            || participants.some(p => p.userId === authStore.userId),
-          canSendMessage: true,
-          canUploadFile: false,
-          canDownloadFile: false,
+          canEdit: authStore.isAdmin || (authStore.isClient && projectWithDetails.clientId === authStore.userId),
+          canDelete: authStore.isAdmin,
+          canFinalize: authStore.isAdmin,
+          canCreateTask: authStore.isAdmin || (authStore.isClient && projectWithDetails.clientId === authStore.userId),
+          canSendMessage: authStore.isAdmin || (authStore.isClient && projectWithDetails.clientId === authStore.userId),
+          canUploadFile: authStore.isAdmin || (authStore.isClient && projectWithDetails.clientId === authStore.userId),
+          canDownloadFile: authStore.isAdmin || (authStore.isClient && projectWithDetails.clientId === authStore.userId),
           canManageParticipants: authStore.isAdmin,
         },
         statusColor: projectSummary?.statusColor || 'gray',
@@ -901,6 +899,24 @@ export const useProjectStore = defineStore('project', () => {
     error.value = null;
   }
 
+  /**
+   * Updates task statistics for the currently loaded project.
+   *
+   * Task stats are readonly in DTOs, so we replace the currentProject object
+   * instead of mutating nested properties.
+   */
+  function setCurrentProjectTaskStats(projectId: string, taskStats: TaskStatsDto): void {
+    const existing = currentProject.value;
+    if (!existing || existing.project.id !== projectId) {
+      return;
+    }
+
+    currentProject.value = {
+      ...existing,
+      taskStats,
+    };
+  }
+
   return {
     // State
     projects,
@@ -948,6 +964,7 @@ export const useProjectStore = defineStore('project', () => {
     resetFilters,
     handleProjectUpdated,
     handleProjectFinalized,
+    setCurrentProjectTaskStats,
     clearCurrentProject,
     clearError,
   };

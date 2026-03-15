@@ -108,6 +108,7 @@ export class TaskRepository implements ITaskRepository {
       priority: task.priority,
       dueDate: task.dueDate.toISOString(),
       comments: task.comments,
+      fileIds: task.fileIds,
     };
     
     const response = await httpClient.post<TaskApiResponse>(
@@ -132,6 +133,7 @@ export class TaskRepository implements ITaskRepository {
       priority: task.priority,
       dueDate: task.dueDate.toISOString(),
       comments: task.comments,
+      fileIds: task.fileIds,
       completedAt: task.completedAt?.toISOString() || null,
       confirmedAt: task.confirmedAt?.toISOString() || null,
     };
