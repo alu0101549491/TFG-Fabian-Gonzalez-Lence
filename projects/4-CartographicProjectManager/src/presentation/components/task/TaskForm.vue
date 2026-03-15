@@ -221,11 +221,25 @@
       <p v-if="errors.dueDate" class="task-form-error">{{ errors.dueDate }}</p>
     </div>
 
-    <!-- Attached Files (edit mode only) -->
-    <div v-if="isEditMode && taskFiles.length > 0" class="task-form-files">
-      <label class="task-form-label">Attached Files</label>
-      <div class="task-form-files-list">
-        <div v-for="file in taskFiles" :key="file.id" class="task-form-file">
+    <!-- Attachments -->
+    <div class="task-form-files">
+      <label class="task-form-label">Attachments</label>
+
+      <input
+        v-if="!isCompleted"
+        ref="fileInputRef"
+        class="task-form-file-input"
+        type="file"
+        multiple
+        aria-label="Attach files"
+        :disabled="loading || isUploadingFiles"
+        @change="handleFileSelection"
+      />
+
+      <p v-if="uploadError" class="task-form-error">{{ uploadError }}</p>
+
+      <div v-if="attachedFiles.length > 0" class="task-form-files-list">
+        <div v-for="file in attachedFiles" :key="file.id" class="task-form-file">
           <span class="task-form-file-icon">📎</span>
           <span class="task-form-file-name">{{ file.name }}</span>
           <span class="task-form-file-size">{{ formatFileSize(file.sizeInBytes) }}</span>
@@ -234,7 +248,7 @@
             type="button"
             class="task-form-file-remove"
             title="Remove file"
-            @click="emit('remove-file', file.id)"
+            @click="removeAttachment(file.id)"
           >
             <span>✕</span>
           </button>
@@ -258,11 +272,12 @@
 
 <script setup lang="ts">
 import {ref, reactive, computed, onMounted} from 'vue';
-import type {CreateTaskDto, UpdateTaskDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto';
+import type {CreateTaskDto, UpdateTaskDto, ChangeTaskStatusDto, ConfirmTaskDto, FileSummaryDto} from '@/application/dto';
 import type {TaskViewModel} from '@/presentation/view-models/task.view-model';
 import {TaskStatus, TaskPriority} from '@/domain/enumerations';
-import {TASK, TASK_PRIORITY_COLORS, TASK_STATUS_COLORS} from '@/shared/constants';
+import {TASK, TASK_PRIORITY_COLORS, TASK_STATUS_COLORS, PROJECT_SECTIONS} from '@/shared/constants';
 import {formatFileSize} from '@/shared/utils';
+import {useFiles} from '@/presentation/composables/use-files';
 
 /**
  * TaskForm component props
@@ -323,6 +338,16 @@ const isCompleted = computed(() => props.task?.status === TaskStatus.COMPLETED);
 
 const taskFiles = computed(() => props.task?.files || []);
 
+const fileInputRef = ref<HTMLInputElement | null>(null);
+const isUploadingFiles = ref(false);
+const uploadError = ref<string | null>(null);
+const attachedFiles = ref<FileSummaryDto[]>([]);
+
+const {uploadFile} = useFiles();
+
+const effectiveProjectId = computed(() => props.task?.projectId ?? props.projectId ?? '');
+const attachedFileIds = computed(() => attachedFiles.value.map((file) => file.id));
+
 const validTransitions = computed(() => {
   if (!props.task) return [];
   return props.task.allowedStatusTransitions || [];
@@ -359,7 +384,50 @@ onMounted(() => {
     form.priority = props.task.priority;
     form.dueDate = formatDateForInput(props.task.dueDate);
   }
+
+  attachedFiles.value = [...taskFiles.value];
 });
+
+async function handleFileSelection(event: Event): Promise<void> {
+  uploadError.value = null;
+
+  const projectId = effectiveProjectId.value;
+  if (!projectId) {
+    uploadError.value = 'Missing project ID for attachments';
+    return;
+  }
+
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  if (files.length === 0) return;
+
+  isUploadingFiles.value = true;
+  try {
+    for (const fileToUpload of files) {
+      const uploaded = await uploadFile(fileToUpload, projectId, PROJECT_SECTIONS.REPORT_AND_ANNEXES);
+      if (!uploaded) {
+        uploadError.value = `Failed to upload file: ${fileToUpload.name}`;
+        continue;
+      }
+
+      if (!attachedFiles.value.some((existing) => existing.id === uploaded.id)) {
+        attachedFiles.value = [...attachedFiles.value, uploaded];
+      }
+    }
+  } catch (error) {
+    uploadError.value = error instanceof Error ? error.message : 'Failed to upload file';
+  } finally {
+    isUploadingFiles.value = false;
+    if (fileInputRef.value) {
+      fileInputRef.value.value = '';
+    }
+  }
+}
+
+function removeAttachment(fileId: string): void {
+  attachedFiles.value = attachedFiles.value.filter((file) => file.id !== fileId);
+  emit('remove-file', fileId);
+}
 
 /**
  * Get status label
@@ -542,6 +610,7 @@ function handleSubmit(): void {
       assigneeId: form.assigneeId,
       priority: form.priority as TaskPriority,
       dueDate: parseDateOnlyInput(form.dueDate),
+      fileIds: attachedFileIds.value,
     };
     emit('submit', updateData);
   } else {
@@ -552,6 +621,7 @@ function handleSubmit(): void {
       assigneeId: form.assigneeId,
       priority: form.priority as TaskPriority,
       dueDate: parseDateOnlyInput(form.dueDate),
+      fileIds: attachedFileIds.value,
     };
     emit('submit', createData);
   }
@@ -776,6 +846,10 @@ function handleSubmit(): void {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
+}
+
+.task-form-file-input {
+  font-size: var(--font-size-sm);
 }
 
 .task-form-files-list {

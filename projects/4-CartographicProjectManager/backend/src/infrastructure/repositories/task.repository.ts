@@ -31,6 +31,7 @@ type TaskWithUsers = Prisma.TaskGetPayload<{
     project: true;
     creator: true;
     assignee: true;
+    files: {select: {fileId: true}};
   };
 }>;
 
@@ -57,7 +58,7 @@ export class TaskRepository implements ITaskRepository {
   public async findAll(): Promise<TaskWithUsers[]> {
     try {
       return await prisma.task.findMany({
-        include: {project: true, creator: true, assignee: true},
+        include: {project: true, creator: true, assignee: true, files: {select: {fileId: true}}},
         orderBy: {createdAt: 'desc'},
       });
     } catch (error) {
@@ -69,7 +70,7 @@ export class TaskRepository implements ITaskRepository {
     try {
       return await prisma.task.findMany({
         where: {projectId},
-        include: {project: true, creator: true, assignee: true},
+        include: {project: true, creator: true, assignee: true, files: {select: {fileId: true}}},
       });
     } catch (error) {
       throw new DatabaseError('Failed to find tasks by project ID');
@@ -80,7 +81,7 @@ export class TaskRepository implements ITaskRepository {
     try {
       return await prisma.task.findMany({
         where: {assigneeId},
-        include: {project: true, creator: true, assignee: true},
+        include: {project: true, creator: true, assignee: true, files: {select: {fileId: true}}},
       });
     } catch (error) {
       throw new DatabaseError('Failed to find tasks by assignee ID');
@@ -91,7 +92,7 @@ export class TaskRepository implements ITaskRepository {
     try {
       return await prisma.task.findMany({
         where: {creatorId},
-        include: {project: true, creator: true, assignee: true},
+        include: {project: true, creator: true, assignee: true, files: {select: {fileId: true}}},
       });
     } catch (error) {
       throw new DatabaseError('Failed to find tasks by creator ID');
@@ -102,7 +103,7 @@ export class TaskRepository implements ITaskRepository {
     try {
       return await prisma.task.findMany({
         where: {status},
-        include: {project: true, creator: true, assignee: true},
+        include: {project: true, creator: true, assignee: true, files: {select: {fileId: true}}},
       });
     } catch (error) {
       throw new DatabaseError('Failed to find tasks by status');
@@ -115,7 +116,7 @@ export class TaskRepository implements ITaskRepository {
     try {
       return await prisma.task.create({
         data,
-        include: {project: true, creator: true, assignee: true},
+        include: {project: true, creator: true, assignee: true, files: {select: {fileId: true}}},
       });
     } catch (error) {
       throw new DatabaseError('Failed to create task');

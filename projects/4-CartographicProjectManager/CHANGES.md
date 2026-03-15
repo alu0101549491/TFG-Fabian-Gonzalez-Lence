@@ -4187,13 +4187,13 @@ export function useUsers(): UseUsersReturn {
 Test with different roles:
 ```bash
 # Login as Admin
-admin@cartographic.com / admin123
+admin@cartographic.com / REDACTED
 
 # Login as Client
-client@example.com / client123
+client@example.com / REDACTED
 
 # Login as Special User
-special@cartographic.com / special123
+special@cartographic.com / REDACTED
 ```
 
 Each role sees different settings sections.
@@ -4759,7 +4759,7 @@ Successfully integrated the frontend application with the backend REST API, fixe
 **Testing:**
 - Backend running on `http://localhost:3000`
 - Frontend running on `http://localhost:5173`
-- Login working with seed data (admin@cartographic.com / admin123)
+- Login working with seed data (admin@cartographic.com / REDACTED)
 - Protected routes requiring authentication
 - Token refresh mechanism operational
 
@@ -4853,7 +4853,7 @@ Following Clean Architecture principles with clear separation of concerns:
 - Documentation: `README.md`, `SETUP.md`
 
 **Seed Data Includes:**
-- 1 Administrator account (admin@cartographic.com / admin123)
+- 1 Administrator account (admin@cartographic.com / REDACTED)
 - 2 Client accounts
 - 1 Special User account
 - 2 Sample projects with full data
@@ -5070,9 +5070,9 @@ export interface RegisterCredentialsDto {
 **Mock Users Database**:
 ```typescript
 const MOCK_USERS = [
-  { id: '1', username: 'admin', email: 'admin@cartographic.com', password: 'admin123', role: UserRole.ADMINISTRATOR },
-  { id: '2', username: 'client', email: 'client@example.com', password: 'client123', role: UserRole.CLIENT },
-  { id: '3', username: 'special', email: 'special@cartographic.com', password: 'special123', role: UserRole.SPECIAL_USER },
+  { id: '1', username: 'admin', email: 'admin@cartographic.com', password: 'REDACTED', role: UserRole.ADMINISTRATOR },
+  { id: '2', username: 'client', email: 'client@example.com', password: 'REDACTED', role: UserRole.CLIENT },
+  { id: '3', username: 'special', email: 'special@cartographic.com', password: 'REDACTED', role: UserRole.SPECIAL_USER },
 ];
 ```
 
@@ -5215,15 +5215,15 @@ export function isThisWeek(date: Date | string): boolean
 
 **Administrator**:
 - Email: `admin@cartographic.com`
-- Password: `admin123`
+- Password: `REDACTED`
 
 **Client**:
 - Email: `client@example.com`
-- Password: `client123`
+- Password: `REDACTED`
 
 **Special User**:
 - Email: `special@cartographic.com`
-- Password: `special123`
+- Password: `REDACTED`
 
 ---
 

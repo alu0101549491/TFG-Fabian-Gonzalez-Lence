@@ -145,6 +145,14 @@
           role="tabpanel"
           aria-labelledby="tasks-tab"
         >
+          <div
+            v-if="isSpecialUser && !canEditTasks"
+            class="permission-banner"
+            role="alert"
+          >
+            ⚠ You don't have permission to modify tasks in this project.
+          </div>
+
           <div class="panel-header">
             <h2>Tasks</h2>
             <div class="panel-actions">
@@ -177,6 +185,7 @@
             @task-edit="handleTaskEdit"
             @task-update="handleTaskUpdate"
             @task-delete="handleTaskDelete"
+            @task-status-change="(taskId, newStatus) => handleStatusChange({ taskId, newStatus })"
             @create="showCreateTaskModal = true"
           />
         </section>
@@ -198,10 +207,35 @@
               :current-user-id="currentUserId"
               @file-click="handleFileDownload"
             />
+
+            <div
+              v-if="onlineOtherCount > 0"
+              class="presence-indicator"
+            >
+              Online now: {{ onlineOtherCount }}
+            </div>
+
+            <div
+              v-if="isSomeoneTyping"
+              class="typing-indicator"
+            >
+              Someone is typing...
+            </div>
+
             <MessageInput
-              :disabled="currentProject.project.status === ProjectStatus.FINALIZED"
+              :disabled="currentProject.project.status === ProjectStatus.FINALIZED || !canSendMessages"
               @send="handleMessageSend"
+              @typing="handleTyping"
+              @stop-typing="handleStopTyping"
             />
+
+            <div
+              v-if="!canSendMessages"
+              class="permission-hint"
+              role="alert"
+            >
+              You don't have permission to send messages in this project.
+            </div>
           </div>
         </section>
 
@@ -219,15 +253,32 @@
             <p class="panel-subtitle">Upload and manage project documentation</p>
           </div>
 
+          <div
+            v-if="currentProject.project.status !== ProjectStatus.FINALIZED && !canUploadFiles"
+            class="permission-banner"
+            role="alert"
+          >
+            ⚠ You don't have permission to upload files in this project.
+          </div>
+
+          <div
+            v-if="!canDownloadFiles"
+            class="permission-banner"
+            role="alert"
+          >
+            ⚠ You don't have permission to download files in this project.
+          </div>
+
           <FileUploader
             v-if="canUploadFiles && currentProject.project.status !== ProjectStatus.FINALIZED"
             :project-id="currentProject.project.id"
             :sections="uploadSections"
             :max-file-size="50 * 1024 * 1024"
-            :accepted-extensions="['.pdf', '.dwg', '.dxf', '.shp', '.jpg', '.png', '.doc', '.docx', '.zip']"
+            :accepted-extensions="['.pdf', '.dwg', '.dxf', '.shp', '.kml', '.jpg', '.png', '.doc', '.docx', '.zip']"
             :uploading="isUploadingFiles"
             :upload-progress="uploadProgress"
             @upload="handleFileUpload"
+            @cancel="handleFileUploadCancel"
           />
 
           <div class="sync-dropbox-section">
@@ -257,7 +308,9 @@
           <FileList
             :files="projectFilesForList"
             :loading="filesLoading"
+            :sections="uploadSections"
             :can-delete="canManageCurrentProject"
+            :can-download="canDownloadFiles"
             :current-user-id="userId ?? undefined"
             :is-admin="isAdmin"
             @file-download="handleFileDownload"
@@ -388,6 +441,26 @@
               <div v-if="selectedTask.comments" class="task-details-section">
                 <h3>Comments</h3>
                 <p>{{ selectedTask.comments }}</p>
+              </div>
+
+              <div v-if="selectedTask.files && selectedTask.files.length > 0" class="task-details-section">
+                <h3>Attachments</h3>
+                <ul class="task-attachments-list">
+                  <li
+                    v-for="file in selectedTask.files"
+                    :key="file.id"
+                    class="task-attachment-item"
+                  >
+                    <button
+                      type="button"
+                      class="task-attachment-button"
+                      @click="handleFileDownload(file)"
+                    >
+                      {{ file.name }}
+                    </button>
+                    <span class="task-attachment-meta">{{ file.humanReadableSize }}</span>
+                  </li>
+                </ul>
               </div>
 
               <div class="task-details-actions">
@@ -556,7 +629,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted, watch, nextTick} from 'vue';
+import {ref, computed, onMounted, onUnmounted, watch, nextTick, inject} from 'vue';
 import {useRouter, useRoute} from 'vue-router';
 import {useAuth} from '../composables/use-auth';
 import {useProjects} from '../composables/use-projects';
@@ -581,11 +654,14 @@ import {TaskStatus} from '@/domain/enumerations/task-status';
 import type {CreateTaskDto, UpdateTaskDto, ChangeTaskStatusDto, ConfirmTaskDto} from '@/application/dto/task-data.dto';
 import type {TaskViewModel, TaskSummaryViewModel} from '@/presentation/view-models/task.view-model';
 import {PROJECT_SECTIONS, isProjectSectionId, type ProjectSectionId} from '@/shared/constants';
+import {TOAST_KEY} from '@/presentation/keys/toast.key';
 
 // Composables
 const router = useRouter();
 const route = useRoute();
 const {user, canManageProjects, isSpecialUser, userId, isAuthenticated, isAdmin} = useAuth();
+
+const toast = inject(TOAST_KEY, undefined);
 const {
   currentProject,
   isLoading,
@@ -664,9 +740,99 @@ const showFinalizeModal = ref(false);
 const showDeleteModal = ref(false);
 const isFinalizing = ref(false);
 const isDeleting = ref(false);
+const hasPromptedFinalizeAfterCompletion = ref(false);
 const isUploadingFiles = ref(false);
 const isSyncingFiles = ref(false);
 const uploadProgress = ref<FileUploadProgressDto[]>([]);
+const uploadAbortControllers = new Map<string, AbortController>();
+
+let fileUploadedSubscription: {unsubscribe: () => void} | null = null;
+let fileDeletedSubscription: {unsubscribe: () => void} | null = null;
+let presenceTypingSubscription: {unsubscribe: () => void} | null = null;
+let presenceStopTypingSubscription: {unsubscribe: () => void} | null = null;
+let presenceOnlineSubscription: {unsubscribe: () => void} | null = null;
+let presenceOfflineSubscription: {unsubscribe: () => void} | null = null;
+
+const typingUserIds = ref<Set<string>>(new Set());
+const typingExpiryTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+const isSomeoneTyping = computed(() => typingUserIds.value.size > 0);
+
+const onlineUserIds = ref<Set<string>>(new Set());
+const onlineOtherCount = computed(() => onlineUserIds.value.size);
+
+function addOnlineUser(userIdValue: string): void {
+  if (!userIdValue) return;
+  const next = new Set(onlineUserIds.value);
+  next.add(userIdValue);
+  onlineUserIds.value = next;
+}
+
+function removeOnlineUser(userIdValue: string): void {
+  if (!userIdValue) return;
+  const next = new Set(onlineUserIds.value);
+  next.delete(userIdValue);
+  onlineUserIds.value = next;
+}
+
+function clearAllOnlinePresenceState(): void {
+  onlineUserIds.value = new Set();
+}
+
+function addTypingUser(userIdValue: string): void {
+  if (!userIdValue) return;
+  const next = new Set(typingUserIds.value);
+  next.add(userIdValue);
+  typingUserIds.value = next;
+}
+
+function removeTypingUser(userIdValue: string): void {
+  if (!userIdValue) return;
+  const next = new Set(typingUserIds.value);
+  next.delete(userIdValue);
+  typingUserIds.value = next;
+}
+
+function refreshTypingExpiry(userIdValue: string): void {
+  const existingTimer = typingExpiryTimers.get(userIdValue);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+  }
+
+  typingExpiryTimers.set(
+    userIdValue,
+    setTimeout(() => {
+      typingExpiryTimers.delete(userIdValue);
+      removeTypingUser(userIdValue);
+    }, 3_000),
+  );
+}
+
+function clearAllTypingState(): void {
+  for (const timer of typingExpiryTimers.values()) {
+    clearTimeout(timer);
+  }
+  typingExpiryTimers.clear();
+  typingUserIds.value = new Set();
+}
+
+function handleTyping(): void {
+  if (!currentProject.value?.project.id) return;
+
+  void (async () => {
+    const {socketHandler} = await import('@/infrastructure/websocket');
+    socketHandler.emitTyping(currentProject.value!.project.id);
+  })();
+}
+
+function handleStopTyping(): void {
+  if (!currentProject.value?.project.id) return;
+
+  void (async () => {
+    const {socketHandler} = await import('@/infrastructure/websocket');
+    socketHandler.emitStopTyping(currentProject.value!.project.id);
+  })();
+}
 
 // Computed Properties
 const projectId = computed(() => route.params.id as string);
@@ -688,18 +854,68 @@ const canUploadFiles = computed(() =>
   currentProject.value?.currentUserPermissions?.canUploadFile ?? false
 );
 
+const canDownloadFiles = computed(() =>
+  currentProject.value?.currentUserPermissions?.canDownloadFile ?? false
+);
+
+const canSendMessages = computed(() =>
+  currentProject.value?.currentUserPermissions?.canSendMessage ?? false
+);
+
+const canEditTasks = computed(() =>
+  currentProject.value?.currentUserPermissions?.canCreateTask ?? false
+);
+
+async function maybePromptFinalizeAfterLastTaskCompletion(): Promise<void> {
+  if (!currentProject.value) return;
+  if (hasPromptedFinalizeAfterCompletion.value) return;
+  if (!currentProject.value.currentUserPermissions?.canFinalize) return;
+  if (currentProject.value.project.status === ProjectStatus.FINALIZED) return;
+  if (taskStats.value.total === 0) return;
+  if (taskStats.value.pending !== 0) return;
+
+  hasPromptedFinalizeAfterCompletion.value = true;
+  showFinalizeModal.value = true;
+}
+
 const uploadSections = computed<ProjectSectionId[]>(() => {
   const sections =
     currentProject.value?.sections
       ?.map((s) => s.name)
       .filter(isProjectSectionId) ?? [];
 
-  return sections.length > 0 ? sections : [PROJECT_SECTIONS.REPORT_AND_ANNEXES];
+  return sections.length > 0
+    ? sections
+    : [
+        PROJECT_SECTIONS.REPORT_AND_ANNEXES,
+        PROJECT_SECTIONS.PLANS,
+        PROJECT_SECTIONS.SPECIFICATIONS,
+        PROJECT_SECTIONS.BUDGET,
+      ];
+});
+
+const enrichedTasks = computed((): TaskViewModel[] => {
+  return projectTasks.value.map((task) => {
+    const taskFileIds = Array.isArray(task.fileIds) ? task.fileIds : [];
+    if (taskFileIds.length === 0) {
+      return {
+        ...task,
+        files: Array.isArray(task.files) ? task.files : [],
+      };
+    }
+
+    const taskFiles = projectFiles.value.filter((file) => taskFileIds.includes(file.id));
+
+    return {
+      ...task,
+      files: taskFiles,
+    };
+  });
 });
 
 const filteredTasks = computed(() => {
-  if (!taskStatusFilter.value) return projectTasks.value;
-  return projectTasks.value.filter((t) => t.status === taskStatusFilter.value);
+  if (!taskStatusFilter.value) return enrichedTasks.value;
+  return enrichedTasks.value.filter((t) => t.status === taskStatusFilter.value);
 });
 
 const taskStats = computed(() => {
@@ -940,6 +1156,10 @@ async function handleTaskCreate(taskData: CreateTaskDto | UpdateTaskDto): Promis
     if (result.success) {
       showCreateTaskModal.value = false;
       await loadTasksByProject(projectId.value);
+
+      if (Array.isArray(taskData.fileIds) && taskData.fileIds.length > 0) {
+        await loadFilesByProject(projectId.value);
+      }
     } else {
       alert(`Failed to create task: ${result.error || 'Unknown error'}`);
     }
@@ -954,7 +1174,7 @@ async function handleTaskCreate(taskData: CreateTaskDto | UpdateTaskDto): Promis
  * @param {TaskViewModel | TaskSummaryViewModel} task - Clicked task
  */
 function handleTaskClick(task: TaskViewModel | TaskSummaryViewModel): void {
-  const resolvedTask = 'projectId' in task ? task : (projectTasks.value.find((t) => t.id === task.id) ?? null);
+  const resolvedTask = 'projectId' in task ? task : (enrichedTasks.value.find((t) => t.id === task.id) ?? null);
   if (!resolvedTask) return;
 
   selectedTask.value = resolvedTask;
@@ -967,7 +1187,7 @@ function handleTaskClick(task: TaskViewModel | TaskSummaryViewModel): void {
  * @param {TaskViewModel | TaskSummaryViewModel} task - Task to edit
  */
 function handleTaskEdit(task: TaskViewModel | TaskSummaryViewModel): void {
-  const resolvedTask = 'projectId' in task ? task : (projectTasks.value.find((t) => t.id === task.id) ?? null);
+  const resolvedTask = 'projectId' in task ? task : (enrichedTasks.value.find((t) => t.id === task.id) ?? null);
   if (!resolvedTask) return;
 
   selectedTask.value = resolvedTask;
@@ -994,6 +1214,10 @@ async function handleTaskEditSubmit(taskData: any): Promise<void> {
       showTaskEditModal.value = false;
       selectedTask.value = null;
       await loadTasksByProject(projectId.value);
+
+      if (Array.isArray(taskData.fileIds) && taskData.fileIds.length > 0) {
+        await loadFilesByProject(projectId.value);
+      }
     } else {
       alert(`Failed to update task: ${result.error || 'Unknown error'}`);
     }
@@ -1049,6 +1273,7 @@ async function handleConfirmTask(data: ConfirmTaskDto): Promise<void> {
       showTaskEditModal.value = false;
       selectedTask.value = null;
       await loadTasksByProject(projectId.value);
+      await maybePromptFinalizeAfterLastTaskCompletion();
     } else {
       alert('Failed to confirm task');
     }
@@ -1057,13 +1282,19 @@ async function handleConfirmTask(data: ConfirmTaskDto): Promise<void> {
   }
 }
 
+watch(projectId, () => {
+  hasPromptedFinalizeAfterCompletion.value = false;
+  clearAllTypingState();
+  clearAllOnlinePresenceState();
+});
+
 /**
  * Handle task deletion
  *
  * @param {TaskViewModel | TaskSummaryViewModel} task - Task to delete
  */
 function handleTaskDelete(task: TaskViewModel | TaskSummaryViewModel): void {
-  const resolvedTask = 'projectId' in task ? task : (projectTasks.value.find((t) => t.id === task.id) ?? null);
+  const resolvedTask = 'projectId' in task ? task : (enrichedTasks.value.find((t) => t.id === task.id) ?? null);
   if (!resolvedTask) return;
 
   void (async () => {
@@ -1082,6 +1313,22 @@ function handleTaskDelete(task: TaskViewModel | TaskSummaryViewModel): void {
  */
 async function handleMessageSend(payload: {content: string; files: File[]}): Promise<void> {
   if (!currentProject.value) return;
+
+  if (!canSendMessages.value) {
+    toast?.({
+      type: 'warning',
+      message: "You don't have permission to send messages in this project.",
+    });
+    return;
+  }
+
+  if (payload.files && payload.files.length > 0 && !canUploadFiles.value) {
+    toast?.({
+      type: 'warning',
+      message: "You don't have permission to upload files in this project.",
+    });
+    return;
+  }
 
   try {
     const fileIds: string[] = [];
@@ -1154,12 +1401,25 @@ async function handleFileUpload(
 ): Promise<void> {
   if (!currentProject.value) return;
 
+  if (!canUploadFiles.value) {
+    toast?.({
+      type: 'warning',
+      message: "You don't have permission to upload files in this project.",
+    });
+    return;
+  }
+
   isUploadingFiles.value = true;
+  uploadAbortControllers.clear();
   uploadProgress.value = uploads.map((upload) => ({
     fileId: upload.id,
     status: 'pending',
     progress: 0,
   }));
+
+  for (const upload of uploads) {
+    uploadAbortControllers.set(upload.id, new AbortController());
+  }
 
   let successCount = 0;
 
@@ -1170,6 +1430,13 @@ async function handleFileUpload(
       const progressItem = uploadProgress.value.find(p => p.fileId === id);
       if (!progressItem) continue;
 
+      const controller = uploadAbortControllers.get(id);
+      if (controller?.signal.aborted) {
+        progressItem.status = 'error';
+        progressItem.error = 'Upload canceled';
+        continue;
+      }
+
       try {
         progressItem.status = 'uploading';
 
@@ -1179,7 +1446,8 @@ async function handleFileUpload(
           isProjectSectionId(section) ? section : PROJECT_SECTIONS.REPORT_AND_ANNEXES,
           (progress) => {
             progressItem.progress = progress;
-          }
+          },
+          {signal: controller?.signal}
         );
 
         if (uploadedFile) {
@@ -1187,8 +1455,13 @@ async function handleFileUpload(
           progressItem.progress = 100;
           successCount++;
         } else {
-          progressItem.status = 'error';
-          progressItem.error = 'Upload failed';
+          if (progressItem.error === 'Upload canceled' || controller?.signal.aborted) {
+            progressItem.status = 'error';
+            progressItem.error = 'Upload canceled';
+          } else {
+            progressItem.status = 'error';
+            progressItem.error = 'Upload failed';
+          }
         }
       } catch (error) {
         console.error('Failed to upload file:', error);
@@ -1206,7 +1479,19 @@ async function handleFileUpload(
     // Clear progress after 3 seconds
     setTimeout(() => {
       uploadProgress.value = [];
+      uploadAbortControllers.clear();
     }, 3000);
+  }
+}
+
+function handleFileUploadCancel(fileId: string): void {
+  const controller = uploadAbortControllers.get(fileId);
+  controller?.abort();
+
+  const progressItem = uploadProgress.value.find((p) => p.fileId === fileId);
+  if (progressItem) {
+    progressItem.status = 'error';
+    progressItem.error = 'Upload canceled';
   }
 }
 
@@ -1216,6 +1501,14 @@ async function handleFileUpload(
  */
 async function handleSyncFromDropbox(): Promise<void> {
   if (!currentProject.value) return;
+
+  if (!canUploadFiles.value) {
+    toast?.({
+      type: 'warning',
+      message: "You don't have permission to upload files in this project.",
+    });
+    return;
+  }
 
   isSyncingFiles.value = true;
 
@@ -1259,11 +1552,22 @@ async function handleFileDownload(file: FileSummaryDto): Promise<void> {
       throw new Error('Not authenticated');
     }
 
+    if (!canDownloadFiles.value) {
+      toast?.({
+        type: 'warning',
+        message: "You don't have permission to download files in this project.",
+      });
+      return;
+    }
+
     const downloadUrl = await getTemporaryDownloadUrl(file.id);
     openExternalUrlInNewTab(downloadUrl);
   } catch (error) {
     console.error('Failed to download file:', error);
-    alert(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    toast?.({
+      type: 'error',
+      message: `Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    });
   }
 }
 
@@ -1322,8 +1626,10 @@ async function loadProjectData(): Promise<void> {
   }
   
   try {
+    // Load project first so dependent stores (e.g., taskStats updates) can safely
+    // reference the current project.
+    await loadProject(projectId.value);
     await Promise.all([
-      loadProject(projectId.value),
       loadTasksByProject(projectId.value),
       loadMessagesByProject(projectId.value),
       loadFilesByProject(projectId.value),
@@ -1374,11 +1680,60 @@ onMounted(async () => {
 
   // Join project WebSocket room for real-time updates
   if (currentProject.value?.project.id) {
-    const projectId = currentProject.value.project.id;
-    console.log('[ProjectDetailsView] 🏠 Joining project room:', projectId);
+    const joinedProjectId = currentProject.value.project.id;
+    console.log('[ProjectDetailsView] 🏠 Joining project room:', joinedProjectId);
     const {socketHandler} = await import('@/infrastructure/websocket');
-    socketHandler.joinProject(projectId);
-    console.log('[ProjectDetailsView] ✅ Successfully joined project room:', projectId);
+    socketHandler.joinProject(joinedProjectId);
+
+    fileUploadedSubscription = socketHandler.onFileUploaded(async (data) => {
+      if (!data || (data as any).projectId !== projectId.value) return;
+      await loadFilesByProject(projectId.value);
+    });
+
+    fileDeletedSubscription = socketHandler.onFileDeleted(async (data) => {
+      if (!data || (data as any).projectId !== projectId.value) return;
+      await loadFilesByProject(projectId.value);
+    });
+
+    presenceTypingSubscription = socketHandler.onPresenceTyping((data) => {
+      if (!data || (data as any).projectId !== projectId.value) return;
+      if ((data as any).userId === currentUserId.value) return;
+
+      const typingUserId = (data as any).userId as string;
+      addTypingUser(typingUserId);
+      refreshTypingExpiry(typingUserId);
+    });
+
+    presenceStopTypingSubscription = socketHandler.onPresenceStopTyping((data) => {
+      if (!data || (data as any).projectId !== projectId.value) return;
+      if ((data as any).userId === currentUserId.value) return;
+
+      const typingUserId = (data as any).userId as string;
+      const timer = typingExpiryTimers.get(typingUserId);
+      if (timer) {
+        clearTimeout(timer);
+        typingExpiryTimers.delete(typingUserId);
+      }
+      removeTypingUser(typingUserId);
+    });
+
+    presenceOnlineSubscription = socketHandler.onPresenceOnline((data) => {
+      if (!data || (data as any).projectId !== projectId.value) return;
+      if ((data as any).userId === currentUserId.value) return;
+
+      const onlineUserId = (data as any).userId as string;
+      addOnlineUser(onlineUserId);
+    });
+
+    presenceOfflineSubscription = socketHandler.onPresenceOffline((data) => {
+      if (!data || (data as any).projectId !== projectId.value) return;
+      if ((data as any).userId === currentUserId.value) return;
+
+      const onlineUserId = (data as any).userId as string;
+      removeOnlineUser(onlineUserId);
+    });
+
+    console.log('[ProjectDetailsView] ✅ Successfully joined project room:', joinedProjectId);
   } else {
     console.error('[ProjectDetailsView] ❌ No project ID available to join room');
   }
@@ -1397,7 +1752,7 @@ onMounted(async () => {
     
     // Function to try opening the task
     const tryOpenTask = () => {
-      const task = projectTasks.value.find(t => t.id === taskId);
+      const task = enrichedTasks.value.find(t => t.id === taskId);
       if (task) {
         handleTaskClick(task);
         return true;
@@ -1428,6 +1783,23 @@ onMounted(async () => {
 
 // Clean up on unmount
 onUnmounted(async () => {
+  fileUploadedSubscription?.unsubscribe();
+  fileDeletedSubscription?.unsubscribe();
+  fileUploadedSubscription = null;
+  fileDeletedSubscription = null;
+
+  presenceTypingSubscription?.unsubscribe();
+  presenceStopTypingSubscription?.unsubscribe();
+  presenceTypingSubscription = null;
+  presenceStopTypingSubscription = null;
+  clearAllTypingState();
+
+  presenceOnlineSubscription?.unsubscribe();
+  presenceOfflineSubscription?.unsubscribe();
+  presenceOnlineSubscription = null;
+  presenceOfflineSubscription = null;
+  clearAllOnlinePresenceState();
+
   // Leave project WebSocket room
   if (currentProject.value?.project.id) {
     const {socketHandler} = await import('@/infrastructure/websocket');
@@ -1457,6 +1829,35 @@ onUnmounted(async () => {
   border-bottom: 2px solid var(--color-border);
   margin-bottom: var(--spacing-6);
   overflow-x: auto;
+}
+
+.typing-indicator {
+  padding: var(--spacing-2) var(--spacing-3);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.presence-indicator {
+  padding: var(--spacing-2) var(--spacing-3);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.permission-banner {
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.permission-hint {
+  margin-top: var(--spacing-2);
+  padding: 0 var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
 }
 
 .tab-button {
@@ -2110,6 +2511,40 @@ onUnmounted(async () => {
 .task-details-field p {
   color: var(--color-text-primary);
   margin: 0;
+}
+
+.task-attachments-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.task-attachment-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+}
+
+.task-attachment-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.task-attachment-button:hover {
+  text-decoration: underline;
+}
+
+.task-attachment-meta {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
 }
 
 .task-status-badge,

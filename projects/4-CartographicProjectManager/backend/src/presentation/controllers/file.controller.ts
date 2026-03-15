@@ -22,6 +22,7 @@ import {sendSuccess, sendError} from '@shared/utils.js';
 import {HTTP_STATUS} from '@shared/constants.js';
 import type {AuthenticatedRequest} from '@shared/types.js';
 import {logDebug, logError, logInfo, logWarning} from '@shared/logger.js';
+import {emitToProject} from '@infrastructure/websocket/index.js';
 import {v4 as uuidv4} from 'uuid';
 
 /**
@@ -141,11 +142,7 @@ export class FileController {
    */
   public async upload(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!this.dropboxService) {
-        logWarning('Dropbox service not configured; upload disabled');
-        sendError(res, 'File upload service not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
-        return;
-      }
+      const dropboxEnabled = Boolean(this.dropboxService);
 
       if (!req.file) {
         logWarning('No file provided in upload request', {userId: req.user?.id});
@@ -194,20 +191,35 @@ export class FileController {
         req.file.originalname,
         fileId,
       );
-      const dropboxPath = `${this.dropboxService.getProjectFolderPath(project.code)}/${sectionFolder}/${storageFilename}`;
 
-      // Upload to Dropbox
-      const dropboxMetadata = await this.dropboxService.uploadFile(
-        dropboxPath,
-        req.file.buffer,
-      );
+      let storedPath: string;
+
+      if (dropboxEnabled && this.dropboxService) {
+        const dropboxPath = `${this.dropboxService.getProjectFolderPath(project.code)}/${sectionFolder}/${storageFilename}`;
+
+        // Upload to Dropbox
+        const dropboxMetadata = await this.dropboxService.uploadFile(
+          dropboxPath,
+          req.file.buffer,
+        );
+        storedPath = dropboxMetadata.path;
+      } else {
+        // Metadata-only fallback (e.g. E2E/test environments without Dropbox configured).
+        // NOTE: download/preview will not work without Dropbox.
+        storedPath = `/local/${project.code}/${sectionFolder}/${storageFilename}`;
+        logWarning('Dropbox service not configured; storing file metadata only', {
+          userId: req.user?.id,
+          projectId,
+          filename: req.file.originalname,
+        });
+      }
 
       // Save file metadata to database
       const fileData = {
         id: fileId,
         filename: req.file.originalname,
         originalName: req.file.originalname,
-        dropboxPath: dropboxMetadata.path,
+        dropboxPath: storedPath,
         type: this.determineFileType(req.file.originalname),
         size: req.file.size,
         mimeType: req.file.mimetype || 'application/octet-stream',
@@ -223,6 +235,8 @@ export class FileController {
         projectId,
         userId: req.user?.id,
       });
+
+      emitToProject(projectId, 'file:uploaded', this.mapFileToDto(file));
 
       sendSuccess(res, {file: this.mapFileToDto(file)}, 'File uploaded successfully', HTTP_STATUS.CREATED);
     } catch (error) {
@@ -361,6 +375,11 @@ export class FileController {
       // Delete metadata from database
       await this.fileRepository.delete(req.params.id as string);
 
+      emitToProject(file.projectId, 'file:deleted', {
+        fileId: file.id,
+        projectId: file.projectId,
+      });
+
       sendSuccess(res, null, 'File deleted successfully', HTTP_STATUS.OK);
     } catch (error) {
       next(error);
@@ -459,10 +478,10 @@ export class FileController {
         return true;
       }
 
-      // Special user needs explicit DOWNLOAD or VIEW permission
+      // Special user needs explicit DOWNLOAD permission
       if (user.role === 'SPECIAL_USER') {
         const permission = await this.permissionRepository.findByUserAndProject(userId, projectId);
-        if (permission && (permission.rights.includes('DOWNLOAD') || permission.rights.includes('VIEW'))) {
+        if (permission && permission.rights.includes('DOWNLOAD')) {
           return true;
         }
       }

@@ -11,6 +11,8 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/4-CartographicProjectManager}
  */
 
+import 'dotenv/config';
+
 import {PrismaClient} from '@prisma/client';
 import bcrypt from 'bcrypt';
 
@@ -49,8 +51,8 @@ async function main(): Promise<void> {
   console.log('✓ Cleared existing data');
 
   // Create users
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  const clientPassword = await bcrypt.hash('client123', 10);
+  const adminPassword = await bcrypt.hash('REDACTED', 10);
+  const clientPassword = await bcrypt.hash('REDACTED', 10);
 
   const admin = await prisma.user.create({
     data: {
@@ -100,7 +102,7 @@ async function main(): Promise<void> {
       name: 'Residential Urbanization Los Pinos',
       year: 2025,
       clientId: client1.id,
-      type: 'RESIDENTIAL',
+      type: 'TOPOGRAPHY',
       coordinateX: -16.2518,
       coordinateY: 28.4636,
       contractDate: new Date('2025-01-15'),
@@ -116,7 +118,7 @@ async function main(): Promise<void> {
       name: 'Commercial Center Plaza Mayor',
       year: 2025,
       clientId: client2.id,
-      type: 'COMMERCIAL',
+      type: 'CADASTRE',
       coordinateX: -16.3195,
       coordinateY: 28.4792,
       contractDate: new Date('2025-02-01'),
@@ -247,10 +249,10 @@ async function main(): Promise<void> {
   console.log(`   - Files: 2`);
   console.log('\n🔐 Admin credentials:');
   console.log(`   Email: admin@cartographic.com`);
-  console.log(`   Password: admin123`);
+  console.log(`   Password: REDACTED`);
   console.log('\n🔐 Client credentials:');
   console.log(`   Email: john@example.com`);
-  console.log(`   Password: client123\n`);
+  console.log(`   Password: REDACTED\n`);
 }
 
 main()

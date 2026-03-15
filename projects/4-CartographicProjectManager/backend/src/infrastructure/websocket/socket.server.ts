@@ -23,6 +23,41 @@ import {ProjectRepository} from '../repositories/project.repository.js';
 const permissionRepository = new PermissionRepository();
 const projectRepository = new ProjectRepository();
 
+type ProjectId = string;
+type UserId = string;
+
+// Presence tracking is kept in-memory.
+// Map: projectId -> (userId -> active socket count in the project room)
+const onlineCountsByProject = new Map<ProjectId, Map<UserId, number>>();
+
+function incrementOnline(projectId: ProjectId, userId: UserId): boolean {
+  const byUser = onlineCountsByProject.get(projectId) ?? new Map<UserId, number>();
+  const nextCount = (byUser.get(userId) ?? 0) + 1;
+  byUser.set(userId, nextCount);
+  onlineCountsByProject.set(projectId, byUser);
+  return nextCount === 1;
+}
+
+function decrementOnline(projectId: ProjectId, userId: UserId): boolean {
+  const byUser = onlineCountsByProject.get(projectId);
+  if (!byUser) return false;
+
+  const current = byUser.get(userId) ?? 0;
+  const next = Math.max(0, current - 1);
+
+  if (next === 0) {
+    byUser.delete(userId);
+  } else {
+    byUser.set(userId, next);
+  }
+
+  if (byUser.size === 0) {
+    onlineCountsByProject.delete(projectId);
+  }
+
+  return current > 0 && next === 0;
+}
+
 async function canJoinProjectRoom(
   userId: string,
   userRole: unknown,
@@ -92,6 +127,8 @@ export function initializeSocketServer(httpServer: HttpServer): void {
     const userRole = socket.data.userRole;
     logInfo(`WebSocket client connected: ${userId}`);
 
+    const joinedProjectIds = new Set<ProjectId>();
+
     // Join user's personal room
     socket.join(`user:${userId}`);
 
@@ -120,6 +157,12 @@ export function initializeSocketServer(httpServer: HttpServer): void {
 
           const roomName = `project:${projectId}`;
           socket.join(roomName);
+          joinedProjectIds.add(projectId);
+
+          const becameOnline = incrementOnline(projectId, userId);
+          if (becameOnline) {
+            emitToProject(projectId, 'presence:online', {projectId, userId});
+          }
           logInfo(`User ${userId} joined project room ${projectId}`);
           ack?.({ok: true});
         } catch (error) {
@@ -129,11 +172,74 @@ export function initializeSocketServer(httpServer: HttpServer): void {
       }
     );
 
+    // Presence typing indicator (client emits while typing in a project)
+    socket.on(
+      'presence:typing',
+      async (
+        data: {projectId: string},
+        ack?: (result: {ok: boolean; reason?: string}) => void
+      ) => {
+        try {
+          const projectId = data.projectId;
+          const authorized = await canJoinProjectRoom(
+            userId,
+            userRole,
+            projectId,
+          );
+
+          if (!authorized) {
+            ack?.({ok: false, reason: 'unauthorized'});
+            return;
+          }
+
+          emitToProject(projectId, 'presence:typing', {projectId, userId});
+          ack?.({ok: true});
+        } catch (error) {
+          logError('WebSocket presence:typing error:', error as Error);
+          ack?.({ok: false, reason: 'error'});
+        }
+      },
+    );
+
+    socket.on(
+      'presence:stop-typing',
+      async (
+        data: {projectId: string},
+        ack?: (result: {ok: boolean; reason?: string}) => void
+      ) => {
+        try {
+          const projectId = data.projectId;
+          const authorized = await canJoinProjectRoom(
+            userId,
+            userRole,
+            projectId,
+          );
+
+          if (!authorized) {
+            ack?.({ok: false, reason: 'unauthorized'});
+            return;
+          }
+
+          emitToProject(projectId, 'presence:stop-typing', {projectId, userId});
+          ack?.({ok: true});
+        } catch (error) {
+          logError('WebSocket presence:stop-typing error:', error as Error);
+          ack?.({ok: false, reason: 'error'});
+        }
+      },
+    );
+
     // Leave project room (frontend emits 'leave:project')
     socket.on('leave:project', (data: {projectId: string}) => {
       const projectId = data.projectId;
       const roomName = `project:${projectId}`;
       socket.leave(roomName);
+      joinedProjectIds.delete(projectId);
+
+      const becameOffline = decrementOnline(projectId, userId);
+      if (becameOffline) {
+        emitToProject(projectId, 'presence:offline', {projectId, userId});
+      }
       logInfo(`User ${userId} left project room ${projectId}`);
     });
 
@@ -177,6 +283,15 @@ export function initializeSocketServer(httpServer: HttpServer): void {
     // Handle disconnect
     socket.on('disconnect', () => {
       logInfo(`WebSocket client disconnected: ${userId}`);
+
+      // Ensure presence gets updated for all joined projects.
+      for (const projectId of joinedProjectIds) {
+        const becameOffline = decrementOnline(projectId, userId);
+        if (becameOffline) {
+          emitToProject(projectId, 'presence:offline', {projectId, userId});
+        }
+      }
+      joinedProjectIds.clear();
     });
 
     // Error handler

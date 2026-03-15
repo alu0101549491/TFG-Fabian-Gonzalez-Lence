@@ -97,7 +97,7 @@ Frontend should start on `http://localhost:5173`
 2. **Test Login with Seed Data**
    ```
    Email: admin@cartographic.com
-   Password: admin123
+   Password: REDACTED
    ```
 
 3. **Verify Successful Login**

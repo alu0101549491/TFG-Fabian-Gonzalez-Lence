@@ -31,9 +31,9 @@
         <div class="login-dev-info" v-if="isDevelopment">
           <p class="dev-info-title">🔧 Development Mode - Test Accounts:</p>
           <ul class="dev-info-list">
-            <li><strong>Admin:</strong> admin@cartographic.com / admin123</li>
-            <li><strong>Client:</strong> client@example.com / client123</li>
-            <li><strong>Special:</strong> special@cartographic.com / special123</li>
+            <li><strong>Admin:</strong> admin@cartographic.com / REDACTED</li>
+            <li><strong>Client:</strong> client@example.com / REDACTED</li>
+            <li><strong>Special:</strong> special@cartographic.com / REDACTED</li>
           </ul>
         </div>
 

@@ -23,12 +23,12 @@
         <div class="header-content">
           <h1>Notifications</h1>
           <p class="notifications-subtitle">
-            {{ unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!' }}
+            {{ effectiveUnreadCount > 0 ? `${effectiveUnreadCount} unread notification${effectiveUnreadCount > 1 ? 's' : ''}` : 'All caught up!' }}
           </p>
         </div>
         <div class="header-actions">
           <button
-            v-if="unreadCount > 0"
+            v-if="effectiveUnreadCount > 0"
             @click="handleMarkAllAsRead"
             class="button-ghost button-sm"
             aria-label="Mark all as read"
@@ -42,7 +42,7 @@
       <div class="notifications-container">
         <NotificationList
           :notifications="notifications"
-          :unread-count="unreadCount"
+          :unread-count="effectiveUnreadCount"
           :loading="isLoading"
           :has-more="hasMore"
           :show-filters="true"
@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted} from 'vue';
+import {onMounted, computed} from 'vue';
 import {useNotifications} from '../composables/use-notifications';
 import LoadingSpinner from '../components/common/LoadingSpinner.vue';
 import NotificationList from '../components/notification/NotificationList.vue';
@@ -75,7 +75,7 @@ import type {NotificationDto} from '@/application/dto';
 // Composables
 const {
   notifications,
-  unreadCount,
+  unreadNotifications,
   isLoading,
   hasMore,
   fetchNotifications,
@@ -85,6 +85,8 @@ const {
   deleteNotification,
   navigateToRelatedEntity,
 } = useNotifications();
+
+const effectiveUnreadCount = computed(() => unreadNotifications.value.length);
 
 // Computed Properties (none needed - all from composable)
 

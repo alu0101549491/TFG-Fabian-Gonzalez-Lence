@@ -46,7 +46,7 @@ npm run dev
 
 2. **Inicia sesión** con:
    - Email: `admin@cartographic.com`
-   - Password: `admin123`
+   - Password: `REDACTED`
 
 3. **Navega a un Proyecto**:
    - Ve a "Projects" en el menú
@@ -197,7 +197,7 @@ DROPBOX_ACCESS_TOKEN=<dropbox_access_token>
 # Login
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@cartographic.com","password":"admin123"}' \
+  -d '{"email":"admin@cartographic.com","password":"REDACTED"}' \
   | jq -r '.accessToken')
 
 # Obtener ID de proyecto

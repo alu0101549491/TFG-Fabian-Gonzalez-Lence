@@ -65,7 +65,7 @@ backend/
    ```bash
    npm run prisma:generate
    npm run prisma:migrate
-   npm run prisma:seed
+   SEED_CONFIRM=I_UNDERSTAND npm run prisma:seed
    ```
 
 4. **Start development server:**

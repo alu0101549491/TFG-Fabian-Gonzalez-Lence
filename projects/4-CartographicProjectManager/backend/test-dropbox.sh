@@ -43,7 +43,7 @@ echo "2️⃣  Obteniendo token de autenticación..."
 LOGIN_BODY_FILE=$(mktemp)
 LOGIN_STATUS=$(curl -sS -o "$LOGIN_BODY_FILE" -w "%{http_code}" -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-    -d '{"email":"admin@cartographic.com","password":"admin123"}')
+    -d '{"email":"admin@cartographic.com","password":"REDACTED"}')
 
 if [[ ! "$LOGIN_STATUS" =~ ^2 ]]; then
     echo "❌ Error: No se pudo autenticar (HTTP $LOGIN_STATUS)" >&2

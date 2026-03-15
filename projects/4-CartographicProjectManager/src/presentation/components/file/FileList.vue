@@ -154,6 +154,7 @@
         <!-- Actions -->
         <div class="file-card-actions" @click.stop>
           <button
+            v-if="canDownload"
             type="button"
             class="file-card-action"
             title="Download"
@@ -163,7 +164,7 @@
             ⬇️
           </button>
           <button
-            v-if="canPreview(file)"
+            v-if="canDownload && canPreview(file)"
             type="button"
             class="file-card-action"
             title="Preview"
@@ -226,6 +227,7 @@
             <td class="file-list-td-uploader">{{ file.uploaderName }}</td>
             <td class="file-list-td-actions" @click.stop>
               <button
+                v-if="canDownload"
                 type="button"
                 class="file-list-action"
                 title="Download"
@@ -235,7 +237,7 @@
                 ⬇️
               </button>
               <button
-                v-if="canPreview(file)"
+                v-if="canDownload && canPreview(file)"
                 type="button"
                 class="file-list-action"
                 title="Preview"
@@ -299,6 +301,8 @@ export interface FileListProps {
   canDelete?: boolean;
   /** Can user upload files */
   canUpload?: boolean;
+  /** Can user download files */
+  canDownload?: boolean;
   /** Empty state message */
   emptyMessage?: string;
   /** Current user ID for permission checks */
@@ -324,12 +328,15 @@ const props = withDefaults(defineProps<FileListProps>(), {
   loading: false,
   canDelete: false,
   canUpload: true,
+  canDownload: true,
   emptyMessage: 'No files uploaded yet',
   currentUserId: '',
   isAdmin: false,
 });
 
 const emit = defineEmits<FileListEmits>();
+
+const canDownload = computed(() => props.canDownload);
 
 // State
 const searchQuery = ref('');

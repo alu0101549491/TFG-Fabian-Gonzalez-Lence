@@ -12,13 +12,40 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import type {Notification} from '@prisma/client';
+import type {Notification, NotificationType} from '@prisma/client';
 import type {INotificationRepository} from '@infrastructure/repositories/interfaces/notification.repository.interface.js';
 import {prisma} from '../database/prisma.client.js';
 import {DatabaseError} from '@shared/errors.js';
 import {logError, logWarning} from '../../shared/logger.js';
 
 export class NotificationRepository implements INotificationRepository {
+  public async findByUserIdFiltered(params: {
+    userId: string;
+    isRead?: boolean;
+    type?: NotificationType;
+    relatedEntityId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<Notification[]> {
+    try {
+      const {userId, isRead, type, relatedEntityId, limit, offset} = params;
+
+      return await prisma.notification.findMany({
+        where: {
+          userId,
+          ...(typeof isRead === 'boolean' ? {isRead} : {}),
+          ...(type ? {type} : {}),
+          ...(relatedEntityId ? {projectId: relatedEntityId} : {}),
+        },
+        orderBy: {createdAt: 'desc'},
+        ...(typeof limit === 'number' ? {take: limit} : {}),
+        ...(typeof offset === 'number' ? {skip: offset} : {}),
+      });
+    } catch (error) {
+      throw new DatabaseError('Failed to find notifications by user with filters');
+    }
+  }
+
   public async findById(id: string): Promise<Notification | null> {
     try {
       return await prisma.notification.findUnique({where: {id}});
