@@ -18,6 +18,16 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (typeof value === 'string' && value.length > 0) return value;
+
+  throw new Error(
+    `[seed] Missing required environment variable: ${name}. ` +
+      'Set it in your shell/CI environment before running prisma seed.'
+  );
+}
+
 /**
  * Main seed function
  */
@@ -51,8 +61,9 @@ async function main(): Promise<void> {
   console.log('✓ Cleared existing data');
 
   // Create users
-  const adminPassword = await bcrypt.hash('REDACTED', 10);
-  const clientPassword = await bcrypt.hash('REDACTED', 10);
+  const adminPassword = await bcrypt.hash(requireEnv('PW_E2E_ADMIN_PASSWORD'), 10);
+  const clientPassword = await bcrypt.hash(requireEnv('PW_E2E_CLIENT_PASSWORD'), 10);
+  const specialPassword = await bcrypt.hash(requireEnv('PW_E2E_SPECIAL_PASSWORD'), 10);
 
   const admin = await prisma.user.create({
     data: {
@@ -66,8 +77,8 @@ async function main(): Promise<void> {
 
   const client1 = await prisma.user.create({
     data: {
-      username: 'John Client',
-      email: 'john@example.com',
+      username: 'Client User',
+      email: 'client@example.com',
       passwordHash: clientPassword,
       role: 'CLIENT',
       phone: '+34600000002',
@@ -87,8 +98,8 @@ async function main(): Promise<void> {
   const specialUser = await prisma.user.create({
     data: {
       username: 'Special User',
-      email: 'special@example.com',
-      passwordHash: clientPassword,
+      email: 'special@cartographic.com',
+      passwordHash: specialPassword,
       role: 'SPECIAL_USER',
     },
   });
@@ -251,7 +262,7 @@ async function main(): Promise<void> {
   console.log(`   Email: admin@cartographic.com`);
   console.log(`   Password: REDACTED`);
   console.log('\n🔐 Client credentials:');
-  console.log(`   Email: john@example.com`);
+  console.log(`   Email: client@example.com`);
   console.log(`   Password: REDACTED\n`);
 }
 
