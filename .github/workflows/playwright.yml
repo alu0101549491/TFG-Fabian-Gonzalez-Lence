@@ -125,9 +125,9 @@ jobs:
             sleep 1
           done
 
-      - name: Run Playwright E2E (critical)
+      - name: Run Playwright E2E (all suites)
         working-directory: projects/4-CartographicProjectManager
-        run: npm run test:e2e -- e2e/critical --project=chromium
+        run: npm run test:e2e -- --project=chromium
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
