@@ -12,17 +12,28 @@
  */
 
 import {defineConfig} from 'vite';
-import angular from '@analogjs/vite-plugin-angular';
+// import angular from '@analogjs/vite-plugin-angular';
 import {resolve} from 'path';
 
 const base = process.env.BASE_URL || '/5-TennisTournamentManager/';
 
 export default defineConfig({
   plugins: [
-    angular({
-      tsconfig: resolve(__dirname, 'tsconfig.app.json'),
-    }),
+    // Angular plugin disabled - causes empty file serving issue
+    // angular({
+    //   tsconfig: resolve(__dirname, 'tsconfig.app.json'),
+    //   inlineStylesExtension: 'css',
+    // }),
   ],
+  esbuild: {
+    tsconfigRaw: {
+      compilerOptions: {
+        experimentalDecorators: true,
+        emitDecoratorMetadata: true,
+        useDefineForClassFields: false,
+      },
+    },
+  },
   root: '.',
   publicDir: 'public',
   base,

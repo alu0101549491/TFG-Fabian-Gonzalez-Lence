@@ -26,7 +26,79 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
-  templateUrl: './login.component.html',
+  template: `
+<div class="container">
+  <div class="flex justify-center items-center" style="min-height: 80vh;">
+    <div class="card" style="max-width: 400px; width: 100%;">
+      <div class="card-header">
+        <h2 class="card-title text-center">Login</h2>
+        <p class="card-subtitle text-center">Sign in to your account</p>
+      </div>
+
+      <div class="card-body">
+        @if (errorMessage()) {
+          <div class="alert alert-error mb-md">
+            {{ errorMessage() }}
+          </div>
+        }
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+          <div class="form-group">
+            <label for="email" class="form-label form-label-required">Email</label>
+            <input
+              type="email"
+              id="email"
+              formControlName="email"
+              class="form-control"
+              [class.form-control-error]="isFieldInvalid('email')"
+              placeholder="Enter your email"
+              autocomplete="email"
+            />
+            @if (isFieldInvalid('email')) {
+              <span class="form-error">{{ getFieldError('email') }}</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label form-label-required">Password</label>
+            <input
+              type="password"
+              id="password"
+              formControlName="password"
+              class="form-control"
+              [class.form-control-error]="isFieldInvalid('password')"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+            />
+            @if (isFieldInvalid('password')) {
+              <span class="form-error">{{ getFieldError('password') }}</span>
+            }
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary btn-block"
+            [disabled]="isLoading()"
+          >
+            @if (isLoading()) {
+              <span>Logging in...</span>
+            } @else {
+              <span>Login</span>
+            }
+          </button>
+        </form>
+
+        <div class="mt-md text-center">
+          <p class="text-sm text-muted">
+            Don't have an account?
+            <a routerLink="/register" class="text-primary">Register here</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  `,
   styles: [],
 })
 export class LoginComponent {

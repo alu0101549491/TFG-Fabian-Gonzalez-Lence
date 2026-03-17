@@ -12,7 +12,7 @@
  */
 
 /** Base URL for the REST API. */
-export const API_BASE_URL = '/api/v1';
+export const API_BASE_URL = '/api';
 
 /** WebSocket connection URL. */
 export const WS_URL = 'http://localhost:3000';

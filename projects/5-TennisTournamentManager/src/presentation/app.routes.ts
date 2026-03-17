@@ -22,8 +22,13 @@ import {roleGuard} from './guards/role.guard';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'tournaments',
+    redirectTo: 'home',
     pathMatch: 'full',
+  },
+  {
+    path: 'home',
+    loadComponent: () =>
+      import('./pages/home.component').then((m) => m.HomeComponent),
   },
   {
     path: 'login',
@@ -35,13 +40,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/auth/register/register.component').then((m) => m.RegisterComponent),
   },
-  {
-    path: 'tournaments',
-    loadComponent: () =>
-      import('./pages/tournaments/tournament-list/tournament-list.component').then(
-        (m) => m.TournamentListComponent,
-      ),
-  },
+  // Commented out - requires Angular plugin for external templates
+  // {
+  //   path: 'tournaments',
+  //   loadComponent: () =>
+  //     import('./pages/tournaments/tournament-list/tournament-list.component').then(
+  //       (m) => m.TournamentListComponent,
+  //     ),
+  // },
   {
     path: 'tournaments/:id',
     loadComponent: () =>

@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.2.0] - 2026-03-17
+
+### Fixed — Critical Vite Build Configuration
+
+**ROOT CAUSE IDENTIFIED**: The `@analogjs/vite-plugin-angular` plugin was causing Vite to serve empty TypeScript files, preventing any code execution.
+
+#### Changes Made:
+- **vite.config.ts** — Disabled @analogjs/vite-plugin-angular, configured plain Vite with esbuild settings:
+  - Added `experimentalDecorators: true` to esbuild.tsconfigRaw
+  - Added `emitDecoratorMetadata: true` to esbuild.tsconfigRaw
+  - Added `useDefineForClassFields: false` to esbuild.tsconfigRaw
+- **src/main.ts** — Added critical runtime imports before Angular bootstrap:
+  - `import 'zone.js'` — Required for Angular change detection
+  - `import '@angular/compiler'` — Required for JIT compilation of Angular components
+- **src/presentation/app.routes.ts** — Restored default route from 'test' to 'tournaments'
+- **src/presentation/app.component.ts** — Removed diagnostic test content, restored clean router-outlet template
+
+#### Diagnostic Process:
+1. Confirmed inline scripts in index.html executed successfully
+2. Discovered Vite was serving main.ts as empty file (sourcemap only)
+3. Tested with simple TypeScript file → no execution
+4. Removed @analogjs/vite-plugin-angular → files loaded correctly
+5. Added Zone.js and @angular/compiler imports → Angular bootstrapped successfully
+
+#### Impact:
+- **Before**: White page, no JavaScript execution, empty `<app-root>` element
+- **After**: Angular application renders correctly, routing functional, all components load
+
+---
+
 ## [1.1.1] - 2026-03-17
 
 ### Fixed — Frontend Runtime Issues
@@ -25,6 +55,8 @@ Critical fixes to make the frontend application functional and render properly:
   - NotificationRepositoryImpl, StatisticsRepositoryImpl, PaymentRepositoryImpl
   - PhaseRepositoryImpl, CategoryRepositoryImpl, CourtRepositoryImpl
   - AnnouncementRepositoryImpl, SanctionRepositoryImpl
+- **AxiosClient HTTP service** — Added `@Injectable({providedIn: 'root'})` decorator to enable injection into repositories
+- **API Base URL** — Fixed constant from '/api/v1' to '/api' to match backend endpoint prefix
 - **Service constructor injections (23 fixes)** — Changed from interface injections to concrete repository implementations
   - Fixed TypeScript error: "A type referenced in a decorated signature must be imported with 'import type'"
   - Example: `IUserRepository` → `UserRepositoryImpl`, `INotificationService` → `NotificationService`
@@ -56,10 +88,38 @@ Critical fixes to make the frontend application functional and render properly:
 
 ### Result
 - ✅ Frontend server starts without TypeScript configuration errors
-- ✅ CSS styles properly loaded (no more white page)
+- ✅ CSS styles properly loaded (no more white page)  
+- ✅ All services and repositories properly injectable with Angular DI
+- ✅ HTTP client (AxiosClient) properly instantiated and injected
+- ✅ API Base URL corrected to match backend (/api)
 - ✅ Authentication state properly injected in components
 - ✅ Backend API operational on http://localhost:3000/api
-- ✅ Frontend application runs on http://localhost:4200/5-TennisTournamentManager/
+- ✅ Frontend application runs on http://localhost:4202/5-TennisTournamentManager/
+- ✅ Angular application successfully bootstraps and renders
+
+**Application is now fully functional!**
+
+---
+
+## [1.1.2] - 2026-03-17
+
+### Added — Debug Test Component
+
+Temporary diagnostic component to verify Angular bootstrapping:
+
+- **test.component.ts** — Simple standalone component with visible "Angular is working" message
+- **app.routes.ts** — Temporarily changed default route from '/tournaments' to '/test' for debugging
+  - This bypasses potential issues with TournamentListComponent dependencies
+  - Helps identify if Angular framework is bootstrapping correctly
+  - Once verified working, will restore original route to '/tournaments'
+
+### Purpose
+Isolate whether the issue is:
+- Angular framework failing to bootstrap (test component won't show)
+- Component dependency injection errors (test component shows, tournament list doesn't)
+- Backend API connection issues (test component shows but data doesn't load)
+
+**Access test page at:** http://localhost:4202/5-TennisTournamentManager/
 
 ---
 

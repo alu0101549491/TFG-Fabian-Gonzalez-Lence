@@ -11,6 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import axios, {type AxiosInstance, type AxiosRequestConfig, type AxiosResponse} from 'axios';
 import {API_BASE_URL, JWT_STORAGE_KEY} from '@shared/constants';
 
@@ -22,6 +23,7 @@ import {API_BASE_URL, JWT_STORAGE_KEY} from '@shared/constants';
  * - Response unwrapping (extracts data from standard API envelope)
  * - Centralized error handling
  */
+@Injectable({providedIn: 'root'})
 export class AxiosClient {
   private readonly instance: AxiosInstance;
 

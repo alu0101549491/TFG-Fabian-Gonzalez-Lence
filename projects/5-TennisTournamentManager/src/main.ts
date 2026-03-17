@@ -17,9 +17,15 @@ import './styles/global.css';
 import './styles/components.css';
 import './styles/responsive.css';
 
+// Import Zone.js for Angular change detection
+import 'zone.js';
+
+// Import Angular JIT compiler for runtime compilation
+import '@angular/compiler';
+
 import {bootstrapApplication} from '@angular/platform-browser';
-import {AppComponent} from '@presentation/app.component';
-import {appConfig} from '@presentation/app.config';
+import {AppComponent} from './presentation/app.component';
+import {appConfig} from './presentation/app.config';
 
 bootstrapApplication(AppComponent, appConfig)
   .catch((err: unknown) => console.error(err));

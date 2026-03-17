@@ -14,6 +14,7 @@
 import {type ApplicationConfig, provideZoneChangeDetection} from '@angular/core';
 import {provideRouter} from '@angular/router';
 import {provideHttpClient, withInterceptors} from '@angular/common/http';
+import {APP_BASE_HREF} from '@angular/common';
 import {routes} from './app.routes';
 import {authInterceptor} from './interceptors/auth.interceptor';
 import {errorInterceptor} from './interceptors/error.interceptor';
@@ -25,6 +26,7 @@ import {errorInterceptor} from './interceptors/error.interceptor';
  */
 export const appConfig: ApplicationConfig = {
   providers: [
+    {provide: APP_BASE_HREF, useValue: '/5-TennisTournamentManager/'},
     provideZoneChangeDetection({eventCoalescing: true}),
     provideRouter(routes),
     provideHttpClient(
