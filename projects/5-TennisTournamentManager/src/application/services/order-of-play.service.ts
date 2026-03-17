@@ -11,12 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {IOrderOfPlayService} from '../interfaces/order-of-play-service.interface';
 import {CreateOrderOfPlayDto, OrderOfPlayDto} from '../dto';
-import {IOrderOfPlayRepository} from '@domain/repositories/order-of-play-repository.interface';
-import {IMatchRepository} from '@domain/repositories/match-repository.interface';
-import {ICourtRepository} from '@domain/repositories/court-repository.interface';
-import {INotificationService} from '../interfaces/notification-service.interface';
+import {OrderOfPlayRepositoryImpl} from '@infrastructure/repositories/order-of-play.repository';
+import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
+import {CourtRepositoryImpl} from '@infrastructure/repositories/court.repository';
+import {NotificationService} from './notification.service';
 import {OrderOfPlay} from '@domain/entities/order-of-play';
 import {generateId} from '@shared/utils';
 
@@ -24,6 +25,7 @@ import {generateId} from '@shared/utils';
  * Order of play service implementation.
  * Handles match scheduling, court assignments, and order of play management.
  */
+@Injectable({providedIn: 'root'})
 export class OrderOfPlayService implements IOrderOfPlayService {
   /**
    * Creates a new OrderOfPlayService instance.
@@ -34,10 +36,10 @@ export class OrderOfPlayService implements IOrderOfPlayService {
    * @param _notificationService - Notification service for schedule notifications (reserved for future use)
    */
   public constructor(
-    private readonly orderOfPlayRepository: IOrderOfPlayRepository,
-    private readonly matchRepository: IMatchRepository,
-    private readonly courtRepository: ICourtRepository,
-    private readonly _notificationService: INotificationService,
+    private readonly orderOfPlayRepository: OrderOfPlayRepositoryImpl,
+    private readonly matchRepository: MatchRepositoryImpl,
+    private readonly courtRepository: CourtRepositoryImpl,
+    private readonly _notificationService: NotificationService,
     // TODO: inject CourtScheduler
   ) {}
 

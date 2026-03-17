@@ -11,11 +11,12 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {IBracketService} from '../interfaces/bracket-service.interface';
 import {GenerateBracketDto, BracketDto, PhaseDto} from '../dto';
-import {IBracketRepository} from '@domain/repositories/bracket-repository.interface';
-import {IPhaseRepository} from '@domain/repositories/phase-repository.interface';
-import {IRegistrationRepository} from '@domain/repositories/registration-repository.interface';
+import {BracketRepositoryImpl} from '@infrastructure/repositories/bracket.repository';
+import {PhaseRepositoryImpl} from '@infrastructure/repositories/phase.repository';
+import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registration.repository';
 import {BracketGeneratorFactory} from './bracket-generator.factory';
 import {Bracket} from '@domain/entities/bracket';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
@@ -25,6 +26,7 @@ import {generateId} from '@shared/utils';
  * Bracket service implementation.
  * Handles bracket generation, publication, and phase management.
  */
+@Injectable({providedIn: 'root'})
 export class BracketService implements IBracketService {
   /**
    * Creates a new BracketService instance.
@@ -35,9 +37,9 @@ export class BracketService implements IBracketService {
    * @param bracketGeneratorFactory - Factory for creating bracket generators
    */
   public constructor(
-    private readonly bracketRepository: IBracketRepository,
-    private readonly phaseRepository: IPhaseRepository,
-    private readonly registrationRepository: IRegistrationRepository,
+    private readonly bracketRepository: BracketRepositoryImpl,
+    private readonly phaseRepository: PhaseRepositoryImpl,
+    private readonly registrationRepository: RegistrationRepositoryImpl,
     private readonly bracketGeneratorFactory: BracketGeneratorFactory,
   ) {}
 

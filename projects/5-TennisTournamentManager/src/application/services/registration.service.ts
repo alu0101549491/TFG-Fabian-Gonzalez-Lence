@@ -11,11 +11,12 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {IRegistrationService} from '../interfaces/registration-service.interface';
 import {CreateRegistrationDto, RegistrationDto, UpdateRegistrationStatusDto} from '../dto';
-import {IRegistrationRepository} from '@domain/repositories/registration-repository.interface';
-import {ITournamentRepository} from '@domain/repositories/tournament-repository.interface';
-import {ICategoryRepository} from '@domain/repositories/category-repository.interface';
+import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registration.repository';
+import {TournamentRepositoryImpl} from '@infrastructure/repositories/tournament.repository';
+import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repository';
 import {INotificationService} from '../interfaces/notification-service.interface';
 import {Registration} from '@domain/entities/registration';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
@@ -25,6 +26,7 @@ import {generateId} from '@shared/utils';
  * Registration service implementation.
  * Handles participant registration for tournaments and categories.
  */
+@Injectable({providedIn: 'root'})
 export class RegistrationService implements IRegistrationService {
   /**
    * Creates a new RegistrationService instance.
@@ -35,9 +37,9 @@ export class RegistrationService implements IRegistrationService {
    * @param notificationService - Notification service for participant notifications
    */
   public constructor(
-    private readonly registrationRepository: IRegistrationRepository,
-    private readonly tournamentRepository: ITournamentRepository,
-    private readonly categoryRepository: ICategoryRepository,
+    private readonly registrationRepository: RegistrationRepositoryImpl,
+    private readonly tournamentRepository: TournamentRepositoryImpl,
+    private readonly categoryRepository: CategoryRepositoryImpl,
     private readonly notificationService: INotificationService,
     // TODO: inject QuotaManager
   ) {}

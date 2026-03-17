@@ -11,6 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {GlobalRanking} from '@domain/entities/global-ranking';
 import {IGlobalRankingRepository} from '@domain/repositories/global-ranking.repository.interface';
 import {AxiosClient} from '../http/axios-client';
@@ -19,6 +20,7 @@ import {AxiosClient} from '../http/axios-client';
  * HTTP-based implementation of IGlobalRankingRepository.
  * Communicates with the backend REST API via Axios.
  */
+@Injectable({providedIn: 'root'})
 export class GlobalRankingRepositoryImpl implements IGlobalRankingRepository {
   /**
    * Creates an instance of GlobalRankingRepositoryImpl.

@@ -11,6 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {Match} from '@domain/entities/match';
 import {IMatchRepository} from '@domain/repositories/match.repository.interface';
 import {MatchStatus} from '@domain/enumerations/match-status';
@@ -20,6 +21,7 @@ import {AxiosClient} from '../http/axios-client';
  * HTTP-based implementation of IMatchRepository.
  * Communicates with the backend REST API via Axios.
  */
+@Injectable({providedIn: 'root'})
 export class MatchRepositoryImpl implements IMatchRepository {
   /**
    * Creates an instance of MatchRepositoryImpl.

@@ -11,10 +11,11 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {IPaymentService} from '../interfaces/payment-service.interface';
 import {InitiatePaymentDto, PaymentDto} from '../dto';
-import {IPaymentRepository} from '@domain/repositories/payment-repository.interface';
-import {IRegistrationRepository} from '@domain/repositories/registration-repository.interface';
+import {PaymentRepositoryImpl} from '@infrastructure/repositories/payment.repository';
+import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registration.repository';
 import {Payment} from '@domain/entities/payment';
 import {PaymentStatus} from '@domain/enumerations/payment-status';
 import {generateId} from '@shared/utils';
@@ -23,6 +24,7 @@ import {generateId} from '@shared/utils';
  * Payment service implementation.
  * Handles payment processing, refunds, and payment history for tournament registrations.
  */
+@Injectable({providedIn: 'root'})
 export class PaymentService implements IPaymentService {
   /**
    * Creates a new PaymentService instance.
@@ -31,8 +33,8 @@ export class PaymentService implements IPaymentService {
    * @param registrationRepository - Registration repository for registration data access
    */
   public constructor(
-    private readonly paymentRepository: IPaymentRepository,
-    private readonly registrationRepository: IRegistrationRepository,
+    private readonly paymentRepository: PaymentRepositoryImpl,
+    private readonly registrationRepository: RegistrationRepositoryImpl,
     // TODO: inject IPaymentGateway
   ) {}
 

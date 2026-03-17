@@ -11,6 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {IBracketGenerator} from '../interfaces/bracket-generator.interface';
 import {BracketType} from '@domain/enumerations/bracket-type';
 
@@ -18,6 +19,7 @@ import {BracketType} from '@domain/enumerations/bracket-type';
  * Bracket generator factory.
  * Implements the Factory Pattern to create appropriate bracket generators based on bracket type.
  */
+@Injectable({providedIn: 'root'})
 export class BracketGeneratorFactory {
   /**
    * Creates a bracket generator for the specified bracket type.

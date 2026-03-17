@@ -11,15 +11,17 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {IStatisticsService} from '../interfaces/statistics-service.interface';
 import {StatisticsDto} from '../dto';
-import {IStatisticsRepository} from '@domain/repositories/statistics-repository.interface';
-import {IMatchRepository} from '@domain/repositories/match-repository.interface';
+import {StatisticsRepositoryImpl} from '@infrastructure/repositories/statistics.repository';
+import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
 
 /**
  * Statistics service implementation.
  * Handles participant performance statistics and tournament analytics.
  */
+@Injectable({providedIn: 'root'})
 export class StatisticsService implements IStatisticsService {
   /**
    * Creates a new StatisticsService instance.
@@ -28,8 +30,8 @@ export class StatisticsService implements IStatisticsService {
    * @param matchRepository - Match repository for match data access
    */
   public constructor(
-    private readonly statisticsRepository: IStatisticsRepository,
-    private readonly matchRepository: IMatchRepository,
+    private readonly statisticsRepository: StatisticsRepositoryImpl,
+    private readonly matchRepository: MatchRepositoryImpl,
   ) {}
 
   /**

@@ -19,6 +19,7 @@ import {TournamentService} from '@application/services';
 import {type TournamentDto, type TournamentFilterDto, type PaginationDto} from '@application/dto';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {Surface} from '@domain/enumerations/surface';
+import {AuthStateService} from '@presentation/services/auth-state.service';
 
 /**
  * TournamentListComponent displays a filterable, paginated list of tournaments.
@@ -67,11 +68,22 @@ export class TournamentListComponent implements OnInit {
    *
    * @param tournamentService - Tournament service for data operations
    * @param router - Router for navigation
+   * @param authStateService - Auth state service for authentication checks
    */
   public constructor(
     private readonly tournamentService: TournamentService,
     private readonly router: Router,
+    private readonly authStateService: AuthStateService,
   ) {}
+
+  /**
+   * Checks if user is authenticated.
+   *
+   * @returns True if user is authenticated
+   */
+  public isAuthenticated(): boolean {
+    return this.authStateService.isAuthenticated();
+  }
 
   /**
    * Initializes component and loads tournament data.

@@ -11,6 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {OrderOfPlay} from '@domain/entities/order-of-play';
 import {IOrderOfPlayRepository} from '@domain/repositories/order-of-play.repository.interface';
 import {AxiosClient} from '../http/axios-client';
@@ -19,6 +20,7 @@ import {AxiosClient} from '../http/axios-client';
  * HTTP-based implementation of IOrderOfPlayRepository.
  * Communicates with the backend REST API via Axios.
  */
+@Injectable({providedIn: 'root'})
 export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
   /**
    * Creates an instance of OrderOfPlayRepositoryImpl.
@@ -94,10 +96,12 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
   /**
    * Retrieves all orders of play for a specific court.
    * @param courtId - The court identifier
+   * @param date - The date to filter by
    * @returns Promise resolving to an array of orders of play
    */
-  public async findByCourtId(courtId: string): Promise<OrderOfPlay[]> {
-    const response = await this.httpClient.get<OrderOfPlay[]>(`/order-of-play?courtId=${courtId}`);
+  public async findByCourtId(courtId: string, date: Date): Promise<OrderOfPlay[]> {
+    const dateStr = date.toISOString().split('T')[0];
+    const response = await this.httpClient.get<OrderOfPlay[]>(`/order-of-play?courtId=${courtId}&date=${dateStr}`);
     return response;
   }
 

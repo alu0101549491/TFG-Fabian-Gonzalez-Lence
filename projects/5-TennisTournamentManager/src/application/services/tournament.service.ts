@@ -11,12 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {ITournamentService} from '../interfaces/tournament-service.interface';
 import {CreateTournamentDto, UpdateTournamentDto, TournamentDto, TournamentFilterDto} from '../dto';
 import {PaginatedResponseDto, PaginationDto} from '../dto';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
-import {ITournamentRepository} from '@domain/repositories/tournament-repository.interface';
-import {ICategoryRepository} from '@domain/repositories/category-repository.interface';
+import {TournamentRepositoryImpl} from '@infrastructure/repositories/tournament.repository';
+import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repository';
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
 import {type INotificationService} from '../interfaces/notification-service.interface';
 import {Tournament} from '@domain/entities/tournament';
@@ -26,6 +27,7 @@ import {generateId} from '@shared/utils';
  * Tournament service implementation.
  * Handles tournament creation, updates, querying, and status management.
  */
+@Injectable({providedIn: 'root'})
 export class TournamentService implements ITournamentService {
   /**
    * Creates a new TournamentService instance.
@@ -36,8 +38,8 @@ export class TournamentService implements ITournamentService {
    * @param notificationService - Notification service for tournament notifications
    */
   public constructor(
-    private readonly tournamentRepository: ITournamentRepository,
-    private readonly categoryRepository: ICategoryRepository,
+    private readonly tournamentRepository: TournamentRepositoryImpl,
+    private readonly categoryRepository: CategoryRepositoryImpl,
     private readonly authorizationService: IAuthorizationService,
     private readonly notificationService: INotificationService,
   ) {}

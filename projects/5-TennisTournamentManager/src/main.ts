@@ -11,6 +11,12 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import './styles/variables.css';
+import './styles/reset.css';
+import './styles/global.css';
+import './styles/components.css';
+import './styles/responsive.css';
+
 import {bootstrapApplication} from '@angular/platform-browser';
 import {AppComponent} from '@presentation/app.component';
 import {appConfig} from '@presentation/app.config';

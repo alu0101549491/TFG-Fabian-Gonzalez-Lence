@@ -11,6 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {Payment} from '@domain/entities/payment';
 import {IPaymentRepository} from '@domain/repositories/payment.repository.interface';
 import {AxiosClient} from '../http/axios-client';
@@ -19,6 +20,7 @@ import {AxiosClient} from '../http/axios-client';
  * HTTP-based implementation of IPaymentRepository.
  * Communicates with the backend REST API via Axios.
  */
+@Injectable({providedIn: 'root'})
 export class PaymentRepositoryImpl implements IPaymentRepository {
   /**
    * Creates an instance of PaymentRepositoryImpl.

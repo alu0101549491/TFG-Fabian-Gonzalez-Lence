@@ -6,6 +6,242 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.1.1] - 2026-03-17
+
+### Fixed — Frontend Runtime Issues
+
+Critical fixes to make the frontend application functional and render properly:
+
+#### Angular Dependency Injection Fixes (CRITICAL)
+- **All application services (12 files)** — Added `@Injectable({providedIn: 'root'})` decorator:
+  - AuthenticationService, AuthorizationService, TournamentService
+  - RegistrationService, BracketService, BracketGeneratorFactory
+  - MatchService, StandingService, RankingService
+  - OrderOfPlayService, NotificationService, StatisticsService, PaymentService
+- **All infrastructure repositories (17 files)** — Added `@Injectable({providedIn: 'root'})` decorator:
+  - UserRepositoryImpl, TournamentRepositoryImpl, RegistrationRepositoryImpl
+  - BracketRepositoryImpl, MatchRepositoryImpl, ScoreRepositoryImpl
+  - StandingRepositoryImpl, GlobalRankingRepositoryImpl, OrderOfPlayRepositoryImpl
+  - NotificationRepositoryImpl, StatisticsRepositoryImpl, PaymentRepositoryImpl
+  - PhaseRepositoryImpl, CategoryRepositoryImpl, CourtRepositoryImpl
+  - AnnouncementRepositoryImpl, SanctionRepositoryImpl
+- **Service constructor injections (23 fixes)** — Changed from interface injections to concrete repository implementations
+  - Fixed TypeScript error: "A type referenced in a decorated signature must be imported with 'import type'"
+  - Example: `IUserRepository` → `UserRepositoryImpl`, `INotificationService` → `NotificationService`
+- **Repository method signatures** — Fixed findByCourtId() in OrderOfPlayRepositoryImpl to accept date parameter matching interface
+- **Root cause**: Services and repositories were plain TypeScript classes without Angular decorators, preventing dependency injection
+- **Impact**: Angular bootstrap was failing silently, resulting in empty `<app-root>` element (white page)
+
+#### Configuration Fixes
+- **tsconfig.app.json** — Created missing TypeScript app configuration file required by @analogjs/vite-plugin-angular
+- **vite.config.ts** — Updated Angular plugin to explicitly reference tsconfig.app.json path
+- **backend/src/shared/config/index.ts** — Fixed environment variable validation (changed DB_NAME to DB_DATABASE to match .env file)
+- **backend/src/presentation/middleware/index.ts** — Fixed TypeScript interface export (changed to type-only export for AuthRequest)
+
+#### Style Loading
+- **src/main.ts** — Added missing CSS imports in correct order:
+  - variables.css (CSS custom properties)
+  - reset.css (browser normalization)
+  - global.css (base styles)
+  - components.css (UI components)
+  - responsive.css (media queries)
+
+#### Component Fixes
+- **tournament-list.component.ts** — Added missing AuthStateService injection and isAuthenticated() method to enable conditional rendering of "Create Tournament" button
+
+#### Database Setup
+- **PostgreSQL authentication** — Configured md5 password authentication in pg_hba.conf
+- **Database creation** — Created tennis_tournament_manager database
+- **Admin user seeding** — Successfully seeded default admin account
+
+### Result
+- ✅ Frontend server starts without TypeScript configuration errors
+- ✅ CSS styles properly loaded (no more white page)
+- ✅ Authentication state properly injected in components
+- ✅ Backend API operational on http://localhost:3000/api
+- ✅ Frontend application runs on http://localhost:4200/5-TennisTournamentManager/
+
+---
+
+## [1.1.0] - 2026-03-17
+
+### Added — Backend API Server
+
+Complete **Node.js + Express + TypeORM backend** implementation providing REST API and WebSocket services.
+
+#### Backend Configuration & Infrastructure (4 files)
+- **backend/package.json** — Backend dependencies (Express, TypeORM, PostgreSQL, JWT, bcrypt, Socket.io)
+- **backend/tsconfig.json** — TypeScript configuration with path aliases matching frontend
+- **backend/.env.example** — Environment variable template (database, JWT, CORS, email, payment)
+- **backend/.gitignore** — Backend-specific ignore patterns
+
+#### Backend Domain Layer (29 files)
+- **Enumerations (12 files)** — Matching frontend enums for UserRole, TournamentStatus, MatchStatus, BracketType, etc.
+- **TypeORM Entities (17 files)** — Database models with decorators (@Entity, @Column, @ManyToOne, @OneToMany):
+  - User with bcrypt password hashing
+  - Tournament with lifecycle management
+  - Category, Court, Registration with acceptance types
+  - Bracket, Phase, Match with status transitions
+  - Score with set-by-set tracking
+  - Standing, GlobalRanking with multi-system support
+  - OrderOfPlay, Notification, Announcement
+  - Statistics, Payment, Sanction
+
+#### Backend Infrastructure Layer (3 files)
+- **database/data-source.ts** — TypeORM DataSource configuration for PostgreSQL
+- **database/migrate.ts** — Database migration runner
+- **database/seed.ts** — Seed script creating default admin user (admin@tennistournament.com / Admin123!)
+
+#### Backend Presentation Layer (22 files)
+
+**Middleware (4 files):**
+- **authMiddleware** — JWT token verification, user attachment to request
+- **roleMiddleware** — Role-based authorization (SYSTEM_ADMIN, TOURNAMENT_ADMIN, REFEREE, PLAYER, SPECTATOR)
+- **errorMiddleware** — Global error handling with consistent JSON responses
+- **validationMiddleware** — Request validation using class-validator
+
+**Controllers (17 files):**
+- **AuthController** — Login, register, token refresh, logout (JWT + bcrypt)
+- **UserController** — Profile management, user listing (admin only)
+- **TournamentController** — CRUD operations with role-based access
+- **CategoryController** — Category listing by tournament
+- **CourtController** — Court availability management
+- **RegistrationController** — Participant enrollment, acceptance, status updates
+- **BracketController** — Bracket generation, retrieval, listing
+- **PhaseController** — Tournament phase management
+- **MatchController** — Match CRUD, score submission, status updates
+- **StandingController** — Category standings calculation
+- **RankingController** — Global player rankings (ELO, Points, WTN)
+- **OrderOfPlayController** — Daily match scheduling with court assignments
+- **NotificationController** — User notifications, mark as read
+- **AnnouncementController** — Tournament announcements with pinning
+- **StatisticsController** — Player performance statistics
+- **PaymentController** — Payment processing and tracking
+- **SanctionController** — Disciplinary actions management
+
+**Routes (1 file):**
+- **routes/index.ts** — Centralized routing with proper auth/role middleware chains
+
+#### Backend Core Application (3 files)
+- **server.ts** — Main entry point with graceful shutdown, database initialization
+- **app.ts** — Express application setup with middleware stack (helmet, CORS, compression, rate limiting, morgan logging)
+- **websocket-server.ts** — Socket.io server for real-time updates (match:updated, order-of-play:changed, notification:new)
+
+#### Backend Shared Layer (4 files)
+- **config/index.ts** — Environment variable loader with validation
+- **utils/index.ts** — Utility functions (ID generation, date formatting)
+- **constants/index.ts** — HTTP status codes, error codes, pagination defaults
+
+#### API Endpoints Implemented (35+ endpoints)
+
+All endpoints from API.md specification:
+
+| Resource | Count | Features |
+|----------|-------|----------|
+| Authentication | 4 | JWT login/register/refresh/logout with bcrypt |
+| Users | 3 | Profile CRUD, admin user management |
+| Tournaments | 5 | Full CRUD with filters and role-based access |
+| Categories | 1 | List by tournament |
+| Courts | 1 | List by tournament with availability |
+| Registrations | 3 | Create, list, update status |
+| Brackets | 3 | Generate with factory pattern, retrieve, list |
+| Phases | 1 | List by bracket |
+| Matches | 4 | List, retrieve, update score, change status |
+| Standings | 1 | Calculate category standings |
+| Rankings | 1 | Global player rankings |
+| Order of Play | 1 | Daily schedule generation |
+| Notifications | 2 | List user notifications, mark read |
+| Announcements | 2 | Create, list by tournament |
+| Statistics | 1 | Player performance metrics |
+| Payments | 2 | Create payment, list user payments |
+| Sanctions | 2 | Issue sanctions, list by match |
+
+### Backend Features
+
+#### Authentication & Authorization
+- **JWT Authentication** — 30-minute access tokens, 7-day refresh tokens
+- **bcrypt Password Hashing** — Salt rounds: 12 (secure password storage)
+- **Role-Based Access Control** — 5 roles with hierarchical permissions
+- **Session Management** — Token refresh mechanism preventing session expiration
+
+#### Database Architecture
+- **PostgreSQL** — Relational database with ACID compliance
+- **TypeORM** — Object-Relational Mapping with decorators
+- **Auto-Synchronization** — Development mode schema sync
+- **Relationships** — Proper foreign keys and cascade operations
+- **17 Tables** — Normalized schema matching domain entities
+
+#### Security Measures
+- **Helmet** — Security headers (XSS, clickjacking protection)
+- **CORS** — Configurable origin whitelist
+- **Rate Limiting** — 1000 requests per hour per IP (configurable)
+- **Input Validation** — class-validator decorators on all DTOs
+- **Error Sanitization** — No stack traces in production responses
+
+#### WebSocket Real-Time Updates
+- **Socket.io** — Bidirectional event-based communication
+- **Events** — match:updated, order-of-play:changed, notification:new
+- **JWT Authentication** — Token verification for WebSocket connections
+- **Room-Based Broadcasting** — Targeted updates per tournament/user
+
+#### Logging & Monitoring
+- **Morgan** — HTTP request logging in combined format
+- **Winston** — Structured logging with levels (error, warn, info, debug)
+- **Error Tracking** — Centralized error middleware with logging
+
+#### Development Tools
+- **tsx** — TypeScript execution for development (watch mode)
+- **Database Seeding** — Default admin user creation
+- **Hot Reload** — Automatic server restart on code changes
+
+### Backend Statistics
+
+- **Total Backend Files**: 60+
+- **Controllers**: 17 (matching all API resources)
+- **Middleware**: 4 (auth, role, error, validation)
+- **TypeORM Entities**: 17 (matching domain entities)
+- **Enumerations**: 12 (matching frontend)
+- **API Endpoints**: 35+ (full REST API coverage)
+- **WebSocket Events**: 3 (real-time updates)
+- **Lines of Code**: ~6,000+ (backend only)
+
+### Environment Configuration
+
+Complete `.env.example` with:
+- Server configuration (port, API prefix)
+- Database credentials (PostgreSQL)
+- JWT secrets (access + refresh tokens)
+- CORS origin whitelist
+- Rate limiting settings
+- WebSocket port
+- Email provider (SMTP/SendGrid)
+- Telegram bot token
+- Payment gateway (Stripe)
+- Logging configuration
+
+### Quick Start Commands
+
+```bash
+# Install dependencies
+cd backend && npm install
+
+# Configure environment
+cp .env.example .env
+
+# Create database
+createdb tennis_tournament_manager
+
+# Seed admin user
+npm run db:seed
+
+# Start development server
+npm run dev
+```
+
+**Default Admin Credentials**: admin@tennistournament.com / Admin123!
+
+---
+
 ## [1.0.0] - 2026-03-17
 
 ### Added — Initial Implementation

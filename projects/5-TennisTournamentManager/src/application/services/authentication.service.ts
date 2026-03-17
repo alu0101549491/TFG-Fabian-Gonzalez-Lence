@@ -11,9 +11,10 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {IAuthenticationService} from '../interfaces/authentication-service.interface';
 import {RegisterUserDto, AuthResponseDto, UserDto} from '../dto';
-import {IUserRepository} from '@domain/repositories/user-repository.interface';
+import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
 import {User} from '@domain/entities/user';
 import {UserRole} from '@domain/enumerations/user-role';
 import {generateId} from '@shared/utils';
@@ -22,6 +23,7 @@ import {generateId} from '@shared/utils';
  * Authentication service implementation.
  * Handles user authentication, registration, and JWT token management.
  */
+@Injectable({providedIn: 'root'})
 export class AuthenticationService implements IAuthenticationService {
   /**
    * Creates a new AuthenticationService instance.
@@ -29,7 +31,7 @@ export class AuthenticationService implements IAuthenticationService {
    * @param userRepository - User repository for user data access
    */
   public constructor(
-    private readonly userRepository: IUserRepository,
+    private readonly userRepository: UserRepositoryImpl,
   ) {}
 
   /**

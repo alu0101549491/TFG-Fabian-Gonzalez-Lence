@@ -19,7 +19,9 @@ const base = process.env.BASE_URL || '/5-TennisTournamentManager/';
 
 export default defineConfig({
   plugins: [
-    angular(),
+    angular({
+      tsconfig: resolve(__dirname, 'tsconfig.app.json'),
+    }),
   ],
   root: '.',
   publicDir: 'public',

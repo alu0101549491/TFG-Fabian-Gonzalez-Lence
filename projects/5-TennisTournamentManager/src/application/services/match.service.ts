@@ -11,10 +11,11 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {IMatchService} from '../interfaces/match-service.interface';
 import {RecordResultDto, MatchDto, UpdateMatchStatusDto} from '../dto';
-import {IMatchRepository} from '@domain/repositories/match-repository.interface';
-import {IScoreRepository} from '@domain/repositories/score-repository.interface';
+import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
+import {ScoreRepositoryImpl} from '@infrastructure/repositories/score.repository';
 import {IStandingService} from '../interfaces/standing-service.interface';
 import {INotificationService} from '../interfaces/notification-service.interface';
 import {Match} from '@domain/entities/match';
@@ -26,6 +27,7 @@ import {generateId} from '@shared/utils';
  * Match service implementation.
  * Handles match queries, result recording, and status updates.
  */
+@Injectable({providedIn: 'root'})
 export class MatchService implements IMatchService {
   /**
    * Creates a new MatchService instance.
@@ -36,8 +38,8 @@ export class MatchService implements IMatchService {
    * @param notificationService - Notification service for match notifications
    */
   public constructor(
-    private readonly matchRepository: IMatchRepository,
-    private readonly scoreRepository: IScoreRepository,
+    private readonly matchRepository: MatchRepositoryImpl,
+    private readonly scoreRepository: ScoreRepositoryImpl,
     private readonly standingService: IStandingService,
     private readonly notificationService: INotificationService,
   ) {}

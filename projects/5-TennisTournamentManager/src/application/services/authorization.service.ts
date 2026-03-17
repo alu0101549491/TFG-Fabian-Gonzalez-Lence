@@ -11,6 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
 import {UserRole} from '@domain/enumerations/user-role';
 import {IUserRepository} from '@domain/repositories/user-repository.interface';
@@ -21,6 +22,7 @@ import {IBracketRepository} from '@domain/repositories/bracket-repository.interf
  * Authorization service implementation.
  * Handles role-based access control, permissions, and session validation.
  */
+@Injectable({providedIn: 'root'})
 export class AuthorizationService implements IAuthorizationService {
   /**
    * Creates a new AuthorizationService instance.

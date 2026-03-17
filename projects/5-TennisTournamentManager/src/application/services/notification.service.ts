@@ -11,9 +11,10 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+import {Injectable} from '@angular/core';
 import {INotificationService} from '../interfaces/notification-service.interface';
 import {SendNotificationDto, NotificationDto} from '../dto';
-import {INotificationRepository} from '@domain/repositories/notification-repository.interface';
+import {NotificationRepositoryImpl} from '@infrastructure/repositories/notification.repository';
 import {Notification} from '@domain/entities/notification';
 import {generateId} from '@shared/utils';
 
@@ -22,6 +23,7 @@ import {generateId} from '@shared/utils';
  * Handles notification dispatch, retrieval, and read status management.
  * Implements the Observer Pattern for multi-channel notifications.
  */
+@Injectable({providedIn: 'root'})
 export class NotificationService implements INotificationService {
   /**
    * Creates a new NotificationService instance.
@@ -29,7 +31,7 @@ export class NotificationService implements INotificationService {
    * @param notificationRepository - Notification repository for data access
    */
   public constructor(
-    private readonly notificationRepository: INotificationRepository,
+    private readonly notificationRepository: NotificationRepositoryImpl,
     // TODO: inject NotificationChannelFactory
   ) {}
 
