@@ -65,7 +65,7 @@ export interface IRegistrationRepository {
    * @param tournamentId - The unique identifier of the tournament
    * @returns Promise resolving to an array of registrations
    */
-  findByTournamentId(tournamentId: string): Promise<Registration[]>;
+  findByTournament(tournamentId: string): Promise<Registration[]>;
 
   /**
    * Finds all registrations for a specific category.

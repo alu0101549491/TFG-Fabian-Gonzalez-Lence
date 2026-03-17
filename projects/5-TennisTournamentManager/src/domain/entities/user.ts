@@ -37,6 +37,10 @@ export interface UserProps {
   phone?: string | null;
   /** GDPR data-processing consent flag (NFR14). */
   gdprConsent?: boolean;
+  /** Contact information (value object placeholder). */
+  contactInfo?: Record<string, unknown>;
+  /** Privacy settings (value object placeholder). */
+  privacySettings?: Record<string, unknown>;
   /** Account creation timestamp. */
   createdAt?: Date;
   /** Last update timestamp. */
@@ -68,6 +72,8 @@ export class User {
   public readonly isActive: boolean;
   public readonly phone: string | null;
   public readonly gdprConsent: boolean;
+  public readonly contactInfo: Record<string, unknown>;
+  public readonly privacySettings: Record<string, unknown>;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
   public readonly lastLogin: Date | null;
@@ -83,6 +89,8 @@ export class User {
     this.isActive = props.isActive ?? true;
     this.phone = props.phone ?? null;
     this.gdprConsent = props.gdprConsent ?? false;
+    this.contactInfo = props.contactInfo ?? {};
+    this.privacySettings = props.privacySettings ?? {};
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
     this.lastLogin = props.lastLogin ?? null;
@@ -98,21 +106,22 @@ export class User {
   }
 
   /**
-   * Checks whether the user has a specific role.
+   * Authenticates the user with the provided password.
    *
-   * @param role - The role to check against
-   * @returns True if user has the specified role
+   * @param password - The password to verify
+   * @returns True if authentication succeeds
    */
-  public hasRole(role: UserRole): boolean {
+  public authenticate(password: string): boolean {
     throw new Error('Not implemented');
   }
 
   /**
-   * Checks whether the user has administrative privileges (SysAdmin or TournamentAdmin).
+   * Checks whether the user has a specific permission.
    *
-   * @returns True if the user is any type of administrator
+   * @param permission - The permission to check
+   * @returns True if the user has the specified permission
    */
-  public isAdmin(): boolean {
+  public hasPermission(permission: string): boolean {
     throw new Error('Not implemented');
   }
 }

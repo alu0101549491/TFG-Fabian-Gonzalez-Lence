@@ -21,7 +21,7 @@ export enum UserRole {
   /** Tournament lifecycle management: creation, draws, scheduling, results. */
   TOURNAMENT_ADMIN = 'TOURNAMENT_ADMIN',
   /** Registered player: registration, profile, own results and notifications. */
-  PARTICIPANT = 'PARTICIPANT',
+  REGISTERED_PARTICIPANT = 'REGISTERED_PARTICIPANT',
   /** Unauthenticated visitor: read-only access to public draws and results. */
   PUBLIC = 'PUBLIC',
 }

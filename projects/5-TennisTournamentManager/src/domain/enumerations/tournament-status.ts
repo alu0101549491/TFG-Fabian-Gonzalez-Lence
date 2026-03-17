@@ -26,7 +26,7 @@ export enum TournamentStatus {
   /** Tournament is actively in progress with matches underway. */
   IN_PROGRESS = 'IN_PROGRESS',
   /** All matches completed; final standings calculated. */
-  COMPLETED = 'COMPLETED',
+  FINALIZED = 'FINALIZED',
   /** Tournament cancelled before completion. */
   CANCELLED = 'CANCELLED',
 }

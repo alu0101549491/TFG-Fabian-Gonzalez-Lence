@@ -24,9 +24,9 @@ export interface GlobalRankingProps {
   /** Current global ranking position. */
   position: number;
   /** Total accumulated ranking points. */
-  totalPoints: number;
+  points: number;
   /** The ranking system used for calculation. */
-  rankingSystem: RankingSystem;
+  system: RankingSystem;
   /** Number of tournaments counted toward the ranking. */
   tournamentsPlayed?: number;
   /** ELO rating (only applicable when rankingSystem is ELO). */
@@ -47,8 +47,8 @@ export class GlobalRanking {
   public readonly id: string;
   public readonly participantId: string;
   public readonly position: number;
-  public readonly totalPoints: number;
-  public readonly rankingSystem: RankingSystem;
+  public readonly points: number;
+  public readonly system: RankingSystem;
   public readonly tournamentsPlayed: number;
   public readonly eloRating: number | null;
   public readonly previousPosition: number | null;
@@ -58,8 +58,8 @@ export class GlobalRanking {
     this.id = props.id;
     this.participantId = props.participantId;
     this.position = props.position;
-    this.totalPoints = props.totalPoints;
-    this.rankingSystem = props.rankingSystem;
+    this.points = props.points;
+    this.system = props.system;
     this.tournamentsPlayed = props.tournamentsPlayed ?? 0;
     this.eloRating = props.eloRating ?? null;
     this.previousPosition = props.previousPosition ?? null;
@@ -67,11 +67,11 @@ export class GlobalRanking {
   }
 
   /**
-   * Calculates the position change since the last update.
+   * Updates ranking points based on a match result.
    *
-   * @returns Positive number if improved, negative if dropped, 0 if unchanged
+   * @param result - The match result data
    */
-  public getPositionChange(): number {
+  public updatePoints(result: Record<string, unknown>): void {
     throw new Error('Not implemented');
   }
 }

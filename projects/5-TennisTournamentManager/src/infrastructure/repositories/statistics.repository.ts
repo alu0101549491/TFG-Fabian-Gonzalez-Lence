@@ -71,11 +71,11 @@ export class StatisticsRepositoryImpl implements IStatisticsRepository {
   }
 
   /**
-   * Retrieves all statistics for a specific participant.
+   * Retrieves statistics for a specific participant.
    * @param participantId - The participant's identifier
-   * @returns Promise resolving to an array of statistics
+   * @returns Promise resolving to the statistics or null if not found
    */
-  public async findByParticipantId(participantId: string): Promise<Statistics[]> {
+  public async findByParticipant(participantId: string): Promise<Statistics | null> {
     throw new Error('Not implemented');
   }
 

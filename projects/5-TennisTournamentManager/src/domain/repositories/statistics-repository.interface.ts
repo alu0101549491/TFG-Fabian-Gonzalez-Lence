@@ -57,7 +57,7 @@ export interface IStatisticsRepository {
    * @param participantId - The unique identifier of the participant
    * @returns Promise resolving to the statistics if found, null otherwise
    */
-  findByParticipantId(participantId: string): Promise<Statistics | null>;
+  findByParticipant(participantId: string): Promise<Statistics | null>;
 
   /**
    * Finds all statistics for a specific tournament.

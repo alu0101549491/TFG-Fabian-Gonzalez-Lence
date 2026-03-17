@@ -12,6 +12,7 @@
  */
 
 import {RegistrationStatus} from '../enumerations/registration-status';
+import {AcceptanceType} from '../enumerations/acceptance-type';
 
 /**
  * Properties for creating a Registration entity.
@@ -27,6 +28,10 @@ export interface RegistrationProps {
   categoryId: string;
   /** Current registration status. */
   status?: RegistrationStatus;
+  /** Type of acceptance (direct, waitlist, etc.). */
+  acceptanceType?: AcceptanceType;
+  /** Participant's ranking. */
+  ranking?: number;
   /** Seed number assigned (null if unseeded). */
   seed?: number | null;
   /** Registration date. */
@@ -49,6 +54,8 @@ export class Registration {
   public readonly tournamentId: string;
   public readonly categoryId: string;
   public readonly status: RegistrationStatus;
+  public readonly acceptanceType: AcceptanceType;
+  public readonly ranking: number;
   public readonly seed: number | null;
   public readonly registeredAt: Date;
   public readonly updatedAt: Date;
@@ -59,27 +66,26 @@ export class Registration {
     this.tournamentId = props.tournamentId;
     this.categoryId = props.categoryId;
     this.status = props.status ?? RegistrationStatus.PENDING;
+    this.acceptanceType = props.acceptanceType ?? AcceptanceType.DIRECT_ACCEPTANCE;
+    this.ranking = props.ranking ?? 0;
     this.seed = props.seed ?? null;
     this.registeredAt = props.registeredAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
   }
 
   /**
-   * Checks whether this registration can transition to the given status.
-   *
-   * @param newStatus - The target status to transition to
-   * @returns True if the transition is valid per the state machine
+   * Accepts this registration.
    */
-  public canTransitionTo(newStatus: RegistrationStatus): boolean {
+  public accept(): void {
     throw new Error('Not implemented');
   }
 
   /**
-   * Checks whether this registration is confirmed and the participant is in the draw.
+   * Withdraws this registration at the specified time.
    *
-   * @returns True if registration status is CONFIRMED
+   * @param time - The withdrawal timestamp
    */
-  public isConfirmed(): boolean {
+  public withdraw(time: string): void {
     throw new Error('Not implemented');
   }
 }

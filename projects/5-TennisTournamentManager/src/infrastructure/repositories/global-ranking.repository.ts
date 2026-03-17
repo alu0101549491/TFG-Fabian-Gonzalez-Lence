@@ -71,11 +71,11 @@ export class GlobalRankingRepositoryImpl implements IGlobalRankingRepository {
   }
 
   /**
-   * Retrieves all global rankings for a specific participant.
+   * Retrieves the global ranking for a specific participant.
    * @param participantId - The participant's identifier
-   * @returns Promise resolving to an array of global rankings
+   * @returns Promise resolving to the global ranking or null if not found
    */
-  public async findByParticipantId(participantId: string): Promise<GlobalRanking[]> {
+  public async findByParticipant(participantId: string): Promise<GlobalRanking | null> {
     throw new Error('Not implemented');
   }
 

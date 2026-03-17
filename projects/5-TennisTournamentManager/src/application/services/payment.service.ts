@@ -30,16 +30,17 @@ export class PaymentService implements IPaymentService {
   public constructor(
     private readonly paymentRepository: IPaymentRepository,
     private readonly registrationRepository: IRegistrationRepository,
+    // TODO: inject IPaymentGateway
   ) {}
 
   /**
-   * Initiates a payment for a tournament registration.
+   * Processes a payment for a tournament registration.
    *
    * @param data - Payment initiation data
    * @param participantId - ID of the participant making the payment
-   * @returns Initiated payment information
+   * @returns Processed payment information
    */
-  public async initiatePayment(data: InitiatePaymentDto, participantId: string): Promise<PaymentDto> {
+  public async processPayment(data: InitiatePaymentDto, participantId: string): Promise<PaymentDto> {
     throw new Error('Not implemented');
   }
 
@@ -64,13 +65,13 @@ export class PaymentService implements IPaymentService {
   }
 
   /**
-   * Processes a refund for a payment.
+   * Refunds a payment.
    *
    * @param paymentId - ID of the payment to refund
    * @param userId - ID of the user processing the refund
    * @returns Updated payment information with refund details
    */
-  public async processRefund(paymentId: string, userId: string): Promise<PaymentDto> {
+  public async refundPayment(paymentId: string, userId: string): Promise<PaymentDto> {
     throw new Error('Not implemented');
   }
 

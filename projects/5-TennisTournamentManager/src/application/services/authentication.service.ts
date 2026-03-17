@@ -32,10 +32,11 @@ export class AuthenticationService implements IAuthenticationService {
   /**
    * Authenticates a user and returns a JWT token.
    *
-   * @param data - Login credentials
+   * @param username - User's username
+   * @param password - User's password
    * @returns Authentication response with token and user data
    */
-  public async login(data: LoginDto): Promise<AuthResponseDto> {
+  public async login(username: string, password: string): Promise<AuthResponseDto> {
     throw new Error('Not implemented');
   }
 
@@ -50,12 +51,12 @@ export class AuthenticationService implements IAuthenticationService {
   }
 
   /**
-   * Validates a JWT token and returns the associated user.
+   * Validates a session token.
    *
-   * @param token - JWT token to validate
-   * @returns User associated with the token
+   * @param token - Session token to validate
+   * @returns True if the session is valid, false otherwise
    */
-  public async validateToken(token: string): Promise<UserDto> {
+  public async validateSession(token: string): Promise<boolean> {
     throw new Error('Not implemented');
   }
 

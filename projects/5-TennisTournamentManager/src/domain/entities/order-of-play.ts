@@ -19,6 +19,8 @@ export interface OrderOfPlayProps {
   id: string;
   /** ID of the tournament this scheduling belongs to. */
   tournamentId: string;
+  /** List of scheduled match IDs. */
+  matches?: string[];
   /** ID of the match being scheduled. */
   matchId: string;
   /** ID of the court assigned. */
@@ -46,6 +48,7 @@ export interface OrderOfPlayProps {
 export class OrderOfPlay {
   public readonly id: string;
   public readonly tournamentId: string;
+  public readonly matches: string[];
   public readonly matchId: string;
   public readonly courtId: string;
   public readonly scheduledDate: Date;
@@ -58,6 +61,7 @@ export class OrderOfPlay {
   constructor(props: OrderOfPlayProps) {
     this.id = props.id;
     this.tournamentId = props.tournamentId;
+    this.matches = props.matches ?? [];
     this.matchId = props.matchId;
     this.courtId = props.courtId;
     this.scheduledDate = props.scheduledDate;
@@ -69,12 +73,19 @@ export class OrderOfPlay {
   }
 
   /**
-   * Checks whether this entry conflicts with another entry on the same court.
-   *
-   * @param other - The other order-of-play entry to compare
-   * @returns True if there is a time overlap on the same court
+   * Publishes the order of play.
    */
-  public conflictsWith(other: OrderOfPlay): boolean {
+  public publish(): void {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Reschedules a match to a new time.
+   *
+   * @param matchId - The ID of the match to reschedule
+   * @param newTime - The new scheduled time
+   */
+  public rescheduleMatch(matchId: string, newTime: Date): void {
     throw new Error('Not implemented');
   }
 }

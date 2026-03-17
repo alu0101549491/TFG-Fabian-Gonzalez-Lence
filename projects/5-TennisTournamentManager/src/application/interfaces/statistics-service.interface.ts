@@ -41,4 +41,13 @@ export interface IStatisticsService {
    * @returns Updated participant statistics
    */
   recalculateStatistics(participantId: string): Promise<StatisticsDto>;
+
+  /**
+   * Retrieves head-to-head statistics between two players.
+   *
+   * @param player1Id - ID of the first player
+   * @param player2Id - ID of the second player
+   * @returns Head-to-head statistics
+   */
+  getHeadToHead(player1Id: string, player2Id: string): Promise<Record<string, unknown>>;
 }

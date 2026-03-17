@@ -24,7 +24,7 @@ export interface INotificationService {
    *
    * @param data - Notification data
    */
-  send(data: SendNotificationDto): Promise<void>;
+  sendNotification(data: SendNotificationDto): Promise<void>;
 
   /**
    * Retrieves all notifications for a recipient.
@@ -56,6 +56,13 @@ export interface INotificationService {
    * @param userId - ID of the user
    */
   markAllAsRead(userId: string): Promise<void>;
+
+  /**
+   * Sends bulk notifications to multiple recipients.
+   *
+   * @param data - Array of notification data
+   */
+  sendBulkNotifications(data: SendNotificationDto[]): Promise<void>;
 
   /**
    * Gets the count of unread notifications for a user.

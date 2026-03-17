@@ -18,6 +18,7 @@ import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {ITournamentRepository} from '@domain/repositories/tournament-repository.interface';
 import {ICategoryRepository} from '@domain/repositories/category-repository.interface';
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
+import {type INotificationService} from '../interfaces/notification-service.interface';
 
 /**
  * Tournament service implementation.
@@ -30,11 +31,13 @@ export class TournamentService implements ITournamentService {
    * @param tournamentRepository - Tournament repository for data access
    * @param categoryRepository - Category repository for category data access
    * @param authorizationService - Authorization service for access control
+   * @param notificationService - Notification service for tournament notifications
    */
   public constructor(
     private readonly tournamentRepository: ITournamentRepository,
     private readonly categoryRepository: ICategoryRepository,
     private readonly authorizationService: IAuthorizationService,
+    private readonly notificationService: INotificationService,
   ) {}
 
   /**
@@ -108,6 +111,15 @@ export class TournamentService implements ITournamentService {
    * @returns List of active tournaments
    */
   public async getActiveTournaments(): Promise<TournamentDto[]> {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Finalizes a tournament, marking it as complete.
+   *
+   * @param id - ID of the tournament to finalize
+   */
+  public async finalizeTournament(id: string): Promise<void> {
     throw new Error('Not implemented');
   }
 }

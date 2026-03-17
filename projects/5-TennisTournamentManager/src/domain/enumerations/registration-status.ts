@@ -19,11 +19,11 @@ export enum RegistrationStatus {
   /** Registration submitted, awaiting review or payment. */
   PENDING = 'PENDING',
   /** Registration confirmed and participant accepted into the draw. */
-  CONFIRMED = 'CONFIRMED',
+  ACCEPTED = 'ACCEPTED',
   /** Registration rejected by tournament administrator. */
   REJECTED = 'REJECTED',
   /** Participant placed on the waiting list. */
-  WAITLISTED = 'WAITLISTED',
+  WAITING_LIST = 'WAITING_LIST',
   /** Registration cancelled by the participant. */
   CANCELLED = 'CANCELLED',
   /** Participant withdrew after confirmation. */

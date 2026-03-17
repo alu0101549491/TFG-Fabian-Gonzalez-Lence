@@ -36,6 +36,7 @@ export class RegistrationService implements IRegistrationService {
     private readonly tournamentRepository: ITournamentRepository,
     private readonly categoryRepository: ICategoryRepository,
     private readonly notificationService: INotificationService,
+    // TODO: inject QuotaManager
   ) {}
 
   /**
@@ -45,7 +46,7 @@ export class RegistrationService implements IRegistrationService {
    * @param participantId - ID of the participant registering
    * @returns Created registration information
    */
-  public async register(data: CreateRegistrationDto, participantId: string): Promise<RegistrationDto> {
+  public async registerParticipant(data: CreateRegistrationDto, participantId: string): Promise<RegistrationDto> {
     throw new Error('Not implemented');
   }
 
@@ -61,12 +62,13 @@ export class RegistrationService implements IRegistrationService {
   }
 
   /**
-   * Cancels a registration.
+   * Withdraws a registration.
    *
-   * @param registrationId - ID of the registration to cancel
-   * @param userId - ID of the user performing the cancellation
+   * @param registrationId - ID of the registration to withdraw
+   * @param time - Withdrawal time
+   * @param userId - ID of the user performing the withdrawal
    */
-  public async cancelRegistration(registrationId: string, userId: string): Promise<void> {
+  public async withdrawRegistration(registrationId: string, time: string, userId: string): Promise<void> {
     throw new Error('Not implemented');
   }
 

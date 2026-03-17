@@ -24,9 +24,9 @@ export interface StatisticsProps {
   /** Total matches played. */
   totalMatches?: number;
   /** Total matches won. */
-  totalWins?: number;
+  wins?: number;
   /** Total matches lost. */
-  totalLosses?: number;
+  losses?: number;
   /** Total sets won. */
   totalSetsWon?: number;
   /** Total sets lost. */
@@ -60,8 +60,8 @@ export class Statistics {
   public readonly participantId: string | null;
   public readonly tournamentId: string | null;
   public readonly totalMatches: number;
-  public readonly totalWins: number;
-  public readonly totalLosses: number;
+  public readonly wins: number;
+  public readonly losses: number;
   public readonly totalSetsWon: number;
   public readonly totalSetsLost: number;
   public readonly totalGamesWon: number;
@@ -78,8 +78,8 @@ export class Statistics {
     this.participantId = props.participantId ?? null;
     this.tournamentId = props.tournamentId ?? null;
     this.totalMatches = props.totalMatches ?? 0;
-    this.totalWins = props.totalWins ?? 0;
-    this.totalLosses = props.totalLosses ?? 0;
+    this.wins = props.wins ?? 0;
+    this.losses = props.losses ?? 0;
     this.totalSetsWon = props.totalSetsWon ?? 0;
     this.totalSetsLost = props.totalSetsLost ?? 0;
     this.totalGamesWon = props.totalGamesWon ?? 0;
@@ -93,20 +93,11 @@ export class Statistics {
   }
 
   /**
-   * Calculates the win percentage.
+   * Updates statistics from a match result.
    *
-   * @returns Win percentage as a value between 0 and 100
+   * @param match - The match data to update from
    */
-  public getWinPercentage(): number {
-    throw new Error('Not implemented');
-  }
-
-  /**
-   * Calculates the set win ratio.
-   *
-   * @returns Ratio of sets won to sets lost
-   */
-  public getSetRatio(): number {
+  public updateFromMatch(match: Record<string, unknown>): void {
     throw new Error('Not implemented');
   }
 }

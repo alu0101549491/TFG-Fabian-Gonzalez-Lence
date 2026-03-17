@@ -15,24 +15,14 @@
  * Represents the type/category of a system notification.
  */
 export enum NotificationType {
-  /** Match schedule assignment or change. */
+  /** Registration has been confirmed (FR52). */
+  REGISTRATION_CONFIRMED = 'REGISTRATION_CONFIRMED',
+  /** A match has been scheduled (FR52). */
   MATCH_SCHEDULED = 'MATCH_SCHEDULED',
-  /** Match result has been recorded. */
-  RESULT_RECORDED = 'RESULT_RECORDED',
-  /** Registration status change (confirmed, rejected, waitlisted). */
-  REGISTRATION_UPDATE = 'REGISTRATION_UPDATE',
-  /** Tournament status change (started, completed, cancelled). */
-  TOURNAMENT_UPDATE = 'TOURNAMENT_UPDATE',
-  /** New announcement published. */
-  ANNOUNCEMENT = 'ANNOUNCEMENT',
-  /** Draw/bracket has been generated or updated. */
-  DRAW_PUBLISHED = 'DRAW_PUBLISHED',
-  /** Sanction or penalty applied. */
-  SANCTION_APPLIED = 'SANCTION_APPLIED',
-  /** Payment confirmation or reminder. */
-  PAYMENT_UPDATE = 'PAYMENT_UPDATE',
-  /** General system notification. */
-  SYSTEM = 'SYSTEM',
+  /** A result has been entered for a match (FR52). */
+  RESULT_ENTERED = 'RESULT_ENTERED',
+  /** The order of play has been published (FR52). */
+  ORDER_OF_PLAY_PUBLISHED = 'ORDER_OF_PLAY_PUBLISHED',
 }
 
 /**

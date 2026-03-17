@@ -19,20 +19,21 @@ import {StandingDto} from '../dto';
  */
 export interface IStandingService {
   /**
-   * Retrieves all standings for a bracket.
+   * Calculates all standings for a bracket.
    *
    * @param bracketId - ID of the bracket
    * @returns List of standings sorted by position
    */
-  getStandingsByBracket(bracketId: string): Promise<StandingDto[]>;
+  calculateStandings(bracketId: string): Promise<StandingDto[]>;
 
   /**
-   * Recalculates standings for a bracket based on match results.
+   * Updates standings for a bracket based on a match result.
    *
    * @param bracketId - ID of the bracket
+   * @param result - Match result data
    * @returns Updated list of standings
    */
-  recalculateStandings(bracketId: string): Promise<StandingDto[]>;
+  updateStandings(bracketId: string, result: Record<string, unknown>): Promise<StandingDto[]>;
 
   /**
    * Retrieves the standing for a specific participant in a bracket.

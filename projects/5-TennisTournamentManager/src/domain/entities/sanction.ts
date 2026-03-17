@@ -29,10 +29,8 @@ export interface SanctionProps {
   type: SanctionType;
   /** Description/reason for the sanction. */
   reason: string;
-  /** Monetary fine amount (if applicable). */
-  fineAmount?: number | null;
-  /** Currency for the fine (ISO 4217). */
-  fineCurrency?: string | null;
+  /** Ranking points penalty (if applicable). */
+  pointsPenalty?: number;
   /** ID of the administrator who issued the sanction. */
   issuedBy: string;
   /** Timestamp when the sanction was issued. */
@@ -55,8 +53,7 @@ export class Sanction {
   public readonly matchId: string | null;
   public readonly type: SanctionType;
   public readonly reason: string;
-  public readonly fineAmount: number | null;
-  public readonly fineCurrency: string | null;
+  public readonly pointsPenalty: number;
   public readonly issuedBy: string;
   public readonly issuedAt: Date;
   public readonly isAppealed: boolean;
@@ -68,28 +65,16 @@ export class Sanction {
     this.matchId = props.matchId ?? null;
     this.type = props.type;
     this.reason = props.reason;
-    this.fineAmount = props.fineAmount ?? null;
-    this.fineCurrency = props.fineCurrency ?? null;
+    this.pointsPenalty = props.pointsPenalty ?? 0;
     this.issuedBy = props.issuedBy;
     this.issuedAt = props.issuedAt ?? new Date();
     this.isAppealed = props.isAppealed ?? false;
   }
 
   /**
-   * Checks whether this sanction involves a monetary fine.
-   *
-   * @returns True if the sanction includes a fine amount
+   * Applies this sanction.
    */
-  public hasFine(): boolean {
-    throw new Error('Not implemented');
-  }
-
-  /**
-   * Checks whether this sanction results in match disqualification.
-   *
-   * @returns True if the sanction type is DISQUALIFICATION
-   */
-  public isDisqualification(): boolean {
+  public apply(): void {
     throw new Error('Not implemented');
   }
 }

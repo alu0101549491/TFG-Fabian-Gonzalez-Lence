@@ -19,13 +19,13 @@ import {InitiatePaymentDto, PaymentDto} from '../dto';
  */
 export interface IPaymentService {
   /**
-   * Initiates a payment for a tournament registration.
+   * Processes a payment for a tournament registration.
    *
    * @param data - Payment initiation data
    * @param participantId - ID of the participant making the payment
-   * @returns Initiated payment information
+   * @returns Processed payment information
    */
-  initiatePayment(data: InitiatePaymentDto, participantId: string): Promise<PaymentDto>;
+  processPayment(data: InitiatePaymentDto, participantId: string): Promise<PaymentDto>;
 
   /**
    * Retrieves a payment by its ID.
@@ -44,13 +44,13 @@ export interface IPaymentService {
   getPaymentsByParticipant(participantId: string): Promise<PaymentDto[]>;
 
   /**
-   * Processes a refund for a payment.
+   * Refunds a payment.
    *
    * @param paymentId - ID of the payment to refund
    * @param userId - ID of the user processing the refund
    * @returns Updated payment information with refund details
    */
-  processRefund(paymentId: string, userId: string): Promise<PaymentDto>;
+  refundPayment(paymentId: string, userId: string): Promise<PaymentDto>;
 
   /**
    * Handles payment gateway webhook notifications.

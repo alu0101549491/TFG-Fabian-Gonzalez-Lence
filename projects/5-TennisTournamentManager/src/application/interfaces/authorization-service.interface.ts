@@ -53,4 +53,13 @@ export interface IAuthorizationService {
    * @returns True if the session is valid, false otherwise
    */
   validateSession(userId: string): Promise<boolean>;
+
+  /**
+   * Checks whether a user can modify a specific bracket.
+   *
+   * @param userId - ID of the user
+   * @param bracketId - ID of the bracket
+   * @returns True if the user can modify the bracket, false otherwise
+   */
+  canModifyBracket(userId: string, bracketId: string): Promise<boolean>;
 }

@@ -25,7 +25,7 @@ export interface IRegistrationService {
    * @param participantId - ID of the participant registering
    * @returns Created registration information
    */
-  register(data: CreateRegistrationDto, participantId: string): Promise<RegistrationDto>;
+  registerParticipant(data: CreateRegistrationDto, participantId: string): Promise<RegistrationDto>;
 
   /**
    * Updates the status of a registration.
@@ -37,12 +37,13 @@ export interface IRegistrationService {
   updateStatus(data: UpdateRegistrationStatusDto, adminId: string): Promise<RegistrationDto>;
 
   /**
-   * Cancels a registration.
+   * Withdraws a registration from a tournament.
    *
-   * @param registrationId - ID of the registration to cancel
-   * @param userId - ID of the user performing the cancellation
+   * @param registrationId - ID of the registration to withdraw
+   * @param time - Withdrawal time reference
+   * @param userId - ID of the user performing the withdrawal
    */
-  cancelRegistration(registrationId: string, userId: string): Promise<void>;
+  withdrawRegistration(registrationId: string, time: string, userId: string): Promise<void>;
 
   /**
    * Retrieves all registrations for a tournament.

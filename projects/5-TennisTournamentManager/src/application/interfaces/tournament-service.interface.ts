@@ -74,6 +74,13 @@ export interface ITournamentService {
   updateStatus(tournamentId: string, status: TournamentStatus, userId: string): Promise<TournamentDto>;
 
   /**
+   * Finalizes a tournament, completing all operations and locking modifications.
+   *
+   * @param id - ID of the tournament to finalize
+   */
+  finalizeTournament(id: string): Promise<void>;
+
+  /**
    * Retrieves all active tournaments.
    *
    * @returns List of active tournaments

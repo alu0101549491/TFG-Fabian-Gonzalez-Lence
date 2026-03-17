@@ -20,8 +20,8 @@ import {NotificationChannel} from '../enumerations/notification-channel';
 export interface NotificationProps {
   /** Unique identifier for the notification. */
   id: string;
-  /** ID of the recipient user. */
-  recipientId: string;
+  /** ID of the user receiving the notification. */
+  userId: string;
   /** Type/category of the notification. */
   type: NotificationType;
   /** Delivery channel used. */
@@ -48,7 +48,7 @@ export interface NotificationProps {
  */
 export class Notification {
   public readonly id: string;
-  public readonly recipientId: string;
+  public readonly userId: string;
   public readonly type: NotificationType;
   public readonly channel: NotificationChannel;
   public readonly title: string;
@@ -60,7 +60,7 @@ export class Notification {
 
   constructor(props: NotificationProps) {
     this.id = props.id;
-    this.recipientId = props.recipientId;
+    this.userId = props.userId;
     this.type = props.type;
     this.channel = props.channel;
     this.title = props.title;
@@ -72,11 +72,9 @@ export class Notification {
   }
 
   /**
-   * Marks this notification as read.
-   *
-   * @returns A new Notification instance with isRead=true and readAt set
+   * Sends this notification.
    */
-  public markAsRead(): Notification {
+  public send(): void {
     throw new Error('Not implemented');
   }
 }

@@ -57,7 +57,7 @@ export interface IBracketRepository {
    * @param tournamentId - The unique identifier of the tournament
    * @returns Promise resolving to an array of brackets
    */
-  findByTournamentId(tournamentId: string): Promise<Bracket[]>;
+  findByTournament(tournamentId: string): Promise<Bracket[]>;
 
   /**
    * Finds a bracket for a specific category.

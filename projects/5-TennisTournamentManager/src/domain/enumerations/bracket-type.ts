@@ -16,13 +16,11 @@
  * Used by BracketGeneratorFactory (Factory Pattern) to select the appropriate generator.
  */
 export enum BracketType {
-  /** Round Robin: all participants play against each other in the group. */
-  ROUND_ROBIN = 'ROUND_ROBIN',
   /** Single elimination knockout: loser is eliminated immediately. */
   SINGLE_ELIMINATION = 'SINGLE_ELIMINATION',
-  /** Double elimination: participant must lose twice to be eliminated. */
-  DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION',
-  /** Match Play: head-to-head format with cumulative scoring. */
+  /** Round Robin: all participants play against each other in the group. */
+  ROUND_ROBIN = 'ROUND_ROBIN',
+  /** Match Play: open format without fixed draw structure (FR3/FR18). */
   MATCH_PLAY = 'MATCH_PLAY',
 }
 

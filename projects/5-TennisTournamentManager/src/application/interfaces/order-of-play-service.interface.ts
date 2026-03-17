@@ -54,21 +54,20 @@ export interface IOrderOfPlayService {
   getByCourt(courtId: string, date: Date): Promise<OrderOfPlayDto[]>;
 
   /**
-   * Publishes the schedule for a specific date, notifying participants.
+   * Publishes the order of play, notifying participants.
    *
-   * @param tournamentId - ID of the tournament
-   * @param date - Date to publish
+   * @param id - ID of the order of play entry to publish
    * @param userId - ID of the user publishing the schedule
    */
-  publishSchedule(tournamentId: string, date: Date, userId: string): Promise<void>;
+  publishOrderOfPlay(id: string, userId: string): Promise<void>;
 
   /**
-   * Automatically generates order of play entries for a date.
+   * Generates order of play entries for a tournament date.
    *
    * @param tournamentId - ID of the tournament
    * @param date - Date to generate schedule for
-   * @param userId - ID of the user triggering auto-generation
+   * @param userId - ID of the user triggering generation
    * @returns Generated order of play entries
    */
-  autoGenerate(tournamentId: string, date: Date, userId: string): Promise<OrderOfPlayDto[]>;
+  generateOrderOfPlay(tournamentId: string, date: Date, userId: string): Promise<OrderOfPlayDto[]>;
 }

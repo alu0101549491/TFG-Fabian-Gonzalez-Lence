@@ -58,7 +58,7 @@ export interface IMatchRepository {
    * @param bracketId - The unique identifier of the bracket
    * @returns Promise resolving to an array of matches
    */
-  findByBracketId(bracketId: string): Promise<Match[]>;
+  findByBracket(bracketId: string): Promise<Match[]>;
 
   /**
    * Finds all matches belonging to a specific phase.

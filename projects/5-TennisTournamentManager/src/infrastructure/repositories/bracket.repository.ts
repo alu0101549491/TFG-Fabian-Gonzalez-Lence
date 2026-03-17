@@ -75,16 +75,16 @@ export class BracketRepositoryImpl implements IBracketRepository {
    * @param tournamentId - The tournament identifier
    * @returns Promise resolving to an array of brackets
    */
-  public async findByTournamentId(tournamentId: string): Promise<Bracket[]> {
+  public async findByTournament(tournamentId: string): Promise<Bracket[]> {
     throw new Error('Not implemented');
   }
 
   /**
-   * Retrieves all brackets for a specific category.
+   * Retrieves a bracket for a specific category.
    * @param categoryId - The category identifier
-   * @returns Promise resolving to an array of brackets
+   * @returns Promise resolving to the bracket or null if not found
    */
-  public async findByCategoryId(categoryId: string): Promise<Bracket[]> {
+  public async findByCategoryId(categoryId: string): Promise<Bracket | null> {
     throw new Error('Not implemented');
   }
 }

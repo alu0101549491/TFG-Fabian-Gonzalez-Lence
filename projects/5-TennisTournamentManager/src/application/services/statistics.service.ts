@@ -61,4 +61,15 @@ export class StatisticsService implements IStatisticsService {
   public async recalculateStatistics(participantId: string): Promise<StatisticsDto> {
     throw new Error('Not implemented');
   }
+
+  /**
+   * Retrieves head-to-head statistics between two players.
+   *
+   * @param player1Id - ID of the first player
+   * @param player2Id - ID of the second player
+   * @returns Head-to-head statistics
+   */
+  public async getHeadToHead(player1Id: string, player2Id: string): Promise<Record<string, unknown>> {
+    throw new Error('Not implemented');
+  }
 }

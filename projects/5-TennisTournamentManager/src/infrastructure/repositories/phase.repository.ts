@@ -71,11 +71,11 @@ export class PhaseRepositoryImpl implements IPhaseRepository {
   }
 
   /**
-   * Retrieves all phases belonging to a specific bracket.
-   * @param bracketId - The bracket identifier
+   * Retrieves all phases belonging to a specific tournament.
+   * @param tournamentId - The tournament identifier
    * @returns Promise resolving to an array of phases
    */
-  public async findByBracketId(bracketId: string): Promise<Phase[]> {
+  public async findByTournament(tournamentId: string): Promise<Phase[]> {
     throw new Error('Not implemented');
   }
 }

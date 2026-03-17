@@ -81,29 +81,11 @@ export class Standing {
   }
 
   /**
-   * Calculates the set difference (sets won - sets lost).
+   * Updates the standings statistics based on a match result.
    *
-   * @returns The net set difference
+   * @param result - The match result data
    */
-  public getSetDifference(): number {
-    throw new Error('Not implemented');
-  }
-
-  /**
-   * Calculates the game difference (games won - games lost).
-   *
-   * @returns The net game difference
-   */
-  public getGameDifference(): number {
-    throw new Error('Not implemented');
-  }
-
-  /**
-   * Calculates the win ratio (matches won / matches played).
-   *
-   * @returns The win ratio as a decimal (0.0 to 1.0)
-   */
-  public getWinRatio(): number {
+  public updateStats(result: Record<string, unknown>): void {
     throw new Error('Not implemented');
   }
 }

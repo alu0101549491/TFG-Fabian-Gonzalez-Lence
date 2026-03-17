@@ -25,16 +25,16 @@ export interface MatchProps {
   phaseId: string;
   /** ID of the court assigned (null if not yet assigned). */
   courtId?: string | null;
-  /** ID of the first participant. */
-  participant1Id: string;
-  /** ID of the second participant. */
-  participant2Id: string;
+  /** ID of the first player. */
+  player1Id: string;
+  /** ID of the second player. */
+  player2Id: string;
   /** ID of the match winner (null if not yet decided). */
   winnerId?: string | null;
   /** Current match status. */
   status?: MatchStatus;
   /** Scheduled start time. */
-  scheduledAt?: Date | null;
+  scheduledTime?: Date | null;
   /** Actual start time. */
   startedAt?: Date | null;
   /** Actual end time. */
@@ -62,11 +62,11 @@ export class Match {
   public readonly bracketId: string;
   public readonly phaseId: string;
   public readonly courtId: string | null;
-  public readonly participant1Id: string;
-  public readonly participant2Id: string;
+  public readonly player1Id: string;
+  public readonly player2Id: string;
   public readonly winnerId: string | null;
   public readonly status: MatchStatus;
-  public readonly scheduledAt: Date | null;
+  public readonly scheduledTime: Date | null;
   public readonly startedAt: Date | null;
   public readonly completedAt: Date | null;
   public readonly matchOrder: number;
@@ -78,11 +78,11 @@ export class Match {
     this.bracketId = props.bracketId;
     this.phaseId = props.phaseId;
     this.courtId = props.courtId ?? null;
-    this.participant1Id = props.participant1Id;
-    this.participant2Id = props.participant2Id;
+    this.player1Id = props.player1Id;
+    this.player2Id = props.player2Id;
     this.winnerId = props.winnerId ?? null;
     this.status = props.status ?? MatchStatus.SCHEDULED;
-    this.scheduledAt = props.scheduledAt ?? null;
+    this.scheduledTime = props.scheduledTime ?? null;
     this.startedAt = props.startedAt ?? null;
     this.completedAt = props.completedAt ?? null;
     this.matchOrder = props.matchOrder ?? 0;
@@ -91,31 +91,29 @@ export class Match {
   }
 
   /**
-   * Checks whether the match can transition to the given status.
+   * Records the result of this match.
    *
-   * @param newStatus - The target status to transition to
-   * @returns True if the transition is valid per the state machine
+   * @param result - The match result data
    */
-  public canTransitionTo(newStatus: MatchStatus): boolean {
+  public recordResult(result: Record<string, unknown>): void {
     throw new Error('Not implemented');
   }
 
   /**
-   * Checks whether a given participant is involved in this match.
+   * Suspends the match for the given reason.
    *
-   * @param participantId - The ID of the participant to check
-   * @returns True if the participant is one of the two players
+   * @param reason - The reason for suspension
    */
-  public hasParticipant(participantId: string): boolean {
+  public suspend(reason: string): void {
     throw new Error('Not implemented');
   }
 
   /**
-   * Checks whether the match has been decided (has a winner or is a walkover).
+   * Assigns a walkover to the specified winner.
    *
-   * @returns True if the match result is final
+   * @param winnerId - The ID of the player receiving the walkover
    */
-  public isDecided(): boolean {
+  public assignWalkover(winnerId: string): void {
     throw new Error('Not implemented');
   }
 }

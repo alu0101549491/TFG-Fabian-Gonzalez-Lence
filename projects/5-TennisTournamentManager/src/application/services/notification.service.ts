@@ -28,6 +28,7 @@ export class NotificationService implements INotificationService {
    */
   public constructor(
     private readonly notificationRepository: INotificationRepository,
+    // TODO: inject NotificationChannelFactory
   ) {}
 
   /**
@@ -35,7 +36,16 @@ export class NotificationService implements INotificationService {
    *
    * @param data - Notification data
    */
-  public async send(data: SendNotificationDto): Promise<void> {
+  public async sendNotification(data: SendNotificationDto): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Sends bulk notifications to multiple recipients.
+   *
+   * @param data - Array of notification data
+   */
+  public async sendBulkNotifications(data: SendNotificationDto[]): Promise<void> {
     throw new Error('Not implemented');
   }
 

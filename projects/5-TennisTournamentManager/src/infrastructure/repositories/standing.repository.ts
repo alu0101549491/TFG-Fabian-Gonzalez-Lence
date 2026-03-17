@@ -75,7 +75,7 @@ export class StandingRepositoryImpl implements IStandingRepository {
    * @param bracketId - The bracket identifier
    * @returns Promise resolving to an array of standings
    */
-  public async findByBracketId(bracketId: string): Promise<Standing[]> {
+  public async findByBracket(bracketId: string): Promise<Standing[]> {
     throw new Error('Not implemented');
   }
 

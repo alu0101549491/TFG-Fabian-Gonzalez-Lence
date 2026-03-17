@@ -15,6 +15,8 @@ import {TournamentStatus} from '../enumerations/tournament-status';
 import {Surface} from '../enumerations/surface';
 import {AcceptanceType} from '../enumerations/acceptance-type';
 import {RankingSystem} from '../enumerations/ranking-system';
+import {Category} from './category';
+import {Court} from './court';
 
 /**
  * Properties for creating a Tournament entity.
@@ -52,6 +54,12 @@ export interface TournamentProps {
   registrationOpenDate?: Date;
   /** Registration closing date. */
   registrationCloseDate?: Date;
+  /** Categories within this tournament. */
+  categories?: Category[];
+  /** Courts available for this tournament. */
+  courts?: Court[];
+  /** Tournament configuration settings. */
+  config?: Record<string, unknown>;
   /** Creation timestamp. */
   createdAt?: Date;
   /** Last update timestamp. */
@@ -85,6 +93,9 @@ export class Tournament {
   public readonly organizerId: string;
   public readonly registrationOpenDate: Date | null;
   public readonly registrationCloseDate: Date | null;
+  public readonly categories: Category[];
+  public readonly courts: Court[];
+  public readonly config: Record<string, unknown>;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
 
@@ -105,6 +116,9 @@ export class Tournament {
     this.organizerId = props.organizerId;
     this.registrationOpenDate = props.registrationOpenDate ?? null;
     this.registrationCloseDate = props.registrationCloseDate ?? null;
+    this.categories = props.categories ?? [];
+    this.courts = props.courts ?? [];
+    this.config = props.config ?? {};
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
   }
@@ -119,11 +133,18 @@ export class Tournament {
   }
 
   /**
-   * Checks whether the tournament has been completed.
+   * Checks whether the tournament can accept new registrations.
    *
-   * @returns True if the tournament status is COMPLETED
+   * @returns True if the tournament accepts registrations
    */
-  public isCompleted(): boolean {
+  public canAcceptRegistrations(): boolean {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Finalizes the tournament, marking it as complete.
+   */
+  public finalize(): void {
     throw new Error('Not implemented');
   }
 

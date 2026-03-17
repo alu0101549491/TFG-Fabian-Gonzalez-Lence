@@ -12,6 +12,7 @@
  */
 
 import {BracketType} from '../enumerations/bracket-type';
+import {Match} from './match';
 
 /**
  * Properties for creating a Bracket entity.
@@ -21,8 +22,8 @@ export interface BracketProps {
   id: string;
   /** ID of the tournament this bracket belongs to. */
   tournamentId: string;
-  /** ID of the category this bracket is for. */
-  categoryId: string;
+  /** ID of the phase this bracket belongs to. */
+  phaseId: string;
   /** Type of bracket format. */
   bracketType: BracketType;
   /** Number of participants in the bracket. */
@@ -31,6 +32,10 @@ export interface BracketProps {
   totalRounds?: number;
   /** Serialized bracket structure (JSON). */
   structure?: string;
+  /** Matches within this bracket. */
+  matches?: Match[];
+  /** Seed assignments for participants. */
+  seeds?: string[];
   /** Whether the bracket has been finalized/published. */
   isPublished?: boolean;
   /** Creation timestamp. */
@@ -47,41 +52,45 @@ export interface BracketProps {
 export class Bracket {
   public readonly id: string;
   public readonly tournamentId: string;
-  public readonly categoryId: string;
+  public readonly phaseId: string;
   public readonly bracketType: BracketType;
   public readonly size: number;
   public readonly totalRounds: number;
   public readonly structure: string;
+  public readonly matches: Match[];
+  public readonly seeds: string[];
   public readonly isPublished: boolean;
   public readonly createdAt: Date;
 
   constructor(props: BracketProps) {
     this.id = props.id;
     this.tournamentId = props.tournamentId;
-    this.categoryId = props.categoryId;
+    this.phaseId = props.phaseId;
     this.bracketType = props.bracketType;
     this.size = props.size;
     this.totalRounds = props.totalRounds ?? 0;
     this.structure = props.structure ?? '{}';
+    this.matches = props.matches ?? [];
+    this.seeds = props.seeds ?? [];
     this.isPublished = props.isPublished ?? false;
     this.createdAt = props.createdAt ?? new Date();
   }
 
   /**
-   * Calculates the total number of matches required for this bracket.
+   * Generates the bracket structure with the given participants.
    *
-   * @returns The total number of matches
+   * @param participants - List of participant IDs to place in the bracket
    */
-  public getTotalMatches(): number {
+  public generate(participants: string[]): void {
     throw new Error('Not implemented');
   }
 
   /**
-   * Checks whether the bracket structure is complete and ready for publication.
+   * Regenerates the bracket, optionally keeping existing results.
    *
-   * @returns True if all positions in the bracket are filled
+   * @param keepResults - Whether to preserve existing match results
    */
-  public isComplete(): boolean {
+  public regenerate(keepResults: boolean): void {
     throw new Error('Not implemented');
   }
 }

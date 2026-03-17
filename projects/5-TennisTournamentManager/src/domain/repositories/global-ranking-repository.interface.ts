@@ -57,7 +57,7 @@ export interface IGlobalRankingRepository {
    * @param participantId - The unique identifier of the participant
    * @returns Promise resolving to the global ranking if found, null otherwise
    */
-  findByParticipantId(participantId: string): Promise<GlobalRanking | null>;
+  findByParticipant(participantId: string): Promise<GlobalRanking | null>;
 
   /**
    * Retrieves the top N participants in the global ranking.

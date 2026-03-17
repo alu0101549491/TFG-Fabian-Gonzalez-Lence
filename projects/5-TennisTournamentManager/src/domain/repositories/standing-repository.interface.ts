@@ -57,7 +57,7 @@ export interface IStandingRepository {
    * @param bracketId - The unique identifier of the bracket
    * @returns Promise resolving to an array of standings
    */
-  findByBracketId(bracketId: string): Promise<Standing[]>;
+  findByBracket(bracketId: string): Promise<Standing[]>;
 
   /**
    * Finds all standings for a specific participant.

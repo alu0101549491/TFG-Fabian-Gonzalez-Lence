@@ -15,16 +15,14 @@
  * Represents the surface type of a tennis court.
  */
 export enum Surface {
-  /** Natural grass surface (e.g., Wimbledon). */
-  GRASS = 'GRASS',
-  /** Clay/terre battue surface (e.g., Roland Garros). */
-  CLAY = 'CLAY',
   /** Hard court surface (e.g., US Open, Australian Open). */
   HARD = 'HARD',
-  /** Carpet or indoor surface. */
-  CARPET = 'CARPET',
-  /** Synthetic or artificial surface. */
-  SYNTHETIC = 'SYNTHETIC',
+  /** Clay/terre battue surface (e.g., Roland Garros). */
+  CLAY = 'CLAY',
+  /** Natural grass surface (e.g., Wimbledon). */
+  GRASS = 'GRASS',
+  /** Indoor court surface. */
+  INDOOR = 'INDOOR',
 }
 
 /**

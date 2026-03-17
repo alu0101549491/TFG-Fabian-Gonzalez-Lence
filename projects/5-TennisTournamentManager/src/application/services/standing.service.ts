@@ -30,25 +30,27 @@ export class StandingService implements IStandingService {
   public constructor(
     private readonly standingRepository: IStandingRepository,
     private readonly matchRepository: IMatchRepository,
+    // TODO: inject TiebreakResolver
   ) {}
 
   /**
-   * Retrieves all standings for a bracket.
+   * Calculates all standings for a bracket.
    *
    * @param bracketId - ID of the bracket
    * @returns List of standings sorted by position
    */
-  public async getStandingsByBracket(bracketId: string): Promise<StandingDto[]> {
+  public async calculateStandings(bracketId: string): Promise<StandingDto[]> {
     throw new Error('Not implemented');
   }
 
   /**
-   * Recalculates standings for a bracket based on match results.
+   * Updates standings for a bracket based on a match result.
    *
    * @param bracketId - ID of the bracket
+   * @param result - Match result data
    * @returns Updated list of standings
    */
-  public async recalculateStandings(bracketId: string): Promise<StandingDto[]> {
+  public async updateStandings(bracketId: string, result: Record<string, unknown>): Promise<StandingDto[]> {
     throw new Error('Not implemented');
   }
 

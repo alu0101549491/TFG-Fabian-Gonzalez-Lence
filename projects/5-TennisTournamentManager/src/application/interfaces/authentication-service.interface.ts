@@ -21,10 +21,11 @@ export interface IAuthenticationService {
   /**
    * Authenticates a user and returns a JWT token.
    *
-   * @param data - Login credentials
+   * @param username - Username for authentication
+   * @param password - Password for authentication
    * @returns Authentication response with token and user data
    */
-  login(data: LoginDto): Promise<AuthResponseDto>;
+  login(username: string, password: string): Promise<AuthResponseDto>;
 
   /**
    * Registers a new user account.
@@ -35,12 +36,12 @@ export interface IAuthenticationService {
   register(data: RegisterUserDto): Promise<UserDto>;
 
   /**
-   * Validates a JWT token and returns the associated user.
+   * Validates a session token and returns whether it is valid.
    *
    * @param token - JWT token to validate
-   * @returns User associated with the token
+   * @returns True if the session is valid, false otherwise
    */
-  validateToken(token: string): Promise<UserDto>;
+  validateSession(token: string): Promise<boolean>;
 
   /**
    * Logs out the current user and invalidates the session.

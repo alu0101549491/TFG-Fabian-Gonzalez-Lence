@@ -16,22 +16,30 @@
  * Follows the State Pattern for valid transitions.
  */
 export enum MatchStatus {
-  /** Match scheduled but not yet started. */
+  /** Match scheduled but not yet started (TBP — To Be Played). */
   SCHEDULED = 'SCHEDULED',
-  /** Match is currently being played. */
+  /** Match is currently being played (IP — In Progress). */
   IN_PROGRESS = 'IN_PROGRESS',
-  /** Match completed with a result recorded. */
+  /** Match completed with a result recorded (CO — Completed). */
   COMPLETED = 'COMPLETED',
-  /** Match suspended due to weather or other circumstances. */
+  /** Match suspended due to weather or other circumstances (SUS). */
   SUSPENDED = 'SUSPENDED',
-  /** Match postponed to a later date/time. */
-  POSTPONED = 'POSTPONED',
-  /** Match cancelled and will not be played. */
-  CANCELLED = 'CANCELLED',
-  /** Match awarded by walkover (opponent did not appear). */
+  /** Match awarded by walkover — opponent did not appear (WO). */
   WALKOVER = 'WALKOVER',
-  /** Match result under dispute or review. */
-  UNDER_REVIEW = 'UNDER_REVIEW',
+  /** Match ended by retirement during play (RET). */
+  RETIRED = 'RETIRED',
+  /** Match abandoned without valid result (ABN). */
+  ABANDONED = 'ABANDONED',
+  /** Automatic pass without playing (BYE). */
+  BYE = 'BYE',
+  /** Match not played / not disputed (NP). */
+  NOT_PLAYED = 'NOT_PLAYED',
+  /** Match cancelled by organization (CAN). */
+  CANCELLED = 'CANCELLED',
+  /** Disciplinary disqualification (DEF — Player default). */
+  DEFAULT = 'DEFAULT',
+  /** Match without relevance for standings (DR — Dead rubber). */
+  DEAD_RUBBER = 'DEAD_RUBBER',
 }
 
 /**

@@ -36,6 +36,7 @@ export class OrderOfPlayService implements IOrderOfPlayService {
     private readonly matchRepository: IMatchRepository,
     private readonly courtRepository: ICourtRepository,
     private readonly notificationService: INotificationService,
+    // TODO: inject CourtScheduler
   ) {}
 
   /**
@@ -82,13 +83,12 @@ export class OrderOfPlayService implements IOrderOfPlayService {
   }
 
   /**
-   * Publishes the schedule for a specific date, notifying participants.
+   * Publishes the order of play for a specific date, notifying participants.
    *
-   * @param tournamentId - ID of the tournament
-   * @param date - Date to publish
+   * @param id - ID of the order of play entry
    * @param userId - ID of the user publishing the schedule
    */
-  public async publishSchedule(tournamentId: string, date: Date, userId: string): Promise<void> {
+  public async publishOrderOfPlay(id: string, userId: string): Promise<void> {
     throw new Error('Not implemented');
   }
 
@@ -100,7 +100,7 @@ export class OrderOfPlayService implements IOrderOfPlayService {
    * @param userId - ID of the user triggering auto-generation
    * @returns Generated order of play entries
    */
-  public async autoGenerate(tournamentId: string, date: Date, userId: string): Promise<OrderOfPlayDto[]> {
+  public async generateOrderOfPlay(tournamentId: string, date: Date, userId: string): Promise<OrderOfPlayDto[]> {
     throw new Error('Not implemented');
   }
 }

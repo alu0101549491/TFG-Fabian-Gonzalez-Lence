@@ -17,14 +17,16 @@
 export interface PhaseProps {
   /** Unique identifier for the phase. */
   id: string;
-  /** ID of the bracket this phase belongs to. */
-  bracketId: string;
+  /** ID of the tournament this phase belongs to. */
+  tournamentId: string;
   /** Name of the phase (e.g., "Quarterfinals", "Group A - Round 1"). */
   name: string;
   /** Ordering index (1 = first phase, ascending). */
-  order: number;
+  sequenceOrder: number;
   /** Number of matches in this phase. */
   matchCount?: number;
+  /** ID of the next phase in sequence (null if final phase). */
+  nextPhaseId?: string | null;
   /** Whether all matches in this phase are completed. */
   isCompleted?: boolean;
 }
@@ -37,27 +39,29 @@ export interface PhaseProps {
  */
 export class Phase {
   public readonly id: string;
-  public readonly bracketId: string;
+  public readonly tournamentId: string;
   public readonly name: string;
-  public readonly order: number;
+  public readonly sequenceOrder: number;
   public readonly matchCount: number;
+  public readonly nextPhaseId: string | null;
   public readonly isCompleted: boolean;
 
   constructor(props: PhaseProps) {
     this.id = props.id;
-    this.bracketId = props.bracketId;
+    this.tournamentId = props.tournamentId;
     this.name = props.name;
-    this.order = props.order;
+    this.sequenceOrder = props.sequenceOrder;
     this.matchCount = props.matchCount ?? 0;
+    this.nextPhaseId = props.nextPhaseId ?? null;
     this.isCompleted = props.isCompleted ?? false;
   }
 
   /**
-   * Checks whether all matches in this phase have been completed.
+   * Links this phase to the next phase in the sequence.
    *
-   * @returns True if the phase is fully completed
+   * @param phaseId - The ID of the next phase
    */
-  public isPhaseCompleted(): boolean {
+  public linkToNextPhase(phaseId: string): void {
     throw new Error('Not implemented');
   }
 }

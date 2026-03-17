@@ -85,7 +85,7 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @param tournamentId - The tournament identifier
    * @returns Promise resolving to an array of registrations
    */
-  public async findByTournamentId(tournamentId: string): Promise<Registration[]> {
+  public async findByTournament(tournamentId: string): Promise<Registration[]> {
     throw new Error('Not implemented');
   }
 
@@ -99,11 +99,12 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
   }
 
   /**
-   * Retrieves all registrations with a specific status.
+   * Retrieves all registrations for a tournament with a specific status.
+   * @param tournamentId - The tournament identifier
    * @param status - The registration status to filter by
    * @returns Promise resolving to an array of registrations
    */
-  public async findByStatus(status: RegistrationStatus): Promise<Registration[]> {
+  public async findByStatus(tournamentId: string, status: RegistrationStatus): Promise<Registration[]> {
     throw new Error('Not implemented');
   }
 }

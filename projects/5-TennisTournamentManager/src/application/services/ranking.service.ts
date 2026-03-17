@@ -31,6 +31,7 @@ export class RankingService implements IRankingService {
   public constructor(
     private readonly globalRankingRepository: IGlobalRankingRepository,
     private readonly standingRepository: IStandingRepository,
+    // TODO: inject RankingCalculator
   ) {}
 
   /**
@@ -57,6 +58,27 @@ export class RankingService implements IRankingService {
    * Recalculates all global rankings based on tournament results.
    */
   public async recalculateRankings(): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Updates the global ranking for a participant based on a tournament result.
+   *
+   * @param participantId - ID of the participant
+   * @param result - Tournament result data
+   */
+  public async updateGlobalRanking(participantId: string, result: Record<string, unknown>): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Calculates seeding order for a category.
+   *
+   * @param categoryId - ID of the category
+   * @param count - Number of seeds to calculate
+   * @returns List of participant IDs in seeding order
+   */
+  public async calculateSeeds(categoryId: string, count: number): Promise<string[]> {
     throw new Error('Not implemented');
   }
 }

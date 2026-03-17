@@ -37,6 +37,10 @@ export interface ScoreProps {
   matchId: string;
   /** Array of set scores. */
   sets: SetScore[];
+  /** ID of the match winner. */
+  winnerId?: string | null;
+  /** Whether the score has been confirmed. */
+  isConfirmed?: boolean;
   /** Whether the match was a retirement (player withdrew mid-match). */
   isRetirement?: boolean;
   /** ID of the retiring participant (if applicable). */
@@ -55,6 +59,8 @@ export class Score {
   public readonly id: string;
   public readonly matchId: string;
   public readonly sets: SetScore[];
+  public readonly winnerId: string | null;
+  public readonly isConfirmed: boolean;
   public readonly isRetirement: boolean;
   public readonly retiredParticipantId: string | null;
   public readonly updatedAt: Date;
@@ -63,6 +69,8 @@ export class Score {
     this.id = props.id;
     this.matchId = props.matchId;
     this.sets = props.sets;
+    this.winnerId = props.winnerId ?? null;
+    this.isConfirmed = props.isConfirmed ?? false;
     this.isRetirement = props.isRetirement ?? false;
     this.retiredParticipantId = props.retiredParticipantId ?? null;
     this.updatedAt = props.updatedAt ?? new Date();
@@ -78,11 +86,11 @@ export class Score {
   }
 
   /**
-   * Calculates the total sets won by each participant.
+   * Checks whether this score needs confirmation.
    *
-   * @returns An object with sets won by participant 1 and participant 2
+   * @returns True if the score requires confirmation
    */
-  public getSetsWon(): {participant1: number; participant2: number} {
+  public needsConfirmation(): boolean {
     throw new Error('Not implemented');
   }
 }

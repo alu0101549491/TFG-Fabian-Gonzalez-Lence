@@ -39,4 +39,21 @@ export interface IRankingService {
    * Recalculates all global rankings based on tournament results.
    */
   recalculateRankings(): Promise<void>;
+
+  /**
+   * Updates global ranking for a participant based on tournament results.
+   *
+   * @param participantId - ID of the participant
+   * @param result - Tournament result data
+   */
+  updateGlobalRanking(participantId: string, result: Record<string, unknown>): Promise<void>;
+
+  /**
+   * Calculates seeding for a tournament category.
+   *
+   * @param categoryId - ID of the category
+   * @param count - Number of seeds to calculate
+   * @returns List of participant IDs in seeding order
+   */
+  calculateSeeds(categoryId: string, count: number): Promise<string[]>;
 }

@@ -30,7 +30,7 @@ export interface PaymentProps {
   /** Current payment status. */
   status?: PaymentStatus;
   /** External payment gateway transaction ID. */
-  externalTransactionId?: string | null;
+  transactionId?: string | null;
   /** Payment method description (e.g., "credit_card", "bank_transfer"). */
   paymentMethod?: string | null;
   /** Payment initiation timestamp. */
@@ -54,7 +54,7 @@ export class Payment {
   public readonly amount: number;
   public readonly currency: string;
   public readonly status: PaymentStatus;
-  public readonly externalTransactionId: string | null;
+  public readonly transactionId: string | null;
   public readonly paymentMethod: string | null;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
@@ -67,7 +67,7 @@ export class Payment {
     this.amount = props.amount;
     this.currency = props.currency;
     this.status = props.status ?? PaymentStatus.PENDING;
-    this.externalTransactionId = props.externalTransactionId ?? null;
+    this.transactionId = props.transactionId ?? null;
     this.paymentMethod = props.paymentMethod ?? null;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
@@ -75,20 +75,9 @@ export class Payment {
   }
 
   /**
-   * Checks whether the payment has been completed successfully.
-   *
-   * @returns True if the payment status is COMPLETED
+   * Processes the payment transaction.
    */
-  public isCompleted(): boolean {
-    throw new Error('Not implemented');
-  }
-
-  /**
-   * Checks whether the payment can be refunded.
-   *
-   * @returns True if the payment is in a refundable state
-   */
-  public isRefundable(): boolean {
+  public process(): void {
     throw new Error('Not implemented');
   }
 }

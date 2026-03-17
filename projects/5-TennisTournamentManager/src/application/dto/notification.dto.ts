@@ -16,7 +16,7 @@ import {NotificationChannel} from '@domain/enumerations/notification-channel';
 
 /** DTO for sending a notification. */
 export interface SendNotificationDto {
-  recipientId: string;
+  userId: string;
   type: NotificationType;
   channels: NotificationChannel[];
   title: string;
@@ -27,7 +27,7 @@ export interface SendNotificationDto {
 /** DTO for notification output representation. */
 export interface NotificationDto {
   id: string;
-  recipientId: string;
+  userId: string;
   type: NotificationType;
   channel: NotificationChannel;
   title: string;

@@ -29,6 +29,8 @@ export interface CourtProps {
   isIndoor?: boolean;
   /** Seating capacity of the court. */
   capacity?: number;
+  /** Available time slots for this court (value object placeholders). */
+  availableSlots?: string[];
   /** Whether the court is currently available for scheduling. */
   isAvailable?: boolean;
 }
@@ -46,6 +48,7 @@ export class Court {
   public readonly surface: Surface;
   public readonly isIndoor: boolean;
   public readonly capacity: number;
+  public readonly availableSlots: string[];
   public readonly isAvailable: boolean;
 
   constructor(props: CourtProps) {
@@ -55,6 +58,7 @@ export class Court {
     this.surface = props.surface;
     this.isIndoor = props.isIndoor ?? false;
     this.capacity = props.capacity ?? 0;
+    this.availableSlots = props.availableSlots ?? [];
     this.isAvailable = props.isAvailable ?? true;
   }
 

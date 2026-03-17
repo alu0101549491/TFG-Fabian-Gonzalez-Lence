@@ -17,16 +17,10 @@
 export enum SanctionType {
   /** Verbal warning for minor infractions. */
   WARNING = 'WARNING',
-  /** Point penalty during a match. */
-  POINT_PENALTY = 'POINT_PENALTY',
-  /** Game penalty during a match. */
-  GAME_PENALTY = 'GAME_PENALTY',
-  /** Disqualification from the current match. */
-  DISQUALIFICATION = 'DISQUALIFICATION',
-  /** Monetary fine imposed on the participant. */
-  FINE = 'FINE',
-  /** Temporary suspension from future tournaments. */
-  SUSPENSION = 'SUSPENSION',
+  /** Point deduction during a match. */
+  POINT_DEDUCTION = 'POINT_DEDUCTION',
+  /** Exclusion from the current match or tournament. */
+  EXCLUSION = 'EXCLUSION',
 }
 
 /**

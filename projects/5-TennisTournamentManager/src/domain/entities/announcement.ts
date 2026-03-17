@@ -25,6 +25,8 @@ export interface AnnouncementProps {
   title: string;
   /** Announcement body content (supports markdown). */
   content: string;
+  /** Tags for categorizing the announcement. */
+  tags?: string[];
   /** Whether the announcement is currently visible to public. */
   isPublished?: boolean;
   /** Whether the announcement is pinned/sticky. */
@@ -50,6 +52,7 @@ export class Announcement {
   public readonly authorId: string;
   public readonly title: string;
   public readonly content: string;
+  public readonly tags: string[];
   public readonly isPublished: boolean;
   public readonly isPinned: boolean;
   public readonly publishedAt: Date | null;
@@ -62,6 +65,7 @@ export class Announcement {
     this.authorId = props.authorId;
     this.title = props.title;
     this.content = props.content;
+    this.tags = props.tags ?? [];
     this.isPublished = props.isPublished ?? false;
     this.isPinned = props.isPinned ?? false;
     this.publishedAt = props.publishedAt ?? null;

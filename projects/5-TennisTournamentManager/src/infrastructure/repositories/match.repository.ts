@@ -76,7 +76,7 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @param bracketId - The bracket identifier
    * @returns Promise resolving to an array of matches
    */
-  public async findByBracketId(bracketId: string): Promise<Match[]> {
+  public async findByBracket(bracketId: string): Promise<Match[]> {
     throw new Error('Not implemented');
   }
 

@@ -71,20 +71,20 @@ export class NotificationRepositoryImpl implements INotificationRepository {
   }
 
   /**
-   * Retrieves all notifications for a specific recipient.
-   * @param recipientId - The recipient's user identifier
+   * Retrieves all notifications for a specific user.
+   * @param userId - The user's identifier
    * @returns Promise resolving to an array of notifications
    */
-  public async findByRecipientId(recipientId: string): Promise<Notification[]> {
+  public async findByUser(userId: string): Promise<Notification[]> {
     throw new Error('Not implemented');
   }
 
   /**
-   * Retrieves all unread notifications for a specific recipient.
-   * @param recipientId - The recipient's user identifier
+   * Retrieves all unread notifications for a specific user.
+   * @param userId - The user's identifier
    * @returns Promise resolving to an array of unread notifications
    */
-  public async findUnread(recipientId: string): Promise<Notification[]> {
+  public async findUnread(userId: string): Promise<Notification[]> {
     throw new Error('Not implemented');
   }
 

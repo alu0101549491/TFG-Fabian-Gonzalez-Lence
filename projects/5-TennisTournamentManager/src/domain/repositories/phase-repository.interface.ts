@@ -53,9 +53,9 @@ export interface IPhaseRepository {
   delete(id: string): Promise<void>;
 
   /**
-   * Finds all phases belonging to a specific bracket.
-   * @param bracketId - The unique identifier of the bracket
+   * Finds all phases belonging to a specific tournament.
+   * @param tournamentId - The unique identifier of the tournament
    * @returns Promise resolving to an array of phases
    */
-  findByBracketId(bracketId: string): Promise<Phase[]>;
+  findByTournament(tournamentId: string): Promise<Phase[]>;
 }

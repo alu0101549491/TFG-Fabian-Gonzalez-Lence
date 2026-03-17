@@ -109,4 +109,27 @@ export class MatchService implements IMatchService {
   public async getLiveMatches(tournamentId: string): Promise<MatchDto[]> {
     throw new Error('Not implemented');
   }
+
+  /**
+   * Confirms the result of a match.
+   *
+   * @param matchId - ID of the match
+   * @param userId - ID of the user confirming the result
+   * @returns Updated match information
+   */
+  public async confirmResult(matchId: string, userId: string): Promise<MatchDto> {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Schedules a match to a specific court and time.
+   *
+   * @param matchId - ID of the match to schedule
+   * @param courtId - ID of the court
+   * @param time - Scheduled time
+   * @returns Updated match information
+   */
+  public async scheduleMatch(matchId: string, courtId: string, time: Date): Promise<MatchDto> {
+    throw new Error('Not implemented');
+  }
 }

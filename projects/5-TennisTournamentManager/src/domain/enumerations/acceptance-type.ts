@@ -12,15 +12,16 @@
  */
 
 /**
- * Represents the method used to accept participants into a tournament.
+ * Represents the type of entry a participant has into a tournament draw.
+ * Corresponds to FR11 entry states.
  */
 export enum AcceptanceType {
-  /** Participants are accepted automatically upon registration. */
-  AUTOMATIC = 'AUTOMATIC',
-  /** Tournament administrator manually reviews and accepts participants. */
-  MANUAL = 'MANUAL',
-  /** Acceptance based on ranking position or seeding criteria. */
-  RANKING_BASED = 'RANKING_BASED',
+  /** Direct Acceptance by ranking classification (DA). */
+  DIRECT_ACCEPTANCE = 'DIRECT_ACCEPTANCE',
+  /** Wild Card: direct organizer invitation (WC). */
+  WILD_CARD = 'WILD_CARD',
+  /** Seeded: pre-ranked player placed in strategic draw positions (SE). */
+  SEEDED = 'SEEDED',
 }
 
 /**

@@ -53,18 +53,18 @@ export interface INotificationRepository {
   delete(id: string): Promise<void>;
 
   /**
-   * Finds all notifications for a specific recipient.
-   * @param recipientId - The unique identifier of the recipient
+   * Finds all notifications for a specific user.
+   * @param userId - The unique identifier of the user
    * @returns Promise resolving to an array of notifications
    */
-  findByRecipientId(recipientId: string): Promise<Notification[]>;
+  findByUser(userId: string): Promise<Notification[]>;
 
   /**
-   * Finds all unread notifications for a specific recipient.
-   * @param recipientId - The unique identifier of the recipient
+   * Finds all unread notifications for a specific user.
+   * @param userId - The unique identifier of the user
    * @returns Promise resolving to an array of unread notifications
    */
-  findUnread(recipientId: string): Promise<Notification[]>;
+  findUnread(userId: string): Promise<Notification[]>;
 
   /**
    * Marks a notification as read.

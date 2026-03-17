@@ -72,4 +72,15 @@ export class AuthorizationService implements IAuthorizationService {
   public async validateSession(userId: string): Promise<boolean> {
     throw new Error('Not implemented');
   }
+
+  /**
+   * Checks whether a user can modify a bracket.
+   *
+   * @param userId - ID of the user
+   * @param bracketId - ID of the bracket
+   * @returns True if the user can modify the bracket, false otherwise
+   */
+  public async canModifyBracket(userId: string, bracketId: string): Promise<boolean> {
+    throw new Error('Not implemented');
+  }
 }

@@ -75,4 +75,23 @@ export interface IMatchService {
    * @returns List of live matches
    */
   getLiveMatches(tournamentId: string): Promise<MatchDto[]>;
+
+  /**
+   * Confirms the result of a match.
+   *
+   * @param matchId - ID of the match
+   * @param userId - ID of the user confirming the result
+   * @returns Updated match information
+   */
+  confirmResult(matchId: string, userId: string): Promise<MatchDto>;
+
+  /**
+   * Schedules a match at a specific court and time.
+   *
+   * @param matchId - ID of the match to schedule
+   * @param courtId - ID of the court
+   * @param time - Scheduled time for the match
+   * @returns Updated match information
+   */
+  scheduleMatch(matchId: string, courtId: string, time: Date): Promise<MatchDto>;
 }

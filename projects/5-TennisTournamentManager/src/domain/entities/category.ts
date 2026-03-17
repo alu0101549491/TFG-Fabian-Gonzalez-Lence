@@ -30,7 +30,9 @@ export interface CategoryProps {
   /** Gender restriction: 'M', 'F', or null for mixed. */
   gender?: string | null;
   /** Maximum number of participants in this category. */
-  maxParticipants?: number;
+  maxQuota?: number;
+  /** Number of reserved spots. */
+  reservedSpots?: number;
   /** Creation timestamp. */
   createdAt?: Date;
 }
@@ -50,7 +52,8 @@ export class Category {
   public readonly minAge: number | null;
   public readonly maxAge: number | null;
   public readonly gender: string | null;
-  public readonly maxParticipants: number;
+  public readonly maxQuota: number;
+  public readonly reservedSpots: number;
   public readonly createdAt: Date;
 
   constructor(props: CategoryProps) {
@@ -61,18 +64,17 @@ export class Category {
     this.minAge = props.minAge ?? null;
     this.maxAge = props.maxAge ?? null;
     this.gender = props.gender ?? null;
-    this.maxParticipants = props.maxParticipants ?? 32;
+    this.maxQuota = props.maxQuota ?? 32;
+    this.reservedSpots = props.reservedSpots ?? 0;
     this.createdAt = props.createdAt ?? new Date();
   }
 
   /**
-   * Checks whether a participant meets the category's age and gender restrictions.
+   * Checks whether this category has available spots for registration.
    *
-   * @param age - The participant's age
-   * @param gender - The participant's gender identifier
-   * @returns True if the participant is eligible for this category
+   * @returns True if there are spots available
    */
-  public isEligible(age: number, gender: string): boolean {
+  public hasAvailableSpots(): boolean {
     throw new Error('Not implemented');
   }
 }

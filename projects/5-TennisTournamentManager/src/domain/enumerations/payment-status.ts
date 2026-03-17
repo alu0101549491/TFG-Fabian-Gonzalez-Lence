@@ -20,7 +20,7 @@ export enum PaymentStatus {
   /** Payment is being processed by the gateway. */
   PROCESSING = 'PROCESSING',
   /** Payment completed successfully. */
-  COMPLETED = 'COMPLETED',
+  PAID = 'PAID',
   /** Payment failed during processing. */
   FAILED = 'FAILED',
   /** Payment was refunded to the participant. */
