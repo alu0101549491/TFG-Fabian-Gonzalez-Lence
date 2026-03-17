@@ -23,7 +23,7 @@ until every checkbox in `CODIFICATION-PROGRESS.md` is ticked.
 - **Architecture:** Layered Architecture with Clean Architecture principles
   (Domain → Application → Infrastructure → Presentation)
 - **Technology stack:** TypeScript, HTML, CSS, Vite, TypeDoc,
-  ESLint (Google Style Guide), Jest, ts-jest, Angular, Socket.io-client, Axios
+  ESLint (Google Style Guide), Jest, ts-jest, Playwright, Angular, Socket.io-client, Axios
 - **Root path:** `/projects/5-TennisTournamentManager/`
 - **Progress file:** `docs/code/CODIFICATION-PROGRESS.md`
 - **Changes file:** `docs/CHANGES.md`
@@ -139,15 +139,6 @@ Specifically for each file type:
   - Tablet: 768px – 1024px
   - Desktop: 1025px+
 - Follow NFR1 (responsive), NFR4 (max 3 clicks to complete tasks).
-
-**Test Files** (`tests/`)
-- One test file per source file, mirroring the `src/` layout.
-- Domain entity tests: test constructor validation, method logic, state
-  transitions.
-- Application service tests: mock all repository interfaces with Jest mocks.
-- Coverage threshold: ≥70% lines, functions, branches (NFR22).
-- Use `describe` / `it` / `expect` — no custom assertion libraries.
-- Test file named `<source-file>.test.ts`.
 
 **Configuration Files** (root)
 - `package.json`: include all scripts — dev, build, preview, test,
