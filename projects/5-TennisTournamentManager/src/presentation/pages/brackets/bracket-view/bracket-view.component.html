@@ -1,0 +1,45 @@
+<div class="container p-lg">
+  <h1 class="mb-lg">Tournament Bracket</h1>
+
+  @if (isLoading()) {
+    <div class="text-center p-lg">
+      <p>Loading bracket...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+
+  @if (bracket()) {
+    <div class="card mb-lg">
+      <div class="card-header">
+        <h3 class="card-title">{{ bracket()!.bracketType }} Bracket</h3>
+        <span class="badge badge-primary">{{ bracket()!.size }} participants</span>
+      </div>
+      <div class="card-body">
+        <p><strong>Total Rounds:</strong> {{ bracket()!.totalRounds }}</p>
+        <p><strong>Published:</strong> {{ bracket()!.isPublished ? 'Yes' : 'No' }}</p>
+        <p><strong>Created:</strong> {{ formatDate(bracket()!.createdAt) }}</p>
+      </div>
+    </div>
+
+    @if (phases().length > 0) {
+      <h2 class="mb-md">Bracket Phases</h2>
+      <div class="grid gap-md" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+        @for (phase of phases(); track phase.id) {
+          <div class="card">
+            <div class="card-header">
+              <h4 class="card-title">{{ phase.name }}</h4>
+            </div>
+            <div class="card-body">
+              <p><strong>Order:</strong> {{ phase.order }}</p>
+              <p><strong>Matches:</strong> {{ phase.matchCount }}</p>
+              <p><strong>Status:</strong> {{ phase.isCompleted ? 'Completed' : 'In Progress' }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

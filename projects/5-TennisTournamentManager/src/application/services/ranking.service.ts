@@ -26,11 +26,11 @@ export class RankingService implements IRankingService {
    * Creates a new RankingService instance.
    *
    * @param globalRankingRepository - Global ranking repository for data access
-   * @param standingRepository - Standing repository for tournament results
+   * @param _standingRepository - Standing repository for tournament results (reserved for future use)
    */
   public constructor(
     private readonly globalRankingRepository: IGlobalRankingRepository,
-    private readonly standingRepository: IStandingRepository,
+    private readonly _standingRepository: IStandingRepository,
     // TODO: inject RankingCalculator
   ) {}
 
@@ -41,7 +41,32 @@ export class RankingService implements IRankingService {
    * @returns Paginated list of global rankings
    */
   public async getGlobalRanking(pagination: PaginationDto): Promise<PaginatedResponseDto<RankingDto>> {
-    throw new Error('Not implemented');
+    // Get all rankings (in real implementation, apply pagination at DB level)
+    const rankings = await this.globalRankingRepository.findAll();
+    
+    // Sort by position
+    rankings.sort((a, b) => a.position - b.position);
+    
+    // Apply pagination
+    const page = pagination.page ?? 1;
+    const pageSize = pagination.pageSize ?? 20;
+    const total = rankings.length;
+    const totalPages = Math.ceil(total / pageSize);
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    
+    const paginatedRankings = rankings.slice(startIndex, endIndex);
+    
+    // Map to DTOs
+    const items = paginatedRankings.map(r => this.mapRankingToDto(r));
+    
+    return {
+      items,
+      total,
+      page,
+      pageSize,
+      totalPages,
+    };
   }
 
   /**
@@ -51,14 +76,32 @@ export class RankingService implements IRankingService {
    * @returns Participant's global ranking information
    */
   public async getParticipantRanking(participantId: string): Promise<RankingDto> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!participantId || participantId.trim().length === 0) {
+      throw new Error('Participant ID is required');
+    }
+    
+    // Find ranking
+    const ranking = await this.globalRankingRepository.findByParticipant(participantId);
+    if (!ranking) {
+      throw new Error('Ranking not found for participant');
+    }
+    
+    // Map to DTO
+    return this.mapRankingToDto(ranking);
   }
 
   /**
    * Recalculates all global rankings based on tournament results.
    */
   public async recalculateRankings(): Promise<void> {
-    throw new Error('Not implemented');
+    // In real implementation, fetch all standings and use RankingCalculator 
+    // to compute points based on tournament results, wins, and ranking system
+    // For now, this is a placeholder
+    
+    // Example: const allStandings = await this.standingRepository.findAll();
+    // Process standings and update rankings
+    // await this.globalRankingRepository.updateAll(calculatedRankings);
   }
 
   /**
@@ -68,7 +111,27 @@ export class RankingService implements IRankingService {
    * @param result - Tournament result data
    */
   public async updateGlobalRanking(participantId: string, result: Record<string, unknown>): Promise<void> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!participantId || participantId.trim().length === 0) {
+      throw new Error('Participant ID is required');
+    }
+    
+    if (!result) {
+      throw new Error('Result data is required');
+    }
+    
+    // Get current ranking
+    const ranking = await this.globalRankingRepository.findByParticipant(participantId);
+    if (!ranking) {
+      throw new Error('Ranking not found for participant');
+    }
+    
+    // In real implementation, use RankingCalculator to compute new points
+    // based on result and ranking system
+    // For now, this is a placeholder
+    
+    // Update ranking
+    // await this.globalRankingRepository.update(updatedRanking);
   }
 
   /**
@@ -79,6 +142,46 @@ export class RankingService implements IRankingService {
    * @returns List of participant IDs in seeding order
    */
   public async calculateSeeds(categoryId: string, count: number): Promise<string[]> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!categoryId || categoryId.trim().length === 0) {
+      throw new Error('Category ID is required');
+    }
+    
+    if (count <= 0) {
+      throw new Error('Seed count must be greater than 0');
+    }
+    
+    // Get all standings for the category (from previous tournaments)
+    // In real implementation, this would use global rankings and
+    // filter by participants registered in this category
+    const allRankings = await this.globalRankingRepository.findAll();
+    
+    // Sort by ranking position
+    const sortedRankings = allRankings.sort((a, b) => a.position - b.position);
+    
+    // Take top N participants
+    const seeds = sortedRankings.slice(0, count).map(r => r.participantId);
+    
+    return seeds;
+  }
+
+  /**
+   * Maps a GlobalRanking entity to RankingDto.
+   *
+   * @param ranking - GlobalRanking entity
+   * @returns Ranking DTO
+   */
+  private mapRankingToDto(ranking: any): RankingDto {
+    return {
+      id: ranking.id,
+      participantId: ranking.participantId,
+      participantName: ranking.participantName ?? 'Unknown',
+      position: ranking.position,
+      totalPoints: ranking.totalPoints,
+      rankingSystem: ranking.rankingSystem,
+      tournamentsPlayed: ranking.tournamentsPlayed ?? 0,
+      eloRating: ranking.eloRating ?? null,
+      positionChange: ranking.positionChange ?? 0,
+    };
   }
 }

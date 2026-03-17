@@ -11,8 +11,8 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Registration} from '../entities/registration.entity';
-import {RegistrationStatus} from '../enumerations/registration-status.enum';
+import {Registration} from '../entities/registration';
+import {RegistrationStatus} from '../enumerations/registration-status';
 
 /**
  * Repository interface for Registration entity data access operations.

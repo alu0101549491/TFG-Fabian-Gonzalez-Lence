@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Standing} from '../entities/standing.entity';
+import {Standing} from '../entities/standing';
 
 /**
  * Repository interface for Standing entity data access operations.

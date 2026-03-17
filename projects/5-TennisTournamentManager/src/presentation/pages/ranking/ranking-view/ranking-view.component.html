@@ -1,0 +1,70 @@
+<div class="container p-lg">
+  <div class="flex justify-between items-center mb-lg">
+    <h1>Global Rankings</h1>
+    <div class="form-group" style="min-width: 200px; margin-bottom: 0;">
+      <label class="form-label">Ranking System:</label>
+      <select class="form-control" [(ngModel)]="selectedSystem" (change)="changeSystem()">
+        @for (system of systems; track system) {
+          <option [value]="system">{{ system }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="text-center p-lg">
+      <p>Loading rankings...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+
+  @if (!isLoading() && rankings().length > 0) {
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Points</th>
+            <th>Tournaments</th>
+            @if (selectedSystem === 'ELO') {
+              <th>ELO Rating</th>
+            }
+            <th>Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (ranking of rankings(); track ranking.id) {
+            <tr>
+              <td class="font-bold">{{ ranking.position }}</td>
+              <td>{{ ranking.participantName }}</td>
+              <td>{{ ranking.totalPoints }}</td>
+              <td>{{ ranking.tournamentsPlayed }}</td>
+              @if (selectedSystem === 'ELO') {
+                <td>{{ ranking.eloRating }}</td>
+              }
+              <td>
+                @if (ranking.positionChange > 0) {
+                  <span class="text-success">↑ {{ ranking.positionChange }}</span>
+                } @else if (ranking.positionChange < 0) {
+                  <span class="text-error">↓ {{ Math.abs(ranking.positionChange) }}</span>
+                } @else {
+                  <span class="text-muted">−</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (!isLoading() && !errorMessage() && rankings().length === 0) {
+    <div class="text-center p-lg">
+      <p class="text-muted">No rankings available yet.</p>
+    </div>
+  }
+</div>

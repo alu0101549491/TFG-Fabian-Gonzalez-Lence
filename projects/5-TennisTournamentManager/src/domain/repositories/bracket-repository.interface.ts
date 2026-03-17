@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Bracket} from '../entities/bracket.entity';
+import {Bracket} from '../entities/bracket';
 
 /**
  * Repository interface for Bracket entity data access operations.

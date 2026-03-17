@@ -1,0 +1,45 @@
+<div class="container p-lg">
+  <h1 class="mb-lg">Order of Play</h1>
+
+  <div class="card mb-lg">
+    <div class="card-body">
+      <label class="form-label">Select Date:</label>
+      <input
+        type="date"
+        class="form-control"
+        [value]="selectedDate.toISOString().split('T')[0]"
+        (change)="changeDate(new Date($any($event.target).value))"
+        style="max-width: 300px;"
+      />
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="text-center p-lg">
+      <p>Loading schedule...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+
+  @if (orderOfPlay()) {
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">{{ formatDate(orderOfPlay()!.playDate) }}</h3>
+      </div>
+      <div class="card-body">
+        <p><strong>Tournament ID:</strong> {{ orderOfPlay()!.tournamentId }}</p>
+        <p class="text-muted">Match schedule for this day will be displayed here.</p>
+        <!-- In a real implementation, would display the actual match schedule -->
+      </div>
+    </div>
+  }
+
+  @if (!isLoading() && !errorMessage() && !orderOfPlay()) {
+    <div class="text-center p-lg">
+      <p class="text-muted">No matches scheduled for this date.</p>
+    </div>
+  }
+</div>

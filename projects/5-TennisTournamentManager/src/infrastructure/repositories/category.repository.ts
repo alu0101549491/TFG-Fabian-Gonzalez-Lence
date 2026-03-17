@@ -32,7 +32,15 @@ export class CategoryRepositoryImpl implements ICategoryRepository {
    * @returns Promise resolving to the category or null if not found
    */
   public async findById(id: string): Promise<Category | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Category>(`/categories/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class CategoryRepositoryImpl implements ICategoryRepository {
    * @returns Promise resolving to an array of all categories
    */
   public async findAll(): Promise<Category[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Category[]>('/categories');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class CategoryRepositoryImpl implements ICategoryRepository {
    * @returns Promise resolving to the saved category with assigned ID
    */
   public async save(category: Category): Promise<Category> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Category>('/categories', category);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class CategoryRepositoryImpl implements ICategoryRepository {
    * @returns Promise resolving to the updated category
    */
   public async update(category: Category): Promise<Category> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Category>(`/categories/${category.id}`, category);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class CategoryRepositoryImpl implements ICategoryRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/categories/${id}`);
   }
 
   /**
@@ -76,6 +87,7 @@ export class CategoryRepositoryImpl implements ICategoryRepository {
    * @returns Promise resolving to an array of categories
    */
   public async findByTournamentId(tournamentId: string): Promise<Category[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Category[]>(`/categories?tournamentId=${tournamentId}`);
+    return response;
   }
 }

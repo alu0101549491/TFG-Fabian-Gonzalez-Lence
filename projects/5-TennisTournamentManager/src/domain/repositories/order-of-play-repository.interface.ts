@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {OrderOfPlay} from '../entities/order-of-play.entity';
+import {OrderOfPlay} from '../entities/order-of-play';
 
 /**
  * Repository interface for OrderOfPlay entity data access operations.

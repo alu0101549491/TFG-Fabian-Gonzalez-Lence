@@ -39,7 +39,30 @@ export class AxiosClient {
    * Configures request and response interceptors for JWT auth and error handling.
    */
   private setupInterceptors(): void {
-    throw new Error('Not implemented');
+    // Request interceptor: inject JWT token from localStorage
+    this.instance.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem(JWT_STORAGE_KEY);
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error),
+    );
+
+    // Response interceptor: unwrap data and handle errors
+    this.instance.interceptors.response.use(
+      (response: AxiosResponse) => response,
+      (error) => {
+        // Handle 401 Unauthorized - clear token and redirect to login
+        if (error.response?.status === 401) {
+          localStorage.removeItem(JWT_STORAGE_KEY);
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      },
+    );
   }
 
   /**
@@ -50,7 +73,8 @@ export class AxiosClient {
    * @returns The response data
    */
   public async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    throw new Error('Not implemented');
+    const response = await this.instance.get<T>(url, config);
+    return response.data;
   }
 
   /**
@@ -62,7 +86,8 @@ export class AxiosClient {
    * @returns The response data
    */
   public async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
-    throw new Error('Not implemented');
+    const response = await this.instance.post<T>(url, data, config);
+    return response.data;
   }
 
   /**
@@ -74,7 +99,8 @@ export class AxiosClient {
    * @returns The response data
    */
   public async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
-    throw new Error('Not implemented');
+    const response = await this.instance.put<T>(url, data, config);
+    return response.data;
   }
 
   /**
@@ -85,6 +111,7 @@ export class AxiosClient {
    * @returns The response data
    */
   public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    throw new Error('Not implemented');
+    const response = await this.instance.delete<T>(url, config);
+    return response.data;
   }
 }

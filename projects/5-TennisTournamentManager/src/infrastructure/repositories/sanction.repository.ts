@@ -32,7 +32,15 @@ export class SanctionRepositoryImpl implements ISanctionRepository {
    * @returns Promise resolving to the sanction or null if not found
    */
   public async findById(id: string): Promise<Sanction | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Sanction>(`/sanctions/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class SanctionRepositoryImpl implements ISanctionRepository {
    * @returns Promise resolving to an array of all sanctions
    */
   public async findAll(): Promise<Sanction[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Sanction[]>('/sanctions');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class SanctionRepositoryImpl implements ISanctionRepository {
    * @returns Promise resolving to the saved sanction with assigned ID
    */
   public async save(sanction: Sanction): Promise<Sanction> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Sanction>('/sanctions', sanction);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class SanctionRepositoryImpl implements ISanctionRepository {
    * @returns Promise resolving to the updated sanction
    */
   public async update(sanction: Sanction): Promise<Sanction> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Sanction>(`/sanctions/${sanction.id}`, sanction);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class SanctionRepositoryImpl implements ISanctionRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/sanctions/${id}`);
   }
 
   /**
@@ -76,7 +87,8 @@ export class SanctionRepositoryImpl implements ISanctionRepository {
    * @returns Promise resolving to an array of sanctions
    */
   public async findByParticipantId(participantId: string): Promise<Sanction[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Sanction[]>(`/sanctions?participantId=${participantId}`);
+    return response;
   }
 
   /**
@@ -85,7 +97,8 @@ export class SanctionRepositoryImpl implements ISanctionRepository {
    * @returns Promise resolving to an array of sanctions
    */
   public async findByTournamentId(tournamentId: string): Promise<Sanction[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Sanction[]>(`/sanctions?tournamentId=${tournamentId}`);
+    return response;
   }
 
   /**
@@ -94,6 +107,7 @@ export class SanctionRepositoryImpl implements ISanctionRepository {
    * @returns Promise resolving to an array of sanctions
    */
   public async findByMatchId(matchId: string): Promise<Sanction[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Sanction[]>(`/sanctions?matchId=${matchId}`);
+    return response;
   }
 }

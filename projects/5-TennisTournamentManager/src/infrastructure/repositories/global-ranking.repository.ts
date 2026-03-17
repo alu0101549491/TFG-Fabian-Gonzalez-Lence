@@ -32,7 +32,15 @@ export class GlobalRankingRepositoryImpl implements IGlobalRankingRepository {
    * @returns Promise resolving to the global ranking or null if not found
    */
   public async findById(id: string): Promise<GlobalRanking | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<GlobalRanking>(`/global-rankings/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class GlobalRankingRepositoryImpl implements IGlobalRankingRepository {
    * @returns Promise resolving to an array of all global rankings
    */
   public async findAll(): Promise<GlobalRanking[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<GlobalRanking[]>('/global-rankings');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class GlobalRankingRepositoryImpl implements IGlobalRankingRepository {
    * @returns Promise resolving to the saved global ranking with assigned ID
    */
   public async save(globalRanking: GlobalRanking): Promise<GlobalRanking> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<GlobalRanking>('/global-rankings', globalRanking);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class GlobalRankingRepositoryImpl implements IGlobalRankingRepository {
    * @returns Promise resolving to the updated global ranking
    */
   public async update(globalRanking: GlobalRanking): Promise<GlobalRanking> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<GlobalRanking>(`/global-rankings/${globalRanking.id}`, globalRanking);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class GlobalRankingRepositoryImpl implements IGlobalRankingRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/global-rankings/${id}`);
   }
 
   /**
@@ -76,7 +87,15 @@ export class GlobalRankingRepositoryImpl implements IGlobalRankingRepository {
    * @returns Promise resolving to the global ranking or null if not found
    */
   public async findByParticipant(participantId: string): Promise<GlobalRanking | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<GlobalRanking>(`/global-rankings?participantId=${participantId}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -85,6 +104,7 @@ export class GlobalRankingRepositoryImpl implements IGlobalRankingRepository {
    * @returns Promise resolving to an array of global rankings
    */
   public async findTopN(n: number): Promise<GlobalRanking[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<GlobalRanking[]>(`/global-rankings?limit=${n}&sort=rank:asc`);
+    return response;
   }
 }

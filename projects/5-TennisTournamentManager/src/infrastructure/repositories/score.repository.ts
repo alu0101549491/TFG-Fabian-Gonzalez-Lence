@@ -32,7 +32,15 @@ export class ScoreRepositoryImpl implements IScoreRepository {
    * @returns Promise resolving to the score or null if not found
    */
   public async findById(id: string): Promise<Score | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Score>(`/scores/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class ScoreRepositoryImpl implements IScoreRepository {
    * @returns Promise resolving to an array of all scores
    */
   public async findAll(): Promise<Score[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Score[]>('/scores');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class ScoreRepositoryImpl implements IScoreRepository {
    * @returns Promise resolving to the saved score with assigned ID
    */
   public async save(score: Score): Promise<Score> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Score>('/scores', score);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class ScoreRepositoryImpl implements IScoreRepository {
    * @returns Promise resolving to the updated score
    */
   public async update(score: Score): Promise<Score> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Score>(`/scores/${score.id}`, score);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class ScoreRepositoryImpl implements IScoreRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/scores/${id}`);
   }
 
   /**
@@ -76,6 +87,7 @@ export class ScoreRepositoryImpl implements IScoreRepository {
    * @returns Promise resolving to an array of scores
    */
   public async findByMatchId(matchId: string): Promise<Score[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Score[]>(`/scores?matchId=${matchId}`);
+    return response;
   }
 }

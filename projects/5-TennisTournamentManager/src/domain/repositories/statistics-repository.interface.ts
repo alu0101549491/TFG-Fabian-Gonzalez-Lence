@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Statistics} from '../entities/statistics.entity';
+import {Statistics} from '../entities/statistics';
 
 /**
  * Repository interface for Statistics entity data access operations.

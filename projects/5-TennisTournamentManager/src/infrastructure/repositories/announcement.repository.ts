@@ -32,7 +32,15 @@ export class AnnouncementRepositoryImpl implements IAnnouncementRepository {
    * @returns Promise resolving to the announcement or null if not found
    */
   public async findById(id: string): Promise<Announcement | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Announcement>(`/announcements/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class AnnouncementRepositoryImpl implements IAnnouncementRepository {
    * @returns Promise resolving to an array of all announcements
    */
   public async findAll(): Promise<Announcement[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Announcement[]>('/announcements');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class AnnouncementRepositoryImpl implements IAnnouncementRepository {
    * @returns Promise resolving to the saved announcement with assigned ID
    */
   public async save(announcement: Announcement): Promise<Announcement> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Announcement>('/announcements', announcement);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class AnnouncementRepositoryImpl implements IAnnouncementRepository {
    * @returns Promise resolving to the updated announcement
    */
   public async update(announcement: Announcement): Promise<Announcement> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Announcement>(`/announcements/${announcement.id}`, announcement);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class AnnouncementRepositoryImpl implements IAnnouncementRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/announcements/${id}`);
   }
 
   /**
@@ -76,7 +87,8 @@ export class AnnouncementRepositoryImpl implements IAnnouncementRepository {
    * @returns Promise resolving to an array of announcements
    */
   public async findByTournamentId(tournamentId: string): Promise<Announcement[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Announcement[]>(`/announcements?tournamentId=${tournamentId}`);
+    return response;
   }
 
   /**
@@ -84,6 +96,7 @@ export class AnnouncementRepositoryImpl implements IAnnouncementRepository {
    * @returns Promise resolving to an array of published announcements
    */
   public async findPublished(): Promise<Announcement[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Announcement[]>('/announcements?published=true');
+    return response;
   }
 }

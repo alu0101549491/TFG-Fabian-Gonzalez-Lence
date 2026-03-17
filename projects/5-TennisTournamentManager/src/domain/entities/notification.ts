@@ -75,6 +75,18 @@ export class Notification {
    * Sends this notification.
    */
   public send(): void {
-    throw new Error('Not implemented');
+    // Note: Actual sending should be done via NotificationService
+    // in the application layer, which dispatches to the appropriate
+    // channel adapter (email, Telegram, web push, in-app) based on
+    // this.channel. This method validates the notification is sendable.
+    if (!this.userId || this.userId.trim().length === 0) {
+      throw new Error('Notification must have a valid recipient user ID.');
+    }
+    
+    if (!this.message || this.message.trim().length === 0) {
+      throw new Error('Notification must have a message.');
+    }
+    
+    // Validation only - real sending happens in application layer
   }
 }

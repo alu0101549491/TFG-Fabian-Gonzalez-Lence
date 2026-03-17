@@ -14,6 +14,8 @@
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
 import {UserRole} from '@domain/enumerations/user-role';
 import {IUserRepository} from '@domain/repositories/user-repository.interface';
+import {ITournamentRepository} from '@domain/repositories/tournament-repository.interface';
+import {IBracketRepository} from '@domain/repositories/bracket-repository.interface';
 
 /**
  * Authorization service implementation.
@@ -24,9 +26,13 @@ export class AuthorizationService implements IAuthorizationService {
    * Creates a new AuthorizationService instance.
    *
    * @param userRepository - User repository for user data access
+   * @param tournamentRepository - Tournament repository for tournament data access
+   * @param bracketRepository - Bracket repository for bracket data access
    */
   public constructor(
     private readonly userRepository: IUserRepository,
+    private readonly tournamentRepository?: ITournamentRepository,
+    private readonly bracketRepository?: IBracketRepository,
   ) {}
 
   /**
@@ -37,7 +43,23 @@ export class AuthorizationService implements IAuthorizationService {
    * @returns True if the user has the role, false otherwise
    */
   public async hasRole(userId: string, role: UserRole): Promise<boolean> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!userId || userId.trim().length === 0) {
+      return false;
+    }
+    
+    if (!role) {
+      return false;
+    }
+    
+    // Get user
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.isActive) {
+      return false;
+    }
+    
+    // Check role
+    return user.role === role;
   }
 
   /**
@@ -49,7 +71,40 @@ export class AuthorizationService implements IAuthorizationService {
    * @returns True if the action is allowed, false otherwise
    */
   public async canPerformAction(userId: string, action: string, resourceId: string): Promise<boolean> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!userId || userId.trim().length === 0) {
+      return false;
+    }
+    
+    if (!action || action.trim().length === 0) {
+      return false;
+    }
+    
+    // Get user
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.isActive) {
+      return false;
+    }
+    
+    // System administrators can do everything
+    if (user.role === UserRole.SYSTEM_ADMINISTRATOR) {
+      return true;
+    }
+    
+    // Tournament administrators can manage their tournaments
+    if (user.role === UserRole.TOURNAMENT_ADMINISTRATOR && this.tournamentRepository) {
+      const tournament = await this.tournamentRepository.findById(resourceId);
+      if (tournament && tournament.organizerId === userId) {
+        return true;
+      }
+    }
+    
+    // Registered participants can view public resources
+    if (action === 'read' || action === 'view') {
+      return true;
+    }
+    
+    return false;
   }
 
   /**
@@ -60,7 +115,23 @@ export class AuthorizationService implements IAuthorizationService {
    * @returns True if the user can access the tournament, false otherwise
    */
   public async canAccessTournament(userId: string, tournamentId: string): Promise<boolean> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!userId || userId.trim().length === 0) {
+      return false;
+    }
+    
+    if (!tournamentId || tournamentId.trim().length === 0) {
+      return false;
+    }
+    
+    // Get user
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.isActive) {
+      return false;
+    }
+    
+    // All active users can access public tournaments
+    return true;
   }
 
   /**
@@ -70,7 +141,21 @@ export class AuthorizationService implements IAuthorizationService {
    * @returns True if the session is valid, false otherwise
    */
   public async validateSession(userId: string): Promise<boolean> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!userId || userId.trim().length === 0) {
+      return false;
+    }
+    
+    // Get user
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.isActive) {
+      return false;
+    }
+    
+    // In real implementation, check session timeout (30 minutes as per NFR12)
+    // This would involve checking last activity timestamp from session store
+    // For now, just verify user exists and is active
+    return true;
   }
 
   /**
@@ -81,6 +166,37 @@ export class AuthorizationService implements IAuthorizationService {
    * @returns True if the user can modify the bracket, false otherwise
    */
   public async canModifyBracket(userId: string, bracketId: string): Promise<boolean> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!userId || userId.trim().length === 0) {
+      return false;
+    }
+    
+    if (!bracketId || bracketId.trim().length === 0) {
+      return false;
+    }
+    
+    // Get user
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.isActive) {
+      return false;
+    }
+    
+    // System administrators can modify all brackets
+    if (user.role === UserRole.SYSTEM_ADMINISTRATOR) {
+      return true;
+    }
+    
+    // Tournament administrators can modify brackets in their tournaments
+    if (user.role === UserRole.TOURNAMENT_ADMINISTRATOR && this.bracketRepository && this.tournamentRepository) {
+      const bracket = await this.bracketRepository.findById(bracketId);
+      if (bracket) {
+        const tournament = await this.tournamentRepository.findById(bracket.tournamentId);
+        if (tournament && tournament.organizerId === userId) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
   }
 }

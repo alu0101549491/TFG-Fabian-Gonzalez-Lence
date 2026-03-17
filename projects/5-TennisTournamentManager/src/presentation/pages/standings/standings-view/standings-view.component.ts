@@ -5,24 +5,78 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since March 16, 2026
+ * @since March 17, 2026
  * @file presentation/pages/standings/standings-view/standings-view.component.ts
  * @desc Category standings and bracket progression display.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component} from '@angular/core';
+import {Component, OnInit, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {ActivatedRoute, RouterModule} from '@angular/router';
+import {StandingService} from '@application/services';
+import {type StandingDto} from '@application/dto';
 
 /**
- * StandingsViewComponent — stub for standings display.
+ * StandingsViewComponent displays tournament standings.
  */
 @Component({
   selector: 'app-standings-view',
   standalone: true,
-  imports: [],
-  template: `<p>standings-view works!</p>`,
+  imports: [CommonModule, RouterModule],
+  templateUrl: './standings-view.component.html',
   styles: [],
 })
-export class StandingsViewComponent {
-  // TODO: implement standings logic
+export class StandingsViewComponent implements OnInit {
+  /** Standings data */
+  public standings = signal<StandingDto[]>([]);
+
+  /** Loading state */
+  public isLoading = signal(false);
+
+  /** Error message */
+  public errorMessage = signal<string | null>(null);
+
+  /**
+   * Creates an instance of StandingsViewComponent.
+   *
+   * @param route - Activated route to get tournament ID
+   * @param standingService - Standing service for data operations
+   */
+  public constructor(
+    private readonly route: ActivatedRoute,
+    private readonly standingService: StandingService,
+  ) {}
+
+  /**
+   * Initializes component and loads standings.
+   */
+  public ngOnInit(): void {
+    this.route.paramMap.subscribe(params => {
+      const tournamentId = params.get('id');
+      if (tournamentId) {
+        void this.loadStandings(tournamentId);
+      }
+    });
+  }
+
+  /**
+   * Loads standings for tournament.
+   *
+   * @param tournamentId - ID of the tournament
+   */
+  private async loadStandings(tournamentId: string): Promise<void> {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const standings = await this.standingService.getStandingsByTournament(tournamentId);
+      this.standings.set(standings);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load standings';
+      this.errorMessage.set(message);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
 }

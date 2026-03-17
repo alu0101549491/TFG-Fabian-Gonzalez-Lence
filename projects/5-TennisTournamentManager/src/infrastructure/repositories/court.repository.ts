@@ -32,7 +32,15 @@ export class CourtRepositoryImpl implements ICourtRepository {
    * @returns Promise resolving to the court or null if not found
    */
   public async findById(id: string): Promise<Court | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Court>(`/courts/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class CourtRepositoryImpl implements ICourtRepository {
    * @returns Promise resolving to an array of all courts
    */
   public async findAll(): Promise<Court[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Court[]>('/courts');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class CourtRepositoryImpl implements ICourtRepository {
    * @returns Promise resolving to the saved court with assigned ID
    */
   public async save(court: Court): Promise<Court> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Court>('/courts', court);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class CourtRepositoryImpl implements ICourtRepository {
    * @returns Promise resolving to the updated court
    */
   public async update(court: Court): Promise<Court> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Court>(`/courts/${court.id}`, court);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class CourtRepositoryImpl implements ICourtRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/courts/${id}`);
   }
 
   /**
@@ -76,7 +87,8 @@ export class CourtRepositoryImpl implements ICourtRepository {
    * @returns Promise resolving to an array of courts
    */
   public async findByTournamentId(tournamentId: string): Promise<Court[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Court[]>(`/courts?tournamentId=${tournamentId}`);
+    return response;
   }
 
   /**
@@ -84,6 +96,7 @@ export class CourtRepositoryImpl implements ICourtRepository {
    * @returns Promise resolving to an array of available courts
    */
   public async findAvailable(): Promise<Court[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Court[]>('/courts?available=true');
+    return response;
   }
 }

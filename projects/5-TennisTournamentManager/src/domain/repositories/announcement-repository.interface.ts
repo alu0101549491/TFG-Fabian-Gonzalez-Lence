@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Announcement} from '../entities/announcement.entity';
+import {Announcement} from '../entities/announcement';
 
 /**
  * Repository interface for Announcement entity data access operations.

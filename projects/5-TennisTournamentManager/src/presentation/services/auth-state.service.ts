@@ -33,7 +33,19 @@ export class AuthStateService {
    * @param user - The authenticated user data
    */
   public setAuth(token: string, user: UserDto): void {
-    throw new Error('Not implemented');
+    if (!token || token.trim().length === 0) {
+      throw new Error('Token is required');
+    }
+    
+    if (!user) {
+      throw new Error('User data is required');
+    }
+    
+    // Store token in localStorage
+    localStorage.setItem(JWT_STORAGE_KEY, token);
+    
+    // Store user in memory
+    this.currentUser = user;
   }
 
   /**
@@ -42,7 +54,7 @@ export class AuthStateService {
    * @returns The JWT token or null if not authenticated
    */
   public getToken(): string | null {
-    throw new Error('Not implemented');
+    return localStorage.getItem(JWT_STORAGE_KEY);
   }
 
   /**
@@ -51,7 +63,8 @@ export class AuthStateService {
    * @returns True if a valid token exists
    */
   public isAuthenticated(): boolean {
-    throw new Error('Not implemented');
+    const token = this.getToken();
+    return token !== null && token.length > 0;
   }
 
   /**
@@ -67,6 +80,10 @@ export class AuthStateService {
    * Clears the authentication state (logout).
    */
   public clearAuth(): void {
-    throw new Error('Not implemented');
+    // Remove token from localStorage
+    localStorage.removeItem(JWT_STORAGE_KEY);
+    
+    // Clear user from memory
+    this.currentUser = null;
   }
 }

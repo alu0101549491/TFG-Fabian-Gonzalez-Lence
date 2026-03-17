@@ -77,7 +77,16 @@ export class Registration {
    * Accepts this registration.
    */
   public accept(): void {
-    throw new Error('Not implemented');
+    if (this.status !== RegistrationStatus.PENDING && 
+        this.status !== RegistrationStatus.WAITING_LIST) {
+      throw new Error(
+        `Cannot accept registration in status ${this.status}. ` +
+        'Must be PENDING or WAITING_LIST.'
+      );
+    }
+    
+    // Note: Actual status update should be done via repository in application layer
+    // This method validates the business rule only
   }
 
   /**
@@ -86,6 +95,11 @@ export class Registration {
    * @param time - The withdrawal timestamp
    */
   public withdraw(time: string): void {
-    throw new Error('Not implemented');
+    if (this.status === RegistrationStatus.WITHDRAWN) {
+      throw new Error('Registration is already withdrawn.');
+    }
+    
+    // Note: Actual status update should be done via repository in application layer
+    // This method validates the business rule only
   }
 }

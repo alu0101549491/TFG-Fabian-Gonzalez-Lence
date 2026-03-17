@@ -34,14 +34,38 @@ export class SocketClient {
    * @param token - The JWT token for authentication
    */
   public connect(token: string): void {
-    throw new Error('Not implemented');
+    if (this.socket?.connected) {
+      return;
+    }
+
+    this.socket = io(WS_URL, {
+      auth: {token},
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    this.socket.on('connect', () => {
+      console.log('[WebSocket] Connected to server');
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('[WebSocket] Connection error:', error);
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('[WebSocket] Disconnected:', reason);
+    });
   }
 
   /**
    * Disconnects the WebSocket connection.
    */
   public disconnect(): void {
-    throw new Error('Not implemented');
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
   }
 
   /**
@@ -51,7 +75,10 @@ export class SocketClient {
    * @param callback - The callback to invoke when the event is received
    */
   public on<T>(event: string, callback: (data: T) => void): void {
-    throw new Error('Not implemented');
+    if (!this.socket) {
+      throw new Error('Socket not connected. Call connect() first.');
+    }
+    this.socket.on(event, callback);
   }
 
   /**
@@ -61,7 +88,10 @@ export class SocketClient {
    * @param data - The data payload to send
    */
   public emit<T>(event: string, data: T): void {
-    throw new Error('Not implemented');
+    if (!this.socket) {
+      throw new Error('Socket not connected. Call connect() first.');
+    }
+    this.socket.emit(event, data);
   }
 
   /**
@@ -70,6 +100,6 @@ export class SocketClient {
    * @returns True if the connection is active
    */
   public isConnected(): boolean {
-    throw new Error('Not implemented');
+    return this.socket?.connected ?? false;
   }
 }

@@ -96,7 +96,21 @@ export class Match {
    * @param result - The match result data
    */
   public recordResult(result: Record<string, unknown>): void {
-    throw new Error('Not implemented');
+    if (this.status !== MatchStatus.IN_PROGRESS && 
+        this.status !== MatchStatus.SCHEDULED) {
+      throw new Error(
+        `Cannot record result for match in status ${this.status}. ` +
+        'Match must be IN_PROGRESS or SCHEDULED.'
+      );
+    }
+    
+    // Validate that result contains a winner
+    if (!result.winnerId) {
+      throw new Error('Match result must specify a winner.');
+    }
+    
+    // Note: Actual score recording should be done via repository in application layer
+    // This method validates the business rule only
   }
 
   /**
@@ -105,7 +119,19 @@ export class Match {
    * @param reason - The reason for suspension
    */
   public suspend(reason: string): void {
-    throw new Error('Not implemented');
+    if (this.status !== MatchStatus.IN_PROGRESS) {
+      throw new Error(
+        `Cannot suspend match in status ${this.status}. ` +
+        'Match must be IN_PROGRESS.'
+      );
+    }
+    
+    if (!reason || reason.trim().length === 0) {
+      throw new Error('Suspension reason is required.');
+    }
+    
+    // Note: Actual status update should be done via repository in application layer
+    // This method validates the business rule only
   }
 
   /**
@@ -114,6 +140,20 @@ export class Match {
    * @param winnerId - The ID of the player receiving the walkover
    */
   public assignWalkover(winnerId: string): void {
-    throw new Error('Not implemented');
+    if (this.status !== MatchStatus.SCHEDULED) {
+      throw new Error(
+        `Cannot assign walkover to match in status ${this.status}. ` +
+        'Match must be SCHEDULED.'
+      );
+    }
+    
+    if (winnerId !== this.player1Id && winnerId !== this.player2Id) {
+      throw new Error(
+        'Walkover winner must be one of the match participants.'
+      );
+    }
+    
+    // Note: Actual status and winner update should be done via repository in application layer
+    // This method validates the business rule only
   }
 }

@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Score} from '../entities/score.entity';
+import {Score} from '../entities/score';
 
 /**
  * Repository interface for Score entity data access operations.

@@ -27,6 +27,24 @@ export class BracketGeneratorFactory {
    * @throws {Error} If the bracket type is not supported
    */
   public createGenerator(bracketType: BracketType): IBracketGenerator {
-    throw new Error('Not implemented');
-  }
-}
+    // Validate input
+    if (!bracketType) {
+      throw new Error('Bracket type is required');
+    }
+    
+    // Create appropriate generator based on type
+    switch (bracketType) {
+      case BracketType.SINGLE_ELIMINATION:
+        // In real implementation, return new SingleEliminationGenerator()
+        throw new Error(`Single elimination bracket generator not yet implemented`);
+      
+      case BracketType.ROUND_ROBIN:
+        // In real implementation, return new RoundRobinGenerator()
+        throw new Error(`Round robin bracket generator not yet implemented`);
+      
+      case BracketType.MATCH_PLAY:
+        // In real implementation, return new MatchPlayGenerator()
+        throw new Error(`Match play bracket generator not yet implemented`);
+      
+      default:
+        throw new Error(`Unsupported bracket type: ${bracketType}`);\n    }\n  }\n}

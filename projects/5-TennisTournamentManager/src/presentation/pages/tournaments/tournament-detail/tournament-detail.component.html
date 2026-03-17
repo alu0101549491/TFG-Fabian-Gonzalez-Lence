@@ -1,0 +1,97 @@
+<div class="container p-lg">
+  @if (isLoading()) {
+    <div class="text-center p-lg">
+      <p>Loading tournament details...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error mb-lg">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (tournament()) {
+    <div class="mb-lg">
+      <button class="btn btn-ghost" routerLink="/tournaments">
+        ← Back to Tournaments
+      </button>
+    </div>
+
+    <div class="card mb-lg">
+      <div class="card-header">
+        <h1 class="card-title">{{ tournament()!.name }}</h1>
+        <span class="badge badge-{{ tournament()!.status.toLowerCase() }}">
+          {{ tournament()!.status }}
+        </span>
+      </div>
+
+      <div class="card-body">
+        <div class="grid gap-lg" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <h3>Tournament Information</h3>
+            <p><strong>Location:</strong> {{ tournament()!.location }}</p>
+            <p><strong>Surface:</strong> {{ tournament()!.surface }}</p>
+            <p><strong>Start Date:</strong> {{ formatDate(tournament()!.startDate) }}</p>
+            <p><strong>End Date:</strong> {{ formatDate(tournament()!.endDate) }}</p>
+            <p><strong>Max Participants:</strong> {{ tournament()!.maxParticipants }}</p>
+            <p><strong>Ranking System:</strong> {{ tournament()!.rankingSystem }}</p>
+            @if (tournament()!.registrationFee > 0) {
+              <p><strong>Registration Fee:</strong> {{ tournament()!.registrationFee }} {{ tournament()!.currency }}</p>
+            }
+          </div>
+
+          <div>
+            <h3>Description</h3>
+            <p class="text-muted">{{ tournament()!.description || 'No description available.' }}</p>
+
+            @if (isAuthenticated()) {
+              <div class="mt-md">
+                @if (isRegistered()) {
+                  <p class="text-success font-bold">✓ You are registered for this tournament</p>
+                } @else {
+                  <button class="btn btn-primary" (click)="registerForTournament()">
+                    Register for Tournament
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+      <div class="card">
+        <div class="card-body text-center">
+          <h4>Bracket</h4>
+          <p class="text-sm text-muted mb-md">View tournament bracket</p>
+          <button class="btn btn-primary btn-block" (click)="viewBracket()">
+            View Bracket
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body text-center">
+          <h4>Matches</h4>
+          <p class="text-sm text-muted mb-md">View match schedule</p>
+          <button class="btn btn-primary btn-block" (click)="viewMatches()">
+            View Matches
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body text-center">
+          <h4>Standings</h4>
+          <p class="text-sm text-muted mb-md">View current standings</p>
+          <button class="btn btn-primary btn-block" (click)="viewStandings()">
+            View Standings
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

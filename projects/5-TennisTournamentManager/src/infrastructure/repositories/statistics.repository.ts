@@ -32,7 +32,15 @@ export class StatisticsRepositoryImpl implements IStatisticsRepository {
    * @returns Promise resolving to the statistics or null if not found
    */
   public async findById(id: string): Promise<Statistics | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Statistics>(`/statistics/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class StatisticsRepositoryImpl implements IStatisticsRepository {
    * @returns Promise resolving to an array of all statistics
    */
   public async findAll(): Promise<Statistics[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Statistics[]>('/statistics');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class StatisticsRepositoryImpl implements IStatisticsRepository {
    * @returns Promise resolving to the saved statistics with assigned ID
    */
   public async save(statistics: Statistics): Promise<Statistics> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Statistics>('/statistics', statistics);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class StatisticsRepositoryImpl implements IStatisticsRepository {
    * @returns Promise resolving to the updated statistics
    */
   public async update(statistics: Statistics): Promise<Statistics> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Statistics>(`/statistics/${statistics.id}`, statistics);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class StatisticsRepositoryImpl implements IStatisticsRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/statistics/${id}`);
   }
 
   /**
@@ -76,7 +87,15 @@ export class StatisticsRepositoryImpl implements IStatisticsRepository {
    * @returns Promise resolving to the statistics or null if not found
    */
   public async findByParticipant(participantId: string): Promise<Statistics | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Statistics>(`/statistics?participantId=${participantId}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -85,6 +104,7 @@ export class StatisticsRepositoryImpl implements IStatisticsRepository {
    * @returns Promise resolving to an array of statistics
    */
   public async findByTournamentId(tournamentId: string): Promise<Statistics[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Statistics[]>(`/statistics?tournamentId=${tournamentId}`);
+    return response;
   }
 }

@@ -33,7 +33,15 @@ export class UserRepositoryImpl implements IUserRepository {
    * @returns Promise resolving to the user or null if not found
    */
   public async findById(id: string): Promise<User | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<User>(`/users/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -41,7 +49,8 @@ export class UserRepositoryImpl implements IUserRepository {
    * @returns Promise resolving to an array of all users
    */
   public async findAll(): Promise<User[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<User[]>('/users');
+    return response;
   }
 
   /**
@@ -50,7 +59,8 @@ export class UserRepositoryImpl implements IUserRepository {
    * @returns Promise resolving to the saved user with assigned ID
    */
   public async save(user: User): Promise<User> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<User>('/users', user);
+    return response;
   }
 
   /**
@@ -59,7 +69,8 @@ export class UserRepositoryImpl implements IUserRepository {
    * @returns Promise resolving to the updated user
    */
   public async update(user: User): Promise<User> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<User>(`/users/${user.id}`, user);
+    return response;
   }
 
   /**
@@ -68,7 +79,7 @@ export class UserRepositoryImpl implements IUserRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/users/${id}`);
   }
 
   /**
@@ -77,7 +88,15 @@ export class UserRepositoryImpl implements IUserRepository {
    * @returns Promise resolving to the user or null if not found
    */
   public async findByEmail(email: string): Promise<User | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<User>(`/users/email/${email}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -86,7 +105,15 @@ export class UserRepositoryImpl implements IUserRepository {
    * @returns Promise resolving to the user or null if not found
    */
   public async findByUsername(username: string): Promise<User | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<User>(`/users/username/${username}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -95,6 +122,7 @@ export class UserRepositoryImpl implements IUserRepository {
    * @returns Promise resolving to an array of users with the specified role
    */
   public async findByRole(role: UserRole): Promise<User[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<User[]>(`/users?role=${role}`);
+    return response;
   }
 }

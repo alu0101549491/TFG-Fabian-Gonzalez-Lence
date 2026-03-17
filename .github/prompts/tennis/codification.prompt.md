@@ -7,6 +7,10 @@ project file by file, category by category, following the plan recorded in
 `CODIFICATION-PROGRESS.md`. You define which categories to tackle and in what
 order — always respecting the dependency order listed in that file.
 
+**SCOPE:** This prompt covers the **codification phase only** — Categories 1–19
+and 24 (production code + documentation). Test categories (20–23) are deferred
+to a separate post-codification phase.
+
 For every file you complete:
 1. Write the full source code.
 2. Tick the corresponding checkbox in `CODIFICATION-PROGRESS.md`.
@@ -14,7 +18,7 @@ For every file you complete:
 4. Append an entry to `CHANGES.md`.
 
 Do NOT stop after finishing one category — continue with the next pending one
-until every checkbox in `CODIFICATION-PROGRESS.md` is ticked.
+until all production code categories are complete.
 
 ---
 
@@ -251,17 +255,21 @@ Append to the top of the file:
 ---
 
 ## STOPPING CONDITION
-Continue coding until every checkbox in every category of
-`CODIFICATION-PROGRESS.md` is ticked. When done, output a final summary:
+Continue coding until **all production code categories (1–19, 24)** in
+`CODIFICATION-PROGRESS.md` are marked ✅ Complete. **Skip test categories
+(20–23)** — they are deferred to the post-codification phase.
+
+When the codification phase is done, output a final summary:
 ```
-## CODIFICATION COMPLETE
+## CODIFICATION PHASE COMPLETE
 
 | Metric | Value |
 |--------|-------|
-| Total categories | N |
-| Total files | N |
-| Estimated test coverage | ≥70% |
-| CHANGES.md entries | N |
+| Categories completed | 20 (1–19, 24) |
+| Production files | ~180 |
+| Test files deferred | 30+ (Categories 20–23) |
+| CHANGES.md entries | ~180 |
 
-All files implemented. Ready for review.
+All production code implemented. Ready for functional testing.
+Tests will be implemented in the post-codification phase.
 ```

@@ -82,7 +82,22 @@ export class Bracket {
    * @param participants - List of participant IDs to place in the bracket
    */
   public generate(participants: string[]): void {
-    throw new Error('Not implemented');
+    if (this.isPublished) {
+      throw new Error('Cannot regenerate a published bracket.');
+    }
+    
+    if (participants.length === 0) {
+      throw new Error('Cannot generate bracket with no participants.');
+    }
+    
+    if (participants.length > this.size) {
+      throw new Error(
+        `Number of participants (${participants.length}) exceeds bracket size (${this.size}).`
+      );
+    }
+    
+    // Note: Actual bracket generation should be done via BracketGeneratorFactory
+    // in the application layer. This method validates the business rules only.
   }
 
   /**
@@ -91,6 +106,13 @@ export class Bracket {
    * @param keepResults - Whether to preserve existing match results
    */
   public regenerate(keepResults: boolean): void {
-    throw new Error('Not implemented');
+    if (this.isPublished && !keepResults) {
+      throw new Error(
+        'Cannot regenerate published bracket without keeping results.'
+      );
+    }
+    
+    // Note: Actual bracket regeneration should be done via BracketGeneratorFactory
+    // in the application layer. This method validates the business rules only.
   }
 }

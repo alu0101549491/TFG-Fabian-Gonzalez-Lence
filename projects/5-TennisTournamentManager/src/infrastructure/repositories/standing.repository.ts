@@ -32,7 +32,15 @@ export class StandingRepositoryImpl implements IStandingRepository {
    * @returns Promise resolving to the standing or null if not found
    */
   public async findById(id: string): Promise<Standing | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Standing>(`/standings/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class StandingRepositoryImpl implements IStandingRepository {
    * @returns Promise resolving to an array of all standings
    */
   public async findAll(): Promise<Standing[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Standing[]>('/standings');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class StandingRepositoryImpl implements IStandingRepository {
    * @returns Promise resolving to the saved standing with assigned ID
    */
   public async save(standing: Standing): Promise<Standing> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Standing>('/standings', standing);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class StandingRepositoryImpl implements IStandingRepository {
    * @returns Promise resolving to the updated standing
    */
   public async update(standing: Standing): Promise<Standing> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Standing>(`/standings/${standing.id}`, standing);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class StandingRepositoryImpl implements IStandingRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/standings/${id}`);
   }
 
   /**
@@ -76,7 +87,8 @@ export class StandingRepositoryImpl implements IStandingRepository {
    * @returns Promise resolving to an array of standings
    */
   public async findByBracket(bracketId: string): Promise<Standing[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Standing[]>(`/standings?bracketId=${bracketId}`);
+    return response;
   }
 
   /**
@@ -85,6 +97,7 @@ export class StandingRepositoryImpl implements IStandingRepository {
    * @returns Promise resolving to an array of standings
    */
   public async findByParticipantId(participantId: string): Promise<Standing[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Standing[]>(`/standings?participantId=${participantId}`);
+    return response;
   }
 }

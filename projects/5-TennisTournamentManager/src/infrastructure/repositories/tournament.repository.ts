@@ -33,7 +33,15 @@ export class TournamentRepositoryImpl implements ITournamentRepository {
    * @returns Promise resolving to the tournament or null if not found
    */
   public async findById(id: string): Promise<Tournament | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Tournament>(`/tournaments/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -41,7 +49,8 @@ export class TournamentRepositoryImpl implements ITournamentRepository {
    * @returns Promise resolving to an array of all tournaments
    */
   public async findAll(): Promise<Tournament[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Tournament[]>('/tournaments');
+    return response;
   }
 
   /**
@@ -50,7 +59,8 @@ export class TournamentRepositoryImpl implements ITournamentRepository {
    * @returns Promise resolving to the saved tournament with assigned ID
    */
   public async save(tournament: Tournament): Promise<Tournament> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Tournament>('/tournaments', tournament);
+    return response;
   }
 
   /**
@@ -59,7 +69,8 @@ export class TournamentRepositoryImpl implements ITournamentRepository {
    * @returns Promise resolving to the updated tournament
    */
   public async update(tournament: Tournament): Promise<Tournament> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Tournament>(`/tournaments/${tournament.id}`, tournament);
+    return response;
   }
 
   /**
@@ -68,7 +79,7 @@ export class TournamentRepositoryImpl implements ITournamentRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/tournaments/${id}`);
   }
 
   /**
@@ -77,7 +88,8 @@ export class TournamentRepositoryImpl implements ITournamentRepository {
    * @returns Promise resolving to an array of tournaments
    */
   public async findByOrganizerId(organizerId: string): Promise<Tournament[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Tournament[]>(`/tournaments?organizerId=${organizerId}`);
+    return response;
   }
 
   /**
@@ -86,7 +98,8 @@ export class TournamentRepositoryImpl implements ITournamentRepository {
    * @returns Promise resolving to an array of tournaments
    */
   public async findByStatus(status: TournamentStatus): Promise<Tournament[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Tournament[]>(`/tournaments?status=${status}`);
+    return response;
   }
 
   /**
@@ -94,6 +107,7 @@ export class TournamentRepositoryImpl implements ITournamentRepository {
    * @returns Promise resolving to an array of active tournaments
    */
   public async findActive(): Promise<Tournament[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Tournament[]>('/tournaments/active');
+    return response;
   }
 }

@@ -5,24 +5,118 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since March 16, 2026
+ * @since March 17, 2026
  * @file presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts
  * @desc Administrator dashboard for tournament management, user moderation, and system monitoring.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component} from '@angular/core';
+import {Component, OnInit, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {Router, RouterModule} from '@angular/router';
+import {TournamentService} from '@application/services';
+import {type TournamentDto} from '@application/dto';
+import {AuthStateService} from '@presentation/services/auth-state.service';
+import {UserRole} from '@domain/enumerations/user-role';
 
 /**
- * AdminDashboardComponent — stub for admin dashboard.
+ * AdminDashboardComponent provides administrative oversight and management tools.
  */
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [],
-  template: `<p>admin-dashboard works!</p>`,
+  imports: [CommonModule, RouterModule],
+  templateUrl: './admin-dashboard.component.html',
   styles: [],
 })
-export class AdminDashboardComponent {
-  // TODO: implement admin dashboard logic
+export class AdminDashboardComponent implements OnInit {
+  /** Recent tournaments */
+  public recentTournaments = signal<TournamentDto[]>([]);
+
+  /** Loading state */
+  public isLoading = signal(false);
+
+  /** Error message */
+  public errorMessage = signal<string | null>(null);
+
+  /** Stats */
+  public totalTournaments = signal(0);
+  public activeTournaments = signal(0);
+
+  /**
+   * Creates an instance of AdminDashboardComponent.
+   *
+   * @param tournamentService - Tournament service for data operations
+   * @param authStateService - Auth state service for user verification
+   * @param router - Router for navigation
+   */
+  public constructor(
+    private readonly tournamentService: TournamentService,
+    private readonly authStateService: AuthStateService,
+    private readonly router: Router,
+  ) {}
+
+  /**
+   * Initializes component and verifies admin access.
+   */
+  public ngOnInit(): void {
+    const user = this.authStateService.getCurrentUser();
+    if (!user || user.role !== UserRole.ADMIN) {
+      void this.router.navigate(['/']);
+      return;
+    }
+
+    void this.loadDashboardData();
+  }
+
+  /**
+   * Loads dashboard statistics and data.
+   */
+  private async loadDashboardData(): Promise<void> {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const active = await this.tournamentService.getActiveTournaments();
+      this.activeTournaments.set(active.length);
+      this.recentTournaments.set(active.slice(0, 5));
+      
+      // Would normally fetch total count from API
+      this.totalTournaments.set(active.length);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load dashboard data';
+      this.errorMessage.set(message);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  /**
+   * Navigates to tournament management.
+   */
+  public manageTournaments(): void {
+    void this.router.navigate(['/tournaments']);
+  }
+
+  /**
+   * Navigates to user management.
+   */
+  public manageUsers(): void {
+    // Would navigate to user management page
+    alert('User management feature coming soon');
+  }
+
+  /**
+   * Formats date for display.
+   *
+   * @param date - Date to format
+   * @returns Formatted date string
+   */
+  public formatDate(date: Date): string {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
 }

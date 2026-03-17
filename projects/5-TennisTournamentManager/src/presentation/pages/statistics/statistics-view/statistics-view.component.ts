@@ -5,24 +5,85 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since March 16, 2026
+ * @since March 17, 2026
  * @file presentation/pages/statistics/statistics-view/statistics-view.component.ts
  * @desc Player and tournament statistics dashboard.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component} from '@angular/core';
+import {Component, OnInit, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {ActivatedRoute, RouterModule} from '@angular/router';
+import {StatisticsService} from '@application/services';
+import {type StatisticsDto} from '@application/dto';
+import {AuthStateService} from '@presentation/services/auth-state.service';
 
 /**
- * StatisticsViewComponent — stub for statistics display.
+ * StatisticsViewComponent displays player and tournament statistics.
  */
 @Component({
   selector: 'app-statistics-view',
   standalone: true,
-  imports: [],
-  template: `<p>statistics-view works!</p>`,
+  imports: [CommonModule, RouterModule],
+  templateUrl: './statistics-view.component.html',
   styles: [],
 })
-export class StatisticsViewComponent {
-  // TODO: implement statistics logic
+export class StatisticsViewComponent implements OnInit {
+  /** Statistics data */
+  public statistics = signal<StatisticsDto | null>(null);
+
+  /** Loading state */
+  public isLoading = signal(false);
+
+  /** Error message */
+  public errorMessage = signal<string | null>(null);
+
+  /**
+   * Creates an instance of StatisticsViewComponent.
+   *
+   * @param route - Activated route to get participant ID
+   * @param statisticsService - Statistics service for data operations
+   * @param authStateService - Auth state service for current user
+   */
+  public constructor(
+    private readonly route: ActivatedRoute,
+    private readonly statisticsService: StatisticsService,
+    private readonly authStateService: AuthStateService,
+  ) {}
+
+  /**
+   * Initializes component and loads statistics.
+   */
+  public ngOnInit(): void {
+    this.route.paramMap.subscribe(params => {
+      let participantId = params.get('id');
+      if (!participantId) {
+        const user = this.authStateService.getCurrentUser();
+        participantId = user?.id || null;
+      }
+      if (participantId) {
+        void this.loadStatistics(participantId);
+      }
+    });
+  }
+
+  /**
+   * Loads statistics for participant.
+   *
+   * @param participantId - ID of the participant
+   */
+  private async loadStatistics(participantId: string): Promise<void> {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const statistics = await this.statisticsService.getStatisticsByParticipant(participantId);
+      this.statistics.set(statistics);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load statistics';
+      this.errorMessage.set(message);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
 }

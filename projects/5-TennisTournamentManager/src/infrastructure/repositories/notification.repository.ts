@@ -32,7 +32,15 @@ export class NotificationRepositoryImpl implements INotificationRepository {
    * @returns Promise resolving to the notification or null if not found
    */
   public async findById(id: string): Promise<Notification | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Notification>(`/notifications/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class NotificationRepositoryImpl implements INotificationRepository {
    * @returns Promise resolving to an array of all notifications
    */
   public async findAll(): Promise<Notification[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Notification[]>('/notifications');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class NotificationRepositoryImpl implements INotificationRepository {
    * @returns Promise resolving to the saved notification with assigned ID
    */
   public async save(notification: Notification): Promise<Notification> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Notification>('/notifications', notification);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class NotificationRepositoryImpl implements INotificationRepository {
    * @returns Promise resolving to the updated notification
    */
   public async update(notification: Notification): Promise<Notification> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Notification>(`/notifications/${notification.id}`, notification);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class NotificationRepositoryImpl implements INotificationRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/notifications/${id}`);
   }
 
   /**
@@ -76,7 +87,8 @@ export class NotificationRepositoryImpl implements INotificationRepository {
    * @returns Promise resolving to an array of notifications
    */
   public async findByUser(userId: string): Promise<Notification[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Notification[]>(`/notifications?userId=${userId}`);
+    return response;
   }
 
   /**
@@ -85,7 +97,8 @@ export class NotificationRepositoryImpl implements INotificationRepository {
    * @returns Promise resolving to an array of unread notifications
    */
   public async findUnread(userId: string): Promise<Notification[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Notification[]>(`/notifications?userId=${userId}&read=false`);
+    return response;
   }
 
   /**
@@ -94,6 +107,6 @@ export class NotificationRepositoryImpl implements INotificationRepository {
    * @returns Promise resolving when the notification is marked as read
    */
   public async markAsRead(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.put(`/notifications/${id}/read`, {});
   }
 }

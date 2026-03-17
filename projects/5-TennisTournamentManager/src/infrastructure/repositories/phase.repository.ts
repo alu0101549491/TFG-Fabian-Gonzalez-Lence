@@ -32,7 +32,15 @@ export class PhaseRepositoryImpl implements IPhaseRepository {
    * @returns Promise resolving to the phase or null if not found
    */
   public async findById(id: string): Promise<Phase | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Phase>(`/phases/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class PhaseRepositoryImpl implements IPhaseRepository {
    * @returns Promise resolving to an array of all phases
    */
   public async findAll(): Promise<Phase[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Phase[]>('/phases');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class PhaseRepositoryImpl implements IPhaseRepository {
    * @returns Promise resolving to the saved phase with assigned ID
    */
   public async save(phase: Phase): Promise<Phase> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Phase>('/phases', phase);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class PhaseRepositoryImpl implements IPhaseRepository {
    * @returns Promise resolving to the updated phase
    */
   public async update(phase: Phase): Promise<Phase> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Phase>(`/phases/${phase.id}`, phase);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class PhaseRepositoryImpl implements IPhaseRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/phases/${id}`);
   }
 
   /**
@@ -76,6 +87,7 @@ export class PhaseRepositoryImpl implements IPhaseRepository {
    * @returns Promise resolving to an array of phases
    */
   public async findByTournament(tournamentId: string): Promise<Phase[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Phase[]>(`/phases?tournamentId=${tournamentId}`);
+    return response;
   }
 }

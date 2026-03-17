@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Category} from '../entities/category.entity';
+import {Category} from '../entities/category';
 
 /**
  * Repository interface for Category entity data access operations.

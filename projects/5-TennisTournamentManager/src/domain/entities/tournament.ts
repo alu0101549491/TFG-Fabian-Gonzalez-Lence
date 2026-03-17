@@ -111,7 +111,7 @@ export class Tournament {
     this.maxParticipants = props.maxParticipants;
     this.registrationFee = props.registrationFee ?? 0;
     this.currency = props.currency ?? 'EUR';
-    this.acceptanceType = props.acceptanceType ?? AcceptanceType.MANUAL;
+    this.acceptanceType = props.acceptanceType ?? AcceptanceType.DIRECT_ACCEPTANCE;
     this.rankingSystem = props.rankingSystem ?? RankingSystem.POINTS_BASED;
     this.organizerId = props.organizerId;
     this.registrationOpenDate = props.registrationOpenDate ?? null;
@@ -129,7 +129,21 @@ export class Tournament {
    * @returns True if registration is open
    */
   public isRegistrationOpen(): boolean {
-    throw new Error('Not implemented');
+    const now = new Date();
+    
+    if (this.status !== TournamentStatus.REGISTRATION_OPEN) {
+      return false;
+    }
+    
+    if (this.registrationOpenDate && now < this.registrationOpenDate) {
+      return false;
+    }
+    
+    if (this.registrationCloseDate && now > this.registrationCloseDate) {
+      return false;
+    }
+    
+    return true;
   }
 
   /**
@@ -138,14 +152,21 @@ export class Tournament {
    * @returns True if the tournament accepts registrations
    */
   public canAcceptRegistrations(): boolean {
-    throw new Error('Not implemented');
+    return this.isRegistrationOpen();
   }
 
   /**
    * Finalizes the tournament, marking it as complete.
    */
   public finalize(): void {
-    throw new Error('Not implemented');
+    if (!this.canTransitionTo(TournamentStatus.FINALIZED)) {
+      throw new Error(
+        `Cannot finalize tournament in status ${this.status}. Must be IN_PROGRESS.`
+      );
+    }
+    
+    // Note: Actual status update should be done via repository in application layer
+    // This method validates the business rule only
   }
 
   /**
@@ -155,6 +176,32 @@ export class Tournament {
    * @returns True if the transition is valid
    */
   public canTransitionTo(newStatus: TournamentStatus): boolean {
-    throw new Error('Not implemented');
+    const validTransitions: Record<TournamentStatus, TournamentStatus[]> = {
+      [TournamentStatus.DRAFT]: [
+        TournamentStatus.REGISTRATION_OPEN,
+        TournamentStatus.CANCELLED,
+      ],
+      [TournamentStatus.REGISTRATION_OPEN]: [
+        TournamentStatus.REGISTRATION_CLOSED,
+        TournamentStatus.CANCELLED,
+      ],
+      [TournamentStatus.REGISTRATION_CLOSED]: [
+        TournamentStatus.DRAW_PENDING,
+        TournamentStatus.CANCELLED,
+      ],
+      [TournamentStatus.DRAW_PENDING]: [
+        TournamentStatus.IN_PROGRESS,
+        TournamentStatus.CANCELLED,
+      ],
+      [TournamentStatus.IN_PROGRESS]: [
+        TournamentStatus.FINALIZED,
+        TournamentStatus.CANCELLED,
+      ],
+      [TournamentStatus.FINALIZED]: [],
+      [TournamentStatus.CANCELLED]: [],
+    };
+    
+    const allowedTransitions = validTransitions[this.status] || [];
+    return allowedTransitions.includes(newStatus);
   }
 }

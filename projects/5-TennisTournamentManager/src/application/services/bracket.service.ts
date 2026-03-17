@@ -17,6 +17,9 @@ import {IBracketRepository} from '@domain/repositories/bracket-repository.interf
 import {IPhaseRepository} from '@domain/repositories/phase-repository.interface';
 import {IRegistrationRepository} from '@domain/repositories/registration-repository.interface';
 import {BracketGeneratorFactory} from './bracket-generator.factory';
+import {Bracket} from '@domain/entities/bracket';
+import {RegistrationStatus} from '@domain/enumerations/registration-status';
+import {generateId} from '@shared/utils';
 
 /**
  * Bracket service implementation.
@@ -46,7 +49,56 @@ export class BracketService implements IBracketService {
    * @returns Generated bracket information
    */
   public async generateBracket(data: GenerateBracketDto, userId: string): Promise<BracketDto> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!data.tournamentId || data.tournamentId.trim().length === 0) {
+      throw new Error('Tournament ID is required');
+    }
+    
+    if (!data.categoryId || data.categoryId.trim().length === 0) {
+      throw new Error('Category ID is required');
+    }
+    
+    if (!data.bracketType) {
+      throw new Error('Bracket type is required');
+    }
+    
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+    
+    // Get accepted registrations for the category
+    const registrations = await this.registrationRepository.findByCategoryId(data.categoryId);
+    const acceptedRegistrations = registrations.filter(
+      r => r.status === RegistrationStatus.ACCEPTED
+    );
+    
+    if (acceptedRegistrations.length === 0) {
+      throw new Error('No accepted participants for this category');
+    }
+    
+    // Get participant IDs
+    const participantIds = acceptedRegistrations.map(r => r.participantId);
+    
+    // Create bracket entity (phaseId would come from a phase entity in real implementation)
+    const phaseId = generateId();
+    const bracket = new Bracket({
+      id: generateId(),
+      tournamentId: data.tournamentId,
+      phaseId,
+      bracketType: data.bracketType,
+      size: acceptedRegistrations.length,
+    });
+    
+    // Generate bracket structure using the appropriate generator
+    const generator = this.bracketGeneratorFactory.createGenerator(data.bracketType);
+    bracket.generate(participantIds);
+    
+    // In real implementation, generator would create matches and structure
+    // For now, we just save the bracket
+    const savedBracket = await this.bracketRepository.save(bracket);
+    
+    // Map to DTO
+    return this.mapBracketToDto(savedBracket);
   }
 
   /**
@@ -56,7 +108,19 @@ export class BracketService implements IBracketService {
    * @returns Bracket information
    */
   public async getBracketById(bracketId: string): Promise<BracketDto> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!bracketId || bracketId.trim().length === 0) {
+      throw new Error('Bracket ID is required');
+    }
+    
+    // Find bracket
+    const bracket = await this.bracketRepository.findById(bracketId);
+    if (!bracket) {
+      throw new Error('Bracket not found');
+    }
+    
+    // Map to DTO
+    return this.mapBracketToDto(bracket);
   }
 
   /**
@@ -66,7 +130,13 @@ export class BracketService implements IBracketService {
    * @returns List of brackets
    */
   public async getBracketsByTournament(tournamentId: string): Promise<BracketDto[]> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!tournamentId || tournamentId.trim().length === 0) {
+      throw new Error('Tournament ID is required');
+    }
+    
+    const brackets = await this.bracketRepository.findByTournament(tournamentId);
+    return brackets.map(b => this.mapBracketToDto(b));
   }
 
   /**
@@ -77,7 +147,38 @@ export class BracketService implements IBracketService {
    * @returns Published bracket information
    */
   public async publishBracket(bracketId: string, userId: string): Promise<BracketDto> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!bracketId || bracketId.trim().length === 0) {
+      throw new Error('Bracket ID is required');
+    }
+    
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+    
+    // Check if bracket exists
+    const bracket = await this.bracketRepository.findById(bracketId);
+    if (!bracket) {
+      throw new Error('Bracket not found');
+    }
+    
+    if (bracket.isPublished) {
+      throw new Error('Bracket is already published');
+    }
+    
+    // Update bracket to published
+    const publishedBracket = new Bracket({
+      ...bracket,
+      isPublished: true,
+    });
+    
+    const savedBracket = await this.bracketRepository.update(publishedBracket);
+    
+    // Send notifications to participants
+    // await this.notificationService.sendBulkNotifications(...)
+    
+    // Map to DTO
+    return this.mapBracketToDto(savedBracket);
   }
 
   /**
@@ -87,7 +188,13 @@ export class BracketService implements IBracketService {
    * @returns List of phases
    */
   public async getPhases(bracketId: string): Promise<PhaseDto[]> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!bracketId || bracketId.trim().length === 0) {
+      throw new Error('Bracket ID is required');
+    }
+    
+    const phases = await this.phaseRepository.findByBracketId(bracketId);
+    return phases.map(p => this.mapPhaseToDto(p));
   }
 
   /**
@@ -98,6 +205,68 @@ export class BracketService implements IBracketService {
    * @returns Regenerated bracket information
    */
   public async regenerateBracket(bracketId: string, userId: string): Promise<BracketDto> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!bracketId || bracketId.trim().length === 0) {
+      throw new Error('Bracket ID is required');
+    }
+    
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+    
+    // Check if bracket exists
+    const bracket = await this.bracketRepository.findById(bracketId);
+    if (!bracket) {
+      throw new Error('Bracket not found');
+    }
+    
+    // Validate business rule
+    bracket.regenerate(false);
+    
+    // In real implementation, regenerate bracket structure
+    // const generator = this.bracketGeneratorFactory.createGenerator(bracket.bracketType);
+    // generator would regenerate the bracket
+    
+    const savedBracket = await this.bracketRepository.update(bracket);
+    
+    // Map to DTO
+    return this.mapBracketToDto(savedBracket);
+  }
+
+  /**
+   * Maps a Bracket entity to BracketDto.
+   *
+   * @param bracket - Bracket entity
+   * @returns Bracket DTO
+   */
+  private mapBracketToDto(bracket: Bracket): BracketDto {
+    return {
+      id: bracket.id,
+      tournamentId: bracket.tournamentId,
+      categoryId: bracket.phaseId, // In real implementation, get from phase
+      bracketType: bracket.bracketType,
+      size: bracket.size,
+      totalRounds: bracket.totalRounds,
+      structure: bracket.structure,
+      isPublished: bracket.isPublished,
+      createdAt: bracket.createdAt,
+    };
+  }
+
+  /**
+   * Maps a Phase entity to PhaseDto.
+   *
+   * @param phase - Phase entity
+   * @returns Phase DTO
+   */
+  private mapPhaseToDto(phase: any): PhaseDto {
+    return {
+      id: phase.id,
+      bracketId: phase.bracketId,
+      name: phase.name,
+      order: phase.order,
+      matchCount: phase.matchCount ?? 0,
+      isCompleted: phase.isCompleted ?? false,
+    };
   }
 }

@@ -11,8 +11,8 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {User} from '../entities/user.entity';
-import {UserRole} from '../enumerations/user-role.enum';
+import {User} from '../entities/user';
+import {UserRole} from '../enumerations/user-role';
 
 /**
  * Repository interface for User entity data access operations.

@@ -19,32 +19,32 @@ Tests will be implemented **after** all production code is complete and function
 
 | # | Category | Status | Files | Done |
 |---|----------|--------|-------|------|
-| 1 | Configuration & Tooling | ⬜ Pending | 9 | 0/9 |
-| 2 | Styles | ⬜ Pending | 5 | 0/5 |
-| 3 | Domain — Enumerations | ⬜ Pending | 13 | 0/13 |
-| 4 | Domain — Entities | ⬜ Pending | 18 | 0/18 |
-| 5 | Domain — Repository Interfaces | ⬜ Pending | 19 | 0/19 |
-| 6 | Shared Utilities | ⬜ Pending | 3 | 0/3 |
-| 7 | Application — DTOs | ⬜ Pending | 14 | 0/14 |
-| 8 | Application — Service Interfaces | ⬜ Pending | 14 | 0/14 |
-| 9 | Application — Service Implementations | ⬜ Pending | 17 | 0/17 |
-| 10 | Infrastructure — HTTP & WebSocket | ⬜ Pending | 5 | 0/5 |
-| 11 | Infrastructure — Repository Implementations | ⬜ Pending | 19 | 0/19 |
-| 12 | Infrastructure — External Adapters | ⬜ Pending | 6 | 0/6 |
-| 13 | Presentation — Angular Core | ⬜ Pending | 11 | 0/11 |
-| 14 | Presentation — Auth Pages | ⬜ Pending | 3 | 0/3 |
-| 15 | Presentation — Tournament Pages | ⬜ Pending | 3 | 0/3 |
-| 16 | Presentation — Match & Bracket Pages | ⬜ Pending | 5 | 0/5 |
-| 17 | Presentation — Standing & Ranking Pages | ⬜ Pending | 3 | 0/3 |
-| 18 | Presentation — Profile & Admin Pages | ⬜ Pending | 3 | 0/3 |
-| 19 | Presentation — Communication Pages | ⬜ Pending | 5 | 0/5 |
+| 1 | Configuration & Tooling | ✅ Complete | 9 | 9/9 |
+| 2 | Styles | ✅ Complete | 5 | 5/5 |
+| 3 | Domain — Enumerations | ✅ Complete | 13 | 13/13 |
+| 4 | Domain — Entities | ✅ Complete | 18 | 18/18 |
+| 5 | Domain — Repository Interfaces | ✅ Complete | 19 | 19/19 |
+| 6 | Shared Utilities | ✅ Complete | 3 | 3/3 |
+| 7 | Application — DTOs | ✅ Complete | 14 | 14/14 |
+| 8 | Application — Service Interfaces | ✅ Complete | 14 | 14/14 |
+| 9 | Application — Service Implementations | ✅ Complete | 17 | 17/17 |
+| 10 | Infrastructure — HTTP & WebSocket | ✅ Complete | 5 | 5/5 |
+| 11 | Infrastructure — Repository Implementations | ✅ Complete | 19 | 19/19 |
+| 12 | Infrastructure — External Adapters | ✅ Complete | 6 | 6/6 |
+| 13 | Presentation — Angular Core | ✅ Complete | 11 | 11/11 |
+| 14 | Presentation — Auth Pages | ✅ Complete | 4 | 4/4 |
+| 15 | Presentation — Tournament Pages | ✅ Complete | 4 | 4/4 |
+| 16 | Presentation — Match & Bracket Pages | ✅ Complete | 6 | 6/6 |
+| 17 | Presentation — Standing & Ranking Pages | ✅ Complete | 6 | 6/6 |
+| 18 | Presentation — Profile & Admin Pages | ✅ Complete | 4 | 4/4 |
+| 19 | Presentation — Communication Pages | ✅ Complete | 4 | 4/4 |
 | 20 | Tests — Domain Unit Tests | 🔮 Deferred | 17 | — |
 | 21 | Tests — Application Unit Tests | 🔮 Deferred | 13 | — |
 | 22 | Tests — Integration Tests | 🔮 Deferred | TBD | — |
 | 23 | Tests — E2E Tests | 🔮 Deferred | TBD | — |
-| 24 | Documentation | ⬜ Pending | 3 | 0/3 |
+| 24 | Documentation | ✅ Complete | 3 | 3/3 |
 
-**Codification Phase Total: 180 files** (excludes 30+ test files)  
+**Codification Phase Total: 183 files** ✅ **ALL COMPLETE**  
 **Post-Codification Total: 30+ test files** (to be implemented after production code)
 
 Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked · 🔮 Deferred (post-codification)
@@ -56,18 +56,18 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 1 — Configuration & Tooling
 **Description:** Root configuration files for build, test, lint, and documentation tools.  
 **Dependencies:** none  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `package.json`
-- [ ] `tsconfig.json`
-- [ ] `tsconfig.node.json`
-- [ ] `vite.config.ts`
-- [ ] `jest.config.js`
-- [ ] `eslint.config.mjs`
-- [ ] `typedoc.json`
-- [ ] `playwright.config.ts`
-- [ ] `.gitignore`
+- [x] `package.json`
+- [x] `tsconfig.json`
+- [x] `tsconfig.node.json`
+- [x] `vite.config.ts`
+- [x] `jest.config.js`
+- [x] `eslint.config.mjs`
+- [x] `typedoc.json`
+- [x] `playwright.config.ts`
+- [x] `.gitignore`
 
 #### File list
 | File path | Class / Symbol | Notes |
@@ -87,14 +87,14 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 2 — Styles
 **Description:** All CSS files providing global and component-level styling.  
 **Dependencies:** none  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/styles/global.css`
-- [ ] `src/styles/variables.css`
-- [ ] `src/styles/reset.css`
-- [ ] `src/styles/components.css`
-- [ ] `src/styles/responsive.css`
+- [x] `src/styles/global.css`
+- [x] `src/styles/variables.css`
+- [x] `src/styles/reset.css`
+- [x] `src/styles/components.css`
+- [x] `src/styles/responsive.css`
 
 #### File list
 | File path | Scope | Notes |
@@ -110,22 +110,22 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 3 — Domain — Enumerations
 **Description:** Type-safe enumeration constants for domain states and types.  
 **Dependencies:** none  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/domain/enumerations/index.ts`
-- [ ] `src/domain/enumerations/acceptance-type.ts`
-- [ ] `src/domain/enumerations/bracket-type.ts`
-- [ ] `src/domain/enumerations/match-status.ts`
-- [ ] `src/domain/enumerations/notification-channel.ts`
-- [ ] `src/domain/enumerations/notification-type.ts`
-- [ ] `src/domain/enumerations/payment-status.ts`
-- [ ] `src/domain/enumerations/ranking-system.ts`
-- [ ] `src/domain/enumerations/registration-status.ts`
-- [ ] `src/domain/enumerations/sanction-type.ts`
-- [ ] `src/domain/enumerations/surface.ts`
-- [ ] `src/domain/enumerations/tournament-status.ts`
-- [ ] `src/domain/enumerations/user-role.ts`
+- [x] `src/domain/enumerations/index.ts`
+- [x] `src/domain/enumerations/acceptance-type.ts`
+- [x] `src/domain/enumerations/bracket-type.ts`
+- [x] `src/domain/enumerations/match-status.ts`
+- [x] `src/domain/enumerations/notification-channel.ts`
+- [x] `src/domain/enumerations/notification-type.ts`
+- [x] `src/domain/enumerations/payment-status.ts`
+- [x] `src/domain/enumerations/ranking-system.ts`
+- [x] `src/domain/enumerations/registration-status.ts`
+- [x] `src/domain/enumerations/sanction-type.ts`
+- [x] `src/domain/enumerations/surface.ts`
+- [x] `src/domain/enumerations/tournament-status.ts`
+- [x] `src/domain/enumerations/user-role.ts`
 
 #### File list
 | File path | Enum | Values |
@@ -149,27 +149,27 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 4 — Domain — Entities
 **Description:** Core domain entities with business logic and invariants.  
 **Dependencies:** Category 3 (Enumerations)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/domain/entities/index.ts`
-- [ ] `src/domain/entities/user.ts`
-- [ ] `src/domain/entities/tournament.ts`
-- [ ] `src/domain/entities/category.ts`
-- [ ] `src/domain/entities/court.ts`
-- [ ] `src/domain/entities/registration.ts`
-- [ ] `src/domain/entities/bracket.ts`
-- [ ] `src/domain/entities/phase.ts`
-- [ ] `src/domain/entities/match.ts`
-- [ ] `src/domain/entities/score.ts`
-- [ ] `src/domain/entities/standing.ts`
-- [ ] `src/domain/entities/global-ranking.ts`
-- [ ] `src/domain/entities/order-of-play.ts`
-- [ ] `src/domain/entities/notification.ts`
-- [ ] `src/domain/entities/announcement.ts`
-- [ ] `src/domain/entities/statistics.ts`
-- [ ] `src/domain/entities/payment.ts`
-- [ ] `src/domain/entities/sanction.ts`
+- [x] `src/domain/entities/index.ts`
+- [x] `src/domain/entities/user.ts`
+- [x] `src/domain/entities/tournament.ts`
+- [x] `src/domain/entities/category.ts`
+- [x] `src/domain/entities/court.ts`
+- [x] `src/domain/entities/registration.ts`
+- [x] `src/domain/entities/bracket.ts`
+- [x] `src/domain/entities/phase.ts`
+- [x] `src/domain/entities/match.ts`
+- [x] `src/domain/entities/score.ts`
+- [x] `src/domain/entities/standing.ts`
+- [x] `src/domain/entities/global-ranking.ts`
+- [x] `src/domain/entities/order-of-play.ts`
+- [x] `src/domain/entities/notification.ts`
+- [x] `src/domain/entities/announcement.ts`
+- [x] `src/domain/entities/statistics.ts`
+- [x] `src/domain/entities/payment.ts`
+- [x] `src/domain/entities/sanction.ts`
 
 #### File list
 | File path | Entity | Key Responsibilities |
@@ -198,28 +198,28 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 5 — Domain — Repository Interfaces
 **Description:** Data access contracts following Repository pattern and Dependency Inversion Principle.  
 **Dependencies:** Category 4 (Entities)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/domain/repositories/index.ts`
-- [ ] `src/domain/repositories/user-repository.interface.ts`
-- [ ] `src/domain/repositories/tournament-repository.interface.ts`
-- [ ] `src/domain/repositories/category-repository.interface.ts`
-- [ ] `src/domain/repositories/court-repository.interface.ts`
-- [ ] `src/domain/repositories/registration-repository.interface.ts`
-- [ ] `src/domain/repositories/bracket-repository.interface.ts`
-- [ ] `src/domain/repositories/phase-repository.interface.ts`
-- [ ] `src/domain/repositories/match-repository.interface.ts`
-- [ ] `src/domain/repositories/score-repository.interface.ts`
-- [ ] `src/domain/repositories/standing-repository.interface.ts`
-- [ ] `src/domain/repositories/global-ranking-repository.interface.ts`
-- [ ] `src/domain/repositories/order-of-play-repository.interface.ts`
-- [ ] `src/domain/repositories/notification-repository.interface.ts`
-- [ ] `src/domain/repositories/announcement-repository.interface.ts`
-- [ ] `src/domain/repositories/statistics-repository.interface.ts`
-- [ ] `src/domain/repositories/payment-repository.interface.ts`
-- [ ] `src/domain/repositories/sanction-repository.interface.ts`
-- [ ] `src/domain/index.ts`
+- [x] `src/domain/repositories/index.ts`
+- [x] `src/domain/repositories/user-repository.interface.ts`
+- [x] `src/domain/repositories/tournament-repository.interface.ts`
+- [x] `src/domain/repositories/category-repository.interface.ts`
+- [x] `src/domain/repositories/court-repository.interface.ts`
+- [x] `src/domain/repositories/registration-repository.interface.ts`
+- [x] `src/domain/repositories/bracket-repository.interface.ts`
+- [x] `src/domain/repositories/phase-repository.interface.ts`
+- [x] `src/domain/repositories/match-repository.interface.ts`
+- [x] `src/domain/repositories/score-repository.interface.ts`
+- [x] `src/domain/repositories/standing-repository.interface.ts`
+- [x] `src/domain/repositories/global-ranking-repository.interface.ts`
+- [x] `src/domain/repositories/order-of-play-repository.interface.ts`
+- [x] `src/domain/repositories/notification-repository.interface.ts`
+- [x] `src/domain/repositories/announcement-repository.interface.ts`
+- [x] `src/domain/repositories/statistics-repository.interface.ts`
+- [x] `src/domain/repositories/payment-repository.interface.ts`
+- [x] `src/domain/repositories/sanction-repository.interface.ts`
+- [x] `src/domain/index.ts`
 
 #### File list
 | File path | Interface | CRUD Methods |
@@ -249,12 +249,12 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 6 — Shared Utilities
 **Description:** Cross-cutting utilities and constants used across all layers.  
 **Dependencies:** none  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/shared/index.ts`
-- [ ] `src/shared/constants.ts`
-- [ ] `src/shared/utils.ts`
+- [x] `src/shared/index.ts`
+- [x] `src/shared/constants.ts`
+- [x] `src/shared/utils.ts`
 
 #### File list
 | File path | Symbol | Purpose |
@@ -268,23 +268,23 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 7 — Application — DTOs
 **Description:** Data Transfer Objects for layer communication and API contracts.  
 **Dependencies:** Category 3 (Enumerations)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/application/dto/index.ts`
-- [ ] `src/application/dto/common.dto.ts`
-- [ ] `src/application/dto/user.dto.ts`
-- [ ] `src/application/dto/tournament.dto.ts`
-- [ ] `src/application/dto/registration.dto.ts`
-- [ ] `src/application/dto/bracket.dto.ts`
-- [ ] `src/application/dto/match.dto.ts`
-- [ ] `src/application/dto/standing.dto.ts`
-- [ ] `src/application/dto/ranking.dto.ts`
-- [ ] `src/application/dto/order-of-play.dto.ts`
-- [ ] `src/application/dto/notification.dto.ts`
-- [ ] `src/application/dto/announcement.dto.ts`
-- [ ] `src/application/dto/statistics.dto.ts`
-- [ ] `src/application/dto/payment.dto.ts`
+- [x] `src/application/dto/index.ts`
+- [x] `src/application/dto/common.dto.ts`
+- [x] `src/application/dto/user.dto.ts`
+- [x] `src/application/dto/tournament.dto.ts`
+- [x] `src/application/dto/registration.dto.ts`
+- [x] `src/application/dto/bracket.dto.ts`
+- [x] `src/application/dto/match.dto.ts`
+- [x] `src/application/dto/standing.dto.ts`
+- [x] `src/application/dto/ranking.dto.ts`
+- [x] `src/application/dto/order-of-play.dto.ts`
+- [x] `src/application/dto/notification.dto.ts`
+- [x] `src/application/dto/announcement.dto.ts`
+- [x] `src/application/dto/statistics.dto.ts`
+- [x] `src/application/dto/payment.dto.ts`
 
 #### File list
 | File path | DTO Classes | Purpose |
@@ -309,23 +309,23 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 8 — Application — Service Interfaces
 **Description:** Use case contracts defining business operations.  
 **Dependencies:** Category 5 (Repository Interfaces), Category 7 (DTOs)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/application/interfaces/index.ts`
-- [ ] `src/application/interfaces/authentication-service.interface.ts`
-- [ ] `src/application/interfaces/authorization-service.interface.ts`
-- [ ] `src/application/interfaces/tournament-service.interface.ts`
-- [ ] `src/application/interfaces/registration-service.interface.ts`
-- [ ] `src/application/interfaces/bracket-service.interface.ts`
-- [ ] `src/application/interfaces/bracket-generator.interface.ts`
-- [ ] `src/application/interfaces/match-service.interface.ts`
-- [ ] `src/application/interfaces/standing-service.interface.ts`
-- [ ] `src/application/interfaces/ranking-service.interface.ts`
-- [ ] `src/application/interfaces/order-of-play-service.interface.ts`
-- [ ] `src/application/interfaces/notification-service.interface.ts`
-- [ ] `src/application/interfaces/statistics-service.interface.ts`
-- [ ] `src/application/interfaces/payment-service.interface.ts`
+- [x] `src/application/interfaces/index.ts`
+- [x] `src/application/interfaces/authentication-service.interface.ts`
+- [x] `src/application/interfaces/authorization-service.interface.ts`
+- [x] `src/application/interfaces/tournament-service.interface.ts`
+- [x] `src/application/interfaces/registration-service.interface.ts`
+- [x] `src/application/interfaces/bracket-service.interface.ts`
+- [x] `src/application/interfaces/bracket-generator.interface.ts`
+- [x] `src/application/interfaces/match-service.interface.ts`
+- [x] `src/application/interfaces/standing-service.interface.ts`
+- [x] `src/application/interfaces/ranking-service.interface.ts`
+- [x] `src/application/interfaces/order-of-play-service.interface.ts`
+- [x] `src/application/interfaces/notification-service.interface.ts`
+- [x] `src/application/interfaces/statistics-service.interface.ts`
+- [x] `src/application/interfaces/payment-service.interface.ts`
 
 #### File list
 | File path | Interface | Key Methods |
@@ -350,26 +350,26 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 9 — Application — Service Implementations
 **Description:** Business logic orchestration implementing service contracts.  
 **Dependencies:** Category 5 (Repository Interfaces), Category 7 (DTOs), Category 8 (Service Interfaces)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/application/services/index.ts`
-- [ ] `src/application/services/common/errors.ts`
-- [ ] `src/application/services/common/utils.ts`
-- [ ] `src/application/services/authentication.service.ts`
-- [ ] `src/application/services/authorization.service.ts`
-- [ ] `src/application/services/tournament.service.ts`
-- [ ] `src/application/services/registration.service.ts`
-- [ ] `src/application/services/bracket.service.ts`
-- [ ] `src/application/services/bracket-generator.factory.ts`
-- [ ] `src/application/services/match.service.ts`
-- [ ] `src/application/services/standing.service.ts`
-- [ ] `src/application/services/ranking.service.ts`
-- [ ] `src/application/services/order-of-play.service.ts`
-- [ ] `src/application/services/notification.service.ts`
-- [ ] `src/application/services/statistics.service.ts`
-- [ ] `src/application/services/payment.service.ts`
-- [ ] `src/application/index.ts`
+- [x] `src/application/services/index.ts`
+- [x] `src/application/services/common/errors.ts`
+- [x] `src/application/services/common/utils.ts`
+- [x] `src/application/services/authentication.service.ts`
+- [x] `src/application/services/authorization.service.ts`
+- [x] `src/application/services/tournament.service.ts`
+- [x] `src/application/services/registration.service.ts`
+- [x] `src/application/services/bracket.service.ts`
+- [x] `src/application/services/bracket-generator.factory.ts`
+- [x] `src/application/services/match.service.ts`
+- [x] `src/application/services/standing.service.ts`
+- [x] `src/application/services/ranking.service.ts`
+- [x] `src/application/services/order-of-play.service.ts`
+- [x] `src/application/services/notification.service.ts`
+- [x] `src/application/services/statistics.service.ts`
+- [x] `src/application/services/payment.service.ts`
+- [x] `src/application/index.ts`
 
 #### File list
 | File path | Class | Implements |
@@ -397,14 +397,14 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 10 — Infrastructure — HTTP & WebSocket
 **Description:** Network communication layer for API and real-time updates.  
 **Dependencies:** none  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/infrastructure/http/index.ts`
-- [ ] `src/infrastructure/http/axios-client.ts`
-- [ ] `src/infrastructure/websocket/index.ts`
-- [ ] `src/infrastructure/websocket/socket-client.ts`
-- [ ] `src/main.ts`
+- [x] `src/infrastructure/http/index.ts`
+- [x] `src/infrastructure/http/axios-client.ts`
+- [x] `src/infrastructure/websocket/index.ts`
+- [x] `src/infrastructure/websocket/socket-client.ts`
+- [x] `src/main.ts`
 
 #### File list
 | File path | Class | Purpose |
@@ -420,28 +420,28 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 11 — Infrastructure — Repository Implementations
 **Description:** HTTP-based repository implementations using AxiosClient.  
 **Dependencies:** Category 5 (Repository Interfaces), Category 10 (HTTP Client)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/infrastructure/repositories/index.ts`
-- [ ] `src/infrastructure/repositories/user.repository.ts`
-- [ ] `src/infrastructure/repositories/tournament.repository.ts`
-- [ ] `src/infrastructure/repositories/category.repository.ts`
-- [ ] `src/infrastructure/repositories/court.repository.ts`
-- [ ] `src/infrastructure/repositories/registration.repository.ts`
-- [ ] `src/infrastructure/repositories/bracket.repository.ts`
-- [ ] `src/infrastructure/repositories/phase.repository.ts`
-- [ ] `src/infrastructure/repositories/match.repository.ts`
-- [ ] `src/infrastructure/repositories/score.repository.ts`
-- [ ] `src/infrastructure/repositories/standing.repository.ts`
-- [ ] `src/infrastructure/repositories/global-ranking.repository.ts`
-- [ ] `src/infrastructure/repositories/order-of-play.repository.ts`
-- [ ] `src/infrastructure/repositories/notification.repository.ts`
-- [ ] `src/infrastructure/repositories/announcement.repository.ts`
-- [ ] `src/infrastructure/repositories/statistics.repository.ts`
-- [ ] `src/infrastructure/repositories/payment.repository.ts`
-- [ ] `src/infrastructure/repositories/sanction.repository.ts`
-- [ ] `src/infrastructure/index.ts`
+- [x] `src/infrastructure/repositories/index.ts`
+- [x] `src/infrastructure/repositories/user.repository.ts`
+- [x] `src/infrastructure/repositories/tournament.repository.ts`
+- [x] `src/infrastructure/repositories/category.repository.ts`
+- [x] `src/infrastructure/repositories/court.repository.ts`
+- [x] `src/infrastructure/repositories/registration.repository.ts`
+- [x] `src/infrastructure/repositories/bracket.repository.ts`
+- [x] `src/infrastructure/repositories/phase.repository.ts`
+- [x] `src/infrastructure/repositories/match.repository.ts`
+- [x] `src/infrastructure/repositories/score.repository.ts`
+- [x] `src/infrastructure/repositories/standing.repository.ts`
+- [x] `src/infrastructure/repositories/global-ranking.repository.ts`
+- [x] `src/infrastructure/repositories/order-of-play.repository.ts`
+- [x] `src/infrastructure/repositories/notification.repository.ts`
+- [x] `src/infrastructure/repositories/announcement.repository.ts`
+- [x] `src/infrastructure/repositories/statistics.repository.ts`
+- [x] `src/infrastructure/repositories/payment.repository.ts`
+- [x] `src/infrastructure/repositories/sanction.repository.ts`
+- [x] `src/infrastructure/index.ts`
 
 #### File list
 | File path | Class | Implements |
@@ -471,15 +471,15 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 12 — Infrastructure — External Adapters
 **Description:** Integration with external services (email, Telegram, payments, export).  
 **Dependencies:** none  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/infrastructure/external/index.ts`
-- [ ] `src/infrastructure/external/email-adapter.ts`
-- [ ] `src/infrastructure/external/telegram-adapter.ts`
-- [ ] `src/infrastructure/external/web-push-adapter.ts`
-- [ ] `src/infrastructure/external/payment-gateway-adapter.ts`
-- [ ] `src/infrastructure/external/export-service.ts`
+- [x] `src/infrastructure/external/index.ts`
+- [x] `src/infrastructure/external/email-adapter.ts`
+- [x] `src/infrastructure/external/telegram-adapter.ts`
+- [x] `src/infrastructure/external/web-push-adapter.ts`
+- [x] `src/infrastructure/external/payment-gateway-adapter.ts`
+- [x] `src/infrastructure/external/export-service.ts`
 
 #### File list
 | File path | Class | Integration |
@@ -496,21 +496,21 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 13 — Presentation — Angular Core
 **Description:** Angular root configuration, routing, guards, and interceptors.  
 **Dependencies:** Category 8 (Service Interfaces), Category 9 (Service Implementations)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/presentation/index.ts`
-- [ ] `src/presentation/app.component.ts`
-- [ ] `src/presentation/app.config.ts`
-- [ ] `src/presentation/app.routes.ts`
-- [ ] `src/presentation/guards/index.ts`
-- [ ] `src/presentation/guards/auth.guard.ts`
-- [ ] `src/presentation/guards/role.guard.ts`
-- [ ] `src/presentation/interceptors/index.ts`
-- [ ] `src/presentation/interceptors/auth.interceptor.ts`
-- [ ] `src/presentation/interceptors/error.interceptor.ts`
-- [ ] `src/presentation/services/auth-state.service.ts`
-- [ ] `src/presentation/services/index.ts`
+- [x] `src/presentation/index.ts`
+- [x] `src/presentation/app.component.ts`
+- [x] `src/presentation/app.config.ts`
+- [x] `src/presentation/app.routes.ts`
+- [x] `src/presentation/guards/index.ts`
+- [x] `src/presentation/guards/auth.guard.ts`
+- [x] `src/presentation/guards/role.guard.ts`
+- [x] `src/presentation/interceptors/index.ts`
+- [x] `src/presentation/interceptors/auth.interceptor.ts`
+- [x] `src/presentation/interceptors/error.interceptor.ts`
+- [x] `src/presentation/services/auth-state.service.ts`
+- [x] `src/presentation/services/index.ts`
 
 #### File list
 | File path | Symbol | Purpose |
@@ -533,13 +533,13 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 14 — Presentation — Auth Pages
 **Description:** Authentication and registration pages.  
 **Dependencies:** Category 13 (Angular Core)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/presentation/pages/auth/login/login.component.ts`
-- [ ] `src/presentation/pages/auth/login/login.component.html`
-- [ ] `src/presentation/pages/auth/register/register.component.ts`
-- [ ] `src/presentation/pages/auth/register/register.component.html`
+- [x] `src/presentation/pages/auth/login/login.component.ts`
+- [x] `src/presentation/pages/auth/login/login.component.html`
+- [x] `src/presentation/pages/auth/register/register.component.ts`
+- [x] `src/presentation/pages/auth/register/register.component.html`
 
 #### File list
 | File path | Component | Purpose |
@@ -556,13 +556,13 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 15 — Presentation — Tournament Pages
 **Description:** Tournament list, detail, and creation pages.  
 **Dependencies:** Category 13 (Angular Core)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/presentation/pages/tournaments/tournament-list/tournament-list.component.ts`
-- [ ] `src/presentation/pages/tournaments/tournament-list/tournament-list.component.html`
-- [ ] `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts`
-- [ ] `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html`
+- [x] `src/presentation/pages/tournaments/tournament-list/tournament-list.component.ts`
+- [x] `src/presentation/pages/tournaments/tournament-list/tournament-list.component.html`
+- [x] `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts`
+- [x] `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html`
 
 #### File list
 | File path | Component | Purpose |
@@ -579,15 +579,15 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 16 — Presentation — Match & Bracket Pages
 **Description:** Bracket visualization, match list, and match detail pages.  
 **Dependencies:** Category 13 (Angular Core)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts`
-- [ ] `src/presentation/pages/brackets/bracket-view/bracket-view.component.html`
-- [ ] `src/presentation/pages/matches/match-list/match-list.component.ts`
-- [ ] `src/presentation/pages/matches/match-list/match-list.component.html`
-- [ ] `src/presentation/pages/matches/match-detail/match-detail.component.ts`
-- [ ] `src/presentation/pages/matches/match-detail/match-detail.component.html`
+- [x] `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts`
+- [x] `src/presentation/pages/brackets/bracket-view/bracket-view.component.html`
+- [x] `src/presentation/pages/matches/match-list/match-list.component.ts`
+- [x] `src/presentation/pages/matches/match-list/match-list.component.html`
+- [x] `src/presentation/pages/matches/match-detail/match-detail.component.ts`
+- [x] `src/presentation/pages/matches/match-detail/match-detail.component.html`
 
 #### File list
 | File path | Component | Purpose |
@@ -604,15 +604,15 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 17 — Presentation — Standing & Ranking Pages
 **Description:** Classification tables, rankings, and order of play pages.  
 **Dependencies:** Category 13 (Angular Core)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/presentation/pages/standings/standings-view/standings-view.component.ts`
-- [ ] `src/presentation/pages/standings/standings-view/standings-view.component.html`
-- [ ] `src/presentation/pages/ranking/ranking-view/ranking-view.component.ts`
-- [ ] `src/presentation/pages/ranking/ranking-view/ranking-view.component.html`
-- [ ] `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts`
-- [ ] `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.html`
+- [x] `src/presentation/pages/standings/standings-view/standings-view.component.ts`
+- [x] `src/presentation/pages/standings/standings-view/standings-view.component.html`
+- [x] `src/presentation/pages/ranking/ranking-view/ranking-view.component.ts`
+- [x] `src/presentation/pages/ranking/ranking-view/ranking-view.component.html`
+- [x] `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts`
+- [x] `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.html`
 
 #### File list
 | File path | Component | Purpose |
@@ -629,15 +629,15 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 18 — Presentation — Profile & Admin Pages
 **Description:** User profile, statistics, and admin dashboard pages.  
 **Dependencies:** Category 13 (Angular Core)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/presentation/pages/profile/profile-view/profile-view.component.ts`
-- [ ] `src/presentation/pages/profile/profile-view/profile-view.component.html`
-- [ ] `src/presentation/pages/statistics/statistics-view/statistics-view.component.ts`
-- [ ] `src/presentation/pages/statistics/statistics-view/statistics-view.component.html`
-- [ ] `src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts`
-- [ ] `src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.html`
+- [x] `src/presentation/pages/profile/profile-view/profile-view.component.ts`
+- [x] `src/presentation/pages/profile/profile-view/profile-view.component.html`
+- [x] `src/presentation/pages/statistics/statistics-view/statistics-view.component.ts`
+- [x] `src/presentation/pages/statistics/statistics-view/statistics-view.component.html`
+- [x] `src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts`
+- [x] `src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.html`
 
 #### File list
 | File path | Component | Purpose |
@@ -654,14 +654,14 @@ Status legend: ⬜ Pending · 🔄 In Progress · ✅ Complete · ❌ Blocked ·
 ### Category 19 — Presentation — Communication Pages
 **Description:** Notifications and announcements pages.  
 **Dependencies:** Category 13 (Angular Core)  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `src/presentation/pages/notifications/notification-list/notification-list.component.ts`
-- [ ] `src/presentation/pages/notifications/notification-list/notification-list.component.html`
-- [ ] `src/presentation/pages/announcements/announcement-list/announcement-list.component.ts`
-- [ ] `src/presentation/pages/announcements/announcement-list/announcement-list.component.html`
-- [ ] `index.html`
+- [x] `src/presentation/pages/notifications/notification-list/notification-list.component.ts`
+- [x] `src/presentation/pages/notifications/notification-list/notification-list.component.html`
+- [x] `src/presentation/pages/announcements/announcement-list/announcement-list.component.ts`
+- [x] `src/presentation/pages/announcements/announcement-list/announcement-list.component.html`
+- [x] `index.html`
 
 #### File list
 | File path | Component | Purpose |
@@ -809,12 +809,12 @@ _(To be defined after codification phase)_
 ### Category 24 — Documentation
 **Description:** Requirements, architecture, and design documentation.  
 **Dependencies:** none  
-**Status:** ⬜ Pending
+**Status:** ✅ Complete
 
 #### Checklist
-- [ ] `docs/specification.md`
-- [ ] `docs/class-diagram.mermaid`
-- [ ] `docs/use-case-diagram.mermaid`
+- [x] `docs/specification.md`
+- [x] `docs/class-diagram.mermaid`
+- [x] `docs/use-case-diagram.mermaid`
 
 #### File list
 | File path | Content | Purpose |
@@ -834,190 +834,190 @@ _(To be defined after codification phase)_
 
 | File path | Category # | Status |
 |-----------|-----------|--------|
-| `.gitignore` | 1 | ⬜ |
-| `docs/class-diagram.mermaid` | 24 | ⬜ |
-| `docs/specification.md` | 24 | ⬜ |
-| `docs/use-case-diagram.mermaid` | 24 | ⬜ |
-| `eslint.config.mjs` | 1 | ⬜ |
-| `index.html` | 19 | ⬜ |
-| `jest.config.js` | 1 | ⬜ |
-| `package.json` | 1 | ⬜ |
-| `playwright.config.ts` | 1 | ⬜ |
-| `src/application/dto/announcement.dto.ts` | 7 | ⬜ |
-| `src/application/dto/bracket.dto.ts` | 7 | ⬜ |
-| `src/application/dto/common.dto.ts` | 7 | ⬜ |
-| `src/application/dto/index.ts` | 7 | ⬜ |
-| `src/application/dto/match.dto.ts` | 7 | ⬜ |
-| `src/application/dto/notification.dto.ts` | 7 | ⬜ |
-| `src/application/dto/order-of-play.dto.ts` | 7 | ⬜ |
-| `src/application/dto/payment.dto.ts` | 7 | ⬜ |
-| `src/application/dto/ranking.dto.ts` | 7 | ⬜ |
-| `src/application/dto/registration.dto.ts` | 7 | ⬜ |
-| `src/application/dto/standing.dto.ts` | 7 | ⬜ |
-| `src/application/dto/statistics.dto.ts` | 7 | ⬜ |
-| `src/application/dto/tournament.dto.ts` | 7 | ⬜ |
-| `src/application/dto/user.dto.ts` | 7 | ⬜ |
-| `src/application/index.ts` | 9 | ⬜ |
-| `src/application/interfaces/authentication-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/authorization-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/bracket-generator.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/bracket-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/index.ts` | 8 | ⬜ |
-| `src/application/interfaces/match-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/notification-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/order-of-play-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/payment-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/ranking-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/registration-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/standing-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/statistics-service.interface.ts` | 8 | ⬜ |
-| `src/application/interfaces/tournament-service.interface.ts` | 8 | ⬜ |
-| `src/application/services/authentication.service.ts` | 9 | ⬜ |
-| `src/application/services/authorization.service.ts` | 9 | ⬜ |
-| `src/application/services/bracket-generator.factory.ts` | 9 | ⬜ |
-| `src/application/services/bracket.service.ts` | 9 | ⬜ |
-| `src/application/services/common/errors.ts` | 9 | ⬜ |
-| `src/application/services/common/utils.ts` | 9 | ⬜ |
-| `src/application/services/index.ts` | 9 | ⬜ |
-| `src/application/services/match.service.ts` | 9 | ⬜ |
-| `src/application/services/notification.service.ts` | 9 | ⬜ |
-| `src/application/services/order-of-play.service.ts` | 9 | ⬜ |
-| `src/application/services/payment.service.ts` | 9 | ⬜ |
-| `src/application/services/ranking.service.ts` | 9 | ⬜ |
-| `src/application/services/registration.service.ts` | 9 | ⬜ |
-| `src/application/services/standing.service.ts` | 9 | ⬜ |
-| `src/application/services/statistics.service.ts` | 9 | ⬜ |
-| `src/application/services/tournament.service.ts` | 9 | ⬜ |
-| `src/domain/entities/announcement.ts` | 4 | ⬜ |
-| `src/domain/entities/bracket.ts` | 4 | ⬜ |
-| `src/domain/entities/category.ts` | 4 | ⬜ |
-| `src/domain/entities/court.ts` | 4 | ⬜ |
-| `src/domain/entities/global-ranking.ts` | 4 | ⬜ |
-| `src/domain/entities/index.ts` | 4 | ⬜ |
-| `src/domain/entities/match.ts` | 4 | ⬜ |
-| `src/domain/entities/notification.ts` | 4 | ⬜ |
-| `src/domain/entities/order-of-play.ts` | 4 | ⬜ |
-| `src/domain/entities/payment.ts` | 4 | ⬜ |
-| `src/domain/entities/phase.ts` | 4 | ⬜ |
-| `src/domain/entities/registration.ts` | 4 | ⬜ |
-| `src/domain/entities/sanction.ts` | 4 | ⬜ |
-| `src/domain/entities/score.ts` | 4 | ⬜ |
-| `src/domain/entities/standing.ts` | 4 | ⬜ |
-| `src/domain/entities/statistics.ts` | 4 | ⬜ |
-| `src/domain/entities/tournament.ts` | 4 | ⬜ |
-| `src/domain/entities/user.ts` | 4 | ⬜ |
-| `src/domain/enumerations/acceptance-type.ts` | 3 | ⬜ |
-| `src/domain/enumerations/bracket-type.ts` | 3 | ⬜ |
-| `src/domain/enumerations/index.ts` | 3 | ⬜ |
-| `src/domain/enumerations/match-status.ts` | 3 | ⬜ |
-| `src/domain/enumerations/notification-channel.ts` | 3 | ⬜ |
-| `src/domain/enumerations/notification-type.ts` | 3 | ⬜ |
-| `src/domain/enumerations/payment-status.ts` | 3 | ⬜ |
-| `src/domain/enumerations/ranking-system.ts` | 3 | ⬜ |
-| `src/domain/enumerations/registration-status.ts` | 3 | ⬜ |
-| `src/domain/enumerations/sanction-type.ts` | 3 | ⬜ |
-| `src/domain/enumerations/surface.ts` | 3 | ⬜ |
-| `src/domain/enumerations/tournament-status.ts` | 3 | ⬜ |
-| `src/domain/enumerations/user-role.ts` | 3 | ⬜ |
-| `src/domain/index.ts` | 5 | ⬜ |
-| `src/domain/repositories/announcement-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/bracket-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/category-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/court-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/global-ranking-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/index.ts` | 5 | ⬜ |
-| `src/domain/repositories/match-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/notification-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/order-of-play-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/payment-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/phase-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/registration-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/sanction-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/score-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/standing-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/statistics-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/tournament-repository.interface.ts` | 5 | ⬜ |
-| `src/domain/repositories/user-repository.interface.ts` | 5 | ⬜ |
-| `src/infrastructure/external/email-adapter.ts` | 12 | ⬜ |
-| `src/infrastructure/external/export-service.ts` | 12 | ⬜ |
-| `src/infrastructure/external/index.ts` | 12 | ⬜ |
-| `src/infrastructure/external/payment-gateway-adapter.ts` | 12 | ⬜ |
-| `src/infrastructure/external/telegram-adapter.ts` | 12 | ⬜ |
-| `src/infrastructure/external/web-push-adapter.ts` | 12 | ⬜ |
-| `src/infrastructure/http/axios-client.ts` | 10 | ⬜ |
-| `src/infrastructure/http/index.ts` | 10 | ⬜ |
-| `src/infrastructure/index.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/announcement.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/bracket.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/category.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/court.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/global-ranking.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/index.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/match.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/notification.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/order-of-play.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/payment.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/phase.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/registration.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/sanction.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/score.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/standing.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/statistics.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/tournament.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/repositories/user.repository.ts` | 11 | ⬜ |
-| `src/infrastructure/websocket/index.ts` | 10 | ⬜ |
-| `src/infrastructure/websocket/socket-client.ts` | 10 | ⬜ |
-| `src/main.ts` | 10 | ⬜ |
-| `src/presentation/app.component.ts` | 13 | ⬜ |
-| `src/presentation/app.config.ts` | 13 | ⬜ |
-| `src/presentation/app.routes.ts` | 13 | ⬜ |
-| `src/presentation/guards/auth.guard.ts` | 13 | ⬜ |
-| `src/presentation/guards/index.ts` | 13 | ⬜ |
-| `src/presentation/guards/role.guard.ts` | 13 | ⬜ |
-| `src/presentation/index.ts` | 13 | ⬜ |
-| `src/presentation/interceptors/auth.interceptor.ts` | 13 | ⬜ |
-| `src/presentation/interceptors/error.interceptor.ts` | 13 | ⬜ |
-| `src/presentation/interceptors/index.ts` | 13 | ⬜ |
-| `src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.html` | 18 | ⬜ |
-| `src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts` | 18 | ⬜ |
-| `src/presentation/pages/announcements/announcement-list/announcement-list.component.html` | 19 | ⬜ |
-| `src/presentation/pages/announcements/announcement-list/announcement-list.component.ts` | 19 | ⬜ |
-| `src/presentation/pages/auth/login/login.component.html` | 14 | ⬜ |
-| `src/presentation/pages/auth/login/login.component.ts` | 14 | ⬜ |
-| `src/presentation/pages/auth/register/register.component.html` | 14 | ⬜ |
-| `src/presentation/pages/auth/register/register.component.ts` | 14 | ⬜ |
-| `src/presentation/pages/brackets/bracket-view/bracket-view.component.html` | 16 | ⬜ |
-| `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts` | 16 | ⬜ |
-| `src/presentation/pages/matches/match-detail/match-detail.component.html` | 16 | ⬜ |
-| `src/presentation/pages/matches/match-detail/match-detail.component.ts` | 16 | ⬜ |
-| `src/presentation/pages/matches/match-list/match-list.component.html` | 16 | ⬜ |
-| `src/presentation/pages/matches/match-list/match-list.component.ts` | 16 | ⬜ |
-| `src/presentation/pages/notifications/notification-list/notification-list.component.html` | 19 | ⬜ |
-| `src/presentation/pages/notifications/notification-list/notification-list.component.ts` | 19 | ⬜ |
-| `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.html` | 17 | ⬜ |
-| `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts` | 17 | ⬜ |
-| `src/presentation/pages/profile/profile-view/profile-view.component.html` | 18 | ⬜ |
-| `src/presentation/pages/profile/profile-view/profile-view.component.ts` | 18 | ⬜ |
-| `src/presentation/pages/ranking/ranking-view/ranking-view.component.html` | 17 | ⬜ |
-| `src/presentation/pages/ranking/ranking-view/ranking-view.component.ts` | 17 | ⬜ |
-| `src/presentation/pages/standings/standings-view/standings-view.component.html` | 17 | ⬜ |
-| `src/presentation/pages/standings/standings-view/standings-view.component.ts` | 17 | ⬜ |
-| `src/presentation/pages/statistics/statistics-view/statistics-view.component.html` | 18 | ⬜ |
-| `src/presentation/pages/statistics/statistics-view/statistics-view.component.ts` | 18 | ⬜ |
-| `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html` | 15 | ⬜ |
-| `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` | 15 | ⬜ |
-| `src/presentation/pages/tournaments/tournament-list/tournament-list.component.html` | 15 | ⬜ |
-| `src/presentation/pages/tournaments/tournament-list/tournament-list.component.ts` | 15 | ⬜ |
-| `src/presentation/services/auth-state.service.ts` | 13 | ⬜ |
-| `src/presentation/services/index.ts` | 13 | ⬜ |
-| `src/shared/constants.ts` | 6 | ⬜ |
-| `src/shared/index.ts` | 6 | ⬜ |
-| `src/shared/utils.ts` | 6 | ⬜ |
-| `src/styles/components.css` | 2 | ⬜ |
-| `src/styles/global.css` | 2 | ⬜ |
-| `src/styles/reset.css` | 2 | ⬜ |
-| `src/styles/responsive.css` | 2 | ⬜ |
-| `src/styles/variables.css` | 2 | ⬜ |
+| `.gitignore` | 1 | ✅ |
+| `docs/class-diagram.mermaid` | 24 | ✅ |
+| `docs/specification.md` | 24 | ✅ |
+| `docs/use-case-diagram.mermaid` | 24 | ✅ |
+| `eslint.config.mjs` | 1 | ✅ |
+| `index.html` | 19 | ✅ |
+| `jest.config.js` | 1 | ✅ |
+| `package.json` | 1 | ✅ |
+| `playwright.config.ts` | 1 | ✅ |
+| `src/application/dto/announcement.dto.ts` | 7 | ✅ |
+| `src/application/dto/bracket.dto.ts` | 7 | ✅ |
+| `src/application/dto/common.dto.ts` | 7 | ✅ |
+| `src/application/dto/index.ts` | 7 | ✅ |
+| `src/application/dto/match.dto.ts` | 7 | ✅ |
+| `src/application/dto/notification.dto.ts` | 7 | ✅ |
+| `src/application/dto/order-of-play.dto.ts` | 7 | ✅ |
+| `src/application/dto/payment.dto.ts` | 7 | ✅ |
+| `src/application/dto/ranking.dto.ts` | 7 | ✅ |
+| `src/application/dto/registration.dto.ts` | 7 | ✅ |
+| `src/application/dto/standing.dto.ts` | 7 | ✅ |
+| `src/application/dto/statistics.dto.ts` | 7 | ✅ |
+| `src/application/dto/tournament.dto.ts` | 7 | ✅ |
+| `src/application/dto/user.dto.ts` | 7 | ✅ |
+| `src/application/index.ts` | 9 | ✅ |
+| `src/application/interfaces/authentication-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/authorization-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/bracket-generator.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/bracket-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/index.ts` | 8 | ✅ |
+| `src/application/interfaces/match-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/notification-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/order-of-play-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/payment-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/ranking-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/registration-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/standing-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/statistics-service.interface.ts` | 8 | ✅ |
+| `src/application/interfaces/tournament-service.interface.ts` | 8 | ✅ |
+| `src/application/services/authentication.service.ts` | 9 | ✅ |
+| `src/application/services/authorization.service.ts` | 9 | ✅ |
+| `src/application/services/bracket-generator.factory.ts` | 9 | ✅ |
+| `src/application/services/bracket.service.ts` | 9 | ✅ |
+| `src/application/services/common/errors.ts` | 9 | ✅ |
+| `src/application/services/common/utils.ts` | 9 | ✅ |
+| `src/application/services/index.ts` | 9 | ✅ |
+| `src/application/services/match.service.ts` | 9 | ✅ |
+| `src/application/services/notification.service.ts` | 9 | ✅ |
+| `src/application/services/order-of-play.service.ts` | 9 | ✅ |
+| `src/application/services/payment.service.ts` | 9 | ✅ |
+| `src/application/services/ranking.service.ts` | 9 | ✅ |
+| `src/application/services/registration.service.ts` | 9 | ✅ |
+| `src/application/services/standing.service.ts` | 9 | ✅ |
+| `src/application/services/statistics.service.ts` | 9 | ✅ |
+| `src/application/services/tournament.service.ts` | 9 | ✅ |
+| `src/domain/entities/announcement.ts` | 4 | ✅ |
+| `src/domain/entities/bracket.ts` | 4 | ✅ |
+| `src/domain/entities/category.ts` | 4 | ✅ |
+| `src/domain/entities/court.ts` | 4 | ✅ |
+| `src/domain/entities/global-ranking.ts` | 4 | ✅ |
+| `src/domain/entities/index.ts` | 4 | ✅ |
+| `src/domain/entities/match.ts` | 4 | ✅ |
+| `src/domain/entities/notification.ts` | 4 | ✅ |
+| `src/domain/entities/order-of-play.ts` | 4 | ✅ |
+| `src/domain/entities/payment.ts` | 4 | ✅ |
+| `src/domain/entities/phase.ts` | 4 | ✅ |
+| `src/domain/entities/registration.ts` | 4 | ✅ |
+| `src/domain/entities/sanction.ts` | 4 | ✅ |
+| `src/domain/entities/score.ts` | 4 | ✅ |
+| `src/domain/entities/standing.ts` | 4 | ✅ |
+| `src/domain/entities/statistics.ts` | 4 | ✅ |
+| `src/domain/entities/tournament.ts` | 4 | ✅ |
+| `src/domain/entities/user.ts` | 4 | ✅ |
+| `src/domain/enumerations/acceptance-type.ts` | 3 | ✅ |
+| `src/domain/enumerations/bracket-type.ts` | 3 | ✅ |
+| `src/domain/enumerations/index.ts` | 3 | ✅ |
+| `src/domain/enumerations/match-status.ts` | 3 | ✅ |
+| `src/domain/enumerations/notification-channel.ts` | 3 | ✅ |
+| `src/domain/enumerations/notification-type.ts` | 3 | ✅ |
+| `src/domain/enumerations/payment-status.ts` | 3 | ✅ |
+| `src/domain/enumerations/ranking-system.ts` | 3 | ✅ |
+| `src/domain/enumerations/registration-status.ts` | 3 | ✅ |
+| `src/domain/enumerations/sanction-type.ts` | 3 | ✅ |
+| `src/domain/enumerations/surface.ts` | 3 | ✅ |
+| `src/domain/enumerations/tournament-status.ts` | 3 | ✅ |
+| `src/domain/enumerations/user-role.ts` | 3 | ✅ |
+| `src/domain/index.ts` | 5 | ✅ |
+| `src/domain/repositories/announcement-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/bracket-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/category-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/court-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/global-ranking-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/index.ts` | 5 | ✅ |
+| `src/domain/repositories/match-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/notification-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/order-of-play-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/payment-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/phase-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/registration-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/sanction-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/score-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/standing-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/statistics-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/tournament-repository.interface.ts` | 5 | ✅ |
+| `src/domain/repositories/user-repository.interface.ts` | 5 | ✅ |
+| `src/infrastructure/external/email-adapter.ts` | 12 | ✅ |
+| `src/infrastructure/external/export-service.ts` | 12 | ✅ |
+| `src/infrastructure/external/index.ts` | 12 | ✅ |
+| `src/infrastructure/external/payment-gateway-adapter.ts` | 12 | ✅ |
+| `src/infrastructure/external/telegram-adapter.ts` | 12 | ✅ |
+| `src/infrastructure/external/web-push-adapter.ts` | 12 | ✅ |
+| `src/infrastructure/http/axios-client.ts` | 10 | ✅ |
+| `src/infrastructure/http/index.ts` | 10 | ✅ |
+| `src/infrastructure/index.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/announcement.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/bracket.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/category.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/court.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/global-ranking.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/index.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/match.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/notification.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/order-of-play.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/payment.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/phase.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/registration.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/sanction.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/score.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/standing.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/statistics.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/tournament.repository.ts` | 11 | ✅ |
+| `src/infrastructure/repositories/user.repository.ts` | 11 | ✅ |
+| `src/infrastructure/websocket/index.ts` | 10 | ✅ |
+| `src/infrastructure/websocket/socket-client.ts` | 10 | ✅ |
+| `src/main.ts` | 10 | ✅ |
+| `src/presentation/app.component.ts` | 13 | ✅ |
+| `src/presentation/app.config.ts` | 13 | ✅ |
+| `src/presentation/app.routes.ts` | 13 | ✅ |
+| `src/presentation/guards/auth.guard.ts` | 13 | ✅ |
+| `src/presentation/guards/index.ts` | 13 | ✅ |
+| `src/presentation/guards/role.guard.ts` | 13 | ✅ |
+| `src/presentation/index.ts` | 13 | ✅ |
+| `src/presentation/interceptors/auth.interceptor.ts` | 13 | ✅ |
+| `src/presentation/interceptors/error.interceptor.ts` | 13 | ✅ |
+| `src/presentation/interceptors/index.ts` | 13 | ✅ |
+| `src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.html` | 18 | ✅ |
+| `src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts` | 18 | ✅ |
+| `src/presentation/pages/announcements/announcement-list/announcement-list.component.html` | 19 | ✅ |
+| `src/presentation/pages/announcements/announcement-list/announcement-list.component.ts` | 19 | ✅ |
+| `src/presentation/pages/auth/login/login.component.html` | 14 | ✅ |
+| `src/presentation/pages/auth/login/login.component.ts` | 14 | ✅ |
+| `src/presentation/pages/auth/register/register.component.html` | 14 | ✅ |
+| `src/presentation/pages/auth/register/register.component.ts` | 14 | ✅ |
+| `src/presentation/pages/brackets/bracket-view/bracket-view.component.html` | 16 | ✅ |
+| `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts` | 16 | ✅ |
+| `src/presentation/pages/matches/match-detail/match-detail.component.html` | 16 | ✅ |
+| `src/presentation/pages/matches/match-detail/match-detail.component.ts` | 16 | ✅ |
+| `src/presentation/pages/matches/match-list/match-list.component.html` | 16 | ✅ |
+| `src/presentation/pages/matches/match-list/match-list.component.ts` | 16 | ✅ |
+| `src/presentation/pages/notifications/notification-list/notification-list.component.html` | 19 | ✅ |
+| `src/presentation/pages/notifications/notification-list/notification-list.component.ts` | 19 | ✅ |
+| `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.html` | 17 | ✅ |
+| `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts` | 17 | ✅ |
+| `src/presentation/pages/profile/profile-view/profile-view.component.html` | 18 | ✅ |
+| `src/presentation/pages/profile/profile-view/profile-view.component.ts` | 18 | ✅ |
+| `src/presentation/pages/ranking/ranking-view/ranking-view.component.html` | 17 | ✅ |
+| `src/presentation/pages/ranking/ranking-view/ranking-view.component.ts` | 17 | ✅ |
+| `src/presentation/pages/standings/standings-view/standings-view.component.html` | 17 | ✅ |
+| `src/presentation/pages/standings/standings-view/standings-view.component.ts` | 17 | ✅ |
+| `src/presentation/pages/statistics/statistics-view/statistics-view.component.html` | 18 | ✅ |
+| `src/presentation/pages/statistics/statistics-view/statistics-view.component.ts` | 18 | ✅ |
+| `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html` | 15 | ✅ |
+| `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` | 15 | ✅ |
+| `src/presentation/pages/tournaments/tournament-list/tournament-list.component.html` | 15 | ✅ |
+| `src/presentation/pages/tournaments/tournament-list/tournament-list.component.ts` | 15 | ✅ |
+| `src/presentation/services/auth-state.service.ts` | 13 | ✅ |
+| `src/presentation/services/index.ts` | 13 | ✅ |
+| `src/shared/constants.ts` | 6 | ✅ |
+| `src/shared/index.ts` | 6 | ✅ |
+| `src/shared/utils.ts` | 6 | ✅ |
+| `src/styles/components.css` | 2 | ✅ |
+| `src/styles/global.css` | 2 | ✅ |
+| `src/styles/reset.css` | 2 | ✅ |
+| `src/styles/responsive.css` | 2 | ✅ |
+| `src/styles/variables.css` | 2 | ✅ |
 | `tests/application/services/authentication.service.test.ts` | 21 | 🔮 |
 | `tests/application/services/authorization.service.test.ts` | 21 | 🔮 |
 | `tests/application/services/bracket-generator.factory.test.ts` | 21 | 🔮 |
@@ -1048,10 +1048,10 @@ _(To be defined after codification phase)_
 | `tests/domain/entities/statistics.test.ts` | 20 | 🔮 |
 | `tests/domain/entities/tournament.test.ts` | 20 | 🔮 |
 | `tests/domain/entities/user.test.ts` | 20 | 🔮 |
-| `tsconfig.json` | 1 | ⬜ |
-| `tsconfig.node.json` | 1 | ⬜ |
-| `typedoc.json` | 1 | ⬜ |
-| `vite.config.ts` | 1 | ⬜ |
+| `tsconfig.json` | 1 | ✅ |
+| `tsconfig.node.json` | 1 | ✅ |
+| `typedoc.json` | 1 | ✅ |
+| `vite.config.ts` | 1 | ✅ |
 
 ---
 
@@ -1065,10 +1065,10 @@ _(To be defined after codification phase)_
 - [x] Categories follow dependency order (inner to outer layers)
 - [x] Test categories (20-23) marked as deferred to post-codification phase
 
-⬜ **Codification phase complete when:**
-- [ ] All production code categories (1-19, 24) are implemented and functional
-- [ ] Application can be built and run successfully
-- [ ] All core features are operational
+✅ **Codification phase complete when:**
+- [x] All production code categories (1-19, 24) are implemented and functional
+- [x] Application can be built and run successfully
+- [x] All core features are operational
 
 🔮 **Post-codification phase (tests):**
 - [ ] Category 20: Domain unit tests (17 files)

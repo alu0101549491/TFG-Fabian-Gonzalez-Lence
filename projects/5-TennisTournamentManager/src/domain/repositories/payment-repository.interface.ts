@@ -11,8 +11,8 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Payment} from '../entities/payment.entity';
-import {PaymentStatus} from '../enumerations/payment-status.enum';
+import {Payment} from '../entities/payment';
+import {PaymentStatus} from '../enumerations/payment-status';
 
 /**
  * Repository interface for Payment entity data access operations.

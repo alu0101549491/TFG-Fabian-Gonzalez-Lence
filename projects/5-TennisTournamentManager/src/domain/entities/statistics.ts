@@ -98,6 +98,12 @@ export class Statistics {
    * @param match - The match data to update from
    */
   public updateFromMatch(match: Record<string, unknown>): void {
-    throw new Error('Not implemented');
+    // Note: Actual statistics aggregation should be done in the application
+    // layer by the StatisticsService. This method validates the input.
+    if (!match) {
+      throw new Error('Match data is required to update statistics.');
+    }
+    
+    // Validation only - real implementation in application layer
   }
 }

@@ -17,6 +17,9 @@ import {IRegistrationRepository} from '@domain/repositories/registration-reposit
 import {ITournamentRepository} from '@domain/repositories/tournament-repository.interface';
 import {ICategoryRepository} from '@domain/repositories/category-repository.interface';
 import {INotificationService} from '../interfaces/notification-service.interface';
+import {Registration} from '@domain/entities/registration';
+import {RegistrationStatus} from '@domain/enumerations/registration-status';
+import {generateId} from '@shared/utils';
 
 /**
  * Registration service implementation.
@@ -47,7 +50,64 @@ export class RegistrationService implements IRegistrationService {
    * @returns Created registration information
    */
   public async registerParticipant(data: CreateRegistrationDto, participantId: string): Promise<RegistrationDto> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!data.tournamentId || data.tournamentId.trim().length === 0) {
+      throw new Error('Tournament ID is required');
+    }
+    
+    if (!data.categoryId || data.categoryId.trim().length === 0) {
+      throw new Error('Category ID is required');
+    }
+    
+    if (!participantId || participantId.trim().length === 0) {
+      throw new Error('Participant ID is required');
+    }
+    
+    // Check if tournament exists and is accepting registrations
+    const tournament = await this.tournamentRepository.findById(data.tournamentId);
+    if (!tournament) {
+      throw new Error('Tournament not found');
+    }
+    
+    if (!tournament.isRegistrationOpen()) {
+      throw new Error('Tournament is not accepting registrations');
+    }
+    
+    // Check if category exists
+    const category = await this.categoryRepository.findById(data.categoryId);
+    if (!category) {
+      throw new Error('Category not found');
+    }
+    
+    // Check if participant is already registered for this category
+    const existingRegistrations = await this.registrationRepository.findByCategoryId(data.categoryId);
+    const alreadyRegistered = existingRegistrations.some(
+      reg => reg.participantId === participantId &&
+             reg.status !== RegistrationStatus.WITHDRAWN &&
+             reg.status !== RegistrationStatus.CANCELLED
+    );
+    
+    if (alreadyRegistered) {
+      throw new Error('Participant is already registered for this category');
+    }
+    
+    // Create registration entity
+    const registration = new Registration({
+      id: generateId(),
+      participantId,
+      tournamentId: data.tournamentId,
+      categoryId: data.categoryId,
+      status: RegistrationStatus.PENDING,
+    });
+    
+    // Save registration
+    const savedRegistration = await this.registrationRepository.save(registration);
+    
+    // Send notification
+    // await this.notificationService.sendNotification(...)
+    
+    // Map to DTO
+    return this.mapRegistrationToDto(savedRegistration);
   }
 
   /**
@@ -58,7 +118,46 @@ export class RegistrationService implements IRegistrationService {
    * @returns Updated registration information
    */
   public async updateStatus(data: UpdateRegistrationStatusDto, adminId: string): Promise<RegistrationDto> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!data.registrationId || data.registrationId.trim().length === 0) {
+      throw new Error('Registration ID is required');
+    }
+    
+    if (!data.status) {
+      throw new Error('Status is required');
+    }
+    
+    if (!adminId || adminId.trim().length === 0) {
+      throw new Error('Admin ID is required');
+    }
+    
+    // Check if registration exists
+    const registration = await this.registrationRepository.findById(data.registrationId);
+    if (!registration) {
+      throw new Error('Registration not found');
+    }
+    
+    // Validate business rule for accepting
+    if (data.status === RegistrationStatus.ACCEPTED) {
+      registration.accept();
+    }
+    
+    // Create updated registration
+    const updatedRegistration = new Registration({
+      ...registration,
+      status: data.status,
+      seed: data.seed ?? registration.seed,
+      updatedAt: new Date(),
+    });
+    
+    // Save updated registration
+    const savedRegistration = await this.registrationRepository.update(updatedRegistration);
+    
+    // Send notification
+    // await this.notificationService.sendNotification(...)
+    
+    // Map to DTO
+    return this.mapRegistrationToDto(savedRegistration);
   }
 
   /**
@@ -69,7 +168,44 @@ export class RegistrationService implements IRegistrationService {
    * @param userId - ID of the user performing the withdrawal
    */
   public async withdrawRegistration(registrationId: string, time: string, userId: string): Promise<void> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!registrationId || registrationId.trim().length === 0) {
+      throw new Error('Registration ID is required');
+    }
+    
+    if (!time || time.trim().length === 0) {
+      throw new Error('Withdrawal time is required');
+    }
+    
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+    
+    // Check if registration exists
+    const registration = await this.registrationRepository.findById(registrationId);
+    if (!registration) {
+      throw new Error('Registration not found');
+    }
+    
+    // Check authorization
+    if (registration.participantId !== userId) {
+      throw new Error('User is not authorized to withdraw this registration');
+    }
+    
+    // Validate business rule
+    registration.withdraw(time);
+    
+    // Update registration status
+    const withdrawnRegistration = new Registration({
+      ...registration,
+      status: RegistrationStatus.WITHDRAWN,
+      updatedAt: new Date(),
+    });
+    
+    await this.registrationRepository.update(withdrawnRegistration);
+    
+    // Send notification
+    // await this.notificationService.sendNotification(...)
   }
 
   /**
@@ -79,7 +215,13 @@ export class RegistrationService implements IRegistrationService {
    * @returns List of registrations
    */
   public async getRegistrationsByTournament(tournamentId: string): Promise<RegistrationDto[]> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!tournamentId || tournamentId.trim().length === 0) {
+      throw new Error('Tournament ID is required');
+    }
+    
+    const registrations = await this.registrationRepository.findByTournament(tournamentId);
+    return registrations.map(r => this.mapRegistrationToDto(r));
   }
 
   /**
@@ -89,7 +231,13 @@ export class RegistrationService implements IRegistrationService {
    * @returns List of registrations
    */
   public async getRegistrationsByParticipant(participantId: string): Promise<RegistrationDto[]> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!participantId || participantId.trim().length === 0) {
+      throw new Error('Participant ID is required');
+    }
+    
+    const registrations = await this.registrationRepository.findByParticipantId(participantId);
+    return registrations.map(r => this.mapRegistrationToDto(r));
   }
 
   /**
@@ -99,6 +247,30 @@ export class RegistrationService implements IRegistrationService {
    * @returns List of registrations
    */
   public async getRegistrationsByCategory(categoryId: string): Promise<RegistrationDto[]> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!categoryId || categoryId.trim().length === 0) {
+      throw new Error('Category ID is required');
+    }
+    
+    const registrations = await this.registrationRepository.findByCategoryId(categoryId);
+    return registrations.map(r => this.mapRegistrationToDto(r));
+  }
+
+  /**
+   * Maps a Registration entity to RegistrationDto.
+   *
+   * @param registration - Registration entity
+   * @returns Registration DTO
+   */
+  private mapRegistrationToDto(registration: Registration): RegistrationDto {
+    return {
+      id: registration.id,
+      participantId: registration.participantId,
+      tournamentId: registration.tournamentId,
+      categoryId: registration.categoryId,
+      status: registration.status,
+      seed: registration.seed,
+      registeredAt: registration.registeredAt,
+    };
   }
 }

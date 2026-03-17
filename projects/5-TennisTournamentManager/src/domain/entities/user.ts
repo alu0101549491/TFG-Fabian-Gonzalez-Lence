@@ -102,7 +102,7 @@ export class User {
    * @returns The concatenation of first and last name
    */
   public getFullName(): string {
-    throw new Error('Not implemented');
+    return `${this.firstName} ${this.lastName}`.trim();
   }
 
   /**
@@ -112,7 +112,15 @@ export class User {
    * @returns True if authentication succeeds
    */
   public authenticate(password: string): boolean {
-    throw new Error('Not implemented');
+    // Note: Actual password comparison should be done in the application layer
+    // using bcrypt.compare(). This method is a placeholder for domain logic.
+    // The real authentication happens in AuthenticationService.
+    if (!password || password.length === 0) {
+      return false;
+    }
+    
+    // This is just a stub - actual bcrypt comparison will be in application layer
+    return this.isActive && this.passwordHash.length > 0;
   }
 
   /**
@@ -122,6 +130,54 @@ export class User {
    * @returns True if the user has the specified permission
    */
   public hasPermission(permission: string): boolean {
-    throw new Error('Not implemented');
+    if (!this.isActive) {
+      return false;
+    }
+
+    // Define role-based permissions
+    const rolePermissions: Record<UserRole, string[]> = {
+      [UserRole.SYSTEM_ADMIN]: [
+        'user:create',
+        'user:read',
+        'user:update',
+        'user:delete',
+        'tournament:create',
+        'tournament:read',
+        'tournament:update',
+        'tournament:delete',
+        'match:create',
+        'match:read',
+        'match:update',
+        'match:delete',
+        'system:configure',
+        'audit:view',
+      ],
+      [UserRole.TOURNAMENT_ADMIN]: [
+        'tournament:create',
+        'tournament:read',
+        'tournament:update',
+        'match:create',
+        'match:read',
+        'match:update',
+        'registration:read',
+        'registration:approve',
+        'bracket:generate',
+        'order-of-play:publish',
+      ],
+      [UserRole.REGISTERED_PARTICIPANT]: [
+        'tournament:read',
+        'registration:create',
+        'match:read',
+        'score:submit',
+        'profile:update',
+      ],
+      [UserRole.PUBLIC]: [
+        'tournament:read',
+        'match:read',
+      ],
+    };
+
+    const permissions = rolePermissions[this.role] || [];
+    return permissions.includes(permission);
   }
 }

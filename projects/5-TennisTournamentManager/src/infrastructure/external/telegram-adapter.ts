@@ -29,6 +29,17 @@ export class TelegramAdapter {
    * @returns Promise resolving when the message is sent successfully
    */
   public async sendMessage(chatId: string, message: string): Promise<void> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!chatId || !message) {
+      throw new Error('Chat ID and message are required');
+    }
+
+    // In production, use actual Telegram Bot API
+    // Example: await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { chat_id: chatId, text: message });
+    console.log(`[TELEGRAM] Chat ID: ${chatId}`);
+    console.log(`[TELEGRAM] Message: ${message}`);
+
+    // Simulate async operation
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }

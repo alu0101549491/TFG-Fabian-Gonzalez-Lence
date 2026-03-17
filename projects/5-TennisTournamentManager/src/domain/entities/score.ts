@@ -82,7 +82,32 @@ export class Score {
    * @returns The formatted score string
    */
   public toDisplayString(): string {
-    throw new Error('Not implemented');
+    if (this.sets.length === 0) {
+      return 'No score recorded';
+    }
+    
+    const setStrings = this.sets.map((set) => {
+      let setStr = `${set.participant1Games}-${set.participant2Games}`;
+      
+      // Add tiebreak score if present
+      if (set.tiebreakParticipant1 !== null && set.tiebreakParticipant1 !== undefined) {
+        const tbScore = Math.min(
+          set.tiebreakParticipant1 ?? 0,
+          set.tiebreakParticipant2 ?? 0
+        );
+        setStr += `(${tbScore})`;
+      }
+      
+      return setStr;
+    });
+    
+    let result = setStrings.join(', ');
+    
+    if (this.isRetirement) {
+      result += ' (ret.)';
+    }
+    
+    return result;
   }
 
   /**
@@ -91,6 +116,8 @@ export class Score {
    * @returns True if the score requires confirmation
    */
   public needsConfirmation(): boolean {
-    throw new Error('Not implemented');
+    // Score needs confirmation if it's not yet confirmed and not a retirement
+    // Retirements are typically pre-confirmed by the official
+    return !this.isConfirmed && !this.isRetirement;
   }
 }

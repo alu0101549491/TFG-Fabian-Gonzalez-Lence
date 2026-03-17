@@ -11,8 +11,8 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Match} from '../entities/match.entity';
-import {MatchStatus} from '../enumerations/match-status.enum';
+import {Match} from '../entities/match';
+import {MatchStatus} from '../enumerations/match-status';
 
 /**
  * Repository interface for Match entity data access operations.

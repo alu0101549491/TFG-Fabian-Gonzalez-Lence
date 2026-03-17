@@ -1,0 +1,50 @@
+<div class="container p-lg">
+  <h1 class="mb-lg">Tournament Standings</h1>
+
+  @if (isLoading()) {
+    <div class="text-center p-lg">
+      <p>Loading standings...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+
+  @if (!isLoading() && standings().length > 0) {
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Position</th>
+            <th>Participant</th>
+            <th>Wins</th>
+            <th>Losses</th>
+            <th>Sets Won</th>
+            <th>Sets Lost</th>
+            <th>Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (standing of standings(); track standing.participantId) {
+            <tr>
+              <td>{{ standing.position }}</td>
+              <td>{{ standing.participantId }}</td>
+              <td>{{ standing.wins }}</td>
+              <td>{{ standing.losses }}</td>
+              <td>{{ standing.setsWon }}</td>
+              <td>{{ standing.setsLost }}</td>
+              <td>{{ standing.points }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (!isLoading() && !errorMessage() && standings().length === 0) {
+    <div class="text-center p-lg">
+      <p class="text-muted">No standings available yet.</p>
+    </div>
+  }
+</div>

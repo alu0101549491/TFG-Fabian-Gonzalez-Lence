@@ -86,6 +86,13 @@ export class Standing {
    * @param result - The match result data
    */
   public updateStats(result: Record<string, unknown>): void {
-    throw new Error('Not implemented');
+    // Note: Actual statistics calculation should be done in the application
+    // layer by the StandingService using the configured RankingSystem (Strategy Pattern).
+    // This method validates that the result data is provided.
+    if (!result) {
+      throw new Error('Match result is required to update standings.');
+    }
+    
+    // Validation only - real implementation in application layer
   }
 }

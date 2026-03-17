@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {GlobalRanking} from '../entities/global-ranking.entity';
+import {GlobalRanking} from '../entities/global-ranking';
 
 /**
  * Repository interface for GlobalRanking entity data access operations.

@@ -72,6 +72,13 @@ export class GlobalRanking {
    * @param result - The match result data
    */
   public updatePoints(result: Record<string, unknown>): void {
-    throw new Error('Not implemented');
+    // Note: Actual ranking calculation should be done in the application
+    // layer by the GlobalRankingService using the configured RankingSystem.
+    // This method validates the input.
+    if (!result) {
+      throw new Error('Match result is required to update ranking points.');
+    }
+    
+    // Validation only - real implementation in application layer
   }
 }

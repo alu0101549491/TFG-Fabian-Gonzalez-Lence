@@ -62,6 +62,15 @@ export class Phase {
    * @param phaseId - The ID of the next phase
    */
   public linkToNextPhase(phaseId: string): void {
-    throw new Error('Not implemented');
+    if (!phaseId || phaseId.trim().length === 0) {
+      throw new Error('Next phase ID is required.');
+    }
+    
+    if (phaseId === this.id) {
+      throw new Error('Cannot link a phase to itself.');
+    }
+    
+    // Note: Actual linking should be done via repository in application layer
+    // This method validates the business rule only
   }
 }

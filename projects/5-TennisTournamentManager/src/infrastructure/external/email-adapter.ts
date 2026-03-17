@@ -30,6 +30,23 @@ export class EmailAdapter {
    * @returns Promise resolving when the email is sent successfully
    */
   public async sendEmail(to: string, subject: string, body: string): Promise<void> {
-    throw new Error('Not implemented');
+    // Validate input
+    if (!to || !subject || !body) {
+      throw new Error('Email parameters (to, subject, body) are required');
+    }
+
+    // Email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to)) {
+      throw new Error('Invalid email address');
+    }
+
+    // In production, use actual email service (SendGrid, AWS SES, etc.)
+    console.log(`[EMAIL] To: ${to}`);
+    console.log(`[EMAIL] Subject: ${subject}`);
+    console.log(`[EMAIL] Body: ${body}`);
+
+    // Simulate async operation
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }

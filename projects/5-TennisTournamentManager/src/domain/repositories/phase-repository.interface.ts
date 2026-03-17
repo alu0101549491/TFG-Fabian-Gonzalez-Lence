@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Phase} from '../entities/phase.entity';
+import {Phase} from '../entities/phase';
 
 /**
  * Repository interface for Phase entity data access operations.

@@ -33,7 +33,15 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @returns Promise resolving to the registration or null if not found
    */
   public async findById(id: string): Promise<Registration | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Registration>(`/registrations/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -41,7 +49,8 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @returns Promise resolving to an array of all registrations
    */
   public async findAll(): Promise<Registration[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Registration[]>('/registrations');
+    return response;
   }
 
   /**
@@ -50,7 +59,8 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @returns Promise resolving to the saved registration with assigned ID
    */
   public async save(registration: Registration): Promise<Registration> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Registration>('/registrations', registration);
+    return response;
   }
 
   /**
@@ -59,7 +69,8 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @returns Promise resolving to the updated registration
    */
   public async update(registration: Registration): Promise<Registration> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Registration>(`/registrations/${registration.id}`, registration);
+    return response;
   }
 
   /**
@@ -68,7 +79,7 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/registrations/${id}`);
   }
 
   /**
@@ -77,7 +88,8 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @returns Promise resolving to an array of registrations
    */
   public async findByParticipantId(participantId: string): Promise<Registration[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Registration[]>(`/registrations?participantId=${participantId}`);
+    return response;
   }
 
   /**
@@ -86,7 +98,8 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @returns Promise resolving to an array of registrations
    */
   public async findByTournament(tournamentId: string): Promise<Registration[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Registration[]>(`/registrations?tournamentId=${tournamentId}`);
+    return response;
   }
 
   /**
@@ -95,7 +108,8 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @returns Promise resolving to an array of registrations
    */
   public async findByCategoryId(categoryId: string): Promise<Registration[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Registration[]>(`/registrations?categoryId=${categoryId}`);
+    return response;
   }
 
   /**
@@ -105,6 +119,7 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @returns Promise resolving to an array of registrations
    */
   public async findByStatus(tournamentId: string, status: RegistrationStatus): Promise<Registration[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Registration[]>(`/registrations?tournamentId=${tournamentId}&status=${status}`);
+    return response;
   }
 }

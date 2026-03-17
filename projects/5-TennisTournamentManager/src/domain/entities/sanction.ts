@@ -75,6 +75,12 @@ export class Sanction {
    * Applies this sanction.
    */
   public apply(): void {
-    throw new Error('Not implemented');
+    if (!this.reason || this.reason.trim().length === 0) {
+      throw new Error('Sanction must have a reason.');
+    }
+    
+    // Note: Actual sanction application should be done in the application layer
+    // by the SanctionService, which will update the participant's record and
+    // potentially adjust standings/rankings. This method validates the sanction.
   }
 }

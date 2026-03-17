@@ -1,0 +1,80 @@
+<div class="container p-lg">
+  <h1 class="mb-lg">Player Statistics</h1>
+
+  @if (isLoading()) {
+    <div class="text-center p-lg">
+      <p>Loading statistics...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+
+  @if (statistics()) {
+    <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+      <div class="card">
+        <div class="card-body text-center">
+          <h3 class="text-3xl font-bold text-primary">{{ statistics()!.totalMatches }}</h3>
+          <p class="text-muted">Total Matches</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body text-center">
+          <h3 class="text-3xl font-bold text-success">{{ statistics()!.totalWins }}</h3>
+          <p class="text-muted">Wins</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body text-center">
+          <h3 class="text-3xl font-bold text-error">{{ statistics()!.totalLosses }}</h3>
+          <p class="text-muted">Losses</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body text-center">
+          <h3 class="text-3xl font-bold">{{ statistics()!.winPercentage.toFixed(1) }}%</h3>
+          <p class="text-muted">Win Rate</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-lg">
+      <div class="card-header">
+        <h2 class="card-title">Detailed Statistics</h2>
+      </div>
+      <div class="card-body">
+        <div class="grid gap-md" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <h4>Set Statistics</h4>
+            <p><strong>Sets Won:</strong> {{ statistics()!.totalSetsWon }}</p>
+            <p><strong>Sets Lost:</strong> {{ statistics()!.totalSetsLost }}</p>
+            <p><strong>Set Ratio:</strong> {{ statistics()!.setRatio.toFixed(2) }}</p>
+          </div>
+
+          <div>
+            <h4>Game Statistics</h4>
+            <p><strong>Games Won:</strong> {{ statistics()!.totalGamesWon }}</p>
+            <p><strong>Games Lost:</strong> {{ statistics()!.totalGamesLost }}</p>
+            <p><strong>Tiebreaks Won:</strong> {{ statistics()!.tiebreaksWon }}</p>
+          </div>
+        </div>
+
+        <div class="mt-md">
+          <h4>Streaks</h4>
+          <p><strong>Current Win Streak:</strong> {{ statistics()!.currentWinStreak }}</p>
+          <p><strong>Best Win Streak:</strong> {{ statistics()!.bestWinStreak }}</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (!isLoading() && !errorMessage() && !statistics()) {
+    <div class="text-center p-lg">
+      <p class="text-muted">No statistics available.</p>
+    </div>
+  }
+</div>

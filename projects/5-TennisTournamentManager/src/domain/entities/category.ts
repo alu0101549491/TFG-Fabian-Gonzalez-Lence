@@ -75,6 +75,8 @@ export class Category {
    * @returns True if there are spots available
    */
   public hasAvailableSpots(): boolean {
-    throw new Error('Not implemented');
+    // Category has available spots if reserved spots haven't filled the quota
+    // Actual participant count should be checked in application layer
+    return this.reservedSpots < this.maxQuota;
   }
 }

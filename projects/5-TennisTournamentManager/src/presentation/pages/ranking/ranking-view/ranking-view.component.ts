@@ -5,24 +5,84 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since March 16, 2026
+ * @since March 17, 2026
  * @file presentation/pages/ranking/ranking-view/ranking-view.component.ts
  * @desc Global ranking table with multi-system support (ELO, points, WTN).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component} from '@angular/core';
+import {Component, OnInit, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {RouterModule} from '@angular/router';
+import {FormsModule} from '@angular/forms';
+import {RankingService} from '@application/services';
+import {type RankingDto} from '@application/dto';
+import {RankingSystem} from '@domain/enumerations/ranking-system';
 
 /**
- * RankingViewComponent — stub for ranking display.
+ * RankingViewComponent displays global player rankings.
  */
 @Component({
   selector: 'app-ranking-view',
   standalone: true,
-  imports: [],
-  template: `<p>ranking-view works!</p>`,
+  imports: [CommonModule, RouterModule, FormsModule],
+  templateUrl: './ranking-view.component.html',
   styles: [],
 })
-export class RankingViewComponent {
-  // TODO: implement ranking logic
+export class RankingViewComponent implements OnInit {
+  /** Rankings data */
+  public rankings = signal<RankingDto[]>([]);
+
+  /** Loading state */
+  public isLoading = signal(false);
+
+  /** Error message */
+  public errorMessage = signal<string | null>(null);
+
+  /** Selected ranking system */
+  public selectedSystem: RankingSystem = RankingSystem.POINTS;
+
+  /** Available ranking systems */
+  public readonly systems = Object.values(RankingSystem);
+
+  /**
+   * Creates an instance of RankingViewComponent.
+   *
+   * @param rankingService - Ranking service for data operations
+   */
+  public constructor(
+    private readonly rankingService: RankingService,
+  ) {}
+
+  /**
+   * Initializes component and loads rankings.
+   */
+  public ngOnInit(): void {
+    void this.loadRankings();
+  }
+
+  /**
+   * Loads rankings for selected system.
+   */
+  public async loadRankings(): Promise<void> {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const rankings = await this.rankingService.getRankingsBySystem(this.selectedSystem);
+      this.rankings.set(rankings);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load rankings';
+      this.errorMessage.set(message);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  /**
+   * Changes ranking system and reloads.
+   */
+  public changeSystem(): void {
+    void this.loadRankings();
+  }
 }

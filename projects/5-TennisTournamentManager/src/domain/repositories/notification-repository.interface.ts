@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Notification} from '../entities/notification.entity';
+import {Notification} from '../entities/notification';
 
 /**
  * Repository interface for Notification entity data access operations.

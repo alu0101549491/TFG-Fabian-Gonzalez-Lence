@@ -79,6 +79,17 @@ export class Announcement {
    * @returns A new Announcement instance with isPublished=true and publishedAt set
    */
   public publish(): Announcement {
-    throw new Error('Not implemented');
+    if (this.isPublished) {
+      throw new Error('Announcement is already published.');
+    }
+    
+    // Return a new instance with updated publication status
+    // Following immutability principle in domain entities
+    return new Announcement({
+      ...this,
+      isPublished: true,
+      publishedAt: new Date(),
+      updatedAt: new Date(),
+    });
   }
 }

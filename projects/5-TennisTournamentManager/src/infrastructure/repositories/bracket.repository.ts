@@ -32,7 +32,15 @@ export class BracketRepositoryImpl implements IBracketRepository {
    * @returns Promise resolving to the bracket or null if not found
    */
   public async findById(id: string): Promise<Bracket | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Bracket>(`/brackets/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class BracketRepositoryImpl implements IBracketRepository {
    * @returns Promise resolving to an array of all brackets
    */
   public async findAll(): Promise<Bracket[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Bracket[]>('/brackets');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class BracketRepositoryImpl implements IBracketRepository {
    * @returns Promise resolving to the saved bracket with assigned ID
    */
   public async save(bracket: Bracket): Promise<Bracket> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Bracket>('/brackets', bracket);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class BracketRepositoryImpl implements IBracketRepository {
    * @returns Promise resolving to the updated bracket
    */
   public async update(bracket: Bracket): Promise<Bracket> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Bracket>(`/brackets/${bracket.id}`, bracket);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class BracketRepositoryImpl implements IBracketRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/brackets/${id}`);
   }
 
   /**
@@ -76,7 +87,8 @@ export class BracketRepositoryImpl implements IBracketRepository {
    * @returns Promise resolving to an array of brackets
    */
   public async findByTournament(tournamentId: string): Promise<Bracket[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Bracket[]>(`/brackets?tournamentId=${tournamentId}`);
+    return response;
   }
 
   /**
@@ -85,6 +97,14 @@ export class BracketRepositoryImpl implements IBracketRepository {
    * @returns Promise resolving to the bracket or null if not found
    */
   public async findByCategoryId(categoryId: string): Promise<Bracket | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Bracket>(`/brackets?categoryId=${categoryId}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 }

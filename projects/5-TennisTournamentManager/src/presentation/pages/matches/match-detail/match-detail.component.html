@@ -1,0 +1,55 @@
+<div class="container p-lg">
+  @if (isLoading()) {
+    <div class="text-center p-lg">
+      <p>Loading match details...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error mb-lg">{{ errorMessage() }}</div>
+  }
+
+  @if (match()) {
+    <div class="mb-md">
+      <button class="btn btn-ghost" routerLink="/matches">← Back to Matches</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Match Details</h2>
+        <span class="badge badge-{{ match()!.status.toLowerCase() }}">
+          {{ match()!.status }}
+        </span>
+      </div>
+
+      <div class="card-body">
+        <div class="grid gap-lg" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <h3>Match Information</h3>
+            <p><strong>Scheduled:</strong> {{ formatDate(match()!.scheduledAt) }}</p>
+            <p><strong>Court:</strong> {{ match()!.courtId || 'Not assigned' }}</p>
+            <p><strong>Status:</strong> {{ match()!.status }}</p>
+          </div>
+
+          <div>
+            <h3>Participants</h3>
+            <p><strong>Participant 1:</strong> {{ match()!.participant1Id }}</p>
+            <p><strong>Participant 2:</strong> {{ match()!.participant2Id }}</p>
+            @if (match()!.winnerId) {
+              <p><strong>Winner:</strong> {{ match()!.winnerId }}</p>
+            }
+          </div>
+        </div>
+
+        @if (match()!.score) {
+          <div class="mt-lg">
+            <h3>Score</h3>
+            <div class="text-center p-lg bg-gray rounded">
+              <p class="text-2xl font-bold">{{ match()!.score }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

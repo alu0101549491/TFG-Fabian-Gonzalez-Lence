@@ -11,8 +11,8 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Tournament} from '../entities/tournament.entity';
-import {TournamentStatus} from '../enumerations/tournament-status.enum';
+import {Tournament} from '../entities/tournament';
+import {TournamentStatus} from '../enumerations/tournament-status';
 
 /**
  * Repository interface for Tournament entity data access operations.

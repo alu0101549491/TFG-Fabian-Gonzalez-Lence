@@ -76,7 +76,12 @@ export class OrderOfPlay {
    * Publishes the order of play.
    */
   public publish(): void {
-    throw new Error('Not implemented');
+    if (this.isPublished) {
+      throw new Error('Order of play is already published.');
+    }
+    
+    // Note: Actual publishing should be done via repository in application layer
+    // This will also trigger notifications via the NotificationService
   }
 
   /**
@@ -86,6 +91,19 @@ export class OrderOfPlay {
    * @param newTime - The new scheduled time
    */
   public rescheduleMatch(matchId: string, newTime: Date): void {
-    throw new Error('Not implemented');
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required for rescheduling.');
+    }
+    
+    if (!newTime || !(newTime instanceof Date)) {
+      throw new Error('Valid new time is required for rescheduling.');
+    }
+    
+    if (newTime < new Date()) {
+      throw new Error('Cannot reschedule match to a past time.');
+    }
+    
+    // Note: Actual rescheduling should be done via repository in application layer
+    // This method validates the business rules only
   }
 }

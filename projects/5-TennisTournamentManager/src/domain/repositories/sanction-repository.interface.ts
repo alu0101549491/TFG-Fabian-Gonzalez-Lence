@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Sanction} from '../entities/sanction.entity';
+import {Sanction} from '../entities/sanction';
 
 /**
  * Repository interface for Sanction entity data access operations.

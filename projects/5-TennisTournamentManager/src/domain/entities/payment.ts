@@ -78,6 +78,18 @@ export class Payment {
    * Processes the payment transaction.
    */
   public process(): void {
-    throw new Error('Not implemented');
+    if (this.status !== PaymentStatus.PENDING) {
+      throw new Error(
+        `Cannot process payment in status ${this.status}. ` +
+        'Payment must be PENDING.'
+      );
+    }
+    
+    if (this.amount <= 0) {
+      throw new Error('Payment amount must be greater than zero.');
+    }
+    
+    // Note: Actual payment processing should be done via PaymentGatewayAdapter
+    // in the infrastructure layer. This method validates the business rules only.
   }
 }

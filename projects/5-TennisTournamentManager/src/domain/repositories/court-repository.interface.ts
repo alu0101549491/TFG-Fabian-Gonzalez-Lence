@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Court} from '../entities/court.entity';
+import {Court} from '../entities/court';
 
 /**
  * Repository interface for Court entity data access operations.

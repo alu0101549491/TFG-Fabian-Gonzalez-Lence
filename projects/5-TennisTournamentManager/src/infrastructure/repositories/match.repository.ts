@@ -33,7 +33,15 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to the match or null if not found
    */
   public async findById(id: string): Promise<Match | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Match>(`/matches/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -41,7 +49,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to an array of all matches
    */
   public async findAll(): Promise<Match[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Match[]>('/matches');
+    return response;
   }
 
   /**
@@ -50,7 +59,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to the saved match with assigned ID
    */
   public async save(match: Match): Promise<Match> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Match>('/matches', match);
+    return response;
   }
 
   /**
@@ -59,7 +69,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to the updated match
    */
   public async update(match: Match): Promise<Match> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Match>(`/matches/${match.id}`, match);
+    return response;
   }
 
   /**
@@ -68,7 +79,7 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/matches/${id}`);
   }
 
   /**
@@ -77,7 +88,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to an array of matches
    */
   public async findByBracket(bracketId: string): Promise<Match[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Match[]>(`/matches?bracketId=${bracketId}`);
+    return response;
   }
 
   /**
@@ -86,7 +98,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to an array of matches
    */
   public async findByPhaseId(phaseId: string): Promise<Match[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Match[]>(`/matches?phaseId=${phaseId}`);
+    return response;
   }
 
   /**
@@ -95,7 +108,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to an array of matches
    */
   public async findByParticipantId(participantId: string): Promise<Match[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Match[]>(`/matches?participantId=${participantId}`);
+    return response;
   }
 
   /**
@@ -104,7 +118,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to an array of matches
    */
   public async findByCourtId(courtId: string): Promise<Match[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Match[]>(`/matches?courtId=${courtId}`);
+    return response;
   }
 
   /**
@@ -113,6 +128,7 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to an array of matches
    */
   public async findByStatus(status: MatchStatus): Promise<Match[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Match[]>(`/matches?status=${status}`);
+    return response;
   }
 }

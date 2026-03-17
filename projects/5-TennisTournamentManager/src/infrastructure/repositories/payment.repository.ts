@@ -32,7 +32,15 @@ export class PaymentRepositoryImpl implements IPaymentRepository {
    * @returns Promise resolving to the payment or null if not found
    */
   public async findById(id: string): Promise<Payment | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<Payment>(`/payments/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class PaymentRepositoryImpl implements IPaymentRepository {
    * @returns Promise resolving to an array of all payments
    */
   public async findAll(): Promise<Payment[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Payment[]>('/payments');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class PaymentRepositoryImpl implements IPaymentRepository {
    * @returns Promise resolving to the saved payment with assigned ID
    */
   public async save(payment: Payment): Promise<Payment> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<Payment>('/payments', payment);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class PaymentRepositoryImpl implements IPaymentRepository {
    * @returns Promise resolving to the updated payment
    */
   public async update(payment: Payment): Promise<Payment> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<Payment>(`/payments/${payment.id}`, payment);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class PaymentRepositoryImpl implements IPaymentRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/payments/${id}`);
   }
 
   /**
@@ -76,7 +87,8 @@ export class PaymentRepositoryImpl implements IPaymentRepository {
    * @returns Promise resolving to an array of payments
    */
   public async findByRegistrationId(registrationId: string): Promise<Payment[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Payment[]>(`/payments?registrationId=${registrationId}`);
+    return response;
   }
 
   /**
@@ -85,6 +97,7 @@ export class PaymentRepositoryImpl implements IPaymentRepository {
    * @returns Promise resolving to an array of payments
    */
   public async findByParticipantId(participantId: string): Promise<Payment[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<Payment[]>(`/payments?participantId=${participantId}`);
+    return response;
   }
 }

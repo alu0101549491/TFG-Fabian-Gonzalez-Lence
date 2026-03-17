@@ -32,7 +32,15 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
    * @returns Promise resolving to the order of play or null if not found
    */
   public async findById(id: string): Promise<OrderOfPlay | null> {
-    throw new Error('Not implemented');
+    try {
+      const response = await this.httpClient.get<OrderOfPlay>(`/order-of-play/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -40,7 +48,8 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
    * @returns Promise resolving to an array of all orders of play
    */
   public async findAll(): Promise<OrderOfPlay[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<OrderOfPlay[]>('/order-of-play');
+    return response;
   }
 
   /**
@@ -49,7 +58,8 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
    * @returns Promise resolving to the saved order of play with assigned ID
    */
   public async save(orderOfPlay: OrderOfPlay): Promise<OrderOfPlay> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.post<OrderOfPlay>('/order-of-play', orderOfPlay);
+    return response;
   }
 
   /**
@@ -58,7 +68,8 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
    * @returns Promise resolving to the updated order of play
    */
   public async update(orderOfPlay: OrderOfPlay): Promise<OrderOfPlay> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.put<OrderOfPlay>(`/order-of-play/${orderOfPlay.id}`, orderOfPlay);
+    return response;
   }
 
   /**
@@ -67,7 +78,7 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
    * @returns Promise resolving when deletion is complete
    */
   public async delete(id: string): Promise<void> {
-    throw new Error('Not implemented');
+    await this.httpClient.delete(`/order-of-play/${id}`);
   }
 
   /**
@@ -76,7 +87,8 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
    * @returns Promise resolving to an array of orders of play
    */
   public async findByTournamentId(tournamentId: string): Promise<OrderOfPlay[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<OrderOfPlay[]>(`/order-of-play?tournamentId=${tournamentId}`);
+    return response;
   }
 
   /**
@@ -85,7 +97,8 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
    * @returns Promise resolving to an array of orders of play
    */
   public async findByCourtId(courtId: string): Promise<OrderOfPlay[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<OrderOfPlay[]>(`/order-of-play?courtId=${courtId}`);
+    return response;
   }
 
   /**
@@ -94,6 +107,7 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
    * @returns Promise resolving to an array of orders of play
    */
   public async findByMatchId(matchId: string): Promise<OrderOfPlay[]> {
-    throw new Error('Not implemented');
+    const response = await this.httpClient.get<OrderOfPlay[]>(`/order-of-play?matchId=${matchId}`);
+    return response;
   }
 }
