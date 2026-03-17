@@ -1,0 +1,426 @@
+graph TB
+    SysAdmin((System Administrator))
+    TournamentAdmin((Tournament Administrator))
+    Participant((Registered Participant))
+    Public((Public User))
+    System((System))
+    External((External Systems))
+    
+    %% User Management Use Cases
+    ManageUsers[Manage Users]
+    CreateUser[Create User]
+    EditUser[Edit User]
+    DeleteUser[Delete User]
+    AssignRoles[Assign Roles]
+    ManagePermissions[Manage Permissions]
+    
+    %% Tournament Management Use Cases
+    CreateTournament[Create Tournament]
+    ConfigureTournament[Configure Tournament]
+    EditTournamentDetails[Edit Tournament Details]
+    AssignAdministrators[Assign Multiple Administrators]
+    DefineTournamentRules[Define Tournament Rules]
+    CustomizeVisuals[Customize Visual Identity]
+    
+    %% Registration Use Cases
+    RegisterParticipant[Register for Tournament]
+    ManageQuotas[Manage Quotas]
+    ManageSubstitutes[Manage Substitute Lists]
+    WithdrawParticipant[Withdraw from Tournament]
+    AssignReservedSpots[Assign Reserved Spots]
+    ProcessPayment[Process Registration Payment]
+    
+    %% Bracket Management Use Cases
+    GenerateBracket[Generate Bracket]
+    ModifyBracket[Modify Bracket]
+    LinkPhases[Link Tournament Phases]
+    SetSeeds[Set Seeds and Byes]
+    BalanceGroups[Balance Round Robin Groups]
+    MigrateResults[Migrate Results to New Bracket]
+    
+    %% Match Management Use Cases
+    EnterResultParticipant[Enter Result as Participant]
+    EnterResultAdmin[Enter Result as Administrator]
+    ConfirmResult[Confirm Match Result]
+    DisputeResult[Dispute Match Result]
+    SuspendMatch[Suspend Match]
+    ResumeMatch[Resume Match]
+    CancelMatch[Cancel Match]
+    RecordMaterialResponsible[Record Material Responsible]
+    
+    %% Order of Play Use Cases
+    PublishOrderOfPlay[Publish Order of Play]
+    UpdateOrderOfPlay[Update Order of Play]
+    AssignCourts[Assign Courts and Schedules]
+    RescheduleMatch[Reschedule Match]
+    ManageCourtAvailability[Manage Court Availability]
+    
+    %% Visualization Use Cases
+    ViewBrackets[View Brackets]
+    ViewMatches[View Matches]
+    ViewClassification[View Classification]
+    ViewPointsClassification[View Points Classification]
+    ViewRatioClassification[View Ratio Classification]
+    ViewOrderOfPlay[View Order of Play]
+    ViewPhaseLinks[View Phase Links]
+    ViewLiveResults[View Live Results]
+    
+    %% Statistics Use Cases
+    ViewParticipantStats[View Participant Statistics]
+    ViewTournamentStats[View Tournament Statistics]
+    ViewResultHistory[View Result History]
+    ViewMatchupHistory[View Matchup History]
+    ExportStatistics[Export Statistics]
+    
+    %% Ranking Use Cases
+    MaintainGlobalRanking[Maintain Global Ranking]
+    CalculateRanking[Calculate Ranking]
+    ImportExternalRanking[Import External Ranking]
+    ViewRanking[View Global Ranking]
+    
+    %% Notification Use Cases
+    ReceiveNotification[Receive Notification]
+    SendNotification[Send Notification]
+    ConfigureNotifications[Configure Notification Preferences]
+    NotifyRegistration[Notify Registration Status]
+    NotifyMatch[Notify Match Schedule]
+    NotifyResult[Notify Result]
+    NotifyOrderChange[Notify Order of Play Change]
+    
+    %% Announcement Use Cases
+    CreateAnnouncement[Create Announcement]
+    PublishAnnouncement[Publish Announcement]
+    ManageTags[Manage Announcement Tags]
+    ViewAnnouncements[View Announcements]
+    ScheduleAnnouncement[Schedule Announcement]
+    
+    %% Privacy and Security Use Cases
+    ConfigurePrivacy[Configure Privacy Settings]
+    ManageDataVisibility[Manage Data Visibility]
+    ControlAccess[Control Access]
+    LogActivity[Log Activity]
+    MonitorUnauthorizedAccess[Monitor Unauthorized Access]
+    
+    %% Communication Use Cases
+    ChatWithParticipants[Chat with Participants]
+    ModerateChat[Moderate Chat]
+    SendGroupMessage[Send Group Message]
+    
+    %% Export and Documents Use Cases
+    ExportResults[Export Results]
+    ExportBrackets[Export Brackets]
+    PrintBrackets[Print Brackets]
+    GenerateDocuments[Generate Documents]
+    GenerateCertificates[Generate Certificates]
+    
+    %% Incident Management Use Cases
+    ManageIncidents[Manage Match Incidents]
+    ApplySanctions[Apply Sanctions]
+    ReplayMatch[Replay Match]
+    RecordDispute[Record Dispute]
+    
+    %% System Management Use Cases
+    CreateBackup[Create Backup]
+    RestoreBackup[Restore Backup]
+    MonitorPerformance[Monitor System Performance]
+    ManageScalability[Manage Scalability]
+    IntegrateExternalSystems[Integrate External Systems]
+    
+    %% System Operations
+    UpdateUI[Update User Interface]
+    ValidateData[Validate Data]
+    CalculateScore[Calculate Score]
+    UpdateClassification[Update Classification]
+    SyncData[Sync Data]
+    ProcessTieBreaks[Process Tie-Breaks]
+    CacheData[Cache Data for Offline]
+    
+    %% System Administrator interactions
+    SysAdmin -->|manages| ManageUsers
+    SysAdmin -->|maintains| MaintainGlobalRanking
+    SysAdmin -->|manages| ManageTags
+    SysAdmin -->|customizes| CustomizeVisuals
+    SysAdmin -->|assigns| AssignAdministrators
+    SysAdmin -->|imports| ImportExternalRanking
+    SysAdmin -->|creates| CreateBackup
+    SysAdmin -->|restores| RestoreBackup
+    SysAdmin -->|monitors| MonitorPerformance
+    SysAdmin -->|controls| ControlAccess
+    
+    %% Tournament Administrator interactions
+    TournamentAdmin -->|creates| CreateTournament
+    TournamentAdmin -->|configures| ConfigureTournament
+    TournamentAdmin -->|manages| ManageQuotas
+    TournamentAdmin -->|generates| GenerateBracket
+    TournamentAdmin -->|modifies| ModifyBracket
+    TournamentAdmin -->|enters| EnterResultAdmin
+    TournamentAdmin -->|publishes| PublishOrderOfPlay
+    TournamentAdmin -->|updates| UpdateOrderOfPlay
+    TournamentAdmin -->|assigns| AssignCourts
+    TournamentAdmin -->|reschedules| RescheduleMatch
+    TournamentAdmin -->|creates| CreateAnnouncement
+    TournamentAdmin -->|manages| ManageIncidents
+    TournamentAdmin -->|applies| ApplySanctions
+    TournamentAdmin -->|suspends| SuspendMatch
+    TournamentAdmin -->|resumes| ResumeMatch
+    TournamentAdmin -->|exports| ExportResults
+    TournamentAdmin -->|generates| GenerateDocuments
+    TournamentAdmin -->|links| LinkPhases
+    TournamentAdmin -->|moderates| ModerateChat
+    
+    %% Participant interactions
+    Participant -->|registers| RegisterParticipant
+    Participant -->|withdraws| WithdrawParticipant
+    Participant -->|enters| EnterResultParticipant
+    Participant -->|confirms| ConfirmResult
+    Participant -->|disputes| DisputeResult
+    Participant -->|views| ViewBrackets
+    Participant -->|views| ViewClassification
+    Participant -->|views| ViewOrderOfPlay
+    Participant -->|views| ViewParticipantStats
+    Participant -->|views| ViewResultHistory
+    Participant -->|receives| ReceiveNotification
+    Participant -->|configures| ConfigureNotifications
+    Participant -->|configures| ConfigurePrivacy
+    Participant -->|chats| ChatWithParticipants
+    Participant -->|pays| ProcessPayment
+    Participant -->|views| ViewLiveResults
+    Participant -->|records| RecordMaterialResponsible
+    
+    %% Public User interactions
+    Public -->|views| ViewBrackets
+    Public -->|views| ViewMatches
+    Public -->|views| ViewClassification
+    Public -->|views| ViewAnnouncements
+    Public -->|views| ViewTournamentStats
+    Public -->|views| ViewLiveResults
+    Public -->|exports| ExportBrackets
+    Public -->|prints| PrintBrackets
+    
+    %% System interactions
+    System -->|validates| ValidateData
+    System -->|updates| UpdateUI
+    System -->|calculates| CalculateScore
+    System -->|updates| UpdateClassification
+    System -->|sends| SendNotification
+    System -->|syncs| SyncData
+    System -->|processes| ProcessTieBreaks
+    System -->|logs| LogActivity
+    System -->|caches| CacheData
+    
+    %% External System interactions
+    External -->|integrates| IntegrateExternalSystems
+    External -->|syncs| ImportExternalRanking
+    
+    %% Include relationships - User Management
+    ManageUsers -.->|includes| CreateUser
+    ManageUsers -.->|includes| EditUser
+    ManageUsers -.->|includes| DeleteUser
+    
+    CreateUser -.->|includes| AssignRoles
+    EditUser -.->|includes| ManagePermissions
+    
+    %% Include relationships - Tournament Management
+    CreateTournament -.->|includes| ConfigureTournament
+    CreateTournament -.->|includes| ValidateData
+    CreateTournament -.->|includes| UpdateUI
+    
+    ConfigureTournament -.->|includes| EditTournamentDetails
+    ConfigureTournament -.->|includes| DefineTournamentRules
+    ConfigureTournament -.->|includes| ManageCourtAvailability
+    
+    %% Include relationships - Registration
+    RegisterParticipant -.->|includes| ValidateData
+    RegisterParticipant -.->|includes| ManageQuotas
+    RegisterParticipant -.->|includes| NotifyRegistration
+    RegisterParticipant ..->|extends| ProcessPayment
+    
+    ManageQuotas -.->|includes| ManageSubstitutes
+    ManageQuotas -.->|includes| AssignReservedSpots
+    
+    WithdrawParticipant -.->|includes| ManageSubstitutes
+    WithdrawParticipant -.->|includes| SendNotification
+    WithdrawParticipant -.->|includes| UpdateClassification
+    
+    %% Include relationships - Bracket Management
+    GenerateBracket -.->|includes| SetSeeds
+    GenerateBracket -.->|includes| BalanceGroups
+    GenerateBracket -.->|includes| ValidateData
+    GenerateBracket -.->|includes| UpdateUI
+    
+    ModifyBracket -.->|includes| MigrateResults
+    ModifyBracket -.->|includes| ValidateData
+    ModifyBracket -.->|includes| UpdateUI
+    
+    LinkPhases -.->|includes| UpdateClassification
+    LinkPhases -.->|includes| ValidateData
+    
+    %% Include relationships - Match Management
+    EnterResultParticipant -.->|includes| ValidateData
+    EnterResultParticipant -.->|includes| NotifyResult
+    EnterResultParticipant -.->|includes| UpdateClassification
+    
+    EnterResultAdmin -.->|includes| ValidateData
+    EnterResultAdmin -.->|includes| LogActivity
+    EnterResultAdmin -.->|includes| UpdateClassification
+    EnterResultAdmin -.->|includes| NotifyResult
+    
+    ConfirmResult -.->|includes| UpdateClassification
+    ConfirmResult -.->|includes| SendNotification
+    
+    DisputeResult -.->|includes| RecordDispute
+    DisputeResult -.->|includes| SendNotification
+    
+    SuspendMatch -.->|includes| UpdateOrderOfPlay
+    SuspendMatch -.->|includes| SendNotification
+    SuspendMatch -.->|includes| LogActivity
+    
+    ResumeMatch -.->|includes| UpdateOrderOfPlay
+    ResumeMatch -.->|includes| SendNotification
+    
+    %% Include relationships - Order of Play
+    PublishOrderOfPlay -.->|includes| AssignCourts
+    PublishOrderOfPlay -.->|includes| NotifyMatch
+    PublishOrderOfPlay -.->|includes| ValidateData
+    
+    UpdateOrderOfPlay -.->|includes| NotifyOrderChange
+    UpdateOrderOfPlay -.->|includes| SyncData
+    UpdateOrderOfPlay -.->|includes| UpdateUI
+    
+    AssignCourts -.->|includes| ManageCourtAvailability
+    AssignCourts -.->|includes| ValidateData
+    
+    RescheduleMatch -.->|includes| UpdateOrderOfPlay
+    RescheduleMatch -.->|includes| NotifyOrderChange
+    
+    %% Include relationships - Visualization
+    ViewBrackets -.->|includes| ViewMatches
+    ViewBrackets -.->|includes| ViewPhaseLinks
+    
+    ViewClassification -.->|includes| ViewPointsClassification
+    ViewClassification -.->|includes| ViewRatioClassification
+    
+    ViewClassification -.->|includes| ProcessTieBreaks
+    
+    %% Include relationships - Statistics
+    ViewParticipantStats -.->|includes| ViewResultHistory
+    ViewParticipantStats -.->|includes| ViewMatchupHistory
+    
+    ViewTournamentStats -.->|includes| CalculateScore
+    
+    ExportStatistics -.->|includes| ValidateData
+    
+    %% Include relationships - Ranking
+    MaintainGlobalRanking -.->|includes| CalculateRanking
+    MaintainGlobalRanking -.->|includes| UpdateClassification
+    
+    ImportExternalRanking -.->|includes| IntegrateExternalSystems
+    ImportExternalRanking -.->|includes| ValidateData
+    
+    %% Include relationships - Notifications
+    ReceiveNotification -.->|includes| ConfigureNotifications
+    
+    SendNotification -.->|includes| NotifyRegistration
+    SendNotification -.->|includes| NotifyMatch
+    SendNotification -.->|includes| NotifyResult
+    SendNotification -.->|includes| NotifyOrderChange
+    
+    %% Include relationships - Announcements
+    CreateAnnouncement -.->|includes| ManageTags
+    CreateAnnouncement -.->|includes| ValidateData
+    
+    PublishAnnouncement -.->|includes| SendNotification
+    PublishAnnouncement ..->|extends| ScheduleAnnouncement
+    
+    %% Include relationships - Privacy and Security
+    ConfigurePrivacy -.->|includes| ManageDataVisibility
+    
+    ControlAccess -.->|includes| LogActivity
+    ControlAccess -.->|includes| MonitorUnauthorizedAccess
+    
+    %% Include relationships - Communication
+    ChatWithParticipants -.->|includes| SendNotification
+    ChatWithParticipants ..->|extends| SendGroupMessage
+    
+    %% Include relationships - Export and Documents
+    ExportResults -.->|includes| ValidateData
+    ExportResults -.->|includes| IntegrateExternalSystems
+    
+    ExportBrackets -.->|includes| ValidateData
+    PrintBrackets -.->|includes| ExportBrackets
+    
+    GenerateDocuments -.->|includes| GenerateCertificates
+    GenerateDocuments -.->|includes| ValidateData
+    
+    %% Include relationships - Incident Management
+    ManageIncidents -.->|includes| RecordDispute
+    ManageIncidents -.->|includes| ApplySanctions
+    ManageIncidents ..->|extends| ReplayMatch
+    ManageIncidents ..->|extends| CancelMatch
+    
+    ApplySanctions -.->|includes| SendNotification
+    ApplySanctions -.->|includes| LogActivity
+    
+    %% Include relationships - System Management
+    CreateBackup -.->|includes| ValidateData
+    CreateBackup -.->|includes| LogActivity
+    
+    RestoreBackup -.->|includes| ValidateData
+    RestoreBackup -.->|includes| UpdateUI
+    
+    MonitorPerformance -.->|includes| ManageScalability
+    
+    %% Extend relationships
+    EnterResultParticipant ..->|extends| ConfirmResult
+    EnterResultParticipant ..->|extends| DisputeResult
+    
+    ModifyBracket ..->|extends| WithdrawParticipant
+    
+    ViewLiveResults ..->|extends| UpdateUI
+    
+    %% Styling
+    classDef sysAdminStyle fill:#E74C3C,stroke:#C0392B,stroke-width:3px,color:#fff
+    classDef tournamentAdminStyle fill:#3498DB,stroke:#2471A3,stroke-width:3px,color:#fff
+    classDef participantStyle fill:#2ECC71,stroke:#27AE60,stroke-width:3px,color:#fff
+    classDef publicStyle fill:#95A5A6,stroke:#7F8C8D,stroke-width:3px,color:#fff
+    classDef systemStyle fill:#50C878,stroke:#2E7D4E,stroke-width:3px,color:#fff
+    classDef externalStyle fill:#9B59B6,stroke:#6C3483,stroke-width:3px,color:#fff
+    classDef userMgmtUseCase fill:#FFD700,stroke:#DAA520,stroke-width:2px
+    classDef tournamentUseCase fill:#FF9F40,stroke:#CC7A33,stroke-width:2px
+    classDef registrationUseCase fill:#3498DB,stroke:#2471A3,stroke-width:2px
+    classDef bracketUseCase fill:#9B59B6,stroke:#6C3483,stroke-width:2px
+    classDef matchUseCase fill:#2ECC71,stroke:#27AE60,stroke-width:2px
+    classDef orderUseCase fill:#E67E22,stroke:#CA6F1E,stroke-width:2px
+    classDef visualUseCase fill:#95A5A6,stroke:#7F8C8D,stroke-width:2px
+    classDef statsUseCase fill:#1ABC9C,stroke:#16A085,stroke-width:2px
+    classDef rankingUseCase fill:#F39C12,stroke:#D68910,stroke-width:2px
+    classDef notificationUseCase fill:#E74C3C,stroke:#C0392B,stroke-width:2px
+    classDef announcementUseCase fill:#8E44AD,stroke:#6C3483,stroke-width:2px
+    classDef privacyUseCase fill:#C0392B,stroke:#922B21,stroke-width:2px
+    classDef commUseCase fill:#3498DB,stroke:#2471A3,stroke-width:2px
+    classDef exportUseCase fill:#16A085,stroke:#138D75,stroke-width:2px
+    classDef incidentUseCase fill:#D35400,stroke:#BA4A00,stroke-width:2px
+    classDef systemMgmtUseCase fill:#B19CD9,stroke:#7B68A8,stroke-width:2px
+    
+    class SysAdmin sysAdminStyle
+    class TournamentAdmin tournamentAdminStyle
+    class Participant participantStyle
+    class Public publicStyle
+    class System systemStyle
+    class External externalStyle
+    class ManageUsers,CreateUser,EditUser,DeleteUser,AssignRoles,ManagePermissions userMgmtUseCase
+    class CreateTournament,ConfigureTournament,EditTournamentDetails,AssignAdministrators,DefineTournamentRules,CustomizeVisuals tournamentUseCase
+    class RegisterParticipant,ManageQuotas,ManageSubstitutes,WithdrawParticipant,AssignReservedSpots,ProcessPayment registrationUseCase
+    class GenerateBracket,ModifyBracket,LinkPhases,SetSeeds,BalanceGroups,MigrateResults bracketUseCase
+    class EnterResultParticipant,EnterResultAdmin,ConfirmResult,DisputeResult,SuspendMatch,ResumeMatch,CancelMatch,RecordMaterialResponsible matchUseCase
+    class PublishOrderOfPlay,UpdateOrderOfPlay,AssignCourts,RescheduleMatch,ManageCourtAvailability orderUseCase
+    class ViewBrackets,ViewMatches,ViewClassification,ViewPointsClassification,ViewRatioClassification,ViewOrderOfPlay,ViewPhaseLinks,ViewLiveResults visualUseCase
+    class ViewParticipantStats,ViewTournamentStats,ViewResultHistory,ViewMatchupHistory,ExportStatistics statsUseCase
+    class MaintainGlobalRanking,CalculateRanking,ImportExternalRanking,ViewRanking rankingUseCase
+    class ReceiveNotification,SendNotification,ConfigureNotifications,NotifyRegistration,NotifyMatch,NotifyResult,NotifyOrderChange notificationUseCase
+    class CreateAnnouncement,PublishAnnouncement,ManageTags,ViewAnnouncements,ScheduleAnnouncement announcementUseCase
+    class ConfigurePrivacy,ManageDataVisibility,ControlAccess,LogActivity,MonitorUnauthorizedAccess privacyUseCase
+    class ChatWithParticipants,ModerateChat,SendGroupMessage commUseCase
+    class ExportResults,ExportBrackets,PrintBrackets,GenerateDocuments,GenerateCertificates exportUseCase
+    class ManageIncidents,ApplySanctions,ReplayMatch,RecordDispute incidentUseCase
+    class CreateBackup,RestoreBackup,MonitorPerformance,ManageScalability,IntegrateExternalSystems,UpdateUI,ValidateData,CalculateScore,UpdateClassification,SyncData,ProcessTieBreaks,CacheData systemMgmtUseCase
