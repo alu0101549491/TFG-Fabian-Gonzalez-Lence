@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {User} from '@domain/entities/user';
 import {IUserRepository} from '@domain/repositories/user.repository.interface';
 import {UserRole} from '@domain/enumerations/user-role';
@@ -23,11 +23,8 @@ import {AxiosClient} from '../http/axios-client';
  */
 @Injectable({providedIn: 'root'})
 export class UserRepositoryImpl implements IUserRepository {
-  /**
-   * Creates an instance of UserRepositoryImpl.
-   * @param httpClient - The HTTP client for making API requests
-   */
-  constructor(private readonly httpClient: AxiosClient) {}
+  /** The HTTP client for making API requests */
+  private readonly httpClient = inject(AxiosClient);
 
   /**
    * Finds a user by their unique identifier.

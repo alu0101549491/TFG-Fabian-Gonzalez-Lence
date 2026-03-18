@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, signal} from '@angular/core';
+import {Component, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router, RouterModule} from '@angular/router';
@@ -204,8 +204,29 @@ import {type RegisterUserDto} from '@application/dto';
   styles: [],
 })
 export class RegisterComponent {
+  /** FormBuilder injected using inject() function */
+  private readonly fb = inject(FormBuilder);
+  
+  /** Authentication service for registration */
+  private readonly authService = inject(AuthenticationService);
+  
+  /** Auth state service for managing session */
+  private readonly authStateService = inject(AuthStateService);
+  
+  /** Router for navigation after registration */
+  private readonly router = inject(Router);
+
   /** Registration form group */
-  public registerForm: FormGroup;
+  public registerForm: FormGroup = this.fb.group({
+    username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(30)]],
+    email: ['', [Validators.required, Validators.email]],
+    firstName: ['', [Validators.required, Validators.maxLength(50)]],
+    lastName: ['', [Validators.required, Validators.maxLength(50)]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
+    confirmPassword: ['', [Validators.required]],
+    phone: ['', [Validators.pattern('^[+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$')]],
+    gdprConsent: [false, [Validators.requiredTrue]],
+  }, { validators: this.passwordMatchValidator });
 
   /** Loading state signal */
   public isLoading = signal(false);
@@ -215,32 +236,6 @@ export class RegisterComponent {
 
   /** Success message signal */
   public successMessage = signal<string | null>(null);
-
-  /**
-   * Creates an instance of RegisterComponent.
-   *
-   * @param fb - FormBuilder for creating reactive forms
-   * @param authService - Authentication service for registration
-   * @param authStateService - Auth state service for managing session
-   * @param router - Router for navigation after registration
-   */
-  public constructor(
-    private readonly fb: FormBuilder,
-    private readonly authService: AuthenticationService,
-    private readonly authStateService: AuthStateService,
-    private readonly router: Router,
-  ) {
-    this.registerForm = this.fb.group({
-      username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(30)]],
-      email: ['', [Validators.required, Validators.email]],
-      firstName: ['', [Validators.required, Validators.maxLength(50)]],
-      lastName: ['', [Validators.required, Validators.maxLength(50)]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', [Validators.required]],
-      phone: ['', [Validators.pattern('^[+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$')]],
-      gdprConsent: [false, [Validators.requiredTrue]],
-    }, { validators: this.passwordMatchValidator });
-  }
 
   /**
    * Custom validator to check if password and confirmPassword match.
@@ -256,7 +251,7 @@ export class RegisterComponent {
 
   /**
    * Handles form submission and user registration.
-   * On success, automatically logs in and navigates to tournaments.
+   * On success, automatically logs in and navigates to home page.
    */
   public async onSubmit(): Promise<void> {
     if (this.registerForm.invalid) {
@@ -286,7 +281,7 @@ export class RegisterComponent {
       this.authStateService.setAuth(response.token, response.user);
       
       setTimeout(() => {
-        void this.router.navigate(['/tournaments']);
+        void this.router.navigate(['/home']);
       }, 1500);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';

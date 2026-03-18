@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {Statistics} from '@domain/entities/statistics';
 import {IStatisticsRepository} from '@domain/repositories/statistics.repository.interface';
 import {AxiosClient} from '../http/axios-client';
@@ -22,11 +22,8 @@ import {AxiosClient} from '../http/axios-client';
  */
 @Injectable({providedIn: 'root'})
 export class StatisticsRepositoryImpl implements IStatisticsRepository {
-  /**
-   * Creates an instance of StatisticsRepositoryImpl.
-   * @param httpClient - The HTTP client for making API requests
-   */
-  constructor(private readonly httpClient: AxiosClient) {}
+  /** The HTTP client for making API requests */
+  private readonly httpClient = inject(AxiosClient);
 
   /**
    * Finds statistics by its unique identifier.

@@ -78,43 +78,66 @@ export class AuthController {
   
   /**
    * POST /api/auth/register
-   * Creates a new user account.
+   * Creates a new user account and automatically logs them in.
    */
   public async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {email, password, firstName, lastName, phone, role} = req.body;
+      const {email, password, firstName, lastName, phone, username} = req.body;
       
       const userRepository = AppDataSource.getRepository(User);
       
+      // Check if email already exists
       const existingUser = await userRepository.findOne({where: {email}});
       if (existingUser) {
         throw new AppError('Email already exists', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.ALREADY_EXISTS);
       }
       
-      const passwordHash = await bcrypt.hash(password, 10);
+      // Check if username already exists (if provided)
+      if (username) {
+        const existingUsername = await userRepository.findOne({where: {username}});
+        if (existingUsername) {
+          throw new AppError('Username already exists', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.ALREADY_EXISTS);
+        }
+      }
       
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 12);
+      
+      // Create user
       const user = userRepository.create({
         id: generateId('usr'),
         email,
+        username: username || email.split('@')[0], // Use username or derive from email
         passwordHash,
         firstName,
         lastName,
         phone: phone || null,
-        role: role || UserRole.PLAYER,
+        role: UserRole.PLAYER,
         isActive: true,
         gdprConsent: true,
-        lastLogin: null,
+        lastLogin: new Date(),
       });
       
       await userRepository.save(user);
       
+      // Generate JWT token for auto-login
+      const token = jwt.sign(
+        {id: user.id, email: user.email, role: user.role},
+        config.jwt.secret,
+        {expiresIn: config.jwt.expiresIn}
+      );
+      
+      // Return token and user data
       res.status(HTTP_STATUS.CREATED).json({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        createdAt: user.createdAt,
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+        },
       });
     } catch (error) {
       next(error);

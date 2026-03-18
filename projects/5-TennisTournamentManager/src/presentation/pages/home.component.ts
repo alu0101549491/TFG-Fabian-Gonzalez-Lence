@@ -11,8 +11,9 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component} from '@angular/core';
-import {RouterModule} from '@angular/router';
+import {Component, inject, computed} from '@angular/core';
+import {Router, RouterModule} from '@angular/router';
+import {AuthStateService} from '@presentation/services/auth-state.service';
 
 /**
  * HomeComponent - Landing page with comprehensive feature presentation
@@ -31,21 +32,40 @@ import {RouterModule} from '@angular/router';
             <span class="tennis-icon">🎾</span>
           </div>
           <h1 class="hero-title">Tennis Tournament Manager</h1>
-          <p class="hero-subtitle">
-            Complete management platform for tennis tournaments with real-time tracking,
-            automated draws, and multichannel notifications
-          </p>
           
-          <div class="cta-buttons">
-            <a routerLink="/login" class="btn btn-primary">
-              <span class="btn-icon">🔐</span>
-              <span>Sign In</span>
-            </a>
-            <a routerLink="/register" class="btn btn-secondary">
-              <span class="btn-icon">📝</span>
-              <span>Get Started</span>
-            </a>
-          </div>
+          @if (isAuthenticated()) {
+            <p class="hero-subtitle">
+              Welcome back, {{ currentUser()?.firstName || 'Player' }}! 
+              Your tournaments and matches are ready to manage.
+            </p>
+            
+            <div class="cta-buttons">
+              <button (click)="goToBrowseTournaments()" class="btn btn-primary">
+                <span class="btn-icon">🏆</span>
+                <span>Browse Tournaments</span>
+              </button>
+              <a routerLink="/profile" class="btn btn-secondary">
+                <span class="btn-icon">👤</span>
+                <span>My Profile</span>
+              </a>
+            </div>
+          } @else {
+            <p class="hero-subtitle">
+              Complete management platform for tennis tournaments with real-time tracking,
+              automated draws, and multichannel notifications
+            </p>
+            
+            <div class="cta-buttons">
+              <a routerLink="/login" class="btn btn-primary">
+                <span class="btn-icon">🔐</span>
+                <span>Sign In</span>
+              </a>
+              <a routerLink="/register" class="btn btn-secondary">
+                <span class="btn-icon">📝</span>
+                <span>Get Started</span>
+              </a>
+            </div>
+          }
 
           <div class="hero-stats">
             <div class="stat-item">
@@ -597,4 +617,23 @@ import {RouterModule} from '@angular/router';
     }
   `],
 })
-export class HomeComponent {}
+export class HomeComponent {
+  /** Auth state service for checking authentication status */
+  private readonly authStateService = inject(AuthStateService);
+
+  /** Router for navigation */
+  private readonly router = inject(Router);
+  
+  /** Computed signal indicating if user is authenticated */
+  public readonly isAuthenticated = computed(() => this.authStateService.isAuthenticated());
+  
+  /** Computed signal with current user data */
+  public readonly currentUser = computed(() => this.authStateService.getCurrentUser());
+  
+  /**
+   * Navigates to browse tournaments page.
+   */
+  public goToBrowseTournaments(): void {
+    void this.router.navigate(['/tournaments']);
+  }
+}

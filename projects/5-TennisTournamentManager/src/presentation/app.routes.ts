@@ -40,14 +40,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/auth/register/register.component').then((m) => m.RegisterComponent),
   },
-  // Commented out - requires Angular plugin for external templates
-  // {
-  //   path: 'tournaments',
-  //   loadComponent: () =>
-  //     import('./pages/tournaments/tournament-list/tournament-list.component').then(
-  //       (m) => m.TournamentListComponent,
-  //     ),
-  // },
+  {
+    path: 'tournaments',
+    loadComponent: () =>
+      import('./pages/tournaments/tournament-list/tournament-list.component').then(
+        (m) => m.TournamentListComponent,
+      ),
+  },
   {
     path: 'tournaments/:id',
     loadComponent: () =>
@@ -138,6 +137,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'tournaments',
+    redirectTo: 'home',
   },
 ];

@@ -11,9 +11,12 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {IBracketGenerator} from '../interfaces/bracket-generator.interface';
 import {BracketType} from '@domain/enumerations/bracket-type';
+import {RoundRobinGenerator} from './generators/round-robin.generator';
+import {SingleEliminationGenerator} from './generators/single-elimination.generator';
+import {MatchPlayGenerator} from './generators/match-play.generator';
 
 /**
  * Bracket generator factory.
@@ -21,6 +24,15 @@ import {BracketType} from '@domain/enumerations/bracket-type';
  */
 @Injectable({providedIn: 'root'})
 export class BracketGeneratorFactory {
+  /** Round Robin generator instance */
+  private readonly roundRobinGenerator = inject(RoundRobinGenerator);
+
+  /** Single Elimination generator instance */
+  private readonly singleEliminationGenerator = inject(SingleEliminationGenerator);
+
+  /** Match Play generator instance */
+  private readonly matchPlayGenerator = inject(MatchPlayGenerator);
+
   /**
    * Creates a bracket generator for the specified bracket type.
    *
@@ -37,16 +49,16 @@ export class BracketGeneratorFactory {
     // Create appropriate generator based on type
     switch (bracketType) {
       case BracketType.SINGLE_ELIMINATION:
-        // In real implementation, return new SingleEliminationGenerator()
-        throw new Error(`Single elimination bracket generator not yet implemented`);
+        return this.singleEliminationGenerator;
       
       case BracketType.ROUND_ROBIN:
-        // In real implementation, return new RoundRobinGenerator()
-        throw new Error(`Round robin bracket generator not yet implemented`);
+        return this.roundRobinGenerator;
       
       case BracketType.MATCH_PLAY:
-        // In real implementation, return new MatchPlayGenerator()
-        throw new Error(`Match play bracket generator not yet implemented`);
+        return this.matchPlayGenerator;
       
       default:
-        throw new Error(`Unsupported bracket type: ${bracketType}`);\n    }\n  }\n}
+        throw new Error(`Unsupported bracket type: ${bracketType}`);
+    }
+  }
+}

@@ -13,15 +13,27 @@
 
 /**
  * Represents the type of entry a participant has into a tournament draw.
- * Corresponds to FR11 entry states.
+ * Covers all 9 entry states as defined in the specification (FR11).
  */
 export enum AcceptanceType {
-  /** Direct Acceptance by ranking classification (DA). */
+  /** Organizer Acceptance: place assigned directly by organization (OA). */
+  ORGANIZER_ACCEPTANCE = 'ORGANIZER_ACCEPTANCE',
+  /** Direct Acceptance: automatic entry by ranking classification (DA). */
   DIRECT_ACCEPTANCE = 'DIRECT_ACCEPTANCE',
+  /** Special Exemption: place for special circumstances (SE). */
+  SPECIAL_EXEMPTION = 'SPECIAL_EXEMPTION',
+  /** Junior Exemption: place reserved for junior category (JE). */
+  JUNIOR_EXEMPTION = 'JUNIOR_EXEMPTION',
+  /** Qualifier: participant who passed qualifying phase (QU). */
+  QUALIFIER = 'QUALIFIER',
+  /** Lucky Loser: alternate who enters due to another participant's withdrawal (LL). */
+  LUCKY_LOSER = 'LUCKY_LOSER',
   /** Wild Card: direct organizer invitation (WC). */
   WILD_CARD = 'WILD_CARD',
-  /** Seeded: pre-ranked player placed in strategic draw positions (SE). */
-  SEEDED = 'SEEDED',
+  /** Alternate: reserve on waiting list (ALT). */
+  ALTERNATE = 'ALTERNATE',
+  /** Withdrawn: participant who has withdrawn (WD). */
+  WITHDRAWN = 'WITHDRAWN',
 }
 
 /**

@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {Court} from '@domain/entities/court';
 import {ICourtRepository} from '@domain/repositories/court.repository.interface';
 import {AxiosClient} from '../http/axios-client';
@@ -22,11 +22,8 @@ import {AxiosClient} from '../http/axios-client';
  */
 @Injectable({providedIn: 'root'})
 export class CourtRepositoryImpl implements ICourtRepository {
-  /**
-   * Creates an instance of CourtRepositoryImpl.
-   * @param httpClient - The HTTP client for making API requests
-   */
-  constructor(private readonly httpClient: AxiosClient) {}
+  /** The HTTP client for making API requests */
+  private readonly httpClient = inject(AxiosClient);
 
   /**
    * Finds a court by its unique identifier.

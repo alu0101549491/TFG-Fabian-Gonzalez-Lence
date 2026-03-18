@@ -28,12 +28,12 @@ export interface IAuthenticationService {
   login(username: string, password: string): Promise<AuthResponseDto>;
 
   /**
-   * Registers a new user account.
+   * Registers a new user account and automatically logs them in.
    *
    * @param data - User registration data
-   * @returns Created user information
+   * @returns Authentication response with token and user data
    */
-  register(data: RegisterUserDto): Promise<UserDto>;
+  register(data: RegisterUserDto): Promise<AuthResponseDto>;
 
   /**
    * Validates a session token and returns whether it is valid.

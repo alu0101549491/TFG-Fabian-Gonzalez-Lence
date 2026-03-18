@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, signal} from '@angular/core';
+import {Component, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router, RouterModule} from '@angular/router';
@@ -102,34 +102,29 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
   styles: [],
 })
 export class LoginComponent {
+  /** FormBuilder injected using inject() function */
+  private readonly fb = inject(FormBuilder);
+  
+  /** Authentication service for login operations */
+  private readonly authService = inject(AuthenticationService);
+  
+  /** Auth state service for managing session */
+  private readonly authStateService = inject(AuthStateService);
+  
+  /** Router for navigation after successful login */
+  private readonly router = inject(Router);
+
   /** Login form group with email and password controls */
-  public loginForm: FormGroup;
+  public loginForm: FormGroup = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+  });
 
   /** Loading state signal */
   public isLoading = signal(false);
 
   /** Error message signal */
   public errorMessage = signal<string | null>(null);
-
-  /**
-   * Creates an instance of LoginComponent.
-   *
-   * @param fb - FormBuilder for creating reactive forms
-   * @param authService - Authentication service for login operations
-   * @param authStateService - Auth state service for managing session
-   * @param router - Router for navigation after successful login
-   */
-  public constructor(
-    private readonly fb: FormBuilder,
-    private readonly authService: AuthenticationService,
-    private readonly authStateService: AuthStateService,
-    private readonly router: Router,
-  ) {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-    });
-  }
 
   /**
    * Handles form submission and user authentication.
@@ -149,7 +144,7 @@ export class LoginComponent {
       const response = await this.authService.login(email, password);
       
       this.authStateService.setAuth(response.token, response.user);
-      await this.router.navigate(['/tournaments']);
+      await this.router.navigate(['/home']);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed';
       this.errorMessage.set(message);

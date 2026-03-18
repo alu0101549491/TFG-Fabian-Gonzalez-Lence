@@ -11,11 +11,12 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {IStandingService} from '../interfaces/standing-service.interface';
 import {StandingDto} from '../dto';
 import {StandingRepositoryImpl} from '@infrastructure/repositories/standing.repository';
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
+import {TiebreakResolverService} from './tiebreak-resolver.service';
 
 /**
  * Standing service implementation.
@@ -23,17 +24,14 @@ import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository
  */
 @Injectable({providedIn: 'root'})
 export class StandingService implements IStandingService {
-  /**
-   * Creates a new StandingService instance.
-   *
-   * @param standingRepository - Standing repository for data access
-   * @param matchRepository - Match repository for match results
-   */
-  public constructor(
-    private readonly standingRepository: StandingRepositoryImpl,
-    private readonly matchRepository: MatchRepositoryImpl,
-    // TODO: inject TiebreakResolver
-  ) {}
+  /** Standing repository for data access */
+  private readonly standingRepository = inject(StandingRepositoryImpl);
+
+  /** Match repository for match results */
+  private readonly matchRepository = inject(MatchRepositoryImpl);
+
+  /** Tiebreak resolver for resolving ties in standings */
+  private readonly tiebreakResolver = inject(TiebreakResolverService);
 
   /**
    * Calculates all standings for a bracket.

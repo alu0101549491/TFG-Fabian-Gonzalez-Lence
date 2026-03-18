@@ -11,13 +11,10 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {IAuthenticationService} from '../interfaces/authentication-service.interface';
 import {RegisterUserDto, AuthResponseDto, UserDto} from '../dto';
-import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
-import {User} from '@domain/entities/user';
-import {UserRole} from '@domain/enumerations/user-role';
-import {generateId} from '@shared/utils';
+import {AxiosClient} from '@infrastructure/http/axios-client';
 
 /**
  * Authentication service implementation.
@@ -25,73 +22,53 @@ import {generateId} from '@shared/utils';
  */
 @Injectable({providedIn: 'root'})
 export class AuthenticationService implements IAuthenticationService {
-  /**
-   * Creates a new AuthenticationService instance.
-   *
-   * @param userRepository - User repository for user data access
-   */
-  public constructor(
-    private readonly userRepository: UserRepositoryImpl,
-  ) {}
+  /** HTTP client for making API requests */
+  private readonly httpClient = inject(AxiosClient);
 
   /**
    * Authenticates a user and returns a JWT token.
    *
-   * @param username - User's username
+   * @param username - User's email (username field accepts email)
    * @param password - User's password
    * @returns Authentication response with token and user data
    */
   public async login(username: string, password: string): Promise<AuthResponseDto> {
     // Validate input
     if (!username || username.trim().length === 0) {
-      throw new Error('Username is required');
+      throw new Error('Email is required');
     }
     
     if (!password || password.length === 0) {
       throw new Error('Password is required');
     }
     
-    // Find user by username or email
-    let user = await this.userRepository.findByUsername(username);
-    if (!user) {
-      user = await this.userRepository.findByEmail(username);
+    try {
+      // Call backend auth endpoint
+      const response = await this.httpClient.post<AuthResponseDto>('/auth/login', {
+        email: username, // Backend expects 'email' field
+        password,
+      });
+      
+      return response;
+    } catch (error: any) {
+      // Handle HTTP errors
+      if (error.response?.status === 401) {
+        throw new Error('Invalid credentials');
+      }
+      if (error.response?.status === 403) {
+        throw new Error('Account is disabled');
+      }
+      throw new Error(error.response?.data?.message || 'Login failed');
     }
-    
-    if (!user) {
-      throw new Error('Invalid credentials');
-    }
-    
-    // Check if user is active
-    if (!user.isActive) {
-      throw new Error('User account is inactive');
-    }
-    
-    // Verify password (in real implementation, use bcrypt.compare)
-    // For now, this is a placeholder - actual bcrypt comparison should be done here
-    const isPasswordValid = user.authenticate(password);
-    if (!isPasswordValid) {
-      throw new Error('Invalid credentials');
-    }
-    
-    // Generate JWT token (in real implementation, use jsonwebtoken library)
-    const token = this.generateToken(user);
-    
-    // Map user to DTO
-    const userDto = this.mapUserToDto(user);
-    
-    return {
-      token,
-      user: userDto,
-    };
   }
 
   /**
-   * Registers a new user account.
+   * Registers a new user account and automatically logs them in.
    *
    * @param data - User registration data
-   * @returns Created user information
+   * @returns Authentication response with token and user data
    */
-  public async register(data: RegisterUserDto): Promise<UserDto> {
+  public async register(data: RegisterUserDto): Promise<AuthResponseDto> {
     // Validate input
     if (!data.email || !data.email.includes('@')) {
       throw new Error('Valid email is required');
@@ -105,39 +82,31 @@ export class AuthenticationService implements IAuthenticationService {
       throw new Error('GDPR consent is required');
     }
     
-    // Check if user already exists
-    const existingUserByEmail = await this.userRepository.findByEmail(data.email);
-    if (existingUserByEmail) {
-      throw new Error('Email is already registered');
+    try {
+      // Call backend auth endpoint
+      const response = await this.httpClient.post<AuthResponseDto>('/auth/register', {
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        username: data.username,
+        phone: data.phone || null,
+      });
+      
+      return response;
+    } catch (error: any) {
+      // Handle HTTP errors
+      if (error.response?.status === 400) {
+        const message = error.response?.data?.message;
+        if (message?.includes('Email already exists')) {
+          throw new Error('Email is already registered');
+        }
+        if (message?.includes('Username already exists')) {
+          throw new Error('Username is already taken');
+        }
+      }
+      throw new Error(error.response?.data?.message || 'Registration failed');
     }
-    
-    const existingUserByUsername = await this.userRepository.findByUsername(data.username);
-    if (existingUserByUsername) {
-      throw new Error('Username is already taken');
-    }
-    
-    // Hash password (in real implementation, use bcrypt.hash with salt >= 12)
-    const passwordHash = this.hashPassword(data.password);
-    
-    // Create user entity
-    const user = new User({
-      id: generateId(),
-      username: data.username,
-      email: data.email,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      passwordHash,
-      role: UserRole.REGISTERED_PARTICIPANT,
-      phone: data.phone || null,
-      gdprConsent: data.gdprConsent,
-      isActive: true,
-    });
-    
-    // Save user
-    const savedUser = await this.userRepository.save(user);
-    
-    // Map to DTO
-    return this.mapUserToDto(savedUser);
   }
 
   /**
@@ -151,17 +120,25 @@ export class AuthenticationService implements IAuthenticationService {
       return false;
     }
     
+    // For JWT tokens, validation is typically done via token expiration
+    // In a more complete implementation, you might call a backend endpoint
+    // to verify the token's validity
     try {
-      // In real implementation, use jsonwebtoken.verify()
-      // For now, basic validation
-      const payload = this.verifyToken(token);
-      if (!payload || !payload.userId) {
+      // Basic structure check (JWT has 3 parts separated by dots)
+      const parts = token.split('.');
+      if (parts.length !== 3) {
         return false;
       }
       
-      // Check if user still exists and is active
-      const user = await this.userRepository.findById(payload.userId);
-      if (!user || !user.isActive) {
+      // Decode payload to check expiration
+      const payload = JSON.parse(atob(parts[1]));
+      if (!payload.exp) {
+        return false;
+      }
+      
+      // Check if token is expired
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp < now) {
         return false;
       }
       
@@ -177,121 +154,18 @@ export class AuthenticationService implements IAuthenticationService {
    * @param userId - ID of the user to log out
    */
   public async logout(userId: string): Promise<void> {
-    // In a real implementation with Redis or database session storage,
-    // you would invalidate the token here. With stateless JWT, we rely
-    // on token expiration. This method is a placeholder for future
-    // session management features.
+    // With stateless JWT tokens, logout is typically handled client-side
+    // by removing the token from storage. This method calls the backend
+    // logout endpoint if server-side session invalidation is needed.
     if (!userId || userId.trim().length === 0) {
       throw new Error('User ID is required for logout');
     }
     
-    // Placeholder for session invalidation logic
-    // In production: add token to blacklist or remove from session store
-  }
-
-  /**
-   * Refreshes an expiring JWT token.
-   *
-   * @param token - Current token to refresh
-   * @returns New authentication response with refreshed token
-   */
-  public async refreshToken(token: string): Promise<AuthResponseDto> {
-    if (!token || token.trim().length === 0) {
-      throw new Error('Token is required for refresh');
-    }
-    
-    // Verify current token
-    const payload = this.verifyToken(token);
-    if (!payload || !payload.userId) {
-      throw new Error('Invalid token');
-    }
-    
-    // Get user
-    const user = await this.userRepository.findById(payload.userId);
-    if (!user || !user.isActive) {
-      throw new Error('User not found or inactive');
-    }
-    
-    // Generate new token
-    const newToken = this.generateToken(user);
-    const userDto = this.mapUserToDto(user);
-    
-    return {
-      token: newToken,
-      user: userDto,
-    };
-  }
-
-  /**
-   * Generates a JWT token for the user.
-   * In real implementation, use jsonwebtoken library.
-   *
-   * @param user - User to generate token for
-   * @returns JWT token string
-   */
-  private generateToken(user: User): string {
-    // Placeholder implementation
-    // In production, use: jwt.sign({ userId: user.id, role: user.role }, secret, { expiresIn: '1h' })
-    const payload = {
-      userId: user.id,
-      username: user.username,
-      role: user.role,
-      iat: Date.now(),
-    };
-    
-    // Simple base64 encoding for demonstration (NOT secure for production)
-    return Buffer.from(JSON.stringify(payload)).toString('base64');
-  }
-
-  /**
-   * Verifies and decodes a JWT token.
-   * In real implementation, use jsonwebtoken library.
-   *
-   * @param token - Token to verify
-   * @returns Decoded token payload
-   */
-  private verifyToken(token: string): {userId: string, role: UserRole} | null {
     try {
-      // Placeholder implementation
-      // In production, use: jwt.verify(token, secret)
-      const decoded = Buffer.from(token, 'base64').toString('utf-8');
-      return JSON.parse(decoded);
+      await this.httpClient.post('/auth/logout', {userId});
     } catch (error) {
-      return null;
+      // Logout endpoint may not be critical - silently fail
+      console.warn('Logout endpoint call failed:', error);
     }
-  }
-
-  /**
-   * Hashes a password using bcrypt.
-   * In real implementation, use bcrypt.hash with salt >= 12.
-   *
-   * @param password - Plain text password
-   * @returns Hashed password
-   */
-  private hashPassword(password: string): string {
-    // Placeholder implementation
-    // In production, use: bcrypt.hashSync(password, 12)
-    return `hashed_${password}_placeholder`;
-  }
-
-  /**
-   * Maps a User entity to a UserDto.
-   *
-   * @param user - User entity
-   * @returns User DTO
-   */
-  private mapUserToDto(user: User): UserDto {
-    return {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      isActive: user.isActive,
-      phone: user.phone,
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin,
-    };
   }
 }

@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {Tournament} from '@domain/entities/tournament';
 import {ITournamentRepository} from '@domain/repositories/tournament.repository.interface';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
@@ -23,11 +23,8 @@ import {AxiosClient} from '../http/axios-client';
  */
 @Injectable({providedIn: 'root'})
 export class TournamentRepositoryImpl implements ITournamentRepository {
-  /**
-   * Creates an instance of TournamentRepositoryImpl.
-   * @param httpClient - The HTTP client for making API requests
-   */
-  constructor(private readonly httpClient: AxiosClient) {}
+  /** The HTTP client for making API requests */
+  private readonly httpClient = inject(AxiosClient);
 
   /**
    * Finds a tournament by its unique identifier.

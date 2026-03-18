@@ -25,6 +25,9 @@ export class User {
   @PrimaryColumn('varchar', {length: 50})
   public id!: string;
 
+  @Column('varchar', {length: 50, unique: true, nullable: true})
+  public username!: string | null;
+
   @Column('varchar', {length: 100, unique: true})
   public email!: string;
 

@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {Registration} from '@domain/entities/registration';
 import {IRegistrationRepository} from '@domain/repositories/registration.repository.interface';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
@@ -23,11 +23,8 @@ import {AxiosClient} from '../http/axios-client';
  */
 @Injectable({providedIn: 'root'})
 export class RegistrationRepositoryImpl implements IRegistrationRepository {
-  /**
-   * Creates an instance of RegistrationRepositoryImpl.
-   * @param httpClient - The HTTP client for making API requests
-   */
-  constructor(private readonly httpClient: AxiosClient) {}
+  /** The HTTP client for making API requests */
+  private readonly httpClient = inject(AxiosClient);
 
   /**
    * Finds a registration by its unique identifier.

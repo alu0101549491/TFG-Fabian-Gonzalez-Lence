@@ -15,8 +15,12 @@
 export default {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   roots: ['<rootDir>/tests'],
   testMatch: ['**/*.test.ts'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(@angular|rxjs)/)',
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@domain/(.*)$': '<rootDir>/src/domain/$1',
@@ -26,7 +30,10 @@ export default {
     '^@shared/(.*)$': '<rootDir>/src/shared/$1',
   },
   transform: {
-    '^.+\\.ts$': ['ts-jest', {useESM: true}],
+    '^.+\\.(ts|mjs|js)$': ['ts-jest', {
+      useESM: true,
+      tsconfig: 'tsconfig.spec.json'
+    }],
   },
   extensionsToTreatAsEsm: ['.ts'],
   collectCoverageFrom: [
