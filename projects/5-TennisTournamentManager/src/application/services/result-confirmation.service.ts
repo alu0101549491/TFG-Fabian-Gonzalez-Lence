@@ -5,15 +5,17 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since March 17, 2026
+ * @since March 18, 2026
  * @file application/services/result-confirmation.service.ts
  * @desc Service for match result confirmation workflow (FR25-FR27).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {MatchResult} from '@domain/entities/match-result';
 import {ConfirmationStatus} from '@domain/enumerations/confirmation-status';
+import {MatchResultRepositoryImpl} from '@infrastructure/repositories/match-result.repository';
+import {generateId} from '@shared/utils';
 
 /**
  * Data transfer object for submitting a match result.
@@ -84,6 +86,9 @@ export interface AnnulResultDto {
  */
 @Injectable({providedIn: 'root'})
 export class ResultConfirmationService {
+  /** Repository for match result persistence */
+  private readonly matchResultRepository = inject(MatchResultRepositoryImpl);
+
   /**
    * Submits a match result by a participant (FR24).
    * Result will be in PENDING_CONFIRMATION status until opponent confirms.
@@ -125,7 +130,7 @@ export class ResultConfirmationService {
 
     // Create result entity
     const result = new MatchResult({
-      id: this.generateId(),
+      id: generateId(),
       matchId: data.matchId,
       submittedBy: data.submittedBy,
       winnerId: data.winnerId,
@@ -139,13 +144,13 @@ export class ResultConfirmationService {
       updatedAt: new Date()
     });
 
-    // TODO: Save to repository
-    // const savedResult = await this.matchResultRepository.save(result);
+    // Save to repository
+    const savedResult = await this.matchResultRepository.save(result);
 
     // TODO: Send notification to opponent
     // await this.notificationService.notifyPendingConfirmation(matchId, opponentId);
 
-    return result;
+    return savedResult;
   }
 
   /**
@@ -165,33 +170,33 @@ export class ResultConfirmationService {
       throw new Error('User ID is required');
     }
 
-    // TODO: Fetch result
-    // const result = await this.matchResultRepository.findById(data.resultId);
-    // if (!result) throw new Error('Result not found');
+    // Fetch result
+    const result = await this.matchResultRepository.findById(data.resultId);
+    if (!result) throw new Error('Result not found');
 
-    // TODO: Fetch match
+    // TODO: Fetch match to verify user is authorized opponent
     // const match = await this.matchRepository.findById(result.matchId);
     // if (!match) throw new Error('Match not found');
 
     // Validate business rules
-    // result.confirm(data.userId);
+    result.confirm(data.userId);
 
     // TODO: Check user is authorized (opponent)
     // if (!result.canBeConfirmedBy(data.userId, match)) {
     //   throw new Error('User is not authorized to confirm this result');
     // }
 
-    // TODO: Update result status
-    // const updatedResult = new MatchResult({
-    //   ...result,
-    //   confirmationStatus: ConfirmationStatus.CONFIRMED,
-    //   confirmedBy: data.userId,
-    //   confirmedAt: new Date(),
-    //   updatedAt: new Date()
-    // });
+    // Update result status
+    const updatedResult = new MatchResult({
+      ...result,
+      confirmationStatus: ConfirmationStatus.CONFIRMED,
+      confirmedBy: data.userId,
+      confirmedAt: new Date(),
+      updatedAt: new Date()
+    });
 
-    // TODO: Save to repository
-    // const savedResult = await this.matchResultRepository.update(updatedResult);
+    // Save to repository
+    const savedResult = await this.matchResultRepository.update(updatedResult);
 
     // TODO: Update match status to COMPLETED
     // await this.matchService.complete(match.id, result.winnerId);
@@ -199,8 +204,7 @@ export class ResultConfirmationService {
     // TODO: Send notification to submitter
     // await this.notificationService.notifyResultConfirmed(result.matchId, result.submittedBy);
 
-    // Placeholder return
-    throw new Error('Not implemented - repository integration pending');
+    return savedResult;
   }
 
   /**
@@ -224,39 +228,38 @@ export class ResultConfirmationService {
       throw new Error('Dispute reason is required');
     }
 
-    // TODO: Fetch result
-    // const result = await this.matchResultRepository.findById(data.resultId);
-    // if (!result) throw new Error('Result not found');
+    // Fetch result
+    const result = await this.matchResultRepository.findById(data.resultId);
+    if (!result) throw new Error('Result not found');
 
-    // TODO: Fetch match
+    // TODO: Fetch match to verify user is authorized opponent
     // const match = await this.matchRepository.findById(result.matchId);
     // if (!match) throw new Error('Match not found');
 
     // Validate business rules
-    // result.dispute(data.userId, data.disputeReason);
+    result.dispute(data.userId, data.disputeReason);
 
     // TODO: Check user is authorized (opponent)
     // if (!result.canBeDisputedBy(data.userId, match)) {
     //   throw new Error('User is not authorized to dispute this result');
     // }
 
-    // TODO: Update result status
-    // const updatedResult = new MatchResult({
-    //   ...result,
-    //   confirmationStatus: ConfirmationStatus.DISPUTED,
-    //   disputeReason: data.disputeReason,
-    //   disputedAt: new Date(),
-    //   updatedAt: new Date()
-    // });
+    // Update result status
+    const updatedResult = new MatchResult({
+      ...result,
+      confirmationStatus: ConfirmationStatus.DISPUTED,
+      disputeReason: data.disputeReason,
+      disputedAt: new Date(),
+      updatedAt: new Date()
+    });
 
-    // TODO: Save to repository
-    // const savedResult = await this.matchResultRepository.update(updatedResult);
+    // Save to repository
+    const savedResult = await this.matchResultRepository.update(updatedResult);
 
     // TODO: Send notification to administrators
     // await this.notificationService.notifyResultDisputed(result.matchId, data.disputeReason);
 
-    // Placeholder return
-    throw new Error('Not implemented - repository integration pending');
+    return savedResult;
   }
 
   /**
@@ -282,25 +285,25 @@ export class ResultConfirmationService {
     //   throw new Error('Only administrators can validate results');
     // }
 
-    // TODO: Fetch result
-    // const result = await this.matchResultRepository.findById(data.resultId);
-    // if (!result) throw new Error('Result not found');
+    // Fetch result
+    const result = await this.matchResultRepository.findById(data.resultId);
+    if (!result) throw new Error('Result not found');
 
     // Validate business rules
-    // result.validateAsAdmin(data.adminId, data.adminNotes);
+    result.validateAsAdmin(data.adminId, data.adminNotes);
 
-    // TODO: Update result status
-    // const updatedResult = new MatchResult({
-    //   ...result,
-    //   confirmationStatus: ConfirmationStatus.CONFIRMED,
-    //   confirmedBy: data.adminId,
-    //   confirmedAt: new Date(),
-    //   adminNotes: data.adminNotes || null,
-    //   updatedAt: new Date()
-    // });
+    // Update result status
+    const updatedResult = new MatchResult({
+      ...result,
+      confirmationStatus: ConfirmationStatus.CONFIRMED,
+      confirmedBy: data.adminId,
+      confirmedAt: new Date(),
+      adminNotes: data.adminNotes || null,
+      updatedAt: new Date()
+    });
 
-    // TODO: Save to repository
-    // const savedResult = await this.matchResultRepository.update(updatedResult);
+    // Save to repository
+    const savedResult = await this.matchResultRepository.update(updatedResult);
 
     // TODO: Update match status
     // await this.matchService.complete(result.matchId, result.winnerId);
@@ -308,8 +311,7 @@ export class ResultConfirmationService {
     // TODO: Send notification to players
     // await this.notificationService.notifyResultValidated(result.matchId);
 
-    // Placeholder return
-    throw new Error('Not implemented - repository integration pending');
+    return savedResult;
   }
 
   /**
@@ -333,7 +335,7 @@ export class ResultConfirmationService {
 
     // Create result entity with immediate confirmation
     const result = new MatchResult({
-      id: this.generateId(),
+      id: generateId(),
       matchId: data.matchId,
       submittedBy: data.adminId,
       winnerId: data.winnerId,
@@ -350,8 +352,8 @@ export class ResultConfirmationService {
       updatedAt: new Date()
     });
 
-    // TODO: Save to repository
-    // const savedResult = await this.matchResultRepository.save(result);
+    // Save to repository
+    const savedResult = await this.matchResultRepository.save(result);
 
     // TODO: Update match status
     // await this.matchService.complete(result.matchId, result.winnerId);
@@ -359,7 +361,7 @@ export class ResultConfirmationService {
     // TODO: Send notification to players
     // await this.notificationService.notifyResultEntered(result.matchId);
 
-    return result;
+    return savedResult;
   }
 
   /**
@@ -389,23 +391,23 @@ export class ResultConfirmationService {
     //   throw new Error('Only administrators can annul results');
     // }
 
-    // TODO: Fetch result
-    // const result = await this.matchResultRepository.findById(data.resultId);
-    // if (!result) throw new Error('Result not found');
+    // Fetch result
+    const result = await this.matchResultRepository.findById(data.resultId);
+    if (!result) throw new Error('Result not found');
 
     // Validate business rules
-    // result.annul(data.adminId, data.reason);
+    result.annul(data.adminId, data.reason);
 
-    // TODO: Update result status
-    // const updatedResult = new MatchResult({
-    //   ...result,
-    //   confirmationStatus: ConfirmationStatus.ANNULLED,
-    //   adminNotes: data.reason,
-    //   updatedAt: new Date()
-    // });
+    // Update result status
+    const updatedResult = new MatchResult({
+      ...result,
+      confirmationStatus: ConfirmationStatus.ANNULLED,
+      adminNotes: data.reason,
+      updatedAt: new Date()
+    });
 
-    // TODO: Save to repository
-    // const savedResult = await this.matchResultRepository.update(updatedResult);
+    // Save to repository
+    const savedResult = await this.matchResultRepository.update(updatedResult);
 
     // TODO: Update match status to CANCELLED
     // await this.matchService.cancel(result.matchId);
@@ -413,8 +415,7 @@ export class ResultConfirmationService {
     // TODO: Send notification to players
     // await this.notificationService.notifyResultAnnulled(result.matchId, data.reason);
 
-    // Placeholder return
-    throw new Error('Not implemented - repository integration pending');
+    return savedResult;
   }
 
   /**
@@ -430,11 +431,8 @@ export class ResultConfirmationService {
       throw new Error('Match ID is required');
     }
 
-    // TODO: Fetch from repository
-    // return await this.matchResultRepository.findByMatch(matchId);
-
-    // Placeholder return
-    return [];
+    // Fetch from repository
+    return await this.matchResultRepository.findByMatch(matchId);
   }
 
   /**
@@ -450,19 +448,7 @@ export class ResultConfirmationService {
       throw new Error('Match ID is required');
     }
 
-    // TODO: Fetch from repository
-    // const results = await this.matchResultRepository.findByMatch(matchId);
-    // return results.find(r => r.confirmationStatus === ConfirmationStatus.CONFIRMED) || null;
-
-    // Placeholder return
-    return null;
-  }
-
-  /**
-   * Generates a unique ID for entities.
-   * @private
-   */
-  private generateId(): string {
-    return `result_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Fetch confirmed result from repository
+    return await this.matchResultRepository.findConfirmedByMatch(matchId);
   }
 }

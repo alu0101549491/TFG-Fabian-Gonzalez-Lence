@@ -52,6 +52,27 @@ export const config = {
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
   rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
   
+  /** Image upload configuration */
+  upload: {
+    maxFileSizeMB: parseInt(process.env.UPLOAD_MAX_FILE_SIZE_MB || '5', 10),
+    allowedFormats: (process.env.UPLOAD_ALLOWED_FORMATS || 'jpg,jpeg,png,gif,webp').split(','),
+    uploadDir: process.env.UPLOAD_DIR || './uploads',
+    imageQuality: parseInt(process.env.IMAGE_QUALITY || '85', 10),
+  },
+  
+  /** CDN configuration for static assets (NFR21) */
+  cdn: {
+    enabled: process.env.CDN_ENABLED === 'true',
+    baseUrl: process.env.CDN_BASE_URL || '',
+  },
+  
+  /** Cache configuration for performance optimization */
+  cache: {
+    enabled: process.env.CACHE_ENABLED !== 'false', // Default enabled
+    ttlSeconds: parseInt(process.env.CACHE_TTL_SECONDS || '300', 10), // 5 minutes default
+    staticAssetsTtlDays: parseInt(process.env.STATIC_ASSETS_TTL_DAYS || '30', 10),
+  },
+  
   /** External services (optional) */
   email: {
     host: process.env.EMAIL_HOST,

@@ -28,3 +28,4 @@ export {Announcement} from './announcement.entity';
 export {Payment} from './payment.entity';
 export {Sanction} from './sanction.entity';
 export {Statistics} from './statistics.entity';
+export {AuditLog} from './audit-log.entity';

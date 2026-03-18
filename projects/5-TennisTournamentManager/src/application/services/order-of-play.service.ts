@@ -20,6 +20,8 @@ import {CourtRepositoryImpl} from '@infrastructure/repositories/court.repository
 import {NotificationService} from './notification.service';
 import {OrderOfPlay} from '@domain/entities/order-of-play';
 import {generateId} from '@shared/utils';
+import {CourtScheduler} from './scheduling/court-scheduler';
+import {SchedulingOptions} from '../interfaces/court-scheduler.interface';
 
 /**
  * Order of play service implementation.
@@ -34,13 +36,14 @@ export class OrderOfPlayService implements IOrderOfPlayService {
    * @param matchRepository - Match repository for match data access
    * @param courtRepository - Court repository for court availability
    * @param _notificationService - Notification service for schedule notifications (reserved for future use)
+   * @param courtScheduler - Court scheduling service for automatic schedule generation
    */
   public constructor(
     private readonly orderOfPlayRepository: OrderOfPlayRepositoryImpl,
     private readonly matchRepository: MatchRepositoryImpl,
     private readonly courtRepository: CourtRepositoryImpl,
     private readonly _notificationService: NotificationService,
-    // TODO: inject CourtScheduler
+    private readonly courtScheduler: CourtScheduler,
   ) {}
 
   /**
@@ -257,13 +260,79 @@ export class OrderOfPlayService implements IOrderOfPlayService {
       throw new Error('No courts available for scheduling');
     }
     
-    // Get unscheduled matches
-    // In real implementation, this would be a more sophisticated algorithm
-    // using the CourtScheduler strategy
+    // Get unscheduled matches (SCHEDULED status)
+    const allMatches = await this.matchRepository.findAll();
+    const unscheduledMatches = allMatches.filter(
+      m => m.status.toString() === 'SCHEDULED' && !m.scheduledTime
+    );
+    
+    if (unscheduledMatches.length === 0) {
+      return []; // No matches to schedule
+    }
+    
+    // Configure scheduling options
+    const schedulingDate = new Date(date);
+    const startTime = new Date(schedulingDate);
+    startTime.setHours(9, 0, 0, 0); // Default: 9:00 AM
+    
+    const endTime = new Date(schedulingDate);
+    endTime.setHours(21, 0, 0, 0); // Default: 9:00 PM
+    
+    const options: SchedulingOptions = {
+      startTime,
+      endTime,
+      estimatedMatchDuration: 90, // 90 minutes per match
+      minimumRestPeriod: 120, // 2 hours rest between matches
+    };
+    
+    // Use CourtScheduler to generate optimal schedule
+    const schedulingResults = await this.courtScheduler.schedule(
+      unscheduledMatches,
+      availableCourts,
+      schedulingDate,
+      options
+    );
+    
+    // Create and save OrderOfPlay entries for each scheduled match
     const entries: OrderOfPlayDto[] = [];
     
-    // Placeholder for auto-generation logic
-    // Real implementation would use CourtScheduler to optimize court usage
+    for (const result of schedulingResults) {
+      const orderOfPlay = new OrderOfPlay({
+        id: generateId(),
+        tournamentId,
+        matchId: result.matchId,
+        courtId: result.courtId,
+        scheduledDate: schedulingDate,
+        startTime: result.startTime,
+        estimatedEndTime: result.estimatedEndTime,
+        courtOrder: result.courtOrder,
+        isPublished: false,
+        updatedAt: new Date(),
+      });
+      
+      const savedOrderOfPlay = await this.orderOfPlayRepository.save(orderOfPlay);
+      
+      // Get match and court details for DTO
+      const match = await this.matchRepository.findById(result.matchId);
+      const court = await this.courtRepository.findById(result.courtId);
+      
+      if (!match || !court) {
+        throw new Error(`Failed to retrieve match or court for order of play entry ${savedOrderOfPlay.id}`);
+      }
+      
+      // TODO: Get participant names from UserRepository
+      const participant1Name = `Player ${match.player1Id}`;
+      const participant2Name = `Player ${match.player2Id}`;
+      
+      const dto = this.mapOrderOfPlayToDto(
+        savedOrderOfPlay,
+        court.name,
+        participant1Name,
+        participant2Name
+      );
+      
+      entries.push(dto);
+    }
     
     return entries;
   }

@@ -24,3 +24,5 @@ export * from './notification.dto';
 export * from './announcement.dto';
 export * from './statistics.dto';
 export * from './payment.dto';
+export * from './export.dto';
+export * from './gdpr.dto';

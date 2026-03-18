@@ -53,6 +53,9 @@ export class User {
   @Column('varchar', {length: 20, nullable: true})
   public phone!: string | null;
 
+  @Column('varchar', {length: 500, nullable: true})
+  public avatarUrl!: string | null;
+
   @Column('boolean', {default: false})
   public gdprConsent!: boolean;
 

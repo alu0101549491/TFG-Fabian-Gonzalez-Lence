@@ -17,6 +17,7 @@ export {ICategoryRepository} from './category-repository.interface';
 export {ICourtRepository} from './court-repository.interface';
 export {IGlobalRankingRepository} from './global-ranking-repository.interface';
 export {IMatchRepository} from './match-repository.interface';
+export {IMatchResultRepository} from './match-result-repository.interface';
 export {INotificationRepository} from './notification-repository.interface';
 export {IOrderOfPlayRepository} from './order-of-play-repository.interface';
 export {IPaymentRepository} from './payment-repository.interface';

@@ -12,6 +12,7 @@
  */
 
 import {UserRole} from '../enumerations/user-role';
+import {PrivacySettings} from '../value-objects/privacy-settings';
 
 /**
  * Properties for creating a User entity.
@@ -39,8 +40,8 @@ export interface UserProps {
   gdprConsent?: boolean;
   /** Contact information (value object placeholder). */
   contactInfo?: Record<string, unknown>;
-  /** Privacy settings (value object placeholder). */
-  privacySettings?: Record<string, unknown>;
+  /** Privacy settings for data visibility control (FR58-FR60, NFR11-NFR14). */
+  privacySettings?: PrivacySettings;
   /** Account creation timestamp. */
   createdAt?: Date;
   /** Last update timestamp. */
@@ -73,7 +74,7 @@ export class User {
   public readonly phone: string | null;
   public readonly gdprConsent: boolean;
   public readonly contactInfo: Record<string, unknown>;
-  public readonly privacySettings: Record<string, unknown>;
+  public readonly privacySettings: PrivacySettings;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
   public readonly lastLogin: Date | null;
@@ -90,7 +91,7 @@ export class User {
     this.phone = props.phone ?? null;
     this.gdprConsent = props.gdprConsent ?? false;
     this.contactInfo = props.contactInfo ?? {};
-    this.privacySettings = props.privacySettings ?? {};
+    this.privacySettings = props.privacySettings ?? PrivacySettings.createDefault();
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
     this.lastLogin = props.lastLogin ?? null;

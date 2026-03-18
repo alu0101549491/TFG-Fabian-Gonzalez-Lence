@@ -24,3 +24,7 @@ export * from './order-of-play.service';
 export * from './notification.service';
 export * from './statistics.service';
 export * from './payment.service';
+export * from './phase-progression.service';
+export * from './privacy.service';
+export * from './export.service';
+export * from './gdpr.service';

@@ -51,11 +51,19 @@ export interface MatchProps {
  * Represents a tennis match between two participants.
  *
  * The match follows the State Pattern for status transitions:
- * SCHEDULED → IN_PROGRESS → COMPLETED
- * SCHEDULED → POSTPONED → SCHEDULED
- * IN_PROGRESS → SUSPENDED → IN_PROGRESS
- * SCHEDULED → CANCELLED | WALKOVER
- * COMPLETED → UNDER_REVIEW → COMPLETED
+ * - SCHEDULED → IN_PROGRESS → COMPLETED | RETIRED | ABANDONED
+ * - IN_PROGRESS → SUSPENDED → IN_PROGRESS
+ * - SCHEDULED → WALKOVER | CANCELLED | DEFAULT | NOT_PLAYED
+ * - Any state can be marked as DEAD_RUBBER (without changing competitive state)
+ * - BYE is assigned at creation for automatic passes
+ * 
+ * Valid state transitions:
+ * - SCHEDULED → IN_PROGRESS, WALKOVER, CANCELLED, DEFAULT, NOT_PLAYED, BYE
+ * - IN_PROGRESS → COMPLETED, RETIRED, SUSPENDED, ABANDONED, DEFAULT
+ * - SUSPENDED → IN_PROGRESS, ABANDONED, CANCELLED
+ * - COMPLETED → DEAD_RUBBER (administrative marking)
+ * 
+ * Final states (terminal): COMPLETED, RETIRED, WALKOVER, ABANDONED, BYE, NOT_PLAYED, CANCELLED, DEFAULT
  */
 export class Match {
   public readonly id: string;
@@ -155,5 +163,257 @@ export class Match {
     
     // Note: Actual status and winner update should be done via repository in application layer
     // This method validates the business rule only
+  }
+
+  /**
+   * Records a retirement during the match.
+   * Player retires mid-match, opponent receives victory.
+   *
+   * @param retiringPlayerId - The ID of the player who is retiring
+   * @param reason - The reason for retirement (injury, illness, etc.)
+   * @throws Error if match is not IN_PROGRESS or SUSPENDED
+   */
+  public retire(retiringPlayerId: string, reason?: string): void {
+    if (this.status !== MatchStatus.IN_PROGRESS && this.status !== MatchStatus.SUSPENDED) {
+      throw new Error(
+        `Cannot retire from match in status ${this.status}. ` +
+        'Match must be IN_PROGRESS or SUSPENDED.'
+      );
+    }
+
+    if (retiringPlayerId !== this.player1Id && retiringPlayerId !== this.player2Id) {
+      throw new Error(
+        'Retiring player must be one of the match participants.'
+      );
+    }
+
+    if (reason && reason.trim().length === 0) {
+      throw new Error('Retirement reason cannot be empty if provided.');
+    }
+
+    // Note: Actual status and winner update should be done via repository in application layer
+    // The opponent automatically wins
+  }
+
+  /**
+   * Abandons the match without a valid result.
+   * Match cannot be completed due to external circumstances.
+   *
+   * @param reason - The reason for abandonment (weather, court damage, etc.)
+   * @throws Error if match is already in a final state
+   */
+  public abandon(reason: string): void {
+    const finalStates = [
+      MatchStatus.COMPLETED,
+      MatchStatus.RETIRED,
+      MatchStatus.WALKOVER,
+      MatchStatus.ABANDONED,
+      MatchStatus.CANCELLED,
+      MatchStatus.DEFAULT,
+      MatchStatus.NOT_PLAYED,
+      MatchStatus.BYE,
+    ];
+
+    if (finalStates.includes(this.status)) {
+      throw new Error(
+        `Cannot abandon match in final status ${this.status}.`
+      );
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      throw new Error('Abandonment reason is required.');
+    }
+
+    // Note: Actual status update should be done via repository in application layer
+    // No winner is assigned for abandoned matches
+  }
+
+  /**
+   * Cancels a scheduled match.
+   * Match is cancelled before it starts.
+   *
+   * @param reason - The reason for cancellation
+   * @throws Error if match has already started or is in a final state
+   */
+  public cancel(reason: string): void {
+    const invalidStates = [
+      MatchStatus.IN_PROGRESS,
+      MatchStatus.COMPLETED,
+      MatchStatus.RETIRED,
+      MatchStatus.WALKOVER,
+      MatchStatus.ABANDONED,
+      MatchStatus.DEFAULT,
+      MatchStatus.BYE,
+    ];
+
+    if (invalidStates.includes(this.status)) {
+      throw new Error(
+        `Cannot cancel match in status ${this.status}. ` +
+        'Match must be SCHEDULED, SUSPENDED, or NOT_PLAYED.'
+      );
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      throw new Error('Cancellation reason is required.');
+    }
+
+    // Note: Actual status update should be done via repository in application layer
+  }
+
+  /**
+   * Applies a default (disciplinary disqualification) to a player.
+   * Player is disqualified, opponent receives automatic victory.
+   *
+   * @param defaultedPlayerId - The ID of the player receiving the default
+   * @param reason - The reason for default (conduct violation, etc.)
+   * @throws Error if match is in a final state
+   */
+  public applyDefault(defaultedPlayerId: string, reason: string): void {
+    const finalStates = [
+      MatchStatus.COMPLETED,
+      MatchStatus.RETIRED,
+      MatchStatus.WALKOVER,
+      MatchStatus.ABANDONED,
+      MatchStatus.CANCELLED,
+      MatchStatus.NOT_PLAYED,
+      MatchStatus.BYE,
+    ];
+
+    if (finalStates.includes(this.status)) {
+      throw new Error(
+        `Cannot apply default to match in final status ${this.status}.`
+      );
+    }
+
+    if (defaultedPlayerId !== this.player1Id && defaultedPlayerId !== this.player2Id) {
+      throw new Error(
+        'Defaulted player must be one of the match participants.'
+      );
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      throw new Error('Default reason is required.');
+    }
+
+    // Note: Actual status and winner update should be done via repository in application layer
+    // The opponent automatically wins
+  }
+
+  /**
+   * Marks the match as not played.
+   * Match was scheduled but never disputed.
+   *
+   * @param reason - The reason the match was not played
+   * @throws Error if match has already started or been played
+   */
+  public markNotPlayed(reason: string): void {
+    if (this.status !== MatchStatus.SCHEDULED) {
+      throw new Error(
+        `Cannot mark match as not played in status ${this.status}. ` +
+        'Match must be SCHEDULED.'
+      );
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      throw new Error('Reason for not played status is required.');
+    }
+
+    // Note: Actual status update should be done via repository in application layer
+  }
+
+  /**
+   * Marks a completed match as a dead rubber.
+   * Match result is recorded but has no impact on tournament standings.
+   *
+   * @throws Error if match is not completed
+   */
+  public markAsDeadRubber(): void {
+    if (this.status !== MatchStatus.COMPLETED) {
+      throw new Error(
+        `Cannot mark match as dead rubber in status ${this.status}. ` +
+        'Match must be COMPLETED first.'
+      );
+    }
+
+    // Note: Actual status update should be done via repository in application layer
+    // This is typically an administrative action after match completion
+  }
+
+  /**
+   * Starts the match, transitioning from SCHEDULED to IN_PROGRESS.
+   *
+   * @throws Error if match is not SCHEDULED
+   */
+  public start(): void {
+    if (this.status !== MatchStatus.SCHEDULED) {
+      throw new Error(
+        `Cannot start match in status ${this.status}. ` +
+        'Match must be SCHEDULED.'
+      );
+    }
+
+    // Note: Actual status and timestamp update should be done via repository in application layer
+  }
+
+  /**
+   * Resumes a suspended match, transitioning back to IN_PROGRESS.
+   *
+   * @throws Error if match is not SUSPENDED
+   */
+  public resume(): void {
+    if (this.status !== MatchStatus.SUSPENDED) {
+      throw new Error(
+        `Cannot resume match in status ${this.status}. ` +
+        'Match must be SUSPENDED.'
+      );
+    }
+
+    // Note: Actual status update should be done via repository in application layer
+  }
+
+  /**
+   * Validates if a state transition is allowed.
+   *
+   * @param fromStatus - Current status
+   * @param toStatus - Target status
+   * @returns True if transition is valid
+   */
+  public static isValidTransition(fromStatus: MatchStatus, toStatus: MatchStatus): boolean {
+    const transitions: Record<MatchStatus, MatchStatus[]> = {
+      [MatchStatus.SCHEDULED]: [
+        MatchStatus.IN_PROGRESS,
+        MatchStatus.WALKOVER,
+        MatchStatus.CANCELLED,
+        MatchStatus.DEFAULT,
+        MatchStatus.NOT_PLAYED,
+        MatchStatus.BYE,
+      ],
+      [MatchStatus.IN_PROGRESS]: [
+        MatchStatus.COMPLETED,
+        MatchStatus.RETIRED,
+        MatchStatus.SUSPENDED,
+        MatchStatus.ABANDONED,
+        MatchStatus.DEFAULT,
+      ],
+      [MatchStatus.SUSPENDED]: [
+        MatchStatus.IN_PROGRESS,
+        MatchStatus.ABANDONED,
+        MatchStatus.CANCELLED,
+      ],
+      [MatchStatus.COMPLETED]: [
+        MatchStatus.DEAD_RUBBER,
+      ],
+      // Final states (no transitions allowed)
+      [MatchStatus.RETIRED]: [],
+      [MatchStatus.WALKOVER]: [],
+      [MatchStatus.ABANDONED]: [],
+      [MatchStatus.BYE]: [],
+      [MatchStatus.NOT_PLAYED]: [],
+      [MatchStatus.CANCELLED]: [],
+      [MatchStatus.DEFAULT]: [],
+      [MatchStatus.DEAD_RUBBER]: [],
+    };
+
+    return transitions[fromStatus]?.includes(toStatus) ?? false;
   }
 }

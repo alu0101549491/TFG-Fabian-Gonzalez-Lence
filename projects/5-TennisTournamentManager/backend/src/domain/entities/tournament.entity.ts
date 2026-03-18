@@ -32,6 +32,9 @@ export class Tournament {
   @Column('varchar', {length: 200})
   public name!: string;
 
+  @Column('varchar', {length: 500, nullable: true})
+  public logoUrl!: string | null;
+
   @Column('text', {nullable: true})
   public description!: string | null;
 

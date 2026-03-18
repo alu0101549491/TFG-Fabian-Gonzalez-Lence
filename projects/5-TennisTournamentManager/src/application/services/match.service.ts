@@ -359,6 +359,455 @@ export class MatchService implements IMatchService {
   }
 
   /**
+   * Starts a match, transitioning from SCHEDULED to IN_PROGRESS.
+   *
+   * @param matchId - ID of the match to start
+   * @param userId - ID of the user starting the match
+   * @returns Updated match information
+   * @throws Error if match cannot be started
+   */
+  public async startMatch(matchId: string, userId: string): Promise<MatchDto> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Validate state transition
+    match.start();
+
+    const updatedMatch = new Match({
+      ...match,
+      status: MatchStatus.IN_PROGRESS,
+      startedAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const savedMatch = await this.matchRepository.update(updatedMatch);
+    
+    return this.mapMatchToDto(savedMatch);
+  }
+
+  /**
+   * Resumes a suspended match.
+   *
+   * @param matchId - ID of the match to resume
+   * @param userId - ID of the user resuming the match
+   * @returns Updated match information
+   * @throws Error if match cannot be resumed
+   */
+  public async resumeMatch(matchId: string, userId: string): Promise<MatchDto> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Validate state transition
+    match.resume();
+
+    const updatedMatch = new Match({
+      ...match,
+      status: MatchStatus.IN_PROGRESS,
+      updatedAt: new Date(),
+    });
+
+    const savedMatch = await this.matchRepository.update(updatedMatch);
+    
+    return this.mapMatchToDto(savedMatch);
+  }
+
+  /**
+   * Records a retirement during the match.
+   *
+   * @param matchId - ID of the match
+   * @param retiringPlayerId - ID of the player retiring
+   * @param reason - Reason for retirement (optional)
+   * @param userId - ID of the user recording the retirement
+   * @returns Updated match information
+   * @throws Error if retirement cannot be recorded
+   */
+  public async retireMatch(
+    matchId: string,
+    retiringPlayerId: string,
+    reason: string | undefined,
+    userId: string
+  ): Promise<MatchDto> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!retiringPlayerId || retiringPlayerId.trim().length === 0) {
+      throw new Error('Retiring player ID is required');
+    }
+
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Validate state transition
+    match.retire(retiringPlayerId, reason);
+
+    // Determine winner (opponent of retiring player)
+    const winnerId = match.player1Id === retiringPlayerId ? match.player2Id : match.player1Id;
+
+    const updatedMatch = new Match({
+      ...match,
+      status: MatchStatus.RETIRED,
+      winnerId,
+      completedAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const savedMatch = await this.matchRepository.update(updatedMatch);
+
+    // Update standings
+    await this.standingService.updateStandings(match.bracketId, {
+      matchId,
+      winnerId,
+    });
+
+    // Send notifications
+    // await this.notificationService.sendNotification(...)
+
+    return this.mapMatchToDto(savedMatch);
+  }
+
+  /**
+   * Assigns a walkover to a player.
+   *
+   * @param matchId - ID of the match
+   * @param winnerId - ID of the player receiving the walkover
+   * @param userId - ID of the user assigning the walkover
+   * @returns Updated match information
+   * @throws Error if walkover cannot be assigned
+   */
+  public async assignWalkover(
+    matchId: string,
+    winnerId: string,
+    userId: string
+  ): Promise<MatchDto> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!winnerId || winnerId.trim().length === 0) {
+      throw new Error('Winner ID is required');
+    }
+
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Validate state transition
+    match.assignWalkover(winnerId);
+
+    const updatedMatch = new Match({
+      ...match,
+      status: MatchStatus.WALKOVER,
+      winnerId,
+      completedAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const savedMatch = await this.matchRepository.update(updatedMatch);
+
+    // Update standings
+    await this.standingService.updateStandings(match.bracketId, {
+      matchId,
+      winnerId,
+    });
+
+    // Send notifications
+    // await this.notificationService.sendNotification(...)
+
+    return this.mapMatchToDto(savedMatch);
+  }
+
+  /**
+   * Abandons a match without a valid result.
+   *
+   * @param matchId - ID of the match
+   * @param reason - Reason for abandonment
+   * @param userId - ID of the user abandoning the match
+   * @returns Updated match information
+   * @throws Error if match cannot be abandoned
+   */
+  public async abandonMatch(
+    matchId: string,
+    reason: string,
+    userId: string
+  ): Promise<MatchDto> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      throw new Error('Abandonment reason is required');
+    }
+
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Validate state transition
+    match.abandon(reason);
+
+    const updatedMatch = new Match({
+      ...match,
+      status: MatchStatus.ABANDONED,
+      completedAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const savedMatch = await this.matchRepository.update(updatedMatch);
+
+    // No standings update for abandoned matches
+    // Send notifications
+    // await this.notificationService.sendNotification(...)
+
+    return this.mapMatchToDto(savedMatch);
+  }
+
+  /**
+   * Cancels a scheduled match.
+   *
+   * @param matchId - ID of the match
+   * @param reason - Reason for cancellation
+   * @param userId - ID of the user cancelling the match
+   * @returns Updated match information
+   * @throws Error if match cannot be cancelled
+   */
+  public async cancelMatch(
+    matchId: string,
+    reason: string,
+    userId: string
+  ): Promise<MatchDto> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      throw new Error('Cancellation reason is required');
+    }
+
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Validate state transition
+    match.cancel(reason);
+
+    const updatedMatch = new Match({
+      ...match,
+      status: MatchStatus.CANCELLED,
+      updatedAt: new Date(),
+    });
+
+    const savedMatch = await this.matchRepository.update(updatedMatch);
+
+    // No standings update for cancelled matches
+    // Send notifications
+    // await this.notificationService.sendNotification(...)
+
+    return this.mapMatchToDto(savedMatch);
+  }
+
+  /**
+   * Applies a default (disciplinary disqualification) to a player.
+   *
+   * @param matchId - ID of the match
+   * @param defaultedPlayerId - ID of the player receiving the default
+   * @param reason - Reason for default
+   * @param userId - ID of the user applying the default
+   * @returns Updated match information
+   * @throws Error if default cannot be applied
+   */
+  public async applyDefault(
+    matchId: string,
+    defaultedPlayerId: string,
+    reason: string,
+    userId: string
+  ): Promise<MatchDto> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!defaultedPlayerId || defaultedPlayerId.trim().length === 0) {
+      throw new Error('Defaulted player ID is required');
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      throw new Error('Default reason is required');
+    }
+
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Validate state transition
+    match.applyDefault(defaultedPlayerId, reason);
+
+    // Determine winner (opponent of defaulted player)
+    const winnerId = match.player1Id === defaultedPlayerId ? match.player2Id : match.player1Id;
+
+    const updatedMatch = new Match({
+      ...match,
+      status: MatchStatus.DEFAULT,
+      winnerId,
+      completedAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const savedMatch = await this.matchRepository.update(updatedMatch);
+
+    // Update standings
+    await this.standingService.updateStandings(match.bracketId, {
+      matchId,
+      winnerId,
+    });
+
+    // Send notifications
+    // await this.notificationService.sendNotification(...)
+
+    return this.mapMatchToDto(savedMatch);
+  }
+
+  /**
+   * Marks a match as not played.
+   *
+   * @param matchId - ID of the match
+   * @param reason - Reason the match was not played
+   * @param userId - ID of the user marking the match
+   * @returns Updated match information
+   * @throws Error if match cannot be marked as not played
+   */
+  public async markNotPlayed(
+    matchId: string,
+    reason: string,
+    userId: string
+  ): Promise<MatchDto> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      throw new Error('Reason is required');
+    }
+
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Validate state transition
+    match.markNotPlayed(reason);
+
+    const updatedMatch = new Match({
+      ...match,
+      status: MatchStatus.NOT_PLAYED,
+      updatedAt: new Date(),
+    });
+
+    const savedMatch = await this.matchRepository.update(updatedMatch);
+
+    // No standings update for not played matches
+    // Send notifications
+    // await this.notificationService.sendNotification(...)
+
+    return this.mapMatchToDto(savedMatch);
+  }
+
+  /**
+   * Marks a completed match as a dead rubber.
+   *
+   * @param matchId - ID of the match
+   * @param userId - ID of the user marking the match
+   * @returns Updated match information
+   * @throws Error if match cannot be marked as dead rubber
+   */
+  public async markAsDeadRubber(
+    matchId: string,
+    userId: string
+  ): Promise<MatchDto> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Validate state transition
+    match.markAsDeadRubber();
+
+    const updatedMatch = new Match({
+      ...match,
+      status: MatchStatus.DEAD_RUBBER,
+      updatedAt: new Date(),
+    });
+
+    const savedMatch = await this.matchRepository.update(updatedMatch);
+
+    // Standings remain as they were when match was completed
+    // Send notifications
+    // await this.notificationService.sendNotification(...)
+
+    const score = await this.scoreRepository.findByMatchId(matchId);
+    const scoreString = score ? score.getFormattedScore() : '';
+
+    return this.mapMatchToDto(savedMatch, scoreString);
+  }
+
+  /**
    * Maps a Match entity to MatchDto.
    *
    * @param match - Match entity

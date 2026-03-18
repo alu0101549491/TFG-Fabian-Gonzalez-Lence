@@ -15,6 +15,7 @@ import {Injectable} from '@angular/core';
 import {INotificationService} from '../interfaces/notification-service.interface';
 import {SendNotificationDto, NotificationDto} from '../dto';
 import {NotificationRepositoryImpl} from '@infrastructure/repositories/notification.repository';
+import {NotificationChannelFactory} from './notification/notification-channel.factory';
 import {Notification} from '@domain/entities/notification';
 import {generateId} from '@shared/utils';
 
@@ -29,10 +30,11 @@ export class NotificationService implements INotificationService {
    * Creates a new NotificationService instance.
    *
    * @param notificationRepository - Notification repository for data access
+   * @param channelFactory - Factory for creating notification channel adapters
    */
   public constructor(
     private readonly notificationRepository: NotificationRepositoryImpl,
-    // TODO: inject NotificationChannelFactory
+    private readonly channelFactory: NotificationChannelFactory,
   ) {}
 
   /**
@@ -77,12 +79,17 @@ export class NotificationService implements INotificationService {
       // Validate notification can be sent
       notification.send();
       
-      // Save notification
+      // Save notification to database
       await this.notificationRepository.save(notification);
       
-      // In real implementation, dispatch to appropriate channel adapter
-      // (email, Telegram, web push, in-app) based on channel type
-      // await this.notificationChannelFactory.getChannel(channel).send(notification);
+      // Dispatch to appropriate channel adapter
+      try {
+        const adapter = this.channelFactory.getChannel(channel);
+        await adapter.send(notification);
+      } catch (error) {
+        console.error(`Failed to send notification via ${channel}:`, error);
+        // Continue with other channels even if one fails
+      }
     }
   }
 

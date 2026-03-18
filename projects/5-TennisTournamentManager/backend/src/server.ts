@@ -16,6 +16,7 @@ import {config, validateConfig} from './shared/config';
 import {initializeDatabase} from './infrastructure/database/data-source';
 import {setupWebSocketServer} from './websocket-server';
 import {createApp} from './app';
+import {ImageOptimizationService} from './application/services/image-optimization.service';
 
 /**
  * Starts the HTTP and WebSocket servers.
@@ -27,6 +28,10 @@ async function startServer(): Promise<void> {
     
     // Initialize database connection
     await initializeDatabase();
+    
+    // Ensure upload directories exist
+    const imageService = new ImageOptimizationService();
+    await imageService.ensureUploadDirectory();
     
     // Create Express app
     const app = createApp();

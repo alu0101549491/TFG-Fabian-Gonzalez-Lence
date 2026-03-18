@@ -23,3 +23,5 @@ export {NotificationChannel} from './notification-channel';
 export {PaymentStatus} from './payment-status';
 export {SanctionType} from './sanction-type';
 export {RankingSystem} from './ranking-system';
+export {AuditAction} from './audit-action';
+export {AuditResourceType} from './audit-resource-type';

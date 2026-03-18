@@ -17,9 +17,12 @@ import cors from 'cors';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
 import routes from './presentation/routes';
 import {errorMiddleware} from './presentation/middleware';
 import {config} from './shared/config';
+import {swaggerSpec} from './shared/config/swagger.config.js';
+import {staticAssetCache} from './presentation/middlewares/cache.middleware';
 
 /**
  * Creates and configures the Express application.
@@ -56,15 +59,40 @@ export function createApp(): Application {
   });
   app.use('/api/', limiter);
   
+  // Swagger documentation (NFR11)
+  app.use(
+    '/api-docs',
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'Tennis Tournament Manager API Docs',
+    })
+  );
+  
+  // Swagger JSON endpoint
+  app.get('/api-docs.json', (_req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+  
+  // Static file serving for uploaded images with caching (NFR21)
+  app.use('/uploads', staticAssetCache, express.static(config.upload.uploadDir, {
+    etag: true, // Enable ETag for conditional requests
+    lastModified: true, // Enable Last-Modified header
+    maxAge: config.cache.staticAssetsTtlDays * 24 * 60 * 60 * 1000, // Milliseconds
+  }));
+  
   // API routes
   app.use('/api', routes);
   
   // Root endpoint
-  app.get('/', (req, res) => {
+  app.get('/', (_req, res) => {
     res.json({
       name: 'Tennis Tournament Manager API',
-      version: '1.0.0',
+      version: '1.17.0',
       status: 'running',
+      documentation: `http://localhost:${config.port}/api-docs`,
+      openapi: `http://localhost:${config.port}/api-docs.json`,
     });
   });
   
