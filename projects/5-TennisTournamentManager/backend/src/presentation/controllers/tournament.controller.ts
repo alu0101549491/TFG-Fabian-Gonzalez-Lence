@@ -14,7 +14,12 @@
 import {Response, NextFunction} from 'express';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Tournament} from '../../domain/entities/tournament.entity';
+import {User} from '../../domain/entities/user.entity';
+import {Category} from '../../domain/entities/category.entity';
+import {Registration} from '../../domain/entities/registration.entity';
+import {Court} from '../../domain/entities/court.entity';
 import {TournamentStatus} from '../../domain/enumerations/tournament-status';
+import {UserRole} from '../../domain/enumerations/user-role';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
@@ -111,6 +116,7 @@ export class TournamentController {
   /**
    * PUT /api/tournaments/:id
    * Updates tournament details.
+   * If status is included, validates status transitions.
    */
   public async update(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -121,6 +127,28 @@ export class TournamentController {
       
       if (!tournament) {
         throw new AppError('Tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // If status is being updated, validate the transition
+      if (req.body.status && req.body.status !== tournament.status) {
+        const validTransitions: Record<TournamentStatus, TournamentStatus[]> = {
+          [TournamentStatus.DRAFT]: [TournamentStatus.REGISTRATION_OPEN, TournamentStatus.CANCELLED],
+          [TournamentStatus.REGISTRATION_OPEN]: [TournamentStatus.REGISTRATION_CLOSED, TournamentStatus.CANCELLED],
+          [TournamentStatus.REGISTRATION_CLOSED]: [TournamentStatus.DRAW_PENDING, TournamentStatus.CANCELLED],
+          [TournamentStatus.DRAW_PENDING]: [TournamentStatus.IN_PROGRESS, TournamentStatus.CANCELLED],
+          [TournamentStatus.IN_PROGRESS]: [TournamentStatus.FINALIZED, TournamentStatus.CANCELLED],
+          [TournamentStatus.FINALIZED]: [],
+          [TournamentStatus.CANCELLED]: [],
+        };
+
+        const allowedTransitions = validTransitions[tournament.status];
+        if (!allowedTransitions.includes(req.body.status)) {
+          throw new AppError(
+            `Cannot transition from ${tournament.status} to ${req.body.status}. Allowed transitions: ${allowedTransitions.join(', ') || 'none'}`,
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.VALIDATION_ERROR,
+          );
+        }
       }
       
       Object.assign(tournament, req.body);
@@ -134,12 +162,27 @@ export class TournamentController {
   
   /**
    * DELETE /api/tournaments/:id
-   * Deletes a tournament.
+   * Deletes a tournament and all its related data (categories, registrations, courts).
+   * 
+   * Authorization:
+   * - System admins can delete any tournament (including finalized)
+   * - Tournament admins can delete any non-finalized tournament
+   * - Tournament organizers can delete their own non-finalized tournaments
    */
   public async delete(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        throw new AppError('User not authenticated', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
+      }
+      
       const tournamentRepository = AppDataSource.getRepository(Tournament);
+      const userRepository = AppDataSource.getRepository(User);
+      const categoryRepository = AppDataSource.getRepository(Category);
+      const registrationRepository = AppDataSource.getRepository(Registration);
+      const courtRepository = AppDataSource.getRepository(Court);
       
       const tournament = await tournamentRepository.findOne({where: {id}});
       
@@ -147,6 +190,46 @@ export class TournamentController {
         throw new AppError('Tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       
+      const user = await userRepository.findOne({where: {id: userId}});
+      
+      if (!user) {
+        throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Authorization check
+      const isSystemAdmin = user.role === UserRole.SYSTEM_ADMIN;
+      const isTournamentAdmin = user.role === UserRole.TOURNAMENT_ADMIN;
+      const isOrganizer = tournament.organizerId === userId;
+      
+      if (!isSystemAdmin && !isTournamentAdmin && !isOrganizer) {
+        throw new AppError(
+          'User is not authorized to delete this tournament',
+          HTTP_STATUS.FORBIDDEN,
+          ERROR_CODES.FORBIDDEN
+        );
+      }
+      
+      // System admins can delete any tournament (including finalized)
+      // Tournament admins and organizers cannot delete finalized tournaments
+      if (tournament.status === TournamentStatus.FINALIZED && !isSystemAdmin) {
+        throw new AppError(
+          'Cannot delete finalized tournaments. Historical records must be preserved.',
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+      
+      // Delete related data in the correct order to respect foreign key constraints
+      // 1. Delete registrations first (they reference both tournament and category)
+      await registrationRepository.delete({tournamentId: id});
+      
+      // 2. Delete categories (they reference tournament)
+      await categoryRepository.delete({tournamentId: id});
+      
+      // 3. Delete courts (they reference tournament)
+      await courtRepository.delete({tournamentId: id});
+      
+      // 4. Finally, delete the tournament
       await tournamentRepository.remove(tournament);
       
       res.status(HTTP_STATUS.NO_CONTENT).send();

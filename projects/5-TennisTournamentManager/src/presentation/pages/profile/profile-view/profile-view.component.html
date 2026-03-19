@@ -207,6 +207,17 @@
               <div class="action-arrow">→</div>
             </button>
 
+            @if (isSystemAdmin()) {
+              <button class="action-item admin" routerLink="/admin/users">
+                <div class="action-icon">👥</div>
+                <div class="action-content">
+                  <div class="action-title">User Management</div>
+                  <div class="action-description">Manage system users</div>
+                </div>
+                <div class="action-arrow">→</div>
+              </button>
+            }
+
             <button class="action-item danger" (click)="logout()">
               <div class="action-icon">🚪</div>
               <div class="action-content">

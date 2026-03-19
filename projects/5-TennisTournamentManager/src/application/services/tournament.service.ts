@@ -18,9 +18,11 @@ import {PaginatedResponseDto, PaginationDto} from '../dto';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {TournamentRepositoryImpl} from '@infrastructure/repositories/tournament.repository';
 import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repository';
+import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
 import {AuthorizationService} from './authorization.service';
 import {NotificationService} from './notification.service';
 import {Tournament} from '@domain/entities/tournament';
+import {UserRole} from '@domain/enumerations/user-role';
 import {generateId} from '@shared/utils';
 
 /**
@@ -31,6 +33,7 @@ import {generateId} from '@shared/utils';
 export class TournamentService implements ITournamentService {
   private readonly tournamentRepository = inject(TournamentRepositoryImpl);
   private readonly categoryRepository = inject(CategoryRepositoryImpl);
+  private readonly userRepository = inject(UserRepositoryImpl);
   private readonly authorizationService = inject(AuthorizationService);
   private readonly notificationService = inject(NotificationService);
 
@@ -127,6 +130,7 @@ export class TournamentService implements ITournamentService {
       registrationFee: data.registrationFee ?? tournament.registrationFee,
       acceptanceType: data.acceptanceType ?? tournament.acceptanceType,
       rankingSystem: data.rankingSystem ?? tournament.rankingSystem,
+      status: data.status ?? tournament.status,
       updatedAt: new Date(),
     });
     
@@ -165,9 +169,13 @@ export class TournamentService implements ITournamentService {
       throw new Error('User is not authorized to delete this tournament');
     }
     
-    // Only allow deletion if tournament is in DRAFT status
-    if (tournament.status !== TournamentStatus.DRAFT) {
-      throw new Error('Can only delete tournaments in DRAFT status');
+    // Get user to check if they're a system admin
+    const user = await this.userRepository.findById(userId);
+    
+    // System admins can delete any tournament (including finalized ones)
+    // Tournament organizers/admins cannot delete finalized tournaments (preserve historical records)
+    if (tournament.status === TournamentStatus.FINALIZED && user?.role !== UserRole.SYSTEM_ADMIN) {
+      throw new Error('Cannot delete finalized tournaments. Historical records must be preserved.');
     }
     
     // Delete tournament

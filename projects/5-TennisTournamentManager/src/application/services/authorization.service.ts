@@ -80,12 +80,17 @@ export class AuthorizationService implements IAuthorizationService {
     }
     
     // System administrators can do everything
-    if (user.role === UserRole.SYSTEM_ADMINISTRATOR) {
+    if (user.role === UserRole.SYSTEM_ADMIN) {
       return true;
     }
     
-    // Tournament administrators can manage their tournaments
-    if (user.role === UserRole.TOURNAMENT_ADMINISTRATOR && this.tournamentRepository) {
+    // Tournament administrators can manage any tournament
+    if (user.role === UserRole.TOURNAMENT_ADMIN) {
+      return true;
+    }
+    
+    // Tournament organizers can manage their own tournaments
+    if (this.tournamentRepository) {
       const tournament = await this.tournamentRepository.findById(resourceId);
       if (tournament && tournament.organizerId === userId) {
         return true;
@@ -175,12 +180,17 @@ export class AuthorizationService implements IAuthorizationService {
     }
     
     // System administrators can modify all brackets
-    if (user.role === UserRole.SYSTEM_ADMINISTRATOR) {
+    if (user.role === UserRole.SYSTEM_ADMIN) {
       return true;
     }
     
-    // Tournament administrators can modify brackets in their tournaments
-    if (user.role === UserRole.TOURNAMENT_ADMINISTRATOR && this.bracketRepository && this.tournamentRepository) {
+    // Tournament administrators can modify any brackets
+    if (user.role === UserRole.TOURNAMENT_ADMIN) {
+      return true;
+    }
+    
+    // Tournament organizers can modify brackets in their tournaments
+    if (this.bracketRepository && this.tournamentRepository) {
       const bracket = await this.bracketRepository.findById(bracketId);
       if (bracket) {
         const tournament = await this.tournamentRepository.findById(bracket.tournamentId);

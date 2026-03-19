@@ -227,6 +227,22 @@ select.form-input {
   cursor: pointer;
 }
 
+/* Form Hint */
+.form-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+  margin-top: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(33, 150, 243, 0.08);
+  border-left: 3px solid var(--color-secondary);
+  border-radius: var(--border-radius-sm);
+}
+
+.form-hint strong {
+  color: var(--color-gray-800);
+  font-weight: var(--font-weight-semibold);
+}
+
 /* Form Actions */
 .form-actions {
   display: flex;

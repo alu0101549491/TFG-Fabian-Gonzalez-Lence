@@ -14,6 +14,7 @@
 import {Response, NextFunction} from 'express';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {User} from '../../domain/entities/user.entity';
+import {UserRole} from '../../domain/enumerations/user-role';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
@@ -91,7 +92,7 @@ export class UserController {
    */
   public async getAll(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {role, isActive} = req.query;
+      const {role, isActive, searchQuery} = req.query;
       const userRepository = AppDataSource.getRepository(User);
       
       const queryBuilder = userRepository.createQueryBuilder('user');
@@ -102,19 +103,213 @@ export class UserController {
       if (isActive !== undefined) {
         queryBuilder.andWhere('user.isActive = :isActive', {isActive: isActive === 'true'});
       }
+      if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
+        queryBuilder.andWhere(
+          '(LOWER(user.username) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search) OR LOWER(user.firstName) LIKE LOWER(:search) OR LOWER(user.lastName) LIKE LOWER(:search))',
+          {search: `%${searchQuery.trim()}%`}
+        );
+      }
       
       queryBuilder.select([
         'user.id',
+        'user.username',
         'user.email',
         'user.firstName',
         'user.lastName',
         'user.role',
         'user.isActive',
+        'user.phone',
+        'user.createdAt',
+        'user.lastLogin',
       ]);
+      
+      queryBuilder.orderBy('user.createdAt', 'DESC');
       
       const users = await queryBuilder.getMany();
       
       res.status(HTTP_STATUS.OK).json(users);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/users
+   * Creates a new user (admin only).
+   */
+  public async create(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {username, email, firstName, lastName, password, role, phone} = req.body;
+      
+      // Validate required fields
+      if (!username || !email || !firstName || !lastName || !password || !role) {
+        throw new AppError(
+          'Missing required fields: username, email, firstName, lastName, password, role',
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.VALIDATION_FAILED
+        );
+      }
+
+      const userRepository = AppDataSource.getRepository(User);
+      
+      // Check if username exists
+      const existingUsername = await userRepository.findOne({where: {username}});
+      if (existingUsername) {
+        throw new AppError('Username already exists', HTTP_STATUS.CONFLICT, ERROR_CODES.ALREADY_EXISTS);
+      }
+      
+      // Check if email exists
+      const existingEmail = await userRepository.findOne({where: {email}});
+      if (existingEmail) {
+        throw new AppError('Email already exists', HTTP_STATUS.CONFLICT, ERROR_CODES.ALREADY_EXISTS);
+      }
+      
+      // Create new user  
+      const bcrypt = await import('bcrypt');
+      const passwordHash = await bcrypt.hash(password, 10);
+      
+      const user = userRepository.create({
+        username,
+        email,
+        firstName,
+        lastName,
+        passwordHash,
+        role,
+        phone: phone || null,
+        isActive: true,
+        gdprConsent: true,
+      });
+      
+      await userRepository.save(user);
+      
+      const {passwordHash: _, ...userWithoutPassword} = user;
+      
+      res.status(HTTP_STATUS.CREATED).json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PUT /api/users/:id/admin
+   * Updates any user field (admin only - more permissive than standard update).
+   */
+  public async updateByAdmin(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const {username, email, firstName, lastName, role, isActive, phone} = req.body;
+      
+      const userRepository = AppDataSource.getRepository(User);
+      
+      const user = await userRepository.findOne({where: {id}});
+      
+      if (!user) {
+        throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Prevent admin from deactivating themselves
+      if (req.user?.id === id && isActive === false) {
+        throw new AppError('Cannot deactivate your own account', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_FAILED);
+      }
+      
+      // Check username uniqueness if changing
+      if (username && username !== user.username) {
+        const existingUsername = await userRepository.findOne({where: {username}});
+        if (existingUsername) {
+          throw new AppError('Username already exists', HTTP_STATUS.CONFLICT, ERROR_CODES.ALREADY_EXISTS);
+        }
+        user.username = username;
+      }
+      
+      // Check email uniqueness if changing
+      if (email && email !== user.email) {
+        const existingEmail = await userRepository.findOne({where: {email}});
+        if (existingEmail) {
+          throw new AppError('Email already exists', HTTP_STATUS.CONFLICT, ERROR_CODES.ALREADY_EXISTS);
+        }
+        user.email = email;
+      }
+      
+      if (firstName !== undefined) user.firstName = firstName;
+      if (lastName !== undefined) user.lastName = lastName;
+      if (role !== undefined) user.role = role;
+      if (isActive !== undefined) user.isActive = isActive;
+      if (phone !== undefined) user.phone = phone;
+      
+      await userRepository.save(user);
+      
+      const {passwordHash, ...userWithoutPassword} = user;
+      
+      res.status(HTTP_STATUS.OK).json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * DELETE /api/users/:id
+   * Deletes a user (admin only).
+   */
+  public async delete(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const userRepository = AppDataSource.getRepository(User);
+      
+      // Prevent admin from deleting themselves
+      if (req.user?.id === id) {
+        throw new AppError('Cannot delete your own account', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_FAILED);
+      }
+      
+      const user = await userRepository.findOne({where: {id}});
+      
+      if (!user) {
+        throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Delete avatar if exists
+      if (user.avatarUrl) {
+        try {
+          const relativePath = user.avatarUrl.replace('/uploads/', '');
+          await this.imageService.deleteImage(relativePath);
+        } catch (error) {
+          // Log but don't fail deletion if avatar deletion fails
+          console.error('Failed to delete avatar:', error);
+        }
+      }
+      
+      await userRepository.remove(user);
+      
+      res.status(HTTP_STATUS.OK).json({message: 'User deleted successfully'});
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/users/stats
+   * Gets user statistics (admin only).
+   */
+  public async getStats(_req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userRepository = AppDataSource.getRepository(User);
+      
+      const totalUsers = await userRepository.count();
+      const activeUsers = await userRepository.count({where: {isActive: true}});
+      const systemAdmins = await userRepository.count({where: {role: UserRole.SYSTEM_ADMIN}});
+      const tournamentAdmins = await userRepository.count({where: {role: UserRole.TOURNAMENT_ADMIN}});
+      const referees = await userRepository.count({where: {role: UserRole.REFEREE}});
+      const players = await userRepository.count({where: {role: UserRole.PLAYER}});
+      const spectators = await userRepository.count({where: {role: UserRole.SPECTATOR}});
+      
+      res.status(HTTP_STATUS.OK).json({
+        totalUsers,
+        activeUsers,
+        systemAdmins,
+        tournamentAdmins,
+        referees,
+        players,
+        spectators,
+      });
     } catch (error) {
       next(error);
     }

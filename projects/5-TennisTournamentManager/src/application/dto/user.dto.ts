@@ -57,3 +57,57 @@ export interface UserDto {
   createdAt: Date;
   lastLogin: Date | null;
 }
+
+/** DTO for user management list (admin view). */
+export interface UserSummaryDto {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  isActive: boolean;
+  phone: string | null;
+  createdAt: Date;
+  lastLogin: Date | null;
+}
+
+/** DTO for creating a new user (admin action). */
+export interface CreateUserDto {
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  role: UserRole;
+  phone?: string;
+}
+
+/** DTO for updating user (admin action). */
+export interface UpdateUserByAdminDto {
+  username?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: UserRole;
+  isActive?: boolean;
+  phone?: string | null;
+}
+
+/** DTO for user filter criteria. */
+export interface UserFilterDto {
+  role?: UserRole;
+  isActive?: boolean;
+  searchQuery?: string; // Search in username, email, firstName, lastName
+}
+
+/** DTO for user management statistics. */
+export interface UserStatsDto {
+  totalUsers: number;
+  activeUsers: number;
+  systemAdmins: number;
+  tournamentAdmins: number;
+  referees: number;
+  players: number;
+  spectators: number;
+}

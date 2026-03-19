@@ -20,6 +20,7 @@ import {type UpdateTournamentDto} from '@application/dto';
 import {Surface} from '@domain/enumerations/surface';
 import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
+import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import templateHtml from './tournament-edit.component.html?raw';
 import styles from './tournament-edit.component.css?inline';
@@ -60,6 +61,7 @@ export class TournamentEditComponent implements OnInit {
     registrationFee: 0,
     acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE,
     rankingSystem: RankingSystem.POINTS_BASED,
+    status: TournamentStatus.DRAFT,
   };
 
   /** Loading state */
@@ -79,6 +81,9 @@ export class TournamentEditComponent implements OnInit {
 
   /** Available ranking systems */
   public readonly rankingSystems = Object.values(RankingSystem);
+
+  /** Available tournament statuses */
+  public readonly tournamentStatuses = Object.values(TournamentStatus);
 
   /**
    * Initializes component and loads tournament data.
@@ -116,6 +121,7 @@ export class TournamentEditComponent implements OnInit {
         registrationFee: tournament.registrationFee,
         acceptanceType: tournament.acceptanceType,
         rankingSystem: tournament.rankingSystem,
+        status: tournament.status,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load tournament';
@@ -169,13 +175,16 @@ export class TournamentEditComponent implements OnInit {
         registrationFee: this.formData.registrationFee ? Number(this.formData.registrationFee) : 0,
         acceptanceType: this.formData.acceptanceType,
         rankingSystem: this.formData.rankingSystem,
+        status: this.formData.status,
       };
 
       // Update the tournament
       await this.tournamentService.updateTournament(updateDto, currentUser.id);
 
-      // Navigate back to the tournament detail page
-      void this.router.navigate(['/tournaments', this.tournamentId]);
+      // Navigate back to the tournament detail page with skipLocationChange to force reload
+      await this.router.navigate(['/tournaments', this.tournamentId], {
+        queryParams: { _t: Date.now() } // Cache-busting timestamp
+      });
     } catch (error: unknown) {
       console.error('Error updating tournament:', error);
       

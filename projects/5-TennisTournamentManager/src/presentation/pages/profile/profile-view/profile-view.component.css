@@ -394,6 +394,11 @@
   background: rgba(211, 47, 47, 0.05);
 }
 
+.action-item.admin:hover {
+  border-color: var(--color-secondary);
+  background: rgba(25, 118, 210, 0.05);
+}
+
 .action-icon {
   font-size: 2rem;
   flex-shrink: 0;
@@ -419,6 +424,10 @@
 
 .action-item.danger .action-title {
   color: var(--color-error);
+}
+
+.action-item.admin .action-title {
+  color: var(--color-secondary);
 }
 
 .action-description {

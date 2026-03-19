@@ -181,6 +181,67 @@
       </div>
     </div>
 
+    <!-- Registered Players List -->
+    <div class="card mb-lg">
+      <div class="card-header">
+        <h3 class="card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.5rem;">👥</span>
+          Registered Players ({{ registeredPlayers().length }})
+        </h3>
+      </div>
+      <div class="card-body">
+        @if (registeredPlayers().length === 0) {
+          <p class="text-muted text-center p-lg">No players registered yet.</p>
+        } @else {
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Player Name</th>
+                  <th>Email</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Registered On</th>
+                  @if (registeredPlayers()[0]?.registration.seed !== null) {
+                    <th>Seed</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (player of registeredPlayers(); track player.user.id; let idx = $index) {
+                  <tr>
+                    <td>{{ idx + 1 }}</td>
+                    <td>
+                      <strong>{{ player.user.firstName }} {{ player.user.lastName }}</strong>
+                      <div class="text-sm text-muted">@literal{{ player.user.username }}</div>
+                    </td>
+                    <td>{{ player.user.email }}</td>
+                    <td>
+                      <span class="badge" style="background-color: var(--primary-color); color: white;">
+                        {{ getCategoryName(player.registration.categoryId) }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge badge-{{ player.registration.status.toLowerCase() }}">
+                        {{ player.registration.status }}
+                      </span>
+                    </td>
+                    <td>{{ formatDate(player.registration.registeredAt) }}</td>
+                    @if (player.registration.seed !== null) {
+                      <td>
+                        <strong>{{ player.registration.seed }}</strong>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+
     <!-- Actions -->
     <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
       <div class="card">

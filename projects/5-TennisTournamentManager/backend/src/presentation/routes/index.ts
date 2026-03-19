@@ -218,7 +218,89 @@ router.post('/auth/logout', noCache, authMiddleware, authController.logout.bind(
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-// User routes
+// User routes - IMPORTANT: Keep specific routes before parameterized ones!
+
+/**
+ * @swagger
+ * /users/stats:
+ *   get:
+ *     tags: [Users]
+ *     summary: Get user statistics
+ *     description: Get aggregated user statistics (SYSTEM_ADMIN only)
+ *     responses:
+ *       200:
+ *         description: User statistics
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get('/users/stats', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), apiCache(120), userController.getStats.bind(userController));
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     tags: [Users]
+ *     summary: List all users
+ *     description: Get all users (SYSTEM_ADMIN only)
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *         description: Filter by role
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
+ *       - in: query
+ *         name: searchQuery
+ *         schema:
+ *           type: string
+ *         description: Search in username, email, first name, last name
+ *     responses:
+ *       200:
+ *         description: List of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get('/users', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), apiCache(60), userController.getAll.bind(userController));
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   get:
+ *     tags: [Users]
+ *     summary: Get user by ID
+ *     description: Retrieve a user by their ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 // Cache user profiles for 5 minutes (public data)
 router.get('/users/:id', authMiddleware, apiCache(300), userController.getById.bind(userController));
 
@@ -265,25 +347,120 @@ router.put('/users/:id', authMiddleware, userController.update.bind(userControll
 /**
  * @swagger
  * /users:
- *   get:
+ *   post:
  *     tags: [Users]
- *     summary: List all users
- *     description: Get all users (SYSTEM_ADMIN only)
+ *     summary: Create new user
+ *     description: Create a new user account (SYSTEM_ADMIN only)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [username, email, firstName, lastName, password, role]
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               phone:
+ *                 type: string
  *     responses:
- *       200:
- *         description: List of users
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/User'
+ *       201:
+ *         description: User created
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  *       403:
  *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         description: Username or email already exists
  */
-router.get('/users', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), userController.getAll.bind(userController));
+router.post('/users', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), userController.create.bind(userController));
+
+/**
+ * @swagger
+ * /users/{id}/admin:
+ *   put:
+ *     tags: [Users]
+ *     summary: Update user (admin)
+ *     description: Update any user field including role (SYSTEM_ADMIN only)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               phone:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User updated
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.put('/users/:id/admin', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), userController.updateByAdmin.bind(userController));
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   delete:
+ *     tags: [Users]
+ *     summary: Delete user
+ *     description: Delete a user account (SYSTEM_ADMIN only)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/users/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), userController.delete.bind(userController));
 
 /**
  * @swagger
@@ -521,7 +698,7 @@ router.put('/tournaments/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_A
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.delete('/tournaments/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), tournamentController.delete.bind(tournamentController));
+router.delete('/tournaments/:id', authMiddleware, tournamentController.delete.bind(tournamentController));
 
 /**
  * @swagger

@@ -46,6 +46,7 @@ export interface UpdateTournamentDto {
   registrationFee?: number;
   acceptanceType?: AcceptanceType;
   rankingSystem?: RankingSystem;
+  status?: TournamentStatus;
 }
 
 /** DTO for tournament output representation. */

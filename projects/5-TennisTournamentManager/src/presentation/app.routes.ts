@@ -152,6 +152,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'admin/users',
+    canActivate: [authGuard, roleGuard],
+    data: {roles: ['SYSTEM_ADMIN']},
+    loadComponent: () =>
+      import('./pages/admin/user-management/user-management.component').then(
+        (m) => m.UserManagementComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'home',
   },

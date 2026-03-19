@@ -11,12 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal, inject} from '@angular/core';
+import {Component, OnInit, signal, inject, computed} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Router, RouterModule} from '@angular/router';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {type UserDto, type UpdateUserDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import {UserRole} from '@domain/enumerations/user-role';
 import templateHtml from './profile-view.component.html?raw';
 import styles from './profile-view.component.css?inline';
 
@@ -57,6 +58,12 @@ export class ProfileViewComponent implements OnInit {
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     phone: [''],
+  });
+
+  /** Check if current user is system admin */
+  public isSystemAdmin = computed(() => {
+    const currentUser = this.user();
+    return currentUser?.role === UserRole.SYSTEM_ADMIN;
   });
 
   /**

@@ -139,6 +139,47 @@
             }
           </select>
         </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="status">Tournament Status</label>
+          <select
+            id="status"
+            class="form-input"
+            [(ngModel)]="formData.status"
+            name="status"
+            required
+          >
+            @for (status of tournamentStatuses; track status) {
+              <option [value]="status">{{ status }}</option>
+            }
+          </select>
+          <div class="form-hint">
+            <strong>Valid transitions:</strong>
+            @switch (formData.status) {
+              @case ('DRAFT') {
+                <span>Can change to: REGISTRATION_OPEN, CANCELLED</span>
+              }
+              @case ('REGISTRATION_OPEN') {
+                <span>Can change to: REGISTRATION_CLOSED, CANCELLED</span>
+              }
+              @case ('REGISTRATION_CLOSED') {
+                <span>Can change to: DRAW_PENDING, CANCELLED</span>
+              }
+              @case ('DRAW_PENDING') {
+                <span>Can change to: IN_PROGRESS, CANCELLED</span>
+              }
+              @case ('IN_PROGRESS') {
+                <span>Can change to: FINALIZED, CANCELLED</span>
+              }
+              @case ('FINALIZED') {
+                <span>No transitions allowed (final state)</span>
+              }
+              @case ('CANCELLED') {
+                <span>No transitions allowed (final state)</span>
+              }
+            }
+          </div>
+        </div>
       </div>
     </div>
 

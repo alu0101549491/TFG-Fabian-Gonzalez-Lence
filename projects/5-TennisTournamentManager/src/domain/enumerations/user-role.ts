@@ -20,10 +20,12 @@ export enum UserRole {
   SYSTEM_ADMIN = 'SYSTEM_ADMIN',
   /** Tournament lifecycle management: creation, draws, scheduling, results. */
   TOURNAMENT_ADMIN = 'TOURNAMENT_ADMIN',
+  /** Match officiating: result entry, score validation. */
+  REFEREE = 'REFEREE',
   /** Registered player: registration, profile, own results and notifications. */
-  REGISTERED_PARTICIPANT = 'REGISTERED_PARTICIPANT',
-  /** Unauthenticated visitor: read-only access to public draws and results. */
-  PUBLIC = 'PUBLIC',
+  PLAYER = 'PLAYER',
+  /** Public spectator: read-only access to published draws and results. */
+  SPECTATOR = 'SPECTATOR',
 }
 
 /**

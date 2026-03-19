@@ -14,11 +14,14 @@
 import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
+import {combineLatest} from 'rxjs';
 import {TournamentService, RegistrationService} from '@application/services';
-import {type TournamentDto} from '@application/dto';
+import {type TournamentDto, type RegistrationDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {type Category} from '@domain/entities/category';
 import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repository';
+import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
+import {type User} from '@domain/entities/user';
 import {UserRole} from '@domain/enumerations/user-role';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import templateHtml from './tournament-detail-new.component.html?raw';
@@ -43,12 +46,16 @@ export class TournamentDetailComponent implements OnInit {
   private readonly registrationService = inject(RegistrationService);
   private readonly authStateService = inject(AuthStateService);
   private readonly categoryRepository = inject(CategoryRepositoryImpl);
+  private readonly userRepository = inject(UserRepositoryImpl);
 
   /** Tournament data */
   public tournament = signal<TournamentDto | null>(null);
 
   /** Tournament categories */
   public categories = signal<Category[]>([]);
+
+  /** Registered players with their details */
+  public registeredPlayers = signal<Array<{user: User; registration: RegistrationDto}>>([]);
 
   /** Selected category ID for registration */
   public selectedCategoryId = signal<string | null>(null);
@@ -69,7 +76,11 @@ export class TournamentDetailComponent implements OnInit {
    * Initializes component and loads tournament data.
    */
   public ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
+    // Combine both paramMap and queryParamMap to reload on any change
+    combineLatest([
+      this.route.paramMap,
+      this.route.queryParamMap
+    ]).subscribe(([params]) => {
       this.tournamentId = params.get('id');
       if (this.tournamentId) {
         void this.loadTournament();
@@ -99,12 +110,48 @@ export class TournamentDetailComponent implements OnInit {
         this.selectedCategoryId.set(categories[0].id);
       }
       
+      // Load registered players
+      await this.loadPlayers();
+      
       await this.checkRegistrationStatus();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load tournament';
       this.errorMessage.set(message);
     } finally {
       this.isLoading.set(false);
+    }
+  }
+
+  /**
+   * Loads the list of registered players for this tournament.
+   */
+  private async loadPlayers(): Promise<void> {
+    if (!this.tournamentId) return;
+
+    try {
+      // Fetch all registrations for this tournament
+      const registrations = await this.registrationService.getRegistrationsByTournament(this.tournamentId);
+      
+      // Fetch user details for each registration
+      const playersWithDetails = await Promise.all(
+        registrations.map(async (registration) => {
+          try {
+            const user = await this.userRepository.findById(registration.participantId);
+            return user ? { user, registration } : null;
+          } catch (error) {
+            console.error(`Failed to load user ${registration.participantId}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      // Filter out any null entries (users that couldn't be loaded)
+      const validPlayers = playersWithDetails.filter((p): p is {user: User; registration: RegistrationDto} => p !== null);
+      
+      this.registeredPlayers.set(validPlayers);
+    } catch (error) {
+      console.error('Failed to load registered players:', error);
+      // Don't set error message - player list is optional info
     }
   }
 
@@ -200,6 +247,17 @@ export class TournamentDetailComponent implements OnInit {
       month: 'long',
       day: 'numeric',
     });
+  }
+
+  /**
+   * Gets the category name for a given category ID.
+   *
+   * @param categoryId - The category identifier
+   * @returns Category name or 'Unknown Category'
+   */
+  public getCategoryName(categoryId: string): string {
+    const category = this.categories().find(c => c.id === categoryId);
+    return category?.name || 'Unknown Category';
   }
 
   /**

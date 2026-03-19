@@ -6,6 +6,560 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.34.1] - 2026-03-19
+
+### Changed — User Management Design System Alignment
+
+**Feature**: Updated User Management page visual design to match the application's established design system.
+
+#### Design Updates
+
+**Hero Section** (`/src/presentation/pages/admin/user-management/user-management.component.ts`):
+- Replaced purple gradient (#667eea, #764ba2) with application's green tennis theme
+- Implemented hero section pattern matching profile and tournament pages:
+  - Background: `linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-secondary) 100%)`
+  - Forest green (#2E7D32) to blue (#1976D2) gradient for tennis tournament branding
+  - SVG decorative overlay with subtle circles
+  - White text with multi-layered text shadows for enhanced readability
+  
+**Layout & Navigation**:
+- Moved "Back to Profile" button to hero section top-left
+- Moved "New User" button to hero section top-right
+- Centered title and subtitle positioning
+- Glassmorphic button styles with backdrop blur effects
+- Hover animations for all interactive elements
+
+**Component Styling**:
+- Container background: Changed to `var(--color-gray-50)` (light gray)
+- All cards use consistent CSS variables:
+  - Box shadows: `var(--shadow-sm)` and `var(--shadow-lg)`
+  - Borders: `var(--border-width-thin)` with `var(--color-gray-200)`
+  - Border radius: `var(--border-radius-lg)`
+  - Spacing: `var(--spacing-*)` scale
+  
+**Color System**:
+- Role badges: Use CSS variable colors (`var(--color-error-light)`, `var(--color-success-light)`, etc.)
+- Alert messages: Use `var(--color-error-light)`, `var(--color-error)`, `var(--color-error-dark)`
+- All hardcoded hex colors replaced with design tokens
+- Primary actions use `var(--color-primary)` (forest green)
+- Secondary elements use `var(--color-secondary)` (blue)
+
+**Consistency Improvements**:
+- Max content width: 1280px (matching other admin pages)
+- Typography: Uses `var(--font-size-*)` and `var(--font-weight-*)` variables
+- Z-index: Uses `var(--z-index-modal)` for modal overlay
+- Maintains visual consistency with profile view and tournament list pages
+
+---
+
+## [1.34.0] - 2026-03-19
+
+### Added — User Management System for System Administrators
+
+**Feature**: Comprehensive user management interface enabling SYSTEM_ADMIN users to perform full CRUD operations on user accounts.
+
+#### Overview
+
+Implemented a complete user management system similar to the CartographicProjectManager application, providing system administrators with centralized control over user accounts, roles, and access permissions.
+
+#### Backend Features
+
+**Extended DTOs** (`/src/application/dto/user.dto.ts`):
+- `UserSummaryDto` — Admin list view with complete user information including creation date and last login
+- `CreateUserDto` — User creation with role assignment and initial password
+- `UpdateUserByAdminDto` — Admin-level updates allowing modification of role and active status
+- `UserFilterDto` — Filter criteria supporting role, active status, and text search
+- `UserStatsDto` — Aggregated statistics by role and status
+
+**New Controller Methods** (`/backend/src/presentation/controllers/user.controller.ts`):
+- `create()` — Creates new users with validation, password hashing, and duplicate checks
+- `updateByAdmin()` — Updates any user field including role and status, with self-protection logic
+- `delete()` — Deletes users with avatar cleanup, prevents self-deletion
+- `getStats()` — Returns aggregated user counts by role (SYSTEM_ADMIN, TOURNAMENT_ADMIN, REFEREE, PLAYER, SPECTATOR)
+- Enhanced `getAll()` — Added text search filtering across username, email, name fields
+
+**New Protected Routes** (`/backend/src/presentation/routes/index.ts`):
+- `GET /users` — List users with optional filters (role, isActive, searchQuery)
+- `GET /users/stats` — User statistics dashboard
+- `POST /users` — Create new user
+- `PUT /users/:id/admin` — Update user (admin privileges)
+- `DELETE /users/:id` — Delete user
+- All routes protected with `roleMiddleware([UserRole.SYSTEM_ADMIN])`
+
+**Security & Validation**:
+- Username and email uniqueness validation on create and update
+- Password hashing using bcrypt (10 salt rounds)
+- Self-protection: administrators cannot delete or deactivate their own accounts
+- GDPR consent automatically granted on user creation
+
+#### Frontend Features
+
+**New Service** (`/src/application/services/user-management.service.ts`):
+- `getAllUsers(filters?)` — Fetch users with optional filtering
+- `getUserStats()` — Retrieve system-wide user statistics
+- `createUser(userData)` — Create new user account
+- `updateUser(userId, userData)` — Admin update with role/status changes
+- `deleteUser(userId)` — Delete user account
+- Uses environment-based API URL configuration
+
+**New Component** (`/src/presentation/pages/admin/user-management/user-management.component.ts`):
+- **Search & Filters**:
+  - Real-time text search across username, email, first name, last name
+  - Role dropdown filter (All Roles, System Admin, Tournament Admin, Referee, Player, Spectator)
+  - Active-only checkbox filter
+  - Clear filters button
+  
+- **Statistics Dashboard**:
+  - Total users count
+  - Active users count
+  - Breakdown by role: System Admins, Tournament Admins, Referees, Players, Spectators
+  - Color-coded stat values for visual clarity
+  
+- **User Table**:
+  - Sortable columns: Username, Email, Name, Role, Status, Last Login
+  - Role badges (color-coded: red=admin, green=tournament, orange=referee, blue=player, gray=spectator)
+  - Status badges (green=active, gray=inactive)
+  - Action buttons: Edit (✏️), Delete (🗑️)
+  - Disabled delete button for own account
+  
+- **Create User Modal**:
+  - Fields: username, email, firstName, lastName, role, phone, password (required)
+  - Role selection dropdown with all five roles
+  - Form validation with error messages
+  - Real-time field validation indicators
+  
+- **Edit User Modal**:
+  - Same fields as create (except password field disabled)
+  - Added isActive checkbox for status management
+  - Pre-populated with existing user data
+  - Validation for uniqueness during updates
+  
+- **Delete Confirmation Modal**:
+  - Warning message with username display
+  - Cannot undo notice
+  - Confirm/Cancel actions
+  
+- **UI States**:
+  - Loading spinner during data fetch
+  - Empty state with icon when no users found
+  - Error alerts with dismiss button
+  - Success messages for operations
+
+**Routing Integration** (`/src/presentation/app.routes.ts`):
+- Added route: `/admin/users`
+- Protected with `authGuard` and `roleGuard`
+- Restricted to `SYSTEM_ADMIN` role only
+- Lazy-loaded component for optimal performance
+
+**Profile Page Integration**:
+- Added "User Management" navigation link in profile page
+- Conditionally displayed only for SYSTEM_ADMIN users
+- Icon: 👥 (People/Users)
+- Blue accent styling on hover
+- Routes to `/admin/users` on click
+
+**Environment Configuration**:
+- Created `/src/environments/environment.ts` (development)
+- Created `/src/environments/environment.prod.ts` (production)
+- Configured API base URLs for HTTP services
+
+#### Reactive Architecture
+
+**Signal-Based State Management**:
+- All component state managed via Angular signals
+- Computed properties for reactive filtering (role + active + search)
+- No manual subscriptions required
+- Efficient change detection
+
+**Features**:
+- `users` — Current user list
+- `filteredUsers()` — Computed filtered results
+- `stats` — User statistics
+- `isLoading`, `errorMessage` — UI state
+- `searchQuery`, `roleFilter`, `activeOnlyFilter` — Filter state
+- `showModal`, `showDeleteConfirm` — Modal visibility
+- `isEditMode`, `isSubmitting`, `isDeleting` — Operation state
+
+#### Files Created
+
+1. `/src/application/services/user-management.service.ts` — HTTP service for user operations
+2. `/src/presentation/pages/admin/user-management/user-management.component.ts` — Full-featured admin panel (1200+ lines)
+3. `/src/environments/environment.ts` — Development environment config
+4. `/src/environments/environment.prod.ts` — Production environment config
+
+#### Files Modified
+
+1. `/src/application/dto/user.dto.ts` — Extended with 5 new DTOs
+2. `/backend/src/presentation/controllers/user.controller.ts` — Added 5 new methods
+3. `/backend/src/presentation/routes/index.ts` — Added 5 new protected routes
+4. `/src/presentation/app.routes.ts` — Added `/admin/users` route with guard
+5. `/src/presentation/pages/profile/profile-view/profile-view.component.ts` — Added system admin check
+6. `/src/presentation/pages/profile/profile-view/profile-view.component.html` — Added User Management link
+7. `/src/presentation/pages/profile/profile-view/profile-view.component.css` — Added admin action styles
+
+#### User Roles
+
+The system supports five distinct user roles with different permission levels:
+- **SYSTEM_ADMIN** — Full platform access, can manage all users and system configuration
+- **TOURNAMENT_ADMIN** — Tournament lifecycle management, draws, scheduling, results
+- **REFEREE** — Match officiating, result entry, score validation
+- **PLAYER** — Registered player, profile management, viewing own results and notifications
+- **SPECTATOR** — Public spectator, read-only access to published draws and results
+
+#### Technical Decisions
+
+**Inline Template Strategy**: Used inline template (not external `templateUrl`) to avoid Vite resolution issues observed in previous login component (v1.33.1).
+
+**Role Enum Alignment**: Updated frontend `UserRole` enum to match backend's more detailed five-role system (SYSTEM_ADMIN, TOURNAMENT_ADMIN, REFEREE, PLAYER, SPECTATOR) instead of the simplified four-role model.
+
+**Self-Protection Logic**: Implemented both backend and frontend validation to prevent administrators from deleting or deactivating their own accounts.
+
+**Error Code Usage**: Used `ERROR_CODES.ALREADY_EXISTS` for duplicate username/email validation instead of creating a new error code.
+
+**Password Security**: All user creation flows use bcrypt with 10 salt rounds for password hashing.
+
+#### Impact
+
+System administrators now have complete control over user accounts with ability to:
+- Create new users and assign roles
+- Edit user information, roles, and active status
+- Delete accounts with proper safeguards
+- Filter and search large user bases efficiently
+- View system-wide user distribution statistics
+- Manage access permissions through role assignment
+
+This feature provides the foundation for enterprise-grade user administration in the Tennis Tournament Manager platform.
+
+---
+
+## [1.33.1] - 2026-03-19
+
+### Fixed — Login Component Template Resolution Issue
+
+**Bug Fix**: Resolved Vite/Angular template resolution error that prevented the login component from loading properly.
+
+#### Problem
+
+When converting the login component from inline template to external files (`templateUrl` and `styleUrls`), Vite's development server encountered a resolution timing issue:
+
+```
+ERROR Error: Component 'LoginComponent' is not resolved:
+ - templateUrl: ./login.component.html
+ - styleUrls: ["./login.component.css"]
+Did you run and wait for 'resolveComponentResources()'?
+```
+
+This is a known issue with Vite's handling of external templates in Angular components during development mode.
+
+#### Solution
+
+**Converted component back to inline template and styles**:
+- Embedded HTML template directly in the component decorator
+- Embedded CSS styles as inline array in the component decorator
+- Maintained all modern design features (gradient hero, enhanced forms, animations)
+- No visual changes — only architectural adjustment for Vite compatibility
+
+#### Technical Details
+
+**Root Cause**: Vite's module resolution doesn't properly handle Angular's external template loading in certain configurations, causing the component definition to be accessed before templates are fully resolved.
+
+**Resolution Strategy**: Using inline templates in Vite-based Angular projects is more reliable for components with complex styling, as it avoids the asynchronous template loading issue.
+
+**Files Modified**:
+- `/src/presentation/pages/auth/login/login.component.ts` — Converted to inline template and styles
+
+**Impact**: Login page now loads correctly in all environments without template resolution errors.
+
+---
+
+## [1.33.0] - 2026-03-19
+
+### Changed — Modernized Login Page Design
+
+**Feature**: Updated login page with modern gradient hero section and enhanced form design to match the application's visual style.
+
+#### Visual Improvements
+
+**Hero Section**:
+- Gradient background: Green (#1B5E20 → #2E7D32) to Blue (#1976D2)
+- Decorative SVG overlay with circles
+- Multi-layer text shadows for depth and readability
+- Welcome message with subtitle
+- Consistent with tournament pages design
+
+**Login Card**:
+- Elevated card with enhanced shadows and hover effects
+- Tennis ball icon (🎾) in gradient circular badge
+- Enhanced form inputs with icons (📧 email, 🔒 password)
+- Modern gradient login button with arrow animation
+- Loading state with spinner animation
+- Improved error alert with warning icon
+
+**Additional Features**:
+- Info card with feature highlights (Fast & Secure, Tournament Management, Real-time Statistics)
+- Divider with "or" text
+- Smooth transitions and hover effects throughout
+- Enhanced visual hierarchy
+
+**Responsive Design**:
+- Mobile-optimized layouts (< 768px)
+- Adjusted font sizes and spacing for smaller screens
+- Maintained readability across all devices
+
+**Technical Changes**:
+- Converted from inline template to external HTML file
+- Added comprehensive CSS file with modern styling
+- Enhanced form controls with icon wrappers
+- Improved accessibility with proper ARIA labels
+
+**Files Modified**:
+- `/src/presentation/pages/auth/login/login.component.ts` — Updated to use external template and styles
+- `/src/presentation/pages/auth/login/login.component.html` — Created modern layout with hero section
+- `/src/presentation/pages/auth/login/login.component.css` — Created comprehensive styling with gradients and animations
+
+**Design Consistency**:
+- Matches tournament list, dashboard, and other modernized pages
+- Uses same color palette and gradient patterns
+- Consistent card shadows and hover effects
+- Uniform typography and spacing
+
+---
+
+## [1.32.2] - 2026-03-19
+
+### Changed — Relaxed Tournament Deletion Restrictions with Admin Override
+
+**Issue**: Tournament creators could only delete tournaments in DRAFT status, but the specification (section 8.1) states that tournament admins should be able to delete their own tournaments without this restriction.
+
+#### Changes Applied
+
+**Deletion Rules by Role** (updated to align with specification):
+
+**System Admins** (full control):
+- ✅ Can delete tournaments in **any status** including FINALIZED
+- No restrictions - complete system control
+
+**Tournament Organizers/Admins**:
+- ✅ **DRAFT** - Can delete (no data loss)
+- ✅ **REGISTRATION_OPEN** - Can delete (only registrations affected)
+- ✅ **REGISTRATION_CLOSED** - Can delete (registrations exist but no matches)
+- ✅ **DRAW_PENDING** - Can delete (draw created but no matches played)
+- ✅ **IN_PROGRESS** - Can delete (matches in progress, organizer decision)
+- ❌ **FINALIZED** - Cannot delete (historical records must be preserved)
+- ✅ **CANCELLED** - Can delete (already cancelled)
+
+**Rationale**:
+- System admins need unrestricted access for system maintenance and cleanup
+- Tournament organizers should have full control over active tournaments
+- Finalized tournaments protected for tournament admins to maintain historical records
+- Preserves data integrity while providing appropriate access levels
+
+**Files Modified**:
+- `/src/application/services/tournament.service.ts` — Added role-based deletion logic with system admin override
+- `/backend/src/presentation/controllers/tournament.controller.ts` — Added authorization checks and cascading deletion of related entities
+- `/backend/src/presentation/routes/index.ts` — Removed SYSTEM_ADMIN-only restriction from delete route
+
+**Technical Details**:
+- Deletion now properly handles foreign key constraints by deleting in order: registrations → categories → courts → tournament
+- Prevents orphaned data and database constraint violations
+
+**User Impact**:
+- System admins can delete any tournament regardless of status
+- Tournament organizers can delete their tournaments at any stage except after finalization
+- Provides more flexibility for tournament management
+- Aligns implementation with specification requirements
+
+---
+
+## [1.32.1] - 2026-03-19
+
+### Fixed — Tournament Deletion Authorization Bug
+
+**Issue**: Tournament organizers were unable to delete their own tournaments, receiving "User is not authorized to delete this tournament" error despite being the tournament creator.
+
+#### Root Causes Identified
+
+1. **Incorrect enum values** - Authorization service was checking for `UserRole.SYSTEM_ADMINISTRATOR` and `UserRole.TOURNAMENT_ADMINISTRATOR` which don't exist in the enum
+2. **Actual enum values** - The correct values are `UserRole.SYSTEM_ADMIN` and `UserRole.TOURNAMENT_ADMIN`
+3. **Overly restrictive logic** - The authorization check required users to be BOTH a tournament admin AND the organizer, instead of allowing organizers to manage their own tournaments regardless of their role
+
+#### Fixes Applied
+
+**Authorization Service Updates**:
+- **`canPerformAction()` method**:
+  - Fixed `SYSTEM_ADMINISTRATOR` → `SYSTEM_ADMIN`
+  - Fixed `TOURNAMENT_ADMINISTRATOR` → `TOURNAMENT_ADMIN`
+  - Separated the logic: tournament admins can manage ANY tournament
+  - Tournament organizers can manage THEIR OWN tournaments (regardless of role)
+  - Removed the restrictive AND condition that was blocking organizers
+  
+- **`canModifyBracket()` method**:
+  - Fixed `SYSTEM_ADMINISTRATOR` → `SYSTEM_ADMIN`
+  - Fixed `TOURNAMENT_ADMINISTRATOR` → `TOURNAMENT_ADMIN`
+  - Added same logic: tournament admins can modify any brackets
+  - Tournament organizers can modify brackets in their own tournaments
+
+**Authorization Logic Flow** (after fix):
+1. ✅ System admins can perform all actions on all resources
+2. ✅ Tournament admins can manage/modify any tournament and bracket
+3. ✅ Tournament organizers can manage/modify their own tournaments and brackets
+4. ✅ All users can read/view public resources
+
+**Files Modified**:
+- `/src/application/services/authorization.service.ts` — Fixed enum values and authorization logic
+
+**Impact**:
+- Tournament organizers can now successfully delete their own tournaments
+- Tournament organizers can update their own tournaments
+- Tournament organizers can modify brackets in their own tournaments
+- Authorization checks now use correct enum values consistently
+
+---
+
+## [1.32.0] - 2026-03-19
+
+### Added — Registered Players List on Tournament Detail Page
+
+**Feature**: Display a comprehensive list of all registered players for each tournament on the tournament detail page.
+
+#### Implementation Details
+
+**Player List Display**:
+- Shows all registered participants with their details in a structured table
+- Includes player information: full name, username, email
+- Displays registration details: category, status, registration date
+- Shows seed number when available (for tournaments with seeding)
+- Real-time count of registered players in section header
+- Empty state message when no players are registered yet
+
+**Data Integration**:
+- Fetches registrations via `RegistrationService.getRegistrationsByTournament()`
+- Retrieves user details for each participant via `UserRepositoryImpl.findById()`
+- Combines registration and user data into unified display model
+- Handles missing user data gracefully with error logging
+
+**Visual Design**:
+- Consistent with modernized tournament page design
+- Responsive table layout with proper styling
+- Category badges with primary color
+- Status badges with color-coded states
+- Player icon (👥) in section header
+- Hover effects on table rows for better UX
+
+**Technical Implementation**:
+- Added `registeredPlayers` signal to hold player data
+- Created `loadPlayers()` method to fetch and combine data
+- Added `getCategoryName()` helper method for category display
+- Integrated with existing component lifecycle in `loadTournament()`
+- Used Promise.all for efficient parallel user data fetching
+- Filters out null entries for users that couldn't be loaded
+
+**Files Modified**:
+- `/src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` — Added player loading logic and display helpers
+- `/src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html` — Added registered players table section
+
+**User Experience Benefits**:
+- Tournament organizers can easily see who has registered
+- Players can verify their registration by seeing their name in the list
+- Category-based organization helps with tournament planning
+- Registration status visibility aids in administration
+
+---
+
+## [1.31.6] - 2026-03-19
+
+### Fixed — Tournament Status Update Delay and Caching Issues
+
+**Issue**: After updating tournament status, changes took multiple minutes to reflect on the page due to multiple caching layers and missing field in update payload.
+
+#### Root Causes Identified
+
+1. **Status field not included in update request** - The edit form had the status field, but it wasn't being sent to the backend
+2. **Browser HTTP caching** - GET requests were being cached by the browser
+3. **Component not reloading** - Detail page wasn't refreshing when navigating back from edit
+4. **No cache-busting mechanism** - Navigation didn't force fresh data fetch
+
+#### Fixes Applied
+
+**Frontend Updates**:
+- **Tournament Edit Component**:
+  - Added `status` field to the `updateDto` payload in `onSubmit()` method
+  - Added cache-busting timestamp query parameter when navigating back (`?_t=timestamp`)
+  - Changed navigation to use `await` to ensure proper sequence
+  
+- **Tournament Detail Component**:
+  - Updated `ngOnInit()` to use `combineLatest` from RxJS
+  - Now listens to both `paramMap` and `queryParamMap` changes
+  - Component reloads whenever query parameters change (triggered by cache-busting param)
+  
+- **HTTP Client**:
+  - Added cache-control headers to all Axios requests:
+    - `Cache-Control: no-cache, no-store, must-revalidate`
+    - `Pragma: no-cache`
+    - `Expires: 0`
+  - Prevents browser from caching API responses
+
+**Files Modified**:
+- `/src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.ts` — Added status to update payload and cache-busting navigation
+- `/src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` — Added combineLatest for proper reload on query param changes
+- `/src/infrastructure/http/axios-client.ts` — Added cache-control headers
+
+**Performance Impact**:
+- Status updates now reflect **immediately** after saving (< 1 second)
+- Tournament data is always fresh from the server
+- No stale data issues across navigation
+
+**User Experience**:
+- Edit tournament status → Save → Redirects to detail page with updated status instantly
+- No need to manually refresh or wait minutes for changes to appear
+
+**Related**: #bug-fix #performance #caching #tournament-status
+
+---
+
+## [1.31.5] - 2026-03-19
+
+### Fixed — Tournament Status Update Functionality
+
+**Issue**: Tournament status could not be changed when editing tournaments. The edit form did not include a status field, and the backend/frontend didn't properly handle status updates.
+
+#### Changes Made
+
+**Frontend Updates**:
+- **DTO**: Added `status?: TournamentStatus` field to `UpdateTournamentDto` interface
+- **Edit Component**: Added status dropdown to tournament edit form
+- **Service**: Updated `TournamentService.updateTournament()` to include status in update payload
+- **UI Enhancement**: Added status transition hints showing valid state changes:
+  - DRAFT → REGISTRATION_OPEN, CANCELLED
+  - REGISTRATION_OPEN → REGISTRATION_CLOSED, CANCELLED
+  - REGISTRATION_CLOSED → DRAW_PENDING, CANCELLED
+  - DRAW_PENDING → IN_PROGRESS, CANCELLED
+  - IN_PROGRESS → FINALIZED, CANCELLED
+  - FINALIZED → No transitions (final state)
+  - CANCELLED → No transitions (final state)
+
+**Backend Updates**:
+- **Controller**: Enhanced `PUT /api/tournaments/:id` endpoint to validate status transitions
+- **Validation**: Enforces tournament lifecycle rules when status is updated
+- **Error Handling**: Returns clear error messages when invalid transitions are attempted
+
+**Files Modified**:
+- `/src/application/dto/tournament.dto.ts` — Added status field to UpdateTournamentDto
+- `/src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.ts` — Added status field and tournamentStatuses array
+- `/src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.html` — Added status dropdown with transition hints
+- `/src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.css` — Added form-hint styles
+- `/src/application/services/tournament.service.ts` — Added status to update logic
+- `/backend/src/presentation/controllers/tournament.controller.ts` — Added status transition validation
+
+**User Impact**:
+- Organizers can now change tournament status from DRAFT to REGISTRATION_OPEN and other valid states
+- Clear visual guidance shows which status transitions are allowed
+- Invalid transitions are prevented with helpful error messages
+
+**Related**: #bug-fix #tournament-status #tournament-edit #validation
+
+---
+
 ## [1.31.4] - 2026-03-19
 
 ### Enhanced — Tournament Forms Modern UI Update
