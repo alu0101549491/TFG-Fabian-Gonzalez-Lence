@@ -11,15 +11,15 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {ITournamentService} from '../interfaces/tournament-service.interface';
 import {CreateTournamentDto, UpdateTournamentDto, TournamentDto, TournamentFilterDto} from '../dto';
 import {PaginatedResponseDto, PaginationDto} from '../dto';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {TournamentRepositoryImpl} from '@infrastructure/repositories/tournament.repository';
 import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repository';
-import {IAuthorizationService} from '../interfaces/authorization-service.interface';
-import {type INotificationService} from '../interfaces/notification-service.interface';
+import {AuthorizationService} from './authorization.service';
+import {NotificationService} from './notification.service';
 import {Tournament} from '@domain/entities/tournament';
 import {generateId} from '@shared/utils';
 
@@ -29,20 +29,10 @@ import {generateId} from '@shared/utils';
  */
 @Injectable({providedIn: 'root'})
 export class TournamentService implements ITournamentService {
-  /**
-   * Creates a new TournamentService instance.
-   *
-   * @param tournamentRepository - Tournament repository for data access
-   * @param categoryRepository - Category repository for category data access
-   * @param authorizationService - Authorization service for access control
-   * @param notificationService - Notification service for tournament notifications
-   */
-  public constructor(
-    private readonly tournamentRepository: TournamentRepositoryImpl,
-    private readonly categoryRepository: CategoryRepositoryImpl,
-    private readonly authorizationService: IAuthorizationService,
-    private readonly notificationService: INotificationService,
-  ) {}
+  private readonly tournamentRepository = inject(TournamentRepositoryImpl);
+  private readonly categoryRepository = inject(CategoryRepositoryImpl);
+  private readonly authorizationService = inject(AuthorizationService);
+  private readonly notificationService = inject(NotificationService);
 
   /**
    * Creates a new tournament.
@@ -77,28 +67,14 @@ export class TournamentService implements ITournamentService {
       throw new Error('Organizer ID is required');
     }
     
-    // Create tournament entity
-    const tournament = new Tournament({
-      id: generateId(),
-      name: data.name,
-      description: data.description,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      location: data.location,
-      surface: data.surface,
-      status: TournamentStatus.DRAFT,
-      maxParticipants: data.maxParticipants,
-      registrationFee: data.registrationFee,
-      currency: data.currency,
-      acceptanceType: data.acceptanceType,
-      rankingSystem: data.rankingSystem,
+    // Prepare the request payload with organizerId
+    const requestData = {
+      ...data,
       organizerId,
-      registrationOpenDate: data.registrationOpenDate,
-      registrationCloseDate: data.registrationCloseDate,
-    });
+    };
     
-    // Save tournament
-    const savedTournament = await this.tournamentRepository.save(tournament);
+    // Save tournament via repository (sends POST to backend)
+    const savedTournament = await this.tournamentRepository.save(requestData as unknown as Tournament);
     
     // Map to DTO
     return this.mapTournamentToDto(savedTournament);

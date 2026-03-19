@@ -20,6 +20,7 @@ import {type TournamentDto, type TournamentFilterDto, type PaginationDto} from '
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {Surface} from '@domain/enumerations/surface';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import templateHtml from './tournament-list.component.html?raw';
 
 /**
  * TournamentListComponent displays a filterable, paginated list of tournaments.
@@ -29,148 +30,15 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
   selector: 'app-tournament-list',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
-  template: `
-    <div class="container p-lg">
-      <div class="flex justify-between items-center mb-lg">
-        <h1>Tournaments</h1>
-        @if (isAuthenticated()) {
-          <button class="btn btn-primary" routerLink="/tournaments/create">
-            Create Tournament
-          </button>
-        }
-      </div>
-
-      <!-- Filters Section -->
-      <div class="card mb-lg">
-        <div class="card-body">
-          <h3 class="card-title">Filters</h3>
-          <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-            <div class="form-group">
-              <label class="form-label">Search</label>
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="searchQuery"
-                placeholder="Search tournaments..."
-                (keyup.enter)="applyFilters()"
-              />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Status</label>
-              <select class="form-control" [(ngModel)]="filters.status" (change)="applyFilters()">
-                <option [ngValue]="undefined">All</option>
-                @for (status of statuses; track status) {
-                  <option [value]="status">{{ status }}</option>
-                }
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Surface</label>
-              <select class="form-control" [(ngModel)]="filters.surface" (change)="applyFilters()">
-                <option [ngValue]="undefined">All</option>
-                @for (surface of surfaces; track surface) {
-                  <option [value]="surface">{{ surface }}</option>
-                }
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Location</label>
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="filters.location"
-                placeholder="Enter location..."
-                (keyup.enter)="applyFilters()"
-              />
-            </div>
-          </div>
-
-          <div class="flex gap-sm mt-md">
-            <button class="btn btn-primary" (click)="applyFilters()">Apply Filters</button>
-            <button class="btn btn-ghost" (click)="clearFilters()">Clear</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Loading State -->
-      @if (isLoading()) {
-        <div class="text-center p-lg">
-          <p>Loading tournaments...</p>
-        </div>
-      }
-
-      <!-- Error State -->
-      @if (errorMessage()) {
-        <div class="alert alert-error">
-          {{ errorMessage() }}
-        </div>
-      }
-
-      <!-- Tournament List -->
-      @if (!isLoading() && tournaments().length > 0) {
-        <div class="grid gap-md" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
-          @for (tournament of tournaments(); track tournament.id) {
-            <div class="card" (click)="viewTournament(tournament.id)" style="cursor: pointer;">
-              <div class="card-header">
-                <h3 class="card-title">{{ tournament.name }}</h3>
-                <span class="badge badge-{{ tournament.status.toLowerCase() }}">
-                  {{ tournament.status }}
-                </span>
-              </div>
-              <div class="card-body">
-                <p class="text-sm text-muted mb-sm">{{ tournament.location }}</p>
-                <p class="text-sm">
-                  <strong>Surface:</strong> {{ tournament.surface }}<br/>
-                  <strong>Dates:</strong> {{ formatDate(tournament.startDate) }} - {{ formatDate(tournament.endDate) }}<br/>
-                  <strong>Participants:</strong> {{ tournament.maxParticipants }} max<br/>
-                  @if (tournament.registrationFee > 0) {
-                    <strong>Fee:</strong> {{ tournament.registrationFee }} {{ tournament.currency }}<br/>
-                  }
-                </p>
-              </div>
-            </div>
-          }
-        </div>
-
-        <!-- Pagination -->
-        <div class="flex justify-between items-center mt-lg">
-          <p class="text-sm text-muted">
-            Showing {{ (currentPage - 1) * pageSize + 1 }} - 
-            {{ Math.min(currentPage * pageSize, totalCount()) }} of {{ totalCount() }}
-          </p>
-          <div class="flex gap-sm">
-            <button
-              class="btn btn-secondary"
-              (click)="previousPage()"
-              [disabled]="!hasPreviousPage()"
-            >
-              Previous
-            </button>
-            <button
-              class="btn btn-secondary"
-              (click)="nextPage()"
-              [disabled]="!hasNextPage()"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      }
-
-      <!-- Empty State -->
-      @if (!isLoading() && !errorMessage() && tournaments().length === 0) {
-        <div class="text-center p-lg">
-          <p class="text-muted">No tournaments found.</p>
-        </div>
-      }
-    </div>
-  `,
+  template: templateHtml,
   styles: [],
 })
 export class TournamentListComponent implements OnInit {
+  /** Services - inject() must be called before other properties */
+  private readonly tournamentService = inject(TournamentService);
+  private readonly router = inject(Router);
+  private readonly authStateService = inject(AuthStateService);
+
   /** List of tournaments */
   public tournaments = signal<TournamentDto[]>([]);
 
@@ -201,14 +69,8 @@ export class TournamentListComponent implements OnInit {
   /** Available surfaces */
   public readonly surfaces = Object.values(Surface);
 
-  /** Tournament service instance */
-  private readonly tournamentService = inject(TournamentService);
-
-  /** Router instance */
-  private readonly router = inject(Router);
-
-  /** Auth state service instance */
-  private readonly authStateService = inject(AuthStateService);
+  /** Math object for template use */
+  public readonly Math = Math;
 
   /**
    * Checks if user is authenticated.
@@ -245,7 +107,7 @@ export class TournamentListComponent implements OnInit {
       };
 
       const response = await this.tournamentService.listTournaments(filter, pagination);
-      this.tournaments.set(response.data);
+      this.tournaments.set(response.items);
       this.totalCount.set(response.total);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load tournaments';
@@ -332,5 +194,12 @@ export class TournamentListComponent implements OnInit {
       month: 'short',
       day: 'numeric',
     });
+  }
+
+  /**
+   * Navigates back to the home page.
+   */
+  public goBack(): void {
+    void this.router.navigate(['/']);
   }
 }

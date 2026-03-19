@@ -77,3 +77,5 @@ Every new file MUST start with this header (adapted for the specific file):
 Adhere to project's established patterns and match existing code style and conventions.
 If any doubts, you can use the `docs` directory of the project for reference, with files like `specification.md`, `class-diagram.mermaid`, `use-case-diagram.mermaid`, etc. to ensure consistency with the project's architecture and design.
 Don't create commits if the user doesn't ask you to. You are not allowed to create tests unless the user explicitly asks you to. Focus on writing the implementation code and documentation first, other agents will handle testing when the implementation is complete.
+
+Every time you fulfill a feature request of the user, document it at the respective `docs/CHANGES.md` file of the project.

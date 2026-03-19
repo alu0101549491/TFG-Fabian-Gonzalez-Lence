@@ -7,65 +7,55 @@
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
  * @file presentation/pages/home.component.ts
- * @desc Home/landing page component with professional tennis-themed design and inline template.
+ * @desc Home/landing page component that shows personalized dashboard for authenticated users or marketing page for guests.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
 import {Component, inject, computed} from '@angular/core';
-import {Router, RouterModule} from '@angular/router';
+import {RouterModule} from '@angular/router';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import {DashboardComponent} from './dashboard.component';
 
 /**
- * HomeComponent - Landing page with comprehensive feature presentation
+ * HomeComponent - Conditional rendering: Dashboard for authenticated users, landing page for guests
  */
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterModule],
+  imports: [RouterModule, DashboardComponent],
   template: `
-    <div class="home-container">
-      <!-- Hero Section -->
-      <section class="hero-section">
-        <div class="hero-overlay"></div>
-        <div class="hero-content">
-          <div class="hero-badge">
-            <span class="tennis-icon">🎾</span>
-          </div>
-          <h1 class="hero-title">Tennis Tournament Manager</h1>
-          
-          @if (isAuthenticated()) {
-            <p class="hero-subtitle">
-              Welcome back, {{ currentUser()?.firstName || 'Player' }}! 
-              Your tournaments and matches are ready to manage.
-            </p>
-            
-            <div class="cta-buttons">
-              <button (click)="goToBrowseTournaments()" class="btn btn-primary">
-                <span class="btn-icon">🏆</span>
-                <span>Browse Tournaments</span>
-              </button>
-              <a routerLink="/profile" class="btn btn-secondary">
-                <span class="btn-icon">👤</span>
-                <span>My Profile</span>
-              </a>
+    <!-- Dashboard for Authenticated Users -->
+    @if (isAuthenticated()) {
+      <app-dashboard></app-dashboard>
+    }
+    
+    <!-- Landing Page for Guests -->
+    @else {
+      <div class="home-container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            <div class="hero-badge">
+              <span class="tennis-icon">🎾</span>
             </div>
-          } @else {
+            <h1 class="hero-title">Tennis Tournament Manager</h1>
+            
             <p class="hero-subtitle">
-              Complete management platform for tennis tournaments with real-time tracking,
-              automated draws, and multichannel notifications
+              Professional tournament management platform for tennis clubs, organizers, and players.
+              Create tournaments, manage draws, track results, and view comprehensive statistics.
             </p>
             
             <div class="cta-buttons">
-              <a routerLink="/login" class="btn btn-primary">
-                <span class="btn-icon">🔐</span>
-                <span>Sign In</span>
-              </a>
-              <a routerLink="/register" class="btn btn-secondary">
-                <span class="btn-icon">📝</span>
+              <a routerLink="/register" class="btn btn-primary">
+                <span class="btn-icon">🚀</span>
                 <span>Get Started</span>
               </a>
+              <a routerLink="/login" class="btn btn-secondary">
+                <span class="btn-icon">🔑</span>
+                <span>Sign In</span>
+              </a>
             </div>
-          }
 
           <div class="hero-stats">
             <div class="stat-item">
@@ -211,7 +201,8 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    }
   `,
   styles: [`
     /* Container */
@@ -620,20 +611,7 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
 export class HomeComponent {
   /** Auth state service for checking authentication status */
   private readonly authStateService = inject(AuthStateService);
-
-  /** Router for navigation */
-  private readonly router = inject(Router);
   
   /** Computed signal indicating if user is authenticated */
   public readonly isAuthenticated = computed(() => this.authStateService.isAuthenticated());
-  
-  /** Computed signal with current user data */
-  public readonly currentUser = computed(() => this.authStateService.getCurrentUser());
-  
-  /**
-   * Navigates to browse tournaments page.
-   */
-  public goToBrowseTournaments(): void {
-    void this.router.navigate(['/tournaments']);
-  }
 }

@@ -15,16 +15,38 @@ import {Injectable} from '@angular/core';
 import {type UserDto} from '@application/dto/user.dto';
 import {JWT_STORAGE_KEY} from '@shared/constants';
 
+const USER_STORAGE_KEY = 'app_user';
+
 /**
  * Service for managing the client-side authentication state.
  *
- * Stores the JWT token in localStorage and provides methods
+ * Stores the JWT token and user data in localStorage and provides methods
  * to check authentication status, retrieve the current user,
  * and handle session timeout (30 min per NFR12).
  */
 @Injectable({providedIn: 'root'})
 export class AuthStateService {
   private currentUser: UserDto | null = null;
+
+  constructor() {
+    // Restore user from localStorage on service initialization
+    this.restoreUser();
+  }
+
+  /**
+   * Restores user data from localStorage.
+   */
+  private restoreUser(): void {
+    const userJson = localStorage.getItem(USER_STORAGE_KEY);
+    if (userJson) {
+      try {
+        this.currentUser = JSON.parse(userJson);
+      } catch (error) {
+        console.error('Failed to restore user from localStorage:', error);
+        localStorage.removeItem(USER_STORAGE_KEY);
+      }
+    }
+  }
 
   /**
    * Stores the JWT token after successful authentication.
@@ -44,8 +66,9 @@ export class AuthStateService {
     // Store token in localStorage
     localStorage.setItem(JWT_STORAGE_KEY, token);
     
-    // Store user in memory
+    // Store user in memory and localStorage
     this.currentUser = user;
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
   }
 
   /**
@@ -82,6 +105,9 @@ export class AuthStateService {
   public clearAuth(): void {
     // Remove token from localStorage
     localStorage.removeItem(JWT_STORAGE_KEY);
+    
+    // Remove user from localStorage
+    localStorage.removeItem(USER_STORAGE_KEY);
     
     // Clear user from memory
     this.currentUser = null;

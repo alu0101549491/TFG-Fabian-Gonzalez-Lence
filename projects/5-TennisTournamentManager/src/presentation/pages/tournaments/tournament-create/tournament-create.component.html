@@ -1,0 +1,229 @@
+<div class="container p-lg">
+  <div class="flex items-center gap-md mb-lg">
+    <button class="btn btn-secondary" (click)="goBack()" title="Go back">
+      ← Back
+    </button>
+    <h1 class="m-0">Create Tournament</h1>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error mb-md">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <form (ngSubmit)="onSubmit()" class="card">
+    <div class="card-body">
+      <!-- Basic Information -->
+      <h3 class="card-title mb-md">Basic Information</h3>
+      
+      <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        <div class="form-group">
+          <label class="form-label" for="name">Tournament Name *</label>
+          <input
+            id="name"
+            type="text"
+            class="form-control"
+            [(ngModel)]="formData.name"
+            name="name"
+            required
+            placeholder="Enter tournament name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="location">Location *</label>
+          <input
+            id="location"
+            type="text"
+            class="form-control"
+            [(ngModel)]="formData.location"
+            name="location"
+            required
+            placeholder="Enter location"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Description</label>
+        <textarea
+          id="description"
+          class="form-control"
+          [(ngModel)]="formData.description"
+          name="description"
+          rows="3"
+          placeholder="Enter tournament description (optional)"
+        ></textarea>
+      </div>
+
+      <!-- Tournament Details -->
+      <h3 class="card-title mt-lg mb-md">Tournament Details</h3>
+      
+      <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+        <div class="form-group">
+          <label class="form-label" for="surface">Surface *</label>
+          <select
+            id="surface"
+            class="form-control"
+            [(ngModel)]="formData.surface"
+            name="surface"
+            required
+          >
+            @for (surface of surfaces; track surface) {
+              <option [value]="surface">{{ surface }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="maxParticipants">Max Participants *</label>
+          <input
+            id="maxParticipants"
+            type="number"
+            class="form-control"
+            [(ngModel)]="formData.maxParticipants"
+            name="maxParticipants"
+            required
+            min="2"
+            placeholder="Enter max participants"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="acceptanceType">Acceptance Type</label>
+          <select
+            id="acceptanceType"
+            class="form-control"
+            [(ngModel)]="formData.acceptanceType"
+            name="acceptanceType"
+          >
+            @for (type of acceptanceTypes; track type) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="rankingSystem">Ranking System</label>
+          <select
+            id="rankingSystem"
+            class="form-control"
+            [(ngModel)]="formData.rankingSystem"
+            name="rankingSystem"
+          >
+            @for (system of rankingSystems; track system) {
+              <option [value]="system">{{ system }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <h3 class="card-title mt-lg mb-md">Dates</h3>
+      
+      <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div class="form-group">
+          <label class="form-label" for="startDate">Start Date *</label>
+          <input
+            id="startDate"
+            type="date"
+            class="form-control"
+            [(ngModel)]="formData.startDate"
+            name="startDate"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="endDate">End Date *</label>
+          <input
+            id="endDate"
+            type="date"
+            class="form-control"
+            [(ngModel)]="formData.endDate"
+            name="endDate"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="registrationOpenDate">Registration Open</label>
+          <input
+            id="registrationOpenDate"
+            type="date"
+            class="form-control"
+            [(ngModel)]="formData.registrationOpenDate"
+            name="registrationOpenDate"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="registrationCloseDate">Registration Close</label>
+          <input
+            id="registrationCloseDate"
+            type="date"
+            class="form-control"
+            [(ngModel)]="formData.registrationCloseDate"
+            name="registrationCloseDate"
+          />
+        </div>
+      </div>
+
+      <!-- Registration Fee -->
+      <h3 class="card-title mt-lg mb-md">Registration Fee</h3>
+      
+      <div class="grid gap-md" style="grid-template-columns: 2fr 1fr;">
+        <div class="form-group">
+          <label class="form-label" for="registrationFee">Fee Amount</label>
+          <input
+            id="registrationFee"
+            type="number"
+            class="form-control"
+            [(ngModel)]="formData.registrationFee"
+            name="registrationFee"
+            min="0"
+            step="0.01"
+            placeholder="0.00"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="currency">Currency</label>
+          <input
+            id="currency"
+            type="text"
+            class="form-control"
+            [(ngModel)]="formData.currency"
+            name="currency"
+            maxlength="3"
+            placeholder="EUR"
+          />
+        </div>
+      </div>
+
+      <!-- Submit Buttons -->
+      <div class="flex gap-md mt-lg">
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+          [disabled]="isSubmitting()"
+        >
+          @if (isSubmitting()) {
+            Creating...
+          } @else {
+            Create Tournament
+          }
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-ghost"
+          (click)="goBack()"
+          [disabled]="isSubmitting()"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </form>
+</div>

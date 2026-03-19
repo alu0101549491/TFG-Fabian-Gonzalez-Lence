@@ -11,12 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Router, RouterModule} from '@angular/router';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {type UserDto, type UpdateUserDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import templateHtml from './profile-view.component.html?raw';
 
 /**
  * ProfileViewComponent displays and allows editing of user profile.
@@ -25,10 +26,15 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
   selector: 'app-profile-view',
   standalone: true,
   imports: [CommonModule, RouterModule, ReactiveFormsModule],
-  templateUrl: './profile-view.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class ProfileViewComponent implements OnInit {
+  /** Services */
+  private readonly fb = inject(FormBuilder);
+  private readonly authStateService = inject(AuthStateService);
+  private readonly router = inject(Router);
+
   /** Current user */
   public user = signal<UserDto | null>(null);
 
@@ -45,27 +51,12 @@ export class ProfileViewComponent implements OnInit {
   public successMessage = signal<string | null>(null);
 
   /** Profile form */
-  public profileForm: FormGroup;
-
-  /**
-   * Creates an instance of ProfileViewComponent.
-   *
-   * @param fb - FormBuilder for reactive forms
-   * @param authStateService - Auth state service for user data
-   * @param router - Router for navigation
-   */
-  public constructor(
-    private readonly fb: FormBuilder,
-    private readonly authStateService: AuthStateService,
-    private readonly router: Router,
-  ) {
-    this.profileForm = this.fb.group({
-      username: ['', [Validators.required, Validators.minLength(3)]],
-      firstName: ['', [Validators.required]],
-      lastName: ['', [Validators.required]],
-      phone: [''],
-    });
-  }
+  public profileForm: FormGroup = this.fb.group({
+    username: ['', [Validators.required, Validators.minLength(3)]],
+    firstName: ['', [Validators.required]],
+    lastName: ['', [Validators.required]],
+    phone: [''],
+  });
 
   /**
    * Initializes component and loads user profile.

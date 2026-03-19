@@ -48,6 +48,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'tournaments/create',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/tournaments/tournament-create/tournament-create.component').then(
+        (m) => m.TournamentCreateComponent,
+      ),
+  },
+  {
     path: 'tournaments/:id',
     loadComponent: () =>
       import('./pages/tournaments/tournament-detail/tournament-detail.component').then(

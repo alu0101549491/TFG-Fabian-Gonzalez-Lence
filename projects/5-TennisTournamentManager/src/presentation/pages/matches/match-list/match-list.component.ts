@@ -11,13 +11,14 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Router, RouterModule, ActivatedRoute} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {MatchService} from '@application/services';
 import {type MatchDto} from '@application/dto';
 import {MatchStatus} from '@domain/enumerations/match-status';
+import templateHtml from './match-list.component.html?raw';
 
 /**
  * MatchListComponent displays a filterable list of matches.
@@ -26,10 +27,15 @@ import {MatchStatus} from '@domain/enumerations/match-status';
   selector: 'app-match-list',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
-  templateUrl: './match-list.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class MatchListComponent implements OnInit {
+  /** Services */
+  private readonly matchService = inject(MatchService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
   /** List of matches */
   public matches = signal<MatchDto[]>([]);
 
@@ -47,19 +53,6 @@ export class MatchListComponent implements OnInit {
 
   /** Available match statuses */
   public readonly statuses = Object.values(MatchStatus);
-
-  /**
-   * Creates an instance of MatchListComponent.
-   *
-   * @param matchService - Match service for data operations
-   * @param router - Router for navigation
-   * @param route - Activated route for query params
-   */
-  public constructor(
-    private readonly matchService: MatchService,
-    private readonly router: Router,
-    private readonly route: ActivatedRoute,
-  ) {}
 
   /**
    * Initializes component and loads matches.
@@ -125,5 +118,12 @@ export class MatchListComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  /**
+   * Navigates back to the home page.
+   */
+  public goBack(): void {
+    void this.router.navigate(['/']);
   }
 }

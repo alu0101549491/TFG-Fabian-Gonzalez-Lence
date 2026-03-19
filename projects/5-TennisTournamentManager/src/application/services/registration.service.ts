@@ -11,13 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {IRegistrationService} from '../interfaces/registration-service.interface';
 import {CreateRegistrationDto, RegistrationDto, UpdateRegistrationStatusDto} from '../dto';
 import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registration.repository';
 import {TournamentRepositoryImpl} from '@infrastructure/repositories/tournament.repository';
 import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repository';
-import {INotificationService} from '../interfaces/notification-service.interface';
+import {NotificationService} from './notification.service';
 import {Registration} from '@domain/entities/registration';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
 import {generateId} from '@shared/utils';
@@ -28,21 +28,11 @@ import {generateId} from '@shared/utils';
  */
 @Injectable({providedIn: 'root'})
 export class RegistrationService implements IRegistrationService {
-  /**
-   * Creates a new RegistrationService instance.
-   *
-   * @param registrationRepository - Registration repository for data access
-   * @param tournamentRepository - Tournament repository for tournament data access
-   * @param categoryRepository - Category repository for category data access
-   * @param notificationService - Notification service for participant notifications
-   */
-  public constructor(
-    private readonly registrationRepository: RegistrationRepositoryImpl,
-    private readonly tournamentRepository: TournamentRepositoryImpl,
-    private readonly categoryRepository: CategoryRepositoryImpl,
-    private readonly notificationService: INotificationService,
-    // TODO: inject QuotaManager
-  ) {}
+  private readonly registrationRepository = inject(RegistrationRepositoryImpl);
+  private readonly tournamentRepository = inject(TournamentRepositoryImpl);
+  private readonly categoryRepository = inject(CategoryRepositoryImpl);
+  private readonly notificationService = inject(NotificationService);
+  // TODO: inject QuotaManager
 
   /**
    * Registers a participant for a tournament category.

@@ -26,21 +26,22 @@ import {AppError} from '../middleware/error.middleware';
 export class MatchController {
   /**
    * GET /api/matches
-   * Lists matches for a bracket.
+   * Lists matches for a bracket or all matches if bracketId is not provided.
    */
   public async getByBracket(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {bracketId} = req.query;
       const matchRepository = AppDataSource.getRepository(Match);
       
-      if (!bracketId) {
-        throw new AppError('bracketId query parameter is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
-      }
-      
-      const matches = await matchRepository.find({
-        where: {bracketId: bracketId as string},
-        relations: ['scores', 'court'],
-      });
+      // If bracketId is provided, filter by bracket; otherwise return all matches
+      const matches = bracketId
+        ? await matchRepository.find({
+            where: {bracketId: bracketId as string},
+            relations: ['scores', 'court'],
+          })
+        : await matchRepository.find({
+            relations: ['scores', 'court'],
+          });
       
       res.status(HTTP_STATUS.OK).json(matches);
     } catch (error) {

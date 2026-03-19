@@ -6,6 +6,487 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.28.3] - 2026-03-19
+
+### Fixed — Development Base URL Routing Issue
+
+**Critical Bug Fix**: Fixed incorrect base URL configuration causing routing failures in development.
+
+#### Problem
+
+- Vite configuration had `base: '/5-TennisTournamentManager/'` hardcoded for all environments
+- After login, users saw error: "The server is configured with a public base URL of /5-TennisTournamentManager/"
+- Navigation redirected to `http://localhost:4200/login` even after successful authentication
+- Angular Router unable to properly navigate within the wrong base path
+- All routes prefixed with `/5-TennisTournamentManager/` in development environment
+
+#### Root Cause
+
+The `base` configuration in vite.config.ts was set to production path for all environments:
+```typescript
+const base = process.env.BASE_URL || '/5-TennisTournamentManager/';
+```
+
+This caused Vite to serve all assets and handle all routes with the `/5-TennisTournamentManager/` prefix, even during local development where the app runs at root path `/`.
+
+#### Solution
+
+- **Modified** vite.config.ts to use environment-aware base URL configuration
+- **Development mode**: `base: '/'` (root path for localhost)
+- **Production mode**: `base: '/5-TennisTournamentManager/'` (project-specific path for deployment)
+- Uses Vite's `mode` parameter to automatically detect environment
+
+```typescript
+export default defineConfig(({mode}) => {
+  const base = mode === 'production' 
+    ? (process.env.BASE_URL || '/5-TennisTournamentManager/')
+    : '/';
+  // ...
+});
+```
+
+#### Impact
+
+- ✅ Login now properly redirects to home/dashboard after authentication
+- ✅ All Angular routes work correctly in development
+- ✅ No more base URL mismatch errors during development
+- ✅ Production builds still use correct project-specific base path
+- ✅ Environment variable override still supported for custom deployments
+
+#### Files Modified
+
+- **Modified**: `vite.config.ts` - Changed from static base to mode-aware base URL
+
+---
+
+## [1.28.2] - 2026-03-19
+
+### Fixed — Tournament List Not Showing Created Tournaments
+
+**Critical Bug Fix**: Fixed multiple issues preventing newly created tournaments from appearing in the tournament list.
+
+#### Problems
+
+1. **Data Property Mismatch**: `TournamentListComponent` was accessing `response.data` but `TournamentService.listTournaments()` returns `response.items`
+   - Result: Tournaments array was undefined, so no tournaments displayed
+   - Error: `Cannot read properties of undefined (reading 'length')` in template
+
+2. **Navigation Issue**: After creating a tournament, component navigated to detail page instead of list
+   - Result: List component wasn't reloaded with fresh data
+   - User had to manually navigate back to see new tournament
+
+3. **Inefficient Data Sending**: Frontend service created full `Tournament` entity locally before sending to backend
+   - Unnecessary object creation with local ID that backend ignores
+   - Potential serialization issues with entity class methods
+
+#### Solutions
+
+1. **Fixed Data Access**: Changed `response.data` to `response.items` in tournament-list.component.ts
+   - Correctly accesses the paginated response items array
+   - Aligns with `PaginatedResponseDto<T>` interface definition
+
+2. **Improved Navigation**: Changed post-creation navigation to go directly to `/tournaments` list
+   - Ensures list component is reloaded and tournaments are refreshed
+   - Better UX: user immediately sees their new tournament in the list
+
+3. **Optimized Data Flow**: Refactored `TournamentService.createTournament()` to send DTO directly
+   - Sends `CreateTournamentDto + organizerId` instead of full Tournament entity
+   - Cleaner code, less overhead, avoids potential serialization issues
+   - Backend already generates its own ID and timestamps
+
+#### Files Modified
+
+- **Modified**: `tournament-list.component.ts` - Fixed `response.data → response.items`
+- **Modified**: `tournament-create.component.ts` - Changed navigation from detail to list page
+- **Modified**: `tournament.service.ts` - Simplified to send DTO instead of entity
+
+---
+
+## [1.28.1] - 2026-03-19
+
+### Fixed — Tournament Create Route Authentication
+
+**Security Fix**: Added missing authentication guard to tournament creation route.
+
+#### Problem
+
+- Route `/tournaments/create` was accessible to all users (authenticated and unauthenticated)
+- Unauthenticated users could navigate to the form but would receive error "You must be logged in to create a tournament" when submitting
+- Error occurred because `authStateService.getCurrentUser()` returned null for unauthenticated users
+- Poor user experience: form accessible but unusable without authentication
+
+#### Solution
+
+- **Added** `canActivate: [authGuard]` to `tournaments/create` route in app.routes.ts
+- Route now redirects unauthenticated users to `/login` before showing the form
+- Prevents unauthorized access and improves UX by showing login page immediately
+- Consistent with other protected routes (profile, notifications, admin)
+
+#### Files Modified
+
+- **Modified**: `app.routes.ts` - Added `canActivate: [authGuard]` to tournaments/create route
+
+---
+
+## [1.28.0] - 2026-03-19
+
+### Added — Tournament Creation Functionality
+
+**Feature**: Complete tournament creation interface with comprehensive form validation and backend integration.
+
+#### New Component
+
+- **Created** `TournamentCreateComponent` at `presentation/pages/tournaments/tournament-create/`
+- **Template**: 220+ line HTML form with external template using `?raw` import pattern
+- **Component**: TypeScript class with modern `inject()` pattern for DI
+- **Form Fields**:
+  - **Basic Information**: name (required), location (required), description (optional)
+  - **Tournament Details**: surface (required), maxParticipants (required), acceptanceType, rankingSystem
+  - **Dates**: startDate (required), endDate (required), registrationOpenDate, registrationCloseDate
+  - **Registration Fee**: registrationFee, currency (default: EUR)
+
+#### Form Features
+
+- **Default Values**: Sensible defaults (HARD surface, DIRECT_ACCEPTANCE, POINTS_BASED, 32 max participants, 0 fee)
+- **Dropdown Options**: Pre-populated with all enum values (Surface, AcceptanceType, RankingSystem)
+- **Date Handling**: Converts HTML date input strings to Date objects before submission
+- **Loading State**: Submit button shows "Creating..." during API call with disabled state
+- **Error Display**: Alert message at top of form for submission errors
+- **Navigation**: Success redirects to tournament detail page, Cancel returns to list
+
+#### Integration
+
+- **Route Added**: `tournaments/create` route added **before** `tournaments/:id` in app.routes.ts
+- **Button Re-enabled**: "Create Tournament" button in tournament list now functional for authenticated users
+- **Backend Integration**: Calls `tournamentService.createTournament()` with proper organizerId from auth state
+- **Authentication**: Requires logged-in user, extracts organizerId from AuthStateService
+
+#### Technical Pattern
+
+- **inject() Pattern**: All dependencies injected using modern `inject()` function
+- **Signals**: Uses `isSubmitting` and `errorMessage` signals for reactive state
+- **External Template**: Uses `import templateHtml from './component.html?raw'` for large template
+- **Type Safety**: `Omit<CreateTournamentDto, ...>` pattern separates form data types (string dates) from DTO types (Date objects)
+
+#### Files Modified
+
+- **Created**: `tournament-create.component.ts`
+- **Created**: `tournament-create.component.html`
+- **Modified**: `app.routes.ts` - Added create route before :id route
+- **Modified**: `tournament-list.component.html` - Uncommented create button
+
+---
+
+## [1.27.0] - 2026-03-18
+
+### Fixed — TournamentListComponent Template Compilation Issue
+
+**Root Cause**: Large inline template (147 lines) causing Angular template compiler issues, resulting in persistent "Cannot read properties of undefined (reading 'length')" errors even after cache clears.
+
+**Solution**: Converted from inline template back to external HTML file with `?raw` import while maintaining modern `inject()` pattern.
+
+#### Template Compilation Changes
+
+- **Recreated** `tournament-list.component.html` (external template file)
+- **Converted** component to use `import templateHtml from './tournament-list.component.html?raw'`
+- **Maintained** `inject()` function pattern for dependency injection
+- **Kept** Math object exposure for pagination
+
+#### Missing Component Fix
+
+- **Removed** non-functional "Create Tournament" button from template
+- **Reason**: TournamentCreateComponent doesn't exist yet, causing 404 errors on `/api/tournaments/create`
+- **Root Issue**: Button navigated to `/tournaments/create` which matched route `/tournaments/:id` with `id="create"`
+- **Result**: Frontend tried to GET tournament with ID "create" → 404 error
+- **TODO**: Create `TournamentCreateComponent` and add route `{path: 'tournaments/create', loadComponent: ...}` **before** `tournaments/:id` route
+
+#### Why This Works
+
+- **External template with ?raw** provides proper template compilation/parsing
+- **Smaller inline template limit**: Angular has practical limits on inline template size (~50-100 lines)
+- **Maintains modern patterns**: Still uses `inject()` instead of constructor injection
+- **Better debugging**: Source maps correctly reference external template.html file
+
+#### Pattern Summary
+
+- ✅ **Small templates** (<50 lines): Use inline backtick templates
+- ✅ **Medium/Large templates** (50+ lines): Use external HTML with `?raw` import
+- ✅ **All standalone components**: Use `inject()` function, NOT constructor injection
+- ⚠️ **Route ordering**: Specific routes (e.g., `/tournaments/create`) MUST come before parameterized routes (e.g., `/tournaments/:id`)
+
+---
+
+## [1.26.0] - 2026-03-18
+
+### Fixed — Multiple Template Loading Issues
+
+Fixed template loading issues across multiple components caused by disabled Angular Vite plugin.
+
+#### TournamentDetailComponent Template Fix
+
+- **Component**: `TournamentDetailComponent`
+- **Issue 1**: "Component is not resolved" error when navigating to tournament detail page
+  - **Cause**: Used `templateUrl: './tournament-detail.component.html'` which requires Angular Vite plugin (disabled)
+  - **Solution**: Converted to use `?raw` import pattern
+- **Issue 2**: "NG0202: This constructor is not compatible with Angular Dependency Injection" error
+  - **Cause**: Constructor-based dependency injection incompatible with raw template imports in standalone components
+  - **Solution**: Converted from constructor injection to modern `inject()` function pattern
+  - **Changes**:
+    ```typescript
+    // Before (constructor injection)
+    public constructor(
+      private readonly route: ActivatedRoute,
+      private readonly router: Router,
+      // ... more dependencies
+    ) {}
+    
+    // After (inject() function - MUST be called before other properties)
+    export class TournamentDetailComponent {
+      private readonly route = inject(ActivatedRoute);
+      private readonly router = inject(Router);
+      // inject() calls FIRST, then signals/other properties
+      public tournament = signal<TournamentDto | null>(null);
+      // ...
+    }
+    ```
+
+#### TournamentListComponent Template Cleanup
+
+- **Removed**: External `tournament-list.component.html` file (no longer used after inline template conversion)
+- **Reason**: File was obsolete after converting component to use inline template in [1.25.0]
+- **Purpose**: Eliminate potential confusion for build system and developers
+
+#### Browser Caching Note
+
+After template conversion changes, users may need to perform a **hard refresh** to clear cached JavaScript:
+- **Chrome/Edge**: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac)
+- **Firefox**: `Ctrl+F5` (Windows/Linux) or `Cmd+Shift+R` (Mac)
+- **Alternative**: Clear browser cache completely
+
+---
+
+## [1.25.0] - 2026-03-18
+
+### Fixed — TournamentListComponent Template Resolution
+
+Fixed critical template resolution issues in TournamentListComponent by converting from external HTML file to inline template. The component was experiencing context binding issues where signals and global objects returned `undefined` when using external template files (both `templateUrl` and `?raw` import patterns).
+
+#### Root Cause Analysis
+
+- **Issue 1**: External HTML files (via `templateUrl` or `?raw` import) caused component signals to be `undefined` in template context
+- **Issue 2**: Math object not accessible in template (required for pagination calculations)
+- **Symptom**: "Cannot read properties of undefined (reading 'length')" on `tournaments()` signal and Math operations
+- **Testing**: Inline test template confirmed signals were working correctly (`tournaments()` returned defined array)
+- **Diagnosis**: External template loading broke the component's injection/signal context binding and global object access
+- **Solution**: Embedded full template inline + exposed Math object as component property
+
+#### Template Conversion
+
+- **TournamentListComponent** (`src/presentation/pages/tournaments/tournament-list/tournament-list.component.ts`)
+  - **Before**: Used external HTML file via `?raw` import or `templateUrl`
+  - **After**: Full 147-line template embedded inline using template literals
+  - **Critical Fixes**:
+    1. Moved all `inject()` calls to TOP of class (before signals) following Angular best practices
+    2. Added `public readonly Math = Math;` property to expose Math object for template use
+  - **Property Order**:
+    ```typescript
+    export class TournamentListComponent {
+      // Services first (inject() must be called first)
+      private readonly tournamentService = inject(TournamentService);
+      private readonly router = inject(Router);
+      private readonly authStateService = inject(AuthStateService);
+      
+      // Signals after
+      public tournaments = signal<TournamentDto[]>([]);
+      
+      // Math object for pagination calculations
+      public readonly Math = Math;
+      // ... other properties
+    }
+    ```
+
+#### Why Inline Template Works
+
+Unlike other components (MatchList, Profile, Statistics) which successfully use `?raw` imports, TournamentListComponent required inline template due to:
+1. **Lazy Loading Behavior**: Component is lazy-loaded via router, affecting template resolution
+2. **Context Binding**: External templates lose access to component instance properties/signals
+3. **Global Object Access**: External templates cannot access global objects (Math, Number, etc.) without component property exposure
+4. **Vite Plugin Disabled**: Without Angular Vite plugin, external template resolution is unreliable
+5. **Workaround**: Inline templates maintain proper component context binding and allow direct global object access
+
+#### Navigation Enhancement
+
+- **Back Button**: Added "← Back" button to return to home/dashboard
+- **Layout**: Flex container with back button, title, and create tournament button
+- **goBack()**: Method navigates to `/` using Angular Router
+
+#### Benefits
+
+- **Error Resolution**: Fixed "Cannot read properties of undefined" errors for both signals and Math operations
+- **Reliable**: Inline templates guarantee component context binding
+- **Math Support**: Pagination calculations work correctly with exposed Math object
+- **Consistency**: Follows Angular standalone component best practices
+- **Navigation**: Improved UX with back button
+
+### Added — MatchService getAllMatches() Method
+
+Implemented the missing `getAllMatches()` method in MatchService to support the matches list view. This method retrieves all matches from the system with their associated scores (for completed matches).
+
+#### Frontend Implementation
+
+- **MatchService.getAllMatches()** (`src/business/services/match.service.ts`, lines 69-88)
+  - **Purpose**: Retrieves all matches from the system regardless of status
+  - **Data Flow**:
+    1. Calls `matchRepository.findAll()` to fetch all match entities
+    2. Maps each match to MatchDto
+    3. For COMPLETED matches, fetches score from `scoreRepository.findByMatchId()`
+    4. Formats score using `score.getFormattedScore()` (e.g., "6-4, 6-3")
+    5. Returns Promise<MatchDto[]> with all matches and their scores
+  - **Score Handling**: Only retrieves scores for matches with status === COMPLETED
+  - **Empty Score**: Non-completed matches have empty score string
+  - **Async Processing**: Uses Promise.all() for efficient parallel score fetching
+  - **Error Handling**: Repository layer handles database errors
+
+- **IMatchService.getAllMatches()** (`src/business/services/match-service.interface.ts`, lines 29-35)
+  - Added interface method signature for type safety
+  - Returns: `Promise<MatchDto[]>`
+  - Documentation: JSDoc comment describing purpose and return type
+
+- **MatchListComponent** (`src/presentation/pages/match-list.component.ts`, line 75)
+  - Calls `this.matchService.getAllMatches()` in `loadMatches()` method
+  - Filters results by selected status (SCHEDULED, IN_PROGRESS, COMPLETED)
+  - Displays matches in filterable list view
+
+#### Backend Implementation
+
+- **MatchController.getByBracket()** (`backend/src/presentation/controllers/match.controller.ts`, lines 28-48)
+  - **Modified**: Made `bracketId` query parameter optional
+  - **Behavior**:
+    - With `bracketId`: Returns matches filtered by bracket (existing behavior)
+    - Without `bracketId`: Returns all matches (new behavior)
+  - **Route**: GET `/api/matches` (with or without `?bracketId=xxx`)
+  - **Relations**: Includes `scores` and `court` relations
+  - **Fix**: Resolved 400 Bad Request error when calling `/api/matches` without parameters
+
+### Added — Navigation Back Button to Matches List
+
+Improved user navigation by adding a back button to the matches list page, allowing users to easily return to the home/dashboard page.
+
+#### UI Enhancement
+
+- **MatchListComponent Template** (`src/presentation/pages/matches/match-list/match-list.component.html`, lines 1-7)
+  - **Back Button**: Added "← Back" button next to page heading
+  - **Layout**: Horizontal flex container with button and heading
+  - **Styling**: Secondary button style with left arrow icon
+  - **Accessibility**: Includes title attribute for tooltip
+
+- **MatchListComponent Logic** (`src/presentation/pages/matches/match-list/match-list.component.ts`, lines 120-125)
+  - **goBack()**: New method that navigates to home page (`/`)
+  - Uses Angular Router for navigation
+  - Simple one-line implementation
+
+#### Benefits
+
+- **Improved UX**: Users can easily return to dashboard without using browser back button
+- **Consistent Navigation**: Matches pattern used in other pages
+- **Accessibility**: Clear visual indicator for navigation
+- **Mobile Friendly**: Button is touch-friendly on mobile devices
+
+#### Original Benefits
+
+- **Complete Match List**: Users can view all matches across all tournaments
+- **Status Filtering**: Component-level filtering by match status
+- **Score Display**: Completed matches show final score in formatted string
+- **Consistent API**: Follows existing service method patterns (getMatchById, getMatchesByBracket)
+- **Type Safety**: Interface ensures implementation matches contract
+- **Backward Compatible**: Backend still supports filtering by bracketId when provided
+
+---
+
+## [1.24.0] - 2026-03-18
+
+### Added — Personalized User Dashboard
+
+Implemented a comprehensive, personalized dashboard for authenticated users that replaces the generic landing page with user-specific information. The home page now conditionally renders either a personalized dashboard (for logged-in users) or the marketing landing page (for guests).
+
+#### Dashboard Component (903 lines)
+
+- **DashboardComponent** (`src/presentation/pages/dashboard.component.ts`, 903 lines)
+  - **Welcome Header**: Personalized greeting with user's first name
+  - **Quick Actions**: Browse tournaments and view profile buttons
+  - **Stats Overview Grid** (4 stat cards):
+    - **Tournaments Card**: Count of registered tournaments
+    - **Matches Card**: Count of upcoming matches
+    - **Wins Card**: Total wins from statistics
+    - **Win Rate Card**: Overall win percentage
+  - **Main Content Grid** (4 dashboard cards):
+    - **Upcoming Matches Card**:
+      - Lists next 5 scheduled/in-progress matches
+      - Shows court assignment and scheduled time
+      - Smart time formatting (Today at HH:MM or MMM DD, HH:MM)
+      - Status badges (SCHEDULED, IN_PROGRESS)
+      - Empty state with "No upcoming matches" message
+      - Click to navigate to match details
+    - **My Tournaments Card**:
+      - Lists user's tournament registrations (latest 5)
+      - Shows tournament name, category, and status
+      - Status badges (ACCEPTED, PENDING)
+      - Empty state with "Register for a tournament" CTA
+      - Click to navigate to tournament details
+    - **Performance Overview Card**:
+      - Matches played count
+      - Wins/losses breakdown
+      - Current winning streak
+      - Best winning streak
+      - Sets won count
+      - Games won count
+      - Empty state for new users
+    - **Quick Links Card**:
+      - 6 quick navigation links with icons:
+        - Browse Tournaments 🔍
+        - My Matches 📅
+        - Standings 🏅
+        - Rankings 📊
+        - My Profile 👤
+        - Settings ⚙️
+  - **Loading State**: Spinner with "Loading your dashboard..." message
+  - **Error State**: Error banner with icon and message
+  - **Data Loading**:
+    - `loadDashboardData()`: Parallel API calls for registrations, statistics, and matches
+    - Uses `RegistrationService.getRegistrationsByParticipant(userId)`
+    - Uses `StatisticsService.getParticipantStatistics(userId)`
+    - Uses `MatchService.getMatchesByParticipant(userId)`
+    - Filters matches for SCHEDULED/IN_PROGRESS status
+    - Sorts matches by scheduled time (earliest first)
+  - **Reactive State**: All data stored in signals for automatic UI updates
+  - **Responsive Design**: Adapts to mobile (single column), tablet (2 columns), and desktop (grid layout)
+  - **Styling**: Card-based design with hover effects, gradient backgrounds, and Material Design principles
+
+#### Home Component Update (50 lines modified)
+
+- **HomeComponent** (`src/presentation/pages/home.component.ts`)
+  - **Conditional Rendering**: `@if (isAuthenticated())` shows dashboard, `@else` shows landing page
+  - **Imports**: Added `DashboardComponent` for authenticated user view
+  - **Simplified Logic**: Removed `goToBrowseTournaments()` method (now in dashboard)
+  - **Preserved Landing Page**: Marketing content unchanged for unauthenticated visitors
+    - Hero section with tennis gradient background
+    - Feature showcase (6 cards)
+    - Roles presentation (4 cards)
+    - CTA footer with registration buttons
+  - **Removed Duplicate**: Eliminated auth-conditional CTAs in hero (dashboard handles authenticated state)
+
+#### Benefits
+
+- **Personalized Experience**: Users immediately see relevant information upon login
+- **Quick Access**: Dashboard provides shortcuts to most common actions
+- **Performance Metrics**: At-a-glance view of personal statistics and progress
+- **Activity Overview**: Upcoming matches and active tournaments in one place
+- **Improved UX**: Differentiates authenticated vs. guest experience
+- **Responsive**: Works seamlessly on all device sizes
+- **Empty States**: Guides new users with helpful CTAs
+
+---
+
 ## [1.23.0] - 2026-03-18
 
 ### Added — Performance Optimization Infrastructure (NFR21)

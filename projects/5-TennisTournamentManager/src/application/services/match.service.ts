@@ -11,13 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {IMatchService} from '../interfaces/match-service.interface';
 import {RecordResultDto, MatchDto, UpdateMatchStatusDto} from '../dto';
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
 import {ScoreRepositoryImpl} from '@infrastructure/repositories/score.repository';
-import {IStandingService} from '../interfaces/standing-service.interface';
-import {INotificationService} from '../interfaces/notification-service.interface';
+import {StandingService} from './standing.service';
+import {NotificationService} from './notification.service';
 import {Match} from '@domain/entities/match';
 import {Score} from '@domain/entities/score';
 import {MatchStatus} from '@domain/enumerations/match-status';
@@ -29,20 +29,10 @@ import {generateId} from '@shared/utils';
  */
 @Injectable({providedIn: 'root'})
 export class MatchService implements IMatchService {
-  /**
-   * Creates a new MatchService instance.
-   *
-   * @param matchRepository - Match repository for data access
-   * @param scoreRepository - Score repository for score data access
-   * @param standingService - Standing service for updating standings
-   * @param notificationService - Notification service for match notifications
-   */
-  public constructor(
-    private readonly matchRepository: MatchRepositoryImpl,
-    private readonly scoreRepository: ScoreRepositoryImpl,
-    private readonly standingService: IStandingService,
-    private readonly notificationService: INotificationService,
-  ) {}
+  private readonly matchRepository = inject(MatchRepositoryImpl);
+  private readonly scoreRepository = inject(ScoreRepositoryImpl);
+  private readonly standingService = inject(StandingService);
+  private readonly notificationService = inject(NotificationService);
 
   /**
    * Retrieves a match by its ID.
@@ -73,6 +63,25 @@ export class MatchService implements IMatchService {
     
     // Map to DTO
     return this.mapMatchToDto(match, scoreString);
+  }
+
+  /**
+   * Retrieves all matches from the system.
+   *
+   * @returns List of all matches
+   */
+  public async getAllMatches(): Promise<MatchDto[]> {
+    const matches = await this.matchRepository.findAll();
+    return Promise.all(matches.map(async m => {
+      let scoreString = '';
+      if (m.status === MatchStatus.COMPLETED) {
+        const score = await this.scoreRepository.findByMatchId(m.id);
+        if (score) {
+          scoreString = score.getFormattedScore();
+        }
+      }
+      return this.mapMatchToDto(m, scoreString);
+    }));
   }
 
   /**

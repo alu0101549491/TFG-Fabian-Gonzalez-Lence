@@ -11,12 +11,12 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {IAuthorizationService} from '../interfaces/authorization-service.interface';
 import {UserRole} from '@domain/enumerations/user-role';
-import {IUserRepository} from '@domain/repositories/user-repository.interface';
-import {ITournamentRepository} from '@domain/repositories/tournament-repository.interface';
-import {IBracketRepository} from '@domain/repositories/bracket-repository.interface';
+import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
+import {TournamentRepositoryImpl} from '@infrastructure/repositories/tournament.repository';
+import {BracketRepositoryImpl} from '@infrastructure/repositories/bracket.repository';
 
 /**
  * Authorization service implementation.
@@ -24,18 +24,9 @@ import {IBracketRepository} from '@domain/repositories/bracket-repository.interf
  */
 @Injectable({providedIn: 'root'})
 export class AuthorizationService implements IAuthorizationService {
-  /**
-   * Creates a new AuthorizationService instance.
-   *
-   * @param userRepository - User repository for user data access
-   * @param tournamentRepository - Tournament repository for tournament data access
-   * @param bracketRepository - Bracket repository for bracket data access
-   */
-  public constructor(
-    private readonly userRepository: IUserRepository,
-    private readonly tournamentRepository?: ITournamentRepository,
-    private readonly bracketRepository?: IBracketRepository,
-  ) {}
+  private readonly userRepository = inject(UserRepositoryImpl);
+  private readonly tournamentRepository = inject(TournamentRepositoryImpl);
+  private readonly bracketRepository = inject(BracketRepositoryImpl);
 
   /**
    * Checks whether a user has a specific role.

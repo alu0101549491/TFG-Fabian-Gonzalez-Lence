@@ -1,11 +1,16 @@
 <div class="container p-lg">
-  <div class="flex justify-between items-center mb-lg">
-    <h1>Tournaments</h1>
-    @if (isAuthenticated()) {
-      <button class="btn btn-primary" routerLink="/tournaments/create">
-        Create Tournament
-      </button>
-    }
+  <div class="flex items-center gap-md mb-lg">
+    <button class="btn btn-secondary" (click)="goBack()" title="Go back">
+      ← Back
+    </button>
+    <div class="flex justify-between items-center" style="flex: 1;">
+      <h1 class="m-0">Tournaments</h1>
+      @if (isAuthenticated()) {
+        <button class="btn btn-primary" routerLink="/tournaments/create">
+          Create Tournament
+        </button>
+      }
+    </div>
   </div>
 
   <!-- Filters Section -->

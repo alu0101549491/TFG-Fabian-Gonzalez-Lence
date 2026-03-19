@@ -27,6 +27,13 @@ export interface IMatchService {
   getMatchById(matchId: string): Promise<MatchDto>;
 
   /**
+   * Retrieves all matches from the system.
+   *
+   * @returns List of all matches
+   */
+  getAllMatches(): Promise<MatchDto[]>;
+
+  /**
    * Retrieves all matches for a bracket.
    *
    * @param bracketId - ID of the bracket

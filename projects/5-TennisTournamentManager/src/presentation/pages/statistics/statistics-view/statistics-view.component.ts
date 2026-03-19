@@ -11,12 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, RouterModule} from '@angular/router';
 import {StatisticsService} from '@application/services';
 import {type StatisticsDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import templateHtml from './statistics-view.component.html?raw';
 
 /**
  * StatisticsViewComponent displays player and tournament statistics.
@@ -25,10 +26,15 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
   selector: 'app-statistics-view',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './statistics-view.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class StatisticsViewComponent implements OnInit {
+  /** Services */
+  private readonly route = inject(ActivatedRoute);
+  private readonly statisticsService = inject(StatisticsService);
+  private readonly authStateService = inject(AuthStateService);
+
   /** Statistics data */
   public statistics = signal<StatisticsDto | null>(null);
 
@@ -37,19 +43,6 @@ export class StatisticsViewComponent implements OnInit {
 
   /** Error message */
   public errorMessage = signal<string | null>(null);
-
-  /**
-   * Creates an instance of StatisticsViewComponent.
-   *
-   * @param route - Activated route to get participant ID
-   * @param statisticsService - Statistics service for data operations
-   * @param authStateService - Auth state service for current user
-   */
-  public constructor(
-    private readonly route: ActivatedRoute,
-    private readonly statisticsService: StatisticsService,
-    private readonly authStateService: AuthStateService,
-  ) {}
 
   /**
    * Initializes component and loads statistics.

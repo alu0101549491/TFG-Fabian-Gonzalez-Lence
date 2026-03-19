@@ -11,12 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {TournamentService, RegistrationService} from '@application/services';
 import {type TournamentDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import templateHtml from './tournament-detail.component.html?raw';
 
 /**
  * TournamentDetailComponent displays comprehensive information about a tournament.
@@ -26,10 +27,17 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
   selector: 'app-tournament-detail',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './tournament-detail.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class TournamentDetailComponent implements OnInit {
+  /** Services - inject() must be called before other properties */
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly tournamentService = inject(TournamentService);
+  private readonly registrationService = inject(RegistrationService);
+  private readonly authStateService = inject(AuthStateService);
+
   /** Tournament data */
   public tournament = signal<TournamentDto | null>(null);
 
@@ -44,23 +52,6 @@ export class TournamentDetailComponent implements OnInit {
 
   /** Tournament ID from route */
   private tournamentId: string | null = null;
-
-  /**
-   * Creates an instance of TournamentDetailComponent.
-   *
-   * @param route - Activated route to get tournament ID
-   * @param router - Router for navigation
-   * @param tournamentService - Tournament service for data operations
-   * @param registrationService - Registration service for checking status
-   * @param authStateService - Auth state service for user info
-   */
-  public constructor(
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly tournamentService: TournamentService,
-    private readonly registrationService: RegistrationService,
-    private readonly authStateService: AuthStateService,
-  ) {}
 
   /**
    * Initializes component and loads tournament data.
