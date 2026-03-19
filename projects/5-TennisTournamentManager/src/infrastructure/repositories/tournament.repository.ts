@@ -109,4 +109,15 @@ export class TournamentRepositoryImpl implements ITournamentRepository {
     const response = await this.httpClient.get<Tournament[]>('/tournaments/active');
     return response;
   }
+
+  /**
+   * Updates the status of a tournament.
+   * @param id - The tournament identifier
+   * @param status - The new status
+   * @returns Promise resolving to the updated tournament
+   */
+  public async updateStatus(id: string, status: TournamentStatus): Promise<Tournament> {
+    const response = await this.httpClient.put<Tournament>(`/tournaments/${id}/status`, {status});
+    return response;
+  }
 }

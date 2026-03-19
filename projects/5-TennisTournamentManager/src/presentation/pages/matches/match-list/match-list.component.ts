@@ -19,6 +19,7 @@ import {MatchService} from '@application/services';
 import {type MatchDto} from '@application/dto';
 import {MatchStatus} from '@domain/enumerations/match-status';
 import templateHtml from './match-list.component.html?raw';
+import styles from './match-list.component.css?inline';
 
 /**
  * MatchListComponent displays a filterable list of matches.
@@ -28,7 +29,7 @@ import templateHtml from './match-list.component.html?raw';
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   template: templateHtml,
-  styles: [],
+  styles: [styles],
 })
 export class MatchListComponent implements OnInit {
   /** Services */

@@ -525,6 +525,47 @@ router.delete('/tournaments/:id', authMiddleware, roleMiddleware([UserRole.SYSTE
 
 /**
  * @swagger
+ * /tournaments/{id}/status:
+ *   put:
+ *     tags: [Tournaments]
+ *     summary: Update tournament status
+ *     description: Update the status of a tournament (TOURNAMENT_ADMIN/SYSTEM_ADMIN or tournament organizer)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [DRAFT, REGISTRATION_OPEN, REGISTRATION_CLOSED, DRAW_PENDING, IN_PROGRESS, FINALIZED, CANCELLED]
+ *     responses:
+ *       200:
+ *         description: Tournament status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Tournament'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.put('/tournaments/:id/status', authMiddleware, tournamentController.updateStatus.bind(tournamentController));
+
+/**
+ * @swagger
  * /tournaments/{id}/logo:
  *   post:
  *     tags: [Tournaments]
@@ -892,6 +933,41 @@ router.put('/matches/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN
  *         $ref: '#/components/responses/Forbidden'
  */
 router.post('/matches/:id/score', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN, UserRole.REFEREE]), matchController.submitScore.bind(matchController));
+
+/**
+ * @swagger
+ * /categories:
+ *   get:
+ *     tags: [Categories]
+ *     summary: List categories
+ *     description: Get categories for a tournament
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: tournamentId
+ *         required: true
+ *         schema:
+/**
+ * @swagger
+ * /categories/{id}:
+ *   get:
+ *     tags: [Categories]
+ *     summary: Get category by ID
+ *     description: Retrieve a single category by its unique identifier
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Category details
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.get('/categories/:id', apiCache(600), categoryController.getById.bind(categoryController));
 
 /**
  * @swagger

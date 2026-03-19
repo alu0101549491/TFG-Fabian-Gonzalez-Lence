@@ -1,83 +1,128 @@
-<div class="container p-lg">
-  <div class="flex items-center gap-md mb-lg">
-    <button class="btn btn-secondary" (click)="goBack()" title="Go back">
-      ← Back
-    </button>
-    <h1 class="m-0">Matches</h1>
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <h1 class="hero-title">🎾 Matches</h1>
+    <p class="hero-subtitle">View and track all tennis matches</p>
   </div>
+</section>
 
-  <!-- Filters -->
-  <div class="card mb-lg">
-    <div class="card-body">
-      <div class="flex gap-md items-end">
-        <div class="form-group" style="flex: 1;">
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Error Banner -->
+  @if (errorMessage()) {
+    <div class="error-container">
+      <div class="error-icon">⚠️</div>
+      <p class="error-message">{{ errorMessage() }}</p>
+    </div>
+  }
+
+  <!-- Filter Card -->
+  <div class="filter-card">
+    <div class="filter-header">
+      <div class="filter-icon">🔍</div>
+      <h2 class="filter-title">Filter Matches</h2>
+    </div>
+    <div class="filter-body">
+      <div class="filter-grid">
+        <!-- Status Filter -->
+        <div class="form-group">
           <label class="form-label">Status</label>
           <select class="form-control" [(ngModel)]="selectedStatus" (change)="applyFilter()">
-            <option [ngValue]="null">All</option>
+            <option [ngValue]="null">All Statuses</option>
             @for (status of statuses; track status) {
               <option [value]="status">{{ status }}</option>
             }
           </select>
         </div>
-        <button class="btn btn-secondary" (click)="loadMatches()">Refresh</button>
+      </div>
+      
+      <div class="filter-actions">
+        <button class="btn btn-refresh" (click)="loadMatches()">
+          <span class="btn-icon">🔄</span>
+          Refresh
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Loading -->
+  <!-- Loading State -->
   @if (isLoading()) {
-    <div class="text-center p-lg">
-      <p>Loading matches...</p>
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading matches...</p>
     </div>
   }
 
-  <!-- Error -->
-  @if (errorMessage()) {
-    <div class="alert alert-error">{{ errorMessage() }}</div>
-  }
-
-  <!-- Matches Table -->
+  <!-- Matches Grid -->
   @if (!isLoading() && matches().length > 0) {
-    <div class="card">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Participant 1</th>
-            <th>Participant 2</th>
-            <th>Status</th>
-            <th>Score</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (match of matches(); track match.id) {
-            <tr>
-              <td>{{ formatDate(match.scheduledAt) }}</td>
-              <td>{{ match.participant1Id }}</td>
-              <td>{{ match.participant2Id }}</td>
-              <td>
-                <span class="badge badge-{{ match.status.toLowerCase() }}">
-                  {{ match.status }}
-                </span>
-              </td>
-              <td>{{ match.score || '-' }}</td>
-              <td>
-                <button class="btn btn-sm btn-primary" (click)="viewMatch(match.id)">
-                  View
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+    <div class="matches-grid">
+      @for (match of matches(); track match.id) {
+        <div class="match-card" (click)="viewMatch(match.id)">
+          <!-- Match Card Header -->
+          <div class="match-card-header">
+            <div class="match-date">
+              <span class="date-icon">📅</span>
+              <span>{{ formatDate(match.scheduledAt) }}</span>
+            </div>
+            <span class="match-status-badge badge-{{ match.status.toLowerCase() }}">
+              {{ match.status }}
+            </span>
+          </div>
+
+          <!-- Match Participants -->
+          <div class="match-participants">
+            <div class="participant">
+              <div class="participant-icon">👤</div>
+              <div class="participant-info">
+                <div class="participant-label">Participant 1</div>
+                <div class="participant-name">{{ match.participant1Id }}</div>
+              </div>
+            </div>
+
+            <div class="vs-divider">
+              <span class="vs-text">VS</span>
+            </div>
+
+            <div class="participant">
+              <div class="participant-icon">👤</div>
+              <div class="participant-info">
+                <div class="participant-label">Participant 2</div>
+                <div class="participant-name">{{ match.participant2Id }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Match Score -->
+          <div class="match-score-section">
+            <div class="score-label">Score</div>
+            <div class="score-value">{{ match.score || 'Not started' }}</div>
+          </div>
+
+          <!-- Match Footer -->
+          <div class="match-card-footer">
+            <button class="match-view-btn">
+              <span>View Details</span>
+              <span class="btn-arrow">→</span>
+            </button>
+          </div>
+        </div>
+      }
     </div>
   }
 
   <!-- Empty State -->
   @if (!isLoading() && !errorMessage() && matches().length === 0) {
-    <div class="text-center p-lg">
-      <p class="text-muted">No matches found.</p>
+    <div class="empty-state">
+      <div class="empty-icon">🎾</div>
+      <h3 class="empty-title">No Matches Found</h3>
+      <p class="empty-description">
+        @if (selectedStatus) {
+          No matches with the selected filters. Try adjusting your filters.
+        } @else {
+          There are no matches yet. Matches will appear here once they are scheduled.
+        }
+      </p>
     </div>
   }
 </div>

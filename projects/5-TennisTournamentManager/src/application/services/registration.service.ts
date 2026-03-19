@@ -20,6 +20,7 @@ import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repo
 import {NotificationService} from './notification.service';
 import {Registration} from '@domain/entities/registration';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
+import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {generateId} from '@shared/utils';
 
 /**
@@ -61,7 +62,8 @@ export class RegistrationService implements IRegistrationService {
       throw new Error('Tournament not found');
     }
     
-    if (!tournament.isRegistrationOpen()) {
+    // Check if tournament is open for registration
+    if (tournament.status !== TournamentStatus.REGISTRATION_OPEN) {
       throw new Error('Tournament is not accepting registrations');
     }
     

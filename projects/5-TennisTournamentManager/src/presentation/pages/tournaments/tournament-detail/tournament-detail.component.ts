@@ -17,7 +17,12 @@ import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {TournamentService, RegistrationService} from '@application/services';
 import {type TournamentDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
-import templateHtml from './tournament-detail.component.html?raw';
+import {type Category} from '@domain/entities/category';
+import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repository';
+import {UserRole} from '@domain/enumerations/user-role';
+import {TournamentStatus} from '@domain/enumerations/tournament-status';
+import templateHtml from './tournament-detail-new.component.html?raw';
+import styles from './tournament-detail-new.component.css?raw';
 
 /**
  * TournamentDetailComponent displays comprehensive information about a tournament.
@@ -28,7 +33,7 @@ import templateHtml from './tournament-detail.component.html?raw';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: templateHtml,
-  styles: [],
+  styles: [styles],
 })
 export class TournamentDetailComponent implements OnInit {
   /** Services - inject() must be called before other properties */
@@ -37,9 +42,16 @@ export class TournamentDetailComponent implements OnInit {
   private readonly tournamentService = inject(TournamentService);
   private readonly registrationService = inject(RegistrationService);
   private readonly authStateService = inject(AuthStateService);
+  private readonly categoryRepository = inject(CategoryRepositoryImpl);
 
   /** Tournament data */
   public tournament = signal<TournamentDto | null>(null);
+
+  /** Tournament categories */
+  public categories = signal<Category[]>([]);
+
+  /** Selected category ID for registration */
+  public selectedCategoryId = signal<string | null>(null);
 
   /** Loading state */
   public isLoading = signal(false);
@@ -77,6 +89,16 @@ export class TournamentDetailComponent implements OnInit {
     try {
       const tournament = await this.tournamentService.getTournamentById(this.tournamentId);
       this.tournament.set(tournament);
+      
+      // Load tournament categories
+      const categories = await this.categoryRepository.findByTournamentId(this.tournamentId);
+      this.categories.set(categories);
+      
+      // Auto-select first category if only one exists
+      if (categories.length === 1) {
+        this.selectedCategoryId.set(categories[0].id);
+      }
+      
       await this.checkRegistrationStatus();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load tournament';
@@ -144,11 +166,20 @@ export class TournamentDetailComponent implements OnInit {
       return;
     }
 
+    const categoryId = this.selectedCategoryId();
+    if (!categoryId) {
+      alert('Please select a category to register for');
+      return;
+    }
+
     try {
-      await this.registrationService.createRegistration({
-        tournamentId: this.tournamentId,
-        participantId: user.id,
-      });
+      await this.registrationService.registerParticipant(
+        {
+          tournamentId: this.tournamentId,
+          categoryId: categoryId,
+        },
+        user.id
+      );
       this.isRegistered.set(true);
       alert('Successfully registered for tournament!');
     } catch (error) {
@@ -178,5 +209,218 @@ export class TournamentDetailComponent implements OnInit {
    */
   public isAuthenticated(): boolean {
     return this.authStateService.isAuthenticated();
+  }
+
+  /**
+   * Checks if current user can edit/delete this tournament.
+   * Returns true if user is the tournament organizer or a tournament admin.
+   *
+   * @returns True if user has permission to modify tournament
+   */
+  public canManageTournament(): boolean {
+    const user = this.authStateService.getCurrentUser();
+    const tournament = this.tournament();
+    
+    if (!user || !tournament) return false;
+
+    // Tournament organizer can manage
+    if (tournament.organizerId === user.id) return true;
+
+    // System admins and tournament admins can manage
+    return user.role === UserRole.SYSTEM_ADMIN || user.role === UserRole.TOURNAMENT_ADMIN;
+  }
+
+  /**
+   * Navigates to tournament edit page.
+   */
+  public editTournament(): void {
+    if (!this.tournamentId) return;
+    void this.router.navigate(['/tournaments', this.tournamentId, 'edit']);
+  }
+
+  /**
+   * Deletes the tournament after confirmation.
+   */
+  public async deleteTournament(): Promise<void> {
+    if (!this.tournamentId) return;
+
+    const tournament = this.tournament();
+    const user = this.authStateService.getCurrentUser();
+    
+    if (!tournament || !user) return;
+
+    const confirmed = confirm(
+      `Are you sure you want to delete "${tournament.name}"? This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await this.tournamentService.deleteTournament(this.tournamentId, user.id);
+      alert('Tournament deleted successfully');
+      void this.router.navigate(['/tournaments']);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete tournament';
+      alert(message);
+    }
+  }
+
+  /**
+   * Gets the available status transitions for the current tournament status.
+   * 
+   * @returns Array of allowed status transitions
+   */
+  public getAvailableStatusTransitions(): TournamentStatus[] {
+    const tournament = this.tournament();
+    if (!tournament) return [];
+
+    const validTransitions: Record<TournamentStatus, TournamentStatus[]> = {
+      [TournamentStatus.DRAFT]: [TournamentStatus.REGISTRATION_OPEN, TournamentStatus.CANCELLED],
+      [TournamentStatus.REGISTRATION_OPEN]: [TournamentStatus.REGISTRATION_CLOSED, TournamentStatus.CANCELLED],
+      [TournamentStatus.REGISTRATION_CLOSED]: [TournamentStatus.DRAW_PENDING, TournamentStatus.CANCELLED],
+      [TournamentStatus.DRAW_PENDING]: [TournamentStatus.IN_PROGRESS, TournamentStatus.CANCELLED],
+      [TournamentStatus.IN_PROGRESS]: [TournamentStatus.FINALIZED, TournamentStatus.CANCELLED],
+      [TournamentStatus.FINALIZED]: [],
+      [TournamentStatus.CANCELLED]: [],
+    };
+
+    return validTransitions[tournament.status as TournamentStatus] || [];
+  }
+
+  /**
+   * Changes the tournament status.
+   * 
+   * @param newStatus - The new status to set
+   */
+  public async changeStatus(newStatus: TournamentStatus): Promise<void> {
+    if (!this.tournamentId) return;
+
+    const user = this.authStateService.getCurrentUser();
+    if (!user) return;
+
+    const tournament = this.tournament();
+    if (!tournament) return;
+
+    const confirmed = confirm(
+      `Change tournament status from ${tournament.status} to ${newStatus}?`
+    );
+
+    if (!confirmed) return;
+
+    this.isLoading.set(true);
+    try {
+      await this.tournamentService.updateStatus(this.tournamentId, newStatus, user.id);
+      alert('Tournament status updated successfully');
+      await this.loadTournament(); // Reload to show updated status
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update tournament status';
+      alert(message);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  /**
+   * Formats status enum for display.
+   * 
+   * @param status - Status enum value
+   * @returns Formatted status string
+   */
+  public formatStatus(status: TournamentStatus): string {
+    return status.replace(/_/g, ' ');
+  }
+
+  /**
+   * Gets a description for the current tournament status.
+   * 
+   * @returns Status description with context
+   */
+  public getStatusDescription(): string {
+    const tournament = this.tournament();
+    if (!tournament) return '';
+
+    const descriptions: Record<TournamentStatus, string> = {
+      [TournamentStatus.DRAFT]: 'Tournament is in draft mode. Setup categories and details before opening registration.',
+      [TournamentStatus.REGISTRATION_OPEN]: 'Tournament is accepting player registrations. Players can register for available categories.',
+      [TournamentStatus.REGISTRATION_CLOSED]: 'Registration period has ended. Preparing tournament draw and brackets.',
+      [TournamentStatus.DRAW_PENDING]: 'Tournament draw is being prepared. Matches will be scheduled soon.',
+      [TournamentStatus.IN_PROGRESS]: 'Tournament is currently active. Matches are being played.',
+      [TournamentStatus.FINALIZED]: 'Tournament has concluded. All matches have been completed and results are final.',
+      [TournamentStatus.CANCELLED]: 'Tournament has been cancelled and will not proceed.',
+    };
+
+    return descriptions[tournament.status as TournamentStatus] || 'Status information not available.';
+  }
+
+  /**
+   * Gets the icon/emoji for the current status.
+   * 
+   * @returns Status icon
+   */
+  public getStatusIcon(): string {
+    const tournament = this.tournament();
+    if (!tournament) return '📋';
+
+    const icons: Record<TournamentStatus, string> = {
+      [TournamentStatus.DRAFT]: '📝',
+      [TournamentStatus.REGISTRATION_OPEN]: '✅',
+      [TournamentStatus.REGISTRATION_CLOSED]: '🔒',
+      [TournamentStatus.DRAW_PENDING]: '🔀',
+      [TournamentStatus.IN_PROGRESS]: '🎾',
+      [TournamentStatus.FINALIZED]: '🏆',
+      [TournamentStatus.CANCELLED]: '❌',
+    };
+
+    return icons[tournament.status as TournamentStatus] || '📋';
+  }
+
+  /**
+   * Gets action items or next steps for the current status.
+   * 
+   * @returns Array of action items
+   */
+  public getStatusActions(): string[] {
+    const tournament = this.tournament();
+    if (!tournament) return [];
+
+    const actions: Record<TournamentStatus, string[]> = {
+      [TournamentStatus.DRAFT]: [
+        'Configure tournament categories',
+        'Set up courts and facilities',
+        'Review tournament details',
+        'Open registration when ready',
+      ],
+      [TournamentStatus.REGISTRATION_OPEN]: [
+        'Monitor player registrations',
+        'Answer player inquiries',
+        'Close registration when capacity reached or deadline passes',
+      ],
+      [TournamentStatus.REGISTRATION_CLOSED]: [
+        'Review registered participants',
+        'Prepare tournament draw',
+        'Schedule match times',
+      ],
+      [TournamentStatus.DRAW_PENDING]: [
+        'Finalize bracket assignments',
+        'Notify participants of match schedules',
+        'Begin tournament play',
+      ],
+      [TournamentStatus.IN_PROGRESS]: [
+        'Record match results',
+        'Update bracket progress',
+        'Monitor tournament schedule',
+      ],
+      [TournamentStatus.FINALIZED]: [
+        'Review tournament results',
+        'Archive tournament data',
+        'Prepare certificates or awards',
+      ],
+      [TournamentStatus.CANCELLED]: [
+        'Notify all registered participants',
+        'Process refunds if applicable',
+      ],
+    };
+
+    return actions[tournament.status as TournamentStatus] || [];
   }
 }

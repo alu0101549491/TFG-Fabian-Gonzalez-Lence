@@ -18,6 +18,7 @@ import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/
 import {type UserDto, type UpdateUserDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import templateHtml from './profile-view.component.html?raw';
+import styles from './profile-view.component.css?inline';
 
 /**
  * ProfileViewComponent displays and allows editing of user profile.
@@ -27,7 +28,7 @@ import templateHtml from './profile-view.component.html?raw';
   standalone: true,
   imports: [CommonModule, RouterModule, ReactiveFormsModule],
   template: templateHtml,
-  styles: [],
+  styles: [styles],
 })
 export class ProfileViewComponent implements OnInit {
   /** Services */

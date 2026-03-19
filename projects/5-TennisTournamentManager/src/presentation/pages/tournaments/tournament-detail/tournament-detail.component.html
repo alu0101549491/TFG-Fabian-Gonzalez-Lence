@@ -20,10 +20,50 @@
 
     <div class="card mb-lg">
       <div class="card-header">
-        <h1 class="card-title">{{ tournament()!.name }}</h1>
-        <span class="badge badge-{{ tournament()!.status.toLowerCase() }}">
-          {{ tournament()!.status }}
-        </span>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div>
+            <h1 class="card-title">{{ tournament()!.name }}</h1>
+            <span class="badge badge-{{ tournament()!.status.toLowerCase() }}">
+              {{ tournament()!.status }}
+            </span>
+          </div>
+          
+          @if (canManageTournament()) {
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <!-- Status Change Dropdown -->
+              @if (getAvailableStatusTransitions().length > 0) {
+                <div style="display: flex; gap: 0.25rem; align-items: center;">
+                  <span class="text-sm text-muted">Change status:</span>
+                  <select 
+                    class="form-select btn-sm"
+                    (change)="changeStatus($any($event.target).value)"
+                    style="width: auto; padding: 0.25rem 0.5rem;"
+                  >
+                    <option value="">Select new status</option>
+                    @for (status of getAvailableStatusTransitions(); track status) {
+                      <option [value]="status">{{ formatStatus(status) }}</option>
+                    }
+                  </select>
+                </div>
+              }
+              
+              <button 
+                class="btn btn-secondary btn-sm" 
+                (click)="editTournament()"
+                title="Edit tournament"
+              >
+                ✏️ Edit
+              </button>
+              <button 
+                class="btn btn-danger btn-sm" 
+                (click)="deleteTournament()"
+                title="Delete tournament"
+              >
+                🗑️ Delete
+              </button>
+            </div>
+          }
+        </div>
       </div>
 
       <div class="card-body">
@@ -50,14 +90,94 @@
                 @if (isRegistered()) {
                   <p class="text-success font-bold">✓ You are registered for this tournament</p>
                 } @else {
-                  <button class="btn btn-primary" (click)="registerForTournament()">
+                  <!-- Category Selection -->
+                  @if (categories().length > 0) {
+                    <div class="mb-md">
+                      <h4>Select Category</h4>
+                      <div class="form-group">
+                        @for (category of categories(); track category.id) {
+                          <label class="radio-label">
+                            <input 
+                              type="radio" 
+                              name="category" 
+                              [value]="category.id"
+                              [checked]="selectedCategoryId() === category.id"
+                              (change)="selectedCategoryId.set(category.id)"
+                            />
+                            <span class="ml-sm">
+                              {{ category.name }}
+                              @if (category.description) {
+                                <span class="text-muted"> - {{ category.description }}</span>
+                              }
+                            </span>
+                          </label>
+                        }
+                      </div>
+                    </div>
+                  }
+                  
+                  <button 
+                    class="btn btn-primary" 
+                    (click)="registerForTournament()"
+                    [disabled]="categories().length === 0 || !selectedCategoryId()"
+                  >
                     Register for Tournament
                   </button>
+                  
+                  @if (categories().length === 0) {
+                    <p class="text-warning mt-sm">No categories available for registration</p>
+                  }
                 }
               </div>
             }
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Tournament Status Information -->
+    <div class="card mb-lg" style="border-left: 4px solid var(--primary-color);">
+      <div class="card-header" style="background-color: rgba(var(--primary-rgb), 0.1);">
+        <h3 class="card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.5rem;">{{ getStatusIcon() }}</span>
+          Tournament Status: {{ formatStatus(tournament()!.status) }}
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-md">
+          <p class="text-lg">{{ getStatusDescription() }}</p>
+        </div>
+        
+        @if (getStatusActions().length > 0) {
+          <div class="mt-md">
+            <h4 class="mb-sm">
+              @if (canManageTournament()) {
+                <span>Action Items:</span>
+              } @else {
+                <span>What's Happening:</span>
+              }
+            </h4>
+            <ul class="list-disc pl-lg">
+              @for (action of getStatusActions(); track action) {
+                <li class="mb-xs">{{ action }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (getAvailableStatusTransitions().length > 0 && canManageTournament()) {
+          <div class="mt-md p-md" style="background-color: rgba(var(--info-rgb), 0.1); border-radius: 4px;">
+            <p class="text-sm font-bold mb-xs">
+              💡 Next Steps:
+            </p>
+            <p class="text-sm">
+              You can transition this tournament to:
+              @for (status of getAvailableStatusTransitions(); track status; let last = $last) {
+                <strong>{{ formatStatus(status) }}</strong>@if (!last) {<span> or </span>}
+              }
+            </p>
+          </div>
+        }
       </div>
     </div>
 

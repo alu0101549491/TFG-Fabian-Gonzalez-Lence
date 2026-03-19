@@ -1,0 +1,322 @@
+<!-- Tournament Detail Page - Redesigned -->
+<div class="tournament-detail-container">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading tournament details...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="error-banner">
+      <span class="error-icon">⚠️</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (tournament()) {
+    <!-- Hero Section -->
+    <section class="tournament-hero">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <button class="back-btn" routerLink="/tournaments">
+          <span>←</span>
+          <span>Back to Tournaments</span>
+        </button>
+
+        <div class="tournament-header">
+          <h1 class="tournament-title">{{ tournament()!.name }}</h1>
+          <div class="tournament-meta">
+            <span class="status-badge status-{{ tournament()!.status.toLowerCase() }}">
+              <span class="status-icon">{{ getStatusIcon() }}</span>
+              <span>{{ formatStatus(tournament()!.status) }}</span>
+            </span>
+            <span class="location-tag">
+              <span>📍</span>
+              <span>{{ tournament()!.location }}</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="hero-stats">
+          <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ formatDate(tournament()!.startDate) }}</div>
+              <div class="stat-label">Start Date</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🏁</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ formatDate(tournament()!.endDate) }}</div>
+              <div class="stat-label">End Date</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ tournament()!.maxParticipants }}</div>
+              <div class="stat-label">Max Players</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🎾</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ tournament()!.surface }}</div>
+              <div class="stat-label">Surface</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Management Actions (for authorized users) -->
+        @if (canManageTournament()) {
+          <div class="management-bar">
+            @if (getAvailableStatusTransitions().length > 0) {
+              <div class="status-selector">
+                <label>Change Status:</label>
+                <select 
+                  class="status-dropdown"
+                  (change)="changeStatus($any($event.target).value)"
+                >
+                  <option value="">Select new status</option>
+                  @for (status of getAvailableStatusTransitions(); track status) {
+                    <option [value]="status">{{ formatStatus(status) }}</option>
+                  }
+                </select>
+              </div>
+            }
+            
+            <div class="action-buttons">
+              <button class="action-btn edit" (click)="editTournament()">
+                <span>✏️</span>
+                <span>Edit</span>
+              </button>
+              <button class="action-btn delete" (click)="deleteTournament()">
+                <span>🗑️</span>
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Status Information Card -->
+      <section class="status-section">
+        <div class="info-card status-card">
+          <div class="card-icon-header">
+            <span class="big-icon">{{ getStatusIcon() }}</span>
+            <div>
+              <h2>Tournament Status</h2>
+              <p class="subtitle">{{ formatStatus(tournament()!.status) }}</p>
+            </div>
+          </div>
+          
+          <p class="status-description">{{ getStatusDescription() }}</p>
+          
+          @if (getStatusActions().length > 0) {
+            <div class="action-items">
+              <h3>
+                @if (canManageTournament()) {
+                  <span>📋 Action Items</span>
+                } @else {
+                  <span>📋 What's Happening</span>
+                }
+              </h3>
+              <ul class="action-list">
+                @for (action of getStatusActions(); track action) {
+                  <li>{{ action }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (getAvailableStatusTransitions().length > 0 && canManageTournament()) {
+            <div class="next-steps">
+              <span class="hint-icon">💡</span>
+              <div>
+                <strong>Next Steps:</strong>
+                <span> You can transition to: </span>
+                @for (status of getAvailableStatusTransitions(); track status; let last = $last) {
+                  <strong class="highlight">{{ formatStatus(status) }}</strong>@if (!last) {<span> or </span>}
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Two Column Layout -->
+      <div class="content-grid">
+        <!-- Left Column -->
+        <div class="left-column">
+          <!-- Tournament Information -->
+          <div class="info-card">
+            <div class="card-header">
+              <h2>📊 Tournament Details</h2>
+            </div>
+            <div class="info-list">
+              <div class="info-item">
+                <span class="info-label">Location</span>
+                <span class="info-value">{{ tournament()!.location }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Surface</span>
+                <span class="info-value">{{ tournament()!.surface }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Start Date</span>
+                <span class="info-value">{{ formatDate(tournament()!.startDate) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">End Date</span>
+                <span class="info-value">{{ formatDate(tournament()!.endDate) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Max Participants</span>
+                <span class="info-value">{{ tournament()!.maxParticipants }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Ranking System</span>
+                <span class="info-value">{{ tournament()!.rankingSystem }}</span>
+              </div>
+              @if (tournament()!.registrationFee > 0) {
+                <div class="info-item">
+                  <span class="info-label">Registration Fee</span>
+                  <span class="info-value">{{ tournament()!.registrationFee }} {{ tournament()!.currency }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="info-card">
+            <div class="card-header">
+              <h2>📝 Description</h2>
+            </div>
+            <p class="description-text">
+              {{ tournament()!.description || 'No description available.' }}
+            </p>
+          </div>
+
+          <!-- Categories -->
+          @if (categories().length > 0) {
+            <div class="info-card categories-card">
+              <div class="card-header">
+                <h2>🏆 Categories</h2>
+              </div>
+              <div class="categories-grid">
+                @for (category of categories(); track category.id) {
+                  <div class="category-chip">
+                    <span class="category-icon">🎾</span>
+                    <div class="category-info">
+                      <div class="category-name">{{ category.name }}</div>
+                      @if (category.description) {
+                        <div class="category-desc">{{ category.description }}</div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+          <!-- Registration Section -->
+          @if (isAuthenticated()) {
+            <div class="info-card registration-card">
+              @if (isRegistered()) {
+                <div class="registered-state">
+                  <span class="success-icon">✅</span>
+                  <div>
+                    <h3>You're Registered!</h3>
+                    <p>You are registered for this tournament</p>
+                  </div>
+                </div>
+              } @else {
+                <div class="card-header">
+                  <h2>📝 Register for Tournament</h2>
+                </div>
+                
+                @if (categories().length > 0) {
+                  <div class="registration-form">
+                    <label class="form-label">Select Category</label>
+                    <div class="category-selection">
+                      @for (category of categories(); track category.id) {
+                        <label class="category-radio">
+                          <input 
+                            type="radio" 
+                            name="category" 
+                            [value]="category.id"
+                            [checked]="selectedCategoryId() === category.id"
+                            (change)="selectedCategoryId.set(category.id)"
+                          />
+                          <div class="radio-content">
+                            <span class="radio-icon">🎾</span>
+                            <span class="radio-label">{{ category.name }}</span>
+                          </div>
+                        </label>
+                      }
+                    </div>
+                    
+                    <button 
+                      class="register-btn"
+                      (click)="registerForTournament()"
+                      [disabled]="!selectedCategoryId()"
+                    >
+                      <span class="btn-icon">🚀</span>
+                      <span>Register Now</span>
+                    </button>
+                  </div>
+                } @else {
+                  <div class="warning-state">
+                    <span class="warning-icon">⚠️</span>
+                    <p>No categories available for registration</p>
+                  </div>
+                }
+              }
+            </div>
+          }
+
+          <!-- Quick Actions -->
+          <div class="info-card actions-card">
+            <div class="card-header">
+              <h2>⚡ Quick Actions</h2>
+            </div>
+            <div class="action-grid">
+              <button class="action-tile" (click)="viewBracket()">
+                <span class="tile-icon">🏆</span>
+                <div class="tile-content">
+                  <h4>Bracket</h4>
+                  <p>View tournament bracket</p>
+                </div>
+              </button>
+
+              <button class="action-tile" (click)="viewMatches()">
+                <span class="tile-icon">🎾</span>
+                <div class="tile-content">
+                  <h4>Matches</h4>
+                  <p>View match schedule</p>
+                </div>
+              </button>
+
+              <button class="action-tile" (click)="viewStandings()">
+                <span class="tile-icon">📊</span>
+                <div class="tile-content">
+                  <h4>Standings</h4>
+                  <p>View current standings</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

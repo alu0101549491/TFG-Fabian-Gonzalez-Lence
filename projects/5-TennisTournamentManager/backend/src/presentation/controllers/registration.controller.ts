@@ -47,19 +47,30 @@ export class RegistrationController {
   
   /**
    * GET /api/registrations
-   * Lists registrations for a tournament.
+   * Lists registrations by tournament, participant, or category.
    */
   public async getByTournament(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {tournamentId} = req.query;
+      const {tournamentId, participantId, categoryId} = req.query;
       const registrationRepository = AppDataSource.getRepository(Registration);
       
-      if (!tournamentId) {
-        throw new AppError('tournamentId query parameter is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      // Build query conditions based on provided parameters
+      const where: any = {};
+      if (tournamentId) where.tournamentId = tournamentId as string;
+      if (participantId) where.participantId = participantId as string;
+      if (categoryId) where.categoryId = categoryId as string;
+      
+      // At least one filter must be provided
+      if (Object.keys(where).length === 0) {
+        throw new AppError(
+          'At least one query parameter required: tournamentId, participantId, or categoryId',
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_INPUT
+        );
       }
       
       const registrations = await registrationRepository.find({
-        where: {tournamentId: tournamentId as string},
+        where,
         relations: ['participant', 'category'],
       });
       

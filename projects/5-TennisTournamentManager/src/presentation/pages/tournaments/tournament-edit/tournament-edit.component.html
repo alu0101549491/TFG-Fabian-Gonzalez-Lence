@@ -2,13 +2,21 @@
 <section class="hero-section">
   <div class="hero-overlay"></div>
   <div class="hero-content">
-    <h1 class="hero-title">✨ Create Tournament</h1>
-    <p class="hero-subtitle">Set up a new tournament with comprehensive details</p>
+    <h1 class="hero-title">✏️ Edit Tournament</h1>
+    <p class="hero-subtitle">Update tournament details and settings</p>
   </div>
 </section>
 
 <!-- Main Content -->
 <div class="main-content">
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading tournament data...</p>
+    </div>
+  }
+
   <!-- Error Banner -->
   @if (errorMessage()) {
     <div class="error-container">
@@ -18,7 +26,7 @@
   }
 
   <!-- Form Container -->
-  <form (ngSubmit)="onSubmit()" class="form-container">
+  <form (ngSubmit)="onSubmit()" class="form-container" *ngIf="!isLoading()">
     <!-- Basic Information Section -->
     <div class="form-section">
       <div class="section-header">
@@ -165,28 +173,6 @@
             required
           />
         </div>
-
-        <div class="form-group">
-          <label class="form-label" for="registrationOpenDate">Registration Open</label>
-          <input
-            id="registrationOpenDate"
-            type="date"
-            class="form-input"
-            [(ngModel)]="formData.registrationOpenDate"
-            name="registrationOpenDate"
-          />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="registrationCloseDate">Registration Close</label>
-          <input
-            id="registrationCloseDate"
-            type="date"
-            class="form-input"
-            [(ngModel)]="formData.registrationCloseDate"
-            name="registrationCloseDate"
-          />
-        </div>
       </div>
     </div>
 
@@ -198,7 +184,7 @@
       </div>
       
       <div class="form-grid">
-        <div class="form-group col-span-2">
+        <div class="form-group">
           <label class="form-label" for="registrationFee">Fee Amount</label>
           <input
             id="registrationFee"
@@ -209,19 +195,6 @@
             min="0"
             step="0.01"
             placeholder="0.00"
-          />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="currency">Currency</label>
-          <input
-            id="currency"
-            type="text"
-            class="form-input"
-            [(ngModel)]="formData.currency"
-            name="currency"
-            maxlength="3"
-            placeholder="EUR"
           />
         </div>
       </div>
@@ -242,9 +215,9 @@
           }
         </span>
         @if (isSubmitting()) {
-          Creating...
+          Updating...
         } @else {
-          Create Tournament
+          Update Tournament
         }
       </button>
       <button 

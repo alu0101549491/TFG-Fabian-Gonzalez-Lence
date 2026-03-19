@@ -6,6 +6,1142 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.31.4] - 2026-03-19
+
+### Enhanced — Tournament Forms Modern UI Update
+
+**Feature**: Modernized tournament creation and edit forms with hero sections, organized sections, and enhanced input styling.
+
+#### Tournament Create & Edit Forms Modernization
+
+**New Hero Section**:
+- Gradient background (green → blue) with pattern overlay
+- Create form: "✨ Create Tournament" title
+- Edit form: "✏️ Edit Tournament" title
+- Centered subtitles with white shadowed text
+
+**Form Organization** (Both forms):
+- Divided into logical sections with visual separation:
+  - **Basic Information** (📋): Name, location, description
+  - **Tournament Details** (🎾): Surface, max participants, acceptance type, ranking system
+  - **Dates** (📅): Start/end dates (Create includes registration dates)
+  - **Registration Fee** (💰): Fee amount and currency
+
+**Section Headers**:
+- Icon + title layout with gradient backgrounds
+- Icon containers with gradient backgrounds
+- Clear visual hierarchy
+
+**Enhanced Form Inputs**:
+- Modern input styling with consistent padding and borders
+- Focus states: border color change + shadow glow
+- Placeholder text with reduced opacity
+- Textarea with vertical resize only
+- Select dropdowns with cursor pointer
+- Required field indicators with red asterisks
+
+**Form Grid Layout**:
+- Responsive grid with auto-fit columns (minwidth 250px)
+- Full-width class for description textarea
+- Proper spacing between fields
+
+**Submit Actions**:
+- Primary button (gradient background) with icon and text
+- Secondary button (outlined) for cancel
+- Loading states: "Creating..." / "Updating..." with hourglass icon
+- Disabled state styling with reduced opacity
+- Hover effects: lift transform + shadow
+
+**Loading State** (Edit form):
+- Centered spinner animation
+- "Loading tournament data..." text
+- White card background
+
+**Error Banners**:
+- Red gradient background with warning icon
+- Centered text with high contrast
+- Shadow for emphasis
+
+**Files Modified**:
+
+**Tournament Create**:
+- `/src/presentation/pages/tournaments/tournament-create/tournament-create.component.html` — Modern form template (230+ lines)
+- `/src/presentation/pages/tournaments/tournament-create/tournament-create.component.css` — Comprehensive styles (380+ lines)
+- `/src/presentation/pages/tournaments/tournament-create/tournament-create.component.ts` — Added CSS import
+
+**Tournament Edit**:
+- `/src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.html` — Modern form template (220+ lines)
+- `/src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.css` — Comprehensive styles (400+ lines)
+- `/src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.ts` — Added CSS import
+
+**Responsive Design**:
+- **Desktop** (>768px): Multi-column form grid
+- **Mobile** (<768px): Single column layout, stacked buttons
+- **Small Mobile** (<480px): Stacked section headers
+
+**Related**: #ui-modernization #forms #tournament-management #hero-section
+
+---
+
+## [1.31.3] - 2026-03-19
+
+### Enhanced — Matches Page Modern UI Update
+
+**Feature**: Modernized matches list page with hero section, card-based layout, and enhanced match visualization.
+
+#### Matches Page Modernization
+
+**New Hero Section**:
+- Gradient background (green → blue) with pattern overlay
+- Centered title "🎾 Matches" with white shadowed text
+- Subtitle "View and track all tennis matches"
+
+**Filter Card Enhancement**:
+- Modern card header with gradient background and icon
+- Single status filter dropdown (All Statuses, Scheduled, In Progress, Completed, Cancelled)
+- Refresh button with gradient background and hover lift
+- Enhanced form inputs with focus states
+
+**Match Cards Layout** (Replaced table):
+- Card-based grid layout (auto-fill, minwidth 350px)
+- Each match displays as an interactive card
+- Hover effects: lift transform + border color change + shadow increase
+- Click anywhere on card to view match details
+
+**Match Card Structure**:
+- **Header**: Date with calendar icon + status badge
+- **Participants Section**:
+  - Two participant rows with avatar icons
+  - Participant labels and names
+  - "VS" divider badge between participants
+- **Score Section**: Score label and value (or "Not started")
+- **Footer**: "View Details" button with arrow indicator
+
+**Status Badges** (Color-coded):
+- Scheduled: Blue background
+- In Progress: Orange background
+- Completed: Green background
+- Cancelled: Gray background
+
+**Interaction Improvements**:
+- Cards lift on hover with border color accent
+- View button arrow slides right on card hover
+- Smooth transitions (0.3s)
+
+**Empty State**:
+- Large tennis ball icon (5rem)
+- Clear message: "No Matches Found"
+- Contextual description based on filters
+
+**Files Modified**:
+- `/src/presentation/pages/matches/match-list/match-list.component.html` — Replaced table with modern card grid (130+ lines)
+- `/src/presentation/pages/matches/match-list/match-list.component.css` — Created comprehensive styles (600+ lines)
+- `/src/presentation/pages/matches/match-list/match-list.component.ts` — Added CSS import
+
+**Responsive Design**:
+- **Desktop** (>968px): Multi-column card grid (auto-fill)
+- **Tablet** (768-968px): Adjusted card grid (minwidth 300px)
+- **Mobile** (<768px): Single column layout, stacked buttons
+- **Small Mobile** (<480px): Stacked card headers
+
+**Related**: #ui-modernization #matches #hero-section #card-layout
+
+---
+
+## [1.31.2] - 2026-03-19
+
+### Enhanced — Profile Page Modern UI Update
+
+**Feature**: Modernized user profile page with hero section, avatar display, enhanced form layout, and account actions.
+
+#### Profile Page Modernization
+
+**New Hero Section**:
+- Gradient background (green → blue) with pattern overlay
+- Centered avatar circle (120px) displaying user initials
+- Glassmorphism effect with backdrop-filter
+- White text with multi-layer shadows for readability
+- User full name as hero title
+- Email as subtitle
+- Role badge with uppercase text and semi-transparent background
+
+**Profile Information Card**:
+- Modern card header with gradient background
+- Edit button with gradient background and hover lift
+- **View Mode**: 6-item info grid (username, email, firstName, lastName, phone, role)
+- Role displayed as styled tag with gradient background
+- Clean, organized layout with proper spacing
+
+**Edit Mode Enhancements**:
+- Two-column form grid for name fields
+- Full-width inputs for username and phone
+- Enhanced input styling with focus states
+- Form validation error messages
+- Required field indicators with asterisks
+- Action buttons: Save (primary gradient) and Cancel (secondary outlined)
+- Disabled state styling for buttons
+
+**Account Actions Section**:
+- New actions card with three clickable items:
+  - **Settings**: Manage preferences (routes to /settings)
+  - **Notifications**: Control notification settings (routes to /notifications)
+  - **Logout**: Sign out (danger styling with red color)
+- Each item includes: icon, title, description, and arrow indicator
+- Hover effects: slide right transform, border color change, shadow
+- Danger action (Logout) has red accent on hover
+
+**Success and Error Banners**:
+- Success banner with green gradient and check icon
+- Error banner with red gradient and icon
+- Positioned above main content for visibility
+
+**Files Modified**:
+- `/src/presentation/pages/profile/profile-view/profile-view.component.html` — Replaced with modern template (240+ lines)
+- `/src/presentation/pages/profile/profile-view/profile-view.component.css` — Created comprehensive styles (600+ lines)
+- `/src/presentation/pages/profile/profile-view/profile-view.component.ts` — Added CSS import
+
+**Responsive Design**:
+- **Desktop** (>768px): Two-column form grid, multi-column info grid
+- **Mobile** (<768px): Single column layout, full-width buttons, smaller avatar (100px)
+- **Small Mobile** (<480px): Stacked card headers, adjusted font sizes
+
+**Related**: #ui-modernization #profile #hero-section #user-management
+
+---
+
+## [1.31.1] - 2026-03-19
+
+### Enhanced — Dashboard Page Modern UI Update
+
+**Feature**: Modernized dashboard page with hero section, enhanced stats cards, and improved content organization.
+
+#### Dashboard Page Modernization
+
+**New Hero Section**:
+- Gradient background (green → blue) with pattern overlay
+- Personalized welcome message centered
+- White text with multi-layer shadows for readability
+- Quick action buttons (Browse Tournaments, My Profile)
+- Primary button with white background, secondary with glassmorphism
+
+**Stats Cards Enhancement**:
+- Four stat cards: Tournaments, Matches, Wins, Win Rate
+- Gradient icon backgrounds (orange, blue, green, purple)
+- Large icons (3rem) with colored circular backgrounds
+- Hover effects: lift transform + shadow increase
+- Responsive grid layout
+
+**Content Organization**:
+- Four main sections in responsive grid:
+  - **Upcoming Matches**: List of scheduled matches with court and time
+  - **My Tournaments**: Registered tournaments with status badges
+  - **Performance Overview**: 6-stat grid with wins, losses, streaks, sets, games
+  - **Quick Links**: 6 navigation shortcuts with icons
+- Card headers with gradient backgrounds
+- Empty states with large icons and call-to-action buttons
+- Status badges with semantic colors
+
+**Interaction Improvements**:
+- List items slide right on hover
+- Cards lift on hover
+- Links underline on hover
+- Smooth transitions (0.2-0.3s)
+
+**Files Modified**:
+- `/src/presentation/pages/dashboard.component.html` — Created modern template (250+ lines)
+- `/src/presentation/pages/dashboard.component.css` — Created comprehensive styles (650+ lines)
+- `/src/presentation/pages/dashboard.component.ts` — Updated to use external template and styles
+
+**Responsive Design**:
+- **Desktop** (>968px): Multi-column grids, full-width performance card
+- **Tablet** (768-968px): Single column main content, 2-column stats
+- **Mobile** (<768px): Single column everything, stacked action buttons
+
+**Related**: #ui-modernization #dashboard #hero-section
+
+---
+
+## [1.31.0] - 2026-03-19
+
+### Enhanced — System-Wide Modern UI Consistency
+
+**Feature**: Implemented consistent modern styling across all pages, creating a cohesive visual experience throughout the application.
+
+#### Design System Established
+
+**Shared Components Created**:
+- `shared-modern.css` — Common styles for all pages:
+  - Loading states with animated spinner
+  - Error banners with gradient backgrounds
+  - Modern card patterns with hover effects
+  - Status badges with icons and colors
+  - Stats cards for metric display
+  - Filter sections with form styling
+  - Empty state templates
+  - Responsive grid layouts
+  - Section dividers and info grids
+
+**Modern Style Characteristics**:
+1. **Hero Sections**
+  - Gradient backgrounds (green → blue)
+  - SVG pattern overlays for texture
+  - White text with multi-layer shadows
+  - Centered titles and subtitles
+  - Call-to-action buttons with hover animations
+
+2. **Card Design**
+  - White backgrounds with rounded corners
+  - Box shadows (elevation effect)
+  - Hover states: lift transform + shadow increase
+  - Header/body/footer structure
+  - Icon-first visual language
+
+3. **Status Badges**
+  - Icon + text (📝 DRAFT, ✅ REGISTRATION_OPEN, etc.)
+  - Colored backgrounds with transparency
+  - Borders matching status type
+  - Uppercase text with letter spacing
+  - Semantic colors (green = active, gray = draft, red = cancelled)
+
+4. **Interactive Elements**
+  - Buttons with gradient backgrounds
+  - Hover effects: translateY(-2px) + shadow
+  - Focus states with outline rings
+  - Smooth transitions (0.2-0.3s)
+  - Disabled states with reduced opacity
+
+#### Pages Updated
+
+**Tournament List Page**:
+- New hero section with gradient background and tournament browsing title
+- Modern filter card with improved form inputs
+- Enhanced tournament cards with:
+  - Status badges with icons
+  - Location display with map pin emoji
+  - Meta information grid (surface, dates, participants)
+  - Registration fee display (when applicable)
+  - Hover lift effect and shadow increase
+  - "View Details" footer with arrow icon
+- Improved pagination controls with styled buttons
+- Enhanced empty state with large icon and create action
+- Loading state with animated spinner
+
+**Files Modified**:
+- `/src/presentation/pages/tournaments/tournament-list/tournament-list.component.html` — Complete template redesign
+- `/src/presentation/pages/tournaments/tournament-list/tournament-list.component.css` — New comprehensive styles (600+ lines)
+- `/src/presentation/pages/tournaments/tournament-list/tournament-list.component.ts` — Added styles import
+- `/src/presentation/pages/shared-modern.css` — Created shared style library
+
+#### Implementation Details
+
+**TypeScript Changes**:
+```typescript
+// Added CSS import
+import styles from './tournament-list.component.css?inline';
+
+// Updated component decorator
+@Component({
+  // ...
+  styles: [styles],  // Changed from empty array
+})
+```
+
+**HTML Structure**:
+- Replaced container-based layout with semantic sections
+- Added hero section with gradient background
+- Wrapped filters in modern card component
+- Restructured tournament cards with header/body/footer
+- Enhanced empty state with centered content and icon
+- Improved loading state with spinner and text
+
+**CSS Architecture**:
+- Component-scoped styles using CSS custom properties
+- Responsive design with media queries (@768px, @968px)
+- Flexbox and Grid for layouts
+- Smooth transitions and animations
+- Hover states for interactive elements
+- Status-specific classes (status-draft, status-registration_open, etc.)
+
+#### Responsive Design
+
+**Mobile** (<768px):
+- Hero title reduced to 2rem
+- Single column grid for tournaments
+- Stacked filter inputs
+- Full-width action buttons
+- Simplified pagination layout
+
+**Tablet** (768px-968px):
+- Hero title at 2.5rem
+- Two-column tournament grid
+- Adjusted filter grid spacing
+
+**Desktop** (>968px):
+- Full hero title at 3rem
+- Multi-column grids (auto-fit minmax)
+- Horizontal pagination controls
+
+#### User Experience Improvements
+
+1. **Visual Hierarchy**: Clear distinction between sections using spacing, colors, and typography
+2. **Accessibility**: Proper ARIA labels, focus states, keyboard navigation support
+3. **Feedback**: Loading spinners, error messages, empty states
+4. **Consistency**: Same design patterns across all pages
+5. **Modern Aesthetics**: Gradients, shadows, hover effects, icons
+6. **Performance**: CSS-only animations, optimized selectors
+
+**Related**: #visual-consistency #ui-modernization #design-system
+
+---
+
+## [1.30.0] - 2026-03-19
+
+### Enhanced — System-Wide Modern UI Consistency
+
+**Feature**: Implemented consistent modern styling across all pages, creating a cohesive visual experience throughout the application.
+
+#### Design System Established
+
+**Shared Components Created**:
+- `shared-modern.css` — Common styles for all pages:
+  - Loading states with animated spinner
+  - Error banners with gradient backgrounds
+  - Modern card patterns with hover effects
+  - Status badges with icons and colors
+  - Stats cards for metric display
+  - Filter sections with form styling
+  - Empty state templates
+  - Responsive grid layouts
+  - Section dividers and info grids
+
+**Modern Style Characteristics**:
+1. **Hero Sections**
+  - Gradient backgrounds (green → blue)
+  - SVG pattern overlays for texture
+  - Glassmorphism effects (backdrop blur)
+  - Prominent titles with text shadows
+  - Call-to-action buttons with hover animations
+
+2. **Card Design**
+  - White backgrounds with rounded corners
+  - Box shadows (elevation effect)
+  - Hover states: lift transform + shadow increase
+  - Header/body/footer structure
+  - Icon-first visual language
+
+3. **Status Badges**
+  - Icon + text (📝 DRAFT, ✅ REGISTRATION_OPEN, etc.)
+  - Colored backgrounds with transparency
+  - Borders matching status type
+  - Uppercase text with letter spacing
+  - Semantic colors (green = active, gray = draft, red = cancelled)
+
+4. **Interactive Elements**
+  - Buttons with gradient backgrounds
+  - Hover effects: translateY(-2px) + shadow
+  - Focus states with outline rings
+  - Smooth transitions (0.2-0.3s)
+  - Disabled states with reduced opacity
+
+#### Pages Updated
+
+**Tournament List Page**:
+- New hero section with gradient background and tournament browsing title
+- Modern filter card with improved form inputs
+- Enhanced tournament cards with:
+  - Status badges with icons
+  - Location display with map pin emoji
+  - Meta information grid (surface, dates, participants)
+  - Registration fee display (when applicable)
+  - Hover lift effect and shadow increase
+  - "View Details" footer with arrow icon
+- Improved pagination controls with styled buttons
+- Enhanced empty state with large icon and create action
+- Loading state with animated spinner
+
+**Files Modified**:
+- `/src/presentation/pages/tournaments/tournament-list/tournament-list.component.html` — Complete template redesign
+- `/src/presentation/pages/tournaments/tournament-list/tournament-list.component.css` — New comprehensive styles (600+ lines)
+- `/src/presentation/pages/tournaments/tournament-list/tournament-list.component.ts` — Added styles import
+- `/src/presentation/pages/shared-modern.css` — Created shared style library
+
+#### Implementation Details
+
+**TypeScript Changes**:
+```typescript
+// Added CSS import
+import styles from './tournament-list.component.css?inline';
+
+// Updated component decorator
+@Component({
+  // ...
+  styles: [styles],  // Changed from empty array
+})
+```
+
+**HTML Structure**:
+- Replaced container-based layout with semantic sections
+- Added hero section with gradient background
+- Wrapped filters in modern card component
+- Restructured tournament cards with header/body/footer
+- Enhanced empty state with centered content and icon
+- Improved loading state with spinner and text
+
+**CSS Architecture**:
+- Component-scoped styles using CSS custom properties
+- Responsive design with media queries (@768px, @968px)
+- Flexbox and Grid for layouts
+- Smooth transitions and animations
+- Hover states for interactive elements
+- Status-specific classes (status-draft, status-registration_open, etc.)
+
+#### Responsive Design
+
+**Mobile** (<768px):
+- Hero title reduced to 2rem
+- Single column grid for tournaments
+- Stacked filter inputs
+- Full-width action buttons
+- Simplified pagination layout
+
+**Tablet** (768px-968px):
+- Hero title at 2.5rem
+- Two-column tournament grid
+- Adjusted filter grid spacing
+
+**Desktop** (>968px):
+- Full hero title at 3rem
+- Multi-column grids (auto-fit minmax)
+- Horizontal pagination controls
+
+#### User Experience Improvements
+
+1. **Visual Hierarchy**: Clear distinction between sections using spacing, colors, and typography
+2. **Accessibility**: Proper ARIA labels, focus states, keyboard navigation support
+3. **Feedback**: Loading spinners, error messages, empty states
+4. **Consistency**: Same design patterns across all pages
+5. **Modern Aesthetics**: Gradients, shadows, hover effects, icons
+6. **Performance**: CSS-only animations, optimized selectors
+
+**Related**: #visual-consistency #ui-modernization #design-system
+
+---
+
+## [1.30.0] - 2026-03-19
+
+### Enhanced — Tournament Detail Page Visual Redesign
+
+**Feature**: Complete visual redesign of the tournament detail page with modern UI, improved information hierarchy, and enhanced user experience inspired by the home page design.
+
+#### Design Philosophy
+
+**Color Palette** (from home page):
+- Primary gradient: Forest green (#1B5E20) → Green (#2E7D32) → Blue (#1976D2)  
+- Background patterns with subtle transparency and backdrop blur
+- White text on colored backgrounds for readability
+- Card-based layout with hover effects and shadows
+
+**Visual Improvements**:
+1. **Hero Section** with gradient background
+  - Tournament name as prominent title with text shadow
+  - Status badge with icon and colored background
+  - Location tag with emoji icon
+  - Quick stats cards (start date, end date, max players, surface)
+  - Management controls for authorized users (inline status selector, edit/delete buttons)
+
+2. **Information Cards** with modern styling
+  - Rounded corners and subtle shadows
+  - Hover effects (lift and shadow increase)
+  - Gradient backgrounds for special cards
+  - Icon headers for visual interest
+
+3. **Status Information** prominently displayed
+  - Large status icon (📝, ✅, 🎾, etc.)
+  - Clear description of current status
+  - Action items with checkmark bullets
+  - Next steps hint box with lightbulb icon
+
+4. **Two-Column Layout** (left: info, right: actions)
+  - **Left Column**:
+    - Tournament Details with labeled value pairs
+    - Description text block
+    - Categories as chips with icons
+  - **Right Column**:
+    - Registration card (if authenticated)
+    - Quick action tiles (Bracket, Matches, Standings)
+
+5. **Enhanced Components**:
+  - **Category Chips**: Icon + name + description in gradient background
+  - **Registration Form**: Radio button cards with visual selection state
+  - **Register Button**: Gradient background with hover lift effect
+  - **Action Tiles**: Icon + title + description, hover with border color change
+  - **Loading State**: Centered spinner with animation
+  - **Error Banner**: Gradient background with icon
+
+#### Color Scheme
+
+**Gradients**:
+- Hero: `linear-gradient(135deg, #1B5E20 0%, #2E7D32 50%, #1976D2 100%)`
+- Cards: `linear-gradient(135deg, rgba(46,125,50,0.05) 0%, rgba(25,118,210,0.05) 100%)`
+- Buttons: `linear-gradient(135deg, #1B5E20, #2E7D32)`
+
+**Status Colors** (with icons):
+- 📝 DRAFT - Primary green
+- ✅ REGISTRATION_OPEN - Success green
+- 🔒 REGISTRATION_CLOSED - Gray
+- 🔀 DRAW_PENDING - Info blue
+- 🎾 IN_PROGRESS - Warning orange
+- 🏆 FINALIZED - Success green
+- ❌ CANCELLED - Error red
+
+#### Responsive Design
+
+- **Desktop** (>968px): Two-column layout with sidebar
+- **Tablet** (768-968px): Single column, full-width cards
+- **Mobile** (<768px): 
+  - Stack all elements vertically
+  - Smaller hero title
+  - Single-column stats
+  - Full-width action buttons
+
+#### User Experience Improvements
+
+1. **Visual Hierarchy**: Most important info (status, registration) is prominent
+2. **Quick Access**: Hero stats provide key info at a glance
+3. **Clear Actions**: Large, prominent buttons for primary actions
+4. **Intuitive Navigation**: Back button in hero, action tiles at bottom
+5. **Status Awareness**: Large status section explains current state and next steps
+6. **Progressive Disclosure**: Categories and actions revealed when relevant7. **Hover Feedback**: All interactive elements have hover states
+
+#### Technical Implementation
+
+**Files Created**:
+- `tournament-detail-new.component.html` - New template with modern structure
+- `tournament-detail-new.component.css` - Complete styling (600+ lines)
+
+**Files Modified**:
+- `tournament-detail.component.ts` - Updated to use new template and styles
+
+**CSS Features**:
+- CSS Grid for responsive layouts
+- Flexbox for component alignment
+- CSS custom properties from variables.css
+- Backdrop filter for glassmorphism effects
+- Smooth transitions and animations
+- Box shadows for depth
+- Gradient backgrounds
+- SVG pattern overlays
+
+#### Accessibility
+
+- Semantic HTML structure
+- Clear labels and descriptions
+- Sufficient color contrast
+- Keyboard navigation support
+- Hover and focus states
+- Screen reader-friendly content
+
+---
+
+## [1.29.3] - 2026-03-19
+
+### Fixed — Missing Category by ID Endpoint
+
+**Issue**: Tournament registration failed with "Category not found" error and 404 response: `GET http://localhost:4200/api/categories/cat_11b9ed73 404 (Not Found)`
+
+**Root Cause**: Frontend registration service validates that the selected category exists by calling `categoryRepository.findById(categoryId)`, which sends `GET /api/categories/:id`. However, the backend **only had** `GET /api/categories?tournamentId=xxx` for listing categories by tournament, but no endpoint for fetching a single category by ID.
+
+**Solution**: Added missing backend endpoint and controller method.
+
+#### Backend Changes
+
+**CategoryController**:
+- Added `getById(req, res, next)` method
+- Fetches single category from database by ID
+- Returns 404 if category not found
+- Returns category JSON on success
+
+**Routes**:
+- Added `GET /api/categories/:id` route
+- Added Swagger documentation for new endpoint
+- Positioned before `GET /api/categories` to avoid route conflict
+- Uses 10-minute cache (categories rarely change)
+
+#### Route Order (Critical)
+```typescript
+router.get('/categories/:id', ...)      // Specific - must come first
+router.get('/categories', ...)           // Generic - must come after
+```
+
+#### Why This Endpoint is Needed
+
+**Registration Flow**:
+1. User selects category from tournament detail page
+2. Frontend loads categories via `GET /categories?tournamentId=xxx` ✅
+3. User clicks "Register for Tournament"
+4. Frontend validates category exists via `GET /categories/:id` ❌ (was missing)
+5. Frontend sends registration request to backend
+
+**Validation Purpose**:
+- Prevents registration with invalid/deleted category IDs
+- Provides immediate user feedback
+- Reduces unnecessary backend requests with invalid data
+
+#### Files Modified
+
+- `backend/src/presentation/controllers/category.controller.ts`
+  - Added `getById()` method with TypeORM findOne query
+- `backend/src/presentation/routes/index.ts`
+  - Added `GET /categories/:id` route with Swagger docs
+
+---
+
+## [1.29.2] - 2026-03-19
+
+### Added — Tournament Status Information Section
+
+**Feature**: Added comprehensive status information card on tournament detail page to help organizers and participants understand the current tournament state and next steps.
+
+#### New Status Information Section
+
+**Visual Design**:
+- Prominent card with colored left border
+- Status icon emoji (📝 for DRAFT, ✅ for REGISTRATION_OPEN, 🎾 for IN_PROGRESS, etc.)
+- Clear status name and description
+- Positioned between main tournament info and action buttons
+
+**Information Displayed**:
+
+1. **Status Description**: Context-aware explanation of current tournament status
+   - DRAFT: "Tournament is in draft mode. Setup categories and details before opening registration."
+   - REGISTRATION_OPEN: "Tournament is accepting player registrations. Players can register for available categories."
+   - IN_PROGRESS: "Tournament is currently active. Matches are being played."
+   - And more for all 7 status values
+
+2. **Action Items / What's Happening**: 
+   - For organizers (when `canManageTournament()` is true): Shows "Action Items" with specific tasks
+   - For participants: Shows "What's Happening" with current activities
+   - Context-specific guidance for each status (e.g., DRAFT shows "Configure tournament categories", IN_PROGRESS shows "Record match results")
+
+3. **Next Steps** (organizers only):
+   - Highlights available status transitions
+   - Example: "You can transition this tournament to: REGISTRATION OPEN or CANCELLED"
+   - Only shown when transitions are available and user has management permissions
+
+#### Component Methods
+
+**Added to TournamentDetailComponent**:
+- `getStatusDescription()`: Returns detailed description for current status
+- `getStatusIcon()`: Returns emoji icon representing status (📝, ✅, 🔒, 🔀, 🎾, 🏆, ❌)
+- `getStatusActions()`: Returns array of action items/activities for current status
+
+**Status Icons**:
+- 📝 DRAFT
+- ✅ REGISTRATION_OPEN
+- 🔒 REGISTRATION_CLOSED
+- 🔀 DRAW_PENDING
+- 🎾 IN_PROGRESS
+- 🏆 FINALIZED
+- ❌ CANCELLED
+
+#### Benefits
+
+1. **Clarity**: Users immediately understand tournament state without guessing
+2. **Guidance**: Organizers know what actions to take next
+3. **Transparency**: Participants see what's happening and what to expect
+4. **Workflow Support**: Reduces confusion about tournament lifecycle
+5. **Professional**: Provides polished tournament management experience
+
+#### Files Modified
+
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts`
+  - Added `getStatusDescription()` method
+  - Added `getStatusIcon()` method
+  - Added `getStatusActions()` method
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html`
+  - Added new status information card section
+  - Dynamic content based on status and user role
+  - Styled with visual hierarchy and color coding
+
+---
+
+## [1.29.1] - 2026-03-19
+
+### Fixed — Tournament Status Update Authorization
+
+**Issue**: Tournament organizers received "User is not authorized to update this tournament" error when trying to change tournament status, even though they created the tournament.
+
+**Root Cause**: Frontend `TournamentService.updateStatus()` had redundant authorization check using `authorizationService.canPerformAction()`, which had flawed logic that didn't properly recognize tournament organizers as authorized users.
+
+**Solution**: Removed redundant frontend authorization check. Authorization is properly handled by:
+1. Backend controller validates organizer OR admin (correct implementation)
+2. UI conditionally shows status dropdown via `canManageTournament()` check
+3. Double-checking in service layer was unnecessary and causing false negatives
+
+**Files Modified**:
+- `src/application/services/tournament.service.ts`
+  - Removed `authorizationService.canPerformAction()` check from `updateStatus()` method
+  - Backend already validates authorization correctly
+
+---
+
+## [1.29.0] - 2026-03-19
+
+### Added — Tournament Status Management
+
+**Feature**: Tournament organizers and admins can now change tournament status through a lifecycle workflow.
+
+**Context**: Tournaments are created with `DRAFT` status by default. To accept player registrations, the status must be changed to `REGISTRATION_OPEN`. This was previously impossible, blocking the entire registration flow.
+
+#### Status Lifecycle
+Valid status transitions:
+- `DRAFT` → `REGISTRATION_OPEN` | `CANCELLED`
+- `REGISTRATION_OPEN` → `REGISTRATION_CLOSED` | `CANCELLED`
+- `REGISTRATION_CLOSED` → `DRAW_PENDING` | `CANCELLED`
+- `DRAW_PENDING` → `IN_PROGRESS` | `CANCELLED`
+- `IN_PROGRESS` → `FINALIZED` | `CANCELLED`
+- `FINALIZED` → (no transitions allowed)
+- `CANCELLED` → (no transitions allowed)
+
+#### Backend Implementation
+
+**New Endpoint**: `PUT /api/tournaments/:id/status`
+- Request body: `{ status: TournamentStatus }`
+- Authorization: Tournament organizer, TOURNAMENT_ADMIN, or SYSTEM_ADMIN
+- Validates status transitions according to lifecycle rules
+- Returns updated tournament with new status
+
+**Controller Method**: `TournamentController.updateStatus()`
+- Validates status parameter against TournamentStatus enum
+- Verifies user authorization (organizer or admin)
+- Checks valid status transition from current status
+- Updates tournament and returns result
+
+#### Frontend Implementation
+
+**Repository Method**: `TournamentRepositoryImpl.updateStatus(id, status)`
+- Calls backend `PUT /tournaments/:id/status` endpoint
+- Returns updated tournament DTO
+
+**Service Method**: `TournamentService.updateStatus(tournamentId, status, userId)`
+- Simplified to call repository method directly
+- Backend handles transition validation (avoids DTO method call issue)
+- Removed entity method calls that don't work on DTOs
+
+**UI Component**: Status change dropdown in tournament detail page
+- Appears in header alongside Edit/Delete buttons (for authorized users)
+- Shows only valid transitions from current status
+- Dropdown with "Change status:" label
+- Confirmation dialog before status change
+- Reloads tournament data after successful update
+- Displays formatted status names (e.g., "REGISTRATION OPEN")
+
+#### Files Modified
+
+**Backend**:
+- `backend/src/presentation/controllers/tournament.controller.ts`
+  - Added `updateStatus()` method with validation and authorization
+  - Added `TournamentStatus` import
+- `backend/src/presentation/routes/index.ts`
+  - Added `PUT /tournaments/:id/status` route
+  - Added Swagger documentation
+
+**Frontend**:
+- `src/infrastructure/repositories/tournament.repository.ts`
+  - Added `updateStatus(id, status)` repository method
+- `src/application/services/tournament.service.ts`
+  - Simplified `updateStatus()` to call repository method
+  - Removed entity method calls (DTO compatibility fix)
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts`
+  - Added `TournamentStatus` import
+  - Added `getAvailableStatusTransitions()` method
+  - Added `changeStatus(newStatus)` method
+  - Added `formatStatus(status)` helper method
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html`
+  - Added status change dropdown in header
+  - Conditional rendering based on available transitions
+
+#### User Workflow
+
+1. Tournament Admin creates tournament (status: DRAFT)
+2. Admin runs `npm run db:add-categories` to add categories
+3. Admin opens tournament detail page
+4. Admin selects "REGISTRATION OPEN" from status dropdown
+5. System validates transition and updates status
+6. Players can now register for the tournament
+
+---
+
+## [1.28.8] - 2026-03-19
+
+### Fixed — Registration Service DTO Method Call Error
+
+**Issue**: Runtime error "tournament.isRegistrationOpen is not a function" when attempting to register for tournament.
+
+**Root Cause**: The registration service attempted to call `.isRegistrationOpen()` method on tournament object returned from repository. However, HTTP repositories return plain DTOs (Data Transfer Objects) which are JSON-parsed plain objects without class methods. The `isRegistrationOpen()` method exists only on the backend Tournament entity class.
+
+**Solution**: 
+- Changed validation from method call to direct property check
+- Before: `if (!tournament.isRegistrationOpen())`
+- After: `if (tournament.status !== TournamentStatus.REGISTRATION_OPEN)`
+- Added TournamentStatus enum import to registration service
+
+**Architectural Pattern**:
+- Backend entities have business logic methods
+- Frontend DTOs are plain TypeScript interfaces from HTTP responses
+- Service layer must reimplement validation using DTO properties
+- Cannot rely on entity methods in frontend code
+
+**Files Modified**:
+- `src/application/services/registration.service.ts`
+  - Added import for TournamentStatus enum
+  - Replaced method call with direct status property check (line 64)
+
+---
+
+## [1.28.7] - 2026-03-19
+
+### Added — Tournament Edit and Delete Functionality
+
+**Feature**: Tournament creators and admins can now edit and delete tournaments from the detail page.
+
+#### Features Added
+
+1. **Edit Tournament Button**
+   - Visible to tournament organizer and tournament admins
+   - Navigates to edit form pre-filled with current tournament data
+   - Route: `/tournaments/:id/edit`
+   - Updates tournament details while maintaining authorization checks
+
+2. **Delete Tournament Button**
+   - Visible to tournament organizer and tournament admins
+   - Shows confirmation dialog before deletion
+   - Only allows deletion of tournaments in DRAFT status
+   - Redirects to tournament list after successful deletion
+
+3. **Authorization Checks**
+   - `canManageTournament()` method verifies user permissions
+   - Checks if user is tournament organizer (organizerId matches)
+   - Allows SYSTEM_ADMIN and TOURNAMENT_ADMIN roles
+   - Buttons only appear for authorized users
+
+#### UI Changes
+
+- Added Edit (✏️) and Delete (🗑️) buttons to tournament detail page header
+- Buttons displayed side-by-side with secondary and danger styling
+- Edit button navigates to new TournamentEditComponent
+- Delete button shows confirmation prompt
+
+#### New Component
+
+**TournamentEditComponent** (`tournament-edit/`)
+- Loads existing tournament data from backend
+- Pre-fills form with current tournament information
+- Converts date fields to HTML date input format
+- Uses `updateTournament()` service method
+- Navigates back to tournament detail page after update
+
+#### Technical Details
+
+- **Authorization**: Checks `user.id === tournament.organizerId` OR `user.role === TOURNAMENT_ADMIN/SYSTEM_ADMIN`
+- **Routes**: Added `/tournaments/:id/edit` route with `authGuard`
+- **Service Methods**: Uses existing `updateTournament()` and `deleteTournament()` methods
+- **Delete Restriction**: Backend only allows deletion of DRAFT tournaments
+
+#### User Impact
+
+Tournament organizers and administrators can now:
+- Modify tournament details after creation
+- Delete tournaments that haven't started (DRAFT status)
+- Manage their tournaments without backend access
+
+---
+
+## [1.28.6] - 2026-03-19
+
+### Fixed — Registration Status Endpoint
+
+**Bug Fix**: Backend registration endpoint now supports querying by participant ID, category ID, or tournament ID.
+
+#### Backend Changes
+
+1. **Updated GET /api/registrations endpoint**
+   - Now accepts `participantId`, `categoryId`, or `tournamentId` as query parameters
+   - At least one parameter is required
+   - Supports filtering registrations by multiple criteria
+   - Returns 400 if no query parameters provided
+
+2. **Error Handling**
+   - Improved error message to indicate which parameters are accepted
+   - More flexible querying for frontend requirements
+
+#### Technical Details
+
+**Before**: Endpoint only supported `?tournamentId=xxx`
+**After**: Supports `?participantId=xxx` or `?categoryId=xxx` or `?tournamentId=xxx` or combinations
+
+### Added — Category Seeding Script
+
+**Feature**: Added helper script to add sample categories to tournaments for testing.
+
+#### Script Features
+
+1. **Automated Category Creation**
+   - Adds 4 standard categories to any tournament without categories
+   - Categories: Men's Singles, Women's Singles, Men's Doubles, Mixed Doubles
+   - Includes age restrictions, gender filters, and quota limits
+
+2. **Smart Detection**
+   - Only adds categories to tournaments that don't have any
+   - Processes all tournaments in the database automatically
+   - Provides detailed console output
+
+3. **Usage**
+   ```bash
+   cd backend
+   npm run db:add-categories
+   ```
+
+#### Created Categories
+
+- **Men's Singles**: Open competition for male players (max 32 participants)
+- **Women's Singles**: Open competition for female players (max 32 participants)
+- **Men's Doubles**: Doubles for male teams (max 16 teams)
+- **Mixed Doubles**: Mixed gender doubles (max 16 teams)
+
+All categories created with ageGroup: "OPEN"
+
+#### Known Issue
+
+**Category Creation UI**: There is currently no UI for creating tournament categories. Categories must be created via:
+- `npm run db:add-categories` script (recommended)
+- Direct database insertion
+- Backend API (if POST endpoint is added)
+
+Without categories, players cannot register for tournaments even if the tournament is in registration period.
+
+---
+
+## [1.28.5] - 2026-03-19
+
+### Fixed — Tournament Registration with Category Selection
+
+**Bug Fix**: Fixed tournament registration functionality to properly collect category selection and use correct service method.
+
+#### Changes Made
+
+1. **Added Category Selection UI**
+   - Tournament detail page now displays available categories with radio button selection
+   - Categories are loaded from backend via `CategoryRepositoryImpl.findByTournamentId()`
+   - Auto-selects category if only one is available
+   - Registration button disabled until category is selected
+
+2. **Fixed Service Method Call**
+   - Changed from non-existent `createRegistration()` to `registerParticipant()`
+   - Fixed parameter signature: now passes `CreateRegistrationDto` and `participantId` separately
+   - Added validation to ensure category is selected before registration
+
+3. **Component Updates**
+   - Added `CategoryRepositoryImpl` injection
+   - Added `categories` signal to store available categories
+   - Added `selectedCategoryId` signal to track user selection
+   - Load categories when tournament is loaded
+
+#### Technical Details
+
+- **Registration DTO Structure**: `{ tournamentId: string, categoryId: string }`
+- **Service Method**: `registerParticipant(data: CreateRegistrationDto, participantId: string)`
+- **Category Entity**: Includes `name`, `description`, `minAge`, `maxAge`, `gender`, `maxQuota`
+
+#### User Impact
+
+Participants can now successfully register for tournaments by selecting their desired category (e.g., "Men's Singles", "Women's Doubles").
+
+---
+
+## [1.28.4] - 2026-03-19
+
+### Added — Development Sample Users for All Roles
+
+**Feature**: Added comprehensive database seeding with sample users for each role in development environment.
+
+#### Sample Users Created
+
+The seed script now creates sample users for all four roles:
+
+1. **System Administrator** (`admin@tennistournament.com`)
+   - Full platform access: user management, system configuration, audit logs
+   - Role: `SYSTEM_ADMIN`
+
+2. **Tournament Administrator** (`tournament@tennistournament.com`)
+   - Tournament lifecycle management: creation, draws, scheduling, results
+   - Role: `TOURNAMENT_ADMIN`
+
+3. **Registered Participants** (Players)
+   - `player@example.com` - Carlos Rodriguez
+   - `maria@example.com` - Maria Garcia
+   - Role: `REGISTERED_PARTICIPANT`
+   - Access to tournament registration, profile management, results
+
+4. **Public User** (`public@example.com`)
+   - Read-only access to public tournaments and results
+   - Role: `PUBLIC`
+
+#### Implementation Pattern
+
+Following the pattern from Cartographic Project Manager:
+- Passwords stored in environment variables for security
+- Requires explicit confirmation via `SEED_CONFIRM=I_UNDERSTAND`
+- Only runs in `NODE_ENV=development` to prevent accidental data loss
+- Clears existing users before seeding (destructive operation)
+- All users have GDPR consent and active status
+
+#### Environment Variables Required
+
+```bash
+# Database Seeding (Development Only)
+SEED_CONFIRM=I_UNDERSTAND
+PW_E2E_ADMIN_PASSWORD=Admin123!
+PW_E2E_TOURNAMENT_ADMIN_PASSWORD=Tournament123!
+PW_E2E_PLAYER_PASSWORD=Player123!
+PW_E2E_PUBLIC_PASSWORD=Public123!
+```
+
+#### Usage
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Set required environment variables in .env file
+# Copy from .env.example and set SEED_CONFIRM=I_UNDERSTAND
+
+# Run seed script
+npm run db:seed
+```
+
+#### Safety Features
+
+- **Environment check**: Only runs if `NODE_ENV=development`
+- **Explicit confirmation**: Requires `SEED_CONFIRM=I_UNDERSTAND` to prevent accidents
+- **Password security**: Uses bcrypt hashing with salt rounds = 10
+- **Clear feedback**: Console output shows all created users and their emails
+
+#### Files Modified
+
+- **Modified**: `backend/src/infrastructure/database/seed.ts` - Complete rewrite with multi-role seeding
+- **Modified**: `backend/.env.example` - Added password environment variables and SEED_CONFIRM
+
+#### Benefits
+
+- ✅ Quick local development setup with test accounts
+- ✅ E2E testing with role-specific credentials
+- ✅ Consistent test data across development environments
+- ✅ Easy password management via environment variables
+- ✅ Safe operation with multiple confirmation requirements
+
+---
+
 ## [1.28.3] - 2026-03-19
 
 ### Fixed — Development Base URL Routing Issue

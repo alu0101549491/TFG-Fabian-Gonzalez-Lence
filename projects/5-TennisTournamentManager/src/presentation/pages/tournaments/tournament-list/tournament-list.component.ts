@@ -21,6 +21,7 @@ import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {Surface} from '@domain/enumerations/surface';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import templateHtml from './tournament-list.component.html?raw';
+import styles from './tournament-list.component.css?inline';
 
 /**
  * TournamentListComponent displays a filterable, paginated list of tournaments.
@@ -31,7 +32,7 @@ import templateHtml from './tournament-list.component.html?raw';
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   template: templateHtml,
-  styles: [],
+  styles: [styles],
 })
 export class TournamentListComponent implements OnInit {
   /** Services - inject() must be called before other properties */

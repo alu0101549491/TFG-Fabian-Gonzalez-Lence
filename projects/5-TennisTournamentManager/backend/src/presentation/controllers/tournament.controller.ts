@@ -14,6 +14,7 @@
 import {Response, NextFunction} from 'express';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Tournament} from '../../domain/entities/tournament.entity';
+import {TournamentStatus} from '../../domain/enumerations/tournament-status';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
@@ -228,6 +229,90 @@ export class TournamentController {
           format: optimized.format,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PUT /api/tournaments/:id/status
+   * Updates the status of a tournament.
+   * 
+   * Validates status transitions according to tournament lifecycle:
+   * - DRAFT → REGISTRATION_OPEN | CANCELLED
+   * - REGISTRATION_OPEN → REGISTRATION_CLOSED | CANCELLED
+   * - REGISTRATION_CLOSED → DRAW_PENDING | CANCELLED
+   * - DRAW_PENDING → IN_PROGRESS | CANCELLED
+   * - IN_PROGRESS → FINALIZED | CANCELLED
+   * - FINALIZED → (no transitions allowed)
+   * - CANCELLED → (no transitions allowed)
+   * 
+   * @requires Body: { status: TournamentStatus }
+   * @requires Auth: TOURNAMENT_ADMIN or SYSTEM_ADMIN or tournament organizer
+   */
+  public async updateStatus(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const {status} = req.body;
+      const tournamentRepository = AppDataSource.getRepository(Tournament);
+
+      // Validate status parameter
+      if (!status) {
+        throw new AppError('Status is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+      }
+
+      if (!Object.values(TournamentStatus).includes(status)) {
+        throw new AppError(
+          `Invalid status. Must be one of: ${Object.values(TournamentStatus).join(', ')}`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.VALIDATION_ERROR,
+        );
+      }
+
+      // Find tournament
+      const tournament = await tournamentRepository.findOne({where: {id}});
+      if (!tournament) {
+        throw new AppError('Tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Verify authorization
+      const isAdmin = req.user?.role === 'SYSTEM_ADMIN' || req.user?.role === 'TOURNAMENT_ADMIN';
+      const isOrganizer = tournament.organizerId === req.user?.id;
+
+      if (!isAdmin && !isOrganizer) {
+        throw new AppError(
+          'Unauthorized to update tournament status',
+          HTTP_STATUS.FORBIDDEN,
+          ERROR_CODES.FORBIDDEN,
+        );
+      }
+
+      // Validate status transition
+      const validTransitions: Record<TournamentStatus, TournamentStatus[]> = {
+        [TournamentStatus.DRAFT]: [TournamentStatus.REGISTRATION_OPEN, TournamentStatus.CANCELLED],
+        [TournamentStatus.REGISTRATION_OPEN]: [TournamentStatus.REGISTRATION_CLOSED, TournamentStatus.CANCELLED],
+        [TournamentStatus.REGISTRATION_CLOSED]: [TournamentStatus.DRAW_PENDING, TournamentStatus.CANCELLED],
+        [TournamentStatus.DRAW_PENDING]: [TournamentStatus.IN_PROGRESS, TournamentStatus.CANCELLED],
+        [TournamentStatus.IN_PROGRESS]: [TournamentStatus.FINALIZED, TournamentStatus.CANCELLED],
+        [TournamentStatus.FINALIZED]: [],
+        [TournamentStatus.CANCELLED]: [],
+      };
+
+      const allowedTransitions = validTransitions[tournament.status];
+      if (!allowedTransitions.includes(status)) {
+        throw new AppError(
+          `Cannot transition from ${tournament.status} to ${status}. Allowed transitions: ${allowedTransitions.join(', ') || 'none'}`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.VALIDATION_ERROR,
+        );
+      }
+
+      // Update status
+      tournament.status = status;
+      tournament.updatedAt = new Date();
+      await tournamentRepository.save(tournament);
+
+      res.status(HTTP_STATUS.OK).json(tournament);
     } catch (error) {
       next(error);
     }

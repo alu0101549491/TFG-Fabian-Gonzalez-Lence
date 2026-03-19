@@ -22,6 +22,7 @@ import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import templateHtml from './tournament-create.component.html?raw';
+import styles from './tournament-create.component.css?inline';
 
 /**
  * TournamentCreateComponent provides a form for creating new tournaments.
@@ -32,7 +33,7 @@ import templateHtml from './tournament-create.component.html?raw';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: templateHtml,
-  styles: [],
+  styles: [styles],
 })
 export class TournamentCreateComponent {
   /** Services - inject() must be called before other properties */

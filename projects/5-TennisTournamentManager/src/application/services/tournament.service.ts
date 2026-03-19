@@ -288,32 +288,8 @@ export class TournamentService implements ITournamentService {
       throw new Error('Tournament not found');
     }
     
-    // Check authorization
-    const canModify = await this.authorizationService.canPerformAction(userId, 'update', tournamentId);
-    if (!canModify) {
-      throw new Error('User is not authorized to update this tournament');
-    }
-    
-    // Check if status transition is valid
-    if (!tournament.canTransitionTo(status)) {
-      throw new Error(`Cannot transition from ${tournament.status} to ${status}`);
-    }
-    
-    // Create updated tournament with new status
-    const updatedTournament = new Tournament({
-      ...tournament,
-      status,
-      updatedAt: new Date(),
-    });
-    
-    // Save updated tournament
-    const savedTournament = await this.tournamentRepository.update(updatedTournament);
-    
-    // Send notification based on status
-    if (status === TournamentStatus.REGISTRATION_OPEN) {
-      // Notification would be sent here
-      // await this.notificationService.sendNotification(...)
-    }
+    // Update status via repository (backend validates authorization and transition)
+    const savedTournament = await this.tournamentRepository.updateStatus(tournamentId, status);
     
     // Map to DTO
     return this.mapTournamentToDto(savedTournament);
