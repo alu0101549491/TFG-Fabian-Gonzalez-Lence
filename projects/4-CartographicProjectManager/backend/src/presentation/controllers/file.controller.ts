@@ -589,6 +589,19 @@ export class FileController {
 
       logInfo('Starting Dropbox file sync', {projectId, projectCode: project.code, userId: req.user!.id});
 
+      // Ensure project folder exists in Dropbox before listing files
+      try {
+        await this.dropboxService.createProjectFolder(project.code);
+        logDebug('Project folder ensured in Dropbox', {projectId, projectCode: project.code});
+      } catch (folderError) {
+        // Folder might already exist, continue
+        logDebug('Project folder creation result (may already exist)', {
+          projectId,
+          projectCode: project.code,
+          error: folderError instanceof Error ? folderError.message : String(folderError),
+        });
+      }
+
       // Get all files from Dropbox
       const dropboxPath = this.dropboxService.getProjectFolderPath(project.code);
       const dropboxFiles = await this.dropboxService.listFiles(dropboxPath);

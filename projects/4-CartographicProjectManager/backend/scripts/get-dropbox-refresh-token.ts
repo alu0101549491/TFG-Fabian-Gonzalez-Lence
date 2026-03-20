@@ -149,6 +149,7 @@ async function exchangeCodeForTokens(code: string): Promise<{
     grant_type: 'authorization_code',
     client_id: APP_KEY!,
     client_secret: APP_SECRET!,
+    redirect_uri: REDIRECT_URI,
   });
 
   const response = await fetch('https://api.dropbox.com/oauth2/token', {

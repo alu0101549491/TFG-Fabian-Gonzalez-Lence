@@ -14,7 +14,7 @@
 
 import {Dropbox} from 'dropbox';
 import type {files} from 'dropbox';
-import {logError, logInfo, logWarning} from '../../shared/logger.js';
+import {logDebug, logError, logInfo, logWarning} from '../../shared/logger.js';
 
 /**
  * Root folder path for all projects in Dropbox
@@ -354,6 +354,18 @@ export class DropboxService implements IDropboxService {
    * @returns Project folder path
    */
   public async createProjectFolder(projectCode: string): Promise<string> {
+    // Ensure root folder exists first
+    try {
+      await this.createFolder(ROOT_FOLDER);
+      logDebug('Root folder ensured in Dropbox', {path: ROOT_FOLDER});
+    } catch (error) {
+      // Root folder might already exist, continue
+      logDebug('Root folder creation result (may already exist)', {
+        path: ROOT_FOLDER,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     const projectPath = this.getProjectFolderPath(projectCode);
 
     // Create main project folder

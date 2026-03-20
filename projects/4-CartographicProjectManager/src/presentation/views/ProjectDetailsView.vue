@@ -1536,7 +1536,7 @@ function openDropboxFolder(): void {
   if (!currentProject.value) return;
   
   const projectCode = currentProject.value.project.code;
-  const dropboxUrl = `https://www.dropbox.com/home/Aplicaciones/CARTO-PROJECT-MANAGER/CartographicProjects/${encodeURIComponent(projectCode)}`;
+  const dropboxUrl = `https://www.dropbox.com/home/Aplicaciones/Cartographic%20Project%20Manager/CartographicProjects/${encodeURIComponent(projectCode)}`;
   
   window.open(dropboxUrl, '_blank', 'noopener,noreferrer');
 }
