@@ -18,9 +18,11 @@ import {FormsModule} from '@angular/forms';
 import {TournamentService} from '@application/services';
 import {type CreateTournamentDto} from '@application/dto';
 import {Surface} from '@domain/enumerations/surface';
+import {TournamentType} from '@domain/enumerations/tournament-type';
 import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './tournament-create.component.html?raw';
 import styles from './tournament-create.component.css?inline';
 
@@ -31,7 +33,7 @@ import styles from './tournament-create.component.css?inline';
 @Component({
   selector: 'app-tournament-create',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, EnumFormatPipe],
   template: templateHtml,
   styles: [styles],
 })
@@ -54,6 +56,7 @@ export class TournamentCreateComponent {
     endDate: '',
     location: '',
     surface: Surface.HARD,
+    tournamentType: TournamentType.SINGLES,
     maxParticipants: 32,
     registrationFee: 0,
     currency: 'EUR',
@@ -72,11 +75,44 @@ export class TournamentCreateComponent {
   /** Available surfaces */
   public readonly surfaces = Object.values(Surface);
 
+  /** Available tournament types */
+  public readonly tournamentTypes = Object.values(TournamentType);
+
   /** Available acceptance types */
   public readonly acceptanceTypes = Object.values(AcceptanceType);
 
   /** Available ranking systems */
   public readonly rankingSystems = Object.values(RankingSystem);
+
+  /**
+   * Validates date ranges to ensure logical consistency.
+   *
+   * @returns Error message if validation fails, null if valid
+   */
+  public validateDates(): string | null {
+    const {startDate, endDate, registrationOpenDate, registrationCloseDate} = this.formData;
+
+    // Check if end date is before start date
+    if (startDate && endDate && endDate < startDate) {
+      return 'End date cannot be before start date';
+    }
+
+    // Check if registration close is before registration open
+    if (registrationOpenDate && registrationCloseDate && registrationCloseDate < registrationOpenDate) {
+      return 'Registration close date cannot be before registration open date';
+    }
+
+    // Check if registration dates overlap with tournament dates
+    if (registrationOpenDate && startDate && registrationOpenDate >= startDate) {
+      return 'Registration must open before the tournament starts';
+    }
+
+    if (registrationCloseDate && startDate && registrationCloseDate > startDate) {
+      return 'Registration must close before or on the tournament start date';
+    }
+
+    return null;
+  }
 
   /**
    * Handles form submission.
@@ -87,6 +123,14 @@ export class TournamentCreateComponent {
     this.errorMessage.set(null);
 
     try {
+      // Validate dates
+      const dateValidationError = this.validateDates();
+      if (dateValidationError) {
+        this.errorMessage.set(dateValidationError);
+        this.isSubmitting.set(false);
+        return;
+      }
+
       // Get current user ID
       const currentUser = this.authStateService.getCurrentUser();
       if (!currentUser) {
@@ -101,6 +145,7 @@ export class TournamentCreateComponent {
         endDate: new Date(this.formData.endDate),
         location: this.formData.location,
         surface: this.formData.surface,
+        tournamentType: this.formData.tournamentType,
         maxParticipants: Number(this.formData.maxParticipants),
         registrationFee: this.formData.registrationFee ? Number(this.formData.registrationFee) : 0,
         currency: this.formData.currency || 'EUR',

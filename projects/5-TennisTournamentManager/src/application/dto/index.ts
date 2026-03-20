@@ -12,8 +12,7 @@
  */
 
 export * from './common.dto';
-export * from './user.dto';
-export * from './tournament.dto';
+export * from './user.dto';export * from './category.dto';export * from './tournament.dto';
 export * from './registration.dto';
 export * from './bracket.dto';
 export * from './match.dto';

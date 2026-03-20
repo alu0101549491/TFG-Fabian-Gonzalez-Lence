@@ -28,3 +28,5 @@ export * from './phase-progression.service';
 export * from './privacy.service';
 export * from './export.service';
 export * from './gdpr.service';
+export * from './category.service';
+export * from './user.service';

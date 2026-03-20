@@ -131,21 +131,11 @@ export class RegistrationService implements IRegistrationService {
       throw new Error('Registration not found');
     }
     
-    // Validate business rule for accepting
-    if (data.status === RegistrationStatus.ACCEPTED) {
-      registration.accept();
-    }
-    
-    // Create updated registration
-    const updatedRegistration = new Registration({
-      ...registration,
-      status: data.status,
-      seed: data.seed ?? registration.seed,
-      updatedAt: new Date(),
-    });
-    
-    // Save updated registration
-    const savedRegistration = await this.registrationRepository.update(updatedRegistration);
+    // Update registration status via the /status endpoint
+    const savedRegistration = await this.registrationRepository.updateStatus(
+      data.registrationId,
+      data.status
+    );
     
     // Send notification
     // await this.notificationService.sendNotification(...)

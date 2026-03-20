@@ -163,6 +163,22 @@
   color: var(--color-error);
 }
 
+/* Form Error Messages */
+.form-error {
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.form-error::before {
+  content: '⚠️';
+  font-size: 0.875rem;
+}
+
 /* Form Inputs */
 .form-input {
   width: 100%;

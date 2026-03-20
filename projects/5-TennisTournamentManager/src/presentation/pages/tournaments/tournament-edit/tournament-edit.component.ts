@@ -18,10 +18,12 @@ import {FormsModule} from '@angular/forms';
 import {TournamentService} from '@application/services';
 import {type UpdateTournamentDto} from '@application/dto';
 import {Surface} from '@domain/enumerations/surface';
+import {TournamentType} from '@domain/enumerations/tournament-type';
 import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './tournament-edit.component.html?raw';
 import styles from './tournament-edit.component.css?inline';
 
@@ -32,7 +34,7 @@ import styles from './tournament-edit.component.css?inline';
 @Component({
   selector: 'app-tournament-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, EnumFormatPipe],
   template: templateHtml,
   styles: [styles],
 })
@@ -57,6 +59,7 @@ export class TournamentEditComponent implements OnInit {
     endDate: '',
     location: '',
     surface: Surface.HARD,
+    tournamentType: TournamentType.SINGLES,
     maxParticipants: 32,
     registrationFee: 0,
     acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE,
@@ -75,6 +78,9 @@ export class TournamentEditComponent implements OnInit {
 
   /** Available surfaces */
   public readonly surfaces = Object.values(Surface);
+
+  /** Available tournament types */
+  public readonly tournamentTypes = Object.values(TournamentType);
 
   /** Available acceptance types */
   public readonly acceptanceTypes = Object.values(AcceptanceType);
@@ -117,6 +123,7 @@ export class TournamentEditComponent implements OnInit {
         endDate: this.formatDateForInput(tournament.endDate),
         location: tournament.location,
         surface: tournament.surface,
+        tournamentType: tournament.tournamentType,
         maxParticipants: tournament.maxParticipants,
         registrationFee: tournament.registrationFee,
         acceptanceType: tournament.acceptanceType,
@@ -146,6 +153,22 @@ export class TournamentEditComponent implements OnInit {
   }
 
   /**
+   * Validates date ranges to ensure logical consistency.
+   *
+   * @returns Error message if validation fails, null if valid
+   */
+  public validateDates(): string | null {
+    const {startDate, endDate} = this.formData;
+
+    // Check if end date is before start date
+    if (startDate && endDate && endDate < startDate) {
+      return 'End date cannot be before start date';
+    }
+
+    return null;
+  }
+
+  /**
    * Handles form submission.
    * Updates the tournament and navigates back to the tournament detail page on success.
    */
@@ -156,6 +179,14 @@ export class TournamentEditComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
+      // Validate dates
+      const dateValidationError = this.validateDates();
+      if (dateValidationError) {
+        this.errorMessage.set(dateValidationError);
+        this.isSubmitting.set(false);
+        return;
+      }
+
       // Get current user ID
       const currentUser = this.authStateService.getCurrentUser();
       if (!currentUser) {
@@ -171,6 +202,7 @@ export class TournamentEditComponent implements OnInit {
         endDate: new Date(this.formData.endDate),
         location: this.formData.location,
         surface: this.formData.surface,
+        tournamentType: this.formData.tournamentType,
         maxParticipants: Number(this.formData.maxParticipants),
         registrationFee: this.formData.registrationFee ? Number(this.formData.registrationFee) : 0,
         acceptanceType: this.formData.acceptanceType,

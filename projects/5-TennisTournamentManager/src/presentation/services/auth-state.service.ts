@@ -100,6 +100,22 @@ export class AuthStateService {
   }
 
   /**
+   * Updates the current user data without changing the token.
+   * Used when user profile is updated.
+   *
+   * @param user - The updated user data
+   */
+  public setUser(user: UserDto): void {
+    if (!user) {
+      throw new Error('User data is required');
+    }
+    
+    // Update user in memory and localStorage
+    this.currentUser = user;
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  }
+
+  /**
    * Clears the authentication state (logout).
    */
   public clearAuth(): void {

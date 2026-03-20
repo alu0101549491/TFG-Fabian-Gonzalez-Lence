@@ -21,6 +21,7 @@ import {MatchService} from '@application/services/match.service';
 import {RegistrationDto} from '@application/dto';
 import {StatisticsDto} from '@application/dto/statistics.dto';
 import {MatchDto} from '@application/dto/match.dto';
+import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './dashboard.component.html?raw';
 import styles from './dashboard.component.css?inline';
 
@@ -38,7 +39,7 @@ import styles from './dashboard.component.css?inline';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, EnumFormatPipe],
   template: templateHtml,
   styles: [styles],
 })

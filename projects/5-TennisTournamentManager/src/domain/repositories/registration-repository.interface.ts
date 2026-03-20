@@ -81,4 +81,12 @@ export interface IRegistrationRepository {
    * @returns Promise resolving to an array of registrations with the specified status
    */
   findByStatus(tournamentId: string, status: RegistrationStatus): Promise<Registration[]>;
+
+  /**
+   * Updates the status of a registration.
+   * @param id - The unique identifier of the registration
+   * @param status - The new registration status
+   * @returns Promise resolving to the updated registration
+   */
+  updateStatus(id: string, status: RegistrationStatus): Promise<Registration>;
 }

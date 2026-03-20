@@ -552,6 +552,66 @@
   color: var(--color-gray-800);
 }
 
+/* Pending Registration State */
+.pending-state {
+  padding: var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  text-align: left;
+  background-color: #fff9e6;
+  border-radius: var(--border-radius);
+  border: 2px solid #ffd700;
+}
+
+.pending-icon {
+  font-size: 3rem;
+  flex-shrink: 0;
+}
+
+.pending-state h3 {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: #cc8800;
+}
+
+.pending-state p {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-gray-800);
+}
+
+/* Rejected Registration State */
+.rejected-state {
+  padding: var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  text-align: left;
+  background-color: #ffe6e6;
+  border-radius: var(--border-radius);
+  border: 2px solid #ff4444;
+}
+
+.error-icon {
+  font-size: 3rem;
+  flex-shrink: 0;
+}
+
+.rejected-state h3 {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: #cc0000;
+}
+
+.rejected-state p {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-gray-800);
+}
+
 /* Registration Form */
 .registration-form {
   padding: var(--spacing-lg);

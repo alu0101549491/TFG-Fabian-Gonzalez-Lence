@@ -14,9 +14,11 @@
 import {Response, NextFunction} from 'express';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Category} from '../../domain/entities/category.entity';
+import {Tournament} from '../../domain/entities/tournament.entity';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
+import {generateId} from '../../shared/utils/id-generator';
 
 /**
  * Category controller.
@@ -59,6 +61,76 @@ export class CategoryController {
       const categories = await categoryRepository.find({where: {tournamentId: tournamentId as string}});
       
       res.status(HTTP_STATUS.OK).json(categories);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/categories
+   * Creates a new category for a tournament.
+   */
+  public async create(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {tournamentId, name, gender, ageGroup, maxParticipants} = req.body;
+
+      if (!tournamentId || !name || !gender || !ageGroup || !maxParticipants) {
+        throw new AppError('Missing required fields', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Verify tournament exists
+      const tournamentRepository = AppDataSource.getRepository(Tournament);
+      const tournament = await tournamentRepository.findOne({where: {id: tournamentId}});
+      
+      if (!tournament) {
+        throw new AppError('Tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Validate maxParticipants doesn't exceed tournament limit
+      if (Number(maxParticipants) > tournament.maxParticipants) {
+        throw new AppError(
+          `Category max participants (${maxParticipants}) cannot exceed tournament limit (${tournament.maxParticipants})`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
+
+      const categoryRepository = AppDataSource.getRepository(Category);
+      const category = categoryRepository.create({
+        id: generateId('cat'),
+        tournamentId,
+        name,
+        gender,
+        ageGroup,
+        maxParticipants: Number(maxParticipants),
+      });
+
+      await categoryRepository.save(category);
+      
+      res.status(HTTP_STATUS.CREATED).json(category);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * DELETE /api/categories/:id
+   * Deletes a category.
+   */
+  public async delete(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const categoryRepository = AppDataSource.getRepository(Category);
+      
+      const category = await categoryRepository.findOne({where: {id}});
+      
+      if (!category) {
+        throw new AppError('Category not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      await categoryRepository.remove(category);
+      
+      res.status(HTTP_STATUS.NO_CONTENT).send();
     } catch (error) {
       next(error);
     }

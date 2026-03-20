@@ -18,6 +18,7 @@ import {FormsModule} from '@angular/forms';
 import {MatchService} from '@application/services';
 import {type MatchDto} from '@application/dto';
 import {MatchStatus} from '@domain/enumerations/match-status';
+import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './match-list.component.html?raw';
 import styles from './match-list.component.css?inline';
 
@@ -27,7 +28,7 @@ import styles from './match-list.component.css?inline';
 @Component({
   selector: 'app-match-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, EnumFormatPipe],
   template: templateHtml,
   styles: [styles],
 })

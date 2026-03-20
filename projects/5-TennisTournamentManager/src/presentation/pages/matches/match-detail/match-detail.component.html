@@ -18,7 +18,7 @@
       <div class="card-header">
         <h2 class="card-title">Match Details</h2>
         <span class="badge badge-{{ match()!.status.toLowerCase() }}">
-          {{ match()!.status }}
+          {{ match()!.status | enumFormat }}
         </span>
       </div>
 
@@ -28,7 +28,7 @@
             <h3>Match Information</h3>
             <p><strong>Scheduled:</strong> {{ formatDate(match()!.scheduledAt) }}</p>
             <p><strong>Court:</strong> {{ match()!.courtId || 'Not assigned' }}</p>
-            <p><strong>Status:</strong> {{ match()!.status }}</p>
+            <p><strong>Status:</strong> {{ match()!.status | enumFormat }}</p>
           </div>
 
           <div>

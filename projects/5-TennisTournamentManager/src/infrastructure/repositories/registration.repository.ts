@@ -121,4 +121,15 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
     const response = await this.httpClient.get<Registration[]>(`/registrations?tournamentId=${tournamentId}&status=${status}`);
     return response;
   }
+
+  /**
+   * Updates the status of a registration.
+   * @param id - The registration identifier
+   * @param status - The new registration status
+   * @returns Promise resolving to the updated registration
+   */
+  public async updateStatus(id: string, status: RegistrationStatus): Promise<Registration> {
+    const response = await this.httpClient.put<Registration>(`/registrations/${id}/status`, {status});
+    return response;
+  }
 }

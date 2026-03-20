@@ -13,6 +13,7 @@
 
 export * from './user-role';
 export * from './tournament-status';
+export * from './tournament-type';
 export * from './surface';
 export * from './registration-status';
 export * from './acceptance-type';
@@ -26,6 +27,7 @@ export * from './notification-channel';
 export * from './payment-status';
 export * from './sanction-type';
 export * from './ranking-system';
-export * from './privacy-level';
+export * from './gender';
+export * from './age-group';
 export * from './confirmation-status';
 export * from './announcement-type';

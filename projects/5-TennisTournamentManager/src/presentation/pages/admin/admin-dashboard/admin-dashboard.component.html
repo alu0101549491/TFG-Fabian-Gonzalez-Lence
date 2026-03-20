@@ -69,7 +69,7 @@
                 <td>{{ formatDate(tournament.startDate) }}</td>
                 <td>
                   <span class="badge badge-{{ tournament.status.toLowerCase() }}">
-                    {{ tournament.status }}
+                    {{ tournament.status | enumFormat }}
                   </span>
                 </td>
               </tr>

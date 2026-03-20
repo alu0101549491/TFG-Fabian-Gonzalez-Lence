@@ -17,6 +17,7 @@ import {Router, RouterModule} from '@angular/router';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {type UserDto, type UpdateUserDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import {UserService} from '@application/services';
 import {UserRole} from '@domain/enumerations/user-role';
 import templateHtml from './profile-view.component.html?raw';
 import styles from './profile-view.component.css?inline';
@@ -35,6 +36,7 @@ export class ProfileViewComponent implements OnInit {
   /** Services */
   private readonly fb = inject(FormBuilder);
   private readonly authStateService = inject(AuthStateService);
+  private readonly userService = inject(UserService);
   private readonly router = inject(Router);
 
   /** Current user */
@@ -122,20 +124,39 @@ export class ProfileViewComponent implements OnInit {
     this.successMessage.set(null);
 
     try {
+      const currentUser = this.user();
+      if (!currentUser) {
+        throw new Error('No user logged in');
+      }
+
       const formValue = this.profileForm.value;
       const updateDto: UpdateUserDto = {
-        username: formValue.username,
-        firstName: formValue.firstName,
-        lastName: formValue.lastName,
-        phone: formValue.phone || null,
+        username: formValue.username?.trim(),
+        firstName: formValue.firstName?.trim(),
+        lastName: formValue.lastName?.trim(),
+        phone: formValue.phone?.trim() || null,
       };
 
-      // In real implementation, would call user service to update
-      // For now, just show success message
+      // Call user service to update profile
+      const updatedUser = await this.userService.updateProfile(currentUser.id, updateDto);
+      
+      // Update local user state
+      this.user.set(updatedUser);
+      
+      // Update auth state so other components see the updated user
+      this.authStateService.setUser(updatedUser);
+      
       this.successMessage.set('Profile updated successfully!');
       this.isEditing.set(false);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update profile';
+    } catch (error: any) {
+      let message = 'Failed to update profile';
+      if (error?.error?.message) {
+        message = error.error.message;
+      } else if (error?.message) {
+        message = error.message;
+      } else if (typeof error?.error === 'string') {
+        message = error.error;
+      }
       this.errorMessage.set(message);
     } finally {
       this.isLoading.set(false);

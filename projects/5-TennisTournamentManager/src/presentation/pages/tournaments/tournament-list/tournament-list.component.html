@@ -76,7 +76,7 @@
           <select id="surface" class="filter-select" [(ngModel)]="filters.surface" (change)="applyFilters()">
             <option [ngValue]="undefined">All Surfaces</option>
             @for (surface of surfaces; track surface) {
-              <option [value]="surface">{{ surface }}</option>
+              <option [value]="surface">{{ surface | enumFormat }}</option>
             }
           </select>
         </div>
@@ -142,7 +142,7 @@
                   @case ('FINALIZED') { <span>🏆</span> }
                   @case ('CANCELLED') { <span>❌</span> }
                 }
-                {{ tournament.status }}
+                {{ tournament.status | enumFormat }}
               </span>
             </header>
 
@@ -156,7 +156,7 @@
               <div class="tournament-meta">
                 <div class="meta-item">
                   <span class="meta-label">Surface</span>
-                  <span class="meta-value">{{ tournament.surface }}</span>
+                  <span class="meta-value">{{ tournament.surface | enumFormat }}</span>
                 </div>
                 <div class="meta-item">
                   <span class="meta-label">Start Date</span>

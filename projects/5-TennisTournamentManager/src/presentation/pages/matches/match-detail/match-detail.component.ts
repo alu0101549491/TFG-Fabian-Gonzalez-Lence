@@ -16,6 +16,7 @@ import {CommonModule} from '@angular/common';
 import {ActivatedRoute, RouterModule} from '@angular/router';
 import {MatchService} from '@application/services';
 import {type MatchDto} from '@application/dto';
+import {EnumFormatPipe} from '@shared/pipes';
 
 /**
  * MatchDetailComponent displays comprehensive match information.
@@ -23,7 +24,7 @@ import {type MatchDto} from '@application/dto';
 @Component({
   selector: 'app-match-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, EnumFormatPipe],
   templateUrl: './match-detail.component.html',
   styles: [],
 })

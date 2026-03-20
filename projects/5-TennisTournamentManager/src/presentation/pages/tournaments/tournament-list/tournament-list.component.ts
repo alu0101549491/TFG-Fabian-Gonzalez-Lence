@@ -20,6 +20,7 @@ import {type TournamentDto, type TournamentFilterDto, type PaginationDto} from '
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {Surface} from '@domain/enumerations/surface';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './tournament-list.component.html?raw';
 import styles from './tournament-list.component.css?inline';
 
@@ -30,7 +31,7 @@ import styles from './tournament-list.component.css?inline';
 @Component({
   selector: 'app-tournament-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, EnumFormatPipe],
   template: templateHtml,
   styles: [styles],
 })

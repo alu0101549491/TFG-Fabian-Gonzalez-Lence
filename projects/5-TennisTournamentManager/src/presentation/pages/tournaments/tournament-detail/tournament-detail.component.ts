@@ -13,17 +13,20 @@
 
 import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {combineLatest} from 'rxjs';
-import {TournamentService, RegistrationService} from '@application/services';
-import {type TournamentDto, type RegistrationDto} from '@application/dto';
+import {TournamentService, RegistrationService, CategoryService} from '@application/services';
+import {type TournamentDto, type RegistrationDto, type CreateCategoryDto, type CategoryDto, type UpdateRegistrationStatusDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
-import {type Category} from '@domain/entities/category';
-import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repository';
 import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
 import {type User} from '@domain/entities/user';
 import {UserRole} from '@domain/enumerations/user-role';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
+import {RegistrationStatus} from '@domain/enumerations/registration-status';
+import {Gender} from '@domain/enumerations/gender';
+import {AgeGroup} from '@domain/enumerations/age-group';
+import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './tournament-detail-new.component.html?raw';
 import styles from './tournament-detail-new.component.css?raw';
 
@@ -34,7 +37,7 @@ import styles from './tournament-detail-new.component.css?raw';
 @Component({
   selector: 'app-tournament-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, EnumFormatPipe],
   template: templateHtml,
   styles: [styles],
 })
@@ -44,15 +47,15 @@ export class TournamentDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly tournamentService = inject(TournamentService);
   private readonly registrationService = inject(RegistrationService);
+  private readonly categoryService = inject(CategoryService);
   private readonly authStateService = inject(AuthStateService);
-  private readonly categoryRepository = inject(CategoryRepositoryImpl);
   private readonly userRepository = inject(UserRepositoryImpl);
 
   /** Tournament data */
   public tournament = signal<TournamentDto | null>(null);
 
   /** Tournament categories */
-  public categories = signal<Category[]>([]);
+  public categories = signal<CategoryDto[]>([]);
 
   /** Registered players with their details */
   public registeredPlayers = signal<Array<{user: User; registration: RegistrationDto}>>([]);
@@ -66,11 +69,34 @@ export class TournamentDetailComponent implements OnInit {
   /** Error message */
   public errorMessage = signal<string | null>(null);
 
-  /** Registration status */
-  public isRegistered = signal(false);
+  /** Current user's registration for this tournament (null if not registered) */
+  public userRegistration = signal<RegistrationDto | null>(null);
 
   /** Tournament ID from route */
   private tournamentId: string | null = null;
+
+  /** Category management form data */
+  public categoryForm = {
+    name: '',
+    gender: Gender.OPEN,
+    ageGroup: AgeGroup.OPEN,
+    maxParticipants: 32,
+  };
+
+  /** Show category management section */
+  public showCategoryManagement = signal(false);
+
+  /** Available gender options */
+  public readonly genders = Object.values(Gender);
+
+  /** Available age group options */
+  public readonly ageGroups = Object.values(AgeGroup);
+
+  /** Category submission state */
+  public isSubmittingCategory = signal(false);
+
+  /** Category error message */
+  public categoryError = signal<string | null>(null);
 
   /**
    * Initializes component and loads tournament data.
@@ -101,14 +127,11 @@ export class TournamentDetailComponent implements OnInit {
       const tournament = await this.tournamentService.getTournamentById(this.tournamentId);
       this.tournament.set(tournament);
       
-      // Load tournament categories
-      const categories = await this.categoryRepository.findByTournamentId(this.tournamentId);
-      this.categories.set(categories);
+      // Initialize category form with tournament's max participants
+      this.categoryForm.maxParticipants = tournament.maxParticipants;
       
-      // Auto-select first category if only one exists
-      if (categories.length === 1) {
-        this.selectedCategoryId.set(categories[0].id);
-      }
+      // Load tournament categories
+      await this.loadCategories();
       
       // Load registered players
       await this.loadPlayers();
@@ -166,8 +189,8 @@ export class TournamentDetailComponent implements OnInit {
 
     try {
       const registrations = await this.registrationService.getRegistrationsByParticipant(user.id);
-      const registered = registrations.some(reg => reg.tournamentId === this.tournamentId);
-      this.isRegistered.set(registered);
+      const registration = registrations.find(reg => reg.tournamentId === this.tournamentId);
+      this.userRegistration.set(registration || null);
     } catch (error) {
       // Silently fail - registration status is optional info
       console.error('Failed to check registration status:', error);
@@ -220,15 +243,16 @@ export class TournamentDetailComponent implements OnInit {
     }
 
     try {
-      await this.registrationService.registerParticipant(
+      const newRegistration = await this.registrationService.registerParticipant(
         {
           tournamentId: this.tournamentId,
           categoryId: categoryId,
         },
         user.id
       );
-      this.isRegistered.set(true);
+      this.userRegistration.set(newRegistration);
       alert('Successfully registered for tournament!');
+      await this.loadPlayers();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';
       alert(message);
@@ -481,4 +505,200 @@ export class TournamentDetailComponent implements OnInit {
 
     return actions[tournament.status as TournamentStatus] || [];
   }
+
+  /**
+   * Submits a new category for the tournament.
+   */
+  public async submitCategory(): Promise<void> {
+    if (!this.tournamentId) return;
+
+    this.isSubmittingCategory.set(true);
+    this.categoryError.set(null);
+
+    try {
+      const categoryData: CreateCategoryDto = {
+        tournamentId: this.tournamentId,
+        name: this.categoryForm.name.trim(),
+        gender: this.categoryForm.gender,
+        ageGroup: this.categoryForm.ageGroup,
+        maxParticipants: this.categoryForm.maxParticipants,
+      };
+
+      console.log('Creating category:', categoryData);
+      const newCategory = await this.categoryService.createCategory(categoryData);
+      console.log('Category created successfully:', newCategory);
+
+      // Add the new category directly to the signal (instant update)
+      this.categories.update(cats => [...cats, newCategory]);
+
+      // Reset form and close
+      this.categoryForm = {
+        name: '',
+        gender: Gender.OPEN,
+        ageGroup: AgeGroup.OPEN,
+        maxParticipants: this.tournament()?.maxParticipants || 32,
+      };
+      this.showCategoryManagement.set(false);
+    } catch (error) {
+      console.error('Failed to create category:', error);
+      const message = error instanceof Error ? error.message : 'Failed to add category';
+      this.categoryError.set(message);
+      alert(`Error creating category: ${message}`);
+    } finally {
+      this.isSubmittingCategory.set(false);
+    }
+  }
+
+  /**
+   * Deletes a category by ID.
+   */
+  public async deleteCategory(categoryId: string, categoryName: string): Promise<void> {
+    const confirmed = confirm(`Delete category "${categoryName}"? This will remove all registrations in this category.`);
+    
+    if (!confirmed) return;
+
+    // Prevent double-clicking by checking if already deleting
+    if (this.isSubmittingCategory()) return;
+    
+    this.isSubmittingCategory.set(true);
+
+    try {
+      await this.categoryService.deleteCategory(categoryId);
+      
+      // Remove the category directly from the signal (instant update)
+      this.categories.update(cats => cats.filter(cat => cat.id !== categoryId));
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+      const message = error instanceof Error ? error.message : 'Failed to delete category';
+      alert(`Error: ${message}`);
+      
+      // Reload categories to ensure sync with backend
+      await this.loadCategories();
+    } finally {
+      this.isSubmittingCategory.set(false);
+    }
+  }
+
+  /**
+   * Loads tournament categories from the API.
+   */
+  private async loadCategories(): Promise<void> {
+    if (!this.tournamentId) return;
+
+    try {
+      const categories = await this.categoryService.getCategoriesByTournament(this.tournamentId);
+      
+      this.categories.set(categories);
+      
+      // Auto-select first category if only one exists
+      if (categories.length === 1) {
+        this.selectedCategoryId.set(categories[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    }
+  }
+
+  /**
+   * Toggles the category management section visibility.
+   */
+  public toggleCategoryManagement(): void {
+    this.showCategoryManagement.update(val => !val);
+  }
+
+  /**
+   * Gets category by ID for display purposes.
+   * @param categoryId - The category ID to find
+   * @returns The category DTO or undefined if not found
+   */
+  public getCategoryById(categoryId: string): CategoryDto | undefined {
+    return this.categories().find(cat => cat.id === categoryId);
+  }
+
+  /**
+   * Approves a pending registration.
+   * @param registrationId - The registration ID to approve
+   * @param playerName - Player name for confirmation message
+   */
+  public async approveRegistration(registrationId: string, playerName: string): Promise<void> {
+    const confirmed = confirm(`Approve registration for ${playerName}?`);
+    if (!confirmed) return;
+
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to perform this action');
+      return;
+    }
+
+    try {
+      const updateData: UpdateRegistrationStatusDto = {
+        registrationId,
+        status: RegistrationStatus.ACCEPTED,
+      };
+
+      await this.registrationService.updateStatus(updateData, currentUser.id);
+      await this.loadPlayers();
+      alert(`${playerName} has been approved!`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to approve registration';
+      alert(`Error: ${message}`);
+    }
+  }
+
+  /**
+   * Rejects a pending registration.
+   * @param registrationId - The registration ID to reject
+   * @param playerName - Player name for confirmation message
+   */
+  public async rejectRegistration(registrationId: string, playerName: string): Promise<void> {
+    const confirmed = confirm(`Reject registration for ${playerName}? They will not be able to participate.`);
+    if (!confirmed) return;
+
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to perform this action');
+      return;
+    }
+
+    try {
+      const updateData: UpdateRegistrationStatusDto = {
+        registrationId,
+        status: RegistrationStatus.REJECTED,
+      };
+
+      await this.registrationService.updateStatus(updateData, currentUser.id);
+      await this.loadPlayers();
+      alert(`${playerName}'s registration has been rejected.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to reject registration';
+      alert(`Error: ${message}`);
+    }
+  }
+
+  /**
+   * Removes an accepted participant from the tournament.
+   * @param registrationId - The registration ID to remove
+   * @param playerName - Player name for confirmation message
+   */
+  public async removeParticipant(registrationId: string, playerName: string): Promise<void> {
+    const confirmed = confirm(`Remove ${playerName} from the tournament? This action will withdraw their registration.`);
+    if (!confirmed) return;
+
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to perform this action');
+      return;
+    }
+
+    try {
+      const now = new Date().toISOString();
+      await this.registrationService.withdrawRegistration(registrationId, now, currentUser.id);
+      await this.loadPlayers();
+      alert(`${playerName} has been removed from the tournament.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove participant';
+      alert(`Error: ${message}`);
+    }
+  }
 }
+

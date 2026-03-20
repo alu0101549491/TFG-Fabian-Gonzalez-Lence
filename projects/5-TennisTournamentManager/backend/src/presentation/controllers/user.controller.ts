@@ -65,13 +65,27 @@ export class UserController {
       const {id} = req.params;
       const userRepository = AppDataSource.getRepository(User);
       
+      // Verify user owns this profile or is admin
+      if (req.user?.id !== id && req.user?.role !== UserRole.SYSTEM_ADMIN) {
+        throw new AppError('Cannot update other users profiles', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+      }
+      
       const user = await userRepository.findOne({where: {id}});
       
       if (!user) {
         throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       
-      const {firstName, lastName, phone} = req.body;
+      const {username, firstName, lastName, phone} = req.body;
+      
+      // Check username uniqueness if changing
+      if (username && username !== user.username) {
+        const existingUsername = await userRepository.findOne({where: {username}});
+        if (existingUsername) {
+          throw new AppError('Username already exists', HTTP_STATUS.CONFLICT, ERROR_CODES.ALREADY_EXISTS);
+        }
+        user.username = username;
+      }
       
       if (firstName) user.firstName = firstName;
       if (lastName) user.lastName = lastName;
@@ -199,7 +213,7 @@ export class UserController {
   public async updateByAdmin(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
-      const {username, email, firstName, lastName, role, isActive, phone} = req.body;
+      const {username, email, firstName, lastName, role, isActive, phone, currentPassword, newPassword} = req.body;
       
       const userRepository = AppDataSource.getRepository(User);
       
@@ -212,6 +226,29 @@ export class UserController {
       // Prevent admin from deactivating themselves
       if (req.user?.id === id && isActive === false) {
         throw new AppError('Cannot deactivate your own account', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_FAILED);
+      }
+      
+      // Handle password change if newPassword is provided
+      if (newPassword) {
+        // If the requesting user is not a SYSTEM_ADMIN, require current password
+        const isSystemAdmin = req.user?.role === UserRole.SYSTEM_ADMIN;
+        
+        if (!isSystemAdmin && !currentPassword) {
+          throw new AppError('Current password is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_FAILED);
+        }
+        
+        // Verify current password if provided
+        if (currentPassword && !isSystemAdmin) {
+          const bcrypt = await import('bcrypt');
+          const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+          if (!isValidPassword) {
+            throw new AppError('Current password is incorrect', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_FAILED);
+          }
+        }
+        
+        // Hash and update new password
+        const bcrypt = await import('bcrypt');
+        user.passwordHash = await bcrypt.hash(newPassword, 10);
       }
       
       // Check username uniqueness if changing

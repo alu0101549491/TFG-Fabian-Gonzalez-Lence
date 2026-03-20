@@ -235,7 +235,8 @@ router.post('/auth/logout', noCache, authMiddleware, authController.logout.bind(
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get('/users/stats', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), apiCache(120), userController.getStats.bind(userController));
+// Note: User management endpoints use shorter cache (30s) for admin operations
+router.get('/users/stats', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), apiCache(30), userController.getStats.bind(userController));
 
 /**
  * @swagger
@@ -274,7 +275,7 @@ router.get('/users/stats', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get('/users', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), apiCache(60), userController.getAll.bind(userController));
+router.get('/users', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), apiCache(30), userController.getAll.bind(userController));
 
 /**
  * @swagger
@@ -868,6 +869,32 @@ router.get('/registrations', registrationController.getByTournament.bind(registr
 
 /**
  * @swagger
+ * /registrations/{id}:
+ *   get:
+ *     tags: [Registrations]
+ *     summary: Get registration by ID
+ *     description: Get a single registration by its unique identifier
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Registration found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Registration'
+ *       404:
+ *         description: Registration not found
+ */
+router.get('/registrations/:id', registrationController.getById.bind(registrationController));
+
+/**
+ * @swagger
  * /registrations/{id}/status:
  *   put:
  *     tags: [Registrations]
@@ -1167,6 +1194,9 @@ router.get('/categories/:id', apiCache(600), categoryController.getById.bind(cat
 // Category routes
 // Cache categories for 10 minutes (rarely change)
 router.get('/categories', apiCache(600), categoryController.getByTournament.bind(categoryController));
+router.get('/categories/:id', apiCache(600), categoryController.getById.bind(categoryController));
+router.post('/categories', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), categoryController.create.bind(categoryController));
+router.delete('/categories/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), categoryController.delete.bind(categoryController));
 
 /**
  * @swagger

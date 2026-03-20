@@ -18,6 +18,7 @@ import {TournamentService} from '@application/services';
 import {type TournamentDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {UserRole} from '@domain/enumerations/user-role';
+import {EnumFormatPipe} from '@shared/pipes';
 
 /**
  * AdminDashboardComponent provides administrative oversight and management tools.
@@ -25,7 +26,7 @@ import {UserRole} from '@domain/enumerations/user-role';
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, EnumFormatPipe],
   templateUrl: './admin-dashboard.component.html',
   styles: [],
 })

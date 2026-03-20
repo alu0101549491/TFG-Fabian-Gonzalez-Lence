@@ -6,7 +6,593 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.34.7] - 2026-03-20 
+
+### Fixed — API URL Configuration (CRITICAL)
+
+**Bug fix**: Corrected environment API URL to use Vite proxy:
+- **Root cause**: `apiUrl: 'http://localhost:4200/api'` bypassed Vite proxy, requests went to frontend port
+- **Symptom**: All API requests returned 404 errors, categories/registrations not saving
+- **Solution**: Changed to `apiUrl: '/api'` (relative URL) to use Vite proxy correctly
+- **Impact**: API requests now properly forwarded to backend on port 3000
+- **Note**: This fixes all API operations - categories, registrations, tournaments, etc.
+
+### Fixed — Registration Status Update API Route Mismatch
+
+**Bug fix**: Fixed missing backend endpoint and API route mismatch:
+- **Root cause**: Frontend calling `GET /api/registrations/:id` but backend didn't have this endpoint; Also calling domain entity method on plain object
+- **Symptom**: 404 errors when trying to fetch registration by ID, "registration.accept is not a function" error
+- **Solution**: 
+  - Added `getById()` controller method to fetch single registration
+  - Added `GET /registrations/:id` route to backend
+  - Removed incorrect `registration.accept()` call on plain object from API
+  - Added `updateStatus()` method to repository for correct `/status` endpoint
+- **Impact**: Registration status updates (approve, reject, remove) now work correctly
+- **Files modified**: 
+  - `backend/src/presentation/controllers/registration.controller.ts` - Added `getById()` method
+  - `backend/src/presentation/routes/index.ts` - Added GET route for /registrations/:id
+  - `src/application/services/registration.service.ts` - Removed domain entity method call, use `updateStatus()`
+  - `src/infrastructure/repositories/registration.repository.ts` - Added `updateStatus()` method
+  - `src/domain/repositories/registration-repository.interface.ts` - Added `updateStatus()` to interface
+
+### Fixed — Player Name Display in Participant Management
+
+**Bug fix**: Fixed "undefined" player names in participant management:
+- **Root cause**: Template used `player.user.name` but User entity has `username`, `firstName`, `lastName` fields
+- **Solution**: Updated template to use `username || (firstName + lastName) || email` as fallback chain
+- **Impact**: Player names now display correctly in approve/reject/remove actions
+
+### Added — Registration Status Notifications for Players
+
+**Feature**: Players now see color-coded status notifications for their tournament registrations:
+- **ACCEPTED**: Green box with checkmark ✅ "You're Registered!"
+- **PENDING**: Yellow box with hourglass ⏳ "Registration Pending" - awaiting organizer approval
+- **REJECTED**: Red box with X ❌ "Registration Rejected" - not approved by organizer
+- **Not Registered**: Shows registration form to select category and register
+- **Implementation**: Component tracks full registration object with status instead of boolean flag
+- **Impact**: Players have clear visibility into their registration status and can understand if they're waiting for approval or were rejected
+
+### Added — Category Management API Endpoints and UI
+
+**Feature**: Tournament organizers can now create and delete categories for their tournaments via API endpoints and a new UI interface on the tournament detail page.
+
+### Added — Participant Management for Tournament Organizers
+
+**Feature**: Tournament organizers now see a participant management view instead of registration form:
+- **Participant List**: Table showing all registered players with name, email, category, and status
+- **Role Separation**: Organizers manage tournaments, players register for them
+- **Automatic Display**: Shows count of registered participants
+- **Category Mapping**: Displays which category each participant registered for
+- **Management Actions**:
+  - **Approve/Reject Pending**: Green "✓ Approve" and red "✕ Reject" buttons for pending registrations
+  - **Remove Participants**: "🗑️ Remove" button for accepted participants (withdraws registration)
+  - **Confirmation Dialogs**: All actions require confirmation before execution
+  - **Real-time Updates**: Participant list refreshes after each action
+- **Status-based Actions**: Different actions available based on registration status (PENDING vs ACCEPTED)
+
+### Fixed — Category Max Participants Validation
+
+**Validation**: Category max participants now respects tournament limits:
+- Frontend: Form input capped at tournament's max participants with visual indicator
+- Backend: Server-side validation ensures category limit cannot exceed tournament limit
+- Default value: Category form defaults to tournament's max participants
+- Error message: Clear feedback when validation fails
+
+### Fixed — Categories Not Displaying After Creation
+
+**Bug fix**: Categories now properly display after creation:
+- Component now uses CategoryDto directly instead of converting to domain entities
+- Template displays gender, age group, and max participants from CategoryDto
+- Categories update immediately after creation without page refresh
+- Removed unused Category entity imports and repository dependencies
+
+### Fixed — Category Management Performance
+
+**Performance improvement**: Category creation and deletion now instant:
+- **Optimistic UI updates**: Categories added/removed from signal immediately without API reload
+- **No blocking alerts**: Removed success alerts that delayed UI updates
+- **Auto-close form**: Category form closes automatically after successful creation
+- **Instant feedback**: UI updates occur in <50ms instead of waiting for API round-trip
+
+#### Implementation
+
+**1. Backend API Endpoints**:
+- `POST /api/categories` - Create a new category for a tournament
+- `DELETE /api/categories/:id` - Delete a category
+- `GET /api/categories?tournamentId=X` - Get all categories for a tournament (existing)
+- `GET /api/categories/:id` - Get a single category (existing)
+
+**2. Category Structure**:
+```typescript
+interface Category {
+  id: string;
+  tournamentId: string;
+  name: string;              // e.g., "Men's Singles", "Women's Doubles"
+  gender: string;            // OPEN, MENS, WOMENS, MIXED
+  ageGroup: string;          // YOUTH, JUNIOR, OPEN, VETERANS_35, etc.
+  maxParticipants: number;   // Maximum quota for this category
+}
+```
+
+**3. Frontend Service**:
+- Created `CategoryService` for category management operations
+- Methods: `createCategory()`, `deleteCategory()`, `getCategoriesByTournament()`, `getCategoryById()`
+
+**4. New Enumerations**:
+- `Gender` enum: OPEN, MENS, WOMENS, MIXED  
+- `AgeGroup` enum: YOUTH, JUNIOR, OPEN, VETERANS_35, VETERANS_45, VETERANS_55, VETERANS_65
+
+**5. UI Component - Category Management Section**:
+- **Location**: Tournament Detail Page (visible only to tournament organizers)
+- **Features**:
+  - View list of existing categories with details
+  - Add new categories with form containing:
+    - Category name (text input, e.g., "Men's Singles")
+    - Gender (dropdown: Open/Men's/Women's/Mixed)
+    - Age Group (dropdown: Youth/Junior/Open/Veterans)
+    - Max Participants (number input)
+  - Delete existing categories with confirmation
+  - Warning message when no categories are configured
+  - Expandable form (toggle "Add Category" button)
+
+**6. Form Validation**:
+- Category name is required
+- Max participants must be between 2 and 128
+- Gender and age group are required selections
+- Form submission disabled while submitting
+
+**7. User Flow**:
+1. Tournament organizer creates a tournament
+2. Organizer navigates to tournament detail page
+3. Clicks "➕ Add Category" button
+4. Fills out category form (name, gender, age group, max participants)
+5. Submits form - category is created
+6. Category appears in the list immediately
+7. Participants can now register selecting from available categories
+
+#### Technical Details
+
+**Backend Files Modified/Created**:
+- `/backend/src/presentation/controllers/category.controller.ts` - Added `create()` and `delete()` methods
+- `/backend/src/presentation/routes/index.ts` - Added POST and DELETE routes for categories with authentication
+
+**Frontend Files Modified/Created**:
+- `/src/application/services/category.service.ts` (NEW) - Service for category management
+- `/src/application/dto/category.dto.ts` (NEW) - Category DTOs (CreateCategoryDto, CategoryDto)
+- `/src/domain/enumerations/gender.ts` (NEW) - Gender enum
+- `/src/domain/enumerations/age-group.ts` (NEW) - Age group enum
+- `/src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` - Added category management methods
+- `/src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html` - Added category management UI section
+- `/src/application/services/index.ts` - Added CategoryService export
+- `/src/application/dto/index.ts` - Added category DTO exports
+- `/src/domain/enumerations/index.ts` - Added Gender and AgeGroup exports
+
+#### Visual Changes
+
+**Tournament Detail Page - Organizer View**:
+- New "Tournament Categories" section card
+- "➕ Add Category" button in card header
+- Expandable form when clicked
+- Table showing existing categories with delete buttons
+- Warning alert when no categories exist
+
+**Registration Flow**:
+- Users must select a category before registering
+- "No categories available for registration" message when none exist
+
+#### Authorization
+
+- **POST /api/categories**: Requires authentication + SYSTEM_ADMIN or TOURNAMENT_ADMIN role
+- **DELETE /api/categories/:id**: Requires authentication + SYSTEM_ADMIN or TOURNAMENT_ADMIN role
+- **UI visibility**: Category management section only visible to tournament organizers
+
+#### Related Requirements
+
+- **FR1**: Tournament creation with complete configuration including categories (gender, age, level) ✅
+- **FR9**: Registered participant registration - requires selecting a category ✅
+
+---
+
+## [1.34.6] - 2026-03-20
+
+### Added — Tournament Type Selection (Singles vs Doubles)
+
+**Feature**: Tournament creation and edit forms now include tournament type selection to specify whether the tournament is for singles or doubles matches. This implements Functional Requirement FR7 from the specification.
+
+#### Implementation
+
+**1. TournamentType Enum** (Both Frontend and Backend):
+```typescript
+export enum TournamentType {
+  /** Singles tournament (1 vs 1). */
+  SINGLES = 'SINGLES',
+  /** Doubles tournament (2 vs 2, formed pairs). */
+  DOUBLES = 'DOUBLES',
+}
+```
+
+**2. Database Schema Update**:
+- Added `tournamentType` column to Tournament entity
+- Type: `enum` (TournamentType)
+- Default value: `SINGLES` (backward compatible)
+- Required field for all tournaments
+
+**3. DTO Updates**:
+- `CreateTournamentDto`: Added required `tournamentType` field
+- `UpdateTournamentDto`: Added optional `tournamentType` field
+- `TournamentDto`: Added required `tournamentType` field
+
+**4. UI Updates**:
+- **Create Form**: Added tournament type dropdown with "Singles" and "Doubles" options
+- **Edit Form**: Added tournament type dropdown, loads existing tournament type
+- **Detail View**: Display tournament type in the information section
+- Uses `EnumFormatPipe` for human-readable display ("Singles", "Doubles")
+
+**5. Form Structure**:
+```html
+<div class="form-group">
+  <label class="form-label required" for="tournamentType">Tournament Type</label>
+  <select id="tournamentType" class="form-input" 
+          [(ngModel)]="formData.tournamentType" name="tournamentType" required>
+    @for (type of tournamentTypes; track type) {
+      <option [value]="type">{{ type | enumFormat }}</option>
+    }
+  </select>
+</div>
+```
+
+#### Technical Details
+
+**Frontend Files Modified**:
+- `/src/domain/enumerations/tournament-type.ts` (NEW)
+- `/src/domain/enumerations/index.ts` (Added export)
+- `/src/application/dto/tournament.dto.ts` (All DTOs updated)
+- `/src/presentation/pages/tournaments/tournament-create/tournament-create.component.ts` (Added tournamentType)
+- `/src/presentation/pages/tournaments/tournament-create/tournament-create.component.html` (Added dropdown)
+- `/src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.ts` (Added tournamentType)
+- `/src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.html` (Added dropdown)
+- `/src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html` (Display type)
+
+**Backend Files Modified**:
+- `/backend/src/domain/enumerations/tournament-type.ts` (NEW)
+- `/backend/src/domain/enumerations/index.ts` (Added export)
+- `/backend/src/domain/entities/tournament.entity.ts` (Added tournamentType column)
+
+**Database Changes**:
+- Column `tournamentType` added to `tournaments` table (via TypeORM synchronization)
+- Type: ENUM ('SINGLES', 'DOUBLES')
+- Default: 'SINGLES'
+- Constraint: NOT NULL
+
+#### Next Steps
+
+This feature lays the foundation for future doubles-specific functionality:
+- **FR15**: Pair registration in doubles tournaments
+- Match structure differentiation (1v1 vs 2v2)
+- Team name display for doubles
+- Participant count validation (even numbers for doubles)
+
+---
+
+## [1.34.5] - 2026-03-20
+
+### Added — Date Validation for Tournament Forms
+
+**Feature**: Tournament creation and edit forms now validate date ranges to prevent illogical date selections.
+
+#### Implementation
+
+**1. Date Input Constraints** (HTML min/max attributes):
+- **End Date**: Cannot be before start date (`[min]="formData.startDate"`)
+- **Registration Open**: Cannot be on or after tournament start (`[max]="formData.startDate"`)
+- **Registration Close**: Must be between registration open and tournament start
+  - `[min]="formData.registrationOpenDate"`
+  - `[max]="formData.startDate"`
+
+**2. Client-Side Validation** (TypeScript):
+```typescript
+public validateDates(): string | null {
+  // End date must be >= Start date
+  if (startDate && endDate && endDate < startDate) {
+    return 'End date cannot be before start date';
+  }
+
+  // Registration close must be >= Registration open
+  if (registrationOpenDate && registrationCloseDate && registrationCloseDate < registrationOpenDate) {
+    return 'Registration close date cannot be before registration open date';
+  }
+
+  // Registration must not overlap tournament dates
+  if (registrationOpenDate && startDate && registrationOpenDate >= startDate) {
+    return 'Registration must open before the tournament starts';
+  }
+
+  if (registrationCloseDate && startDate && registrationCloseDate > startDate) {
+    return 'Registration must close before or on the tournament start date';
+  }
+
+  return null;
+}
+```
+
+**3. Real-Time Error Messages**:
+- Inline validation errors appear below date inputs when invalid
+- Visual feedback with warning icon (⚠️) and red text
+- Prevents form submission until dates are valid
+
+#### Validation Rules
+
+1. **Tournament Dates**:
+   - End date ≥ Start date
+   - Tournament must have valid date range
+
+2. **Registration Dates**:
+   - Registration Open < Tournament Start
+   - Registration Close ≥ Registration Open
+   - Registration Close ≤ Tournament Start
+   - Registration period must end before or when tournament starts
+
+#### Benefits
+
+- ✅ **Prevents invalid data**: Cannot create tournaments with illogical dates
+- ✅ **Clear feedback**: Users see exactly what's wrong in real-time
+- ✅ **Better UX**: Date pickers automatically constrain selections
+- ✅ **Data integrity**: Backend receives only valid date ranges
+- ✅ **Business logic enforcement**: Registration must complete before tournament starts
+
+---
+
+## [1.34.4] - 2026-03-20
+
+### Added — Human-Readable Enum Formatting
+
+**Feature**: Enum values are now displayed in human-readable format instead of UPPER_SNAKE_CASE.
+
+#### Implementation
+
+**1. Created EnumFormatPipe** (`/src/shared/pipes/enum-format.pipe.ts`):
+```typescript
+@Pipe({
+  name: 'enumFormat',
+  standalone: true,
+})
+export class EnumFormatPipe implements PipeTransform {
+  public transform(value: string | null | undefined): string {
+    if (!value) return '';
+    
+    // Convert UPPER_SNAKE_CASE to Title Case
+    // Example: "DIRECT_ACCEPTANCE" → "Direct Acceptance"
+    return value
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+}
+```
+
+**2. Applied to All Enum Displays**:
+- **Tournament forms** (create/edit): Surface, Acceptance Type, Ranking System, Status
+- **Tournament list**: Status badges, surface filters
+- **Tournament detail**: Surface, ranking system, status displays
+- **Registration status**: Player registration status badges
+
+#### Examples
+
+Before:
+- `DIRECT_ACCEPTANCE` → After: `Direct Acceptance`
+- `POINTS_BASED` → After: `Points Based`
+- `HARD` → After: `Hard`
+- `REGISTRATION_OPEN` → After: `Registration Open`
+- `WILD_CARD` → After: `Wild Card`
+
+#### Benefits
+
+- ✅ **Improved readability**: Professional, user-friendly display
+- ✅ **Consistent formatting**: Applied across all enum types
+- ✅ **Maintainable**: Single pipe handles all enum conversions
+- ✅ **Type-safe**: Values remain as enums in code, formatted for display only
+- ✅ **Reusable**: Can be applied to any UPPER_SNAKE_CASE string
+
+---
+
 ## [1.34.3] - 2026-03-20
+
+### Fixed — Profile Update Not Working
+
+**Issue**: Users couldn't update their username from the profile page. Username field wasn't updating and sometimes didn't display at all.
+
+#### Root Causes
+
+**1. Backend Limitation** (`/backend/src/presentation/controllers/user.controller.ts`):
+- Standard `PUT /users/:id` endpoint only accepted `firstName`, `lastName`, and `phone`
+- Username was explicitly excluded from destructured body fields
+- No username uniqueness validation in standard user update
+- Only admin endpoint (`PUT /users/:id/admin`) supported username changes
+
+**2. Missing Service Layer** (`/src/application/services/user.service.ts`):
+- No dedicated service existed for user profile operations
+- Other services (AuthenticationService, UserManagementService) handled different concerns
+- Profile component had no proper service to call
+
+**3. Incomplete Component Implementation** (`/src/presentation/pages/profile/profile-view/profile-view.component.ts`):
+- `saveProfile()` method had TODO comment: "In real implementation, would call user service to update"
+- Showed success message without actually calling any API
+- Didn't update AuthStateService after changes
+- No error handling for failed saves
+
+#### Solution
+
+**1. Created UserService** (`/src/application/services/user.service.ts`):
+```typescript
+@Injectable({providedIn: 'root'})
+export class UserService {
+  public async updateProfile(userId: string, userData: UpdateUserDto): Promise<UserDto> {
+    return firstValueFrom(
+      this.http.put<UserDto>(`${this.apiUrl}/${userId}`, userData, {
+        headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
+      })
+    );
+  }
+
+  public async getUserById(userId: string, bypassCache = false): Promise<UserDto> {
+    // ... with optional cache-busting
+  }
+}
+```
+
+**2. Enhanced Backend Endpoint**:
+- Added `username` to destructured fields
+- Added username uniqueness validation if changing:
+  ```typescript
+  if (username && username !== user.username) {
+    const existingUsername = await userRepository.findOne({where: {username}});
+    if (existingUsername) {
+      throw new AppError('Username already exists', HTTP_STATUS.CONFLICT, ERROR_CODES.ALREADY_EXISTS);
+    }
+    user.username = username;
+  }
+  ```
+- Added authorization check: users can only update their own profile (or admins can update anyone's)
+- Returns updated user without password hash
+
+**3. Integrated Service Into Profile Component**:
+- Injected UserService
+- Replaced placeholder `saveProfile()` with actual API call
+- Updated AuthStateService with new user data after successful save:
+  ```typescript
+  const updatedUser = await this.userService.updateProfile(currentUser.id, updateDto);
+  this.user.set(updatedUser);
+  this.authStateService.setUser(updatedUser); // New method - updates user without re-auth
+  ```
+- Added comprehensive error handling with user-friendly messages
+- Trim whitespace from input fields before submitting
+
+**4. Enhanced AuthStateService**:
+- Added `setUser(user: UserDto)` method for updating user data without changing token
+- Used when profile is updated - avoids requiring token re-validation
+- Updates both in-memory state and localStorage
+
+#### Benefits
+
+- ✅ **Self-service**: Users can update their own profiles without admin intervention
+- ✅ **Username changes**: Fully supported with uniqueness validation
+- ✅ **Real-time updates**: AuthStateService updated immediately after save
+- ✅ **Security**: Users can only edit their own profiles (admins can edit any)
+- ✅ **Cache-busting**: Fresh data fetched after updates
+- ✅ **Error handling**: Clear feedback for conflicts and validation errors
+- ✅ **Data integrity**: Username uniqueness enforced at database level
+
+---
+
+### Fixed — Stale Data After User Edit (Cache Issue)
+
+**Issue**: After editing a user (e.g., changing username), the frontend still displayed old data even though changes were saved successfully on the backend.
+
+#### Root Cause
+
+**API Response Caching** (`/backend/src/presentation/routes/index.ts`):
+- `GET /users` endpoint cached responses for 60 seconds
+- `GET /users/stats` endpoint cached for 120 seconds
+- After `PUT /users/:id/admin` updated data, subsequent GET requests returned cached (stale) data
+- Users had to wait up to 60 seconds or hard-refresh to see their changes
+
+#### Solution
+
+**1. Cache-Busting Parameters** (`/src/application/services/user-management.service.ts`):
+- Added `bypassCache` parameter to `getAllUsers()` and `getUserStats()` methods
+- When `bypassCache=true`:
+  - Adds timestamp query parameter `_t` to URL (forces unique request)
+  - Adds `Cache-Control: no-cache` and `Pragma: no-cache` headers
+  - Prevents both browser and server from returning cached responses
+
+**2. Force Fresh Data After Mutations** (`/src/presentation/pages/admin/user-management/user-management.component.ts`):
+- Updated `handleSubmit()` to call `loadData(true, true)` after create/update
+- Updated `handleDelete()` to call `loadData(true, true)` after delete
+- Second parameter (`bypassCache=true`) ensures fresh data fetch
+
+**3. Reduced Cache TTL for Admin Operations** (`/backend/src/presentation/routes/index.ts`):
+- `GET /users` cache: 60s → 30s
+- `GET /users/stats` cache: 120s → 30s
+- Admin operations need fresher data than public-facing endpoints
+
+#### Code Changes
+
+```typescript
+// Service method signature
+public async getAllUsers(filters?: UserFilterDto, bypassCache = false): Promise<UserSummaryDto[]>
+
+// Component usage - bypass cache after mutations
+await this.loadData(true, true); // throwOnError=true, bypassCache=true
+```
+
+#### Benefits
+
+- ✅ **Immediate feedback**: Changes visible instantly after save
+- ✅ **Selective cache-busting**: Normal loads still benefit from caching
+- ✅ **No waiting**: Users don't need to refresh browser or wait 60 seconds
+- ✅ **Backward compatible**: Default behavior unchanged for non-mutation calls
+- ✅ **Better UX**: Admin operations feel responsive and reliable
+
+### Fixed — User Edit 404 Error (Critical)
+
+**Issue**: Editing a user resulted in `PUT http://localhost:4200/api/users/undefined/admin 404 (Not Found)`.
+
+#### Root Cause
+
+**Missing Form Field for User ID** (`/src/presentation/pages/admin/user-management/user-management.component.ts`):
+- Form didn't have an `id` field to store the user ID when opening edit modal
+- Code attempted to patch `{id: user.id}` but form didn't have this field
+- Result: `this.userForm.value.id` was `undefined` when submitting
+- Backend received request to `/api/users/undefined/admin` → 404
+
+#### Solution
+
+**Added Hidden ID Field**:
+- Added `id: ['']` field to form (hidden, not validated)
+- Properly sets ID when opening edit modal: `id: user.id`
+- ID is now correctly sent in update requests
+
+### Added — Password Change Functionality
+
+**Feature**: Admins can now change user passwords, including their own, with proper validation.
+
+#### Implementation
+
+**Frontend** (`/src/presentation/pages/admin/user-management/user-management.component.ts`):
+- Added "Change Password" checkbox in edit mode
+- Added three password fields:
+  - **Current Password** (optional for system admins)
+  - **New Password** (required, min 6 chars)
+  - **Confirm New Password** (must match)
+- Client-side validation:
+  - Checks new password matches confirmation
+  - Ensures all password fields filled if changing password
+  - Fields disabled unless checkbox is checked
+- Form hint: "Leave empty if you're a system administrator"
+
+**Backend** (`/backend/src/presentation/controllers/user.controller.ts`):
+- Updated `updateByAdmin` endpoint to accept `currentPassword` and `newPassword`
+- **Smart Validation**:
+  - System admins can change any password without knowing current password
+  - Non-admin users must provide correct current password
+  - Current password verified with bcrypt before allowing change
+- New password hashed with bcrypt (10 salt rounds)
+- Returns appropriate error messages
+
+**DTOs** (`/src/application/dto/user.dto.ts`):
+- Updated `UpdateUserByAdminDto` interface:
+  ```typescript
+  currentPassword?: string; // Optional - admin doesn't need it
+  newPassword?: string;     // If provided, password will be changed
+  ```
+
+#### Benefits
+
+- ✅ System admins can reset user passwords without knowing current password
+- ✅ Users editing themselves must prove identity with current password
+- ✅ Password validation prevents mismatches
+- ✅ Security maintained with bcrypt hashing
+- ✅ Clear UI feedback with hints and validation messages
 
 ### Fixed — Login Page Reload on Failed Authentication (UX)
 

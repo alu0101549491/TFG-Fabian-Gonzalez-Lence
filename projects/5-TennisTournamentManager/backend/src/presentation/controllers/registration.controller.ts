@@ -81,6 +81,30 @@ export class RegistrationController {
   }
   
   /**
+   * GET /api/registrations/:id
+   * Gets a single registration by ID.
+   */
+  public async getById(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const registrationRepository = AppDataSource.getRepository(Registration);
+      
+      const registration = await registrationRepository.findOne({
+        where: {id},
+        relations: ['participant', 'category'],
+      });
+      
+      if (!registration) {
+        throw new AppError('Registration not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      res.status(HTTP_STATUS.OK).json(registration);
+    } catch (error) {
+      next(error);
+    }
+  }
+  
+  /**
    * PUT /api/registrations/:id/status
    * Updates registration status.
    */

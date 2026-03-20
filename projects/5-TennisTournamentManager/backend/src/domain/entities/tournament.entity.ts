@@ -13,6 +13,7 @@
 
 import {Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn} from 'typeorm';
 import {TournamentStatus} from '../enumerations/tournament-status';
+import {TournamentType} from '../enumerations/tournament-type';
 import {Surface} from '../enumerations/surface';
 import {AcceptanceType} from '../enumerations/acceptance-type';
 import {RankingSystem} from '../enumerations/ranking-system';
@@ -53,6 +54,13 @@ export class Tournament {
     default: Surface.HARD,
   })
   public surface!: Surface;
+
+  @Column({
+    type: 'enum',
+    enum: TournamentType,
+    default: TournamentType.SINGLES,
+  })
+  public tournamentType!: TournamentType;
 
   @Column({
     type: 'enum',

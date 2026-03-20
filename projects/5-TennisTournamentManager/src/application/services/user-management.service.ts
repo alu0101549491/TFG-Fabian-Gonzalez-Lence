@@ -57,9 +57,10 @@ export class UserManagementService {
    * Retrieves all users with optional filtering.
    *
    * @param filters - Optional filter criteria (role, isActive, searchQuery)
+   * @param bypassCache - If true, forces fresh data fetch (bypasses HTTP cache)
    * @returns Promise resolving to array of user summaries
    */
-  public async getAllUsers(filters?: UserFilterDto): Promise<UserSummaryDto[]> {
+  public async getAllUsers(filters?: UserFilterDto, bypassCache = false): Promise<UserSummaryDto[]> {
     let params = new HttpParams();
 
     if (filters?.role) {
@@ -72,19 +73,38 @@ export class UserManagementService {
       params = params.set('searchQuery', filters.searchQuery);
     }
 
+    // Add cache-buster timestamp if bypassing cache
+    if (bypassCache) {
+      params = params.set('_t', Date.now().toString());
+    }
+
     return firstValueFrom(
-      this.http.get<UserSummaryDto[]>(this.apiUrl, {params})
+      this.http.get<UserSummaryDto[]>(this.apiUrl, {
+        params,
+        headers: bypassCache ? {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'} : {}
+      })
     );
   }
 
   /**
    * Retrieves user statistics.
    *
+   * @param bypassCache - If true, forces fresh data fetch (bypasses HTTP cache)
    * @returns Promise resolving to user statistics
    */
-  public async getUserStats(): Promise<UserStatsDto> {
+  public async getUserStats(bypassCache = false): Promise<UserStatsDto> {
+    let params = new HttpParams();
+    
+    // Add cache-buster timestamp if bypassing cache
+    if (bypassCache) {
+      params = params.set('_t', Date.now().toString());
+    }
+
     return firstValueFrom(
-      this.http.get<UserStatsDto>(`${this.apiUrl}/stats`)
+      this.http.get<UserStatsDto>(`${this.apiUrl}/stats`, {
+        params,
+        headers: bypassCache ? {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'} : {}
+      })
     );
   }
 

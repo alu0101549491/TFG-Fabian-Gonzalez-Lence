@@ -353,6 +353,61 @@ import {UserRole} from '@domain/enumerations/user-role';
                 }
 
                 @if (isEditMode()) {
+                  <div class="form-group form-group-full">
+                    <label class="checkbox-label">
+                      <input 
+                        type="checkbox" 
+                        [checked]="changePassword()"
+                        (change)="togglePasswordChange()" />
+                      <span>Change Password</span>
+                    </label>
+                  </div>
+                  
+                  @if (changePassword()) {
+                    <div class="form-group form-group-full">
+                      <label for="currentPassword" class="form-label">Current Password</label>
+                      <input
+                        type="password"
+                        id="currentPassword"
+                        formControlName="currentPassword"
+                        class="form-control"
+                        [class.form-control-error]="isFieldInvalid('currentPassword')"
+                        placeholder="Enter current password (optional for admins)" />
+                      <small class="form-hint">Leave empty if you're a system administrator</small>
+                      @if (isFieldInvalid('currentPassword')) {
+                        <span class="form-error">{{ getFieldError('currentPassword') }}</span>
+                      }
+                    </div>
+
+                    <div class="form-group form-group-full">
+                      <label for="newPassword" class="form-label">New Password *</label>
+                      <input
+                        type="password"
+                        id="newPassword"
+                        formControlName="newPassword"
+                        class="form-control"
+                        [class.form-control-error]="isFieldInvalid('newPassword')"
+                        placeholder="Enter new password" />
+                      @if (isFieldInvalid('newPassword')) {
+                        <span class="form-error">{{ getFieldError('newPassword') }}</span>
+                      }
+                    </div>
+
+                    <div class="form-group form-group-full">
+                      <label for="confirmNewPassword" class="form-label">Confirm New Password *</label>
+                      <input
+                        type="password"
+                        id="confirmNewPassword"
+                        formControlName="confirmNewPassword"
+                        class="form-control"
+                        [class.form-control-error]="isFieldInvalid('confirmNewPassword')"
+                        placeholder="Confirm new password" />
+                      @if (isFieldInvalid('confirmNewPassword')) {
+                        <span class="form-error">{{ getFieldError('confirmNewPassword') }}</span>
+                      }
+                    </div>
+                  }
+                  
                   <div class="form-group">
                     <label class="checkbox-label">
                       <input type="checkbox" formControlName="isActive" />
@@ -921,6 +976,15 @@ import {UserRole} from '@domain/enumerations/user-role';
       grid-column: 1 / -1;
     }
 
+    /* Form Hint */
+    .form-hint {
+      display: block;
+      margin-top: var(--spacing-xs);
+      font-size: var(--font-size-sm);
+      color: var(--color-gray-600);
+      font-style: italic;
+    }
+
     /* Warning Text */
     .warning-text {
       color: var(--color-gray-700);
@@ -1059,11 +1123,15 @@ export class UserManagementComponent implements OnInit {
     !!this.searchQuery() || !!this.roleFilter() || this.activeOnlyFilter()
   );
 
+  /** Signal to track if changing password in edit mode */
+  public changePassword = signal(false);
+
   /**
    * Creates an instance of UserManagementComponent.
    */
   public constructor() {
     this.userForm = this.fb.group({
+      id: [''], // Hidden field to store user ID in edit mode
       username: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
       firstName: ['', [Validators.required]],
@@ -1071,6 +1139,9 @@ export class UserManagementComponent implements OnInit {
       role: ['', [Validators.required]],
       phone: [''],
       password: ['', [Validators.required, Validators.minLength(6)]],
+      currentPassword: [''],
+      newPassword: ['', [Validators.minLength(6)]],
+      confirmNewPassword: [''],
       isActive: [true],
     });
   }
@@ -1129,7 +1200,9 @@ export class UserManagementComponent implements OnInit {
    */
   public openEditModal(user: UserSummaryDto): void {
     this.isEditMode.set(true);
+    this.changePassword.set(false);
     this.userForm.patchValue({
+      id: user.id, // Store the user ID
       username: user.username,
       email: user.email,
       firstName: user.firstName,
@@ -1137,9 +1210,15 @@ export class UserManagementComponent implements OnInit {
       role: user.role,
       phone: user.phone || '',
       isActive: user.isActive,
+      password: '',
+      currentPassword: '',
+      newPassword: '',
+      confirmNewPassword: '',
     });
     this.userForm.get('password')?.disable();
-    this.userForm.patchValue({id: user.id});
+    this.userForm.get('currentPassword')?.disable();
+    this.userForm.get('newPassword')?.disable();
+    this.userForm.get('confirmNewPassword')?.disable();
     this.formError.set(null);
     this.showModal.set(true);
   }
@@ -1149,8 +1228,43 @@ export class UserManagementComponent implements OnInit {
    */
   public closeModal(): void {
     this.showModal.set(false);
+    this.changePassword.set(false);
     this.userForm.reset();
     this.formError.set(null);
+  }
+
+  /**
+   * Toggles password change fields in edit mode.
+   */
+  public togglePasswordChange(): void {
+    const shouldChange = !this.changePassword();
+    this.changePassword.set(shouldChange);
+    
+    if (shouldChange) {
+      // Enable password fields
+      this.userForm.get('currentPassword')?.enable();
+      this.userForm.get('newPassword')?.enable();
+      this.userForm.get('confirmNewPassword')?.enable();
+      
+      // Make them required
+      this.userForm.get('newPassword')?.setValidators([Validators.required, Validators.minLength(6)]);
+      this.userForm.get('confirmNewPassword')?.setValidators([Validators.required]);
+    } else {
+      // Disable and clear password fields
+      this.userForm.patchValue({
+        currentPassword: '',
+        newPassword: '',
+        confirmNewPassword: '',
+      });
+      this.userForm.get('currentPassword')?.disable();
+      this.userForm.get('newPassword')?.disable();
+      this.userForm.get('confirmNewPassword')?.disable();
+      this.userForm.get('newPassword')?.clearValidators();
+      this.userForm.get('confirmNewPassword')?.clearValidators();
+    }
+    
+    this.userForm.get('newPassword')?.updateValueAndValidity();
+    this.userForm.get('confirmNewPassword')?.updateValueAndValidity();
   }
 
   /**
@@ -1180,6 +1294,23 @@ export class UserManagementComponent implements OnInit {
     try {
       if (this.isEditMode()) {
         const userId = this.userForm.value.id;
+        
+        // Validate password change if enabled
+        if (this.changePassword()) {
+          const newPassword = this.userForm.value.newPassword?.trim();
+          const confirmPassword = this.userForm.value.confirmNewPassword?.trim();
+          
+          if (!newPassword || !confirmPassword) {
+            this.formError.set('Please fill in all password fields');
+            return;
+          }
+          
+          if (newPassword !== confirmPassword) {
+            this.formError.set('New passwords do not match');
+            return;
+          }
+        }
+        
         const updateData: UpdateUserByAdminDto = {
           username: this.userForm.value.username.trim(),
           email: this.userForm.value.email.trim(),
@@ -1189,6 +1320,13 @@ export class UserManagementComponent implements OnInit {
           phone: this.userForm.value.phone?.trim() || null,
           isActive: this.userForm.value.isActive,
         };
+        
+        // Add password if changing
+        if (this.changePassword()) {
+          updateData.newPassword = this.userForm.value.newPassword.trim();
+          updateData.currentPassword = this.userForm.value.currentPassword?.trim();
+        }
+        
         await this.userManagementService.updateUser(userId, updateData);
       } else {
         const createData: CreateUserDto = {
@@ -1203,8 +1341,8 @@ export class UserManagementComponent implements OnInit {
         await this.userManagementService.createUser(createData);
       }
 
-      // Reload data to refresh the list (throw errors to catch here)
-      await this.loadData(true);
+      // Reload data to refresh the list (bypass cache to get fresh data)
+      await this.loadData(true, true);
       
       // Only close modal after successful refresh
       this.closeModal();
@@ -1254,8 +1392,8 @@ export class UserManagementComponent implements OnInit {
       // Delete user
       await this.userManagementService.deleteUser(user.id);
       
-      // Reload data to refresh the list (throw errors to catch here)
-      await this.loadData(true);
+      // Reload data to refresh the list (bypass cache to get fresh data)
+      await this.loadData(true, true);
       
       // Only close modal and reset state after successful refresh
       this.showDeleteConfirm.set(false);

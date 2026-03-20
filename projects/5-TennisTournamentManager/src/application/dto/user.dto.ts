@@ -92,6 +92,8 @@ export interface UpdateUserByAdminDto {
   role?: UserRole;
   isActive?: boolean;
   phone?: string | null;
+  currentPassword?: string; // Optional - admin doesn't need it
+  newPassword?: string; // If provided, password will be changed
 }
 
 /** DTO for user filter criteria. */

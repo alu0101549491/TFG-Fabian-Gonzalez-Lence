@@ -13,6 +13,7 @@
 
 export {UserRole} from './user-role';
 export {TournamentStatus} from './tournament-status';
+export {TournamentType} from './tournament-type';
 export {Surface} from './surface';
 export {MatchStatus} from './match-status';
 export {BracketType} from './bracket-type';

@@ -85,7 +85,22 @@
             required
           >
             @for (surface of surfaces; track surface) {
-              <option [value]="surface">{{ surface }}</option>
+              <option [value]="surface">{{ surface | enumFormat }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="tournamentType">Tournament Type</label>
+          <select
+            id="tournamentType"
+            class="form-input"
+            [(ngModel)]="formData.tournamentType"
+            name="tournamentType"
+            required
+          >
+            @for (type of tournamentTypes; track type) {
+              <option [value]="type">{{ type | enumFormat }}</option>
             }
           </select>
         </div>
@@ -113,7 +128,7 @@
             name="acceptanceType"
           >
             @for (type of acceptanceTypes; track type) {
-              <option [value]="type">{{ type }}</option>
+              <option [value]="type">{{ type | enumFormat }}</option>
             }
           </select>
         </div>
@@ -127,7 +142,7 @@
             name="rankingSystem"
           >
             @for (system of rankingSystems; track system) {
-              <option [value]="system">{{ system }}</option>
+              <option [value]="system">{{ system | enumFormat }}</option>
             }
           </select>
         </div>
@@ -162,8 +177,12 @@
             class="form-input"
             [(ngModel)]="formData.endDate"
             name="endDate"
+            [min]="formData.startDate"
             required
           />
+          @if (formData.startDate && formData.endDate && formData.endDate < formData.startDate) {
+            <div class="form-error">End date cannot be before start date</div>
+          }
         </div>
 
         <div class="form-group">
@@ -174,7 +193,11 @@
             class="form-input"
             [(ngModel)]="formData.registrationOpenDate"
             name="registrationOpenDate"
+            [max]="formData.startDate"
           />
+          @if (formData.registrationOpenDate && formData.startDate && formData.registrationOpenDate >= formData.startDate) {
+            <div class="form-error">Registration must open before tournament starts</div>
+          }
         </div>
 
         <div class="form-group">
@@ -185,7 +208,15 @@
             class="form-input"
             [(ngModel)]="formData.registrationCloseDate"
             name="registrationCloseDate"
+            [min]="formData.registrationOpenDate"
+            [max]="formData.startDate"
           />
+          @if (formData.registrationOpenDate && formData.registrationCloseDate && formData.registrationCloseDate < formData.registrationOpenDate) {
+            <div class="form-error">Registration close cannot be before registration open</div>
+          }
+          @if (formData.registrationCloseDate && formData.startDate && formData.registrationCloseDate > formData.startDate) {
+            <div class="form-error">Registration must close before or on tournament start date</div>
+          }
         </div>
       </div>
     </div>
