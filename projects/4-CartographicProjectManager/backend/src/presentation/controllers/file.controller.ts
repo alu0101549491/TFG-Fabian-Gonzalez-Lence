@@ -315,12 +315,34 @@ export class FileController {
       }
 
       // Get preview link from Dropbox (shared link that opens in browser)
-      const previewUrl = await this.dropboxService.getPreviewLink(file.dropboxPath);
+      try {
+        const previewUrl = await this.dropboxService.getPreviewLink(file.dropboxPath);
 
-      sendSuccess(res, {
-        previewUrl,
-        filename: file.filename || file.originalName,
-      });
+        sendSuccess(res, {
+          previewUrl,
+          filename: file.filename || file.originalName,
+        });
+      } catch (dropboxError: any) {
+        // Check if file doesn't exist in Dropbox (was deleted there)
+        const errorMessage = dropboxError?.error?.error_summary || dropboxError?.message || String(dropboxError);
+        
+        if (errorMessage.includes('not_found') || errorMessage.includes('path/not_found')) {
+          logWarning('File not found in Dropbox (may have been deleted)', {
+            fileId: file.id,
+            dropboxPath: file.dropboxPath,
+            projectId: file.projectId,
+          });
+          sendError(
+            res,
+            'File no longer exists in Dropbox. It may have been deleted. Try syncing from Dropbox to update the file list.',
+            HTTP_STATUS.NOT_FOUND
+          );
+          return;
+        }
+        
+        // Re-throw other errors
+        throw dropboxError;
+      }
     } catch (error) {
       const normalizedError =
         error instanceof Error ? error : new Error(String(error));
@@ -612,8 +634,43 @@ export class FileController {
       const dbFiles = await this.fileRepository.findByProjectId(projectId);
       const dbFilePaths = new Set(dbFiles.map((f) => f.dropboxPath));
 
+      // Get set of Dropbox file paths for comparison
+      const dropboxFilePaths = new Set(dropboxFiles.map((f) => f.path));
+
       let syncedCount = 0;
       let skippedCount = 0;
+      let deletedCount = 0;
+
+      // Delete database entries for files that no longer exist in Dropbox
+      for (const dbFile of dbFiles) {
+        if (!dropboxFilePaths.has(dbFile.dropboxPath)) {
+          try {
+            await this.fileRepository.delete(dbFile.id);
+            deletedCount++;
+
+            logDebug('File removed from database (no longer in Dropbox)', {
+              projectId,
+              fileName: dbFile.filename,
+              dropboxPath: dbFile.dropboxPath,
+            });
+
+            // Emit WebSocket event for file deletion
+            emitToProject(projectId, 'file:deleted', {
+              fileId: dbFile.id,
+              projectId,
+            });
+          } catch (error) {
+            const normalizedError =
+              error instanceof Error ? error : new Error(String(error));
+            logError('Failed to delete file from database during sync', normalizedError, {
+              projectId,
+              fileId: dbFile.id,
+              fileName: dbFile.filename,
+            });
+            // Continue with other files
+          }
+        }
+      }
 
       // Create database entries for files that don't exist in DB
       for (const dropboxFile of dropboxFiles) {
@@ -670,14 +727,20 @@ export class FileController {
         projectCode: project.code,
         totalDropboxFiles: dropboxFiles.length,
         syncedCount,
+        deletedCount,
         skippedCount,
       });
+
+      const message = deletedCount > 0
+        ? `Synced ${syncedCount} new file(s) and removed ${deletedCount} deleted file(s) from Dropbox`
+        : `Successfully synced ${syncedCount} file(s) from Dropbox`;
 
       sendSuccess(res, {
         totalFiles: dropboxFiles.length,
         synced: syncedCount,
+        deleted: deletedCount,
         skipped: skippedCount,
-      }, `Successfully synced ${syncedCount} file(s) from Dropbox`);
+      }, message);
     } catch (error) {
       const normalizedError =
         error instanceof Error ? error : new Error(String(error));

@@ -49,7 +49,7 @@ export interface UseFilesReturn {
     onProgress?: UploadProgressCallback,
     options?: UploadRequestOptions
   ) => Promise<FileSummaryDto | null>;
-  syncFilesFromDropbox: (projectId: string) => Promise<{synced: number; skipped: number; totalFiles: number}>;
+  syncFilesFromDropbox: (projectId: string) => Promise<{synced: number; deleted: number; skipped: number; totalFiles: number}>;
   getTemporaryDownloadUrl: (fileId: string) => Promise<string>;
   getPreviewUrl: (fileId: string) => Promise<string>;
   deleteFile: (fileId: string) => Promise<boolean>;
@@ -322,21 +322,23 @@ export function useFiles(): UseFilesReturn {
   /**
    * Syncs files from Dropbox to the database
    * This will fetch all files from Dropbox and create database entries for any missing files
+   * It will also remove database entries for files that no longer exist in Dropbox
    *
    * @param projectId - Project ID to sync files for
-   * @returns Sync statistics (synced, skipped, total)
+   * @returns Sync statistics (synced, deleted, skipped, total)
    */
-  async function syncFilesFromDropbox(projectId: string): Promise<{synced: number; skipped: number; totalFiles: number}> {
+  async function syncFilesFromDropbox(projectId: string): Promise<{synced: number; deleted: number; skipped: number; totalFiles: number}> {
     error.value = null;
 
     try {
       const response = await httpClient.post<{
         synced: number;
+        deleted: number;
         skipped: number;
         totalFiles: number;
       }>(`/files/project/${projectId}/sync`, {});
 
-      // Reload files to get the newly synced ones
+      // Reload files to get the newly synced ones and remove deleted ones
       await loadFilesByProject(projectId);
 
       return response.data;

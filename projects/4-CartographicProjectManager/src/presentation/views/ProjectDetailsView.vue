@@ -1515,10 +1515,28 @@ async function handleSyncFromDropbox(): Promise<void> {
   try {
     const result = await syncFilesFromDropbox(currentProject.value.project.id);
     
+    const messages: string[] = [];
+    
     if (result.synced > 0) {
-      alert(`Successfully synced ${result.synced} file(s) from Dropbox.\n\nTotal files: ${result.totalFiles}\nNewly synced: ${result.synced}\nAlready in database: ${result.skipped}`);
+      messages.push(`✅ Added ${result.synced} new file(s)`);
+    }
+    
+    if (result.deleted > 0) {
+      messages.push(`🗑️ Removed ${result.deleted} deleted file(s)`);
+    }
+    
+    if (result.skipped > 0) {
+      messages.push(`ℹ️ ${result.skipped} file(s) already in sync`);
+    }
+    
+    const summary = `Total files in Dropbox: ${result.totalFiles}`;
+    
+    if (result.synced > 0 || result.deleted > 0) {
+      alert(`Sync completed!\n\n${messages.join('\n')}\n\n${summary}`);
+      // Reload files to show updated list
+      await loadFilesByProject(currentProject.value.project.id);
     } else {
-      alert(`No new files to sync.\n\nAll ${result.totalFiles} file(s) in Dropbox are already in the database.`);
+      alert(`All files are in sync.\n\n${summary}`);
     }
   } catch (error) {
     console.error('Failed to sync from Dropbox:', error);
