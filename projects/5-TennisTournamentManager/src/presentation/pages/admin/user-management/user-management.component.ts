@@ -1085,10 +1085,14 @@ export class UserManagementComponent implements OnInit {
 
   /**
    * Loads users and statistics.
+   * 
+   * @param throwOnError - If true, re-throws errors instead of setting errorMessage
    */
-  private async loadData(): Promise<void> {
+  private async loadData(throwOnError = false): Promise<void> {
     this.isLoading.set(true);
-    this.errorMessage.set(null);
+    if (!throwOnError) {
+      this.errorMessage.set(null);
+    }
 
     try {
       const [users, stats] = await Promise.all([
@@ -1099,6 +1103,9 @@ export class UserManagementComponent implements OnInit {
       this.users.set(users);
       this.stats.set(stats);
     } catch (error) {
+      if (throwOnError) {
+        throw error; // Re-throw for caller to handle
+      }
       const message = error instanceof Error ? error.message : 'Failed to load users';
       this.errorMessage.set(message);
     } finally {
@@ -1155,6 +1162,18 @@ export class UserManagementComponent implements OnInit {
       return;
     }
 
+    // Additional validation - ensure required fields are not empty strings
+    const formValues = this.userForm.value;
+    if (!this.isEditMode()) {
+      if (!formValues.username?.trim() || !formValues.email?.trim() || 
+          !formValues.firstName?.trim() || !formValues.lastName?.trim() || 
+          !formValues.password?.trim() || !formValues.role?.trim()) {
+        this.formError.set('Please fill in all required fields');
+        this.userForm.markAllAsTouched();
+        return;
+      }
+    }
+
     this.isSubmitting.set(true);
     this.formError.set(null);
 
@@ -1162,32 +1181,43 @@ export class UserManagementComponent implements OnInit {
       if (this.isEditMode()) {
         const userId = this.userForm.value.id;
         const updateData: UpdateUserByAdminDto = {
-          username: this.userForm.value.username,
-          email: this.userForm.value.email,
-          firstName: this.userForm.value.firstName,
-          lastName: this.userForm.value.lastName,
+          username: this.userForm.value.username.trim(),
+          email: this.userForm.value.email.trim(),
+          firstName: this.userForm.value.firstName.trim(),
+          lastName: this.userForm.value.lastName.trim(),
           role: this.userForm.value.role,
-          phone: this.userForm.value.phone || null,
+          phone: this.userForm.value.phone?.trim() || null,
           isActive: this.userForm.value.isActive,
         };
         await this.userManagementService.updateUser(userId, updateData);
       } else {
         const createData: CreateUserDto = {
-          username: this.userForm.value.username,
-          email: this.userForm.value.email,
-          firstName: this.userForm.value.firstName,
-          lastName: this.userForm.value.lastName,
-          password: this.userForm.value.password,
+          username: this.userForm.value.username.trim(),
+          email: this.userForm.value.email.trim(),
+          firstName: this.userForm.value.firstName.trim(),
+          lastName: this.userForm.value.lastName.trim(),
+          password: this.userForm.value.password.trim(),
           role: this.userForm.value.role,
-          phone: this.userForm.value.phone || undefined,
+          phone: this.userForm.value.phone?.trim() || undefined,
         };
         await this.userManagementService.createUser(createData);
       }
 
+      // Reload data to refresh the list (throw errors to catch here)
+      await this.loadData(true);
+      
+      // Only close modal after successful refresh
       this.closeModal();
-      await this.loadData();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Operation failed';
+    } catch (error: any) {
+      // Extract error message from HTTP error response
+      let message = 'Operation failed';
+      if (error?.error?.message) {
+        message = error.error.message;
+      } else if (error?.message) {
+        message = error.message;
+      } else if (typeof error?.error === 'string') {
+        message = error.error;
+      }
       this.formError.set(message);
     } finally {
       this.isSubmitting.set(false);
@@ -1218,15 +1248,23 @@ export class UserManagementComponent implements OnInit {
     if (!user) return;
 
     this.isDeleting.set(true);
+    this.errorMessage.set(null);
 
     try {
+      // Delete user
       await this.userManagementService.deleteUser(user.id);
+      
+      // Reload data to refresh the list (throw errors to catch here)
+      await this.loadData(true);
+      
+      // Only close modal and reset state after successful refresh
       this.showDeleteConfirm.set(false);
       this.userToDelete.set(null);
-      await this.loadData();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete user';
       this.errorMessage.set(message);
+      
+      // Keep modal open so user can see error and try again
     } finally {
       this.isDeleting.set(false);
     }

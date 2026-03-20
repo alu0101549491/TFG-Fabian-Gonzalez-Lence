@@ -46,7 +46,11 @@ export const config = {
   },
   
   /** CORS configuration */
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  corsOrigin: process.env.CORS_ORIGIN 
+    ? process.env.CORS_ORIGIN.split(',')
+    : (process.env.NODE_ENV === 'production' 
+      ? 'https://yourdomain.com' 
+      : ['http://localhost:4200', 'http://localhost:4201', 'http://localhost:5173']),
   
   /** Rate limiting configuration */
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes

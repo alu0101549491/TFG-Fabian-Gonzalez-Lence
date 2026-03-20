@@ -61,9 +61,16 @@ export class AxiosClient {
       (response: AxiosResponse) => response,
       (error) => {
         // Handle 401 Unauthorized - clear token and redirect to login
+        // BUT: don't redirect if we're already on an auth page (login/register)
         if (error.response?.status === 401) {
-          localStorage.removeItem(JWT_STORAGE_KEY);
-          window.location.href = '/login';
+          const currentPath = window.location.pathname;
+          const isAuthPage = currentPath.includes('/login') || currentPath.includes('/register');
+          
+          // Only redirect if not on auth pages (expired session on protected routes)
+          if (!isAuthPage) {
+            localStorage.removeItem(JWT_STORAGE_KEY);
+            window.location.href = '/login';
+          }
         }
         return Promise.reject(error);
       },

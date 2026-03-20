@@ -19,6 +19,7 @@ import {AuthRequest} from '../middleware/auth.middleware';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
 import {ImageOptimizationService} from '../../application/services/image-optimization.service';
+import {generateId} from '../../shared/utils/id-generator';
 
 /**
  * User controller.
@@ -169,6 +170,7 @@ export class UserController {
       const passwordHash = await bcrypt.hash(password, 10);
       
       const user = userRepository.create({
+        id: generateId('usr'),
         username,
         email,
         firstName,

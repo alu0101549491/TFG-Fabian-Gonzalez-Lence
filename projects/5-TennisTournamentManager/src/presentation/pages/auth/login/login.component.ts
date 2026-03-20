@@ -595,6 +595,7 @@ export class LoginComponent {
   /**
    * Handles form submission and user authentication.
    * On success, stores auth state and navigates to tournaments.
+   * On failure, clears password field but retains email for easier retry.
    */
   public async onSubmit(): Promise<void> {
     if (this.loginForm.invalid) {
@@ -614,6 +615,10 @@ export class LoginComponent {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed';
       this.errorMessage.set(message);
+      
+      // Clear password field for security, but keep email for easier retry
+      this.loginForm.patchValue({password: ''});
+      this.loginForm.get('password')?.markAsUntouched();
     } finally {
       this.isLoading.set(false);
     }

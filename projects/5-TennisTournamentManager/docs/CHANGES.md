@@ -6,6 +6,185 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.34.3] - 2026-03-20
+
+### Fixed — Login Page Reload on Failed Authentication (UX)
+
+**Issue**: When entering wrong credentials, the login page would reload, forcing users to re-enter both email and password.
+
+#### Root Cause
+
+**Axios Interceptor Redirect** (`/src/infrastructure/http/axios-client.ts`):
+- HTTP interceptor caught ALL 401 (Unauthorized) responses
+- Redirected to `/login` using `window.location.href` (causes full page reload)
+- This was intended for expired sessions on protected routes
+- BUT it also triggered on failed login attempts, clearing the form unnecessarily
+
+#### Solution
+
+**Smart Interceptor** - Only redirect when NOT on auth pages:
+```typescript
+if (error.response?.status === 401) {
+  const currentPath = window.location.pathname;
+  const isAuthPage = currentPath.includes('/login') || currentPath.includes('/register');
+  
+  // Only redirect if not on auth pages (expired session on protected routes)
+  if (!isAuthPage) {
+    localStorage.removeItem(JWT_STORAGE_KEY);
+    window.location.href = '/login';
+  }
+}
+```
+
+**Enhanced Login Component** (`/src/presentation/pages/auth/login/login.component.ts`):
+- On failed login, clear only password field (security best practice)
+- Retain email field value for easier retry
+- Reset password field's touched state for clean UX
+
+#### Benefits
+
+- ✅ No page reload on failed login attempts
+- ✅ Email retained for easier retry
+- ✅ Password cleared for security
+- ✅ Interceptor still works correctly for expired sessions on protected routes
+- ✅ Improved user experience - faster error recovery
+
+### Fixed — User Creation Database Error (Critical)
+
+**Issue**: User creation via User Management page failed with "Database operation failed" error.
+
+#### Root Cause
+
+**Missing ID Generation** (`/backend/src/presentation/controllers/user.controller.ts`):
+- User entity requires a primary key `id` field (varchar, not auto-generated)
+- Create endpoint didn't generate an ID before saving user to database
+- Database rejected the insert operation due to missing required primary key value
+
+#### Solution
+
+**Added ID Generation**:
+- Imported `generateId` utility from `shared/utils/id-generator.ts`
+- Added `id: generateId('usr')` to user creation object
+- Follows same pattern as auth registration and other entity creation endpoints
+- Generated ID format: `usr_a1b2c3d4` (8 random hex characters)
+
+#### Code Changes
+
+```typescript
+// Added import
+import {generateId} from '../../shared/utils/id-generator';
+
+// Updated user creation
+const user = userRepository.create({
+  id: generateId('usr'),  // ← Critical fix
+  username,
+  email,
+  firstName,
+  lastName,
+  passwordHash,
+  role,
+  phone: phone || null,
+  isActive: true,
+  gdprConsent: true,
+});
+```
+
+#### Impact
+
+- ✅ User creation now works correctly
+- ✅ Consistent ID generation across all entities
+- ✅ Follows established project patterns
+
+### Fixed — User Creation Form Validation and Error Handling
+
+**Issue**: Users receiving generic "Operation failed" error when creating users, making it difficult to diagnose what field was invalid.
+
+#### Improvements
+
+**Enhanced Error Message Display** (`/src/presentation/pages/admin/user-management/user-management.component.ts`):
+- Improved HTTP error response extraction to show actual backend validation messages
+- Error message priority: `error.error.message` → `error.message` → `error.error` (string) → generic fallback
+- Users now see specific errors like "Missing required fields: username, email, firstName, lastName, password, role"
+
+**Added Client-Side Validation Guards**:
+- Added explicit validation before HTTP request to catch empty/whitespace-only required fields
+- Trims all string inputs before sending to backend to prevent accidental whitespace-only values
+- Shows "Please fill in all required fields" if form somehow bypasses Angular validation
+- Validates: username, email, firstName, lastName, password, role (for create mode)
+
+**Data Sanitization**:
+- All text fields are trimmed using `.trim()` before sending to backend
+- Phone field properly handles empty string → `null` (edit) or `undefined` (create)
+- Prevents sending whitespace-only values that could pass form validation but fail backend
+
+#### Benefits
+
+- **Better UX**: Users see specific error messages instead of generic "Operation failed"
+- **Prevents invalid requests**: Client-side guards catch issues before HTTP call
+- **Cleaner data**: Automatic trimming prevents accidental whitespace in usernames/emails
+- **Easier debugging**: Specific validation messages help users correct their input
+
+### Fixed — CORS Configuration for Multiple Development Ports
+
+**Issue**: Frontend running on alternate port (4201) blocked by CORS when port 4200 was in use.
+
+#### Solution
+
+**Updated CORS Configuration** (`/backend/src/shared/config/index.ts`):
+- Changed from single origin string to array of allowed origins for development
+- Default development origins: `['http://localhost:4200', 'http://localhost:4201', 'http://localhost:5173']`
+- Production mode still uses single origin (configurable via `CORS_ORIGIN` env var)
+- Environment variable now supports comma-separated list: `CORS_ORIGIN=http://localhost:4200,http://localhost:4201`
+
+**Why This Helps**:
+- Vite automatically tries alternate ports when default is occupied
+- Backend now accepts requests from common Vite ports (4200, 4201, 5173)
+- No more CORS errors when running multiple dev instances
+- Flexible configuration via environment variables for different setups
+
+---
+
+## [1.34.2] - 2026-03-20
+
+### Fixed — User Management Delete and Update Operations
+
+**Issue**: User deletion appeared to fail but actually succeeded on backend, causing UI inconsistency.
+
+#### Root Cause
+
+The `handleDelete()` and `handleSubmit()` methods closed modals and reset state **before** verifying that the user list refresh succeeded. If `loadData()` failed after a successful backend operation, the modal would close but the list wouldn't update, creating a false impression that the operation failed.
+
+**Symptom**: User clicks delete → modal closes → list doesn't refresh → user tries again → gets 404 because user was already deleted.
+
+#### Solution
+
+**Updated Delete Flow** (`/src/presentation/pages/admin/user-management/user-management.component.ts`):
+1. Perform delete operation
+2. **Reload data with error propagation** (`loadData(true)`)
+3. **Only close modal after successful refresh**
+4. If refresh fails, keep modal open with error message
+
+**Updated Create/Edit Flow**:
+1. Perform create/update operation
+2. **Reload data with error propagation** (`loadData(true)`)
+3. **Only close modal after successful refresh**
+4. If refresh fails, keep modal open with error message
+
+**Enhanced `loadData()` Method**:
+- Added `throwOnError` parameter (default: `false`)
+- When `true`, re-throws errors for caller to handle
+- When `false`, catches errors and sets `errorMessage` signal (initial load behavior)
+- Prevents silent failures during CRUD operations
+
+#### Benefits
+
+- **Consistent UI state**: List always reflects actual backend state
+- **Better error visibility**: Users see errors if refresh fails
+- **Retry capability**: Modal stays open so users can retry failed operations
+- **Prevents confusion**: No more "ghost" users or false success indicators
+
+---
+
 ## [1.34.1] - 2026-03-19
 
 ### Changed — User Management Design System Alignment
