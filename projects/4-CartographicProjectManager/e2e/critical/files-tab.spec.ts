@@ -1392,7 +1392,7 @@ test.describe('Files tab (critical)', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             success: true,
-            data: {synced: 1, skipped: 0, totalFiles: 1},
+            data: {synced: 1, deleted: 0, skipped: 0, totalFiles: 1},
           }),
         });
       },
@@ -1407,14 +1407,16 @@ test.describe('Files tab (critical)', () => {
 
       page.once('dialog', async (dialog) => {
         expect(dialog.type()).toBe('alert');
-        expect(dialog.message()).toContain('Successfully synced 1 file(s) from Dropbox');
-        expect(dialog.message()).toContain('Total files: 1');
-        expect(dialog.message()).toContain('Newly synced: 1');
-        expect(dialog.message()).toContain('Already in database: 0');
+        expect(dialog.message()).toContain('Sync completed!');
+        expect(dialog.message()).toContain('✅ Added 1 new file(s)');
+        expect(dialog.message()).toContain('Total files in Dropbox: 1');
         await dialog.accept();
       });
 
       await page.getByRole('button', {name: /Sync from Dropbox/}).click();
+
+      // Wait for the file list to reload after sync
+      await page.waitForTimeout(500);
 
       const syncedCard = page.locator('.file-card').filter({hasText: syncedFileName});
       await expect(syncedCard).toBeVisible();
