@@ -76,16 +76,28 @@ export class BracketController {
         if (!oldBracket.isPublished) {
           console.log(`🗑️ Deleting unpublished bracket ${oldBracket.id}...`);
           
-          // Delete matches first (foreign key constraint)
-          await matchRepository.delete({bracketId: oldBracket.id});
-          
-          // Delete phases
-          await phaseRepository.delete({bracketId: oldBracket.id});
-          
-          // Delete bracket
-          await bracketRepository.delete(oldBracket.id);
-          
-          console.log(`✅ Deleted unpublished bracket ${oldBracket.id} and its data`);
+          try {
+            // Delete matches first (foreign key constraint)
+            const matchDeleteResult = await matchRepository.delete({bracketId: oldBracket.id});
+            console.log(`  Deleted ${matchDeleteResult.affected || 0} matches`);
+            
+            // Delete phases
+            const phaseDeleteResult = await phaseRepository.delete({bracketId: oldBracket.id});
+            console.log(`  Deleted ${phaseDeleteResult.affected || 0} phases`);
+            
+            // Delete bracket
+            const bracketDeleteResult = await bracketRepository.delete(oldBracket.id);
+            console.log(`  Deleted ${bracketDeleteResult.affected || 0} bracket(s)`);
+            
+            console.log(`✅ Deleted unpublished bracket ${oldBracket.id} and its data`);
+          } catch (deleteError) {
+            console.error(`❌ Error deleting bracket ${oldBracket.id}:`, deleteError);
+            throw new AppError(
+              `Failed to delete existing bracket: ${deleteError instanceof Error ? deleteError.message : 'Unknown error'}`,
+              HTTP_STATUS.INTERNAL_SERVER_ERROR,
+              ERROR_CODES.DATABASE_ERROR
+            );
+          }
         }
       }
       

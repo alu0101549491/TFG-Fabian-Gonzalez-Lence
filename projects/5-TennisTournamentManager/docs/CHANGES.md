@@ -6,7 +6,213 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.39.14] - 2026-03-21
+## [1.39.17] - 2026-03-21
+
+### Fixed — MATCH_PLAY Bracket Generates Matches for Small Brackets
+
+**Issue**: MATCH_PLAY bracket type was generating zero matches regardless of participant count. For tournaments with 2-4 participants, this resulted in empty matches pages even though the bracket was correctly configured with approved registrations. The matches page would show "No Matches Found" despite having valid participants ready to compete.
+
+**User Feedback**: "That doesn't make sense, the match should be shown independent from the bracket type."
+
+**Root Cause**: The `generateMatchPlay()` method was designed for large flexible brackets where organizers manually schedule matches. It returned an empty matches array for ALL participant counts, including small brackets where automatic match generation makes sense. Additionally, there was a property name mismatch: the code used `match.roundNumber` but the Match entity property is named `match.round`, causing a NOT NULL constraint violation.
+
+**Solution**: Modified `generateMatchPlay()` to intelligently generate initial matches for small brackets:
+- **2 participants**: Generates 1 match (head-to-head)
+- **3-4 participants**: Generates initial matches (Round 1)
+- **5+ participants**: Empty phase for manual scheduling (original behavior)
+- **Bug Fix**: Changed `match.roundNumber` to `match.round` to match entity property name
+
+**Changes**:
+
+#### Match Generator Service ([match-generator.service.ts](backend/src/application/services/match-generator.service.ts)):
+
+**1. Updated Method Signature**:
+```typescript
+// Before
+private generateMatchPlay(bracketId: string): MatchGenerationResult
+
+// After
+private generateMatchPlay(
+  bracketId: string,
+  participantIds: string[]
+): MatchGenerationResult
+```
+
+**2. Added Participant-Based Logic**:
+```typescript
+if (participantIds.length === 2) {
+  // Create single match for 2 participants
+  const match = new Match();
+  match.round = 1;  // ✅ Fixed: was roundNumber
+  match.participant1Id = participantIds[0];
+  match.participant2Id = participantIds[1];
+  match.status = MatchStatus.SCHEDULED;
+  matches.push(match);
+  phase.matchCount = 1;
+} else if (participantIds.length >= 3 && participantIds.length <= 4) {
+  // Generate initial round matches
+  // ...
+} else {
+  // Empty phase for manual scheduling (5+ participants)
+  phase.matchCount = 0;
+}
+```
+
+**3. Updated Switch Case**:
+```typescript
+case BracketType.MATCH_PLAY:
+  return this.generateMatchPlay(bracketId, participantIds); // ✅ Now passes participantIds
+```
+
+**4. Improved Error Handling in Bracket Creation** ([bracket.controller.ts](backend/src/presentation/controllers/bracket.controller.ts)):
+```typescript
+try {
+  // Delete matches first (foreign key constraint)
+  const matchDeleteResult = await matchRepository.delete({bracketId: oldBracket.id});
+  console.log(`  Deleted ${matchDeleteResult.affected || 0} matches`);
+  // ...
+} catch (deleteError) {
+  throw new AppError(
+    `Failed to delete existing bracket: ${deleteError.message}`,
+    HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    ERROR_CODES.DATABASE_ERROR
+  );
+}
+```
+
+**Impact**:
+- ✅ MATCH_PLAY brackets with 2-4 participants now auto-generate matches
+- ✅ Matches page displays matches correctly regardless of bracket type
+- ✅ Maintains flexibility for large brackets (5+ participants remain manual)
+- ✅ Fixed database constraint violation error
+- ✅ Improved UX for small tournament organizers
+
+**Testing**: Regenerate any MATCH_PLAY brackets with 2-4 participants to see matches automatically created.
+
+---
+
+## [1.39.16] - 2026-03-21
+
+### Added — Tournament & Category Context to Matches List
+
+**Issue**: The matches list page lacked context about which tournament and category each match belonged to. When clicking "View Matches" from a tournament page, the navigation didn't work because the match list component ignored the `tournamentId` parameter. Users couldn't tell which tournament or category a match was part of when viewing the general matches list.
+
+**User Feedback**: "Shouldn't the matches page be divided by tournaments? For example, a specific matches page for a specific tournament or a general matches page that indicates from what tournament is which match (or both pages)?"
+
+**Solution**: Enhanced the matches list to support both tournament-level and bracket-level filtering, and added tournament and category badges to provide full context for each match group.
+
+**Changes**:
+
+#### Match List Component ([match-list.component.ts](src/presentation/pages/matches/match-list/match-list.component.ts)):
+
+**1. Enhanced Match Interface**:
+```typescript
+interface EnhancedMatch extends MatchDto {
+  participant1Name: string | null;
+  participant2Name: string | null;
+  phaseName: string;
+  phaseOrder: number;
+  tournamentName: string;      // ✅ Added
+  categoryName: string;         // ✅ Added
+  tournamentId: string;         // ✅ Added
+  categoryId: string;           // ✅ Added
+}
+```
+
+**2. Dual Filtering Support**:
+- Added `tournamentId` query parameter support (show all matches in a tournament)
+- Existing `bracketId` parameter (show matches for specific category/bracket)
+- No parameters: show all matches across all tournaments
+
+**3. Enhanced Data Fetching**:
+- Introduced `TournamentService` and `CategoryService` injections
+- Fetch tournament and category data for each bracket
+- Build comprehensive context maps for matches
+- Enrich each match with tournament and category information
+
+**4. Improved Grouping**:
+
+**Before**: Grouped only by phase
+```typescript
+groups.set(`${phaseOrder}-${phaseName}`, matches);
+```
+
+**After**: Grouped by tournament → category → phase
+```typescript
+const key = `${tournamentName}|${categoryName}|${phaseOrder}-${phaseName}`;
+```
+
+**5. Sorting Logic**:
+- Primary: Tournament name (alphabetical)
+- Secondary: Category name (alphabetical)
+- Tertiary: Phase order (numerical)
+
+#### Match List Template ([match-list.component.html](src/presentation/pages/matches/match-list/match-list.component.html)):
+
+**Before**:
+```html
+<div class="phase-header">
+  <h3 class="phase-title">{{ group.phaseName }}</h3>
+  <span>{{ group.matches.length }} matches</span>
+</div>
+```
+
+**After**:
+```html
+<div class="phase-header">
+  <div class="phase-header-content">
+    <div class="tournament-context">
+      <span class="tournament-badge">🏆 {{ group.tournamentName }}</span>
+      <span class="category-badge">{{ group.categoryName }}</span>
+    </div>
+    <h3 class="phase-title">{{ group.phaseName }}</h3>
+  </div>
+  <span>{{ group.matches.length }} matches</span>
+</div>
+```
+
+#### Match List Styles ([match-list.component.css](src/presentation/pages/matches/match-list/match-list.component.css)):
+
+Added new styles:
+- `.phase-header-content` - Container for tournament/category badges and phase title
+- `.tournament-context` - Flexbox container for badges
+- `.tournament-badge` - Green gradient badge with trophy icon
+- `.category-badge` - Blue gradient badge for category name
+
+**Effect**:
+- ✅ Tournament detail "View Matches" button now works (was broken)
+- ✅ Bracket view "View Matches" button filters by specific category
+- ✅ General matches page shows all matches with full context
+- ✅ Users can see which tournament and category each match belongs to
+- ✅ Improved navigation UX with visual hierarchy
+- ✅ Better organization for tournaments with multiple categories
+
+**Visual Structure**:
+```
+📍 🏆 Spring Championship 2026  │  Men's Singles
+   ▼ Round 1 (2 matches)
+   ├─ John Doe vs Jane Smith
+   └─ ...
+   
+📍 🏆 Spring Championship 2026  │  Women's Singles  
+   ▼ Round 1 (2 matches)
+   ├─ ...
+```
+
+**Technical Note**: This enhancement completes the data flow for match context:
+- v1.39.13: Backend loads participant relations
+- v1.39.14: Frontend maps participant objects
+- v1.39.15: Match list uses participant data
+- **v1.39.16**: Added tournament and category context for complete match information
+
+**Navigation Patterns Now Supported**:
+1. `GET /matches` → All matches across all tournaments
+2. `GET /matches?tournamentId=xxx` → All matches in a tournament
+3. `GET /matches?bracketId=xxx` → Matches for specific category/bracket
+
+---
+
+## [1.39.15] - 2026-03-21
 
 ### Fixed — Frontend Discarding Participant Data from Backend
 

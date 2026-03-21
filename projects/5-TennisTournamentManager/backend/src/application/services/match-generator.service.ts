@@ -57,7 +57,7 @@ export class MatchGeneratorService {
       case BracketType.ROUND_ROBIN:
         return this.generateRoundRobin(bracketId, participantIds, totalRounds);
       case BracketType.MATCH_PLAY:
-        return this.generateMatchPlay(bracketId);
+        return this.generateMatchPlay(bracketId, participantIds);
       default:
         throw new Error(`Unsupported bracket type: ${bracketType}`);
     }
@@ -249,14 +249,16 @@ export class MatchGeneratorService {
   /**
    * Generates match play bracket (flexible open format).
    * 
-   * Creates one phase with no predefined matches.
-   * Organizers can create matches manually as needed.
+   * For small brackets (2-4 participants), generates initial matches.
+   * For larger brackets, creates empty phase for manual scheduling.
    *
    * @param bracketId - Bracket identifier
-   * @returns Empty matches array with single phase
+   * @param participantIds - Participant IDs
+   * @returns Matches and single phase
    */
   private generateMatchPlay(
     bracketId: string,
+    participantIds: string[],
   ): MatchGenerationResult {
     const matches: Match[] = [];
     const phases: Phase[] = [];
@@ -267,11 +269,43 @@ export class MatchGeneratorService {
     phase.bracketId = bracketId;
     phase.order = 1;
     phase.name = 'Open Play';
-    phase.matchCount = 0; // No predefined matches
     phase.isCompleted = false;
-    phases.push(phase);
     
-    // No matches created initially - organizers add them manually
+    // For small brackets (2-4 participants), generate initial matches
+    if (participantIds.length === 2) {
+      // Create single match for 2 participants
+      const match = new Match();
+      match.id = generateId('mch');
+      match.bracketId = bracketId;
+      match.phaseId = phase.id;
+      match.round = 1;
+      match.matchNumber = 1;
+      match.participant1Id = participantIds[0];
+      match.participant2Id = participantIds[1];
+      match.status = MatchStatus.SCHEDULED;
+      matches.push(match);
+      phase.matchCount = 1;
+    } else if (participantIds.length >= 3 && participantIds.length <= 4) {
+      // For 3-4 participants, create initial matches (everyone vs first player)
+      for (let i = 1; i < participantIds.length; i++) {
+        const match = new Match();
+        match.id = generateId('mch');
+        match.bracketId = bracketId;
+        match.phaseId = phase.id;
+        match.round = 1;
+        match.matchNumber = i;
+        match.participant1Id = participantIds[0];
+        match.participant2Id = participantIds[i];
+        match.status = MatchStatus.SCHEDULED;
+        matches.push(match);
+      }
+      phase.matchCount = participantIds.length - 1;
+    } else {
+      // For larger brackets or no participants, leave empty for manual scheduling
+      phase.matchCount = 0;
+    }
+    
+    phases.push(phase);
     
     return {matches, phases};
   }

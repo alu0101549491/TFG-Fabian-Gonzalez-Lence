@@ -61,19 +61,27 @@
   <!-- Matches Grid -->
   @if (!isLoading() && groupedMatches().length > 0) {
     <div class="phases-container">
-      @for (group of groupedMatches(); track group.phaseName) {
+      @for (group of groupedMatches(); track getGroupKey(group)) {
         <div class="phase-group">
-          <!-- Phase Header (Clickable) -->
-          <div class="phase-header" (click)="togglePhase(group.phaseName)">
+          <!-- Phase Header with Tournament & Category Context (Clickable) -->
+          <div class="phase-header" (click)="togglePhase(getGroupKey(group))">
             <div class="phase-header-left">
-              <span class="phase-toggle-icon">{{ isPhaseExpanded(group.phaseName) ? '▼' : '▶' }}</span>
-              <h3 class="phase-title">{{ group.phaseName }}</h3>
+              <span class="phase-toggle-icon">{{ isPhaseExpanded(getGroupKey(group)) ? '▼' : '▶' }}</span>
+              <div class="phase-header-content">
+                <!-- Tournament & Category Badge -->
+                <div class="tournament-context">
+                  <span class="tournament-badge">🏆 {{ group.tournamentName }}</span>
+                  <span class="category-badge">{{ group.categoryName }}</span>
+                </div>
+                <!-- Phase Title -->
+                <h3 class="phase-title">{{ group.phaseName }}</h3>
+              </div>
               <span class="phase-match-count">{{ group.matches.length }} {{ group.matches.length === 1 ? 'match' : 'matches' }}</span>
             </div>
           </div>
 
           <!-- Matches in Phase (Expandable) -->
-          @if (isPhaseExpanded(group.phaseName)) {
+          @if (isPhaseExpanded(getGroupKey(group))) {
             <div class="matches-grid">
               @for (match of group.matches; track match.id) {
                 <div class="match-card" (click)="viewMatch(match.id)">
