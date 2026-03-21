@@ -97,6 +97,9 @@ export class TournamentDetailComponent implements OnInit {
   /** Category submission state */
   public isSubmittingCategory = signal(false);
 
+  /** Category loading state (for refresh button) */
+  public isLoadingCategories = signal(false);
+
   /** Category error message */
   public categoryError = signal<string | null>(null);
 
@@ -617,6 +620,29 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   /**
+   * Refreshes the category list from the server.
+   * Allows players to see latest changes made by admins.
+   */
+  public async refreshCategories(): Promise<void> {
+    if (!this.tournamentId || this.isLoadingCategories()) return;
+
+    this.isLoadingCategories.set(true);
+
+    try {
+      const categories = await this.categoryService.getCategoriesByTournament(this.tournamentId);
+      this.categories.set(categories);
+      
+      // Show brief success feedback
+      console.log(`✅ Categories refreshed: ${categories.length} found`);
+    } catch (error) {
+      console.error('Failed to refresh categories:', error);
+      alert('Failed to refresh categories. Please try again.');
+    } finally {
+      this.isLoadingCategories.set(false);
+    }
+  }
+
+  /**
    * Toggles the category management section visibility.
    */
   public toggleCategoryManagement(): void {
@@ -708,8 +734,13 @@ export class TournamentDetailComponent implements OnInit {
     }
 
     try {
-      const now = new Date().toISOString();
-      await this.registrationService.withdrawRegistration(registrationId, now, currentUser.id);
+      // Tournament admins use updateStatus instead of withdrawRegistration
+      const updateData: UpdateRegistrationStatusDto = {
+        registrationId,
+        status: RegistrationStatus.WITHDRAWN,
+      };
+
+      await this.registrationService.updateStatus(updateData, currentUser.id);
       await this.loadPlayers();
       alert(`${playerName} has been removed from the tournament.`);
     } catch (error) {
@@ -816,8 +847,9 @@ export class TournamentDetailComponent implements OnInit {
 
     const confirmed = confirm(
       `Generate ${this.bracketForm.bracketType.replace(/_/g, ' ').toLowerCase()} bracket for ${category.name}?\n\n` +
-      `Participants: ${acceptedCount} accepted players\n` +
-      `This will create matches for all accepted participants in this category.`
+      `Participants: ${acceptedCount} accepted players\n\n` +
+      `This will create matches for all accepted participants in this category.\n` +
+      `⚠️ Any existing unpublished bracket for this category will be replaced.`
     );
     if (!confirmed) return;
 
@@ -838,10 +870,35 @@ export class TournamentDetailComponent implements OnInit {
       this.bracketForm.categoryId = '';
       this.bracketForm.bracketType = BracketType.SINGLE_ELIMINATION;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to generate bracket';
+      // Extract error message from server response
+      let message = 'Failed to generate bracket';
+      
+      if (error && typeof error === 'object') {
+        // Axios error with response from server
+        const axiosError = error as {response?: {data?: {message?: string; error?: string}}};
+        if (axiosError.response?.data?.message) {
+          message = axiosError.response.data.message;
+        } else if (axiosError.response?.data?.error) {
+          message = axiosError.response.data.error;
+        } else if (error instanceof Error) {
+          message = error.message;
+        }
+      }
+      
+      console.error('Bracket generation error:', error);
+      console.error('Error message:', message);
       
       // Provide helpful context for common errors
-      if (message.includes('No accepted participants')) {
+      if (message.includes('published bracket already exists')) {
+        alert(
+          `Cannot Create New Bracket\n\n` +
+          `A published bracket already exists for ${category.name}.\n\n` +
+          `Published brackets cannot be replaced to preserve match history and results.\n\n` +
+          `Options:\n` +
+          `• Use the existing published bracket\n` +
+          `• Create a new tournament for a new competition`
+        );
+      } else if (message.includes('No accepted participants')) {
         alert(
           `Error: ${message}\n\n` +
           `This usually means:\n` +

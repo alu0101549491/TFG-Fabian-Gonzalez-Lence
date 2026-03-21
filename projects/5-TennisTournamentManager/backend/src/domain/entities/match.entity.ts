@@ -17,6 +17,7 @@ import {Bracket} from './bracket.entity';
 import {Phase} from './phase.entity';
 import {Court} from './court.entity';
 import {Score} from './score.entity';
+import {User} from './user.entity';
 
 /**
  * Match entity representing a tennis match.
@@ -84,6 +85,18 @@ export class Match {
   @ManyToOne(() => Court)
   @JoinColumn({name: 'courtId'})
   public court!: Court | null;
+
+  @ManyToOne(() => User)
+  @JoinColumn({name: 'participant1Id'})
+  public participant1!: User | null;
+
+  @ManyToOne(() => User)
+  @JoinColumn({name: 'participant2Id'})
+  public participant2!: User | null;
+
+  @ManyToOne(() => User)
+  @JoinColumn({name: 'winnerId'})
+  public winner!: User | null;
 
   @OneToMany(() => Score, (score) => score.match)
   public scores!: Score[];

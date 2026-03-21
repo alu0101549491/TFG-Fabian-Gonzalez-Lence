@@ -37,10 +37,10 @@ export class MatchController {
       const matches = bracketId
         ? await matchRepository.find({
             where: {bracketId: bracketId as string},
-            relations: ['scores', 'court'],
+            relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
           })
         : await matchRepository.find({
-            relations: ['scores', 'court'],
+            relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
           });
       
       res.status(HTTP_STATUS.OK).json(matches);
@@ -60,7 +60,7 @@ export class MatchController {
       
       const match = await matchRepository.findOne({
         where: {id},
-        relations: ['scores', 'court'],
+        relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
       });
       
       if (!match) {

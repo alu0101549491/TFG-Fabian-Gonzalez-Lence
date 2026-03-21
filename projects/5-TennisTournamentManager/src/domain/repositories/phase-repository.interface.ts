@@ -58,4 +58,11 @@ export interface IPhaseRepository {
    * @returns Promise resolving to an array of phases
    */
   findByTournament(tournamentId: string): Promise<Phase[]>;
+
+  /**
+   * Finds all phases belonging to a specific bracket.
+   * @param bracketId - The unique identifier of the bracket
+   * @returns Promise resolving to an array of phases ordered by phase order
+   */
+  findByBracketId(bracketId: string): Promise<Phase[]>;
 }

@@ -1,54 +1,210 @@
-<div class="container p-lg">
+<!-- Match Detail Page - Modern Design -->
+<div class="match-detail-container">
   @if (isLoading()) {
-    <div class="text-center p-lg">
+    <div class="loading-state">
+      <div class="spinner"></div>
       <p>Loading match details...</p>
     </div>
   }
 
   @if (errorMessage()) {
-    <div class="alert alert-error mb-lg">{{ errorMessage() }}</div>
+    <div class="error-banner">
+      <span class="error-icon">⚠️</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
   }
 
   @if (match()) {
-    <div class="mb-md">
-      <button class="btn btn-ghost" routerLink="/matches">← Back to Matches</button>
-    </div>
+    <!-- Hero Section -->
+    <section class="match-hero">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <button class="back-btn" routerLink="/matches">
+          <span>←</span>
+          <span>Back to Matches</span>
+        </button>
 
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">Match Details</h2>
-        <span class="badge badge-{{ match()!.status.toLowerCase() }}">
-          {{ match()!.status | enumFormat }}
-        </span>
+        <div class="match-header">
+          <h1 class="match-title">🎾 Match Details</h1>
+          <span class="status-badge" [class]="'status-' + match()!.status.toLowerCase()">
+            {{ match()!.status | enumFormat }}
+          </span>
+        </div>
       </div>
+    </section>
 
-      <div class="card-body">
-        <div class="grid gap-lg" style="grid-template-columns: 1fr 1fr;">
-          <div>
-            <h3>Match Information</h3>
-            <p><strong>Scheduled:</strong> {{ formatDate(match()!.scheduledAt) }}</p>
-            <p><strong>Court:</strong> {{ match()!.courtId || 'Not assigned' }}</p>
-            <p><strong>Status:</strong> {{ match()!.status | enumFormat }}</p>
+    <!-- Main Content -->
+    <div class="match-content">
+      <!-- Participants Card -->
+      <div class="card participants-card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">👥</span>
+            <span>Participants</span>
+          </h2>
+        </div>
+        <div class="card-body">
+          <div class="participants-grid">
+            <!-- Participant 1 -->
+            <div class="participant-box" [class.winner]="match()!.winnerId === match()!.participant1Id">
+              <div class="participant-header">
+                <span class="participant-label">Participant 1</span>
+                @if (match()!.winnerId === match()!.participant1Id) {
+                  <span class="winner-badge">👑 Winner</span>
+                }
+              </div>
+              <div class="participant-info">
+                @if (match()!.participant1) {
+                  <div class="avatar">{{ getInitials(match()!.participant1!.firstName, match()!.participant1!.lastName) }}</div>
+                  <div class="participant-details">
+                    <h3 class="participant-name">{{ match()!.participant1!.firstName }} {{ match()!.participant1!.lastName }}</h3>
+                    <p class="participant-email">{{ match()!.participant1!.email }}</p>
+                  </div>
+                } @else {
+                  <div class="participant-tbd">
+                    <span class="tbd-icon">❓</span>
+                    <span class="tbd-text">To Be Determined</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- VS Divider -->
+            <div class="vs-divider">
+              <span class="vs-text">VS</span>
+            </div>
+
+            <!-- Participant 2 -->
+            <div class="participant-box" [class.winner]="match()!.winnerId === match()!.participant2Id">
+              <div class="participant-header">
+                <span class="participant-label">Participant 2</span>
+                @if (match()!.winnerId === match()!.participant2Id) {
+                  <span class="winner-badge">👑 Winner</span>
+                }
+              </div>
+              <div class="participant-info">
+                @if (match()!.participant2) {
+                  <div class="avatar">{{ getInitials(match()!.participant2!.firstName, match()!.participant2!.lastName) }}</div>
+                  <div class="participant-details">
+                    <h3 class="participant-name">{{ match()!.participant2!.firstName }} {{ match()!.participant2!.lastName }}</h3>
+                    <p class="participant-email">{{ match()!.participant2!.email }}</p>
+                  </div>
+                } @else {
+                  <div class="participant-tbd">
+                    <span class="tbd-icon">❓</span>
+                    <span class="tbd-text">To Be Determined</span>
+                  </div>
+                }
+              </div>
+            </div>
           </div>
 
-          <div>
-            <h3>Participants</h3>
-            <p><strong>Participant 1:</strong> {{ match()!.participant1Id }}</p>
-            <p><strong>Participant 2:</strong> {{ match()!.participant2Id }}</p>
-            @if (match()!.winnerId) {
-              <p><strong>Winner:</strong> {{ match()!.winnerId }}</p>
+          @if (match()!.score) {
+            <div class="score-section">
+              <h3 class="score-label">Final Score</h3>
+              <div class="score-display">{{ match()!.score }}</div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Match Information Card -->
+      <div class="card info-card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">📋</span>
+            <span>Match Information</span>
+          </h2>
+        </div>
+        <div class="card-body">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-icon">📅</span>
+              <div class="info-content">
+                <span class="info-label">Scheduled Time</span>
+                <span class="info-value">{{ formatDate(match()!.scheduledTime) }}</span>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <span class="info-icon">🏟️</span>
+              <div class="info-content">
+                <span class="info-label">Court</span>
+                <span class="info-value">{{ match()!.courtId || 'Not assigned' }}</span>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <span class="info-icon">🔢</span>
+              <div class="info-content">
+                <span class="info-label">Round</span>
+                <span class="info-value">Round {{ match()!.round }}</span>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <span class="info-icon">🎯</span>
+              <div class="info-content">
+                <span class="info-label">Match Number</span>
+                <span class="info-value">#{{ match()!.matchNumber }}</span>
+              </div>
+            </div>
+
+            @if (match()!.startTime) {
+              <div class="info-item">
+                <span class="info-icon">▶️</span>
+                <div class="info-content">
+                  <span class="info-label">Start Time</span>
+                  <span class="info-value">{{ formatDate(match()!.startTime) }}</span>
+                </div>
+              </div>
+            }
+
+            @if (match()!.endTime) {
+              <div class="info-item">
+                <span class="info-icon">⏹️</span>
+                <div class="info-content">
+                  <span class="info-label">End Time</span>
+                  <span class="info-value">{{ formatDate(match()!.endTime) }}</span>
+                </div>
+              </div>
             }
           </div>
         </div>
+      </div>
 
-        @if (match()!.score) {
-          <div class="mt-lg">
-            <h3>Score</h3>
-            <div class="text-center p-lg bg-gray rounded">
-              <p class="text-2xl font-bold">{{ match()!.score }}</p>
-            </div>
+      <!-- Actions Card (for match management) -->
+      <div class="card actions-card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">⚙️</span>
+            <span>Match Actions</span>
+          </h2>
+        </div>
+        <div class="card-body">
+          <div class="actions-grid">
+            <button class="action-btn schedule" disabled>
+              <span>📅</span>
+              <span>Schedule Match</span>
+            </button>
+            <button class="action-btn scores" disabled>
+              <span>🎾</span>
+              <span>Record Scores</span>
+            </button>
+            <button class="action-btn status" disabled>
+              <span>🔄</span>
+              <span>Update Status</span>
+            </button>
+            <button class="action-btn cancel" disabled>
+              <span>❌</span>
+              <span>Cancel Match</span>
+            </button>
           </div>
-        }
+          <p class="actions-note">
+            <span class="note-icon">ℹ️</span>
+            <span>Match management features coming soon...</span>
+          </p>
+        </div>
       </div>
     </div>
   }

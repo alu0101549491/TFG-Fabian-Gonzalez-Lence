@@ -35,10 +35,12 @@ export class BracketService implements IBracketService {
 
   /**
    * Generates a new bracket for a category.
+   * Replaces any existing unpublished bracket for the same category.
    *
    * @param data - Bracket generation parameters
    * @param userId - ID of the user generating the bracket
    * @returns Generated bracket information
+   * @throws Error if a published bracket already exists for the category
    */
   public async generateBracket(data: GenerateBracketDto, userId: string): Promise<BracketDto> {
     // Validate input
@@ -178,12 +180,9 @@ export class BracketService implements IBracketService {
     }
     
     // Update bracket to published
-    const publishedBracket = new Bracket({
-      ...bracket,
-      isPublished: true,
-    });
+    bracket.isPublished = true;
     
-    const savedBracket = await this.bracketRepository.update(publishedBracket);
+    const savedBracket = await this.bracketRepository.update(bracket);
     
     // Send notifications to participants
     // await this.notificationService.sendBulkNotifications(...)
@@ -231,8 +230,10 @@ export class BracketService implements IBracketService {
       throw new Error('Bracket not found');
     }
     
-    // Validate business rule
-    bracket.regenerate(false);
+    // Validate business rule: cannot regenerate published bracket without keeping results
+    if (bracket.isPublished && !false) {
+      throw new Error('Cannot regenerate published bracket without keeping results.');
+    }
     
     // In real implementation, regenerate bracket structure
     // const generator = this.bracketGeneratorFactory.createGenerator(bracket.bracketType);

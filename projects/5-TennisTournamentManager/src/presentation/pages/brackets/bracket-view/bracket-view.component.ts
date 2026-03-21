@@ -132,10 +132,13 @@ export class BracketViewComponent implements OnInit {
     const tournament = this.tournament();
     if (!tournament) return false;
 
+    // Safe check for roles array
+    const userRoles = user.roles || [];
+
     return (
       user.id === tournament.organizerId ||
-      user.roles.includes(UserRole.TOURNAMENT_ADMIN) ||
-      user.roles.includes(UserRole.SYSTEM_ADMIN)
+      userRoles.includes(UserRole.TOURNAMENT_ADMIN) ||
+      userRoles.includes(UserRole.SYSTEM_ADMIN)
     );
   }
 
@@ -161,9 +164,10 @@ export class BracketViewComponent implements OnInit {
     this.isPublishing.set(true);
 
     try {
-      await this.bracketService.publishBracket(bracket.id, currentUser.id);
+      const updatedBracket = await this.bracketService.publishBracket(bracket.id, currentUser.id);
+      // Update the bracket signal with the fresh data from the server
+      this.bracket.set(updatedBracket);
       alert('Bracket published successfully!');
-      await this.loadBracket(this.tournamentId);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to publish bracket';
       alert(`Error: ${message}`);
@@ -194,15 +198,31 @@ export class BracketViewComponent implements OnInit {
     this.isRegenerating.set(true);
 
     try {
-      await this.bracketService.regenerateBracket(bracket.id, currentUser.id);
+      const updatedBracket = await this.bracketService.regenerateBracket(bracket.id, currentUser.id);
+      // Update the bracket signal with the fresh data from the server
+      this.bracket.set(updatedBracket);
       alert('Bracket regenerated successfully!');
-      await this.loadBracket(this.tournamentId);
+      // Reload phases as they might have changed
+      const phases = await this.bracketService.getPhases(updatedBracket.id);
+      this.phases.set(phases);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to regenerate bracket';
       alert(`Error: ${message}`);
     } finally {
       this.isRegenerating.set(false);
     }
+  }
+
+  /**
+   * Navigates to matches page filtered by this bracket.
+   */
+  public viewMatches(): void {
+    const bracket = this.bracket();
+    if (!bracket) return;
+    
+    void this.router.navigate(['/matches'], {
+      queryParams: {bracketId: bracket.id}
+    });
   }
 
   /**

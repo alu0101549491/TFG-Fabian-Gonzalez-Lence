@@ -112,19 +112,29 @@ export class RegistrationController {
     try {
       const {id} = req.params;
       const {status} = req.body;
+      
+      console.log(`📝 Updating registration ${id} status to:`, status);
+      
       const registrationRepository = AppDataSource.getRepository(Registration);
       
       const registration = await registrationRepository.findOne({where: {id}});
       
       if (!registration) {
+        console.log(`❌ Registration ${id} not found`);
         throw new AppError('Registration not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       
-      registration.status = status;
-      await registrationRepository.save(registration);
+      console.log(`📊 Current status: ${registration.status}, New status: ${status}`);
+      console.log(`👤 Participant: ${registration.participantId}, Category: ${registration.categoryId}`);
       
-      res.status(HTTP_STATUS.OK).json(registration);
+      registration.status = status;
+      const saved = await registrationRepository.save(registration);
+      
+      console.log(`✅ Registration ${id} status updated to: ${saved.status}`);
+      
+      res.status(HTTP_STATUS.OK).json(saved);
     } catch (error) {
+      console.error('❌ Error updating registration status:', error);
       next(error);
     }
   }

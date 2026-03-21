@@ -35,7 +35,14 @@ export class CategoryService {
    */
   public async getCategoriesByTournament(tournamentId: string): Promise<CategoryDto[]> {
     return firstValueFrom(
-      this.http.get<CategoryDto[]>(`${this.apiUrl}?tournamentId=${tournamentId}`),
+      this.http.get<CategoryDto[]>(`${this.apiUrl}?tournamentId=${tournamentId}`, {
+        headers: {
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          Pragma: 'no-cache',
+        },
+      }),
     );
   }
 

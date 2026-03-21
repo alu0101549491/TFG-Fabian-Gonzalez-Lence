@@ -15,11 +15,9 @@ import {Injectable, inject} from '@angular/core';
 import {IMatchService} from '../interfaces/match-service.interface';
 import {RecordResultDto, MatchDto, UpdateMatchStatusDto} from '../dto';
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
-import {ScoreRepositoryImpl} from '@infrastructure/repositories/score.repository';
 import {StandingService} from './standing.service';
 import {NotificationService} from './notification.service';
 import {Match} from '@domain/entities/match';
-import {Score} from '@domain/entities/score';
 import {MatchStatus} from '@domain/enumerations/match-status';
 import {generateId} from '@shared/utils';
 
@@ -30,7 +28,6 @@ import {generateId} from '@shared/utils';
 @Injectable({providedIn: 'root'})
 export class MatchService implements IMatchService {
   private readonly matchRepository = inject(MatchRepositoryImpl);
-  private readonly scoreRepository = inject(ScoreRepositoryImpl);
   private readonly standingService = inject(StandingService);
   private readonly notificationService = inject(NotificationService);
 
@@ -46,23 +43,14 @@ export class MatchService implements IMatchService {
       throw new Error('Match ID is required');
     }
     
-    // Find match
+    // Find match (scores already loaded as relations from backend)
     const match = await this.matchRepository.findById(matchId);
     if (!match) {
       throw new Error('Match not found');
     }
     
-    // Get score if match is completed
-    let scoreString = '';
-    if (match.status === MatchStatus.COMPLETED) {
-      const score = await this.scoreRepository.findByMatchId(matchId);
-      if (score) {
-        scoreString = score.getFormattedScore();
-      }
-    }
-    
-    // Map to DTO
-    return this.mapMatchToDto(match, scoreString);
+    // Map to DTO (scores come from match object)
+    return this.mapMatchToDto(match, '');
   }
 
   /**
@@ -72,16 +60,7 @@ export class MatchService implements IMatchService {
    */
   public async getAllMatches(): Promise<MatchDto[]> {
     const matches = await this.matchRepository.findAll();
-    return Promise.all(matches.map(async m => {
-      let scoreString = '';
-      if (m.status === MatchStatus.COMPLETED) {
-        const score = await this.scoreRepository.findByMatchId(m.id);
-        if (score) {
-          scoreString = score.getFormattedScore();
-        }
-      }
-      return this.mapMatchToDto(m, scoreString);
-    }));
+    return matches.map(m => this.mapMatchToDto(m, ''));
   }
 
   /**
@@ -97,11 +76,7 @@ export class MatchService implements IMatchService {
     }
     
     const matches = await this.matchRepository.findByBracket(bracketId);
-    return Promise.all(matches.map(async m => {
-      const score = await this.scoreRepository.findByMatchId(m.id);
-      const scoreString = score ? score.getFormattedScore() : '';
-      return this.mapMatchToDto(m, scoreString);
-    }));
+    return matches.map(m => this.mapMatchToDto(m, ''));
   }
 
   /**
@@ -117,11 +92,7 @@ export class MatchService implements IMatchService {
     }
     
     const matches = await this.matchRepository.findByPhaseId(phaseId);
-    return Promise.all(matches.map(async m => {
-      const score = await this.scoreRepository.findByMatchId(m.id);
-      const scoreString = score ? score.getFormattedScore() : '';
-      return this.mapMatchToDto(m, scoreString);
-    }));
+    return matches.map(m => this.mapMatchToDto(m, ''));
   }
 
   /**
@@ -137,11 +108,7 @@ export class MatchService implements IMatchService {
     }
     
     const matches = await this.matchRepository.findByParticipantId(participantId);
-    return Promise.all(matches.map(async m => {
-      const score = await this.scoreRepository.findByMatchId(m.id);
-      const scoreString = score ? score.getFormattedScore() : '';
-      return this.mapMatchToDto(m, scoreString);
-    }));
+    return matches.map(m => this.mapMatchToDto(m, ''));
   }
 
   /**
@@ -834,7 +801,29 @@ export class MatchService implements IMatchService {
       winnerId: match.winnerId,
       status: match.status,
       scheduledAt: match.scheduledTime,
+      scheduledTime: match.scheduledTime,
+      startTime: match.startTime,
+      endTime: match.endTime,
       score,
+      // Map participant User objects from backend relations
+      participant1: (match as any).participant1 ? {
+        id: (match as any).participant1.id,
+        firstName: (match as any).participant1.firstName,
+        lastName: (match as any).participant1.lastName,
+        email: (match as any).participant1.email,
+      } : null,
+      participant2: (match as any).participant2 ? {
+        id: (match as any).participant2.id,
+        firstName: (match as any).participant2.firstName,
+        lastName: (match as any).participant2.lastName,
+        email: (match as any).participant2.email,
+      } : null,
+      winner: (match as any).winner ? {
+        id: (match as any).winner.id,
+        firstName: (match as any).winner.firstName,
+        lastName: (match as any).winner.lastName,
+        email: (match as any).winner.email,
+      } : null,
     };
   }
 }

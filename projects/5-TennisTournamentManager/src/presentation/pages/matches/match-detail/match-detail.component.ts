@@ -18,6 +18,7 @@ import {MatchService} from '@application/services';
 import {type MatchDto} from '@application/dto';
 import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './match-detail.component.html?raw';
+import styles from './match-detail.component.css?raw';
 
 /**
  * MatchDetailComponent displays detailed match information.
@@ -27,7 +28,7 @@ import templateHtml from './match-detail.component.html?raw';
   standalone: true,
   imports: [CommonModule, RouterModule, EnumFormatPipe],
   template: templateHtml,
-  styles: [],
+  styles: [styles],
 })
 export class MatchDetailComponent implements OnInit {
   /** Services */
@@ -87,5 +88,18 @@ export class MatchDetailComponent implements OnInit {
       dateStyle: 'full',
       timeStyle: 'short',
     });
+  }
+
+  /**
+   * Gets initials from first and last name.
+   *
+   * @param firstName - First name
+   * @param lastName - Last name
+   * @returns Initials (e.g., "JD" for John Doe)
+   */
+  public getInitials(firstName: string, lastName: string): string {
+    const first = firstName?.charAt(0)?.toUpperCase() || '';
+    const last = lastName?.charAt(0)?.toUpperCase() || '';
+    return first + last;
   }
 }

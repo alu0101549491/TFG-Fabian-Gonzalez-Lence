@@ -18,6 +18,9 @@ import {User} from '../../domain/entities/user.entity';
 import {Category} from '../../domain/entities/category.entity';
 import {Registration} from '../../domain/entities/registration.entity';
 import {Court} from '../../domain/entities/court.entity';
+import {Bracket} from '../../domain/entities/bracket.entity';
+import {Match} from '../../domain/entities/match.entity';
+import {Phase} from '../../domain/entities/phase.entity';
 import {TournamentStatus} from '../../domain/enumerations/tournament-status';
 import {UserRole} from '../../domain/enumerations/user-role';
 import {AuthRequest} from '../middleware/auth.middleware';
@@ -146,7 +149,7 @@ export class TournamentController {
           throw new AppError(
             `Cannot transition from ${tournament.status} to ${req.body.status}. Allowed transitions: ${allowedTransitions.join(', ') || 'none'}`,
             HTTP_STATUS.BAD_REQUEST,
-            ERROR_CODES.VALIDATION_ERROR,
+            ERROR_CODES.INVALID_INPUT,
           );
         }
       }
@@ -162,7 +165,16 @@ export class TournamentController {
   
   /**
    * DELETE /api/tournaments/:id
-   * Deletes a tournament and all its related data (categories, registrations, courts).
+   * Deletes a tournament and all its related data (brackets, matches, phases, categories, registrations, courts).
+   * 
+   * Cascade deletion order:
+   * 1. Registrations (reference tournament and category)
+   * 2. Matches (reference brackets)
+   * 3. Phases (reference brackets)
+   * 4. Brackets (reference categories)
+   * 5. Categories (reference tournament)
+   * 6. Courts (reference tournament)
+   * 7. Tournament
    * 
    * Authorization:
    * - System admins can delete any tournament (including finalized)
@@ -183,6 +195,9 @@ export class TournamentController {
       const categoryRepository = AppDataSource.getRepository(Category);
       const registrationRepository = AppDataSource.getRepository(Registration);
       const courtRepository = AppDataSource.getRepository(Court);
+      const bracketRepository = AppDataSource.getRepository(Bracket);
+      const matchRepository = AppDataSource.getRepository(Match);
+      const phaseRepository = AppDataSource.getRepository(Phase);
       
       const tournament = await tournamentRepository.findOne({where: {id}});
       
@@ -215,22 +230,48 @@ export class TournamentController {
         throw new AppError(
           'Cannot delete finalized tournaments. Historical records must be preserved.',
           HTTP_STATUS.BAD_REQUEST,
-          ERROR_CODES.VALIDATION_ERROR
+          ERROR_CODES.INVALID_INPUT
         );
       }
+      
+      console.log(`🗑️ Deleting tournament ${id} and all related data...`);
       
       // Delete related data in the correct order to respect foreign key constraints
       // 1. Delete registrations first (they reference both tournament and category)
       await registrationRepository.delete({tournamentId: id});
+      console.log(`✅ Deleted registrations for tournament ${id}`);
       
-      // 2. Delete categories (they reference tournament)
+      // 2. Get all categories for this tournament to delete their brackets
+      const categories = await categoryRepository.find({where: {tournamentId: id}});
+      
+      for (const category of categories) {
+        // 2a. Get all brackets for this category
+        const brackets = await bracketRepository.find({where: {categoryId: category.id}});
+        
+        for (const bracket of brackets) {
+          // 2a-i. Delete matches first (they reference brackets)
+          await matchRepository.delete({bracketId: bracket.id});
+          
+          // 2a-ii. Delete phases (they reference brackets)
+          await phaseRepository.delete({bracketId: bracket.id});
+        }
+        
+        // 2b. Delete brackets (they reference categories)
+        await bracketRepository.delete({categoryId: category.id});
+      }
+      console.log(`✅ Deleted brackets, phases, and matches for tournament ${id}`);
+      
+      // 3. Delete categories (they reference tournament)
       await categoryRepository.delete({tournamentId: id});
+      console.log(`✅ Deleted categories for tournament ${id}`);
       
-      // 3. Delete courts (they reference tournament)
+      // 4. Delete courts (they reference tournament)
       await courtRepository.delete({tournamentId: id});
+      console.log(`✅ Deleted courts for tournament ${id}`);
       
-      // 4. Finally, delete the tournament
+      // 5. Finally, delete the tournament
       await tournamentRepository.remove(tournament);
+      console.log(`✅ Tournament ${id} deleted successfully`);
       
       res.status(HTTP_STATUS.NO_CONTENT).send();
     } catch (error) {
@@ -341,14 +382,14 @@ export class TournamentController {
 
       // Validate status parameter
       if (!status) {
-        throw new AppError('Status is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+        throw new AppError('Status is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
       }
 
       if (!Object.values(TournamentStatus).includes(status)) {
         throw new AppError(
           `Invalid status. Must be one of: ${Object.values(TournamentStatus).join(', ')}`,
           HTTP_STATUS.BAD_REQUEST,
-          ERROR_CODES.VALIDATION_ERROR,
+          ERROR_CODES.INVALID_INPUT,
         );
       }
 
@@ -386,7 +427,7 @@ export class TournamentController {
         throw new AppError(
           `Cannot transition from ${tournament.status} to ${status}. Allowed transitions: ${allowedTransitions.join(', ') || 'none'}`,
           HTTP_STATUS.BAD_REQUEST,
-          ERROR_CODES.VALIDATION_ERROR,
+          ERROR_CODES.INVALID_INPUT,
         );
       }
 

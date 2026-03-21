@@ -23,18 +23,31 @@ export interface RecordResultDto {
   retiredParticipantId?: string;
 }
 
+/** User data for match participants. */
+export interface MatchParticipant {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 /** DTO for match output representation. */
 export interface MatchDto {
   id: string;
   bracketId: string;
   phaseId: string;
   courtId: string | null;
-  participant1Id: string;
-  participant2Id: string;
+  participant1Id: string | null;
+  participant2Id: string | null;
   winnerId: string | null;
   status: MatchStatus;
-  scheduledAt: Date | null;
+  scheduledTime: Date | null;
+  startTime: Date | null;
+  endTime: Date | null;
   score?: string;
+  participant1?: MatchParticipant | null;
+  participant2?: MatchParticipant | null;
+  winner?: MatchParticipant | null;
 }
 
 /** DTO for updating match status. */

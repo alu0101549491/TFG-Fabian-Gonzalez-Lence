@@ -89,4 +89,14 @@ export class PhaseRepositoryImpl implements IPhaseRepository {
     const response = await this.httpClient.get<Phase[]>(`/phases?tournamentId=${tournamentId}`);
     return response;
   }
+
+  /**
+   * Retrieves all phases belonging to a specific bracket.
+   * @param bracketId - The bracket identifier
+   * @returns Promise resolving to an array of phases ordered by phase order
+   */
+  public async findByBracketId(bracketId: string): Promise<Phase[]> {
+    const response = await this.httpClient.get<Phase[]>(`/phases?bracketId=${bracketId}`);
+    return response;
+  }
 }

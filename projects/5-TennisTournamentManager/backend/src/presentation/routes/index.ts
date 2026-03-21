@@ -1004,6 +1004,43 @@ router.get('/brackets', apiCache(300), bracketController.getByTournament.bind(br
 
 /**
  * @swagger
+ * /brackets/{id}:
+ *   put:
+ *     tags: [Brackets]
+ *     summary: Update bracket
+ *     description: Updates bracket information (e.g., publish, regenerate). Requires authentication.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Bracket ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               isPublished:
+ *                 type: boolean
+ *               structure:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Updated bracket
+ *       404:
+ *         description: Bracket not found
+ *       401:
+ *         description: Unauthorized
+ */
+router.put('/brackets/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), bracketController.update.bind(bracketController));
+
+/**
+ * @swagger
  * /matches:
  *   get:
  *     tags: [Matches]

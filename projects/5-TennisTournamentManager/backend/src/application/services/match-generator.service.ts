@@ -1,0 +1,339 @@
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since March 21, 2026
+ * @file application/services/match-generator.service.ts
+ * @desc Service for generating match pairings for different bracket types
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ */
+
+import {Match} from '../../domain/entities/match.entity';
+import {Phase} from '../../domain/entities/phase.entity';
+import {MatchStatus} from '../../domain/enumerations/match-status';
+import {BracketType} from '../../domain/enumerations/bracket-type';
+import {generateId} from '../../shared/utils/id-generator';
+
+/**
+ * Match generation result containing matches and phases.
+ */
+export interface MatchGenerationResult {
+  /** Generated matches */
+  matches: Match[];
+  /** Generated phases */
+  phases: Phase[];
+}
+
+/**
+ * Service for generating tournament match pairings.
+ * 
+ * Implements three bracket types:
+ * - Single Elimination: Knockout format with automatic byes
+ * - Round Robin: Everyone plays everyone once
+ * - Match Play: Flexible open format
+ */
+export class MatchGeneratorService {
+  /**
+   * Generates matches and phases for a bracket based on type.
+   *
+   * @param bracketId - Bracket identifier
+   * @param bracketType - Type of bracket (SINGLE_ELIMINATION, ROUND_ROBIN, MATCH_PLAY)
+   * @param participantIds - Array of participant IDs
+   * @param totalRounds - Total number of rounds in bracket
+   * @returns Generated matches and phases
+   */
+  public generateMatches(
+    bracketId: string,
+    bracketType: BracketType,
+    participantIds: string[],
+    totalRounds: number,
+  ): MatchGenerationResult {
+    switch (bracketType) {
+      case BracketType.SINGLE_ELIMINATION:
+        return this.generateSingleElimination(bracketId, participantIds, totalRounds);
+      case BracketType.ROUND_ROBIN:
+        return this.generateRoundRobin(bracketId, participantIds, totalRounds);
+      case BracketType.MATCH_PLAY:
+        return this.generateMatchPlay(bracketId);
+      default:
+        throw new Error(`Unsupported bracket type: ${bracketType}`);
+    }
+  }
+
+  /**
+   * Generates single elimination bracket with automatic byes.
+   * 
+   * Algorithm:
+   * 1. Calculate next power of 2 for bracket size
+   * 2. Assign byes to top-seeded players if needed
+   * 3. Create first round matches
+   * 4. Create placeholder matches for subsequent rounds
+   *
+   * @param bracketId - Bracket identifier
+   * @param participantIds - Participant IDs (seeded order)
+   * @param totalRounds - Number of rounds
+   * @returns Matches and phases
+   */
+  private generateSingleElimination(
+    bracketId: string,
+    participantIds: string[],
+    totalRounds: number,
+  ): MatchGenerationResult {
+    const matches: Match[] = [];
+    const phases: Phase[] = [];
+    const playerCount = participantIds.length;
+    
+    // Calculate bracket size (next power of 2)
+    const bracketSize = Math.pow(2, totalRounds);
+    const byeCount = bracketSize - playerCount;
+    
+    // Create phases (rounds)
+    const phaseNames = this.getSingleEliminationPhaseNames(totalRounds);
+    for (let round = 1; round <= totalRounds; round++) {
+      const phase = new Phase();
+      phase.id = generateId('phs');
+      phase.bracketId = bracketId;
+      phase.order = round;
+      phase.name = phaseNames[round - 1];
+      phase.matchCount = Math.pow(2, totalRounds - round);
+      phase.isCompleted = false;
+      phases.push(phase);
+    }
+    
+    // Generate Round 1 matches
+    const round1MatchCount = Math.pow(2, totalRounds - 1);
+    const playersWithByes = participantIds.slice(0, byeCount);
+    const playersWithoutByes = participantIds.slice(byeCount);
+    
+    let matchNumber = 1;
+    let playerIndex = 0;
+    
+    for (let i = 0; i < round1MatchCount; i++) {
+      const match = new Match();
+      match.id = generateId('mtc');
+      match.bracketId = bracketId;
+      match.phaseId = phases[0].id;
+      match.round = 1;
+      match.matchNumber = matchNumber++;
+      
+      // Assign participants or byes
+      if (i < byeCount) {
+        // This match is a bye - winner advances automatically
+        match.participant1Id = playersWithByes[i];
+        match.participant2Id = null;
+        match.winnerId = playersWithByes[i];
+        match.status = MatchStatus.BYE;
+      } else {
+        // Regular match between two players
+        match.participant1Id = playersWithoutByes[playerIndex++] || null;
+        match.participant2Id = playersWithoutByes[playerIndex++] || null;
+        match.winnerId = null;
+        match.status = MatchStatus.SCHEDULED;
+      }
+      
+      match.courtId = null;
+      match.scheduledTime = null;
+      match.startTime = null;
+      match.endTime = null;
+      
+      matches.push(match);
+    }
+    
+    // Generate placeholder matches for subsequent rounds
+    for (let round = 2; round <= totalRounds; round++) {
+      const roundMatchCount = Math.pow(2, totalRounds - round);
+      matchNumber = 1;
+      
+      for (let i = 0; i < roundMatchCount; i++) {
+        const match = new Match();
+        match.id = generateId('mtc');
+        match.bracketId = bracketId;
+        match.phaseId = phases[round - 1].id;
+        match.round = round;
+        match.matchNumber = matchNumber++;
+        match.participant1Id = null; // TBD - winner of previous matches
+        match.participant2Id = null;
+        match.winnerId = null;
+        match.status = MatchStatus.SCHEDULED;
+        match.courtId = null;
+        match.scheduledTime = null;
+        match.startTime = null;
+        match.endTime = null;
+        
+        matches.push(match);
+      }
+    }
+    
+    return {matches, phases};
+  }
+
+  /**
+   * Generates round robin bracket where each player plays all others.
+   * 
+   * Algorithm: Round-robin scheduling
+   * - For even number of players: participants - 1 rounds
+   * - For odd number of players: participants rounds (one bye per round)
+   *
+   * @param bracketId - Bracket identifier
+   * @param participantIds - Participant IDs
+   * @param totalRounds - Number of rounds
+   * @returns Matches and phases
+   */
+  private generateRoundRobin(
+    bracketId: string,
+    participantIds: string[],
+    totalRounds: number,
+  ): MatchGenerationResult {
+    const matches: Match[] = [];
+    const phases: Phase[] = [];
+    const playerCount  = participantIds.length;
+    
+    // For odd number of players, add a "bye" slot
+    const players = [...participantIds];
+    const isOdd = playerCount % 2 === 1;
+    if (isOdd) {
+      players.push('BYE'); // Placeholder for bye
+    }
+    
+    const matchesPerRound = players.length / 2;
+    
+    // Create phases (one per round)
+    for (let round = 1; round <= totalRounds; round++) {
+      const phase = new Phase();
+      phase.id = generateId('phs');
+      phase.bracketId = bracketId;
+      phase.order = round;
+      phase.name = `Round ${round}`;
+      phase.matchCount = matchesPerRound;
+      phase.isCompleted = false;
+      phases.push(phase);
+    }
+    
+    // Generate matches using round-robin algorithm
+    for (let round = 0; round < totalRounds; round++) {
+      const roundMatches = this.generateRoundRobinRound(players, round);
+      
+      for (let i = 0; i < roundMatches.length; i++) {
+        const [player1, player2] = roundMatches[i];
+        
+        // Skip if either player is the bye placeholder
+        if (player1 === 'BYE' || player2 === 'BYE') {
+          continue;
+        }
+        
+        const match = new Match();
+        match.id = generateId('mtc');
+        match.bracketId = bracketId;
+        match.phaseId = phases[round].id;
+        match.round = round + 1;
+        match.matchNumber = i + 1;
+        match.participant1Id = player1;
+        match.participant2Id = player2;
+        match.winnerId = null;
+        match.status = MatchStatus.SCHEDULED;
+        match.courtId = null;
+        match.scheduledTime = null;
+        match.startTime = null;
+        match.endTime = null;
+        
+        matches.push(match);
+      }
+    }
+    
+    return {matches, phases};
+  }
+
+  /**
+   * Generates match play bracket (flexible open format).
+   * 
+   * Creates one phase with no predefined matches.
+   * Organizers can create matches manually as needed.
+   *
+   * @param bracketId - Bracket identifier
+   * @returns Empty matches array with single phase
+   */
+  private generateMatchPlay(
+    bracketId: string,
+  ): MatchGenerationResult {
+    const matches: Match[] = [];
+    const phases: Phase[] = [];
+    
+    // Create a single phase for match play
+    const phase = new Phase();
+    phase.id = generateId('phs');
+    phase.bracketId = bracketId;
+    phase.order = 1;
+    phase.name = 'Open Play';
+    phase.matchCount = 0; // No predefined matches
+    phase.isCompleted = false;
+    phases.push(phase);
+    
+    // No matches created initially - organizers add them manually
+    
+    return {matches, phases};
+  }
+
+  /**
+   * Generates pairings for one round of round-robin using circle method.
+   * 
+   * @param players - Array of player IDs
+   * @param roundNumber - Current round number (0-indexed)
+   * @returns Array of match pairings
+   */
+  private generateRoundRobinRound(players: string[], roundNumber: number): [string, string][] {
+    const pairings: [string, string][] = [];
+    
+    // Use circle method: fix one player, rotate others
+    const fixed = players[0];
+    const rotating = players.slice(1);
+    
+    // Rotate for current round
+    for (let i = 0; i < roundNumber; i++) {
+      rotating.unshift(rotating.pop()!);
+    }
+    
+    // Generate pairings
+    pairings.push([fixed, rotating[rotating.length - 1]]);
+    
+    for (let i = 0; i < rotating.length - 1; i++) {
+      pairings.push([rotating[i], rotating[rotating.length - 2 - i]]);
+    }
+    
+    return pairings;
+  }
+
+  /**
+   * Gets human-readable phase names for single elimination rounds.
+   *
+   * @param totalRounds - Total number of rounds
+   * @returns Array of phase names
+   */
+  private getSingleEliminationPhaseNames(totalRounds: number): string[] {
+    const names: string[] = [];
+    
+    for (let round = 1; round <= totalRounds; round++) {
+      const remainingRounds = totalRounds - round;
+      
+      if (remainingRounds === 0) {
+        names.push('Final');
+      } else if (remainingRounds === 1) {
+        names.push('Semifinals');
+      } else if (remainingRounds === 2) {
+        names.push('Quarterfinals');
+      } else if (remainingRounds === 3) {
+        names.push('Round of 16');
+      } else if (remainingRounds === 4) {
+        names.push('Round of 32');
+      } else if (remainingRounds === 5) {
+        names.push('Round of 64');
+      } else {
+        names.push(`Round ${round}`);
+      }
+    }
+    
+    return names;
+  }
+}

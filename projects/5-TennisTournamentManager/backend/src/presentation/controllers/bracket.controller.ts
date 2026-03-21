@@ -14,32 +14,134 @@
 import {Response, NextFunction} from 'express';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Bracket} from '../../domain/entities/bracket.entity';
+import {Match} from '../../domain/entities/match.entity';
+import {Phase} from '../../domain/entities/phase.entity';
+import {Registration} from '../../domain/entities/registration.entity';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
+import {MatchGeneratorService} from '../../application/services/match-generator.service';
+import {RegistrationStatus} from '../../domain/enumerations/registration-status';
 
 /**
  * Bracket controller.
  */
 export class BracketController {
+  private readonly matchGenerator: MatchGeneratorService;
+
+  /**
+   * Creates a new bracket controller instance.
+   */
+  public constructor() {
+    this.matchGenerator = new MatchGeneratorService();
+  }
+
   /**
    * POST /api/brackets
-   * Generates a bracket for a category.
+   * Generates a bracket for a category with matches and phases.
+   * Replaces any existing unpublished bracket for the same category.
    */
   public async create(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const bracketRepository = AppDataSource.getRepository(Bracket);
+      const matchRepository = AppDataSource.getRepository(Match);
+      const phaseRepository = AppDataSource.getRepository(Phase);
+      const registrationRepository = AppDataSource.getRepository(Registration);
       
+      const {categoryId} = req.body;
+      
+      console.log(`📋 Creating bracket for category ${categoryId}...`);
+      
+      // Check for existing brackets in this category
+      const existingBrackets = await bracketRepository.find({
+        where: {categoryId},
+      });
+      
+      console.log(`📊 Found ${existingBrackets.length} existing bracket(s) for category ${categoryId}`);
+      
+      // Check if any published brackets exist
+      const publishedBracket = existingBrackets.find(b => b.isPublished);
+      if (publishedBracket) {
+        console.log(`❌ Cannot create bracket: Published bracket ${publishedBracket.id} already exists`);
+        throw new AppError(
+          'A published bracket already exists for this category. Cannot create a new bracket.',
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_OPERATION
+        );
+      }
+      
+      // Delete unpublished brackets and their related data
+      for (const oldBracket of existingBrackets) {
+        if (!oldBracket.isPublished) {
+          console.log(`🗑️ Deleting unpublished bracket ${oldBracket.id}...`);
+          
+          // Delete matches first (foreign key constraint)
+          await matchRepository.delete({bracketId: oldBracket.id});
+          
+          // Delete phases
+          await phaseRepository.delete({bracketId: oldBracket.id});
+          
+          // Delete bracket
+          await bracketRepository.delete(oldBracket.id);
+          
+          console.log(`✅ Deleted unpublished bracket ${oldBracket.id} and its data`);
+        }
+      }
+      
+      // Create new bracket entity
       const bracket = bracketRepository.create({
         ...req.body,
         id: generateId('brk'),
       });
       
-      await bracketRepository.save(bracket);
+      console.log(`💾 Saving new bracket...`);
+      const savedBracket = await bracketRepository.save(bracket);
+      console.log(`✅ Bracket ${savedBracket.id} saved successfully`);
       
-      res.status(HTTP_STATUS.CREATED).json(bracket);
+      // Get accepted participants for the category
+      const registrations = await registrationRepository.find({
+        where: {
+          categoryId: savedBracket.categoryId,
+          status: RegistrationStatus.ACCEPTED,
+        },
+      });
+      
+      const participantIds = registrations.map(r => r.participantId);
+      
+      console.log(`📊 Found ${registrations.length} ACCEPTED registrations for category ${savedBracket.categoryId}`);
+      console.log(`👥 Participant IDs:`, participantIds);
+      
+      // Generate matches and phases based on bracket type
+      if (participantIds.length >= 2) {
+        console.log(`🎾 Generating matches for ${participantIds.length} participants...`);
+        const {matches, phases} = this.matchGenerator.generateMatches(
+          savedBracket.id,
+          savedBracket.bracketType,
+          participantIds,
+          savedBracket.totalRounds,
+        );
+        
+        console.log(`💾 Saving ${phases.length} phases...`);
+        // Save phases first (matches reference them)
+        await phaseRepository.save(phases);
+        
+        console.log(`💾 Saving ${matches.length} matches...`);
+        // Save generated matches
+        await matchRepository.save(matches);
+        
+        console.log(`✅ Generated ${matches.length} matches across ${phases.length} phases for bracket ${savedBracket.id}`);
+      } else {
+        console.log(`⚠️ Not enough participants (${participantIds.length}) to generate matches. Need at least 2 ACCEPTED registrations.`);
+      }
+      
+      res.status(HTTP_STATUS.CREATED).json(savedBracket);
     } catch (error) {
+      console.error('❌ Error creating bracket:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
       next(error);
     }
   }
@@ -86,6 +188,32 @@ export class BracketController {
       });
       
       res.status(HTTP_STATUS.OK).json(brackets);
+    } catch (error) {
+      next(error);
+    }
+  }
+  
+  /**
+   * PUT /api/brackets/:id
+   * Updates bracket data (e.g., publishing, regenerating).
+   */
+  public async update(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const bracketRepository = AppDataSource.getRepository(Bracket);
+      
+      const bracket = await bracketRepository.findOne({where: {id}});
+      
+      if (!bracket) {
+        throw new AppError('Bracket not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Update bracket fields
+      Object.assign(bracket, req.body);
+      
+      const updatedBracket = await bracketRepository.save(bracket);
+      
+      res.status(HTTP_STATUS.OK).json(updatedBracket);
     } catch (error) {
       next(error);
     }

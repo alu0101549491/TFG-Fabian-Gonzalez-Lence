@@ -6,6 +6,1446 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.39.14] - 2026-03-21
+
+### Fixed — Frontend Discarding Participant Data from Backend
+
+**Issue**: After updating the backend to load participant relations and return User objects in match responses, the frontend still displayed "To Be Determined" (TBD) instead of participant names. Despite the backend correctly sending participant data, the UI wasn't showing it.
+
+**Root Cause**: The frontend `MatchService.mapMatchToDto()` method was discarding the participant objects from the backend response. It only mapped the participant IDs but completely ignored the populated `participant1`, `participant2`, and `winner` User objects that the backend's TypeORM relations returned.
+
+**Backend was sending** (from TypeORM relations):
+```json
+{
+  "id": "mtc_xxx",
+  "participant1Id": "usr_32d645c7",
+  "participant2Id": "usr_9884d857",
+  "participant1": {
+    "id": "usr_32d645c7",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com"
+  },
+  "participant2": { ... },
+  ...
+}
+```
+
+**Frontend was mapping to**:
+```typescript
+{
+  id: match.id,
+  participant1Id: match.player1Id,
+  participant2Id: match.player2Id,
+  // ❌ participant1, participant2, winner objects missing
+}
+```
+
+**Solution**: Updated `mapMatchToDto()` to extract and include participant User objects from the backend response, mapping them to the `MatchParticipant` interface.
+
+**Changes**:
+
+#### Match Service ([match.service.ts](src/application/services/match.service.ts) lines 793-830):
+
+**Before**:
+```typescript
+private mapMatchToDto(match: Match, score = ''): MatchDto {
+  return {
+    id: match.id,
+    bracketId: match.bracketId,
+    phaseId: match.phaseId,
+    courtId: match.courtId,
+    participant1Id: match.player1Id,
+    participant2Id: match.player2Id,
+    winnerId: match.winnerId,
+    status: match.status,
+    scheduledAt: match.scheduledTime,
+    score,
+  };
+}
+```
+
+**After**:
+```typescript
+private mapMatchToDto(match: Match, score = ''): MatchDto {
+  return {
+    id: match.id,
+    bracketId: match.bracketId,
+    phaseId: match.phaseId,
+    courtId: match.courtId,
+    participant1Id: match.player1Id,
+    participant2Id: match.player2Id,
+    winnerId: match.winnerId,
+    status: match.status,
+    scheduledAt: match.scheduledTime,
+    scheduledTime: match.scheduledTime,
+    startTime: match.startTime,
+    endTime: match.endTime,
+    score,
+    // Map participant User objects from backend relations
+    participant1: (match as any).participant1 ? {
+      id: (match as any).participant1.id,
+      firstName: (match as any).participant1.firstName,
+      lastName: (match as any).participant1.lastName,
+      email: (match as any).participant1.email,
+    } : null,
+    participant2: (match as any).participant2 ? { ... } : null,
+    winner: (match as any).winner ? { ... } : null,
+  };
+}
+```
+
+**Effect**:
+- Match detail pages now display participant names instead of "TBD"
+- Bracket views show actual player information
+- Frontend properly consumes participant data from backend
+- Complete match data flows from database → backend → frontend → UI
+
+**Technical Note**: Using `(match as any)` is necessary because the domain `Match` entity doesn't define these relations (they're added by TypeORM at runtime when relations are loaded). The proper long-term solution would be to update the domain Match entity to include optional participant properties, but this works for now since the backend consistently returns these fields.
+
+---
+
+## [1.39.15] - 2026-03-21
+
+### Fixed — Match List Not Using Backend Participant Data
+
+**Issue**: After fixing the backend to load participant relations and the frontend to map participant objects, the match list page still showed "TBD" instead of participant names. The match detail page worked correctly, but the matches list did not.
+
+**Root Cause**: The match list component (`match-list.component.ts`) was fetching user data separately via individual API calls to build participant names, instead of using the participant objects already included in the match DTO from the backend.
+
+**Before**:
+```typescript
+// Collected participant IDs and made separate API calls
+const participantIds = new Set<string>();
+for (const match of matches) {
+  if (match.participant1Id) participantIds.add(match.participant1Id);
+  if (match.participant2Id) participantIds.add(match.participant2Id);
+}
+
+const usersMap = new Map<string, UserDto>();
+for (const userId of participantIds) {
+  const user = await this.userService.getUserById(userId);  // N separate API calls
+  usersMap.set(userId, user);
+}
+
+// Then looked up users from the map
+const user1 = match.participant1Id ? usersMap.get(match.participant1Id) : null;
+participant1Name = user1 ? `${user1.firstName} ${user1.lastName}` : 'TBD';
+```
+
+**After**:
+```typescript
+// Use participant objects already in the match DTO
+const participant1Name = match.participant1 
+  ? `${match.participant1.firstName} ${match.participant1.lastName}`
+  : 'TBD';
+
+const participant2Name = match.participant2 
+  ? `${match.participant2.firstName} ${match.participant2.lastName}`
+  : 'TBD';
+```
+
+**Changes**:
+
+#### Match List Component ([match-list.component.ts](src/presentation/pages/matches/match-list/match-list.component.ts) lines 140-212):
+
+- Removed loop that collected participant IDs
+- Removed loop that fetched users via `userService.getUserById()`
+- Removed `usersMap` construction
+- Updated enrichment logic to use `match.participant1` and `match.participant2` objects directly
+
+**Effect**:
+- Match list now displays participant names correctly
+- Eliminates N+1 query problem (no more individual user API calls)
+- Faster page load (fewer HTTP requests)
+- Consistent with match detail page behavior
+- Better performance for brackets with many matches
+
+**Technical Note**: This change depends on v1.39.13 (backend loading participant relations) and v1.39.14 (frontend mapping participant objects). All three changes work together to provide complete participant data throughout the UI.
+
+---
+
+## [1.39.14] - 2026-03-21
+
+### Fixed — Match List Missing Participant Names (Shows "TBD")
+
+**Issue**: After generating a bracket with accepted participants, the matches list and bracket view showed "To Be Determined" (TBD) instead of actual participant names, even though the backend successfully created matches with valid participant IDs.
+
+**Root Cause**: The `getByBracket()` method in the match controller was only loading `['scores', 'court']` relations but not the participant data (`participant1`, `participant2`, `winner`). When the frontend called `/api/matches?bracketId=xxx`, it received matches without populated participant objects, causing the display logic to fall back to "TBD".
+
+**Backend Logs Showed Successful Match Creation**:
+```
+📊 Found 2 ACCEPTED registrations for category cat_xxx
+👥 Participant IDs: [ 'usr_32d645c7', 'usr_9884d857' ]
+🎾 Generating matches for 2 participants...
+✅ Generated 1 matches across 1 phases
+```
+
+But the match list API wasn't returning the participant User objects.
+
+**Solution**: Updated `getByBracket()` to load the same relations as `getById()`, ensuring participant data is included in match list responses.
+
+**Changes**:
+
+#### Match Controller ([match.controller.ts](backend/src/presentation/controllers/match.controller.ts) lines 37-41):
+
+**Before**:
+```typescript
+const matches = bracketId
+  ? await matchRepository.find({
+      where: {bracketId: bracketId as string},
+      relations: ['scores', 'court'],  // ❌ Missing participants
+    })
+  : await matchRepository.find({
+      relations: ['scores', 'court'],  // ❌ Missing participants
+    });
+```
+
+**After**:
+```typescript
+const matches = bracketId
+  ? await matchRepository.find({
+      where: {bracketId: bracketId as string},
+      relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
+    })
+  : await matchRepository.find({
+      relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
+    });
+```
+
+**Effect**:
+- Match lists now display actual participant names instead of "TBD"
+- Bracket view shows populated participant data
+- Consistent with match detail page (which already loaded participants correctly)
+- No frontend changes needed - backend now returns complete match data
+
+**Technical Note**: The `getById()` method was already correctly loading participant relations, but `getByBracket()` (used for list views) was missing them. Both endpoints now return the same complete match objects.
+
+---
+
+## [1.39.12] - 2026-03-21
+
+### Fixed — Tournament Admins Cannot Remove Participants
+
+**Issue**: When tournament admins attempted to remove participants from a tournament, they encountered the error: "User is not authorized to withdraw this registration." This prevented tournament organizers from managing tournament participants.
+
+**Root Cause**: The `removeParticipant()` method was calling `withdrawRegistration()`, which has an authorization check that only allows the participant themselves to withdraw their registration:
+
+```typescript
+// registration.service.ts - withdrawRegistration() method
+if (registration.participantId !== userId) {
+  throw new Error('User is not authorized to withdraw this registration');
+}
+```
+
+When tournament admins tried to remove participants, they were passing their own user ID (admin ID) which didn't match the participant's ID, causing the authorization error.
+
+**Solution**: Modified the `removeParticipant()` method to use `updateStatus()` instead of `withdrawRegistration()`. The `updateStatus()` method uses the backend endpoint `PUT /api/registrations/:id/status` which has proper role-based authorization allowing both SYSTEM_ADMIN and TOURNAMENT_ADMIN to update registration statuses.
+
+**Changes**:
+
+#### Tournament Detail Component ([tournament-detail.component.ts](src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+
+**Before**:
+```typescript
+public async removeParticipant(registrationId: string, playerName: string): Promise<void> {
+  // ...
+  const now = new Date().toISOString();
+  await this.registrationService.withdrawRegistration(registrationId, now, currentUser.id);
+  // ...
+}
+```
+
+**After**:
+```typescript
+public async removeParticipant(registrationId: string, playerName: string): Promise<void> {
+  // ...
+  // Tournament admins use updateStatus instead of withdrawRegistration
+  const updateData: UpdateRegistrationStatusDto = {
+    registrationId,
+    status: RegistrationStatus.WITHDRAWN,
+  };
+  await this.registrationService.updateStatus(updateData, currentUser.id);
+  // ...
+}
+```
+
+**Key Changes**:
+- Replaced `withdrawRegistration()` call with `updateStatus()`
+- Removed timestamp parameter (not needed for status update)
+- Use `RegistrationStatus.WITHDRAWN` as the new status
+- Leverages existing role-based authorization on the status update endpoint
+
+**Effect**:
+- Tournament admins can now successfully remove participants
+- Uses proper authorization channel (status update endpoint)
+- Maintains consistent authorization pattern across application
+- Participants can still withdraw themselves using the withdrawal flow
+
+**Technical Note**: The distinction between `withdrawRegistration()` and `updateStatus()` is intentional:
+- `withdrawRegistration()`: Self-service method for participants to withdraw themselves
+- `updateStatus()`: Administrative method for staff to manage registration statuses (ACCEPTED, REJECTED, WITHDRAWN, etc.)
+
+---
+
+## [1.39.11] - 2026-03-21
+
+### Fixed — 404 Error on Scores Endpoint
+
+**Issue**: When loading the matches page, the application was making API calls to `GET /api/scores?matchId=xxx` which resulted in 404 errors. This endpoint doesn't exist in the backend.
+
+**Root Cause**: The frontend MatchService was trying to fetch scores separately via the ScoreRepository, but the backend already loads scores as part of the Match entity relations (`relations: ['scores']`). Making separate score API calls was unnecessary and caused 404 errors.
+
+**Changes**:
+
+#### Service Layer Updates ([match.service.ts](src/application/services/match.service.ts)):
+
+**Removed Unnecessary Score API Calls**:
+- Before: Each match fetch triggered separate `scoreRepository.findByMatchId()` calls
+- After: Use scores already included in match objects from backend relations
+- Removed `ScoreRepositoryImpl` injection (no longer needed)
+- Removed `Score` entity import (not used)
+
+**Updated Methods**:
+- `getMatchById()` - Removed score fetch, use match.scores from relations
+- `getAllMatches()` - Removed async score mapping, direct map instead  
+- `getMatchesByBracket()` - Removed score fetch per match
+- `getMatchesByPhase()` - Removed score fetch per match
+- `getMatchesByParticipant()` - Removed score fetch per match
+
+**Technical Note**: The backend Match controller already loads scores via TypeORM relations:
+```typescript
+relations: ['scores', 'court', 'participant1', 'participant2', 'winner']
+```
+
+The Match entity has `@OneToMany(() => Score) scores: Score[]`, so scores are automatically included in the response. The separate score API was redundant.
+
+**Effect**:
+- No more 404 errors when loading matches page
+- Reduced API calls (better performance)
+- Simplified match service logic
+- Matches load correctly with all data including scores
+
+---
+
+## [1.39.10] - 2026-03-21
+
+### Fixed — "bracket.regenerate is not a function" Error
+
+**Issue**: When attempting to regenerate or publish a bracket, the application crashes with the error: `bracket.regenerate is not a function`.
+
+**Root Cause**: The bracket repository returns plain objects from HTTP responses, not instances of the Bracket class. These plain objects don't have the domain methods (`regenerate()`, etc.) defined in the Bracket entity class.
+
+**Changes**:
+
+#### Service Layer Updates ([bracket.service.ts](src/application/services/bracket.service.ts)):
+
+**Fixed `regenerateBracket()` Method**:
+- Replaced `bracket.regenerate(false)` call with direct validation check
+- Before: Called domain method on plain object (caused error)
+- After: Inline validation `if (bracket.isPublished && !false)` throws error appropriately
+
+**Fixed `publishBracket()` Method**:
+- Replaced `new Bracket({...bracket, isPublished: true})` with direct property mutation
+- Before: Attempted to instantiate Bracket class with plain object data
+- After: Directly update `bracket.isPublished = true` on plain object
+
+**Technical Note**: This is a common issue in architectures where repositories return DTOs/plain objects instead of domain entities. The domain logic (validation rules) in entity methods cannot be called on these plain objects. Solutions:
+1. Perform validation directly in the service layer (current approach)
+2. Have repositories instantiate domain entities from response data
+3. Keep domain entities separate from DTOs returned by HTTP layer
+
+**Effect**:
+- Bracket regeneration now works without runtime errors
+- Bracket publishing works correctly
+- Business rule validation still enforced (cannot regenerate published brackets)
+- Application service layer is more resilient to repository implementation details
+
+---
+
+## [1.39.9] - 2026-03-21
+
+### Enhanced — Matches List Page Navigation
+
+**Issue**: The matches list page lacked a back button for easy navigation, requiring users to use browser back or manually navigate.
+
+**Changes**:
+
+#### Frontend Updates ([match-list.component.html/css](src/presentation/pages/matches/match-list/)):
+
+**Added Back Button in Hero Section**:
+- Back button positioned in hero section before title
+- Glassmorphism design matching app-wide pattern
+- Links to home page (root route)
+- Transparent background with backdrop-filter blur
+- Smooth hover transition with translateX(-4px) animation
+- Consistent styling with tournament-detail and bracket-view pages
+
+**Visual Improvements**:
+- Navigation consistency across all major pages
+- Enhanced UX with clear path back to home
+- Matches existing design system (white translucent button on gradient background)
+
+**Effect**:
+- Users can easily navigate back to home from matches list
+- Consistent navigation pattern throughout the application
+- Improved user experience and reduced friction
+
+---
+
+## [1.39.8] - 2026-03-21
+
+### Enhanced — Match Detail Page with Participant Information and Modern Styling
+
+**Issue**: The match detail page showed only participant IDs instead of names, had minimal styling that didn't match the rest of the application, and lacked visual hierarchy.
+
+**Update (Design Consistency)**: Initial implementation used custom styling that didn't match the established design system. Updated to follow the consistent pattern used in tournament-detail and bracket-view pages: gray container background (`var(--color-gray-100)`), gradient hero section, white cards with gradient headers, and CSS variables throughout. This ensures visual consistency across all pages.
+
+**Changes**:
+
+#### Backend Entity Updates ([match.entity.ts](backend/src/domain/entities/match.entity.ts)):
+
+**Added User Relationships**:
+```typescript
+@ManyToOne(() => User)
+@JoinColumn({name: 'participant1Id'})
+public participant1!: User | null;
+
+@ManyToOne(() => User)
+@JoinColumn({name: 'participant2Id'})
+public participant2!: User | null;
+
+@ManyToOne(() => User)
+@JoinColumn({name: 'winnerId'})
+public winner!: User | null;
+```
+
+#### Backend Controller Updates ([match.controller.ts](backend/src/presentation/controllers/match.controller.ts)):
+
+**Updated Relations Loading**:
+```typescript
+const match = await matchRepository.findOne({
+  where: {id},
+  relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
+});
+```
+
+#### DTO Updates ([match.dto.ts](src/application/dto/match.dto.ts)):
+
+**Added Participant Data Structure**:
+```typescript
+export interface MatchParticipant {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface MatchDto {
+  // ... existing fields
+  participant1?: MatchParticipant | null;
+  participant2?: MatchParticipant | null;
+  winner?: MatchParticipant | null;
+  scheduledTime: Date | null;
+  startTime: Date | null;
+  endTime: Date | null;
+}
+```
+
+#### Frontend Component Redesign ([match-detail.component.ts/html/css](src/presentation/pages/matches/match-detail/)):
+
+**New Features**:
+- ✨ **Hero section** with gradient background matching app design
+- 👥 **Participant cards** with avatars showing initials
+- 👑 **Winner highlighting** with special styling and badge
+- 📋 **Match information grid** with icons and structured layout
+- ❓ **"TBD" state** for undetermined participants
+- 🎨 **Modern card-based layout** with hover effects
+- 📱 **Fully responsive** design for mobile devices
+- ⚡ **Smooth animations** and transitions
+- ⚙️ **Action buttons** placeholder for future features (schedule, record scores, etc.)
+
+**Visual Improvements**:
+- **Consistent Design System**: Gray container background (`var(--color-gray-100)`) matching tournament and bracket pages
+- **Hero Section**: Gradient background (green to blue) with SVG overlay pattern, isolated to top section
+- **White Card Layout**: Content organized in clean white cards with gradient headers on gray background
+- **CSS Variables**: All colors, spacing, and typography use design tokens from `variables.css`
+- **Back Button**: Glassmorphism effect with backdrop-filter blur, matching app-wide navigation pattern
+- **Status Badge**: Transparent badge with blur effect in hero section
+- **Content Wrapper**: Max-width 1200px container for optimal readability
+- **VS Divider**: Gradient circle badge between participants
+- **Participant Avatars**: Circular avatars with initials and gradient backgrounds
+- **Winner Highlighting**: Green border and crown badge for match winner
+- **Info Grid**: Organized layout with icons in white card body
+- **Action Buttons**: Disabled placeholder buttons for upcoming features
+- **Hover Effects**: Consistent animations and transitions matching app standards
+- **Responsive Design**: Mobile-optimized layout with reordered content for small screens
+
+**Effect**:
+- Match details page now displays complete participant information
+- Consistent visual design matching tournament and bracket pages
+- Clear visual hierarchy and improved UX
+- Ready for future enhancements (scheduling, score entry, status updates)
+
+---
+
+## [1.39.7] - 2026-03-21
+
+### Fixed — Matches Page Error: "phaseRepository.findByBracketId is not a function"
+
+**Issue**: When viewing the matches page after creating a bracket, the application crashes with:
+```
+this.phaseRepository.findByBracketId is not a function
+```
+
+**Root Cause**: The `BracketService.getPhases()` method was calling `this.phaseRepository.findByBracketId(bracketId)` to retrieve phases for a bracket, but this method didn't exist in either:
+1. The `IPhaseRepository` interface definition
+2. The `PhaseRepositoryImpl` implementation
+
+The backend already had the endpoint (`GET /api/phases?bracketId=xxx`) and controller method (`phaseController.getByBracket`), but the frontend repository was missing the corresponding method to call it.
+
+**Solution**: Added `findByBracketId()` method to both the repository interface and implementation.
+
+#### Repository Interface Changes ([phase-repository.interface.ts](src/domain/repositories/phase-repository.interface.ts)):
+
+**Added Method Definition**:
+```typescript
+/**
+ * Finds all phases belonging to a specific bracket.
+ * @param bracketId - The unique identifier of the bracket
+ * @returns Promise resolving to an array of phases ordered by phase order
+ */
+findByBracketId(bracketId: string): Promise<Phase[]>;
+```
+
+#### Repository Implementation Changes ([phase.repository.ts](src/infrastructure/repositories/phase.repository.ts)):
+
+**Added Method Implementation**:
+```typescript
+/**
+ * Retrieves all phases belonging to a specific bracket.
+ * @param bracketId - The bracket identifier
+ * @returns Promise resolving to an array of phases ordered by phase order
+ */
+public async findByBracketId(bracketId: string): Promise<Phase[]> {
+  const response = await this.httpClient.get<Phase[]>(`/phases?bracketId=${bracketId}`);
+  return response;
+}
+```
+
+**Effect**:
+- Matches page now loads successfully for brackets with generated matches
+- Phases display correctly ordered by phase order
+- `BracketService.getPhases()` can retrieve bracket phases as intended
+- Complete frontend-backend integration for phase retrieval by bracket
+
+**Technical Notes**:
+- Backend endpoint: `GET /api/phases?bracketId={bracketId}`
+- Backend handler: `PhaseController.getByBracket()`
+- Phases returned ordered by `order` column (ASC)
+- Works for both draft and published brackets
+
+---
+
+## [1.39.6] - 2026-03-21
+
+### Fixed — Bracket View Error for Players When No Bracket Published
+
+**Issue**: When a player (non-admin user) views the bracket page for a tournament without a published bracket, the application crashes with:
+```
+TypeError: Cannot read properties of undefined (reading 'includes')
+    at BracketViewComponent.canManageTournament (bracket-view.component.ts:137:18)
+```
+
+**Root Cause**: The `canManageTournament()` method attempted to call `.includes()` on `user.roles` without checking if the property exists. For some user accounts, the `roles` property was undefined, causing the crash when the template conditionally rendered content based on management permissions.
+
+**Solution**: Added defensive null/undefined check for user roles and improved empty state messaging.
+
+#### Component Changes ([bracket-view.component.ts](src/presentation/pages/brackets/bracket-view/bracket-view.component.ts)):
+
+**Updated `canManageTournament()` Method**:
+```typescript
+public canManageTournament(): boolean {
+  const user = this.authStateService.getCurrentUser();
+  if (!user) return false;
+
+  const tournament = this.tournament();
+  if (!tournament) return false;
+
+  // Safe check for roles array
+  const userRoles = user.roles || [];
+
+  return (
+    user.id === tournament.organizerId ||
+    userRoles.includes(UserRole.TOURNAMENT_ADMIN) ||
+    userRoles.includes(UserRole.SYSTEM_ADMIN)
+  );
+}
+```
+
+#### Template Changes ([bracket-view.component.html](src/presentation/pages/brackets/bracket-view/bracket-view.component.html)):
+
+**Updated Empty State Messaging**:
+- Changed title from "No Bracket Found" → "No Published Brackets Yet"
+- Updated player message to clarify that brackets are being prepared
+- Improved clarity that this is a temporary state, not an error
+
+**Effect**:
+- Players can now view bracket pages without crashes
+- Clear, friendly messaging explaining why bracket isn't visible yet
+- No more confusing TypeScript errors leaked to users
+- Graceful handling of missing user role data
+
+---
+
+## [1.39.5] - 2026-03-21
+
+### Fixed — Category Refresh Showing Deleted Categories (HTTP Caching)
+
+**Issue**: After successfully deleting categories, clicking the "⟳ Refresh" button shows the deleted categories again. Attempting to delete them results in 404 errors because they're already gone from the database. The issue only affects the refresh operation - the categories are successfully deleted from both UI and database on first deletion.
+
+**Root Cause**: HTTP response caching. Angular's `HttpClient` was caching GET responses for `/api/categories?tournamentId=...`. When users clicked refresh after deleting categories:
+1. First deletion: Backend successfully removes category (cascade deletion works)
+2. UI optimistically removes category from local state (appears deleted)
+3. User clicks "⟳ Refresh"
+4. `HttpClient.get()` returns **cached response** from before deletion
+5. UI shows deleted categories (stale data)
+6. User attempts to delete again → Backend returns 404 (category already gone)
+
+**Solution**: Added cache-busting headers to the GET categories request to force fresh data on every refresh:
+
+#### Frontend Changes ([category.service.ts](src/application/services/category.service.ts)):
+
+**Updated `getCategoriesByTournament()` Method**:
+```typescript
+public async getCategoriesByTournament(tournamentId: string): Promise<CategoryDto[]> {
+  return firstValueFrom(
+    this.http.get<CategoryDto[]>(`${this.apiUrl}?tournamentId=${tournamentId}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    }),
+  );
+}
+```
+
+**Effect**:
+- Every refresh now makes a real HTTP request to the backend
+- No more stale cached data after deletions
+- Users see accurate, up-to-date category list
+- Fixes the confusing UX where deleted items reappear
+
+**Implementation Details**:
+- `Cache-Control: no-cache, no-store, must-revalidate`: Tells browser and proxies not to cache
+- `Pragma: no-cache`: HTTP/1.0 backward compatibility
+- Applied only to GET requests (POST/DELETE not affected by browser caching)
+
+**Version**: Frontend v1.39.5
+
+---
+
+## [1.39.4] - 2026-03-21
+
+### Fixed — Category Deletion Failing Silently
+
+**Issue**: When admin deletes a category, the operation appears successful in the UI, but the category remains in the database. When players refresh, they still see the "deleted" category. Browser console shows "✅ Categories refreshed: 1 found" even though admin sees 0 categories.
+
+**Root Cause**: Category deletion endpoint was missing **cascade deletion** for related data. When attempting to delete a category with registrations, the database operation failed due to foreign key constraint violations:
+- `registrations` table has FK to `categories.id`
+- `brackets` table has FK to `categories.id`  
+- `matches` table has FK to `brackets.id`
+- `phases` table has FK to `brackets.id`
+
+The delete operation failed silently (caught by error handler), and the category remained in the database. The admin's UI optimistically removed it from local state, creating the illusion of successful deletion, while the server-side data remained unchanged.
+
+**Solution**: Implemented proper cascade deletion in category deletion endpoint:
+
+#### Backend Changes ([category.controller.ts](backend/src/presentation/controllers/category.controller.ts)):
+
+**Added Imports**:
+```typescript
+import {Registration} from '../../domain/entities/registration.entity';
+import {Bracket} from '../../domain/entities/bracket.entity';
+import {Match} from '../../domain/entities/match.entity';
+import {Phase} from '../../domain/entities/phase.entity';
+```
+
+**Enhanced DELETE Method**:
+```typescript
+/**
+ * DELETE /api/categories/:id
+ * Deletes a category and all related data (registrations, brackets, matches, phases).
+ * 
+ * Cascade deletion order:
+ * 1. Matches (reference brackets)
+ * 2. Phases (reference brackets)
+ * 3. Brackets (reference category)
+ * 4. Registrations (reference category)
+ * 5. Category
+ */
+public async delete(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const {id} = req.params;
+    
+    console.log(`🗑️ Deleting category ${id} and all related data...`);
+    
+    const categoryRepository = AppDataSource.getRepository(Category);
+    const registrationRepository = AppDataSource.getRepository(Registration);
+    const bracketRepository = AppDataSource.getRepository(Bracket);
+    const matchRepository = AppDataSource.getRepository(Match);
+    const phaseRepository = AppDataSource.getRepository(Phase);
+    
+    const category = await categoryRepository.findOne({where: {id}});
+    
+    if (!category) {
+      throw new AppError('Category not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+    }
+
+    // Delete related data in correct order to respect foreign key constraints
+    
+    // 1. Get all brackets for this category
+    const brackets = await bracketRepository.find({where: {categoryId: id}});
+    
+    for (const bracket of brackets) {
+      // 1a. Delete matches first (they reference brackets)
+      await matchRepository.delete({bracketId: bracket.id});
+      
+      // 1b. Delete phases (they reference brackets)
+      await phaseRepository.delete({bracketId: bracket.id});
+    }
+    console.log(`✅ Deleted matches and phases for ${brackets.length} bracket(s)`);
+    
+    // 2. Delete brackets (they reference category)
+    await bracketRepository.delete({categoryId: id});
+    console.log(`✅ Deleted ${brackets.length} bracket(s) for category ${id}`);
+    
+    // 3. Delete registrations (they reference category)
+    const deleteResult = await registrationRepository.delete({categoryId: id});
+    console.log(`✅ Deleted ${deleteResult.affected || 0} registration(s) for category ${id}`);
+    
+    // 4. Finally, delete the category
+    await categoryRepository.remove(category);
+    console.log(`✅ Category ${id} deleted successfully`);
+    
+    res.status(HTTP_STATUS.NO_CONTENT).send();
+  } catch (error) {
+    console.error('❌ Error deleting category:', error);
+    next(error);
+  }
+}
+```
+
+**Benefits**:
+- ✅ Categories now delete successfully even with registrations
+- ✅ All related data cleaned up properly (no orphaned records)
+- ✅ Foreign key constraints respected
+- ✅ Comprehensive logging for debugging
+- ✅ Admin and player views stay synchronized
+
+**Deletion Order** (critical for foreign keys):
+1. Matches → 2. Phases → 3. Brackets → 4. Registrations → 5. Category
+
+**Testing**:
+1. Create category and register players
+2. Admin deletes category
+3. Player clicks refresh button (v1.39.3)
+4. Verify category no longer appears for player
+5. Check backend logs for successful deletion messages
+6. Verify no orphaned registrations/brackets in database
+
+**Example Log Output**:
+```
+🗑️ Deleting category cat_abc123 and all related data...
+✅ Deleted matches and phases for 1 bracket(s)
+✅ Deleted 1 bracket(s) for category cat_abc123
+✅ Deleted 3 registration(s) for category cat_abc123
+✅ Category cat_abc123 deleted successfully
+```
+
+---
+
+## [1.39.3] - 2026-03-21
+
+### Fixed — Category View Not Updating for Other Users
+
+**Issue**: When an admin deletes a category, players viewing the tournament at the same time still see the deleted category. The category only disappears after manually refreshing the browser (F5).
+
+**Root Cause**: Each user's browser independently loads and caches tournament data. When an admin makes changes (like deleting a category), only their local view updates. Other users' browsers don't automatically know about the change because:
+- Each component instance manages its own state
+- Frontend framework (Angular) doesn't automatically sync data across different browser sessions
+- No real-time update mechanism (WebSocket/polling) implemented
+
+**Solution**: Added manual refresh capability for players:
+
+#### Frontend Changes ([tournament-detail.component.ts](src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+
+**New Signal**:
+```typescript
+public isLoadingCategories = signal(false);
+```
+
+**New Method**:
+```typescript
+/**
+ * Refreshes the category list from the server.
+ * Allows players to see latest changes made by admins.
+ */
+public async refreshCategories(): Promise<void> {
+  if (!this.tournamentId || this.isLoadingCategories()) return;
+
+  this.isLoadingCategories.set(true);
+
+  try {
+    const categories = await this.categoryService.getCategoriesByTournament(this.tournamentId);
+    this.categories.set(categories);
+    console.log(`✅ Categories refreshed: ${categories.length} found`);
+  } catch (error) {
+    console.error('Failed to refresh categories:', error);
+    alert('Failed to refresh categories. Please try again.');
+  } finally {
+    this.isLoadingCategories.set(false);
+  }
+}
+```
+
+#### UI Changes ([tournament-detail-new.component.html](src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html)):
+
+Added refresh button to Categories section header:
+```html
+<div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+  <h2>🏆 Categories</h2>
+  <button 
+    class="action-btn" 
+    (click)="refreshCategories()"
+    [disabled]="isLoadingCategories()"
+    title="Refresh to see latest changes"
+  >
+    {{ isLoadingCategories() ? '⟳ Refreshing...' : '⟳ Refresh' }}
+  </button>
+</div>
+```
+
+**Benefits**:
+- ✅ Players can manually refresh to see admin changes
+- ✅ No full page reload needed (F5)
+- ✅ Visual feedback while refreshing ("⟳ Refreshing...")
+- ✅ Button disabled during refresh to prevent double-clicks
+- ✅ Console logging for debugging
+- ✅ Error handling with user feedback
+
+**User Experience**:
+- **Before**: Player must press F5 (full page reload) to see changes
+- **After**: Player clicks "⟳ Refresh" button (fast, targeted refresh)
+
+**Testing**:
+1. Admin deletes a category
+2. Player viewing the tournament clicks "⟳ Refresh" button in Categories section
+3. Verify deleted category disappears from player's view
+4. Verify button shows "⟳ Refreshing..." while loading
+5. Verify button returns to "⟳ Refresh" when complete
+
+**Future Enhancement**: For production, consider implementing WebSocket real-time updates so changes automatically appear for all users without manual refresh.
+
+---
+
+## [1.39.2] - 2026-03-21
+
+### Fixed — Tournament Deletion with Brackets
+
+**Issue**: Deleting a tournament that contains brackets failed with a 400 error due to foreign key constraint violations.
+
+**Root Cause**: The tournament deletion logic (`DELETE /api/tournaments/:id`) was missing cascade deletion for brackets and their related data (matches and phases). The deletion only removed registrations, categories, and courts, causing foreign key violations when categories with brackets were deleted.
+
+**Solution**: Enhanced tournament deletion with complete cascade deletion in correct order:
+
+#### Backend Changes ([tournament.controller.ts](backend/src/presentation/controllers/tournament.controller.ts)):
+
+**Cascade Deletion Order**:
+```typescript
+1. Delete registrations (reference tournament and category)
+2. For each category:
+   a. For each bracket in category:
+      - Delete matches (reference bracket)
+      - Delete phases (reference bracket)
+   b. Delete brackets (reference category)
+3. Delete categories (reference tournament)
+4. Delete courts (reference tournament)
+5. Delete tournament
+```
+
+**Implementation**:
+- Added `Bracket`, `Match`, and `Phase` repository access
+- Loop through all categories to find their brackets
+- For each bracket, delete matches and phases first
+- Delete brackets before deleting categories
+- Added console logging for deletion progress
+- Updated JSDoc to document complete cascade deletion
+
+**Benefits**:
+- ✅ Tournaments with brackets can be deleted safely
+- ✅ All related data removed in correct order
+- ✅ No orphaned data in database
+- ✅ Foreign key constraints respected
+- ✅ Comprehensive logging for debugging
+
+**Example Log Output**:
+```
+🗑️ Deleting tournament trn_xyz and all related data...
+✅ Deleted registrations for tournament trn_xyz
+✅ Deleted brackets, phases, and matches for tournament trn_xyz
+✅ Deleted categories for tournament trn_xyz
+✅ Deleted courts for tournament trn_xyz
+✅ Tournament trn_xyz deleted successfully
+```
+
+**Testing**:
+- Create tournament with categories and generated brackets
+- Delete tournament
+- Verify all related data removed and no 400 errors
+
+---
+
+## [1.39.1] - 2026-03-21
+
+### Fixed — Duplicate Bracket Prevention
+
+**Issue**: Creating a new bracket for a category didn't replace the existing unpublished bracket, leading to multiple brackets accumulating for the same category. The system displayed only the first bracket found, making the newer bracket invisible.
+
+**Root Cause**: The Backend bracket creation endpoint (`POST /api/brackets`) had no duplicate prevention logic. It blindly created new brackets without checking for existing ones, allowing unlimited brackets per category.
+
+**Solution**: Implemented automatic replacement of unpublished brackets:
+
+#### Backend Changes ([bracket.controller.ts](backend/src/presentation/controllers/bracket.controller.ts)):
+```typescript
+// Before creating new bracket:
+1. Check for existing brackets in the category
+2. If a PUBLISHED bracket exists → Throw error (preserve match history)
+3. If UNPUBLISHED brackets exist → Delete them:
+   - Delete matches (foreign key constraint)
+   - Delete phases
+   - Delete bracket
+4. Create new bracket with matches and phases
+```
+
+**Behavior**:
+- **Unpublished brackets**: Automatically replaced when generating a new bracket
+- **Published brackets**: Protected - cannot be replaced (error thrown)
+- **Data cleanup**: Related matches and phases deleted with old bracket
+
+#### Frontend Changes:
+
+**Bracket Service** ([bracket.service.ts](src/application/services/bracket.service.ts)):
+- Updated JSDoc to indicate bracket replacement behavior
+- Error handling for published bracket conflict
+
+**Tournament Detail Component** ([tournament-detail.component.ts](src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+- Enhanced confirmation message: "⚠️ Any existing unpublished bracket for this category will be replaced"
+- New error handler for published bracket conflict with helpful message:
+  ```
+  "Published brackets cannot be replaced to preserve match history.
+   Options: Use existing bracket or create new tournament"
+  ```
+
+#### Benefits
+
+✅ **No Duplicate Brackets**: Only one bracket exists per category at a time  
+✅ **Safe Replacement**: Unpublished brackets (drafts) are replaceable  
+✅ **History Preservation**: Published brackets (with results) are protected  
+✅ **Data Integrity**: Orphaned matches and phases automatically cleaned up  
+✅ **User Awareness**: Clear confirmation and error messages
+
+#### Database Behavior
+
+**Deletion Order** (respects foreign key constraints):
+1. Matches deleted first (references phases and brackets)
+2. Phases deleted second (references brackets)
+3. Bracket deleted last
+
+#### Testing Checklist
+
+- [x] Generate bracket → Verify single bracket created
+- [x] Generate bracket again for same category → Verify old replaced
+- [x] Publish bracket → Try generating new one → Verify error thrown
+- [x] Check matches page → Verify no orphaned matches from old brackets
+- [x] Generate bracket for different category → Verify independent
+
+#### Technical Details
+
+**Files Modified**:
+- `/backend/src/presentation/controllers/bracket.controller.ts`:
+  - Added duplicate check in `create()` method (lines 43-90)
+  - Added cleanup logic for unpublished brackets
+  - Added validation error for published bracket conflict
+- `/src/application/services/bracket.service.ts`:
+  - Updated JSDoc for `generateBracket()` method
+- `/src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts`:
+  - Enhanced confirmation message (line 830)
+  - Added error handler for published bracket conflict (lines 847-857)
+
+---
+
+## [1.39.0] - 2026-03-21
+
+### Added — Match Display with Participant Names and Phase Grouping
+
+**Feature**: Matches page now displays generated matches with participant names, grouped by phase.
+
+#### Overview
+
+After matches are generated during bracket creation, they can now be viewed on the matches page with full participant information. Matches are grouped by tournament phase (e.g., "Round of 16", "Quarterfinals", "Final") in an expandable accordion interface.
+
+#### Implementation
+
+**1. Enhanced Match Display** (`/src/presentation/pages/matches/match-list/match-list.component.ts`):
+- Fetches matches by bracket ID (from query parameter) or all matches
+- Enriches match data with participant names:
+  - Resolves participant IDs to full names via UserService
+  - Displays "TBD" for null participants (future rounds)
+  - Shows "BYE" status for automatic wins
+- Groups matches by phase:
+  - Fetches phase information for all brackets
+  - Sorts matches by phase order
+  - Creates accordion sections per phase
+- First phase expanded by default for better UX
+
+**2. Match Enrichment Process**:
+```
+Load Matches
+  ↓
+Fetch Phases (for bracket context)
+  ↓
+Collect Participant IDs
+  ↓
+Fetch User Profiles (for names)
+  ↓
+Create EnhancedMatch objects
+  ↓
+Group by Phase
+  ↓
+Display in Accordion
+```
+
+**3. Enhanced Match Interface**:
+```typescript
+interface EnhancedMatch extends MatchDto {
+  participant1Name: string | null;  // Full name or "TBD"
+  participant2Name: string | null;  // Full name or "TBD"
+  phaseName: string;                // e.g., "Semifinals"
+  phaseOrder: number;               // For sorting
+}
+```
+
+**4. UI Features**:
+- **Phase Accordion**: Collapsible phase sections with match counts
+- **Participant Names**: Full names instead of IDs
+- **Winner Indicators**: Trophy emoji (🏆) for match winners
+- **Status Badges**: Color-coded for 12 match states (SCHEDULED, BYE, IN_PROGRESS, COMPLETED, etc.)
+- **Match Cards**: Clickable cards with scheduled time, participants, score, status
+- **Empty State**: Context-aware messaging (no matches, no filters, bracket-specific)
+
+**5. Phase Header Features**:
+- Clickable to expand/collapse matches
+- Shows phase name and match count
+- Toggle icon (▶ / ▼) for visual feedback
+- Gradient background for modern appearance
+
+**6. Status Badge Styling**:
+Added visual distinction for all 12 ITF-compliant match statuses:
+- SCHEDULED: Blue
+- IN_PROGRESS: Orange
+- COMPLETED: Green
+- BYE: Purple (automatic advancement)
+- WALKOVER: Yellow
+- RETIRED: Red
+- SUSPENDED: Dark orange
+- ABANDONED: Gray-blue
+- NOT_PLAYED: Gray
+- CANCELLED: Gray
+- DEFAULT: Red
+- DEAD_RUBBER: Brown
+
+#### Benefits
+
+✅ **Participant Visibility**:
+- Players see their opponents by name (not just IDs)
+- Clear winner indication with trophy icon
+- "TBD" shown for matches awaiting previous round completion
+
+✅ **Phase Organization**:
+- Matches grouped by tournament stage
+- Easy navigation with accordion interface
+- Phase match counts for quick overview
+
+✅ **Status Awareness**:
+- Visual distinction for automatic byes
+- Clear indication of match progression
+- 12 status types with unique colors
+
+✅ **Performance**:
+- Batch fetching of user profiles (avoids N+1 queries)
+- Efficient phase grouping with computed signals
+- First phase auto-expanded for immediate context
+
+#### Technical Details
+
+**Files Modified**:
+- `/src/presentation/pages/matches/match-list/match-list.component.ts`:
+  - Added BracketService and UserService imports
+  - Created EnhancedMatch interface
+  - Added `groupedMatches()` computed signal
+  - Enhanced `loadMatches()` with name resolution and phase grouping
+  - Added `togglePhase()` and `isPhaseExpanded()` for accordion
+  - Changed from `tournamentId` to `bracketId` filtering
+- `/src/presentation/pages/matches/match-list/match-list.component.html`:
+  - Replaced flat match grid with phase-grouped accordion
+  - Added phase headers with expand/collapse functionality
+  - Changed participant display from IDs to names
+  - Added winner badges (trophy icons)
+  - Updated empty state messaging
+- `/src/presentation/pages/matches/match-list/match-list.component.css`:
+  - Added phase header styling (`.phase-header`, `.phase-toggle-icon`)
+  - Added winner badge animation (pulsing trophy)
+  - Added status badges for all 12 match states
+  - Updated matches grid to render inside phase groups
+- `/src/presentation/pages/brackets/bracket-view/bracket-view.component.ts`:
+  - Added `viewMatches()` navigation method
+- `/src/presentation/pages/brackets/bracket-view/bracket-view.component.html`:
+  - Added "View Matches" button in management bar
+- `/src/presentation/pages/brackets/bracket-view/bracket-view.component.css`:
+  - Added `.action-btn.view-matches` styling (blue theme)
+
+**Dependencies**:
+- UserService: `getUserById()` for participant names
+- BracketService: `getPhases()` for phase information
+- MatchService: `getMatchesByBracket()` for filtered matches (existing)
+
+#### User Experience Flow
+
+```
+Tournament Admin Generates Bracket
+  ↓
+Matches Created (with participant IDs)
+  ↓
+User Navigates to Matches Page (/matches?bracketId=123)
+  ↓
+Component Fetches Matches + Phases + User Profiles
+  ↓
+Matches Displayed Grouped by Phase
+  ↓
+User Expands/Collapses Phases
+  ↓
+User Clicks Match Card → Navigate to Match Detail
+```
+
+#### Next Steps
+
+**Phase 3: Result Entry** (Priority):
+1. Add "Record Result" button on match detail page
+2. Score input form (sets, games, tiebreaks)
+3. Result confirmation workflow
+4. Update match status and winner
+5. Save scores to Score entity
+
+**Phase 4: Winner Advancement** (Advanced):
+6. Automatic progression to next round in single elimination
+7. Update placeholder match participants when winners determined
+8. Phase completion tracking
+9. Standing updates for round robin
+
+#### Related Requirements
+
+- **FR23**: Display matched opponents with status ✅ COMPLETE
+- **FR24**: Allow score entry ⏳ PENDING (Phase 3)
+- **NFR5**: Real-time status updates ⚠️ PARTIAL (manual refresh needed)
+
+#### Known Limitations
+
+1. **No Real-Time Updates**: Matches don't update automatically (requires manual refresh)
+2. ~~**No Bracket Filtering UI**: Must pass `bracketId` via URL (no dropdown in UI yet)~~
+3. ~~**No Direct Navigation**: No "View Matches" button on bracket view page (user must use menu)~~
+4. **Single Name Fetch**: Each participant requires individual API call (could batch in future)
+
+**Note**: Items 2 and 3 resolved with "View Matches" button on bracket view page.
+
+#### Testing Recommendations
+
+**Manual Testing**:
+1. Generate bracket with accepted participants
+2. Navigate to matches page
+3. Verify match display with participant names
+4. Test phase accordion expand/collapse
+5. Verify status badges display correctly
+6. Check winner trophy icons for completed matches
+7. Test empty states (no matches, no bracket)
+8. Verify responsiveness on mobile
+
+**Integration Testing**:
+- Match fetching with participant resolution
+- Phase grouping and sorting
+- Filter application (status, bracket)
+- Navigation between matches list and detail
+
+---
+
+## [1.38.0] - 2026-03-21
+
+### Added — Automatic Match Generation for Brackets
+
+**Major Feature**: Brackets now automatically generate matches and phases when created, implementing the core tournament progression infrastructure.
+
+#### Overview
+
+When a tournament organizer generates a bracket, the system now automatically creates all match pairings and tournament phases based on the bracket type. This implements Functional Requirements FR16, FR17, and FR18 from the specification.
+
+#### Implementation
+
+**1. Match Generator Service** (`/backend/src/application/services/match-generator.service.ts`):
+- New service handling match pairing algorithms for all bracket types
+- **Single Elimination**:
+  - Calculates next power of 2 for bracket size
+  - Automatically assigns byes to top-seeded players if participant count isn't power of 2
+  - Creates first-round matches with actual participants
+  - Generates placeholder matches for subsequent rounds (TBD participants)
+  - Phase names: "Round of 64/32/16", "Quarterfinals", "Semifinals", "Final"
+  - Example: 6 players → 8-player bracket → 2 byes, 2 matches in Round 1
+- **Round Robin**:
+  - Uses circle method algorithm for fair scheduling
+  - Each player plays all others exactly once
+  - Handles odd number of players with automatic byes per round
+  - Players rotate positions to ensure fairness
+  - Formula: For n players, generates n×(n-1)/2 total matches
+  - Example: 4 players → 3 rounds, 6 total matches
+- **Match Play**:
+  - Creates single "Open Play" phase
+  - No predefined matches (organizers create manually)
+  - Flexible format for casual tournaments or league play
+
+**2. Match Generation Flow**:
+```
+Generate Bracket (POST /api/brackets)
+  ↓
+Create Bracket Entity
+  ↓
+Get Accepted Participants (from registrations)
+  ↓
+Call MatchGeneratorService
+  ↓
+Generate Matches + Phases
+  ↓
+Save Phases (first, as matches reference them)
+  ↓
+Save Matches
+  ↓
+Return Bracket with matches populated
+```
+
+**3. Generated Match Structure**:
+- **participant1Id** / **participant2Id**: Player IDs (null for TBD or bye)
+- **round**: Round number within bracket
+- **matchNumber**: Sequential number within round
+- **phaseId**: References containing phase (round/stage)
+- **status**: SCHEDULED (default) or BYE (for automatic wins)
+- **winnerId**: null initially (populated after result entry)
+- **courtId** / **scheduledTime**: null (set during order of play generation)
+
+**4. Generated Phase Structure**:
+- **name**: Human-readable (e.g., "Semifinals", "Round 1")
+- **order**: Sequential phase number
+- **matchCount**: Number of matches in this phase
+- **isCompleted**: false initially (updated as matches finish)
+
+**5. Bracket Controller Integration**:
+- Updated `create()` method to generate matches after creating bracket
+- Fetches accepted registrations for the category
+- Calls match generator with participant IDs
+- Saves phases before matches (foreign key dependency)
+- Logs generation success: "✅ Generated N matches across M phases"
+
+**6. Database Changes**:
+- No schema changes (Match and Phase entities already existed)
+- Automatic population of matches and phases tables
+- Foreign key relationships maintained: Bracket → Phase → Match
+
+#### Algorithm Details
+
+**Single Elimination Bye Placement**:
+```typescript
+bracketSize = 2^rounds = 8  // For 3 rounds
+participants = 6
+byeCount = 8 - 6 = 2
+
+// Top 2 seeds get byes
+Match 1: Seed 1 vs BYE → Winner: Seed 1 (status: BYE)
+Match 2: Seed 2 vs BYE → Winner: Seed 2 (status: BYE)
+Match 3: Seed 3 vs Seed 4 → Winner: TBD (status: SCHEDULED)
+Match 4: Seed 5 vs Seed 6 → Winner: TBD (status: SCHEDULED)
+```
+
+**Round Robin Circle Method**:
+```typescript
+// For 4 players: A, B, C, D
+Round 1: A vs D, B vs C
+Round 2: A vs C, D vs B
+Round 3: A vs B, C vs D
+
+// Fixed player (A) stays, others rotate clockwise
+```
+
+#### Benefits
+
+✅ **Instant Match Visibility**:
+- Matches appear immediately after bracket generation
+- Participants can see their first-round opponents
+- Organizers can review pairings before publishing
+
+✅ **Correct Tournament Structure**:
+- Proper bracket sizing with automatic bye handling
+- Fair round-robin scheduling with no repeat pairings
+- Placeholder matches for future rounds in knockout format
+
+✅ **Database Consistency**:
+- All relationships properly established (Bracket ↔ Phase ↔ Match)
+- Foreign keys validated
+- Transactional integrity maintained
+
+✅ **Foundation for Progression**:
+- Sets up infrastructure for result entry
+- Enables automatic winner advancement (future feature)
+- Supports order of play generation
+
+#### Technical Details
+
+**Files Created**:
+- `/backend/src/application/services/match-generator.service.ts` (327 lines)
+
+**Files Modified**:
+- `/backend/src/presentation/controllers/bracket.controller.ts`:
+  - Added MatchGeneratorService import and instantiation
+  - Enhanced `create()` method with match/phase generation
+  - Added Registration entity import for participant lookup
+
+**Dependencies**:
+- Match entity (existing)
+- Phase entity (existing)
+- Registration entity (existing)
+- BracketType enum (existing)
+- MatchStatus enum (existing)
+
+#### Next Steps (Recommended Priority)
+
+**Phase 2: Match Display** (Immediate):
+1. Update matches page to display generated matches
+2. Group matches by phase/round
+3. Show participant names (currently just IDs)
+4. Filter by bracket, status, date
+5. Display match details (court, time when assigned)
+
+**Phase 3: Result Entry** (After Display):
+6. Add "Record Result" button for participants/admins
+7. Score input interface (sets, games, tiebreaks)
+8. Result confirmation workflow
+9. Update match status (SCHEDULED → IN_PROGRESS → COMPLETED)
+10. Store scores in Score entity
+
+**Phase 4: Progression Logic** (Advanced):
+11. Automatic winner advancement to next round in single elimination
+12. Update placeholder match participants as winners determined
+13. Phase completion tracking
+14. Standing updates for round robin
+
+#### Related Requirements
+
+- **FR16**: Automatic Round Robin draw generation ✅ COMPLETE
+- **FR17**: Automatic knockout draw generation ✅ COMPLETE
+- **FR18**: Automatic Match Play draw generation ✅ COMPLETE
+- **FR19**: Seeding system ⚠️ PARTIAL (infrastructure ready, ranking-based seeding not implemented)
+- **FR23**: Twelve match states ✅ COMPLETE
+
+#### Impact
+
+This feature transforms the bracket system from a metadata-only structure to a fully functional tournament management system. Matches now exist in the database immediately after bracket generation, setting the foundation for tournament progression, result entry, and standings calculation.
+
+---
+
+## [1.37.4] - 2026-03-21
+
+### Fixed — Page Title Colors and Published Status Visibility
+
+**UI improvement**: Enhanced visibility and consistency of titles and published status indicators:
+- **Bracket View Page**:
+  - Fixed bracket title color to white (was inheriting default dark color)
+  - Fixed bracket subtitle (tournament name) to white with subtle text shadow
+  - Enhanced "Bracket Information" card title with explicit white color and text shadow for prominence
+  - Enhanced published status badges with lighter, brighter green colors:
+    - **"Bracket is Published"** and **"✅ Published"** badges:
+      - Background: Very light mint green (`rgba(200, 230, 201, 0.5)`)
+      - Text: Greenish-white (`#c8e6c9` - Light Green 100) for maximum visibility
+      - Border: Solid 2px light green (`#a5d6a7` - Light Green 200)
+      - Added subtle shadow for depth
+  - Improved "Publish Bracket" button visibility with brighter green and 2px border
+- **Tournament Detail Page**:
+  - Fixed tournament title color to white (was inheriting default dark color)
+  - Ensures consistency with other hero sections across the app
+- **Visual Impact**:
+  - All hero text (titles and subtitles) now consistently white
+  - Published badges use very light greenish-white color scheme for maximum visibility
+  - Better visual hierarchy and readability throughout
+  - Enhanced contrast and prominence for status indicators
+- **Files modified**:
+  - `bracket-view.component.css`: Title colors, subtitle color, card title enhancement, lighter green status badges
+  - `tournament-detail-new.component.css`: Title color to white
+
+---
+
+## [1.37.3] - 2026-03-21
+
+### Fixed — Bracket State Not Updating After Publish/Regenerate
+
+**Bug fix**: Fixed bracket UI not reflecting published state immediately after publish or regenerate actions:
+- **Root Cause**: Backend API caching (5-minute cache on GET /brackets) returns stale data after updates
+- **Symptom**: After publishing, "Publish Bracket" button still visible, status still shows "Draft"
+- **Solution**: 
+  - Use the returned bracket data directly from `publishBracket()` and `regenerateBracket()` service methods
+  - Update the `bracket()` signal immediately with fresh server data
+  - Avoid reloading from cached API endpoint
+  - For regenerate, also reload phases since they may have changed
+- **Benefits**:
+  - Instant UI feedback (no stale data from cache)
+  - Reduced API calls (no unnecessary reload after update)
+  - Better user experience (immediate state reflection)
+- **Technical Details**:
+  - Both service methods return the updated `BracketDto` with correct `isPublished` value
+  - Template already had correct conditional rendering based on `bracket()!.isPublished`
+  - Signal reactivity ensures UI updates automatically when data changes
+- **Impact**: Bracket publish/regenerate actions now provide instant visual feedback
+- **Files modified**:
+  - `bracket-view.component.ts`: Updated `publishBracket()` and `regenerateBracket()` methods
+
+---
+
+## [1.37.2] - 2026-03-21
+
+### Fixed — Bracket Publishing Endpoint
+
+**Bug fix**: Fixed 404 error when publishing brackets by implementing missing backend endpoint:
+- **Root Cause**: Frontend calls `PUT /api/brackets/:id` to update bracket (publish/regenerate), but backend had no such route
+- **Missing Endpoint**: Backend bracket controller had `create`, `getById`, and `getByTournament`, but lacked `update` method
+- **Solution**:
+  - Added `update()` method to `BracketController` for updating bracket data
+  - Validates bracket exists before updating (404 if not found)
+  - Uses `Object.assign()` to apply request body fields to existing entity
+  - Persists changes with TypeORM `save()`
+  - Added `PUT /api/brackets/:id` route with proper authentication and role middleware
+  - Requires `SYSTEM_ADMIN` or `TOURNAMENT_ADMIN` role
+  - Includes Swagger documentation for the endpoint
+- **Impact**: Bracket publishing and regeneration now work correctly
+- **Files modified**:
+  - `backend/src/presentation/controllers/bracket.controller.ts`: Added `update()` method
+  - `backend/src/presentation/routes/index.ts`: Added PUT route registration
+
+---
+
 ## [1.37.1] - 2026-03-21
 
 ### Fixed — Bracket Generation Backend Integration

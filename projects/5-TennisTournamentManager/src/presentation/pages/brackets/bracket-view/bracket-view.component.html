@@ -32,6 +32,14 @@
         <!-- Management Actions (for tournament admins) -->
         @if (canManageTournament() && bracket()) {
           <div class="management-bar">
+            <button 
+              class="action-btn view-matches" 
+              (click)="viewMatches()"
+            >
+              <span>🎾</span>
+              <span>View Matches</span>
+            </button>
+
             @if (!bracket()!.isPublished) {
               <button 
                 class="action-btn publish" 
@@ -148,15 +156,15 @@
         <!-- No Bracket State -->
         <div class="empty-state">
           <div class="empty-icon">🏆</div>
-          <h2 class="empty-title">No Bracket Found</h2>
+          <h2 class="empty-title">No Published Brackets Yet</h2>
           <p class="empty-description">
-            A bracket has not been generated for this tournament yet.
+            The tournament bracket has not been published yet.
             @if (canManageTournament()) {
               <br><br>
-              As a tournament administrator, you can generate a bracket from the tournament detail page.
+              As a tournament administrator, you can generate and publish a bracket from the tournament detail page.
             } @else {
               <br><br>
-              Please check back later once the tournament organizers have created the bracket.
+              The tournament organizers are still preparing the bracket. Please check back later!
             }
           </p>
           @if (canManageTournament()) {
