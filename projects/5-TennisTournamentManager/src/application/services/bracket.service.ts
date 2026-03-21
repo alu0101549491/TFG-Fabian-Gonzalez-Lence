@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {IBracketService} from '../interfaces/bracket-service.interface';
 import {GenerateBracketDto, BracketDto, PhaseDto} from '../dto';
 import {BracketRepositoryImpl} from '@infrastructure/repositories/bracket.repository';
@@ -28,20 +28,10 @@ import {generateId} from '@shared/utils';
  */
 @Injectable({providedIn: 'root'})
 export class BracketService implements IBracketService {
-  /**
-   * Creates a new BracketService instance.
-   *
-   * @param bracketRepository - Bracket repository for data access
-   * @param phaseRepository - Phase repository for phase data access
-   * @param registrationRepository - Registration repository for participant data
-   * @param bracketGeneratorFactory - Factory for creating bracket generators
-   */
-  public constructor(
-    private readonly bracketRepository: BracketRepositoryImpl,
-    private readonly phaseRepository: PhaseRepositoryImpl,
-    private readonly registrationRepository: RegistrationRepositoryImpl,
-    private readonly bracketGeneratorFactory: BracketGeneratorFactory,
-  ) {}
+  private readonly bracketRepository = inject(BracketRepositoryImpl);
+  private readonly phaseRepository = inject(PhaseRepositoryImpl);
+  private readonly registrationRepository = inject(RegistrationRepositoryImpl);
+  private readonly bracketGeneratorFactory = inject(BracketGeneratorFactory);
 
   /**
    * Generates a new bracket for a category.
@@ -78,26 +68,45 @@ export class BracketService implements IBracketService {
       throw new Error('No accepted participants for this category');
     }
     
-    // Get participant IDs
-    const participantIds = acceptedRegistrations.map(r => r.participantId);
+    if (acceptedRegistrations.length < 2) {
+      throw new Error('At least 2 accepted participants are required to generate a bracket');
+    }
     
-    // Create bracket entity (phaseId would come from a phase entity in real implementation)
-    const phaseId = generateId();
-    const bracket = new Bracket({
-      id: generateId(),
+    // Calculate total rounds based on bracket type and participant count
+    const participantCount = acceptedRegistrations.length;
+    let totalRounds = 0;
+    
+    switch (data.bracketType) {
+      case 'SINGLE_ELIMINATION':
+        // For single elimination: rounds = log2(nextPowerOf2(participants))
+        totalRounds = Math.ceil(Math.log2(participantCount));
+        break;
+      case 'ROUND_ROBIN':
+        // For round robin: each participant plays all others once
+        // Total rounds = participants - 1 (if even) or participants (if odd)
+        totalRounds = participantCount % 2 === 0 ? participantCount - 1 : participantCount;
+        break;
+      case 'MATCH_PLAY':
+        // For match play: flexible, default to 1 round
+        totalRounds = 1;
+        break;
+      default:
+        totalRounds = 1;
+    }
+    
+    // Prepare bracket data for backend (matching backend entity structure)
+    const bracketData = {
       tournamentId: data.tournamentId,
-      phaseId,
+      categoryId: data.categoryId,
       bracketType: data.bracketType,
-      size: acceptedRegistrations.length,
-    });
+      size: participantCount,
+      totalRounds: totalRounds,
+      structure: null,
+      isPublished: false,
+    };
     
-    // Generate bracket structure using the appropriate generator
-    const generator = this.bracketGeneratorFactory.createGenerator(data.bracketType);
-    bracket.generate(participantIds);
-    
-    // In real implementation, generator would create matches and structure
-    // For now, we just save the bracket
-    const savedBracket = await this.bracketRepository.save(bracket);
+    // Save bracket to backend
+    const savedBracket = await this.bracketRepository.save(bracketData as any);
     
     // Map to DTO
     return this.mapBracketToDto(savedBracket);
@@ -238,14 +247,14 @@ export class BracketService implements IBracketService {
   /**
    * Maps a Bracket entity to BracketDto.
    *
-   * @param bracket - Bracket entity
+   * @param bracket - Bracket entity or backend response
    * @returns Bracket DTO
    */
-  private mapBracketToDto(bracket: Bracket): BracketDto {
+  private mapBracketToDto(bracket: any): BracketDto {
     return {
       id: bracket.id,
       tournamentId: bracket.tournamentId,
-      categoryId: bracket.phaseId, // In real implementation, get from phase
+      categoryId: bracket.categoryId || bracket.phaseId, // Handle both backend and frontend structures
       bracketType: bracket.bracketType,
       size: bracket.size,
       totalRounds: bracket.totalRounds,

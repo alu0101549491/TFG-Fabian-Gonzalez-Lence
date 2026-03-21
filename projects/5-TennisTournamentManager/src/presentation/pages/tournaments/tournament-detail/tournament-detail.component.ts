@@ -16,7 +16,7 @@ import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {combineLatest} from 'rxjs';
-import {TournamentService, RegistrationService, CategoryService} from '@application/services';
+import {TournamentService, RegistrationService, CategoryService, BracketService} from '@application/services';
 import {type TournamentDto, type RegistrationDto, type CreateCategoryDto, type CategoryDto, type UpdateRegistrationStatusDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
@@ -26,6 +26,7 @@ import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
 import {Gender} from '@domain/enumerations/gender';
 import {AgeGroup} from '@domain/enumerations/age-group';
+import {BracketType} from '@domain/enumerations/bracket-type';
 import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './tournament-detail-new.component.html?raw';
 import styles from './tournament-detail-new.component.css?raw';
@@ -48,6 +49,7 @@ export class TournamentDetailComponent implements OnInit {
   private readonly tournamentService = inject(TournamentService);
   private readonly registrationService = inject(RegistrationService);
   private readonly categoryService = inject(CategoryService);
+  private readonly bracketService = inject(BracketService);
   private readonly authStateService = inject(AuthStateService);
   private readonly userRepository = inject(UserRepositoryImpl);
 
@@ -97,6 +99,21 @@ export class TournamentDetailComponent implements OnInit {
 
   /** Category error message */
   public categoryError = signal<string | null>(null);
+
+  /** Bracket generation form data */
+  public bracketForm = {
+    categoryId: '',
+    bracketType: BracketType.SINGLE_ELIMINATION,
+  };
+
+  /** Show bracket generation section */
+  public showBracketGeneration = signal(false);
+
+  /** Available bracket types */
+  public readonly bracketTypes = Object.values(BracketType);
+
+  /** Bracket generation state */
+  public isGeneratingBracket = signal(false);
 
   /**
    * Initializes component and loads tournament data.
@@ -698,6 +715,146 @@ export class TournamentDetailComponent implements OnInit {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to remove participant';
       alert(`Error: ${message}`);
+    }
+  }
+
+  /**
+   * Toggles the bracket generation form visibility.
+   */
+  public toggleBracketGeneration(): void {
+    this.showBracketGeneration.set(!this.showBracketGeneration());
+    
+    // Reset form when hiding
+    if (!this.showBracketGeneration()) {
+      this.bracketForm.categoryId = '';
+      this.bracketForm.bracketType = BracketType.SINGLE_ELIMINATION;
+    }
+  }
+
+  /**
+   * Gets the count of accepted participants for a category.
+   *
+   * @param categoryId - The category ID
+   * @returns Number of accepted participants
+   */
+  public getAcceptedParticipantCount(categoryId: string): number {
+    return this.registeredPlayers().filter(
+      p => p.registration.categoryId === categoryId && p.registration.status === RegistrationStatus.ACCEPTED
+    ).length;
+  }
+
+  /**
+   * Checks if a category has accepted participants.
+   *
+   * @param categoryId - The category ID
+   * @returns True if category has at least one accepted participant
+   */
+  public categoryHasParticipants(categoryId: string): boolean {
+    return this.getAcceptedParticipantCount(categoryId) > 0;
+  }
+
+  /**
+   * Gets helpful text about category readiness for bracket generation.
+   *
+   * @param categoryId - The category ID
+   * @returns Status text
+   */
+  public getCategoryReadinessText(categoryId: string): string {
+    const count = this.getAcceptedParticipantCount(categoryId);
+    if (count === 0) return 'No accepted participants yet';
+    if (count === 1) return '1 participant (needs at least 2)';
+    return `${count} participants ready`;
+  }
+
+  /**
+   * Generates a bracket for the selected category.
+   * Requires tournament administrator permissions.
+   */
+  public async generateBracket(): Promise<void> {
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to generate brackets');
+      return;
+    }
+
+    if (!this.tournamentId) {
+      alert('Tournament ID is missing');
+      return;
+    }
+
+    if (!this.bracketForm.categoryId) {
+      alert('Please select a category');
+      return;
+    }
+
+    const category = this.categories().find(c => c.id === this.bracketForm.categoryId);
+    if (!category) {
+      alert('Invalid category selected');
+      return;
+    }
+
+    // Check for accepted participants
+    const acceptedCount = this.getAcceptedParticipantCount(this.bracketForm.categoryId);
+    if (acceptedCount === 0) {
+      alert(
+        `Cannot generate bracket: No accepted participants in ${category.name}\n\n` +
+        `To generate a bracket:\n` +
+        `1. Wait for players to register for this category\n` +
+        `2. Approve their registrations in the "Registered Participants" section\n` +
+        `3. Then return here to generate the bracket`
+      );
+      return;
+    }
+
+    if (acceptedCount < 2) {
+      alert(
+        `Cannot generate bracket: Only ${acceptedCount} participant in ${category.name}\n\n` +
+        `Brackets require at least 2 accepted participants. Please approve more registrations before generating the bracket.`
+      );
+      return;
+    }
+
+    const confirmed = confirm(
+      `Generate ${this.bracketForm.bracketType.replace(/_/g, ' ').toLowerCase()} bracket for ${category.name}?\n\n` +
+      `Participants: ${acceptedCount} accepted players\n` +
+      `This will create matches for all accepted participants in this category.`
+    );
+    if (!confirmed) return;
+
+    this.isGeneratingBracket.set(true);
+
+    try {
+      await this.bracketService.generateBracket(
+        {
+          tournamentId: this.tournamentId,
+          categoryId: this.bracketForm.categoryId,
+          bracketType: this.bracketForm.bracketType,
+        },
+        currentUser.id
+      );
+
+      alert(`${this.bracketForm.bracketType.replace(/_/g, ' ')} bracket created successfully for ${category.name}!\n\nParticipants: ${acceptedCount} players`);
+      this.showBracketGeneration.set(false);
+      this.bracketForm.categoryId = '';
+      this.bracketForm.bracketType = BracketType.SINGLE_ELIMINATION;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate bracket';
+      
+      // Provide helpful context for common errors
+      if (message.includes('No accepted participants')) {
+        alert(
+          `Error: ${message}\n\n` +
+          `This usually means:\n` +
+          `• Players haven't registered for this category yet\n` +
+          `• Registrations are still pending approval\n` +
+          `• Approved participants were removed\n\n` +
+          `Check the "Registered Participants" section and approve registrations before generating the bracket.`
+        );
+      } else {
+        alert(`Error: ${message}`);
+      }
+    } finally {
+      this.isGeneratingBracket.set(false);
     }
   }
 }

@@ -11,13 +11,14 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {RouterModule} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {RankingService} from '@application/services';
 import {type RankingDto} from '@application/dto';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
+import templateHtml from './ranking-view.component.html?raw';
 
 /**
  * RankingViewComponent displays global player rankings.
@@ -26,10 +27,13 @@ import {RankingSystem} from '@domain/enumerations/ranking-system';
   selector: 'app-ranking-view',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
-  templateUrl: './ranking-view.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class RankingViewComponent implements OnInit {
+  /** Services */
+  private readonly rankingService = inject(RankingService);
+
   /** Rankings data */
   public rankings = signal<RankingDto[]>([]);
 
@@ -44,15 +48,6 @@ export class RankingViewComponent implements OnInit {
 
   /** Available ranking systems */
   public readonly systems = Object.values(RankingSystem);
-
-  /**
-   * Creates an instance of RankingViewComponent.
-   *
-   * @param rankingService - Ranking service for data operations
-   */
-  public constructor(
-    private readonly rankingService: RankingService,
-  ) {}
 
   /**
    * Initializes component and loads rankings.

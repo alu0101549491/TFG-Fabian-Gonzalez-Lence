@@ -11,11 +11,12 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, RouterModule} from '@angular/router';
 import {StandingService} from '@application/services';
 import {type StandingDto} from '@application/dto';
+import templateHtml from './standings-view.component.html?raw';
 
 /**
  * StandingsViewComponent displays tournament standings.
@@ -24,10 +25,14 @@ import {type StandingDto} from '@application/dto';
   selector: 'app-standings-view',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './standings-view.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class StandingsViewComponent implements OnInit {
+  /** Services */
+  private readonly route = inject(ActivatedRoute);
+  private readonly standingService = inject(StandingService);
+
   /** Standings data */
   public standings = signal<StandingDto[]>([]);
 
@@ -36,17 +41,6 @@ export class StandingsViewComponent implements OnInit {
 
   /** Error message */
   public errorMessage = signal<string | null>(null);
-
-  /**
-   * Creates an instance of StandingsViewComponent.
-   *
-   * @param route - Activated route to get tournament ID
-   * @param standingService - Standing service for data operations
-   */
-  public constructor(
-    private readonly route: ActivatedRoute,
-    private readonly standingService: StandingService,
-  ) {}
 
   /**
    * Initializes component and loads standings.

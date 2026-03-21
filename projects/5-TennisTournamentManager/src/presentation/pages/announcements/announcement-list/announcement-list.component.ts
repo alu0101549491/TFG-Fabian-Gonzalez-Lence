@@ -11,11 +11,12 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, RouterModule} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
 import {type AnnouncementDto} from '@application/dto';
+import templateHtml from './announcement-list.component.html?raw';
 
 /**
  * AnnouncementListComponent displays tournament announcements.
@@ -24,10 +25,14 @@ import {type AnnouncementDto} from '@application/dto';
   selector: 'app-announcement-list',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './announcement-list.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class AnnouncementListComponent implements OnInit {
+  /** Services */
+  private readonly route = inject(ActivatedRoute);
+  private readonly http = inject(HttpClient);
+
   /** Announcements list */
   public announcements = signal<AnnouncementDto[]>([]);
 
@@ -36,17 +41,6 @@ export class AnnouncementListComponent implements OnInit {
 
   /** Error message */
   public errorMessage = signal<string | null>(null);
-
-  /**
-   * Creates an instance of AnnouncementListComponent.
-   *
-   * @param route - Activated route to get tournament ID
-   * @param http - HTTP client for API calls
-   */
-  public constructor(
-    private readonly route: ActivatedRoute,
-    private readonly http: HttpClient,
-  ) {}
 
   /**
    * Initializes component and loads announcements.

@@ -11,12 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, RouterModule} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {OrderOfPlayService} from '@application/services';
 import {type OrderOfPlayDto} from '@application/dto';
+import templateHtml from './order-of-play-view.component.html?raw';
 
 /**
  * OrderOfPlayViewComponent displays the schedule of matches for a specific day.
@@ -25,10 +26,14 @@ import {type OrderOfPlayDto} from '@application/dto';
   selector: 'app-order-of-play-view',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
-  templateUrl: './order-of-play-view.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class OrderOfPlayViewComponent implements OnInit {
+  /** Services */
+  private readonly route = inject(ActivatedRoute);
+  private readonly orderOfPlayService = inject(OrderOfPlayService);
+
   /** Order of play data */
   public orderOfPlay = signal<OrderOfPlayDto | null>(null);
 
@@ -40,17 +45,6 @@ export class OrderOfPlayViewComponent implements OnInit {
 
   /** Selected date */
   public selectedDate: Date = new Date();
-
-  /**
-   * Creates an instance of OrderOfPlayViewComponent.
-   *
-   * @param route - Activated route to get tournament ID
-   * @param orderOfPlayService - Order of play service
-   */
-  public constructor(
-    private readonly route: ActivatedRoute,
-    private readonly orderOfPlayService: OrderOfPlayService,
-  ) {}
 
   /**
    * Initializes component and loads order of play.

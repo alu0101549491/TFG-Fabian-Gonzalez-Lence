@@ -6,7 +6,201 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.37.1] - 2026-03-21
+
+### Fixed — Bracket Generation Backend Integration
+
+**Bug fix**: Fixed 400 error when generating brackets by aligning frontend data structure with backend expectations:
+- **Root Cause**: Frontend was sending `phaseId` field instead of `categoryId` to backend
+- **Missing Fields**: Backend requires `size` and `totalRounds` which weren't being calculated
+- **Solution**: 
+  - Changed bracket service to send correct data structure matching backend entity
+  - Added automatic `totalRounds` calculation based on bracket type:
+    - **Single Elimination**: `log2(participants)` rounds (e.g., 8 participants = 3 rounds)
+    - **Round Robin**: `participants - 1` rounds for even count, `participants` for odd
+    - **Match Play**: 1 round (flexible format)
+  - Send properly structured data with `categoryId` instead of domain entity with `phaseId`
+  - Added minimum participant validation (at least 2 required)
+- **Bracket Data Sent to Backend**:
+  - `tournamentId`: tournament identifier
+  - `categoryId`: category identifier (not phaseId)
+  - `bracketType`: SINGLE_ELIMINATION | ROUND_ROBIN | MATCH_PLAY
+  - `size`: number of accepted participants
+  - `totalRounds`: calculated based on type and participant count
+  - `structure`: null (populated by bracket generator later)
+  - `isPublished`: false (starts as draft)
+- **Mapping Fix**: Updated `mapBracketToDto` to handle both `categoryId` (backend) and `phaseId` (frontend legacy)
+- **Impact**: Bracket generation now works correctly, creating brackets with proper structure
+- **Files modified**:
+  - `bracket.service.ts`: Fixed data structure and added totalRounds calculation
+
+---
+
+## [1.37.0] - 2026-03-21
+
+### Enhanced — Bracket Generation Validation and User Guidance
+
+**Feature**: Improved bracket generation with comprehensive validation and helpful user guidance:
+- **Category Readiness Summary**: 
+  - Shows participant count for each category at a glance
+  - Visual indicators (✅ ready, ⚠️ needs more, ⏸️ none)
+  - Displays before category selection to help admins plan
+- **Real-time Participant Validation**:
+  - Dropdown shows participant count for each category
+    - "X participants ready" (2+)
+    - "1 participant (needs at least 2)"
+    - "No accepted participants yet"
+  - Dynamic status message when category is selected
+  - Generate button disabled if category lacks sufficient participants
+- **Pre-Generation Checks**:
+  - Frontend validation before API call
+  - Checks for at least 2 accepted participants
+  - Clear error messages explaining requirements
+- **Enhanced Error Messages**:
+  - Step-by-step instructions for fixing issues
+  - Explains difference between pending and accepted registrations
+  - Points users to "Registered Participants" section
+  - Shows participant count in success messages
+- **User Workflow Guidance**:
+  - "No accepted participants" → Lists steps to approve registrations
+  - "Only 1 participant" → Explains need for at least 2 players
+  - Backend errors → Provides troubleshooting context
+- **New Helper Methods**:
+  - `getAcceptedParticipantCount(categoryId)`: Counts accepted participants
+  - `categoryHasParticipants(categoryId)`: Checks if category is ready
+  - `getCategoryReadinessText(categoryId)`: Returns status text
+- **Visual Feedback**:
+  - Green checkmarks for ready categories
+  - Orange warning icons for insufficient participants
+  - Gray pause icons for empty categories
+  - Tooltip on disabled button explaining why
+- **Files modified**:
+  - `tournament-detail.component.ts`: Added validation methods and enhanced error handling
+  - `tournament-detail-new.component.html`: Added category status summary and dynamic feedback
+
+**Impact**: Tournament organizers now have clear guidance on bracket generation requirements, reducing confusion and support requests when encountering "No accepted participants" errors.
+
+---
+
+## [1.36.0] - 2026-03-21
+
+### Enhanced — Bracket View Page with Admin Actions
+
+**Feature**: Redesigned bracket view page with modern styling and tournament admin privileges:
+- **Modern UI Design**: 
+  - Hero section with gradient background matching tournament detail page
+  - Card-based layout with clean, professional styling
+  - Responsive design for mobile and desktop
+  - Loading states, empty states, and error handling
+- **Tournament Context**: 
+  - Displays tournament name in page header
+  - Back button to return to tournament detail page
+  - Shows complete bracket information with visual hierarchy
+- **Admin Privileges**: Tournament administrators can now:
+  - **Publish Bracket**: Make bracket visible to all participants with notification
+  - **Regenerate Bracket**: Reset and regenerate bracket structure (draft only)
+  - See action buttons only when authorized
+  - Visual indicators for published vs. draft status
+- **Bracket Information Display**:
+  - Bracket type (Single Elimination, Round Robin, Match Play)
+  - Number of participants
+  - Total rounds
+  - Creation date
+  - Publication status with visual badges
+- **Phases Display**:
+  - Grid layout showing all bracket phases
+  - Phase order, match count, and completion status
+  - Hover effects for better interactivity
+- **Empty State**:
+  - Clear messaging when no bracket exists
+  - Different messages for admins vs. regular users
+  - Call-to-action button for admins to return to tournament page
+- **Access Control**: Uses `canManageTournament()` to check if user is:
+  - Tournament organizer
+  - Tournament admin
+  - System admin
+- **User Feedback**:
+  - Confirmation dialogs before destructive actions
+  - Loading states during async operations
+  - Success/error messages for all actions
+- **CSS Variables**: Uses design system variables for consistency
+- **Files modified**:
+  - `bracket-view.component.ts`: Added tournament loading, admin actions, access control
+  - `bracket-view.component.html`: Complete redesign with modern layout
+  - `bracket-view.component.css`: New comprehensive styling (400+ lines)
+
+---
+
+## [1.35.0] - 2026-03-20
+
+### Added — Bracket Generation for Tournament Organizers
+
+**Feature**: Tournament organizers can now generate brackets for tournament categories:
+- **Functionality**: Added UI for organizers to create tournament brackets with multiple format options
+- **Access Control**: Only accessible to tournament organizers (TOURNAMENT_ADMIN) via tournament detail page
+- **Category Selection**: Select from existing tournament categories with visual category details (gender, age group)
+- **Bracket Formats Supported**:
+  - **Single Elimination**: Knockout format where players are eliminated after one loss
+  - **Round Robin**: Every player plays against every other player
+  - **Match Play**: Open format with flexible match scheduling
+- **Validation**: Requires at least one accepted participant in the selected category
+- **User Feedback**: 
+  - Information banner explaining requirements
+  - Descriptive help text for each bracket format
+  - Confirmation dialog before generation
+  - Success/error messages after generation attempt
+- **UI Features**:
+  - Collapsible form with toggle button
+  - Radio button selection with format descriptions
+  - Disabled state during generation process
+  - Visual selection states for better UX
+- **Integration**: 
+  - Uses existing `BracketService.generateBracket()` method
+  - Connects to backend `POST /api/brackets` endpoint
+  - Automatically resets form after successful generation
+- **Files modified**:
+  - `tournament-detail.component.ts`: Added bracket generation methods and state management
+  - `tournament-detail-new.component.html`: Added bracket generation UI section
+
+---
+
 ## [1.34.7] - 2026-03-20 
+
+### Fixed — Angular Dependency Injection for Standalone Components
+
+**Bug fix**: Converted all components and services from constructor injection to `inject()` function for Angular standalone components:
+- **Root cause**: Constructor injection causes "NG0202: This constructor is not compatible with Angular Dependency Injection" errors in Vite-based Angular projects
+- **Symptom**: Runtime errors when navigating to various pages (brackets, notifications, announcements, matches, rankings, standings, order of play, admin dashboard)
+- **Solution**: Changed all components and services to use `inject()` function instead of constructor injection
+- **Pattern**: 
+  ```typescript
+  // Before (constructor injection):
+  public constructor(private readonly service: Service) {}
+  
+  // After (inject() function):
+  private readonly service = inject(Service);
+  ```
+- **Impact**: All components and services now work correctly with Angular's dependency injection system
+- **Files modified**: 
+  - **Components**: bracket-view, notification-list, announcement-list, match-detail, ranking-view, standings-view, order-of-play-view, admin-dashboard
+  - **Services**: bracket.service, ranking.service, payment.service, order-of-play.service
+
+### Fixed — Component Template Loading for Vite
+
+**Bug fix**: Converted all components from `templateUrl` to raw template imports for Vite compatibility:
+- **Root cause**: Vite requires templates to be imported as raw strings using `?raw` suffix, not loaded via `templateUrl`
+- **Symptom**: "Component is not resolved: Did you run and wait for 'resolveComponentResources()'" errors
+- **Solution**: Changed all components to use `import templateHtml from './component.html?raw'` and `template: templateHtml`
+- **Impact**: All routes and components now work correctly without template resolution errors
+- **Files modified**: 
+  - `bracket-view.component.ts`
+  - `notification-list.component.ts`
+  - `announcement-list.component.ts`
+  - `match-detail.component.ts`
+  - `ranking-view.component.ts`
+  - `standings-view.component.ts`
+  - `order-of-play-view.component.ts`
+  - `admin-dashboard.component.ts`
 
 ### Fixed — API URL Configuration (CRITICAL)
 

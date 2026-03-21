@@ -1,45 +1,172 @@
-<div class="container p-lg">
-  <h1 class="mb-lg">Tournament Bracket</h1>
-
+<!-- Bracket View Page - Modern Design -->
+<div class="bracket-container">
   @if (isLoading()) {
-    <div class="text-center p-lg">
-      <p>Loading bracket...</p>
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading bracket information...</p>
     </div>
   }
 
   @if (errorMessage()) {
-    <div class="alert alert-error">{{ errorMessage() }}</div>
+    <div class="error-banner">
+      <span class="error-icon">⚠️</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
   }
 
-  @if (bracket()) {
-    <div class="card mb-lg">
-      <div class="card-header">
-        <h3 class="card-title">{{ bracket()!.bracketType }} Bracket</h3>
-        <span class="badge badge-primary">{{ bracket()!.size }} participants</span>
-      </div>
-      <div class="card-body">
-        <p><strong>Total Rounds:</strong> {{ bracket()!.totalRounds }}</p>
-        <p><strong>Published:</strong> {{ bracket()!.isPublished ? 'Yes' : 'No' }}</p>
-        <p><strong>Created:</strong> {{ formatDate(bracket()!.createdAt) }}</p>
-      </div>
-    </div>
+  @if (tournament()) {
+    <!-- Hero Section -->
+    <section class="bracket-hero">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <button class="back-btn" (click)="goBack()">
+          <span>←</span>
+          <span>Back to Tournament</span>
+        </button>
 
-    @if (phases().length > 0) {
-      <h2 class="mb-md">Bracket Phases</h2>
-      <div class="grid gap-md" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
-        @for (phase of phases(); track phase.id) {
-          <div class="card">
-            <div class="card-header">
-              <h4 class="card-title">{{ phase.name }}</h4>
-            </div>
-            <div class="card-body">
-              <p><strong>Order:</strong> {{ phase.order }}</p>
-              <p><strong>Matches:</strong> {{ phase.matchCount }}</p>
-              <p><strong>Status:</strong> {{ phase.isCompleted ? 'Completed' : 'In Progress' }}</p>
-            </div>
+        <div class="bracket-header">
+          <h1 class="bracket-title">🏆 Tournament Bracket</h1>
+          <p class="bracket-subtitle">{{ tournament()!.name }}</p>
+        </div>
+
+        <!-- Management Actions (for tournament admins) -->
+        @if (canManageTournament() && bracket()) {
+          <div class="management-bar">
+            @if (!bracket()!.isPublished) {
+              <button 
+                class="action-btn publish" 
+                (click)="publishBracket()"
+                [disabled]="isPublishing()"
+              >
+                @if (isPublishing()) {
+                  <span>🔄</span>
+                  <span>Publishing...</span>
+                } @else {
+                  <span>✅</span>
+                  <span>Publish Bracket</span>
+                }
+              </button>
+            }
+
+            @if (!bracket()!.isPublished) {
+              <button 
+                class="action-btn regenerate" 
+                (click)="regenerateBracket()"
+                [disabled]="isRegenerating()"
+              >
+                @if (isRegenerating()) {
+                  <span>🔄</span>
+                  <span>Regenerating...</span>
+                } @else {
+                  <span>🔄</span>
+                  <span>Regenerate Bracket</span>
+                }
+              </button>
+            }
+
+            @if (bracket()!.isPublished) {
+              <div class="status-badge published">
+                <span>✅</span>
+                <span>Bracket is Published</span>
+              </div>
+            }
           </div>
         }
       </div>
-    }
+    </section>
+
+    <!-- Main Content -->
+    <div class="bracket-content">
+      @if (bracket()) {
+        <!-- Bracket Information Card -->
+        <div class="info-card">
+          <div class="card-header">
+            <h2 class="card-title">Bracket Information</h2>
+            <span class="status-badge" [class.published]="bracket()!.isPublished" [class.draft]="!bracket()!.isPublished">
+              {{ bracket()!.isPublished ? '✅ Published' : '📝 Draft' }}
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="bracket-info-grid">
+              <div class="info-item">
+                <span class="info-label">Bracket Type</span>
+                <span class="info-value">{{ bracket()!.bracketType | enumFormat }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="info-label">Participants</span>
+                <span class="info-value">{{ bracket()!.size }} players</span>
+              </div>
+
+              <div class="info-item">
+                <span class="info-label">Total Rounds</span>
+                <span class="info-value">{{ bracket()!.totalRounds }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="info-label">Created</span>
+                <span class="info-value">{{ formatDate(bracket()!.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bracket Phases -->
+        @if (phases().length > 0) {
+          <h2 class="section-title">
+            <span class="section-icon">📊</span>
+            <span>Bracket Phases</span>
+          </h2>
+
+          <div class="phases-grid">
+            @for (phase of phases(); track phase.id) {
+              <div class="phase-card">
+                <div class="phase-header">
+                  <h3 class="phase-name">{{ phase.name }}</h3>
+                </div>
+                <div class="phase-body">
+                  <div class="phase-detail">
+                    <span class="phase-label">Order</span>
+                    <span class="phase-value">Round {{ phase.order }}</span>
+                  </div>
+                  <div class="phase-detail">
+                    <span class="phase-label">Matches</span>
+                    <span class="phase-value">{{ phase.matchCount }}</span>
+                  </div>
+                  <div class="phase-detail">
+                    <span class="phase-label">Status</span>
+                    <span class="phase-value">
+                      {{ phase.isCompleted ? '✅ Completed' : '🎾 In Progress' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      } @else {
+        <!-- No Bracket State -->
+        <div class="empty-state">
+          <div class="empty-icon">🏆</div>
+          <h2 class="empty-title">No Bracket Found</h2>
+          <p class="empty-description">
+            A bracket has not been generated for this tournament yet.
+            @if (canManageTournament()) {
+              <br><br>
+              As a tournament administrator, you can generate a bracket from the tournament detail page.
+            } @else {
+              <br><br>
+              Please check back later once the tournament organizers have created the bracket.
+            }
+          </p>
+          @if (canManageTournament()) {
+            <button class="empty-action" (click)="goBack()">
+              <span>←</span>
+              <span>Go to Tournament Page</span>
+            </button>
+          }
+        </div>
+      }
+    </div>
   }
 </div>

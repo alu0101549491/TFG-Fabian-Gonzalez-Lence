@@ -11,12 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {RouterModule} from '@angular/router';
 import {NotificationService} from '@application/services';
 import {type NotificationDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import templateHtml from './notification-list.component.html?raw';
 
 /**
  * NotificationListComponent displays user notifications.
@@ -25,10 +26,14 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
   selector: 'app-notification-list',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './notification-list.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class NotificationListComponent implements OnInit {
+  /** Services */
+  private readonly notificationService = inject(NotificationService);
+  private readonly authStateService = inject(AuthStateService);
+
   /** Notifications list */
   public notifications = signal<NotificationDto[]>([]);
 
@@ -37,17 +42,6 @@ export class NotificationListComponent implements OnInit {
 
   /** Error message */
   public errorMessage = signal<string | null>(null);
-
-  /**
-   * Creates an instance of NotificationListComponent.
-   *
-   * @param notificationService - Notification service for data operations
-   * @param authStateService - Auth state service for current user
-   */
-  public constructor(
-    private readonly notificationService: NotificationService,
-    private readonly authStateService: AuthStateService,
-  ) {}
 
   /**
    * Initializes component and loads notifications.

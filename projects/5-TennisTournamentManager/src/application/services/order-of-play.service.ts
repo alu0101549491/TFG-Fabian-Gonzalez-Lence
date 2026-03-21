@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {IOrderOfPlayService} from '../interfaces/order-of-play-service.interface';
 import {CreateOrderOfPlayDto, OrderOfPlayDto} from '../dto';
 import {OrderOfPlayRepositoryImpl} from '@infrastructure/repositories/order-of-play.repository';
@@ -29,22 +29,11 @@ import {SchedulingOptions} from '../interfaces/court-scheduler.interface';
  */
 @Injectable({providedIn: 'root'})
 export class OrderOfPlayService implements IOrderOfPlayService {
-  /**
-   * Creates a new OrderOfPlayService instance.
-   *
-   * @param orderOfPlayRepository - Order of play repository for data access
-   * @param matchRepository - Match repository for match data access
-   * @param courtRepository - Court repository for court availability
-   * @param _notificationService - Notification service for schedule notifications (reserved for future use)
-   * @param courtScheduler - Court scheduling service for automatic schedule generation
-   */
-  public constructor(
-    private readonly orderOfPlayRepository: OrderOfPlayRepositoryImpl,
-    private readonly matchRepository: MatchRepositoryImpl,
-    private readonly courtRepository: CourtRepositoryImpl,
-    private readonly _notificationService: NotificationService,
-    private readonly courtScheduler: CourtScheduler,
-  ) {}
+  private readonly orderOfPlayRepository = inject(OrderOfPlayRepositoryImpl);
+  private readonly matchRepository = inject(MatchRepositoryImpl);
+  private readonly courtRepository = inject(CourtRepositoryImpl);
+  private readonly _notificationService = inject(NotificationService);
+  private readonly courtScheduler = inject(CourtScheduler);
 
   /**
    * Creates a new order of play entry.

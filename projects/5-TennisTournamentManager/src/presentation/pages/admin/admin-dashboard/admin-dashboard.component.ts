@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Router, RouterModule} from '@angular/router';
 import {TournamentService} from '@application/services';
@@ -19,6 +19,7 @@ import {type TournamentDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {UserRole} from '@domain/enumerations/user-role';
 import {EnumFormatPipe} from '@shared/pipes';
+import templateHtml from './admin-dashboard.component.html?raw';
 
 /**
  * AdminDashboardComponent provides administrative oversight and management tools.
@@ -27,10 +28,15 @@ import {EnumFormatPipe} from '@shared/pipes';
   selector: 'app-admin-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule, EnumFormatPipe],
-  templateUrl: './admin-dashboard.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class AdminDashboardComponent implements OnInit {
+  /** Services */
+  private readonly tournamentService = inject(TournamentService);
+  private readonly authStateService = inject(AuthStateService);
+  private readonly router = inject(Router);
+
   /** Recent tournaments */
   public recentTournaments = signal<TournamentDto[]>([]);
 
@@ -43,19 +49,6 @@ export class AdminDashboardComponent implements OnInit {
   /** Stats */
   public totalTournaments = signal(0);
   public activeTournaments = signal(0);
-
-  /**
-   * Creates an instance of AdminDashboardComponent.
-   *
-   * @param tournamentService - Tournament service for data operations
-   * @param authStateService - Auth state service for user verification
-   * @param router - Router for navigation
-   */
-  public constructor(
-    private readonly tournamentService: TournamentService,
-    private readonly authStateService: AuthStateService,
-    private readonly router: Router,
-  ) {}
 
   /**
    * Initializes component and verifies admin access.

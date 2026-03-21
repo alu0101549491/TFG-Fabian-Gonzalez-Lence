@@ -11,24 +11,29 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, RouterModule} from '@angular/router';
 import {MatchService} from '@application/services';
 import {type MatchDto} from '@application/dto';
 import {EnumFormatPipe} from '@shared/pipes';
+import templateHtml from './match-detail.component.html?raw';
 
 /**
- * MatchDetailComponent displays comprehensive match information.
+ * MatchDetailComponent displays detailed match information.
  */
 @Component({
   selector: 'app-match-detail',
   standalone: true,
   imports: [CommonModule, RouterModule, EnumFormatPipe],
-  templateUrl: './match-detail.component.html',
+  template: templateHtml,
   styles: [],
 })
 export class MatchDetailComponent implements OnInit {
+  /** Services */
+  private readonly route = inject(ActivatedRoute);
+  private readonly matchService = inject(MatchService);
+
   /** Match data */
   public match = signal<MatchDto | null>(null);
 
@@ -37,17 +42,6 @@ export class MatchDetailComponent implements OnInit {
 
   /** Error message */
   public errorMessage = signal<string | null>(null);
-
-  /**
-   * Creates an instance of MatchDetailComponent.
-   *
-   * @param route - Activated route to get match ID
-   * @param matchService - Match service for data operations
-   */
-  public constructor(
-    private readonly route: ActivatedRoute,
-    private readonly matchService: MatchService,
-  ) {}
 
   /**
    * Initializes component and loads match data.

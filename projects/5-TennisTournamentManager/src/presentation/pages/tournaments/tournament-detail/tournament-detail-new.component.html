@@ -379,6 +379,175 @@
               }
             </div>
           }
+
+          <!-- Bracket Generation (Organizers Only) -->
+          @if (canManageTournament() && categories().length > 0) {
+            <div class="info-card">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>🏆 Bracket Generation</h2>
+                <button 
+                  class="action-btn" 
+                  (click)="toggleBracketGeneration()"
+                  style="padding: 0.5rem 1rem; font-size: 0.875rem;"
+                >
+                  {{ showBracketGeneration() ? '✕ Close' : '➕ Generate Bracket' }}
+                </button>
+              </div>
+
+              @if (!showBracketGeneration()) {
+                <div style="margin: 1rem 0; padding: 1rem; background-color: rgba(var(--primary-rgb, 74, 144, 226), 0.05); border-radius: 8px;">
+                  <p style="margin: 0; color: #666;">
+                    Generate brackets for your tournament categories to create match schedules and tournament draws.
+                    Click "Generate Bracket" to get started.
+                  </p>
+                </div>
+              }
+
+              <!-- Generate Bracket Form -->
+              @if (showBracketGeneration()) {
+                <div style="padding: 1.5rem; background-color: rgba(var(--primary-rgb, 74, 144, 226), 0.05); border-radius: 8px; margin-top: 1rem;">
+                  <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">📋 Create Tournament Bracket</h3>
+                  
+                  <!-- Category Readiness Summary -->
+                  <div style="margin-bottom: 1.5rem; padding: 1rem; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; font-weight: 600; color: #374151;">Category Status:</h4>
+                    <div style="display: grid; gap: 0.5rem;">
+                      @for (category of categories(); track category.id) {
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem;">
+                          <span>{{ category.name }} ({{ category.gender | enumFormat }}, {{ category.ageGroup | enumFormat }})</span>
+                          @if (getAcceptedParticipantCount(category.id) >= 2) {
+                            <span style="color: #10b981; font-weight: 600;">✅ {{ getAcceptedParticipantCount(category.id) }} participants</span>
+                          } @else if (getAcceptedParticipantCount(category.id) === 1) {
+                            <span style="color: #f59e0b; font-weight: 600;">⚠️ 1 participant (need 1 more)</span>
+                          } @else {
+                            <span style="color: #6b7280; font-weight: 600;">⏸️ No participants</span>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                  
+                  <div class="info-banner" style="margin-bottom: 1.5rem; padding: 1rem; background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
+                    <p style="margin: 0; color: #1976d2; font-size: 0.9rem;">
+                      <strong>Requirements:</strong> Brackets require at least 2 accepted participants in the selected category.
+                      Approve player registrations in the "Registered Participants" section before generating brackets.
+                    </p>
+                  </div>
+
+                  <form (ngSubmit)="generateBracket()" style="display: grid; gap: 1.5rem;">
+                    <!-- Category Selection -->
+                    <div class="form-group">
+                      <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                        Select Category <span style="color: red;">*</span>
+                      </label>
+                      <select
+                        class="form-input"
+                        [(ngModel)]="bracketForm.categoryId"
+                        name="categoryId"
+                        required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;"
+                      >
+                        <option value="" disabled>Choose a category...</option>
+                        @for (category of categories(); track category.id) {
+                          <option [value]="category.id">
+                            {{ category.name }} ({{ category.gender | enumFormat }}, {{ category.ageGroup | enumFormat }}) - {{ getCategoryReadinessText(category.id) }}
+                          </option>
+                        }
+                      </select>
+                      
+                      <!-- Show status for selected category -->
+                      @if (bracketForm.categoryId) {
+                        @if (categoryHasParticipants(bracketForm.categoryId)) {
+                          <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #10b981; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>✅</span>
+                            <span>{{ getAcceptedParticipantCount(bracketForm.categoryId) }} accepted participant(s) - Ready to generate bracket</span>
+                          </p>
+                        } @else {
+                          <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #f59e0b; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>⚠️</span>
+                            <span>No accepted participants yet - Please approve registrations first</span>
+                          </p>
+                        }
+                      } @else {
+                        <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;">
+                          Select which category to create the bracket for
+                        </p>
+                      }
+                    </div>
+
+                    <!-- Bracket Type Selection -->
+                    <div class="form-group">
+                      <label class="form-label" style="display: block; margin-bottom: 0.75rem; font-weight: 500;">
+                        Bracket Format <span style="color: red;">*</span>
+                      </label>
+                      
+                      <div style="display: grid; gap: 0.75rem;">
+                        @for (type of bracketTypes; track type) {
+                          <label 
+                            style="display: flex; align-items: start; padding: 1rem; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                            [style.border-color]="bracketForm.bracketType === type ? 'var(--primary-color, #4a90e2)' : '#ddd'"
+                            [style.background-color]="bracketForm.bracketType === type ? 'rgba(var(--primary-rgb, 74, 144, 226), 0.05)' : 'transparent'"
+                          >
+                            <input
+                              type="radio"
+                              [(ngModel)]="bracketForm.bracketType"
+                              [value]="type"
+                              name="bracketType"
+                              required
+                              style="margin-right: 0.75rem; margin-top: 0.25rem;"
+                            />
+                            <div>
+                              <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                {{ type | enumFormat }}
+                              </div>
+                              <div style="font-size: 0.875rem; color: #666;">
+                                @if (type === 'SINGLE_ELIMINATION') {
+                                  <span>Knockout format: Players are eliminated after one loss. Fast and straightforward.</span>
+                                }
+                                @if (type === 'ROUND_ROBIN') {
+                                  <span>Round-robin format: Every player plays against every other player. Fair and comprehensive.</span>
+                                }
+                                @if (type === 'MATCH_PLAY') {
+                                  <span>Open format: Flexible match scheduling without a fixed draw structure.</span>
+                                }
+                              </div>
+                            </div>
+                          </label>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                      <button 
+                        type="submit" 
+                        class="register-btn"
+                        [disabled]="isGeneratingBracket() || !bracketForm.categoryId || (bracketForm.categoryId && getAcceptedParticipantCount(bracketForm.categoryId) < 2)"
+                        style="flex: 1;"
+                        [title]="bracketForm.categoryId && getAcceptedParticipantCount(bracketForm.categoryId) < 2 ? 'Need at least 2 accepted participants to generate bracket' : ''"
+                      >
+                        @if (isGeneratingBracket()) {
+                          <span>🔄 Generating...</span>
+                        } @else {
+                          <span>🏆 Generate Bracket</span>
+                        }
+                      </button>
+                      
+                      <button 
+                        type="button" 
+                        class="action-btn"
+                        (click)="toggleBracketGeneration()"
+                        [disabled]="isGeneratingBracket()"
+                        style="padding: 0.75rem 1.5rem;"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              }
+            </div>
+          }
         </div>
 
         <!-- Right Column -->

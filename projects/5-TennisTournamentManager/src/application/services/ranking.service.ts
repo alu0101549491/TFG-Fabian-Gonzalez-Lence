@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {IRankingService} from '../interfaces/ranking-service.interface';
 import {RankingDto} from '../dto';
 import {PaginatedResponseDto, PaginationDto} from '../dto';
@@ -24,17 +24,9 @@ import {StandingRepositoryImpl} from '@infrastructure/repositories/standing.repo
  */
 @Injectable({providedIn: 'root'})
 export class RankingService implements IRankingService {
-  /**
-   * Creates a new RankingService instance.
-   *
-   * @param globalRankingRepository - Global ranking repository for data access
-   * @param _standingRepository - Standing repository for tournament results (reserved for future use)
-   */
-  public constructor(
-    private readonly globalRankingRepository: GlobalRankingRepositoryImpl,
-    private readonly _standingRepository: StandingRepositoryImpl,
-    // TODO: inject RankingCalculator
-  ) {}
+  private readonly globalRankingRepository = inject(GlobalRankingRepositoryImpl);
+  private readonly _standingRepository = inject(StandingRepositoryImpl);
+  // TODO: inject RankingCalculator
 
   /**
    * Retrieves the global ranking with pagination.
