@@ -13,36 +13,87 @@
 
 import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {ActivatedRoute, RouterModule} from '@angular/router';
-import {MatchService} from '@application/services';
+import {ActivatedRoute, RouterModule, Router} from '@angular/router';
+import {FormsModule} from '@angular/forms';
+import {MatchService, BracketService, TournamentService} from '@application/services';
 import {type MatchDto} from '@application/dto';
+import {MatchStatus} from '@domain/enumerations/match-status';
+import {UserRole} from '@domain/enumerations/user-role';
+import {AuthStateService} from '@presentation/services/auth-state.service';
 import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './match-detail.component.html?raw';
 import styles from './match-detail.component.css?raw';
 
 /**
- * MatchDetailComponent displays detailed match information.
+ * MatchDetailComponent displays detailed match information with management actions.
  */
 @Component({
   selector: 'app-match-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, EnumFormatPipe],
+  imports: [CommonModule, RouterModule, FormsModule, EnumFormatPipe],
   template: templateHtml,
   styles: [styles],
 })
 export class MatchDetailComponent implements OnInit {
   /** Services */
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly matchService = inject(MatchService);
+  private readonly bracketService = inject(BracketService);
+  private readonly tournamentService = inject(TournamentService);
+  private readonly authStateService = inject(AuthStateService);
 
   /** Match data */
   public match = signal<MatchDto | null>(null);
+
+  /** Tournament data */
+  public tournament = signal<any | null>(null);
 
   /** Loading state */
   public isLoading = signal(false);
 
   /** Error message */
   public errorMessage = signal<string | null>(null);
+
+  /** Success message */
+  public successMessage = signal<string | null>(null);
+
+  /** Tournament admin check */
+  public canManageMatch = signal(false);
+
+  /** Modal states */
+  public showScheduleModal = signal(false);
+  public showStatusModal = signal(false);
+  public showScoresModal = signal(false);
+  public showCancelModal = signal(false);
+
+  /** Form states */
+  public scheduleForm = {
+    courtId: '',
+    scheduledDate: '',
+    scheduledTime: '',
+  };
+
+  public statusForm = {
+    status: MatchStatus.SCHEDULED,
+  };
+
+  public scoresForm = {
+    winnerId: '',
+    sets: [] as { participant1Score: number; participant2Score: number }[],
+    isRetirement: false,
+    retiredParticipantId: '',
+  };
+
+  public cancelForm = {
+    reason: '',
+  };
+
+  /** Available statuses */
+  public readonly availableStatuses = Object.values(MatchStatus);
+
+  /** Submitting state */
+  public isSubmitting = signal(false);
 
   /**
    * Initializes component and loads match data.
@@ -54,10 +105,17 @@ export class MatchDetailComponent implements OnInit {
         void this.loadMatch(matchId);
       }
     });
+
+    // Add some default sets for scoring form
+    this.scoresForm.sets = [
+      { participant1Score: 0, participant2Score: 0 },
+      { participant1Score: 0, participant2Score: 0 },
+      { participant1Score: 0, participant2Score: 0 },
+    ];
   }
 
   /**
-   * Loads match details.
+   * Loads match details and checks permissions.
    *
    * @param matchId - ID of the match
    */
@@ -68,11 +126,293 @@ export class MatchDetailComponent implements OnInit {
     try {
       const match = await this.matchService.getMatchById(matchId);
       this.match.set(match);
+
+      // Check if user can manage this match
+      await this.checkPermissions(match);
+
+      // Pre-fill forms
+      if (match.scheduledTime) {
+        const date = new Date(match.scheduledTime);
+        this.scheduleForm.scheduledDate = date.toISOString().split('T')[0];
+        this.scheduleForm.scheduledTime = date.toTimeString().slice(0, 5);
+      }
+      if (match.courtId) {
+        this.scheduleForm.courtId = match.courtId;
+      }
+      this.statusForm.status = match.status as MatchStatus;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load match';
       this.errorMessage.set(message);
     } finally {
       this.isLoading.set(false);
+    }
+  }
+
+  /**
+   * Checks if current user can manage this match.
+   *
+   * @param match - The match to check permissions for
+   */
+  private async checkPermissions(match: MatchDto): Promise<void> {
+    const user = this.authStateService.getCurrentUser();
+    if (!user || user.role !== UserRole.TOURNAMENT_ADMIN) {
+      this.canManageMatch.set(false);
+      return;
+    }
+
+    try {
+      // Get bracket to find tournament
+      const bracket = await this.bracketService.getBracketById(match.bracketId);
+      const tournament = await this.tournamentService.getTournamentById(bracket.tournamentId);
+
+      // Store tournament data for date restrictions
+      this.tournament.set(tournament);
+
+      // Check if user is the tournament organizer
+      this.canManageMatch.set(tournament.organizerId === user.id);
+    } catch (error) {
+      console.error('Error checking permissions:', error);
+      this.canManageMatch.set(false);
+    }
+  }
+
+  // Modal management methods
+
+  /**
+   * Opens the schedule match modal.
+   */
+  public openScheduleModal(): void {
+    this.showScheduleModal.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+  }
+
+  /**
+   * Opens the update status modal.
+   */
+  public openStatusModal(): void {
+    this.showStatusModal.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+  }
+
+  /**
+   * Opens the record scores modal.
+   */
+  public openScoresModal(): void {
+    console.log('🎾 Full match object:', this.match());
+    console.log('🎾 Participant1 ID:', this.match()!.participant1Id);
+    console.log('🎾 Participant2 ID:', this.match()!.participant2Id);
+    console.log('🎾 Participant1 object:', this.match()!.participant1);
+    console.log('🎾 Participant2 object:', this.match()!.participant2);
+    
+    if (this.match()?.participant1Id) {
+      this.scoresForm.winnerId = this.match()!.participant1Id!;
+      console.log('🎾 Set winnerId to participant1:', this.match()!.participant1Id);
+    } else if (this.match()?.participant1?.id) {
+      // Fallback: use participant object ID if participant1Id is missing
+      this.scoresForm.winnerId = this.match()!.participant1!.id;
+      console.log('🎾 Set winnerId to participant1.id:', this.match()!.participant1!.id);
+    }
+    console.log('🎾 Current winnerId:', this.scoresForm.winnerId);
+    
+    this.showScoresModal.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+  }
+
+  /**
+   * Handles winner selection change (for debugging).
+   * 
+   * @param participant - Which participant was clicked
+   * @param id - The participant ID
+   */
+  public onWinnerChange(participant: string, id: string): void {
+    console.log('🎾 Radio button changed!');
+    console.log('🎾 Clicked:', participant);
+    console.log('🎾 ID:', id);
+    console.log('🎾 scoresForm.winnerId is now:', this.scoresForm.winnerId);
+  }
+
+  /**
+   * Opens the cancel match modal.
+   */
+  public openCancelModal(): void {
+    this.showCancelModal.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+  }
+
+  /**
+   * Closes all modals.
+   */
+  public closeModals(): void {
+    this.showScheduleModal.set(false);
+    this.showStatusModal.set(false);
+    this.showScoresModal.set(false);
+    this.showCancelModal.set(false);
+  }
+
+  // Action handlers
+
+  /**
+   * Submits the schedule match form.
+   */
+  public async submitSchedule(): Promise<void> {
+    if (!this.match()) return;
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const dateTime = new Date(`${this.scheduleForm.scheduledDate}T${this.scheduleForm.scheduledTime}`);
+      
+      // Extract court input - separate courtId (FK) from courtName (free text)
+      const courtIdInput = this.scheduleForm.courtId.trim();
+      const courtId = courtIdInput && courtIdInput.startsWith('crt_') ? courtIdInput : null;
+      const courtName = courtIdInput && !courtIdInput.startsWith('crt_') ? courtIdInput : null;
+      
+      await this.matchService.scheduleMatch(
+        this.match()!.id,
+        courtId,
+        courtName,
+        dateTime
+      );
+
+      this.successMessage.set('Match scheduled successfully');
+      this.closeModals();
+      await this.loadMatch(this.match()!.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to schedule match';
+      this.errorMessage.set(message);
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  /**
+   * Submits the update status form.
+   */
+  public async submitStatus(): Promise<void> {
+    if (!this.match()) return;
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const user = this.authStateService.getCurrentUser();
+      if (!user) throw new Error('User not authenticated');
+
+      await this.matchService.updateStatus(
+        {
+          matchId: this.match()!.id,
+          status: this.statusForm.status,
+        },
+        user.id
+      );
+
+      this.successMessage.set('Match status updated successfully');
+      this.closeModals();
+      await this.loadMatch(this.match()!.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update status';
+      this.errorMessage.set(message);
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  /**
+   * Submits the record scores form.
+   */
+  public async submitScores(): Promise<void> {
+    if (!this.match()) return;
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const user = this.authStateService.getCurrentUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Filter out empty sets
+      const validSets = this.scoresForm.sets.filter(
+        set => set.participant1Score > 0 || set.participant2Score > 0
+      );
+
+      if (validSets.length === 0) {
+        throw new Error('Please enter at least one set score');
+      }
+
+      await this.matchService.recordResult(
+        {
+          matchId: this.match()!.id,
+          winnerId: this.scoresForm.winnerId,
+          sets: validSets,
+          isRetirement: this.scoresForm.isRetirement,
+          retiredParticipantId: this.scoresForm.isRetirement ? this.scoresForm.retiredParticipantId : undefined,
+        },
+        user.id
+      );
+
+      this.successMessage.set('Match result recorded successfully');
+      this.closeModals();
+      await this.loadMatch(this.match()!.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to record scores';
+      this.errorMessage.set(message);
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  /**
+   * Submits the cancel match form.
+   */
+  public async submitCancel(): Promise<void> {
+    if (!this.match()) return;
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const user = this.authStateService.getCurrentUser();
+      if (!user) throw new Error('User not authenticated');
+
+      await this.matchService.cancelMatch(
+        this.match()!.id,
+        this.cancelForm.reason,
+        user.id
+      );
+
+      this.successMessage.set('Match cancelled successfully');
+      this.closeModals();
+await this.loadMatch(this.match()!.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to cancel match';
+      this.errorMessage.set(message);
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  /**
+   * Adds a new set to the scoring form.
+   */
+  public addSet(): void {
+    if (this.scoresForm.sets.length < 5) {
+      this.scoresForm.sets.push({ participant1Score: 0, participant2Score: 0 });
+    }
+  }
+
+  /**
+   * Removes a set from the scoring form.
+   *
+   * @param index - Index of the set to remove
+   */
+  public removeSet(index: number): void {
+    if (this.scoresForm.sets.length > 1) {
+      this.scoresForm.sets.splice(index, 1);
     }
   }
 
@@ -91,6 +431,28 @@ export class MatchDetailComponent implements OnInit {
   }
 
   /**
+   * Gets minimum allowed date for scheduling (tournament start date).
+   *
+   * @returns ISO date string or empty string if tournament not loaded
+   */
+  public getMinScheduleDate(): string {
+    const tournament = this.tournament();
+    if (!tournament?.startDate) return '';
+    return new Date(tournament.startDate).toISOString().split('T')[0];
+  }
+
+  /**
+   * Gets maximum allowed date for scheduling (tournament end date).
+   *
+   * @returns ISO date string or empty string if tournament not loaded
+   */
+  public getMaxScheduleDate(): string {
+    const tournament = this.tournament();
+    if (!tournament?.endDate) return '';
+    return new Date(tournament.endDate).toISOString().split('T')[0];
+  }
+
+  /**
    * Gets initials from first and last name.
    *
    * @param firstName - First name
@@ -101,5 +463,23 @@ export class MatchDetailComponent implements OnInit {
     const first = firstName?.charAt(0)?.toUpperCase() || '';
     const last = lastName?.charAt(0)?.toUpperCase() || '';
     return first + last;
+  }
+
+  /**
+   * Checks if application is running in development mode.
+   * In dev mode, score recording is allowed even without participants assigned.
+   *
+   * @returns True if in development mode
+   */
+  public isDevelopmentMode(): boolean {
+    return !window.location.hostname.includes('tennistournament.com') && 
+           (window.location.hostname === 'localhost' || window.location.hostname.startsWith('192.168.'));
+  }
+
+  /**
+   * Navigates back to matches list.
+   */
+  public goBack(): void {
+    void this.router.navigate(['/matches']);
   }
 }

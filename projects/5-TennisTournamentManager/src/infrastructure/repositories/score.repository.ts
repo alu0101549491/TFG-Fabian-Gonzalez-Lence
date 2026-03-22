@@ -12,7 +12,7 @@
  */
 
 import {Injectable, inject} from '@angular/core';
-import {Score} from '@domain/entities/score';
+import {Score, SetScore} from '@domain/entities/score';
 import {IScoreRepository} from '@domain/repositories/score.repository.interface';
 import {AxiosClient} from '../http/axios-client';
 
@@ -88,5 +88,33 @@ export class ScoreRepositoryImpl implements IScoreRepository {
   public async findByMatchId(matchId: string): Promise<Score[]> {
     const response = await this.httpClient.get<Score[]>(`/scores?matchId=${matchId}`);
     return response;
+  }
+
+  /**
+   * Saves multiple scores for a match (one per set).
+   * Backend endpoint: POST /api/matches/:matchId/score
+   * @param matchId - The match identifier
+   * @param setScores - Array of set scores to save
+   * @returns Promise resolving to the saved scores
+   */
+  public async saveMatchScores(matchId: string, setScores: SetScore[]): Promise<Score[]> {
+    const savedScores: Score[] = [];
+    
+    // Save each set score individually to /api/matches/:matchId/score
+    for (const setScore of setScores) {
+      // Map frontend SetScore to backend Score entity format
+      const scoreData = {
+        setNumber: setScore.setNumber,
+        player1Games: setScore.participant1Games,  // Frontend: participant1Games → Backend: player1Games
+        player2Games: setScore.participant2Games,  // Frontend: participant2Games → Backend: player2Games
+        player1TiebreakPoints: setScore.tiebreakParticipant1 ?? null,  // Frontend: tiebreakParticipant1 → Backend: player1TiebreakPoints
+        player2TiebreakPoints: setScore.tiebreakParticipant2 ?? null,  // Frontend: tiebreakParticipant2 → Backend: player2TiebreakPoints
+      };
+      
+      const savedScore = await this.httpClient.post<any>(`/matches/${matchId}/score`, scoreData);
+      savedScores.push(savedScore);
+    }
+    
+    return savedScores;
   }
 }

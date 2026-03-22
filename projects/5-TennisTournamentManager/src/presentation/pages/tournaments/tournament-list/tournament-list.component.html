@@ -11,7 +11,7 @@
           title="Go back">
           ← Back
         </button>
-        @if (isAuthenticated()) {
+        @if (isTournamentAdmin()) {
           <button
             class="create-tournament-btn"
             routerLink="/tournaments/create"

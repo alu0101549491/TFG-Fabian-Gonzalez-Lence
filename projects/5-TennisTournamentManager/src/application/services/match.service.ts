@@ -15,11 +15,11 @@ import {Injectable, inject} from '@angular/core';
 import {IMatchService} from '../interfaces/match-service.interface';
 import {RecordResultDto, MatchDto, UpdateMatchStatusDto} from '../dto';
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
+import {ScoreRepositoryImpl} from '@infrastructure/repositories/score.repository';
 import {StandingService} from './standing.service';
 import {NotificationService} from './notification.service';
 import {Match} from '@domain/entities/match';
 import {MatchStatus} from '@domain/enumerations/match-status';
-import {generateId} from '@shared/utils';
 
 /**
  * Match service implementation.
@@ -28,11 +28,77 @@ import {generateId} from '@shared/utils';
 @Injectable({providedIn: 'root'})
 export class MatchService implements IMatchService {
   private readonly matchRepository = inject(MatchRepositoryImpl);
+  private readonly scoreRepository = inject(ScoreRepositoryImpl);
   private readonly standingService = inject(StandingService);
   private readonly notificationService = inject(NotificationService);
 
   /**
+   * Preserves backend-specific fields (round, matchNumber, courtName) from source match to target match.
+   * These fields exist in backend responses but aren't part of the frontend Match type.
+   *
+   * @param sourceMatch - Match with backend fields (from repository)
+   * @param targetMatch - New Match entity to attach fields to
+   * @returns Target match with backend fields attached
+   */
+  private preserveBackendFields(sourceMatch: Match, targetMatch: Match): Match {
+    const backendRound = (sourceMatch as any).round;
+    const backendMatchNumber = (sourceMatch as any).matchNumber;
+    const backendCourtName = (sourceMatch as any).courtName;
+    
+    if (backendRound !== undefined) {
+      (targetMatch as any).round = backendRound;
+    }
+    if (backendMatchNumber !== undefined) {
+      (targetMatch as any).matchNumber = backendMatchNumber;
+    }
+    if (backendCourtName !== undefined) {
+      (targetMatch as any).courtName = backendCourtName;
+    }
+    
+    return targetMatch;
+  }
+
+  /**
+   * Formats scores from the match object (scores come from backend with match data).
+   * 
+   * @param match - Match entity with scores
+   * @returns Formatted score string or empty string if no scores
+   */
+  private formatMatchScores(match: any): string {
+    try {
+      const scores = match.scores;
+      
+      if (!scores || scores.length === 0) {
+        return '';
+      }
+      
+      // Convert backend Score entities to SetScore format
+      const setScores = scores.map((score: any) => ({
+        setNumber: score.setNumber,
+        participant1Games: score.player1Games,
+        participant2Games: score.player2Games,
+        tiebreakParticipant1: score.player1TiebreakPoints,
+        tiebreakParticipant2: score.player2TiebreakPoints,
+      })).sort((a: any, b: any) => a.setNumber - b.setNumber);
+      
+      // Format as "6-4, 3-6, 7-6(5)"
+      return setScores.map((set: any) => {
+        let setStr = `${set.participant1Games}-${set.participant2Games}`;
+        if (set.tiebreakParticipant1 !== null && set.tiebreakParticipant1 !== undefined) {
+          const tbWinner = set.participant1Games > set.participant2Games ? set.tiebreakParticipant1 : set.tiebreakParticipant2;
+          setStr += `(${tbWinner})`;
+        }
+        return setStr;
+      }).join(', ');
+    } catch (error) {
+      console.error('Error formatting match scores:', error);
+      return '';
+    }
+  }
+
+  /**
    * Retrieves a match by its ID.
+   * Note: Backend includes scores in the match response via relations.
    *
    * @param matchId - ID of the match
    * @returns Match information
@@ -43,14 +109,16 @@ export class MatchService implements IMatchService {
       throw new Error('Match ID is required');
     }
     
-    // Find match (scores already loaded as relations from backend)
+    // Find match (backend includes scores via relations)
     const match = await this.matchRepository.findById(matchId);
     if (!match) {
       throw new Error('Match not found');
     }
     
-    // Map to DTO (scores come from match object)
-    return this.mapMatchToDto(match, '');
+    // Format scores from match object (no separate API call needed)
+    const score = this.formatMatchScores(match);
+    
+    return this.mapMatchToDto(match, score);
   }
 
   /**
@@ -150,25 +218,20 @@ export class MatchService implements IMatchService {
     // Validate business rule
     match.recordResult({winnerId: data.winnerId});
     
-    // Create score entity
-    const score = new Score({
-      id: generateId(),
-      matchId: data.matchId,
-      sets: data.sets,
-      isRetirement: data.isRetirement ?? false,
-      retiredParticipantId: data.retiredParticipantId ?? null,
-    });
-    
-    await this.scoreRepository.save(score);
+    // Persist scores to backend (one score record per set)
+    await this.scoreRepository.saveMatchScores(data.matchId, data.sets);
     
     // Update match with result
-    const updatedMatch = new Match({
-      ...match,
-      winnerId: data.winnerId,
-      status: data.isRetirement ? MatchStatus.RETIRED : MatchStatus.COMPLETED,
-      completedAt: new Date(),
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        winnerId: data.winnerId,
+        status: data.isRetirement ? MatchStatus.RETIRED : MatchStatus.COMPLETED,
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      })
+    );
     
     const savedMatch = await this.matchRepository.update(updatedMatch);
     
@@ -181,8 +244,10 @@ export class MatchService implements IMatchService {
     // Send notifications
     // await this.notificationService.sendNotification(...)
     
-    // Map to DTO
-    return this.mapMatchToDto(savedMatch, score.getFormattedScore());
+    // Format scores from the saved match
+    const score = this.formatMatchScores(savedMatch);
+    
+    return this.mapMatchToDto(savedMatch, score);
   }
 
   /**
@@ -213,21 +278,20 @@ export class MatchService implements IMatchService {
     }
     
     // Update match status
-    const updatedMatch = new Match({
-      ...match,
-      status: data.status,
-      startedAt: data.status === MatchStatus.IN_PROGRESS && !match.startedAt ? new Date() : match.startedAt,
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        status: data.status,
+        startedAt: data.status === MatchStatus.IN_PROGRESS && !match.startedAt ? new Date() : match.startedAt,
+        updatedAt: new Date(),
+      })
+    );
     
     const savedMatch = await this.matchRepository.update(updatedMatch);
     
-    // Get score if available
-    const score = await this.scoreRepository.findByMatchId(data.matchId);
-    const scoreString = score ? score.getFormattedScore() : '';
-    
-    // Map to DTO
-    return this.mapMatchToDto(savedMatch, scoreString);
+    const score = this.formatMatchScores(savedMatch);
+    return this.mapMatchToDto(savedMatch, score);
   }
 
   /**
@@ -246,11 +310,10 @@ export class MatchService implements IMatchService {
     const allMatches = await this.matchRepository.findAll();
     const liveMatches = allMatches.filter(m => m.status === MatchStatus.IN_PROGRESS);
     
-    return Promise.all(liveMatches.map(async m => {
-      const score = await this.scoreRepository.findByMatchId(m.id);
-      const scoreString = score ? score.getFormattedScore() : '';
-      return this.mapMatchToDto(m, scoreString);
-    }));
+    return liveMatches.map(m => {
+      const score = this.formatMatchScores(m);
+      return this.mapMatchToDto(m, score);
+    });
   }
 
   /**
@@ -282,28 +345,28 @@ export class MatchService implements IMatchService {
     
     // In real implementation, might update a confirmation flag
     // For now, just return the match
-    const score = await this.scoreRepository.findByMatchId(matchId);
-    const scoreString = score ? score.getFormattedScore() : '';
-    
-    return this.mapMatchToDto(match, scoreString);
+    const score = this.formatMatchScores(match);
+    return this.mapMatchToDto(match, score);
   }
 
   /**
    * Schedules a match to a specific court and time.
    *
    * @param matchId - ID of the match to schedule
-   * @param courtId - ID of the court
+   * @param courtId - ID of the court (optional, can be null or text label)
+   * @param courtName - Free text court name for reference (optional)
    * @param time - Scheduled time
    * @returns Updated match information
    */
-  public async scheduleMatch(matchId: string, courtId: string, time: Date): Promise<MatchDto> {
+  public async scheduleMatch(
+    matchId: string,
+    courtId: string | null,
+    courtName: string | null,
+    time: Date
+  ): Promise<MatchDto> {
     // Validate input
     if (!matchId || matchId.trim().length === 0) {
       throw new Error('Match ID is required');
-    }
-    
-    if (!courtId || courtId.trim().length === 0) {
-      throw new Error('Court ID is required');
     }
     
     if (!time) {
@@ -317,21 +380,25 @@ export class MatchService implements IMatchService {
     }
     
     // Update match with schedule
-    const scheduledMatch = new Match({
-      ...match,
-      courtId,
-      scheduledTime: time,
-      updatedAt: new Date(),
-    });
+    const scheduledMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        courtId,
+        scheduledTime: time,
+        updatedAt: new Date(),
+      })
+    );
+    
+    // Attach courtName if provided (free text reference)
+    if (courtName) {
+      (scheduledMatch as any).courtName = courtName;
+    }
     
     const savedMatch = await this.matchRepository.update(scheduledMatch);
     
-    // Get score if available
-    const score = await this.scoreRepository.findByMatchId(matchId);
-    const scoreString = score ? score.getFormattedScore() : '';
-    
-    // Map to DTO
-    return this.mapMatchToDto(savedMatch, scoreString);
+    const score = this.formatMatchScores(savedMatch);
+    return this.mapMatchToDto(savedMatch, score);
   }
 
   /**
@@ -359,12 +426,15 @@ export class MatchService implements IMatchService {
     // Validate state transition
     match.start();
 
-    const updatedMatch = new Match({
-      ...match,
-      status: MatchStatus.IN_PROGRESS,
-      startedAt: new Date(),
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        status: MatchStatus.IN_PROGRESS,
+        startedAt: new Date(),
+        updatedAt: new Date(),
+      })
+    );
 
     const savedMatch = await this.matchRepository.update(updatedMatch);
     
@@ -396,11 +466,14 @@ export class MatchService implements IMatchService {
     // Validate state transition
     match.resume();
 
-    const updatedMatch = new Match({
-      ...match,
-      status: MatchStatus.IN_PROGRESS,
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        status: MatchStatus.IN_PROGRESS,
+        updatedAt: new Date(),
+      })
+    );
 
     const savedMatch = await this.matchRepository.update(updatedMatch);
     
@@ -446,13 +519,16 @@ export class MatchService implements IMatchService {
     // Determine winner (opponent of retiring player)
     const winnerId = match.player1Id === retiringPlayerId ? match.player2Id : match.player1Id;
 
-    const updatedMatch = new Match({
-      ...match,
-      status: MatchStatus.RETIRED,
-      winnerId,
-      completedAt: new Date(),
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        status: MatchStatus.RETIRED,
+        winnerId,
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      })
+    );
 
     const savedMatch = await this.matchRepository.update(updatedMatch);
 
@@ -502,13 +578,16 @@ export class MatchService implements IMatchService {
     // Validate state transition
     match.assignWalkover(winnerId);
 
-    const updatedMatch = new Match({
-      ...match,
-      status: MatchStatus.WALKOVER,
-      winnerId,
-      completedAt: new Date(),
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        status: MatchStatus.WALKOVER,
+        winnerId,
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      })
+    );
 
     const savedMatch = await this.matchRepository.update(updatedMatch);
 
@@ -558,12 +637,15 @@ export class MatchService implements IMatchService {
     // Validate state transition
     match.abandon(reason);
 
-    const updatedMatch = new Match({
-      ...match,
-      status: MatchStatus.ABANDONED,
-      completedAt: new Date(),
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        status: MatchStatus.ABANDONED,
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      })
+    );
 
     const savedMatch = await this.matchRepository.update(updatedMatch);
 
@@ -608,11 +690,14 @@ export class MatchService implements IMatchService {
     // Validate state transition
     match.cancel(reason);
 
-    const updatedMatch = new Match({
-      ...match,
-      status: MatchStatus.CANCELLED,
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        status: MatchStatus.CANCELLED,
+        updatedAt: new Date(),
+      })
+    );
 
     const savedMatch = await this.matchRepository.update(updatedMatch);
 
@@ -666,13 +751,16 @@ export class MatchService implements IMatchService {
     // Determine winner (opponent of defaulted player)
     const winnerId = match.player1Id === defaultedPlayerId ? match.player2Id : match.player1Id;
 
-    const updatedMatch = new Match({
-      ...match,
-      status: MatchStatus.DEFAULT,
-      winnerId,
-      completedAt: new Date(),
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        status: MatchStatus.DEFAULT,
+        winnerId,
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      })
+    );
 
     const savedMatch = await this.matchRepository.update(updatedMatch);
 
@@ -722,11 +810,14 @@ export class MatchService implements IMatchService {
     // Validate state transition
     match.markNotPlayed(reason);
 
-    const updatedMatch = new Match({
-      ...match,
-      status: MatchStatus.NOT_PLAYED,
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        status: MatchStatus.NOT_PLAYED,
+        updatedAt: new Date(),
+      })
+    );
 
     const savedMatch = await this.matchRepository.update(updatedMatch);
 
@@ -765,11 +856,14 @@ export class MatchService implements IMatchService {
     // Validate state transition
     match.markAsDeadRubber();
 
-    const updatedMatch = new Match({
-      ...match,
-      status: MatchStatus.DEAD_RUBBER,
-      updatedAt: new Date(),
-    });
+    const updatedMatch = this.preserveBackendFields(
+      match,
+      new Match({
+        ...match,
+        status: MatchStatus.DEAD_RUBBER,
+        updatedAt: new Date(),
+      })
+    );
 
     const savedMatch = await this.matchRepository.update(updatedMatch);
 
@@ -777,10 +871,8 @@ export class MatchService implements IMatchService {
     // Send notifications
     // await this.notificationService.sendNotification(...)
 
-    const score = await this.scoreRepository.findByMatchId(matchId);
-    const scoreString = score ? score.getFormattedScore() : '';
-
-    return this.mapMatchToDto(savedMatch, scoreString);
+    const score = this.formatMatchScores(savedMatch);
+    return this.mapMatchToDto(savedMatch, score);
   }
 
   /**
@@ -796,14 +888,16 @@ export class MatchService implements IMatchService {
       bracketId: match.bracketId,
       phaseId: match.phaseId,
       courtId: match.courtId,
-      participant1Id: match.player1Id,
-      participant2Id: match.player2Id,
+      courtName: (match as any).courtName ?? null,  // From backend response (free text reference)
+      round: (match as any).round ?? 1,  // From backend response
+      matchNumber: (match as any).matchNumber ?? match.matchOrder ?? 0,  // Backend uses matchNumber
+      participant1Id: match.player1Id,  // Domain: player1Id → DTO: participant1Id
+      participant2Id: match.player2Id,  // Domain: player2Id → DTO: participant2Id
       winnerId: match.winnerId,
       status: match.status,
-      scheduledAt: match.scheduledTime,
       scheduledTime: match.scheduledTime,
-      startTime: match.startTime,
-      endTime: match.endTime,
+      startTime: match.startedAt,  // Domain: startedAt → DTO: startTime
+      endTime: match.completedAt,  // Domain: completedAt → DTO: endTime
       score,
       // Map participant User objects from backend relations
       participant1: (match as any).participant1 ? {

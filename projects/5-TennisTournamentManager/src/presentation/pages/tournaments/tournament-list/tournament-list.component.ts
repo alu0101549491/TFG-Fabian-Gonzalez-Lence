@@ -19,6 +19,7 @@ import {TournamentService} from '@application/services';
 import {type TournamentDto, type TournamentFilterDto, type PaginationDto} from '@application/dto';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {Surface} from '@domain/enumerations/surface';
+import {UserRole} from '@domain/enumerations/user-role';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './tournament-list.component.html?raw';
@@ -81,6 +82,16 @@ export class TournamentListComponent implements OnInit {
    */
   public isAuthenticated(): boolean {
     return this.authStateService.isAuthenticated();
+  }
+
+  /**
+   * Checks if the current user is a tournament administrator.
+   *
+   * @returns True if user has TOURNAMENT_ADMIN role
+   */
+  public isTournamentAdmin(): boolean {
+    const user = this.authStateService.getCurrentUser();
+    return user?.role === UserRole.TOURNAMENT_ADMIN;
   }
 
   /**

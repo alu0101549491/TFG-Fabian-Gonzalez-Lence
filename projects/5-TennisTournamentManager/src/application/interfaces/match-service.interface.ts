@@ -96,9 +96,10 @@ export interface IMatchService {
    * Schedules a match at a specific court and time.
    *
    * @param matchId - ID of the match to schedule
-   * @param courtId - ID of the court
+   * @param courtId - ID of the court (nullable for free text court references)
+   * @param courtName - Free text court name (nullable)
    * @param time - Scheduled time for the match
    * @returns Updated match information
    */
-  scheduleMatch(matchId: string, courtId: string, time: Date): Promise<MatchDto>;
+  scheduleMatch(matchId: string, courtId: string | null, courtName: string | null, time: Date): Promise<MatchDto>;
 }

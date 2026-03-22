@@ -284,11 +284,14 @@ export class MatchListComponent implements OnInit {
 
       this.matches.set(enriched);
       
-      // Expand first group by default
-      if (this.groupedMatches().length > 0) {
+      // Expand first group by default only when filtering by tournament/bracket
+      if (this.groupedMatches().length > 0 && (this.tournamentId || this.bracketId)) {
         const firstGroup = this.groupedMatches()[0];
         const firstKey = this.getGroupKey(firstGroup);
         this.expandedPhases.set(new Set([firstKey]));
+      } else {
+        // On general matches page, keep all groups collapsed
+        this.expandedPhases.set(new Set());
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load matches';

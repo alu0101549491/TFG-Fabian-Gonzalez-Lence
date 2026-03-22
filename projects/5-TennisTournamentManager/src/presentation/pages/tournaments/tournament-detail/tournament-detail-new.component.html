@@ -2,19 +2,20 @@
 <div class="tournament-detail-container">
   @if (isLoading()) {
     <div class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading tournament details...</p>
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Loading tournament details...</p>
+      </div>
     </div>
-  }
+  } @else {
+    @if (errorMessage()) {
+      <div class="error-banner">
+        <span class="error-icon">⚠️</span>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    }
 
-  @if (errorMessage()) {
-    <div class="error-banner">
-      <span class="error-icon">⚠️</span>
-      <span>{{ errorMessage() }}</span>
-    </div>
-  }
-
-  @if (tournament()) {
+    @if (tournament()) {
     <!-- Hero Section -->
     <section class="tournament-hero">
       <div class="hero-overlay"></div>
@@ -722,5 +723,6 @@
         </div>
       </div>
     </div>
+    }
   }
 </div>

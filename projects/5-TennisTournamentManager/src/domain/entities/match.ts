@@ -14,6 +14,17 @@
 import {MatchStatus} from '../enumerations/match-status';
 
 /**
+ * Backend score entity structure from API.
+ */
+export interface BackendScore {
+  setNumber: number;
+  player1Games: number;
+  player2Games: number;
+  player1TiebreakPoints?: number | null;
+  player2TiebreakPoints?: number | null;
+}
+
+/**
  * Properties for creating a Match entity.
  */
 export interface MatchProps {
@@ -45,6 +56,8 @@ export interface MatchProps {
   createdAt?: Date;
   /** Last update timestamp. */
   updatedAt?: Date;
+  /** Scores from backend (if already loaded with match data). */
+  scores?: BackendScore[];
 }
 
 /**
@@ -80,6 +93,8 @@ export class Match {
   public readonly matchOrder: number;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
+  /** Scores from backend (populated when match is fetched with relations). */
+  public readonly scores?: BackendScore[];
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -96,6 +111,7 @@ export class Match {
     this.matchOrder = props.matchOrder ?? 0;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
+    this.scores = props.scores;
   }
 
   /**

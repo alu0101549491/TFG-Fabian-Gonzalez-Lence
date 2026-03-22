@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Score} from '../entities/score';
+import {Score, SetScore} from '../entities/score';
 
 /**
  * Repository interface for Score entity data access operations.
@@ -55,7 +55,15 @@ export interface IScoreRepository {
   /**
    * Finds the score for a specific match.
    * @param matchId - The unique identifier of the match
-   * @returns Promise resolving to the score if found, null otherwise
+   * @returns Promise resolving to an array of scores (one per set)
    */
-  findByMatchId(matchId: string): Promise<Score | null>;
+  findByMatchId(matchId: string): Promise<Score[]>;
+
+  /**
+   * Saves multiple scores for a match (one per set).
+   * @param matchId - The match identifier
+   * @param setScores - Array of set scores to save
+   * @returns Promise resolving to the saved score records
+   */
+  saveMatchScores(matchId: string, setScores: SetScore[]): Promise<Score[]>;
 }

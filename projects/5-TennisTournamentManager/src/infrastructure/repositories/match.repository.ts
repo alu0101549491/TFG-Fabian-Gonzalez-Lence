@@ -27,14 +27,77 @@ export class MatchRepositoryImpl implements IMatchRepository {
   private readonly httpClient = inject(AxiosClient);
 
   /**
+   * Serializes a date value to ISO string format.
+   * Handles dates that are already ISO strings from backend responses.
+   * 
+   * @param date - Date object, ISO string, or null
+   * @returns ISO string or null
+   */
+  private serializeDate(date: Date | string | null | undefined): string | null {
+    if (!date) return null;
+    if (typeof date === 'string') return date; // Already serialized
+    return date.toISOString(); // Convert Date to string
+  }
+
+  /**
+   * Maps backend match response to frontend Match entity.
+   * Backend uses participant1Id/participant2Id, frontend uses player1Id/player2Id.
+   * Also preserves participant objects for display purposes.
+   * 
+   * @param response - Raw backend match response
+   * @returns Match entity instance
+   */
+  private mapBackendToMatch(response: any): Match {
+    const match = new Match({
+      id: response.id,
+      bracketId: response.bracketId,
+      phaseId: response.phaseId,
+      courtId: response.courtId ?? null,
+      player1Id: response.participant1Id,  // Backend: participant1Id → Frontend: player1Id
+      player2Id: response.participant2Id,  // Backend: participant2Id → Frontend: player2Id
+      winnerId: response.winnerId ?? null,
+      status: response.status,
+      scheduledTime: response.scheduledTime ? new Date(response.scheduledTime) : null,
+      startedAt: response.startTime ? new Date(response.startTime) : null,
+      completedAt: response.endTime ? new Date(response.endTime) : null,
+      matchOrder: response.matchNumber ?? 0,
+      createdAt: response.createdAt ? new Date(response.createdAt) : new Date(),
+      updatedAt: response.updatedAt ? new Date(response.updatedAt) : new Date(),
+      scores: response.scores ?? [],  // Include scores from backend
+    });
+    
+    // Preserve participant objects from backend for display
+    if (response.participant1) {
+      (match as any).participant1 = response.participant1;
+    }
+    if (response.participant2) {
+      (match as any).participant2 = response.participant2;
+    }
+    if (response.winner) {
+      (match as any).winner = response.winner;
+    }
+    if (response.round !== undefined) {
+      (match as any).round = response.round;
+    }
+    if (response.matchNumber !== undefined) {
+      (match as any).matchNumber = response.matchNumber;
+    }
+    if (response.courtName !== undefined) {
+      (match as any).courtName = response.courtName;
+    }
+    
+    return match;
+  }
+
+  /**
    * Finds a match by its unique identifier.
    * @param id - The match identifier
    * @returns Promise resolving to the match or null if not found
    */
   public async findById(id: string): Promise<Match | null> {
     try {
-      const response = await this.httpClient.get<Match>(`/matches/${id}`);
-      return response;
+      const response = await this.httpClient.get<any>(`/matches/${id}`);
+      return this.mapBackendToMatch(response);
     } catch (error) {
       if ((error as {response?: {status?: number}}).response?.status === 404) {
         return null;
@@ -48,8 +111,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to an array of all matches
    */
   public async findAll(): Promise<Match[]> {
-    const response = await this.httpClient.get<Match[]>('/matches');
-    return response;
+    const response = await this.httpClient.get<any[]>('/matches');
+    return response.map(item => this.mapBackendToMatch(item));
   }
 
   /**
@@ -58,7 +121,34 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to the saved match with assigned ID
    */
   public async save(match: Match): Promise<Match> {
-    const response = await this.httpClient.post<Match>('/matches', match);
+    // Convert Match entity to backend API format
+    const matchData: any = {
+      id: match.id,
+      bracketId: match.bracketId,
+      phaseId: match.phaseId,
+      participant1Id: match.player1Id,  // Frontend: player1Id → Backend: participant1Id
+      participant2Id: match.player2Id,  // Frontend: player2Id → Backend: participant2Id
+      winnerId: match.winnerId,
+      status: match.status,
+      scheduledTime: this.serializeDate(match.scheduledTime),
+      startTime: this.serializeDate(match.startedAt),  // Frontend: startedAt → Backend: startTime
+      endTime: this.serializeDate(match.completedAt),  // Frontend: completedAt → Backend: endTime
+      round: 1, // Default round for new matches
+      matchNumber: match.matchOrder || 1,  // Default to 1 if not specified
+    };
+    
+    // Only include courtId if it exists
+    if (match.courtId) {
+      matchData.courtId = match.courtId;
+    }
+    
+    // Include courtName if it exists (free text reference)
+    const backendCourtName = (match as any).courtName;
+    if (backendCourtName) {
+      matchData.courtName = backendCourtName;
+    }
+    
+    const response = await this.httpClient.post<Match>('/matches', matchData);
     return response;
   }
 
@@ -68,7 +158,40 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to the updated match
    */
   public async update(match: Match): Promise<Match> {
-    const response = await this.httpClient.put<Match>(`/matches/${match.id}`, match);
+    // Convert Match entity to backend API format
+    // Map frontend field names to backend entity field names
+    
+    // Preserve round and matchNumber from backend response (attached as extra properties)
+    // Use || instead of ?? to ensure 0 values are replaced with defaults
+    const backendRound = (match as any).round || 1;
+    const backendMatchNumber = (match as any).matchNumber || match.matchOrder || 1;
+    
+    const matchData: any = {
+      bracketId: match.bracketId,
+      phaseId: match.phaseId,
+      participant1Id: match.player1Id,  // Frontend: player1Id → Backend: participant1Id
+      participant2Id: match.player2Id,  // Frontend: player2Id → Backend: participant2Id
+      winnerId: match.winnerId,
+      status: match.status,
+      scheduledTime: this.serializeDate(match.scheduledTime),
+      startTime: this.serializeDate(match.startedAt),  // Frontend: startedAt → Backend: startTime
+      endTime: this.serializeDate(match.completedAt),  // Frontend: completedAt → Backend: endTime
+      round: backendRound,  // Preserve from backend
+      matchNumber: backendMatchNumber,  // Preserve from backend
+    };
+    
+    // Only include courtId if it exists (don't send null to avoid clearing existing court)
+    if (match.courtId) {
+      matchData.courtId = match.courtId;
+    }
+    
+    // Include courtName if it exists (free text reference)
+    const backendCourtName = (match as any).courtName;
+    if (backendCourtName) {
+      matchData.courtName = backendCourtName;
+    }
+    
+    const response = await this.httpClient.put<Match>(`/matches/${match.id}`, matchData);
     return response;
   }
 

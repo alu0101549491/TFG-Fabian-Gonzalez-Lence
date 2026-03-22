@@ -58,6 +58,9 @@ export class Match {
   @Column('varchar', {length: 50, nullable: true})
   public courtId!: string | null;
 
+  @Column('varchar', {length: 100, nullable: true})
+  public courtName!: string | null;
+
   @Column('timestamp', {nullable: true})
   public scheduledTime!: Date | null;
 
