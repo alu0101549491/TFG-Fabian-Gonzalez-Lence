@@ -21,7 +21,7 @@
       <div class="hero-content">
         <button class="back-btn" routerLink="/tournaments">
           <span>←</span>
-          <span>Back to Tournaments</span>
+          <span>Back</span>
         </button>
 
         <div class="tournament-header">
@@ -105,55 +105,52 @@
 
     <!-- Main Content -->
     <div class="main-content">
-      <!-- Status Information Card -->
-      <section class="status-section">
-        <div class="info-card status-card">
-          <div class="card-icon-header">
-            <span class="big-icon">{{ getStatusIcon() }}</span>
-            <div>
-              <h2>Tournament Status</h2>
-              <p class="subtitle">{{ formatStatus(tournament()!.status) }}</p>
-            </div>
-          </div>
-          
-          <p class="status-description">{{ getStatusDescription() }}</p>
-          
-          @if (getStatusActions().length > 0) {
-            <div class="action-items">
-              <h3>
-                @if (canManageTournament()) {
-                  <span>📋 Action Items</span>
-                } @else {
-                  <span>📋 What's Happening</span>
-                }
-              </h3>
-              <ul class="action-list">
-                @for (action of getStatusActions(); track action) {
-                  <li>{{ action }}</li>
-                }
-              </ul>
-            </div>
-          }
-
-          @if (getAvailableStatusTransitions().length > 0 && canManageTournament()) {
-            <div class="next-steps">
-              <span class="hint-icon">💡</span>
-              <div>
-                <strong>Next Steps:</strong>
-                <span> You can transition to: </span>
-                @for (status of getAvailableStatusTransitions(); track status; let last = $last) {
-                  <strong class="highlight">{{ formatStatus(status) }}</strong>@if (!last) {<span> or </span>}
-                }
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-
       <!-- Two Column Layout -->
       <div class="content-grid">
         <!-- Left Column -->
         <div class="left-column">
+          <!-- Description -->
+          <div class="info-card">
+            <div class="card-header">
+              <h2>📝 Description</h2>
+            </div>
+            <p class="description-text">
+              {{ tournament()!.description || 'No description available.' }}
+            </p>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="info-card actions-card">
+            <div class="card-header">
+              <h2>⚡ Quick Actions</h2>
+            </div>
+            <div class="action-grid">
+              <button class="action-tile" (click)="viewBracket()">
+                <span class="tile-icon">🏆</span>
+                <div class="tile-content">
+                  <h4>Bracket</h4>
+                  <p>View tournament bracket</p>
+                </div>
+              </button>
+
+              <button class="action-tile" (click)="viewMatches()">
+                <span class="tile-icon">🎾</span>
+                <div class="tile-content">
+                  <h4>Matches</h4>
+                  <p>View match schedule</p>
+                </div>
+              </button>
+
+              <button class="action-tile" (click)="viewStandings()">
+                <span class="tile-icon">📊</span>
+                <div class="tile-content">
+                  <h4>Standings</h4>
+                  <p>View current standings</p>
+                </div>
+              </button>
+            </div>
+          </div>
+
           <!-- Tournament Information -->
           <div class="info-card">
             <div class="card-header">
@@ -192,16 +189,97 @@
               }
             </div>
           </div>
+        </div>
 
-          <!-- Description -->
-          <div class="info-card">
-            <div class="card-header">
-              <h2>📝 Description</h2>
+        <!-- Right Column -->
+        <div class="right-column">
+          <!-- Tournament Status -->
+          <div class="info-card status-card">
+            <div class="card-icon-header">
+              <span class="big-icon">{{ getStatusIcon() }}</span>
+              <div>
+                <h2>Tournament Status</h2>
+                <p class="subtitle">{{ formatStatus(tournament()!.status) }}</p>
+              </div>
             </div>
-            <p class="description-text">
-              {{ tournament()!.description || 'No description available.' }}
-            </p>
+            
+            <p class="status-description">{{ getStatusDescription() }}</p>
           </div>
+
+          <!-- Registration Section (for players only, not organizers) -->
+          @if (isAuthenticated() && !canManageTournament()) {
+            <div class="info-card registration-card">
+              @if (userRegistration()) {
+                <!-- Registration Status Display -->
+                @if (userRegistration()!.status === 'ACCEPTED') {
+                  <div class="registered-state">
+                    <span class="success-icon">✅</span>
+                    <div>
+                      <h3>You're Registered!</h3>
+                      <p>You are registered for this tournament</p>
+                    </div>
+                  </div>
+                } @else if (userRegistration()!.status === 'PENDING') {
+                  <div class="pending-state">
+                    <span class="pending-icon">⏳</span>
+                    <div>
+                      <h3>Registration Pending</h3>
+                      <p>Your registration is awaiting approval from the organizer</p>
+                    </div>
+                  </div>
+                } @else if (userRegistration()!.status === 'REJECTED') {
+                  <div class="rejected-state">
+                    <span class="error-icon">❌</span>
+                    <div>
+                      <h3>Registration Rejected</h3>
+                      <p>Your registration was not approved by the organizer</p>
+                    </div>
+                  </div>
+                }
+              } @else {
+                <div class="card-header">
+                  <h2>📝 Register for Tournament</h2>
+                </div>
+                
+                @if (categories().length > 0) {
+                  <div class="registration-form">
+                    <label class="form-label">Select Category</label>
+                    <div class="category-selection">
+                      @for (category of categories(); track category.id) {
+                        <label class="category-radio">
+                          <input 
+                            type="radio" 
+                            name="category" 
+                            [value]="category.id"
+                            [checked]="selectedCategoryId() === category.id"
+                            (change)="selectedCategoryId.set(category.id)"
+                          />
+                          <div class="radio-content">
+                            <span class="radio-icon">🎾</span>
+                            <span class="radio-label">{{ category.name }}</span>
+                          </div>
+                        </label>
+                      }
+                    </div>
+                    
+                    <button 
+                      class="register-btn"
+                      (click)="registerForTournament()"
+                      [disabled]="!selectedCategoryId()"
+                    >
+                      <span class="btn-icon">🚀</span>
+                      <span>Register Now</span>
+                    </button>
+                  </div>
+                } @else {
+                  <div class="warning-state">
+                    <span class="warning-icon">⚠️</span>
+                    <p>No categories available for registration</p>
+                  </div>
+                }
+              }
+            </div>
+          }
 
           <!-- Categories -->
           @if (categories().length > 0) {
@@ -229,6 +307,90 @@
                   </div>
                 }
               </div>
+            </div>
+          }
+
+          <!-- Participant Management (for organizers) -->
+          @if (isAuthenticated() && canManageTournament()) {
+            <div class="info-card">
+              <div class="card-header">
+                <h2>👥 Registered Participants ({{ registeredPlayers().length }})</h2>
+              </div>
+              
+              @if (registeredPlayers().length === 0) {
+                <div class="warning-state" style="margin: 1rem;">
+                  <span class="warning-icon">ℹ️</span>
+                  <p>No participants registered yet. Share the tournament link with players to start registrations.</p>
+                </div>
+              } @else {
+                <div style="max-height: 400px; overflow-y: auto;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                      <tr style="border-bottom: 2px solid #ddd; background-color: #f5f5f5;">
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Player</th>
+                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Category</th>
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Status</th>
+                        <th style="padding: 0.75rem; text-align: right; font-weight: 600;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (player of registeredPlayers(); track player.registration.id) {
+                        <tr style="border-bottom: 1px solid #eee;">
+                          <td style="padding: 0.75rem;">
+                            <div style="display: flex; flex-direction: column;">
+                              <strong>{{ player.user.username || player.user.firstName + ' ' + player.user.lastName || player.user.email }}</strong>
+                              <span style="font-size: 0.875rem; color: #666;">{{ player.user.email }}</span>
+                            </div>
+                          </td>
+                          <td style="padding: 0.75rem;">
+                            @if (getCategoryById(player.registration.categoryId); as category) {
+                              <span>{{ category.name }}</span>
+                            } @else {
+                              <span style="color: #999;">N/A</span>
+                            }
+                          </td>
+                          <td style="padding: 0.75rem; text-align: center;">
+                            <span class="status-badge status-{{ player.registration.status.toLowerCase() }}">
+                              {{ player.registration.status | enumFormat }}
+                            </span>
+                          </td>
+                          <td style="padding: 0.75rem; text-align: right;">
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                              @if (player.registration.status === 'PENDING') {
+                                <button
+                                  class="action-btn"
+                                  (click)="approveRegistration(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
+                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                                  title="Approve registration"
+                                >
+                                  ✓ Approve
+                                </button>
+                                <button
+                                  class="action-btn"
+                                  (click)="rejectRegistration(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
+                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                                  title="Reject registration"
+                                >
+                                  ✕ Reject
+                                </button>
+                              } @else if (player.registration.status === 'ACCEPTED') {
+                                <button
+                                  class="action-btn delete"
+                                  (click)="removeParticipant(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
+                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem;"
+                                  title="Remove participant"
+                                >
+                                  🗑️ Remove
+                                </button>
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
             </div>
           }
 
@@ -557,200 +719,6 @@
               }
             </div>
           }
-        </div>
-
-        <!-- Right Column -->
-        <div class="right-column">
-          <!-- Registration Section (for players only, not organizers) -->
-          @if (isAuthenticated() && !canManageTournament()) {
-            <div class="info-card registration-card">
-              @if (userRegistration()) {
-                <!-- Registration Status Display -->
-                @if (userRegistration()!.status === 'ACCEPTED') {
-                  <div class="registered-state">
-                    <span class="success-icon">✅</span>
-                    <div>
-                      <h3>You're Registered!</h3>
-                      <p>You are registered for this tournament</p>
-                    </div>
-                  </div>
-                } @else if (userRegistration()!.status === 'PENDING') {
-                  <div class="pending-state">
-                    <span class="pending-icon">⏳</span>
-                    <div>
-                      <h3>Registration Pending</h3>
-                      <p>Your registration is awaiting approval from the organizer</p>
-                    </div>
-                  </div>
-                } @else if (userRegistration()!.status === 'REJECTED') {
-                  <div class="rejected-state">
-                    <span class="error-icon">❌</span>
-                    <div>
-                      <h3>Registration Rejected</h3>
-                      <p>Your registration was not approved by the organizer</p>
-                    </div>
-                  </div>
-                }
-              } @else {
-                <div class="card-header">
-                  <h2>📝 Register for Tournament</h2>
-                </div>
-                
-                @if (categories().length > 0) {
-                  <div class="registration-form">
-                    <label class="form-label">Select Category</label>
-                    <div class="category-selection">
-                      @for (category of categories(); track category.id) {
-                        <label class="category-radio">
-                          <input 
-                            type="radio" 
-                            name="category" 
-                            [value]="category.id"
-                            [checked]="selectedCategoryId() === category.id"
-                            (change)="selectedCategoryId.set(category.id)"
-                          />
-                          <div class="radio-content">
-                            <span class="radio-icon">🎾</span>
-                            <span class="radio-label">{{ category.name }}</span>
-                          </div>
-                        </label>
-                      }
-                    </div>
-                    
-                    <button 
-                      class="register-btn"
-                      (click)="registerForTournament()"
-                      [disabled]="!selectedCategoryId()"
-                    >
-                      <span class="btn-icon">🚀</span>
-                      <span>Register Now</span>
-                    </button>
-                  </div>
-                } @else {
-                  <div class="warning-state">
-                    <span class="warning-icon">⚠️</span>
-                    <p>No categories available for registration</p>
-                  </div>
-                }
-              }
-            </div>
-          }
-
-          <!-- Participant Management (for organizers) -->
-          @if (isAuthenticated() && canManageTournament()) {
-            <div class="info-card">
-              <div class="card-header">
-                <h2>👥 Registered Participants ({{ registeredPlayers().length }})</h2>
-              </div>
-              
-              @if (registeredPlayers().length === 0) {
-                <div class="warning-state" style="margin: 1rem;">
-                  <span class="warning-icon">ℹ️</span>
-                  <p>No participants registered yet. Share the tournament link with players to start registrations.</p>
-                </div>
-              } @else {
-                <div style="max-height: 400px; overflow-y: auto;">
-                  <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                      <tr style="border-bottom: 2px solid #ddd; background-color: #f5f5f5;">
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Player</th>
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Category</th>
-                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Status</th>
-                        <th style="padding: 0.75rem; text-align: right; font-weight: 600;">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (player of registeredPlayers(); track player.registration.id) {
-                        <tr style="border-bottom: 1px solid #eee;">
-                          <td style="padding: 0.75rem;">
-                            <div style="display: flex; flex-direction: column;">
-                              <strong>{{ player.user.username || player.user.firstName + ' ' + player.user.lastName || player.user.email }}</strong>
-                              <span style="font-size: 0.875rem; color: #666;">{{ player.user.email }}</span>
-                            </div>
-                          </td>
-                          <td style="padding: 0.75rem;">
-                            @if (getCategoryById(player.registration.categoryId); as category) {
-                              <span>{{ category.name }}</span>
-                            } @else {
-                              <span style="color: #999;">N/A</span>
-                            }
-                          </td>
-                          <td style="padding: 0.75rem; text-align: center;">
-                            <span class="status-badge status-{{ player.registration.status.toLowerCase() }}">
-                              {{ player.registration.status | enumFormat }}
-                            </span>
-                          </td>
-                          <td style="padding: 0.75rem; text-align: right;">
-                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                              @if (player.registration.status === 'PENDING') {
-                                <button
-                                  class="action-btn"
-                                  (click)="approveRegistration(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
-                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                                  title="Approve registration"
-                                >
-                                  ✓ Approve
-                                </button>
-                                <button
-                                  class="action-btn"
-                                  (click)="rejectRegistration(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
-                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                                  title="Reject registration"
-                                >
-                                  ✕ Reject
-                                </button>
-                              } @else if (player.registration.status === 'ACCEPTED') {
-                                <button
-                                  class="action-btn delete"
-                                  (click)="removeParticipant(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
-                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem;"
-                                  title="Remove participant"
-                                >
-                                  🗑️ Remove
-                                </button>
-                              }
-                            </div>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              }
-            </div>
-          }
-
-          <!-- Quick Actions -->
-          <div class="info-card actions-card">
-            <div class="card-header">
-              <h2>⚡ Quick Actions</h2>
-            </div>
-            <div class="action-grid">
-              <button class="action-tile" (click)="viewBracket()">
-                <span class="tile-icon">🏆</span>
-                <div class="tile-content">
-                  <h4>Bracket</h4>
-                  <p>View tournament bracket</p>
-                </div>
-              </button>
-
-              <button class="action-tile" (click)="viewMatches()">
-                <span class="tile-icon">🎾</span>
-                <div class="tile-content">
-                  <h4>Matches</h4>
-                  <p>View match schedule</p>
-                </div>
-              </button>
-
-              <button class="action-tile" (click)="viewStandings()">
-                <span class="tile-icon">📊</span>
-                <div class="tile-content">
-                  <h4>Standings</h4>
-                  <p>View current standings</p>
-                </div>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -443,7 +443,7 @@ export class TournamentDetailComponent implements OnInit {
 
     const descriptions: Record<TournamentStatus, string> = {
       [TournamentStatus.DRAFT]: 'Tournament is in draft mode. Setup categories and details before opening registration.',
-      [TournamentStatus.REGISTRATION_OPEN]: 'Tournament is accepting player registrations. Players can register for available categories.',
+      [TournamentStatus.REGISTRATION_OPEN]: 'Tournament is accepting player registrations. Register for available categories.',
       [TournamentStatus.REGISTRATION_CLOSED]: 'Registration period has ended. Preparing tournament draw and brackets.',
       [TournamentStatus.DRAW_PENDING]: 'Tournament draw is being prepared. Matches will be scheduled soon.',
       [TournamentStatus.IN_PROGRESS]: 'Tournament is currently active. Matches are being played.',

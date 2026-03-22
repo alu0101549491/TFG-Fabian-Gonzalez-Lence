@@ -76,8 +76,7 @@
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 /* Back Button */
@@ -85,21 +84,22 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: var(--border-radius-md);
   color: var(--color-white);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   backdrop-filter: blur(10px);
   margin-bottom: var(--spacing-xl);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .back-btn:hover {
   background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
   transform: translateX(-4px);
 }
 
@@ -283,8 +283,7 @@
 
 /* Main Content */
 .main-content {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
   padding: var(--spacing-2xl) var(--spacing-xl);
 }
 
@@ -419,8 +418,8 @@
 /* Content Grid */
 .content-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: var(--spacing-xl);
+  grid-template-columns: 7fr 3fr;
+  gap: var(--spacing-lg);
 }
 
 @media (max-width: 968px) {
@@ -429,12 +428,12 @@
   }
 }
 
-/* Columns */
+/* Columns - Keep as flex containers */
 .left-column,
 .right-column {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-lg);
 }
 
 /* Info List */
@@ -484,7 +483,7 @@
 .categories-grid {
   padding: var(--spacing-lg);
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--spacing-md);
 }
 
@@ -727,7 +726,14 @@
 .action-grid {
   padding: var(--spacing-lg);
   display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .action-tile {
