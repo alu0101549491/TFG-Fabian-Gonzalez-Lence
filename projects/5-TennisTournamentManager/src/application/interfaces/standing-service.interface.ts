@@ -43,4 +43,12 @@ export interface IStandingService {
    * @returns Participant's standing information
    */
   getParticipantStanding(bracketId: string, participantId: string): Promise<StandingDto>;
+
+  /**
+   * Retrieves standings for all brackets in a tournament.
+   *
+   * @param tournamentId - ID of the tournament
+   * @returns List of standings for all tournament brackets
+   */
+  getStandingsByTournament(tournamentId: string): Promise<StandingDto[]>;
 }

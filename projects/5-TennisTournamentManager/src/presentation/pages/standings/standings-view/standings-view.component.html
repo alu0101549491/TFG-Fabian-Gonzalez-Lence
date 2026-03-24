@@ -1,50 +1,135 @@
-<div class="container p-lg">
-  <h1 class="mb-lg">Tournament Standings</h1>
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <button class="back-btn" (click)="goBack()">
+      <span>←</span>
+      <span>Back</span>
+    </button>
 
-  @if (isLoading()) {
-    <div class="text-center p-lg">
-      <p>Loading standings...</p>
+    <div class="standings-header">
+      <h1 class="standings-title">🏅 Standings</h1>
+      @if (tournament(); as tournamentData) {
+        <p class="standings-subtitle">{{ tournamentData.name }}</p>
+        <p class="standings-description">Current tournament rankings and statistics</p>
+      } @else {
+        <p class="standings-subtitle">Current tournament rankings and statistics</p>
+      }
     </div>
-  }
+  </div>
+</section>
 
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Error Banner -->
   @if (errorMessage()) {
-    <div class="alert alert-error">{{ errorMessage() }}</div>
-  }
-
-  @if (!isLoading() && standings().length > 0) {
-    <div class="card">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Position</th>
-            <th>Participant</th>
-            <th>Wins</th>
-            <th>Losses</th>
-            <th>Sets Won</th>
-            <th>Sets Lost</th>
-            <th>Points</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (standing of standings(); track standing.participantId) {
-            <tr>
-              <td>{{ standing.position }}</td>
-              <td>{{ standing.participantId }}</td>
-              <td>{{ standing.wins }}</td>
-              <td>{{ standing.losses }}</td>
-              <td>{{ standing.setsWon }}</td>
-              <td>{{ standing.setsLost }}</td>
-              <td>{{ standing.points }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+    <div class="error-container">
+      <div class="error-icon">⚠️</div>
+      <p class="error-message">{{ errorMessage() }}</p>
     </div>
   }
 
-  @if (!isLoading() && !errorMessage() && standings().length === 0) {
-    <div class="text-center p-lg">
-      <p class="text-muted">No standings available yet.</p>
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading standings...</p>
+    </div>
+  }
+
+  <!-- Standings by Category -->
+  @if (!isLoading() && groupedStandings().length > 0) {
+    <div class="standings-container">
+      @for (group of groupedStandings(); track group.bracketId) {
+        <div class="standings-card">
+          <!-- Category Header -->
+          <div class="card-header">
+            <div class="header-left">
+              <span class="category-icon">🏆</span>
+              <div class="header-content">
+                <h2 class="category-title">{{ group.categoryName }}</h2>
+                <p class="bracket-info">{{ group.bracketType | enumFormat }} • {{ group.standingsCount }} participants</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Standings Table -->
+          <div class="standings-table-container">
+            <table class="standings-table">
+              <thead>
+                <tr>
+                  <th class="col-position">Pos</th>
+                  <th class="col-participant">Participant</th>
+                  <th class="col-stat">Played</th>
+                  <th class="col-stat">Won</th>
+                  <th class="col-stat">Lost</th>
+                  <th class="col-stat">Sets</th>
+                  <th class="col-stat">Games</th>
+                  <th class="col-points">Points</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (standing of group.standings; track standing.participantId) {
+                  <tr class="standing-row" [class.top-position]="standing.position <= 3">
+                    <td class="col-position">
+                      <div class="position-badge" [class]="getPositionClass(standing.position)">
+                        @if (standing.position === 1) {
+                          <span class="position-icon">🥇</span>
+                        } @else if (standing.position === 2) {
+                          <span class="position-icon">🥈</span>
+                        } @else if (standing.position === 3) {
+                          <span class="position-icon">🥉</span>
+                        } @else {
+                          <span class="position-number">{{ standing.position }}</span>
+                        }
+                      </div>
+                    </td>
+                    <td class="col-participant">
+                      <div class="participant-info">
+                        <span class="participant-icon">👤</span>
+                        <span class="participant-name">{{ standing.participantName }}</span>
+                      </div>
+                    </td>
+                    <td class="col-stat">{{ standing.matchesPlayed }}</td>
+                    <td class="col-stat winner-stat">{{ standing.matchesWon }}</td>
+                    <td class="col-stat loser-stat">{{ standing.matchesLost }}</td>
+                    <td class="col-stat">
+                      <span class="stat-ratio">{{ standing.setsWon }}/{{ standing.setsLost }}</span>
+                      @if (standing.setDifference !== 0) {
+                        <span class="stat-diff" [class.positive]="standing.setDifference > 0" [class.negative]="standing.setDifference < 0">
+                          {{ standing.setDifference > 0 ? '+' : '' }}{{ standing.setDifference }}
+                        </span>
+                      }
+                    </td>
+                    <td class="col-stat">
+                      <span class="stat-ratio">{{ standing.gamesWon }}/{{ standing.gamesLost }}</span>
+                      @if (standing.gameDifference !== 0) {
+                        <span class="stat-diff" [class.positive]="standing.gameDifference > 0" [class.negative]="standing.gameDifference < 0">
+                          {{ standing.gameDifference > 0 ? '+' : '' }}{{ standing.gameDifference }}
+                        </span>
+                      }
+                    </td>
+                    <td class="col-points">
+                      <div class="points-badge">{{ standing.points }}</div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!isLoading() && !errorMessage() && groupedStandings().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">📊</div>
+      <h3 class="empty-title">No Standings Available</h3>
+      <p class="empty-description">
+        Standings will appear here once matches have been played.
+      </p>
     </div>
   }
 </div>

@@ -6,6 +6,484 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.40.7] - 2026-03-24
+
+### Fixed — Hero Section Styling Consistency
+
+**Issue**: Standings page hero section styling didn't match the project's standard design pattern used in other pages (Tournament Bracket, Tournament Details).
+
+**Problems**:
+- Back button was absolutely positioned instead of inline
+- Title and subtitle had inconsistent font sizes and weights
+- Missing text shadows for visual depth
+- Hero section used fixed height (`min-height: 20vh`) instead of content-based padding
+- Text hierarchy didn't match project standards
+
+**Solution**: Refactored hero section to match the bracket view page styling (project standard).
+
+**Changes**:
+
+**HTML Structure** ([standings-view.component.html](src/presentation/pages/standings/standings-view/standings-view.component.html)):
+```html
+<!-- Before: Mixed positioning and unclear hierarchy -->
+<button class=\"back-btn\">...</button>  <!-- Absolutely positioned -->
+<div class=\"hero-content\">
+  <h1 class=\"hero-title\">Standings</h1>
+  <h2 class=\"hero-tournament-name\">{{ tournament }}</h2>
+  <p class=\"hero-subtitle\">Description</p>
+</div>
+
+<!-- After: Standard project pattern -->
+<div class=\"hero-content\">
+  <button class=\"back-btn\">...</button>  <!-- Inline with margin-bottom -->
+  <div class=\"standings-header\">
+    <h1 class=\"standings-title\">🏅 Standings</h1>
+    <p class=\"standings-subtitle\">{{ tournament.name }}</p>
+    <p class=\"standings-description\">Current tournament rankings...</p>
+  </div>
+</div>
+```
+
+**CSS Updates** ([standings-view.component.css](src/presentation/pages/standings/standings-view/standings-view.component.css)):
+
+1. **Hero Section**:
+   - Removed `min-height: 20vh`, `display: flex`, `align-items`, `justify-content`
+   - Added content-based padding: `var(--spacing-3xl) var(--spacing-xl) var(--spacing-2xl)`
+
+2. **Hero Content**:
+   - Added `max-width: 1200px` and `margin: 0 auto` for centered content container
+   - Removed inline centering (now handled by header)
+
+3. **Back Button**:
+   - Changed from `position: absolute` to `display: inline-flex`
+   - Lighter background: `rgba(255, 255, 255, 0.15)` (was `0.2`)
+   - Thinner border: `1px solid` (was `2px`)
+   - Added `margin-bottom: var(--spacing-xl)`
+   - Consistent transitions and hover effects
+
+4. **Title Styling**:
+   - `.standings-title`: `font-size-4xl`, `font-weight-bold` with `text-shadow: 0 2px 4px rgba(0,0,0,0.2)`
+   - `.standings-subtitle`: `font-size-lg`, `font-weight-medium` with `text-shadow: 0 1px 2px rgba(0,0,0,0.1)`
+   - `.standings-description`: `font-size-md`, `font-weight-normal`, `opacity: 0.9`
+
+5. **Centered Header**: Added `.standings-header` with `text-align: center`
+
+**Result**: Hero section now matches the visual design of Tournament Bracket and other standard pages in the project, with proper text hierarchy, consistent spacing, and professional styling.
+
+---
+
+## [1.40.6] - 2026-03-24
+
+### Fixed — Hero Section Layout and Text Hierarchy
+
+**Issue**: Standings page hero section had layout problems:
+- Back button was positioned inside centered content container instead of at the absolute left edge
+- Tournament name and subtitle were combined in a single line with em dash separator
+- Text hierarchy was unclear
+
+**Solution**: Restructured hero section for better layout and improved text presentation.
+
+**Changes**:
+
+**HTML Structure** ([standings-view.component.html](src/presentation/pages/standings/standings-view/standings-view.component.html)):
+```html
+<!-- Before: Back button inside hero-content -->
+<div class="hero-content">
+  <button class="back-btn">...</button>
+  <h1 class="hero-title">🏅 Standings</h1>
+  <p class="hero-subtitle">{{ tournamentData.name }} — Current tournament...</p>
+</div>
+
+<!-- After: Back button as sibling to hero-content -->
+<section class="hero-section">
+  <button class="back-btn">...</button>  <!-- ← Now positioned relative to section -->
+  <div class="hero-content">
+    <h1 class="hero-title">🏅 Standings</h1>
+    <h2 class="hero-tournament-name">{{ tournamentData.name }}</h2>  <!-- ← Separate line -->
+    <p class="hero-subtitle">Current tournament rankings and statistics</p>
+  </div>
+</section>
+```
+
+**CSS Updates** ([standings-view.component.css](src/presentation/pages/standings/standings-view/standings-view.component.css)):
+1. **Back Button**: Added `z-index: 10` to ensure it appears above overlay
+2. **Title Sizes**: Adjusted font sizes for better hierarchy
+   - `hero-title`: `font-size-3xl` (reduced from `4xl`)
+   - `hero-tournament-name`: New element with `font-size-2xl`
+   - `hero-subtitle`: `font-size-md` (reduced from `lg`)
+3. **New Style**: Added `.hero-tournament-name` for tournament name display
+
+**Result**:
+- Back button now appears at the absolute left edge of the screen
+- Text hierarchy is clear: Standings title → Tournament name → Subtitle
+- Better visual structure matching other pages in the app
+
+---
+
+## [1.40.5] - 2026-03-24
+
+### Improved — Bracket Type Display Format
+
+**Enhancement**: Applied human-readable formatting to bracket types in standings page category headers.
+
+**Before**: "MATCH_PLAY • 2 participants"  
+**After**: "Match Play • 2 participants"
+
+**Implementation** ([standings-view.component.html](src/presentation/pages/standings/standings-view/standings-view.component.html)):
+Applied `enumFormat` pipe to bracket type display:
+```html
+<!-- Before -->
+<p class="bracket-info">{{ group.bracketType }} • {{ group.standingsCount }} participants</p>
+
+<!-- After -->
+<p class="bracket-info">{{ group.bracketType | enumFormat }} • {{ group.standingsCount }} participants</p>
+```
+
+**Formatting Examples**:
+- `MATCH_PLAY` → "Match Play"
+- `SINGLE_ELIMINATION` → "Single Elimination"
+- `ROUND_ROBIN` → "Round Robin"
+- `DOUBLE_ELIMINATION` → "Double Elimination"
+
+The `EnumFormatPipe` transforms UPPER_SNAKE_CASE enum values to Title Case with spaces, providing better user experience and readability.
+
+---
+
+## [1.40.4] - 2026-03-24
+
+### Fixed — Category Names Stuck on "Loading..."
+
+**Issue**: Standings page category headers displayed "Loading..." permanently instead of showing the actual category names.
+
+**Root Cause**: Reactive signal pattern issue with `groupedStandings`. It was defined as a `computed()` signal that recreated group objects every time the `standings` array changed. When `enrichGroupData()` fetched bracket and category names and updated the group objects, then triggered a re-computation by calling `this.standings.set([...this.standings()])`, the computed signal would re-run and create brand new group objects with `categoryName: 'Loading...'` again, losing all the enriched data.
+
+**Technical Problem**:
+```typescript
+// BROKEN: Computed signal recreates objects on every change
+public groupedStandings = computed(() => {
+  // Creates new groups with 'Loading...'
+  // enrichGroupData() modifications are lost when this re-runs
+});
+```
+
+**Solution**: Changed `groupedStandings` from a computed signal to a writable signal, and created a separate `groupStandings()` method to manually update it.
+
+**Changes** ([standings-view.component.ts](src/presentation/pages/standings/standings-view/standings-view.component.ts)):
+
+1. **Removed `computed` import**: No longer needed
+2. **Changed signal type**:
+```typescript
+// Before: Computed signal (recreates on every change)
+public groupedStandings = computed(() => { ... });
+
+// After: Writable signal (persists modifications)
+public groupedStandings = signal<StandingGroup[]>([]);
+```
+
+3. **Added `groupStandings()` method**: Manually groups standings by bracket and sets the signal
+```typescript
+private groupStandings(standings: StandingDto[]): void {
+  // Group by bracket ID
+  const groups = new Map<string, StandingGroup>();
+  // ... grouping logic ...
+  this.groupedStandings.set(Array.from(groups.values()));
+}
+```
+
+4. **Updated `loadStandings()` flow**:
+```typescript
+// Fetch standings
+const standings = await this.standingService.getStandingsByTournament(tournamentId);
+this.standings.set(standings);
+
+// Group standings by bracket
+this.groupStandings(standings);  // ← New step
+
+// Enrich with bracket/category info
+await this.enrichGroupData();
+```
+
+5. **Fixed `enrichGroupData()` update**:
+```typescript
+// Before: Tried to force re-computation (didn't work)
+this.standings.set([...this.standings()]);
+
+// After: Directly updates the signal with enriched data
+this.groupedStandings.set([...groups]);
+```
+
+**Result**: Category names now display correctly (e.g., "Men's Singles", "Women's Doubles") instead of permanently showing "Loading...".
+
+---
+
+## [1.40.3] - 2026-03-24
+
+### Fixed — Tournament Name Display in Standings
+
+**Issue**: Standings page hero section showed generic text "Current tournament rankings and statistics" without displaying the actual tournament name.
+
+**Solution**: Enhanced standings view component to fetch and display tournament name.
+
+**Changes**:
+
+**Component** ([standings-view.component.ts](src/presentation/pages/standings/standings-view/standings-view.component.ts)):
+1. Added `TournamentService` import and injection
+2. Added `tournament` signal to store tournament data: `public tournament = signal<TournamentDto | null>(null);`
+3. Updated `loadStandings()` method to fetch tournament data:
+```typescript
+// Fetch tournament data
+const tournamentData = await this.tournamentService.getTournamentById(tournamentId);
+this.tournament.set(tournamentData);
+```
+
+**Template** ([standings-view.component.html](src/presentation/pages/standings/standings-view/standings-view.component.html)):
+Updated hero subtitle to display tournament name dynamically:
+```html
+<p class="hero-subtitle">
+  @if (tournament(); as tournamentData) {
+    {{ tournamentData.name }} — Current tournament rankings and statistics
+  } @else {
+    Current tournament rankings and statistics
+  }
+</p>
+```
+
+**Result**: Hero section now displays the tournament name (e.g., "Spring Championship 2026 — Current tournament rankings and statistics") instead of generic text.
+
+---
+
+## [1.40.2] - 2026-03-24
+
+### Fixed — Score Field Name Mismatch
+
+**Issue**: After implementing the score parsing logic in v1.40.1, the sets and games statistics still showed "0/0" despite matches having been played with recorded scores.
+
+**Root Cause**: Field name mismatch between backend and frontend when parsing score data:
+- **Backend Score Entity** uses: `player1Games`, `player2Games` ([backend/src/domain/entities/score.entity.ts](backend/src/domain/entities/score.entity.ts))
+- **Frontend Code** was expecting: `participant1Games`, `participant2Games`
+
+The score parsing logic in `calculateStandings()` was attempting to read `set.participant1Games` and `set.participant2Games`, but the backend API returns Score entities with `player1Games` and `player2Games` fields.
+
+**Solution** ([standing.service.ts](src/application/services/standing.service.ts), lines ~107-108):
+```typescript
+// Fixed: Use correct backend field names
+const p1Games = set.player1Games || 0;  // ← Changed from participant1Games
+const p2Games = set.player2Games || 0;  // ← Changed from participant2Games
+```
+
+**Results**:
+- ✅ Sets statistics now display correctly (e.g., "2/1" instead of "0/0")
+- ✅ Games statistics now display correctly (e.g., "12/8" instead of "0/0")
+- ✅ Set difference properly calculated from actual match data
+- ✅ Game difference properly calculated from actual match data
+- ✅ Standings rankings reflect true match performance
+
+**Technical Notes**:
+- Backend Score entity structure:
+  ```typescript
+  export class Score {
+    player1Games: number;
+    player2Games: number;
+    player1TiebreakPoints: number | null;
+    player2TiebreakPoints: number | null;
+  }
+  ```
+- Match repository preserves raw backend scores in Match entity
+- Frontend SetScore interface uses `participant1Games/participant2Games` for domain consistency
+- When parsing raw API responses, must use backend field names
+
+---
+
+## [1.40.1] - 2026-03-24
+
+### Fixed — Standings Display Issues
+
+**Issue**: Standings page displayed incomplete information:
+- Hero banner height was excessively large (40vh)
+- Participant names showed as "Unknown"
+- Sets statistics showed "0/0"
+- Games statistics showed "0/0"
+
+**Root Causes**:
+1. **Hero Banner**: CSS `min-height: 40vh` was too large for the header section
+2. **Missing Participant Names**: `calculateStandings()` method never fetched or assigned participant names
+3. **No Score Calculation**: Method initialized `setsWon`, `setsLost`, `gamesWon`, `gamesLost` to 0 but never updated them from match scores
+
+**Solutions**:
+
+**CSS Update** ([standings-view.component.css](src/presentation/pages/standings/standings-view/standings-view.component.css)):
+```css
+/* Reduced from 40vh to 20vh */
+.hero-section {
+  min-height: 20vh;  /* ← Fixed: Reduced hero banner height */
+}
+```
+
+**Service Enhancement** ([standing.service.ts](src/application/services/standing.service.ts)):
+
+1. **Added UserService Injection**:
+```typescript
+import {UserService} from './user.service';
+
+// Injected in service
+private readonly userService = inject(UserService);
+```
+
+2. **Score Parsing Logic** (lines ~107-124):
+```typescript
+// Calculate sets and games from scores
+const scores = (match as any).scores || [];
+for (const set of scores) {
+  const p1Games = set.participant1Games || 0;
+  const p2Games = set.participant2Games || 0;
+  
+  p1Stats.gamesWon += p1Games;
+  p1Stats.gamesLost += p2Games;
+  p2Stats.gamesWon += p2Games;
+  p2Stats.gamesLost += p1Games;
+  
+  // Determine set winner
+  if (p1Games > p2Games) {
+    p1Stats.setsWon++;
+    p2Stats.setsLost++;
+  } else if (p2Games > p1Games) {
+    p2Stats.setsWon++;
+    p1Stats.setsLost++;
+  }
+}
+```
+
+3. **Participant Name Fetching** (lines ~139-150):
+```typescript
+// Fetch participant names
+const participantIds = Array.from(participantStats.keys());
+await Promise.all(
+  participantIds.map(async (participantId) => {
+    try {
+      const user = await this.userService.getUserById(participantId);
+      const stats = participantStats.get(participantId)!;
+      stats.participantName = `${user.firstName} ${user.lastName}`;
+    } catch (error) {
+      console.warn(`Failed to fetch user ${participantId}:`, error);
+      const stats = participantStats.get(participantId)!;
+      stats.participantName = 'Unknown';
+    }
+  })
+);
+```
+
+**Results**:
+- ✅ Hero banner reduced to appropriate size (20vh)
+- ✅ Participant names now display correctly (e.g., "John Doe" instead of "Unknown")
+- ✅ Sets statistics display actual match data (e.g., "2/1" instead of "0/0")
+- ✅ Games statistics display actual match data (e.g., "12/8" instead of "0/0")
+- ✅ Set difference properly calculated and displayed
+- ✅ Game difference properly calculated and displayed
+- ✅ Graceful fallback to "Unknown" if user data fetch fails
+
+---
+
+## [1.40.0] - 2026-03-24
+
+### Added — Tournament Standings Page
+
+**Feature**: Implemented comprehensive tournament standings page with modern UI showing rankings, statistics, and positions for all tournament categories.
+
+**Implementation**:
+
+**Service Layer** ([standing.service.ts](src/application/services/standing.service.ts)):
+- Added `getStandingsByTournament()` method to retrieve standings for all brackets in a tournament
+- Fetches brackets using `BracketRepositoryImpl`
+- Calculates standings for each bracket
+- Returns consolidated list of standings across all tournament categories
+
+**Interface Update** ([standing-service.interface.ts](src/application/interfaces/standing-service.interface.ts)):
+- Added `getStandingsByTournament(tournamentId: string): Promise<StandingDto[]>` method signature
+
+**Component** ([standings-view.component.ts](src/presentation/pages/standings/standings-view/standings-view.component.ts)):
+- Complete redesign from basic table to sophisticated standings display
+- Integrated `BracketService` and `CategoryService` for data enrichment
+- Added `StandingGroup` interface for grouping standings by bracket/category
+- Implemented `groupedStandings` computed signal for real-time data grouping
+- Added `enrichGroupData()` method to fetch bracket and category names
+- Added `getPositionClass()` helper for position badge styling
+- Added `goBack()` navigation to return to tournament detail
+
+**Template** ([standings-view.component.html](src/presentation/pages/standings/standings-view/standings-view.component.html)):
+- Modern hero section with gradient background and back button
+- Standings grouped by category/bracket with expandable cards
+- Position indicators with medals for top 3 (🥇🥈🥉)
+- Comprehensive statistics table:
+  - Position ranking
+  - Participant name with icon
+  - Matches played, won, lost
+  - Sets won/lost with difference indicator
+  - Games won/lost with difference indicator
+  - Points with prominent badge
+- Color-coded statistics (green for wins, red for losses)
+- Responsive design with mobile optimizations
+- Loading states and empty states with proper messaging
+
+**Styles** ([standings-view.component.css](src/presentation/pages/standings/standings-view/standings-view.component.css)):
+- Hero section with gradient background matching app theme
+- Glassmorphism back button with hover effects
+- Card-based layout with subtle shadows and hover animations
+- Position badges with gradients for medal positions (gold, silver, bronze)
+- Participant info with icons and proper typography
+- Statistics with color coding (success green, error red)
+- Difference indicators with positive/negative styling
+- Points badge with primary gradient and shadow
+- Responsive breakpoints for tablet and mobile
+- Hidden columns on small screens for better mobile UX
+
+**Features Implemented**:
+1. ✅ Grouped standings by tournament category/bracket
+2. ✅ Position ranking with medal icons for top 3
+3. ✅ Comprehensive match statistics (played, won, lost)
+4. ✅ Set and game statistics with difference indicators
+5. ✅ Points display with prominent styling
+6. ✅ Participant names (fetched from backend)
+7. ✅ Category names (enriched from CategoryService)
+8. ✅ Bracket type display (Single Elimination, Round Robin, Match Play)
+9. ✅ Loading and error states
+10. ✅ Empty state when no standings available
+11. ✅ Responsive design for all screen sizes
+12. ✅ Navigation back to tournament detail
+
+**User Experience**:
+- Tournament organizers can view standings from tournament detail page
+- Click "View Standings" button or "Standings" tile
+- Navigate to `/standings/:tournamentId`
+- See all categories grouped with their current standings
+- Top 3 positions highlighted with medal indicators
+- Detailed statistics for performance analysis
+- Mobile-friendly table that hides less critical columns on small screens
+
+**Routes Configuration** ([app.routes.ts](src/presentation/app.routes.ts)):
+```typescript
+// Fixed route to accept tournament ID parameter
+{
+  path: 'standings/:id',  // ← Added :id parameter
+  loadComponent: () =>
+    import('./pages/standings/standings-view/standings-view.component').then(
+      (m) => m.StandingsViewComponent,
+    ),
+}
+```
+
+**Navigation** ([tournament-detail.component.ts](src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+```typescript
+public viewStandings(): void {
+  if (this.tournamentId) {
+    void this.router.navigate(['/standings', this.tournamentId]);
+  }
+}
+```
+
+**Result**: Professional standings page that matches the quality and design of other pages in the application. Provides comprehensive ranking and statistics information for tournament participants. Navigation from tournament detail page correctly passes tournament ID to display tournament-specific standings.
+
+---
+
 ## [1.39.24] - 2026-03-24
 
 ### Fixed — Match List Display Not Showing Scheduling Information

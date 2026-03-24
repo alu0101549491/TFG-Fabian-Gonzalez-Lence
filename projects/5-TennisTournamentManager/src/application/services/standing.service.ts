@@ -16,7 +16,9 @@ import {IStandingService} from '../interfaces/standing-service.interface';
 import {StandingDto} from '../dto';
 import {StandingRepositoryImpl} from '@infrastructure/repositories/standing.repository';
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
+import {BracketRepositoryImpl} from '@infrastructure/repositories/bracket.repository';
 import {TiebreakResolverService} from './tiebreak-resolver.service';
+import {UserService} from './user.service';
 
 /**
  * Standing service implementation.
@@ -30,8 +32,14 @@ export class StandingService implements IStandingService {
   /** Match repository for match results */
   private readonly matchRepository = inject(MatchRepositoryImpl);
 
+  /** Bracket repository for bracket data */
+  private readonly bracketRepository = inject(BracketRepositoryImpl);
+
   /** Tiebreak resolver for resolving ties in standings */
   private readonly tiebreakResolver = inject(TiebreakResolverService);
+
+  /** User service for fetching participant details */
+  private readonly userService = inject(UserService);
 
   /**
    * Calculates all standings for a bracket.
@@ -49,7 +57,6 @@ export class StandingService implements IStandingService {
     const matches = await this.matchRepository.findByBracket(bracketId);
     
     // Calculate standings based on match results
-    // In real implementation, use TiebreakResolver and ranking system
     const participantStats = new Map<string, any>();
     
     for (const match of matches) {
@@ -94,6 +101,28 @@ export class StandingService implements IStandingService {
       p1Stats.matchesPlayed++;
       p2Stats.matchesPlayed++;
       
+      // Calculate sets and games from scores
+      const scores = (match as any).scores || [];
+      for (const set of scores) {
+        const p1Games = set.player1Games || 0;
+        const p2Games = set.player2Games || 0;
+        
+        p1Stats.gamesWon += p1Games;
+        p1Stats.gamesLost += p2Games;
+        p2Stats.gamesWon += p2Games;
+        p2Stats.gamesLost += p1Games;
+        
+        // Determine set winner
+        if (p1Games > p2Games) {
+          p1Stats.setsWon++;
+          p2Stats.setsLost++;
+        } else if (p2Games > p1Games) {
+          p2Stats.setsWon++;
+          p1Stats.setsLost++;
+        }
+      }
+      
+      // Update match wins/losses and points
       if (match.winnerId === p1Id) {
         p1Stats.matchesWon++;
         p1Stats.points += 3; // Example point system
@@ -104,6 +133,22 @@ export class StandingService implements IStandingService {
         p1Stats.matchesLost++;
       }
     }
+    
+    // Fetch participant names
+    const participantIds = Array.from(participantStats.keys());
+    await Promise.all(
+      participantIds.map(async (participantId) => {
+        try {
+          const user = await this.userService.getUserById(participantId);
+          const stats = participantStats.get(participantId)!;
+          stats.participantName = `${user.firstName} ${user.lastName}`;
+        } catch (error) {
+          console.warn(`Failed to fetch user ${participantId}:`, error);
+          const stats = participantStats.get(participantId)!;
+          stats.participantName = 'Unknown';
+        }
+      })
+    );
     
     // Convert to standings array
     const standings = Array.from(participantStats.values());
@@ -175,6 +220,40 @@ export class StandingService implements IStandingService {
     }
     
     return standing;
+  }
+
+  /**
+   * Retrieves standings for all brackets in a tournament.
+   *
+   * @param tournamentId - ID of the tournament
+   * @returns List of standings for all tournament brackets
+   */
+  public async getStandingsByTournament(tournamentId: string): Promise<StandingDto[]> {
+    // Validate input
+    if (!tournamentId || tournamentId.trim().length === 0) {
+      throw new Error('Tournament ID is required');
+    }
+    
+    // Get all brackets for the tournament
+    const brackets = await this.bracketRepository.findByTournament(tournamentId);
+    
+    if (brackets.length === 0) {
+      return [];
+    }
+    
+    // Get standings for each bracket
+    const allStandings: StandingDto[] = [];
+    for (const bracket of brackets) {
+      try {
+        const bracketStandings = await this.calculateStandings(bracket.id);
+        allStandings.push(...bracketStandings);
+      } catch (error) {
+        console.warn(`Failed to calculate standings for bracket ${bracket.id}:`, error);
+        // Continue with other brackets
+      }
+    }
+    
+    return allStandings;
   }
 
   /**

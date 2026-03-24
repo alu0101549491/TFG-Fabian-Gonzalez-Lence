@@ -99,7 +99,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'standings',
+    path: 'standings/:id',
     loadComponent: () =>
       import('./pages/standings/standings-view/standings-view.component').then(
         (m) => m.StandingsViewComponent,
