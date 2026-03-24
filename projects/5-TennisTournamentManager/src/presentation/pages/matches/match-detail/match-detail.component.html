@@ -150,30 +150,20 @@
                 <span class="info-value">#{{ match()!.matchNumber }}</span>
               </div>
             </div>
-
-            @if (match()!.endTime) {
-              <div class="info-item">
-                <span class="info-icon">⏹️</span>
-                <div class="info-content">
-                  <span class="info-label">End Time</span>
-                  <span class="info-value">{{ formatDate(match()!.endTime) }}</span>
-                </div>
-              </div>
-            }
           </div>
         </div>
       </div>
 
       <!-- Actions Card (for match management) -->
-      <div class="card actions-card">
-        <div class="card-header">
-          <h2 class="card-title">
-            <span class="section-icon">⚙️</span>
-            <span>Match Actions</span>
-          </h2>
-        </div>
-        <div class="card-body">
-          @if (canManageMatch()) {
+      @if (canManageMatch()) {
+        <div class="card actions-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="section-icon">⚙️</span>
+              <span>Match Actions</span>
+            </h2>
+          </div>
+          <div class="card-body">
             <div class="actions-grid">
               <button class="action-btn schedule" (click)="openScheduleModal()" [disabled]="isSubmitting()">
                 <span>📅</span>
@@ -198,14 +188,9 @@
                 <span>{{ successMessage() }}</span>
               </p>
             }
-          } @else {
-            <p class="actions-note">
-              <span class="note-icon">🔒</span>
-              <span>Only tournament organizers can manage matches</span>
-            </p>
-          }
+          </div>
         </div>
-      </div>
+      }
     </div>
 
     <!-- Schedule Match Modal -->

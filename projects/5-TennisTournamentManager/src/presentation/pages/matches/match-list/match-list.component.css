@@ -379,6 +379,27 @@
   background: linear-gradient(135deg, rgba(46, 125, 50, 0.03) 0%, rgba(25, 118, 210, 0.03) 100%);
 }
 
+.match-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.match-court,
+.match-time {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-700);
+}
+
+.court-icon,
+.time-icon {
+  font-size: 1rem;
+}
+
 .match-date {
   display: flex;
   align-items: center;

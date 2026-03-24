@@ -128,7 +128,7 @@ export class MatchService implements IMatchService {
    */
   public async getAllMatches(): Promise<MatchDto[]> {
     const matches = await this.matchRepository.findAll();
-    return matches.map(m => this.mapMatchToDto(m, ''));
+    return matches.map(m => this.mapMatchToDto(m, this.formatMatchScores(m)));
   }
 
   /**
@@ -144,7 +144,7 @@ export class MatchService implements IMatchService {
     }
     
     const matches = await this.matchRepository.findByBracket(bracketId);
-    return matches.map(m => this.mapMatchToDto(m, ''));
+    return matches.map(m => this.mapMatchToDto(m, this.formatMatchScores(m)));
   }
 
   /**
@@ -160,7 +160,7 @@ export class MatchService implements IMatchService {
     }
     
     const matches = await this.matchRepository.findByPhaseId(phaseId);
-    return matches.map(m => this.mapMatchToDto(m, ''));
+    return matches.map(m => this.mapMatchToDto(m, this.formatMatchScores(m)));
   }
 
   /**
@@ -176,7 +176,7 @@ export class MatchService implements IMatchService {
     }
     
     const matches = await this.matchRepository.findByParticipantId(participantId);
-    return matches.map(m => this.mapMatchToDto(m, ''));
+    return matches.map(m => this.mapMatchToDto(m, this.formatMatchScores(m)));
   }
 
   /**

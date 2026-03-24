@@ -210,8 +210,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to an array of matches
    */
   public async findByBracket(bracketId: string): Promise<Match[]> {
-    const response = await this.httpClient.get<Match[]>(`/matches?bracketId=${bracketId}`);
-    return response;
+    const response = await this.httpClient.get<any[]>(`/matches?bracketId=${bracketId}`);
+    return response.map(item => this.mapBackendToMatch(item));
   }
 
   /**
@@ -220,8 +220,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to an array of matches
    */
   public async findByPhaseId(phaseId: string): Promise<Match[]> {
-    const response = await this.httpClient.get<Match[]>(`/matches?phaseId=${phaseId}`);
-    return response;
+    const response = await this.httpClient.get<any[]>(`/matches?phaseId=${phaseId}`);
+    return response.map(item => this.mapBackendToMatch(item));
   }
 
   /**
@@ -230,8 +230,8 @@ export class MatchRepositoryImpl implements IMatchRepository {
    * @returns Promise resolving to an array of matches
    */
   public async findByParticipantId(participantId: string): Promise<Match[]> {
-    const response = await this.httpClient.get<Match[]>(`/matches?participantId=${participantId}`);
-    return response;
+    const response = await this.httpClient.get<any[]>(`/matches?participantId=${participantId}`);
+    return response.map(item => this.mapBackendToMatch(item));
   }
 
   /**

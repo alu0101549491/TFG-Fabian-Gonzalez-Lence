@@ -106,9 +106,9 @@
                 @for (match of upcomingMatches().slice(0, 5); track match.id) {
                   <article class="match-item" (click)="goToMatch(match.id)">
                     <div class="match-info">
-                      <div class="match-court">Court {{ match.courtId || 'TBD' }}</div>
+                      <div class="match-court">{{ match.courtName || 'Court TBD' }}</div>
                       <div class="match-time">
-                        {{ formatMatchTime(match.scheduledAt) }}
+                        {{ formatMatchTime(match.scheduledTime) }}
                       </div>
                     </div>
                     <div class="match-status">

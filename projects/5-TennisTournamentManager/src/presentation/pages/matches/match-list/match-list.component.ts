@@ -334,6 +334,23 @@ export class MatchListComponent implements OnInit {
   }
 
   /**
+   * Formats date and time for detailed display.
+   *
+   * @param date - Date to format
+   * @returns Formatted date and time string
+   */
+  public formatDateTime(date: Date | null): string {
+    if (!date) return 'Time TBD';
+    return new Date(date).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  /**
    * Navigates back to the home page.
    */
   public goBack(): void {

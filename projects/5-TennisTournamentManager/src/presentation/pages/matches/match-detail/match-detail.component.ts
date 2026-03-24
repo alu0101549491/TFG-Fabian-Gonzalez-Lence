@@ -200,21 +200,12 @@ export class MatchDetailComponent implements OnInit {
    * Opens the record scores modal.
    */
   public openScoresModal(): void {
-    console.log('🎾 Full match object:', this.match());
-    console.log('🎾 Participant1 ID:', this.match()!.participant1Id);
-    console.log('🎾 Participant2 ID:', this.match()!.participant2Id);
-    console.log('🎾 Participant1 object:', this.match()!.participant1);
-    console.log('🎾 Participant2 object:', this.match()!.participant2);
-    
     if (this.match()?.participant1Id) {
       this.scoresForm.winnerId = this.match()!.participant1Id!;
-      console.log('🎾 Set winnerId to participant1:', this.match()!.participant1Id);
     } else if (this.match()?.participant1?.id) {
       // Fallback: use participant object ID if participant1Id is missing
       this.scoresForm.winnerId = this.match()!.participant1!.id;
-      console.log('🎾 Set winnerId to participant1.id:', this.match()!.participant1!.id);
     }
-    console.log('🎾 Current winnerId:', this.scoresForm.winnerId);
     
     this.showScoresModal.set(true);
     this.errorMessage.set(null);
@@ -228,10 +219,7 @@ export class MatchDetailComponent implements OnInit {
    * @param id - The participant ID
    */
   public onWinnerChange(participant: string, id: string): void {
-    console.log('🎾 Radio button changed!');
-    console.log('🎾 Clicked:', participant);
-    console.log('🎾 ID:', id);
-    console.log('🎾 scoresForm.winnerId is now:', this.scoresForm.winnerId);
+    // Winner selection handled by ngModel binding
   }
 
   /**
@@ -335,13 +323,23 @@ export class MatchDetailComponent implements OnInit {
       const user = this.authStateService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Filter out empty sets
-      const validSets = this.scoresForm.sets.filter(
-        set => set.participant1Score > 0 || set.participant2Score > 0
-      );
+      // Filter out empty sets and transform to SetScore format
+      const validSets = this.scoresForm.sets
+        .filter(set => set.participant1Score > 0 || set.participant2Score > 0)
+        .map((set, index) => ({
+          setNumber: index + 1,
+          participant1Games: set.participant1Score,
+          participant2Games: set.participant2Score,
+          tiebreakParticipant1: null,
+          tiebreakParticipant2: null,
+        }));
 
       if (validSets.length === 0) {
         throw new Error('Please enter at least one set score');
+      }
+
+      if (!this.scoresForm.winnerId) {
+        throw new Error('Please select a winner');
       }
 
       await this.matchService.recordResult(

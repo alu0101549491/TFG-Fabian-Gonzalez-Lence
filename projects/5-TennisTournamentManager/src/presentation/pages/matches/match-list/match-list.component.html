@@ -87,9 +87,15 @@
                 <div class="match-card" (click)="viewMatch(match.id)">
                   <!-- Match Card Header -->
                   <div class="match-card-header">
-                    <div class="match-date">
-                      <span class="date-icon">📅</span>
-                      <span>{{ formatDate(match.scheduledAt) }}</span>
+                    <div class="match-details">
+                      <div class="match-court">
+                        <span class="court-icon">🏟️</span>
+                        <span>{{ match.courtName || 'Court TBD' }}</span>
+                      </div>
+                      <div class="match-time">
+                        <span class="time-icon">⏰</span>
+                        <span>{{ formatDateTime(match.scheduledTime) || 'Time TBD' }}</span>
+                      </div>
                     </div>
                     <span class="match-status-badge badge-{{ match.status.toLowerCase() }}">
                       {{ match.status | enumFormat }}

@@ -6,6 +6,127 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.39.24] - 2026-03-24
+
+### Fixed — Match List Display Not Showing Scheduling Information
+
+**Problem**: Match cards in the homepage/match list were not displaying court name and scheduled time, even when matches were scheduled. Cards showed "Court TBD" and "Time TBD" instead of actual values.
+
+**Root Causes Multiple Issues**:
+1. **Repository Issue**: Methods `findByBracket()`, `findByPhaseId()`, and `findByParticipantId()` were not mapping backend responses using `mapBackendToMatch()`, so scores and other backend data (like courtName) were not properly included.
+2. **Match List Template**: Was not displaying court and time information in the card header.
+3. **Dashboard Template**: Was using wrong property names (`courtId` instead of `courtName`, `scheduledAt` instead of `scheduledTime`).
+
+**Solution**:
+
+**Repository Fix** ([match.repository.ts](src/infrastructure/repositories/match.repository.ts)):
+```typescript
+// Before (BROKEN):
+public async findByBracket(bracketId: string): Promise<Match[]> {
+  const response = await this.httpClient.get<Match[]>(`/matches?bracketId=${bracketId}`);
+  return response;  // ← No mapping!
+}
+
+// After (FIXED):
+public async findByBracket(bracketId: string): Promise<Match[]> {
+  const response = await this.httpClient.get<any[]>(`/matches?bracketId=${bracketId}`);
+  return response.map(item => this.mapBackendToMatch(item));  // ← Map backend data
+}
+```
+
+Applied same fix to `findByPhaseId()` and `findByParticipantId()`.
+
+**Match List Template Fix** ([match-list.component.html](src/presentation/pages/matches/match-list/match-list.component.html)):
+- Updated match card header to display court name and scheduled time
+- Added icons for visual clarity (🏟️ for court, ⏰ for time)
+
+**Match List Component Fix** ([match-list.component.ts](src/presentation/pages/matches/match-list/match-list.component.ts)):
+- Added `formatDateTime()` method to format dates in compact style: "Mar 24, 2026, 12:50 PM"
+
+**Dashboard Template Fix** ([dashboard.component.html](src/presentation/pages/dashboard.component.html)):
+```html
+<!-- Before (BROKEN): -->
+<div class="match-court">Court {{ match.courtId || 'TBD' }}</div>
+<div class="match-time">{{ formatMatchTime(match.scheduledAt) }}</div>
+
+<!-- After (FIXED): -->
+<div class="match-court">{{ match.courtName || 'Court TBD' }}</div>
+<div class="match-time">{{ formatMatchTime(match.scheduledTime) }}</div>
+```
+
+**Result**: 
+- Match cards in homepage dashboard now correctly display "Court 4" and formatted time when scheduled
+- Match list page shows complete scheduling information with icons
+- All views consistently use correct DTO property names
+
+---
+
+### Fixed — Match Actions Section Visible to Non-Organizers
+
+**Problem**: The "Match Actions" section (with Schedule, Record Scores, Update Status, Cancel buttons) was always visible to all users. For non-organizers, it showed a locked message "Only tournament organizers can manage matches".
+
+**Expected Behavior**: The entire Match Actions section should be hidden for non-organizers, not just disabled.
+
+**Solution** ([match-detail.component.html](src/presentation/pages/matches/match-detail/match-detail.component.html)):
+- Wrapped entire actions card in `@if (canManageMatch())` conditional
+- Removed inner conditional that showed locked message
+- Now the card is completely hidden unless user is tournament organizer
+
+**Result**: Match Actions section only appears for tournament organizers. Regular users see cleaner interface without management controls.
+
+---
+
+## [1.39.23.5] - 2026-03-22
+
+### Fixed — Score Submission Data Format
+
+**Problem**: When submitting match scores, got 400 Bad Request error because form data didn't match the expected `SetScore` interface format.
+
+**Error**:
+```
+POST http://localhost:3000/api/matches/mch_c0b17476/score 400 (Bad Request)
+```
+
+**Root Cause**: The form uses properties `participant1Score` and `participant2Score`, but the `SetScore` interface expects:
+- `setNumber: number`
+- `participant1Games: number` (not participant1Score)
+- `participant2Games: number` (not participant2Score)
+- `tiebreakParticipant1?: number | null`
+- `tiebreakParticipant2?: number | null`
+
+**Solution**: Transform form data to correct format before submitting.
+
+**Changes** ([match-detail.component.ts](src/presentation/pages/matches/match-detail/match-detail.component.ts)):
+
+```typescript
+// Before (BROKEN):
+const validSets = this.scoresForm.sets.filter(
+  set => set.participant1Score > 0 || set.participant2Score > 0
+);
+
+// After (FIXED):
+const validSets = this.scoresForm.sets
+  .filter(set => set.participant1Score > 0 || set.participant2Score > 0)
+  .map((set, index) => ({
+    setNumber: index + 1,              // ← Add setNumber
+    participant1Games: set.participant1Score,  // ← Rename property
+    participant2Games: set.participant2Score,  // ← Rename property
+    tiebreakParticipant1: null,        // ← Add tiebreak fields
+    tiebreakParticipant2: null,
+  }));
+```
+
+**Also Added**:
+- Validation to ensure winner is selected before submission
+- Cleaned up debug console logs
+
+**Result**:
+- ✅ Score submission succeeds with 200 OK
+- ✅ Backend receives correctly formatted data
+- ✅ Match scores are saved and displayed
+
+---
+
 ## [1.39.23.4] - 2026-03-22
 
 ### Fixed — Radio Button Selection (Property Mapping Bug)
