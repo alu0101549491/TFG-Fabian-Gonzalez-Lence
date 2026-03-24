@@ -47,9 +47,13 @@ import {DashboardComponent} from './dashboard.component';
             </p>
             
             <div class="cta-buttons">
-              <a routerLink="/register" class="btn btn-primary">
+              <a routerLink="/tournaments" class="btn btn-primary">
+                <span class="btn-icon">🔍</span>
+                <span>Browse Tournaments</span>
+              </a>
+              <a routerLink="/register" class="btn btn-secondary">
                 <span class="btn-icon">🚀</span>
-                <span>Get Started</span>
+                <span>Create Account</span>
               </a>
               <a routerLink="/login" class="btn btn-secondary">
                 <span class="btn-icon">🔑</span>
@@ -76,10 +80,44 @@ import {DashboardComponent} from './dashboard.component';
         </div>
       </section>
 
+      <!-- Public Access Section -->
+      <section class="public-access-section">
+        <div class="section-header">
+          <h2>Explore Without an Account</h2>
+          <p>Discover tennis tournaments and follow results — no registration required</p>
+        </div>
+
+        <div class="public-features-grid">
+          <div class="public-feature-card">
+            <div class="public-feature-icon">🔍</div>
+            <h3>Browse Tournaments</h3>
+            <p>Explore ongoing and upcoming tennis tournaments in your area</p>
+          </div>
+
+          <div class="public-feature-card">
+            <div class="public-feature-icon">📊</div>
+            <h3>View Live Brackets</h3>
+            <p>Follow tournament draws and match progressions in real-time</p>
+          </div>
+
+          <div class="public-feature-card">
+            <div class="public-feature-icon">🏅</div>
+            <h3>Check Standings</h3>
+            <p>Track player rankings and group standings throughout tournaments</p>
+          </div>
+
+          <div class="public-feature-card">
+            <div class="public-feature-icon">📈</div>
+            <h3>Follow Results</h3>
+            <p>Stay updated with live scores and match outcomes</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Features Section -->
       <section class="features-section">
         <div class="section-header">
-          <h2>Comprehensive Tournament Management</h2>
+          <h2>Tournament Management Tools</h2>
           <p>Everything you need to organize and manage professional tennis tournaments</p>
         </div>
 
@@ -160,16 +198,10 @@ import {DashboardComponent} from './dashboard.component';
         </div>
 
         <div class="roles-grid">
-          <div class="role-card">
-            <div class="role-icon">👨‍💼</div>
-            <h3>System Administrator</h3>
-            <p>Full platform control with global tournament management and user permission handling</p>
-          </div>
-
-          <div class="role-card">
-            <div class="role-icon">🎯</div>
-            <h3>Tournament Administrator</h3>
-            <p>Complete tournament management including draws, results validation, and announcements</p>
+          <div class="role-card role-card-highlight">
+            <div class="role-icon">👁️</div>
+            <h3>Public Viewer</h3>
+            <p>Access to public tournaments, live results, standings, and player profiles — no account needed</p>
           </div>
 
           <div class="role-card">
@@ -179,9 +211,15 @@ import {DashboardComponent} from './dashboard.component';
           </div>
 
           <div class="role-card">
-            <div class="role-icon">👁️</div>
-            <h3>Public Viewer</h3>
-            <p>Access to public tournaments, live results, standings, and player profiles</p>
+            <div class="role-icon">🎯</div>
+            <h3>Tournament Administrator</h3>
+            <p>Complete tournament management including draws, results validation, and announcements</p>
+          </div>
+
+          <div class="role-card">
+            <div class="role-icon">👨‍💼</div>
+            <h3>System Administrator</h3>
+            <p>Full platform control with global tournament management and user permission handling</p>
           </div>
         </div>
       </section>
@@ -189,14 +227,14 @@ import {DashboardComponent} from './dashboard.component';
       <!-- CTA Footer -->
       <section class="cta-section">
         <div class="cta-content">
-          <h2>Ready to organize your tournament?</h2>
-          <p>Join the platform and start managing professional tennis tournaments today</p>
+          <h2>Ready to Get Involved?</h2>
+          <p>Explore tournaments as a viewer or create an account to manage your own professional tennis events</p>
           <div class="cta-buttons">
-            <a routerLink="/register" class="btn btn-light">
-              <span>Create Account</span>
-            </a>
-            <a routerLink="/tournaments" class="btn btn-outline-light">
+            <a routerLink="/tournaments" class="btn btn-light">
               <span>Browse Tournaments</span>
+            </a>
+            <a routerLink="/register" class="btn btn-outline-light">
+              <span>Create Account</span>
             </a>
           </div>
         </div>
@@ -214,7 +252,7 @@ import {DashboardComponent} from './dashboard.component';
     /* Hero Section */
     .hero-section {
       position: relative;
-      min-height: 90vh;
+      min-height: 50vh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -234,7 +272,7 @@ import {DashboardComponent} from './dashboard.component';
       position: relative;
       z-index: 1;
       text-align: center;
-      padding: var(--spacing-2xl);
+      padding: var(--spacing-xl);
       max-width: 900px;
       color: var(--color-white);
     }
@@ -243,31 +281,31 @@ import {DashboardComponent} from './dashboard.component';
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 100px;
-      height: 100px;
+      width: 80px;
+      height: 80px;
       background: rgba(255, 255, 255, 0.15);
       border-radius: 50%;
       backdrop-filter: blur(10px);
-      margin-bottom: var(--spacing-xl);
+      margin-bottom: var(--spacing-md);
       border: 3px solid rgba(255, 255, 255, 0.3);
     }
 
     .tennis-icon {
-      font-size: 3.5rem;
+      font-size: 2.5rem;
     }
 
     .hero-title {
-      font-size: var(--font-size-4xl);
+      font-size: var(--font-size-3xl);
       font-weight: var(--font-weight-bold);
-      margin-bottom: var(--spacing-md);
+      margin-bottom: var(--spacing-sm);
       letter-spacing: -0.02em;
       color: var(--color-white);
     }
 
     .hero-subtitle {
-      font-size: var(--font-size-lg);
+      font-size: var(--font-size-base);
       line-height: var(--line-height-relaxed);
-      margin-bottom: var(--spacing-2xl);
+      margin-bottom: var(--spacing-xl);
       opacity: 0.95;
       max-width: 700px;
       margin-left: auto;
@@ -351,9 +389,9 @@ import {DashboardComponent} from './dashboard.component';
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: var(--spacing-xl);
-      margin-top: var(--spacing-2xl);
-      padding: var(--spacing-xl);
+      gap: var(--spacing-lg);
+      margin-top: var(--spacing-lg);
+      padding: var(--spacing-md);
       background: rgba(255, 255, 255, 0.1);
       border-radius: var(--border-radius-lg);
       backdrop-filter: blur(10px);
@@ -364,29 +402,75 @@ import {DashboardComponent} from './dashboard.component';
     }
 
     .stat-value {
-      font-size: var(--font-size-3xl);
+      font-size: var(--font-size-2xl);
       font-weight: var(--font-weight-bold);
       color: var(--color-white);
     }
 
     .stat-label {
-      font-size: var(--font-size-sm);
+      font-size: var(--font-size-xs);
       opacity: 0.9;
       margin-top: var(--spacing-xs);
     }
 
     .stat-divider {
       width: 1px;
-      height: 40px;
+      height: 35px;
       background: rgba(255, 255, 255, 0.3);
     }
 
     /* Sections */
     .features-section,
-    .roles-section {
+    .roles-section,
+    .public-access-section {
       padding: var(--spacing-3xl) var(--spacing-xl);
       max-width: 1400px;
       margin: 0 auto;
+    }
+
+    /* Public Access Section */
+    .public-access-section {
+      background: linear-gradient(135deg, rgba(156, 39, 176, 0.05) 0%, rgba(103, 58, 183, 0.05) 100%);
+    }
+
+    .public-features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--spacing-xl);
+    }
+
+    .public-feature-card {
+      background: var(--color-white);
+      padding: var(--spacing-xl);
+      border-radius: var(--border-radius-lg);
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .public-feature-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--color-primary-light);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .public-feature-icon {
+      font-size: 3rem;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .public-feature-card h3 {
+      font-size: var(--font-size-lg);
+      color: var(--color-gray-900);
+      margin-bottom: var(--spacing-sm);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .public-feature-card p {
+      font-size: var(--font-size-sm);
+      color: var(--color-gray-700);
+      line-height: var(--line-height-relaxed);
     }
 
     .section-header {
@@ -527,6 +611,31 @@ import {DashboardComponent} from './dashboard.component';
       box-shadow: var(--shadow-lg);
     }
 
+    .role-card-highlight {
+      border: 2px solid var(--color-primary-light);
+      background: linear-gradient(135deg, rgba(156, 39, 176, 0.03) 0%, rgba(103, 58, 183, 0.03) 100%);
+      position: relative;
+    }
+
+    .role-card-highlight::before {
+      content: '✨ Start Here';
+      position: absolute;
+      top: -12px;
+      right: var(--spacing-md);
+      background: var(--color-primary);
+      color: var(--color-white);
+      padding: var(--spacing-xs) var(--spacing-md);
+      border-radius: var(--border-radius-md);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      box-shadow: var(--shadow-md);
+    }
+
+    .role-card-highlight:hover {
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-xl);
+    }
+
     .role-icon {
       font-size: 3rem;
       margin-bottom: var(--spacing-md);
@@ -590,6 +699,10 @@ import {DashboardComponent} from './dashboard.component';
       }
 
       .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .public-features-grid {
         grid-template-columns: 1fr;
       }
 

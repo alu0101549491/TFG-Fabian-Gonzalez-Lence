@@ -6,6 +6,143 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.41.1] - 2026-03-24
+
+### Fixed — Hero Section Size Reduction
+
+**Issue**: Hero section on the home page was too tall (90vh), taking up most of the viewport and pushing content below the fold.
+
+**Solution**: Comprehensively reduced hero section dimensions and spacing for a more compact appearance.
+
+**Changes**:
+
+**Hero Section Height** ([home.component.ts](src/presentation/pages/home.component.ts)):
+- Reduced from `min-height: 90vh` to `min-height: 60vh` (33% reduction)
+
+**Badge & Icon**:
+- Badge size: `100px × 100px` → `80px × 80px`
+- Tennis icon: `3.5rem` → `2.5rem`
+- Badge margin-bottom: `var(--spacing-xl)` → `var(--spacing-md)`
+
+**Typography**:
+- Title font-size: `var(--font-size-4xl)` → `var(--font-size-3xl)`
+- Title margin-bottom: `var(--spacing-md)` → `var(--spacing-sm)`
+- Subtitle font-size: `var(--font-size-lg)` → `var(--font-size-base)`
+- Subtitle margin-bottom: `var(--spacing-2xl)` → `var(--spacing-xl)`
+
+**Content Spacing**:
+- Hero content padding: `var(--spacing-2xl)` → `var(--spacing-xl)`
+
+**Stats Section**:
+- Margin-top: `var(--spacing-2xl)` → `var(--spacing-lg)`
+- Padding: `var(--spacing-xl)` → `var(--spacing-md)`
+- Gap between items: `var(--spacing-xl)` → `var(--spacing-lg)`
+- Stat value font-size: `var(--font-size-3xl)` → `var(--font-size-2xl)`
+- Stat label font-size: `var(--font-size-sm)` → `var(--font-size-xs)`
+- Divider height: `40px` → `35px`
+
+**Result**: Hero section is now ~40% more compact while maintaining visual hierarchy and professional appearance. More content visible above the fold, improving user engagement with public features section.
+
+---
+
+## [1.41.0] - 2026-03-24
+
+### Enhanced — Public-Friendly Home Page Redesign
+
+**Issue**: The non-authenticated landing page wasn't clear about what features are accessible without login. The design prioritized account creation over browsing public content, making the page feel unnecessarily restrictive for visitors.
+
+**Problems**:
+- Primary CTAs emphasized "Get Started" and "Sign In" over public browsing
+- No dedicated section highlighting features accessible without an account
+- "Designed for Every Role" section showed Public Viewer last, buried after administrator roles
+- CTA footer message "Ready to organize your tournament?" implied login requirement
+- Public capabilities (viewing tournaments, brackets, standings, results) were hidden
+
+**Solution**: Redesigned home page to prioritize public access and clearly communicate what visitors can do without registration.
+
+**Changes**:
+
+**1. Hero Section CTAs** ([home.component.ts](src/presentation/pages/home.component.ts)):
+```typescript
+// Before: Account creation first
+<a routerLink="/register" class="btn btn-primary">Get Started</a>
+<a routerLink="/login" class="btn btn-secondary">Sign In</a>
+
+// After: Browse tournaments first (primary CTA for public)
+<a routerLink="/tournaments" class="btn btn-primary">🔍 Browse Tournaments</a>
+<a routerLink="/register" class="btn btn-secondary">🚀 Create Account</a>
+<a routerLink="/login" class="btn btn-secondary">🔑 Sign In</a>
+```
+
+**2. New "Explore Without an Account" Section**:
+Added dedicated public features section after hero, before management features:
+```html
+<section class="public-access-section">
+  <h2>Explore Without an Account</h2>
+  <p>Discover tennis tournaments and follow results — no registration required</p>
+  
+  <div class="public-features-grid">
+    <!-- 4 cards highlighting public capabilities -->
+    🔍 Browse Tournaments
+    📊 View Live Brackets
+    🏅 Check Standings
+    📈 Follow Results
+  </div>
+</section>
+```
+
+**CSS Styling**:
+- Gradient background: `rgba(156,39,176,0.05)` to `rgba(103,58,183,0.05)`
+- 4-column responsive grid (1 column on mobile)
+- Cards with hover effects and shadow transitions
+- Clean, accessible design matching project standards
+
+**3. Reordered "Designed for Every Role" Section**:
+```typescript
+// Before: System Admin → Tournament Admin → Player → Public Viewer
+// After: Public Viewer → Player → Tournament Admin → System Admin
+```
+
+**Public Viewer Card Enhancement**:
+- Moved to first position with `.role-card-highlight` class
+- Added "✨ Start Here" badge (absolute positioned at top-right)
+- Subtle gradient background and primary border color
+- Enhanced description: "...no account needed"
+- Stronger visual emphasis with box-shadow on hover
+
+**4. Redesigned CTA Footer**:
+```typescript
+// Before: "Ready to organize your tournament?"
+// After: "Ready to Get Involved?"
+
+// Description change:
+// Before: "Join the platform and start managing professional tennis tournaments today"
+// After: "Explore tournaments as a viewer or create an account to manage your own professional tennis events"
+
+// Button order reversed:
+// Before: Create Account (primary) → Browse Tournaments (secondary)
+// After: Browse Tournaments (primary) → Create Account (secondary)
+```
+
+**5. Section Retitling**:
+- "Comprehensive Tournament Management" → "Tournament Management Tools"
+- Clearer separation between public features and authenticated-only tools
+
+**Result**: Home page now clearly communicates accessibility for public viewers:
+- Immediate emphasis on browsing without registration
+- Dedicated section for public features
+- "Public Viewer" role prominently featured first
+- CTA messaging is inclusive rather than restrictive
+- Logical progression: Public features → Management features → Role details → CTA
+
+**User Experience Impact**:
+- Visitors immediately understand they can explore tournaments without signing up
+- Account creation positioned as optional enhancement rather than requirement
+- Reduced friction for public engagement with the platform
+- Clear visual hierarchy guides users based on their goals (browse vs. manage)
+
+---
+
 ## [1.40.7] - 2026-03-24
 
 ### Fixed — Hero Section Styling Consistency
