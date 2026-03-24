@@ -351,9 +351,13 @@ export class MatchListComponent implements OnInit {
   }
 
   /**
-   * Navigates back to the home page.
+   * Navigates back to the tournament page if filtered by tournament, otherwise to home.
    */
   public goBack(): void {
-    void this.router.navigate(['/']);
+    if (this.tournamentId) {
+      void this.router.navigate(['/tournaments', this.tournamentId]);
+    } else {
+      void this.router.navigate(['/']);
+    }
   }
 }

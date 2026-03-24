@@ -336,18 +336,14 @@ export class UserController {
       const activeUsers = await userRepository.count({where: {isActive: true}});
       const systemAdmins = await userRepository.count({where: {role: UserRole.SYSTEM_ADMIN}});
       const tournamentAdmins = await userRepository.count({where: {role: UserRole.TOURNAMENT_ADMIN}});
-      const referees = await userRepository.count({where: {role: UserRole.REFEREE}});
       const players = await userRepository.count({where: {role: UserRole.PLAYER}});
-      const spectators = await userRepository.count({where: {role: UserRole.SPECTATOR}});
       
       res.status(HTTP_STATUS.OK).json({
         totalUsers,
         activeUsers,
         systemAdmins,
         tournamentAdmins,
-        referees,
         players,
-        spectators,
       });
     } catch (error) {
       next(error);
@@ -475,6 +471,38 @@ export class UserController {
       res.status(HTTP_STATUS.OK).json({
         message: 'Avatar deleted successfully',
         user: userWithoutPassword,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/users/:id/public
+   * Retrieves public user information (name, avatar) without authentication.
+   * Used for displaying participant names in public views (standings, brackets, matches).
+   */
+  public async getPublicInfo(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const userRepository = AppDataSource.getRepository(User);
+      
+      const user = await userRepository.findOne({
+        where: {id},
+        select: ['id', 'username', 'firstName', 'lastName', 'avatarUrl'],
+      });
+      
+      if (!user) {
+        throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Return only public fields
+      res.status(HTTP_STATUS.OK).json({
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatarUrl: user.avatarUrl,
       });
     } catch (error) {
       next(error);

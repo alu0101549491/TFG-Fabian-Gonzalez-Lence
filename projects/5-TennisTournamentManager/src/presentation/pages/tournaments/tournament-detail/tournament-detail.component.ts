@@ -252,7 +252,8 @@ export class TournamentDetailComponent implements OnInit {
 
     const user = this.authStateService.getCurrentUser();
     if (!user) {
-      void this.router.navigate(['/login']);
+      // This should not happen as UI hides register button for unauthenticated users
+      alert('Please log in first to register for tournaments');
       return;
     }
 

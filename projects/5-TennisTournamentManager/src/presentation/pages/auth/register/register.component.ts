@@ -18,6 +18,8 @@ import {Router, RouterModule} from '@angular/router';
 import {AuthenticationService} from '@application/services';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {type RegisterUserDto} from '@application/dto';
+import {UserRole} from '@domain/enumerations/user-role';
+import {EnumFormatPipe} from '@shared/pipes';
 
 /**
  * RegisterComponent handles new user registration.
@@ -26,7 +28,7 @@ import {type RegisterUserDto} from '@application/dto';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, EnumFormatPipe],
   template: `
 <div class="container">
   <div class="flex justify-center items-center" style="min-height: 80vh;">
@@ -129,6 +131,29 @@ import {type RegisterUserDto} from '@application/dto';
           </div>
 
           <div class="form-group">
+            <label for="role" class="form-label form-label-required">I want to register as</label>
+            <select
+              id="role"
+              formControlName="role"
+              class="form-control"
+              [class.form-control-error]="isFieldInvalid('role')"
+            >
+              <option value="" disabled>Select your role</option>
+              @for (role of availableRoles; track role.value) {
+                <option [value]="role.value">{{ role.label }}</option>
+              }
+            </select>
+            @if (isFieldInvalid('role')) {
+              <span class="form-error">{{ getFieldError('role') }}</span>
+            }
+            <small class="form-text text-muted">
+              @if (selectedRoleDescription()) {
+                {{ selectedRoleDescription() }}
+              }
+            </small>
+          </div>
+
+          <div class="form-group">
             <label for="password" class="form-label form-label-required">Password</label>
             <input
               type="password"
@@ -216,6 +241,12 @@ export class RegisterComponent {
   /** Router for navigation after registration */
   private readonly router = inject(Router);
 
+  /** Available roles for registration (excludes SYSTEM_ADMIN for security, excludes SPECTATOR as it represents unauthenticated public access) */
+  public availableRoles = [
+    { value: UserRole.PLAYER, label: 'Player', description: 'Register for tournaments and compete' },
+    { value: UserRole.TOURNAMENT_ADMIN, label: 'Tournament Organizer', description: 'Create and manage tournaments' },
+  ];
+
   /** Registration form group */
   public registerForm: FormGroup = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(30)]],
@@ -225,6 +256,7 @@ export class RegisterComponent {
     password: ['', [Validators.required, Validators.minLength(8)]],
     confirmPassword: ['', [Validators.required]],
     phone: ['', [Validators.pattern('^[+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$')]],
+    role: [UserRole.PLAYER, [Validators.required]],
     gdprConsent: [false, [Validators.requiredTrue]],
   }, { validators: this.passwordMatchValidator });
 
@@ -236,6 +268,21 @@ export class RegisterComponent {
 
   /** Success message signal */
   public successMessage = signal<string | null>(null);
+
+  /** Selected role description computed signal */
+  public selectedRoleDescription = signal<string>('');
+
+  constructor() {
+    // Watch role changes to update description
+    this.registerForm.get('role')?.valueChanges.subscribe((role: UserRole) => {
+      const roleInfo = this.availableRoles.find(r => r.value === role);
+      this.selectedRoleDescription.set(roleInfo?.description || '');
+    });
+    // Set initial description
+    const initialRole = this.registerForm.get('role')?.value;
+    const initialRoleInfo = this.availableRoles.find(r => r.value === initialRole);
+    this.selectedRoleDescription.set(initialRoleInfo?.description || '');
+  }
 
   /**
    * Custom validator to check if password and confirmPassword match.
@@ -272,6 +319,7 @@ export class RegisterComponent {
         lastName: formValue.lastName,
         password: formValue.password,
         phone: formValue.phone || undefined,
+        role: formValue.role,
         gdprConsent: formValue.gdprConsent,
       };
 

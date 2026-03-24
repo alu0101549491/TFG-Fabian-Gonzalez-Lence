@@ -91,6 +91,7 @@ export class AuthenticationService implements IAuthenticationService {
         lastName: data.lastName,
         username: data.username,
         phone: data.phone || null,
+        role: data.role,  // Include role selection from registration form
       });
       
       return response;

@@ -302,7 +302,31 @@ router.get('/users', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), ap
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-// Cache user profiles for 5 minutes (public data)
+
+/**
+ * @swagger
+ * /users/{id}/public:
+ *   get:
+ *     tags: [Users]
+ *     summary: Get public user info
+ *     description: Get public user information (name, avatar) without authentication
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Public user information
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+// Public endpoint for participant names in standings, brackets, etc.
+router.get('/users/:id/public', apiCache(300), userController.getPublicInfo.bind(userController));
+
+// Cache user profiles for 5 minutes (requires authentication)
 router.get('/users/:id', authMiddleware, apiCache(300), userController.getById.bind(userController));
 
 /**
@@ -1135,7 +1159,7 @@ router.put('/matches/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN
  *   post:
  *     tags: [Matches]
  *     summary: Submit match score
- *     description: Record match score (REFEREE, TOURNAMENT_ADMIN, or SYSTEM_ADMIN)
+ *     description: Record match score (TOURNAMENT_ADMIN or SYSTEM_ADMIN)
  *     parameters:
  *       - in: path
  *         name: id
@@ -1173,7 +1197,7 @@ router.put('/matches/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/matches/:id/score', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN, UserRole.REFEREE]), matchController.submitScore.bind(matchController));
+router.post('/matches/:id/score', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), matchController.submitScore.bind(matchController));
 
 /**
  * @swagger
@@ -1517,7 +1541,7 @@ router.get('/payments', authMiddleware, paymentController.getByUser.bind(payment
  *   post:
  *     tags: [Sanctions]
  *     summary: Issue sanction
- *     description: Issue participant sanction (REFEREE, TOURNAMENT_ADMIN, or SYSTEM_ADMIN)
+ *     description: Issue participant sanction (TOURNAMENT_ADMIN or SYSTEM_ADMIN)
  *     requestBody:
  *       required: true
  *       content:
@@ -1544,7 +1568,7 @@ router.get('/payments', authMiddleware, paymentController.getByUser.bind(payment
  *         $ref: '#/components/responses/Forbidden'
  */
 // Sanction routes
-router.post('/sanctions', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN, UserRole.REFEREE]), sanctionController.create.bind(sanctionController));
+router.post('/sanctions', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), sanctionController.create.bind(sanctionController));
 
 /**
  * @swagger

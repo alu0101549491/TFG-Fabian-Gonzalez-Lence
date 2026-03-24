@@ -88,29 +88,29 @@ import {DashboardComponent} from './dashboard.component';
         </div>
 
         <div class="public-features-grid">
-          <div class="public-feature-card">
+          <a routerLink="/tournaments" class="public-feature-card">
             <div class="public-feature-icon">🔍</div>
             <h3>Browse Tournaments</h3>
             <p>Explore ongoing and upcoming tennis tournaments in your area</p>
-          </div>
+          </a>
 
-          <div class="public-feature-card">
+          <a [routerLink]="['/tournaments']" [queryParams]="{intent: 'brackets'}" class="public-feature-card">
             <div class="public-feature-icon">📊</div>
-            <h3>View Live Brackets</h3>
-            <p>Follow tournament draws and match progressions in real-time</p>
-          </div>
+            <h3>View Brackets</h3>
+            <p>Browse tournaments and view draws and match progressions in real-time</p>
+          </a>
 
-          <div class="public-feature-card">
+          <a [routerLink]="['/tournaments']" [queryParams]="{intent: 'standings'}" class="public-feature-card">
             <div class="public-feature-icon">🏅</div>
             <h3>Check Standings</h3>
-            <p>Track player rankings and group standings throughout tournaments</p>
-          </div>
+            <p>Browse tournaments to track player rankings and group standings</p>
+          </a>
 
-          <div class="public-feature-card">
+          <a routerLink="/matches" class="public-feature-card">
             <div class="public-feature-icon">📈</div>
             <h3>Follow Results</h3>
             <p>Stay updated with live scores and match outcomes</p>
-          </div>
+          </a>
         </div>
       </section>
 
@@ -194,7 +194,7 @@ import {DashboardComponent} from './dashboard.component';
       <section class="roles-section">
         <div class="section-header">
           <h2>Designed for Every Role</h2>
-          <p>Tailored experiences for administrators, players, and spectators</p>
+          <p>Tailored experiences for administrators and players, with full public access for spectators</p>
         </div>
 
         <div class="roles-grid">
@@ -440,6 +440,7 @@ import {DashboardComponent} from './dashboard.component';
     }
 
     .public-feature-card {
+      display: block;
       background: var(--color-white);
       padding: var(--spacing-xl);
       border-radius: var(--border-radius-lg);
@@ -447,12 +448,19 @@ import {DashboardComponent} from './dashboard.component';
       transition: all 0.3s ease;
       border: 2px solid transparent;
       box-shadow: var(--shadow-sm);
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
     }
 
     .public-feature-card:hover {
       transform: translateY(-4px);
       border-color: var(--color-primary-light);
       box-shadow: var(--shadow-lg);
+    }
+
+    .public-feature-card:active {
+      transform: translateY(-2px);
     }
 
     .public-feature-icon {

@@ -6,6 +6,972 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.43.3] - 2026-03-24
+
+### Fixed — User List Not Refreshing After Deletion
+
+**Bug Fix**: User list wasn't refreshing after successful deletion, causing 404 errors on subsequent delete attempts.
+
+**Issue**: After deleting a user, the frontend list wasn't being refreshed with cache-busting, so the deleted user still appeared in the UI. When attempting to delete again, the backend returned 404 (user already deleted).
+
+**Root Cause**: The `loadData()` method wasn't passing the `bypassCache` parameter to `getAllUsers()`, allowing stale cached data to be displayed after deletion.
+
+**Changes**:
+
+1. **Frontend - User Management Component** ([user-management.component.ts](src/presentation/pages/admin/user-management/user-management.component.ts)):
+```typescript
+// Before:
+private async loadData(throwOnError = false): Promise<void> {
+  const [users, stats] = await Promise.all([
+    this.userManagementService.getAllUsers(),  // ❌ No cache bypass
+    this.userManagementService.getUserStats(),
+  ]);
+}
+
+// After:
+private async loadData(throwOnError = false, bypassCache = false): Promise<void> {
+  const [users, stats] = await Promise.all([
+    this.userManagementService.getAllUsers(undefined, bypassCache),  // ✅ Cache bypass
+    this.userManagementService.getUserStats(),
+  ]);
+}
+
+// In handleDelete:
+await this.loadData(true, true);  // ✅ Bypass cache after deletion
+```
+
+2. **Added console logging** for better debugging of delete operations.
+
+**Impact**: User list now correctly refreshes immediately after deletion, preventing phantom users and 404 errors.
+
+---
+
+## [1.43.2] - 2026-03-24
+
+### Fixed — Registration Role Selection and API Proxy
+
+**Bug Fixes**: Fixed two critical issues preventing proper role assignment during user registration and API communication.
+
+**Issue 1 - Role Not Saved**: Users selecting "Tournament Admin" during registration were incorrectly saved as "Player".
+- **Root Cause**: `AuthenticationService.register()` was not including the `role` field in the HTTP request body sent to the backend API.
+- **Impact**: All newly registered users defaulted to PLAYER role regardless of selection.
+
+**Issue 2 - API Proxy Misconfiguration**: Frontend was bypassing Vite proxy by using absolute URLs.
+- **Root Cause**: `API_BASE_URL` constant was hardcoded to `'http://localhost:3000/api'` instead of using the proxy path `'/api'`.
+- **Impact**: API requests from `localhost:4200` failed to reach backend on `localhost:3000`.
+
+**Changes**:
+
+1. **Frontend - Authentication Service** ([authentication.service.ts](src/application/services/authentication.service.ts)):
+```typescript
+// Before:
+const response = await this.httpClient.post<AuthResponseDto>('/auth/register', {
+  email: data.email,
+  password: data.password,
+  firstName: data.firstName,
+  lastName: data.lastName,
+  username: data.username,
+  phone: data.phone || null,
+  // ❌ Missing role field
+});
+
+// After:
+const response = await this.httpClient.post<AuthResponseDto>('/auth/register', {
+  email: data.email,
+  password: data.password,
+  firstName: data.firstName,
+  lastName: data.lastName,
+  username: data.username,
+  phone: data.phone || null,
+  role: data.role,  // ✅ Include role selection from registration form
+});
+```
+
+2. **Frontend - API Configuration** ([constants.ts](src/shared/constants.ts)):
+```typescript
+// Before:
+export const API_BASE_URL = 'http://localhost:3000/api';  // Bypassed proxy
+
+// After:
+export const API_BASE_URL = import.meta.env.PROD 
+  ? 'https://your-production-domain.com/api'  // Production URL
+  : '/api';  // ✅ Uses Vite proxy to localhost:3000 in development
+```
+
+**Testing**: Users can now successfully register as Tournament Admin and see their role correctly displayed in the user management panel.
+
+---
+
+## [1.43.1] - 2026-03-24
+
+### Fixed — User Management Role Display Functions
+
+**Bug Fix**: Fixed `getRoleLabel()` and `getRoleColor()` functions in the user management component that still referenced removed REFEREE and SPECTATOR roles, causing TypeScript type errors and incorrect role color fallbacks.
+
+**Issue**: After v1.43.0 role removal, the display helper functions still contained mappings for the removed roles, which could cause:
+- TypeScript compilation warnings
+- Incorrect fallback colors (defaulting to 'spectator' instead of 'player')
+- Potential display issues if role data was malformed
+
+**Changes**:
+
+1. **Frontend - User Management Component** ([user-management.component.ts](src/presentation/pages/admin/user-management/user-management.component.ts)):
+```typescript
+// Before (5 roles):
+public getRoleLabel(role: UserRole): string {
+  const labels: Record<UserRole, string> = {
+    [UserRole.SYSTEM_ADMIN]: 'System Admin',
+    [UserRole.TOURNAMENT_ADMIN]: 'Tournament Admin',
+    [UserRole.REFEREE]: 'Referee',  // ❌ Removed
+    [UserRole.PLAYER]: 'Player',
+    [UserRole.SPECTATOR]: 'Spectator',  // ❌ Removed
+  };
+  return labels[role] || role;
+}
+
+// After (3 roles):
+public getRoleLabel(role: UserRole): string {
+  const labels: Record<UserRole, string> = {
+    [UserRole.SYSTEM_ADMIN]: 'System Admin',
+    [UserRole.TOURNAMENT_ADMIN]: 'Tournament Admin',
+    [UserRole.PLAYER]: 'Player',
+  };
+  return labels[role] || role;
+}
+
+// Same fix applied to getRoleColor()
+```
+
+**Impact**: User management panel now correctly displays all user roles with proper labels and colors.
+
+---
+
+## [1.43.0] - 2026-03-24
+
+### Changed — Simplified Role Architecture to Match Specification
+
+**Architectural Change**: Removed `REFEREE` and `SPECTATOR` roles to align with the project specification, which defines **three main actor types**: System Administrator, Tournament Administrator, and Registered Participant (Player).
+
+**Rationale**:
+- **Specification Compliance**: The [specification](specification.md#L8-L9) states: "The platform is aimed at three types of actors with differentiated roles and specific permissions: System Administrator (full control), Tournament Administrator (management of own tournaments), and Registered Participant (registration, result recording, and personalized tracking). Additionally, unregistered general public will be able to consult tournaments, results, and standings publicly."
+- **Simplified Permissions**: `REFEREE` had the same permissions as `TOURNAMENT_ADMIN` for match management, creating unnecessary role duplication.
+- **Public Access Model**: Spectators don't need accounts — all public content (tournaments, brackets, standings, matches) is accessible without authentication via public endpoints.
+
+**New Role Structure**:
+1. **SYSTEM_ADMIN** 🔑 - Full platform control (cannot self-assign during registration)
+2. **TOURNAMENT_ADMIN** 🏆 - Create tournaments, manage draws, record results, issue sanctions
+3. **PLAYER** 🎾 - Register for tournaments, enter own results, view personal statistics
+4. **Unauthenticated Public** 👁️ - View all public tournament content without logging in
+
+**Changes**:
+
+1. **Backend - UserRole Enum** ([user-role.ts](backend/src/domain/enumerations/user-role.ts)):
+```typescript
+export enum UserRole {
+  SYSTEM_ADMIN = 'SYSTEM_ADMIN',
+  TOURNAMENT_ADMIN = 'TOURNAMENT_ADMIN',
+  PLAYER = 'PLAYER',
+  // REMOVED: REFEREE, SPECTATOR
+}
+```
+
+2. **Frontend - Registration Form** ([register.component.ts](src/presentation/pages/auth/register/register.component.ts)):
+```typescript
+// Only 2 selectable roles (SYSTEM_ADMIN excluded for security)
+public availableRoles = [
+  { value: UserRole.PLAYER, label: 'Player', description: 'Register for tournaments and compete' },
+  { value: UserRole.TOURNAMENT_ADMIN, label: 'Tournament Organizer', description: 'Create and manage tournaments' },
+];
+```
+
+3. **Backend - Route Permissions** ([routes/index.ts](backend/src/presentation/routes/index.ts)):
+```typescript
+// Match updates and score submission (removed REFEREE)
+router.put('/matches/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), ...);
+router.post('/matches/:id/score', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), ...);
+
+// Sanctions (removed REFEREE)
+router.post('/sanctions', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), ...);
+```
+
+4. **Backend - User Statistics** ([user.controller.ts](backend/src/presentation/controllers/user.controller.ts)):
+```typescript
+// Removed referees and spectators from stats
+const stats = {
+  totalUsers,
+  activeUsers,
+  systemAdmins,
+  tournamentAdmins,
+  players, // Only 3 counts now
+};
+```
+
+5. **Backend - Seed Data** ([seed.ts](backend/src/infrastructure/database/seed.ts)):
+```typescript
+// Removed public/spectator user from seed data
+// Only creates: system admin, tournament admin, 2 players
+```
+
+6. **Frontend - User Management** ([user-management.component.ts](src/presentation/pages/admin/user-management/user-management.component.ts)):
+```typescript
+// Removed REFEREE and SPECTATOR from:
+// - Role filter dropdown
+// - Statistics display
+// - User creation/edit modal
+```
+
+7. **Swagger Documentation** ([swagger.config.ts](backend/src/shared/config/swagger.config.ts)):
+```typescript
+// Updated role enums in schemas
+role: {
+  type: 'string',
+  enum: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN', 'PLAYER'],
+  default: 'PLAYER',
+}
+```
+
+**Migration Notes**:
+- Existing users with `REFEREE` or `SPECTATOR` roles should be manually migrated:
+  - `REFEREE` → `TOURNAMENT_ADMIN` (if they manage tournaments) or `PLAYER` (if they only participate)
+  - `SPECTATOR` → Delete account (they can access public content without authentication)
+- Database migration script may be needed for production deployments
+
+**Benefits**:
+- ✅ Specification compliance
+- ✅ Simplified permission model
+- ✅ Clearer role responsibilities
+- ✅ Reduced code complexity
+- ✅ Better public access UX (no login required for browsing)
+
+---
+
+## [1.42.0] - 2026-03-24
+
+### Added — Role Selection During Registration
+
+**Feature**: Users can now select their role during account registration, as specified in the system requirements. Previously, all new users were automatically assigned the `PLAYER` role.
+
+**Available Roles**:
+- **Player** 🎾 - Register for tournaments and compete
+- **Spectator** 👁️ - Follow tournaments and view results
+- **Referee** 🦓 - Officiate matches and enter results  
+- **Tournament Organizer** 🏆 - Create and manage tournaments
+
+**Security**: `SYSTEM_ADMIN` role cannot be selected during registration and must be assigned by existing system administrators.
+
+**Changes**:
+
+1. **Frontend - Registration Form** ([register.component.ts](src/presentation/pages/auth/register/register.component.ts)):
+```typescript
+// Added role selection dropdown
+<select id="role" formControlName="role">
+  <option value="PLAYER">Player - Register for tournaments and compete</option>
+  <option value="SPECTATOR">Spectator - Follow tournaments and view results</option>
+  <option value="REFEREE">Referee - Officiate matches and enter results</option>
+  <option value="TOURNAMENT_ADMIN">Tournament Organizer - Create and manage tournaments</option>
+</select>
+
+// Dynamic role description
+public availableRoles = [
+  { value: UserRole.PLAYER, label: 'Player', description: '...' },
+  { value: UserRole.SPECTATOR, label: 'Spectator', description: '...' },
+  { value: UserRole.REFEREE, label: 'Referee', description: '...' },
+  { value: UserRole.TOURNAMENT_ADMIN, label: 'Tournament Organizer', description: '...' },
+];
+
+// Default selection: PLAYER
+role: [UserRole.PLAYER, [Validators.required]]
+```
+
+2. **DTO Update** ([user.dto.ts](src/application/dto/user.dto.ts)):
+```typescript
+export interface RegisterUserDto {
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  phone?: string;
+  role?: UserRole; // ✨ New field
+  gdprConsent: boolean;
+}
+```
+
+3. **Backend Controller** ([auth.controller.ts](backend/src/presentation/controllers/auth.controller.ts)):
+```typescript
+const {email, password, firstName, lastName, phone, username, role} = req.body;
+
+// Validate role (prevent SYSTEM_ADMIN from being set via registration)
+let userRole = UserRole.PLAYER; // Default to PLAYER
+if (role && Object.values(UserRole).includes(role)) {
+  // Allow all roles except SYSTEM_ADMIN
+  if (role !== UserRole.SYSTEM_ADMIN) {
+    userRole = role;
+  }
+}
+
+const user = userRepository.create({
+  // ...
+  role: userRole, // Uses selected role or defaults to PLAYER
+});
+```
+
+**User Experience**:
+- Dropdown appears between "Phone" and "Password" fields
+- Shows descriptive label for each role
+- Displays dynamic description below dropdown based on selection
+- Default selection: **Player** (most common use case)
+- Clear visual hierarchy with role icons in labels
+
+**Security Considerations**:
+- ✅ SYSTEM_ADMIN cannot be self-assigned
+- ✅ Role validation on backend prevents malicious requests
+- ✅ Invalid roles default to PLAYER
+- ✅ Maintains secure role hierarchy
+
+**Specification Compliance**:
+According to [specification.md](docs/specification.md):
+- ✅ FR9: "Registered participant registration" - Different participant types supported
+- ✅ NFR12: "Robust authentication system" - Role-based access from registration
+- ✅ NFR13: "Granular role and permission management" - Each action validated by role
+
+**Use Cases**:
+- **Tennis Player**: Registers as PLAYER to participate in tournaments
+- **Tennis Fan**: Registers as SPECTATOR to follow favorite tournaments
+- **Certified Referee**: Registers as REFEREE to officiate matches
+- **Club Manager**: Registers as TOURNAMENT_ADMIN to organize club tournaments
+
+---
+
+## [1.41.8] - 2026-03-24
+
+### Fixed — Participant Names in Public Standings View
+
+**Issue**: Participant names showed as "Unknown" in public standings view because the `/users/:id` endpoint required authentication.
+
+**Problem Flow**:
+1. Public user views standings page
+2. Standing service calculates standings from matches
+3. For each participant, tries to fetch name via `getUserById()`
+4. `/users/:id` endpoint requires authentication → 401 error
+5. Falls back to "Unknown" for all participants
+
+**Solution**: Created public endpoint for basic user information that doesn't require authentication.
+
+**Backend Changes**:
+
+1. **New Controller Method** ([user.controller.ts](backend/src/presentation/controllers/user.controller.ts)):
+```typescript
+/**
+ * GET /api/users/:id/public
+ * Retrieves public user information without authentication.
+ */
+public async getPublicInfo(req, res, next): Promise<void> {
+  const user = await userRepository.findOne({
+    where: {id},
+    select: ['id', 'username', 'firstName', 'lastName', 'avatarUrl']
+  });
+  
+  res.json({
+    id: user.id,
+    username: user.username,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    avatarUrl: user.avatarUrl
+  });
+}
+```
+
+2. **New Public Route** ([routes/index.ts](backend/src/presentation/routes/index.ts)):
+```typescript
+// Public endpoint - no authMiddleware
+router.get('/users/:id/public', apiCache(300), userController.getPublicInfo.bind(userController));
+
+// Authenticated endpoint - requires authMiddleware
+router.get('/users/:id', authMiddleware, apiCache(300), userController.getById.bind(userController));
+```
+
+**Frontend Changes**:
+
+1. **New Service Method** ([user.service.ts](src/application/services/user.service.ts)):
+```typescript
+/**
+ * Gets public user information without authentication.
+ */
+public async getPublicUserInfo(userId: string): Promise<Partial<UserDto>> {
+  return firstValueFrom(
+    this.http.get<Partial<UserDto>>(`${this.apiUrl}/${userId}/public`)
+  );
+}
+```
+
+2. **Updated Standing Service** ([standing.service.ts](src/application/services/standing.service.ts)):
+```typescript
+// Before: Used authenticated endpoint
+const user = await this.userService.getUserById(participantId);
+
+// After: Uses public endpoint
+const user = await this.userService.getPublicUserInfo(participantId);
+```
+
+**Security Considerations**:
+- ✅ Only exposes non-sensitive user data (name, avatar)
+- ✅ Does NOT expose email, phone, role, or other private information
+- ✅ Uses TypeORM select to explicitly limit fetched fields
+- ✅ Cached for 5 minutes to reduce load
+
+**Result**:
+- ✅ Participant names display correctly in public standings view
+- ✅ No authentication required for viewing tournament standings
+- ✅ Public endpoint can be reused for brackets, matches, and other public views
+- ✅ Private user data remains protected
+
+**Also Benefits**:
+- Brackets view (participant names)
+- Match lists (player names)
+- Order of play (player names)
+- Any other public view showing participant information
+
+---
+
+## [1.41.7] - 2026-03-24
+
+### Fixed — Public Page Access (Standings, Brackets, etc.)
+
+**Issue**: Public pages like standings, brackets, and match details were redirecting to login when users had expired or no authentication tokens.
+
+**Root Cause**: The Angular `errorInterceptor` was redirecting **ALL** 401/403 errors to login/tournaments without checking if the current page should be publicly accessible.
+
+**Flow Before**:
+1. User navigates to `/standings/trn_xxx` (should be public)
+2. Component makes API calls
+3. If user has expired token OR no token, API returns 401
+4. `errorInterceptor` catches 401 and redirects to `/login` ❌
+5. User can't view public content
+
+**Flow After**:
+1. User navigates to `/standings/trn_xxx` (public page)
+2. Component makes API calls
+3. API returns 401 (expired/invalid token)
+4. `errorInterceptor` detects it's a public page ✅
+5. Clears invalid token from localStorage
+6. Allows page to continue loading ✅
+7. Public content visible without authentication
+
+**Changes** ([error.interceptor.ts](src/presentation/interceptors/error.interceptor.ts)):
+```typescript
+// Before: Always redirected on 401/403
+if (error.status === 401) {
+  router.navigate(['/login']);  // ❌ Blocked public pages
+}
+
+// After: Check if page is public first
+const isPublicPage = 
+  currentPath.includes('/tournaments') ||
+  currentPath.includes('/brackets') ||
+  currentPath.includes('/matches') ||
+  currentPath.includes('/standings') ||
+  currentPath.includes('/order-of-play');
+
+if (error.status === 401) {
+  if (isPublicPage) {
+    localStorage.removeItem(JWT_STORAGE_KEY);  // Clear bad token
+    // Don't redirect - let page load
+  } else if (!isAuthPage) {
+    router.navigate(['/login']);  // Only redirect protected routes
+  }
+}
+```
+
+**Also Updated** ([axios-client.ts](src/infrastructure/http/axios-client.ts)):
+- Added same public page logic to Axios interceptor
+- Added console logging for debugging
+- Handles both 401 and 403 errors
+
+**Public Pages** (accessible without login):
+- `/home` - Home page
+- `/tournaments` - Tournament list
+- `/tournaments/:id` - Tournament details
+- `/brackets/:id` - Bracket/draw view
+- `/standings/:id` - Standings view
+- `/matches` - Match list
+- `/matches/:id` - Match details
+- `/order-of-play` - Order of play schedule
+
+**Protected Pages** (require login):
+- `/profile` - User profile
+- `/notifications` - Notifications
+- `/admin/**` - Admin pages
+- `/tournaments/create` - Create tournament
+- `/tournaments/:id/edit` - Edit tournament
+
+**Result**:
+- ✅ Public pages remain accessible even with invalid/expired tokens
+- ✅ Invalid tokens are cleared automatically on public pages
+- ✅ Protected pages still redirect to login as expected
+- ✅ Console logging helps debug authentication issues
+- ✅ Both Angular HttpClient and Axios client handle public pages correctly
+
+---
+
+## [1.41.6] - 2026-03-24
+
+### Added — Intent-Based Tournament Navigation
+
+**Feature**: Implemented context-aware navigation from home page public feature cards. When clicking "View Brackets" or "Check Standings", the system now remembers the user's intent and navigates directly to the appropriate page when a tournament is selected.
+
+**User Flow** (Before):
+1. Click "View Brackets" → Tournaments list
+2. Click tournament → Tournament details page
+3. Manually click "View Brackets" tab → Finally see brackets
+
+**User Flow** (After):
+1. Click "View Brackets" → Tournaments list (with intent stored)
+2. Click tournament → **Directly to brackets page** ✨
+3. See brackets immediately
+
+**Implementation**:
+
+**1. Home Page** ([home.component.ts](src/presentation/pages/home.component.ts)):
+```html
+<!-- Before: Simple routing -->
+<a routerLink="/tournaments" class="public-feature-card">
+  <div class="public-feature-icon">📊</div>
+  <h3>View Brackets</h3>
+  ...
+</a>
+
+<!-- After: Intent-based routing with query params -->
+<a [routerLink]="['/tournaments']" [queryParams]="{intent: 'brackets'}" class="public-feature-card">
+  <div class="public-feature-icon">📊</div>
+  <h3>View Brackets</h3>
+  ...
+</a>
+
+<a [routerLink]="['/tournaments']" [queryParams]="{intent: 'standings'}" class="public-feature-card">
+  <div class="public-feature-icon">🏅</div>
+  <h3>Check Standings</h3>
+  ...
+</a>
+```
+
+**2. Tournament List Component** ([tournament-list.component.ts](src/presentation/pages/tournaments/tournament-list/tournament-list.component.ts)):
+
+**Added Intent Detection**:
+```typescript
+import {ActivatedRoute} from '@angular/router';
+
+/** Navigation intent from query params (e.g., 'brackets', 'standings') */
+private navigationIntent: string | null = null;
+
+public ngOnInit(): void {
+  // Check for navigation intent from query params
+  this.route.queryParams.subscribe(params => {
+    this.navigationIntent = params['intent'] || null;
+  });
+  
+  void this.loadTournaments();
+}
+```
+
+**Updated Tournament Click Handler**:
+```typescript
+// Before: Always went to tournament details
+public viewTournament(tournamentId: string): void {
+  void this.router.navigate(['/tournaments', tournamentId]);
+}
+
+// After: Context-aware navigation based on intent
+public viewTournament(tournamentId: string): void {
+  if (this.navigationIntent === 'brackets') {
+    void this.router.navigate(['/brackets', tournamentId]);
+  } else if (this.navigationIntent === 'standings') {
+    void this.router.navigate(['/standings', tournamentId]);
+  } else {
+    void this.router.navigate(['/tournaments', tournamentId]);
+  }
+}
+```
+
+**Navigation Mapping**:
+- **Browse Tournaments** → `/tournaments` (no intent) → Select tournament → Details page
+- **View Brackets** → `/tournaments?intent=brackets` → Select tournament → **Brackets page**
+- **Check Standings** → `/tournaments?intent=standings` → Select tournament → **Standings page**  
+- **Follow Results** → `/matches` (direct access, unchanged)
+
+**Result**:
+- ✅ More direct navigation flow for specific features
+- ✅ Users reach their desired content faster (one less click and navigation)
+- ✅ Intent-aware system respects user's original goal
+- ✅ Maintains backwards compatibility (no intent = normal details navigation)
+- ✅ Clean URL query param pattern for extensibility
+
+**User Experience**: Clicking "View Brackets" or "Check Standings" from home now creates a direct path to that specific feature after tournament selection, eliminating unnecessary navigation through the details page.
+
+---
+
+## [1.41.5] - 2026-03-24
+
+### Fixed — Public Feature Card Descriptions Clarity
+
+**Issue**: "View Live Brackets" and "Check Standings" public feature cards on home page led users to the tournaments page, which was confusing since the card titles suggested direct access to brackets/standings.
+
+**Problem**: Card titles and descriptions implied immediate access to brackets and standings, but these features are tournament-specific and require selecting a tournament first:
+- "View Live Brackets" → Routes to `/tournaments` (needs tournament selection)
+- "Check Standings" → Routes to `/tournaments` (needs tournament selection)
+
+**Root Cause**: Brackets and standings are inherently tournament-scoped features. There's no "all brackets" or "all standings" page. Users must select a tournament from the tournaments list to view its specific brackets or standings.
+
+**Solution**: Updated card titles and descriptions to clearly communicate the workflow: browse tournaments first, then access brackets/standings.
+
+**Changes** ([home.component.ts](src/presentation/pages/home.component.ts)):
+
+```html
+<!-- Before: Implied direct access -->
+<a routerLink="/tournaments" class="public-feature-card">
+  <div class="public-feature-icon">📊</div>
+  <h3>View Live Brackets</h3>
+  <p>Follow tournament draws and match progressions in real-time</p>
+</a>
+
+<a routerLink="/tournaments" class="public-feature-card">
+  <div class="public-feature-icon">🏅</div>
+  <h3>Check Standings</h3>
+  <p>Track player rankings and group standings throughout tournaments</p>
+</a>
+
+<!-- After: Clear workflow communication -->
+<a routerLink="/tournaments" class="public-feature-card">
+  <div class="public-feature-icon">📊</div>
+  <h3>View Brackets</h3>
+  <p>Browse tournaments and view draws and match progressions in real-time</p>
+</a>
+
+<a routerLink="/tournaments" class="public-feature-card">
+  <div class="public-feature-icon">🏅</div>
+  <h3>Check Standings</h3>
+  <p>Browse tournaments to track player rankings and group standings</p>
+</a>
+```
+
+**Key Changes**:
+- "View Live Brackets" → "View Brackets" (removed "Live" to reduce expectation of immediate access)
+- Brackets description: Added "Browse tournaments and" prefix
+- Standings description: Changed from "Track...throughout tournaments" to "Browse tournaments to track..."
+
+**Result**:
+- ✅ Card descriptions accurately reflect the user workflow
+- ✅ Users understand they'll browse tournaments first, then access brackets/standings
+- ✅ No misleading "direct access" implication
+- ✅ Maintains consistent navigation pattern (all go to tournaments page as intended)
+
+**User Experience**: Clear communication of the two-step process:
+1. Browse/select a tournament
+2. View its brackets or standings
+
+---
+
+## [1.41.4] - 2026-03-24
+
+### Fixed — Match List Back Navigation
+
+**Issue**: When viewing matches filtered by tournament (e.g., `/matches?tournamentId=trn_2caedc9f`), clicking the back button would navigate to the homepage instead of returning to the specific tournament details page.
+
+**Root Cause**: The HTML template had a hardcoded `routerLink="/"` on the back button, which always navigated to home regardless of the component logic.
+
+**Problems**:
+1. Back button in template: `<button routerLink="/">Back to Home</button>` (hardcoded)
+2. Component method `goBack()` existed but was never called from template
+3. No context-aware navigation logic
+
+**Solution**: Implemented smart back navigation in both component logic and template.
+
+**Changes**:
+
+**1. Component Logic** ([match-list.component.ts](src/presentation/pages/matches/match-list/match-list.component.ts)):
+```typescript
+// Before: Always went home
+public goBack(): void {
+  void this.router.navigate(['/']);
+}
+
+// After: Context-aware navigation
+public goBack(): void {
+  if (this.tournamentId) {
+    void this.router.navigate(['/tournaments', this.tournamentId]);
+  } else {
+    void this.router.navigate(['/']);
+  }
+}
+```
+
+**2. Template Update** ([match-list.component.html](src/presentation/pages/matches/match-list/match-list.component.html)):
+```html
+<!-- Before: Hardcoded home navigation -->
+<button class="back-btn" routerLink="/">
+  <span>←</span>
+  <span>Back to Home</span>
+</button>
+
+<!-- After: Uses component method -->
+<button class="back-btn" (click)="goBack()">
+  <span>←</span>
+  <span>Back</span>
+</button>
+```
+
+**Key Changes**:
+- Changed from `routerLink="/"` to `(click)="goBack()"`
+- Updated button text from "Back to Home" to "Back" (context-aware)
+- Component reads `tournamentId` from query params in `ngOnInit()`
+
+**Result**:
+- ✅ From tournament details → View matches → Back → Returns to tournament details
+- ✅ From matches page directly → Back → Returns to homepage
+- ✅ Button text is contextual rather than misleading
+- ✅ Consistent navigation pattern with bracket-view and standings-view components
+
+**User Experience**: Users can now navigate naturally through tournament context without losing their place. The back button behaves intuitively based on where the user came from.
+
+---
+
+## [1.41.3] - 2026-03-24
+
+### Fixed — Public Access to Tournament Details Page
+
+**Issue**: Tournament details page was hidden from public users, requiring login to view tournament information. The registration section was completely hidden behind authentication, and attempting to register would redirect users away from the page to the login screen. Additionally, the HTTP interceptor was redirecting public users to login when 401 errors occurred on public pages.
+
+**Root Causes**:
+1. **UI Logic**: Registration section only visible to authenticated users (`@if (isAuthenticated() && !canManageTournament())`)
+2. **Component Redirect**: Clicking "Register" would navigate away to `/login`, losing context
+3. **HTTP Interceptor**: Axios interceptor caught ALL 401 responses and redirected to login, even on public pages
+
+**Problems**:
+1. Public users couldn't see that registration was available
+2. No indication to public viewers that they need to log in to participate
+3. **Critical**: HTTP interceptor redirected to login whenever ANY API call returned 401, making public pages inaccessible
+
+**Solution**: Made tournament details page fully accessible to public while guiding unauthenticated users to log in for registration without losing context.
+
+**Changes**:
+
+**1. Template Updates** ([tournament-detail-new.component.html](src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html)):
+
+```html
+<!-- Before: Hidden from public -->
+@if (isAuthenticated() && !canManageTournament()) {
+  <div class="info-card registration-card">
+    <!-- Registration form -->
+  </div>
+}
+
+<!-- After: Visible to public with conditional content -->
+@if (!canManageTournament()) {
+  <div class="info-card registration-card">
+    @if (isAuthenticated()) {
+      <!-- Show registration form for authenticated users -->
+    } @else {
+      <!-- Show login prompt for public users -->
+      <div class="login-prompt">
+        <div class="prompt-content">
+          <span class="prompt-icon">🔐</span>
+          <div>
+            <h3>Login Required</h3>
+            <p>You need to log in or create an account to register for this tournament</p>
+          </div>
+        </div>
+        <div class="prompt-actions">
+          <button class="btn-primary" routerLink="/login">🔑 Log In</button>
+          <button class="btn-secondary" routerLink="/register">✨ Create Account</button>
+        </div>
+      </div>
+    }
+  </div>
+}
+```
+
+**Key Changes**:
+- Changed condition from `isAuthenticated() && !canManageTournament()` to just `!canManageTournament()`
+- Added `@else` block for unauthenticated users
+- Created login prompt with two action buttons
+- Registration card now always visible (except to tournament managers)
+
+**2. Component Logic** ([tournament-detail.component.ts](src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+
+```typescript
+// Before: Redirected to login page
+public async registerForTournament(): Promise<void> {
+  const user = this.authStateService.getCurrentUser();
+  if (!user) {
+    void this.router.navigate(['/login']);  // ❌ Navigation loses context
+    return;
+  }
+  // ...
+}
+
+// After: Show alert (UI already prevents this case)
+public async registerForTournament(): Promise<void> {
+  const user = this.authStateService.getCurrentUser();
+  if (!user) {
+    alert('Please log in first to register for tournaments');  // ✅ Stay on page
+    return;
+  }
+  // ...
+}
+```
+
+**3. CSS Styling** ([tournament-detail-new.component.css](src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.css)):
+
+Added new styles for public user login prompt:
+```css
+.login-prompt {
+  padding: var(--spacing-lg);
+}
+
+.prompt-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  background: linear-gradient(135deg, rgba(103,58,183,0.1), rgba(156,39,176,0.05));
+  border: 2px solid var(--color-primary-light);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.prompt-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+  /* Primary/secondary button styling with hover effects */
+}
+```
+
+**4. HTTP Interceptor Fix** ([axios-client.ts](src/infrastructure/http/axios-client.ts)):
+
+**Critical Issue**: The Axios response interceptor was redirecting ALL 401 errors to login, even on public pages. When public users visited tournament details, some API calls (like loading categories or registrations) would return 401, triggering an unwanted redirect.
+
+**Additional Issue**: The interceptor was using `startsWith()` checks that failed when the app runs with a base path (e.g., `/5-TennisTournamentManager/tournaments/...`).
+
+```typescript
+// Before: Redirected on ANY 401 except auth pages
+if (error.response?.status === 401) {
+  const currentPath = window.location.pathname;
+  const isAuthPage = currentPath.includes('/login') || currentPath.includes('/register');
+  
+  if (!isAuthPage) {
+    localStorage.removeItem(JWT_STORAGE_KEY);
+    window.location.href = '/login';  // ❌ Redirects even on public pages
+  }
+}
+
+// After: Only redirect on 401 for truly protected routes
+if (error.response?.status === 401) {
+  const currentPath = window.location.pathname;
+  const isAuthPage = currentPath.includes('/login') || currentPath.includes('/register');
+  const isPublicPage = 
+    currentPath.endsWith('/home') ||
+    currentPath === '/' ||
+    currentPath.includes('/tournaments') ||  // ✅ Works with base paths
+    currentPath.includes('/brackets') ||
+    currentPath.includes('/matches') ||
+    currentPath.includes('/standings') ||
+    currentPath.includes('/order-of-play');
+  
+  // Only redirect if not on auth pages or public pages
+  if (!isAuthPage && !isPublicPage) {
+    localStorage.removeItem(JWT_STORAGE_KEY);
+    window.location.href = '/login';  // ✅ Only redirects from protected routes
+  }
+}
+```
+
+**Key Fix**: Changed from `startsWith()` to `includes()` to handle applications running with base paths:
+- `startsWith('/tournaments')` ❌ Fails: `/5-TennisTournamentManager/tournaments/...`
+- `includes('/tournaments')` ✅ Works: `/5-TennisTournamentManager/tournaments/...`
+
+**Interceptor Behavior**:
+- **Before**: 401 on `/5-TennisTournamentManager/tournaments/123` → Redirect to `/login` ❌
+- **After**: 401 on `/5-TennisTournamentManager/tournaments/123` → Silently fail, stay on page ✅
+- **Before**: 401 on `/dashboard` → Redirect to `/login` ✅
+- **After**: 401 on `/dashboard` → Redirect to `/login` ✅ (unchanged)
+
+**Public Pages** (no redirect on 401):
+- `/home`, `/` — Landing page
+- `/tournaments/*` — Tournament list and details
+- `/brackets/*` — Bracket views
+- `/matches/*` — Match list and details
+- `/standings/*` — Standings views
+- `/order-of-play` — Order of play view
+
+**Result**: Tournament details pages are now fully accessible to the public:
+- ✅ Public users can view all tournament information (dates, location, categories, registered players, status)
+- ✅ Registration section visible to everyone (except managers) with contextual content
+- ✅ Unauthenticated users see clear call-to-action: "Log In" or "Create Account"
+- ✅ No disruptive redirects - users stay on tournament page
+- ✅ Authenticated users see registration form as before
+- ✅ Tournament managers see management tools instead of registration
+
+**User Experience**: Public viewers can now explore tournament details freely and understand that registration requires authentication, without being forced to log in just to view information. The interface guides them naturally toward account creation when they're ready to participate.
+
+---
+
+## [1.41.2] - 2026-03-24
+
+### Enhanced — Public Feature Cards Now Navigable
+
+**Issue**: Public feature cards in the "Explore Without an Account" section were static display elements without any interactive functionality, despite appearing clickable.
+
+**Solution**: Converted feature cards to functional navigation links that direct users to relevant pages.
+
+**Changes**:
+
+**HTML Structure** ([home.component.ts](src/presentation/pages/home.component.ts)):
+```html
+<!-- Before: Static div cards -->
+<div class="public-feature-card">
+  <div class="public-feature-icon">🔍</div>
+  <h3>Browse Tournaments</h3>
+  <p>Explore ongoing and upcoming tennis tournaments...</p>
+</div>
+
+<!-- After: Navigable anchor cards with routerLink -->
+<a routerLink="/tournaments" class="public-feature-card">
+  <div class="public-feature-icon">🔍</div>
+  <h3>Browse Tournaments</h3>
+  <p>Explore ongoing and upcoming tennis tournaments...</p>
+</a>
+```
+
+**Navigation Mapping**:
+- **Browse Tournaments** → `/tournaments` (tournament list page)
+- **View Live Brackets** → `/tournaments` (select tournament to view bracket)
+- **Check Standings** → `/tournaments` (select tournament to view standings)
+- **Follow Results** → `/matches` (match list with live scores)
+
+**CSS Updates**:
+```css
+.public-feature-card {
+  display: block;              /* Added for anchor element */
+  text-decoration: none;        /* Remove underline */
+  color: inherit;               /* Preserve text color */
+  cursor: pointer;              /* Indicate clickability */
+}
+
+.public-feature-card:active {   /* Added feedback */
+  transform: translateY(-2px);
+}
+```
+
+**Result**: All four public feature cards are now functional navigation elements that seamlessly guide visitors to relevant pages. The cards maintain their visual styling while behaving as proper links with hover/active feedback.
+
+**User Experience**: Visitors can immediately explore platform features by clicking any public access card, reinforcing the "no registration required" message.
+
+---
+
 ## [1.41.1] - 2026-03-24
 
 ### Fixed — Hero Section Size Reduction

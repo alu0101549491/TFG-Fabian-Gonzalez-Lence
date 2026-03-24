@@ -31,7 +31,7 @@ and multichannel notifications.
 
 ## Features
 - 🔐 JWT-based authentication
-- 👥 Role-based authorization (SYSTEM_ADMIN, TOURNAMENT_ADMIN, REFEREE, PLAYER, SPECTATOR)
+- 👥 Role-based authorization (SYSTEM_ADMIN, TOURNAMENT_ADMIN, PLAYER)
 - 🏆 Multiple simultaneous tournaments
 - 📊 Real-time standings and rankings
 - 📧 Multichannel notifications (Email, Telegram, Web Push)
@@ -179,7 +179,7 @@ and multichannel notifications.
             lastName: {type: 'string', example: 'Doe'},
             role: {
               type: 'string',
-              enum: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN', 'REFEREE', 'PLAYER', 'SPECTATOR'],
+              enum: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN', 'PLAYER'],
               default: 'PLAYER',
             },
           },
@@ -201,7 +201,7 @@ and multichannel notifications.
             email: {type: 'string', format: 'email'},
             firstName: {type: 'string'},
             lastName: {type: 'string'},
-            role: {type: 'string', enum: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN', 'REFEREE', 'PLAYER', 'SPECTATOR']},
+            role: {type: 'string', enum: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN', 'PLAYER']},
             phoneNumber: {type: 'string', nullable: true},
             birthDate: {type: 'string', format: 'date', nullable: true},
             nationality: {type: 'string', nullable: true},

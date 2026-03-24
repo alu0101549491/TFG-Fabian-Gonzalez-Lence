@@ -11,11 +11,15 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-/** Base URL for the REST API. */
-export const API_BASE_URL = 'http://localhost:3000/api';
+/** Base URL for the REST API. Uses Vite proxy in dev, full URL in production. */
+export const API_BASE_URL = import.meta.env.PROD 
+  ? 'https://your-production-domain.com/api'  // Update for production
+  : '/api';  // Uses Vite proxy to localhost:3000 in development
 
 /** WebSocket connection URL. */
-export const WS_URL = 'http://localhost:3000';
+export const WS_URL = import.meta.env.PROD
+  ? 'https://your-production-domain.com'  // Update for production
+  : 'http://localhost:3000';  // Development WebSocket server
 
 /** JWT token key in local storage. */
 export const JWT_STORAGE_KEY = 'tennis_jwt_token';

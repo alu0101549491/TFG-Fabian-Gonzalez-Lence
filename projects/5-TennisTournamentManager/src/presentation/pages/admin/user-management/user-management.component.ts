@@ -80,9 +80,7 @@ import {UserRole} from '@domain/enumerations/user-role';
               <option value="">All Roles</option>
               <option [value]="UserRole.SYSTEM_ADMIN">System Admin</option>
               <option [value]="UserRole.TOURNAMENT_ADMIN">Tournament Admin</option>
-              <option [value]="UserRole.REFEREE">Referee</option>
               <option [value]="UserRole.PLAYER">Player</option>
-              <option [value]="UserRole.SPECTATOR">Spectator</option>
             </select>
 
             <label class="checkbox-label">
@@ -129,18 +127,8 @@ import {UserRole} from '@domain/enumerations/user-role';
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <span class="stat-label">Referees</span>
-            <span class="stat-value stat-referee">{{ stats()!.referees }}</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
             <span class="stat-label">Players</span>
             <span class="stat-value stat-player">{{stats()!.players }}</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <span class="stat-label">Spectators</span>
-            <span class="stat-value stat-spectator">{{ stats()!.spectators }}</span>
           </div>
         </div>
       }
@@ -317,9 +305,7 @@ import {UserRole} from '@domain/enumerations/user-role';
                     <option value="">Select role...</option>
                     <option [value]="UserRole.SYSTEM_ADMIN">System Admin</option>
                     <option [value]="UserRole.TOURNAMENT_ADMIN">Tournament Admin</option>
-                    <option [value]="UserRole.REFEREE">Referee</option>
                     <option [value]="UserRole.PLAYER">Player</option>
-                    <option [value]="UserRole.SPECTATOR">Spectator</option>
                   </select>
                   @if (isFieldInvalid('role')) {
                     <span class="form-error">{{ getFieldError('role') }}</span>
@@ -1159,7 +1145,7 @@ export class UserManagementComponent implements OnInit {
    * 
    * @param throwOnError - If true, re-throws errors instead of setting errorMessage
    */
-  private async loadData(throwOnError = false): Promise<void> {
+  private async loadData(throwOnError = false, bypassCache = false): Promise<void> {
     this.isLoading.set(true);
     if (!throwOnError) {
       this.errorMessage.set(null);
@@ -1167,7 +1153,7 @@ export class UserManagementComponent implements OnInit {
 
     try {
       const [users, stats] = await Promise.all([
-        this.userManagementService.getAllUsers(),
+        this.userManagementService.getAllUsers(undefined, bypassCache),
         this.userManagementService.getUserStats(),
       ]);
 
@@ -1389,16 +1375,21 @@ export class UserManagementComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
+      console.log('[User Management] Deleting user:', user.id);
+      
       // Delete user
       await this.userManagementService.deleteUser(user.id);
+      console.log('[User Management] Delete successful, refreshing list...');
       
       // Reload data to refresh the list (bypass cache to get fresh data)
       await this.loadData(true, true);
+      console.log('[User Management] List refreshed successfully');
       
       // Only close modal and reset state after successful refresh
       this.showDeleteConfirm.set(false);
       this.userToDelete.set(null);
     } catch (error) {
+      console.error('[User Management] Delete failed:', error);
       const message = error instanceof Error ? error.message : 'Failed to delete user';
       this.errorMessage.set(message);
       
@@ -1466,9 +1457,7 @@ export class UserManagementComponent implements OnInit {
     const labels: Record<UserRole, string> = {
       [UserRole.SYSTEM_ADMIN]: 'System Admin',
       [UserRole.TOURNAMENT_ADMIN]: 'Tournament Admin',
-      [UserRole.REFEREE]: 'Referee',
       [UserRole.PLAYER]: 'Player',
-      [UserRole.SPECTATOR]: 'Spectator',
     };
     return labels[role] || role;
   }
@@ -1480,11 +1469,9 @@ export class UserManagementComponent implements OnInit {
     const colors: Record<UserRole, string> = {
       [UserRole.SYSTEM_ADMIN]: 'admin',
       [UserRole.TOURNAMENT_ADMIN]: 'tournament',
-      [UserRole.REFEREE]: 'referee',
       [UserRole.PLAYER]: 'player',
-      [UserRole.SPECTATOR]: 'spectator',
     };
-    return colors[role] || 'spectator';
+    return colors[role] || 'player';
   }
 
   /**

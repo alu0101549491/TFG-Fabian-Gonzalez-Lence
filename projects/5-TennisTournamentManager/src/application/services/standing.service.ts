@@ -139,7 +139,7 @@ export class StandingService implements IStandingService {
     await Promise.all(
       participantIds.map(async (participantId) => {
         try {
-          const user = await this.userService.getUserById(participantId);
+          const user = await this.userService.getPublicUserInfo(participantId);
           const stats = participantStats.get(participantId)!;
           stats.participantName = `${user.firstName} ${user.lastName}`;
         } catch (error) {

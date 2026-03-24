@@ -60,14 +60,38 @@ export class AxiosClient {
     this.instance.interceptors.response.use(
       (response: AxiosResponse) => response,
       (error) => {
-        // Handle 401 Unauthorized - clear token and redirect to login
-        // BUT: don't redirect if we're already on an auth page (login/register)
-        if (error.response?.status === 401) {
+        // Handle 401 Unauthorized and 403 Forbidden errors
+        // BUT: don't redirect if we're on public pages that allow anonymous access
+        if (error.response?.status === 401 || error.response?.status === 403) {
           const currentPath = window.location.pathname;
           const isAuthPage = currentPath.includes('/login') || currentPath.includes('/register');
+          const isPublicPage = 
+            currentPath.endsWith('/home') ||
+            currentPath === '/' ||
+            currentPath.includes('/tournaments') ||
+            currentPath.includes('/brackets') ||
+            currentPath.includes('/matches') ||
+            currentPath.includes('/standings') ||
+            currentPath.includes('/order-of-play');
           
-          // Only redirect if not on auth pages (expired session on protected routes)
-          if (!isAuthPage) {
+          console.log('[HTTP Interceptor]', {
+            status: error.response?.status,
+            url: error.config?.url,
+            currentPath,
+            isAuthPage,
+            isPublicPage,
+            willRedirect: !isAuthPage && !isPublicPage,
+            tokenExists: !!localStorage.getItem(JWT_STORAGE_KEY)
+          });
+          
+          // If on a public page, clear invalid token but don't redirect
+          // This prevents future requests from sending the bad token
+          if (isPublicPage) {
+            console.warn('[HTTP Interceptor] Clearing invalid token on public page');
+            localStorage.removeItem(JWT_STORAGE_KEY);
+          } else if (!isAuthPage) {
+            // Only redirect if not on auth pages or public pages
+            // (expired session on protected routes)
             localStorage.removeItem(JWT_STORAGE_KEY);
             window.location.href = '/login';
           }

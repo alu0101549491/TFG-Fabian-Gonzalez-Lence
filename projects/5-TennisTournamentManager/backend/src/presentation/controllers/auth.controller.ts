@@ -82,7 +82,7 @@ export class AuthController {
    */
   public async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {email, password, firstName, lastName, phone, username} = req.body;
+      const {email, password, firstName, lastName, phone, username, role} = req.body;
       
       const userRepository = AppDataSource.getRepository(User);
       
@@ -103,6 +103,15 @@ export class AuthController {
       // Hash password
       const passwordHash = await bcrypt.hash(password, 12);
       
+      // Validate role (prevent SYSTEM_ADMIN from being set via registration)
+      let userRole = UserRole.PLAYER; // Default to PLAYER
+      if (role && Object.values(UserRole).includes(role)) {
+        // Allow all roles except SYSTEM_ADMIN
+        if (role !== UserRole.SYSTEM_ADMIN) {
+          userRole = role;
+        }
+      }
+      
       // Create user
       const user = userRepository.create({
         id: generateId('usr'),
@@ -112,7 +121,7 @@ export class AuthController {
         firstName,
         lastName,
         phone: phone || null,
-        role: UserRole.PLAYER,
+        role: userRole,
         isActive: true,
         gdprConsent: true,
         lastLogin: new Date(),

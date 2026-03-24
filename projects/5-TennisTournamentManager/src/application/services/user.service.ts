@@ -69,4 +69,17 @@ export class UserService {
       })
     );
   }
+
+  /**
+   * Gets public user information (name, avatar) without authentication.
+   * Used for displaying participant names in public views.
+   *
+   * @param userId - ID of user to retrieve
+   * @returns Promise resolving to public user data
+   */
+  public async getPublicUserInfo(userId: string): Promise<Partial<UserDto>> {
+    return firstValueFrom(
+      this.http.get<Partial<UserDto>>(`${this.apiUrl}/${userId}/public`)
+    );
+  }
 }

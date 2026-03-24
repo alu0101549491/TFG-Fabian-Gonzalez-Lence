@@ -13,7 +13,7 @@
 
 import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {Router, RouterModule} from '@angular/router';
+import {Router, RouterModule, ActivatedRoute} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {TournamentService} from '@application/services';
 import {type TournamentDto, type TournamentFilterDto, type PaginationDto} from '@application/dto';
@@ -40,7 +40,11 @@ export class TournamentListComponent implements OnInit {
   /** Services - inject() must be called before other properties */
   private readonly tournamentService = inject(TournamentService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly authStateService = inject(AuthStateService);
+
+  /** Navigation intent from query params (e.g., 'brackets', 'standings') */
+  private navigationIntent: string | null = null;
 
   /** List of tournaments */
   public tournaments = signal<TournamentDto[]>([]);
@@ -98,6 +102,11 @@ export class TournamentListComponent implements OnInit {
    * Initializes component and loads tournament data.
    */
   public ngOnInit(): void {
+    // Check for navigation intent from query params
+    this.route.queryParams.subscribe(params => {
+      this.navigationIntent = params['intent'] || null;
+    });
+    
     void this.loadTournaments();
   }
 
@@ -149,12 +158,18 @@ export class TournamentListComponent implements OnInit {
   }
 
   /**
-   * Navigates to tournament detail page.
+   * Navigates to tournament detail, brackets, or standings based on navigation intent.
    *
    * @param tournamentId - ID of the tournament
    */
   public viewTournament(tournamentId: string): void {
-    void this.router.navigate(['/tournaments', tournamentId]);
+    if (this.navigationIntent === 'brackets') {
+      void this.router.navigate(['/brackets', tournamentId]);
+    } else if (this.navigationIntent === 'standings') {
+      void this.router.navigate(['/standings', tournamentId]);
+    } else {
+      void this.router.navigate(['/tournaments', tournamentId]);
+    }
   }
 
   /**

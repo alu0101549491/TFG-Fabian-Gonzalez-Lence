@@ -27,6 +27,7 @@ export interface RegisterUserDto {
   lastName: string;
   password: string;
   phone?: string;
+  role?: UserRole;
   gdprConsent: boolean;
 }
 
@@ -109,7 +110,5 @@ export interface UserStatsDto {
   activeUsers: number;
   systemAdmins: number;
   tournamentAdmins: number;
-  referees: number;
   players: number;
-  spectators: number;
 }

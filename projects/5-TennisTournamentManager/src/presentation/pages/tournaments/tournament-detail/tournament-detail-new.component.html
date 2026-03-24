@@ -207,77 +207,106 @@
             <p class="status-description">{{ getStatusDescription() }}</p>
           </div>
 
-          <!-- Registration Section (for players only, not organizers) -->
-          @if (isAuthenticated() && !canManageTournament()) {
+          <!-- Registration Section (visible to all, but managers) -->
+          @if (!canManageTournament()) {
             <div class="info-card registration-card">
-              @if (userRegistration()) {
-                <!-- Registration Status Display -->
-                @if (userRegistration()!.status === 'ACCEPTED') {
-                  <div class="registered-state">
-                    <span class="success-icon">✅</span>
-                    <div>
-                      <h3>You're Registered!</h3>
-                      <p>You are registered for this tournament</p>
+              @if (isAuthenticated()) {
+                <!-- Authenticated User - Show Registration Form/Status -->
+                @if (userRegistration()) {
+                  <!-- Registration Status Display -->
+                  @if (userRegistration()!.status === 'ACCEPTED') {
+                    <div class="registered-state">
+                      <span class="success-icon">✅</span>
+                      <div>
+                        <h3>You're Registered!</h3>
+                        <p>You are registered for this tournament</p>
+                      </div>
                     </div>
-                  </div>
-                } @else if (userRegistration()!.status === 'PENDING') {
-                  <div class="pending-state">
-                    <span class="pending-icon">⏳</span>
-                    <div>
-                      <h3>Registration Pending</h3>
-                      <p>Your registration is awaiting approval from the organizer</p>
+                  } @else if (userRegistration()!.status === 'PENDING') {
+                    <div class="pending-state">
+                      <span class="pending-icon">⏳</span>
+                      <div>
+                        <h3>Registration Pending</h3>
+                        <p>Your registration is awaiting approval from the organizer</p>
+                      </div>
                     </div>
-                  </div>
-                } @else if (userRegistration()!.status === 'REJECTED') {
-                  <div class="rejected-state">
-                    <span class="error-icon">❌</span>
-                    <div>
-                      <h3>Registration Rejected</h3>
-                      <p>Your registration was not approved by the organizer</p>
+                  } @else if (userRegistration()!.status === 'REJECTED') {
+                    <div class="rejected-state">
+                      <span class="error-icon">❌</span>
+                      <div>
+                        <h3>Registration Rejected</h3>
+                        <p>Your registration was not approved by the organizer</p>
+                      </div>
                     </div>
+                  }
+                } @else {
+                  <div class="card-header">
+                    <h2>📝 Register for Tournament</h2>
                   </div>
+                  
+                  @if (categories().length > 0) {
+                    <div class="registration-form">
+                      <label class="form-label">Select Category</label>
+                      <div class="category-selection">
+                        @for (category of categories(); track category.id) {
+                          <label class="category-radio">
+                            <input 
+                              type="radio" 
+                              name="category" 
+                              [value]="category.id"
+                              [checked]="selectedCategoryId() === category.id"
+                              (change)="selectedCategoryId.set(category.id)"
+                            />
+                            <div class="radio-content">
+                              <span class="radio-icon">🎾</span>
+                              <span class="radio-label">{{ category.name }}</span>
+                            </div>
+                          </label>
+                        }
+                      </div>
+                      
+                      <button 
+                        class="register-btn"
+                        (click)="registerForTournament()"
+                        [disabled]="!selectedCategoryId()"
+                      >
+                        <span class="btn-icon">🚀</span>
+                        <span>Register Now</span>
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="warning-state">
+                      <span class="warning-icon">⚠️</span>
+                      <p>No categories available for registration</p>
+                    </div>
+                  }
                 }
               } @else {
+                <!-- Public User - Show Login Prompt -->
                 <div class="card-header">
                   <h2>📝 Register for Tournament</h2>
                 </div>
                 
-                @if (categories().length > 0) {
-                  <div class="registration-form">
-                    <label class="form-label">Select Category</label>
-                    <div class="category-selection">
-                      @for (category of categories(); track category.id) {
-                        <label class="category-radio">
-                          <input 
-                            type="radio" 
-                            name="category" 
-                            [value]="category.id"
-                            [checked]="selectedCategoryId() === category.id"
-                            (change)="selectedCategoryId.set(category.id)"
-                          />
-                          <div class="radio-content">
-                            <span class="radio-icon">🎾</span>
-                            <span class="radio-label">{{ category.name }}</span>
-                          </div>
-                        </label>
-                      }
+                <div class="login-prompt">
+                  <div class="prompt-content">
+                    <span class="prompt-icon">🔐</span>
+                    <div>
+                      <h3>Login Required</h3>
+                      <p>You need to log in or create an account to register for this tournament</p>
                     </div>
-                    
-                    <button 
-                      class="register-btn"
-                      (click)="registerForTournament()"
-                      [disabled]="!selectedCategoryId()"
-                    >
-                      <span class="btn-icon">🚀</span>
-                      <span>Register Now</span>
+                  </div>
+                  
+                  <div class="prompt-actions">
+                    <button class="btn-primary" routerLink="/login">
+                      <span>🔑</span>
+                      <span>Log In</span>
+                    </button>
+                    <button class="btn-secondary" routerLink="/register">
+                      <span>✨</span>
+                      <span>Create Account</span>
                     </button>
                   </div>
-                } @else {
-                  <div class="warning-state">
-                    <span class="warning-icon">⚠️</span>
-                    <p>No categories available for registration</p>
-                  </div>
-                }
+                </div>
               }
             </div>
           }
