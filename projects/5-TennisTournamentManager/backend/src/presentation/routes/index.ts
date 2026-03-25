@@ -1151,7 +1151,7 @@ router.get('/matches/:id', apiCache(120), matchController.getById.bind(matchCont
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.put('/matches/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN, UserRole.REFEREE]), matchController.update.bind(matchController));
+router.put('/matches/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), matchController.update.bind(matchController));
 
 /**
  * @swagger

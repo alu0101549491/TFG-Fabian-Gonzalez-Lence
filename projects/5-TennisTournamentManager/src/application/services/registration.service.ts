@@ -255,6 +255,8 @@ export class RegistrationService implements IRegistrationService {
       status: registration.status,
       seed: registration.seed,
       registeredAt: registration.registeredAt,
+      tournament: registration.tournament,
+      category: registration.category,
     };
   }
 }

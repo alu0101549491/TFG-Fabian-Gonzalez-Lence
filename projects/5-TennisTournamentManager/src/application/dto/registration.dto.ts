@@ -12,6 +12,8 @@
  */
 
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
+import {TournamentDto} from './tournament.dto';
+import {CategoryDto} from './category.dto';
 
 /** DTO for creating a registration. */
 export interface CreateRegistrationDto {
@@ -28,6 +30,8 @@ export interface RegistrationDto {
   status: RegistrationStatus;
   seed: number | null;
   registeredAt: Date;
+  tournament?: TournamentDto;
+  category?: CategoryDto;
 }
 
 /** DTO for updating a registration status. */

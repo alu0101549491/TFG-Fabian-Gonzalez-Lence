@@ -105,6 +105,9 @@ export class StatisticsService implements IStatisticsService {
       totalMatches++;
       const didWin = match.winnerId === participantId;
       
+      // Determine if participant is player1 or player2
+      const isPlayer1 = match.player1Id === participantId;
+      
       // Update win/loss counters
       if (didWin) {
         totalWins++;
@@ -128,6 +131,37 @@ export class StatisticsService implements IStatisticsService {
         currentWinStreak = 0;
       }
       
+      // Process scores to calculate set/game statistics
+      if (match.scores && match.scores.length > 0) {
+        for (const score of match.scores) {
+          const participantGames = isPlayer1 ? score.player1Games : score.player2Games;
+          const opponentGames = isPlayer1 ? score.player2Games : score.player1Games;
+          const participantTiebreakPoints = isPlayer1 ? score.player1TiebreakPoints : score.player2TiebreakPoints;
+          const opponentTiebreakPoints = isPlayer1 ? score.player2TiebreakPoints : score.player1TiebreakPoints;
+          
+          // Count games won and lost
+          totalGamesWon += participantGames;
+          totalGamesLost += opponentGames;
+          
+          // Determine set winner
+          if (participantGames > opponentGames) {
+            totalSetsWon++;
+          } else if (opponentGames > participantGames) {
+            totalSetsLost++;
+          }
+          
+          // Check for tiebreak win (tiebreak exists and participant won the set)
+          if (participantTiebreakPoints !== null && participantTiebreakPoints !== undefined &&
+              opponentTiebreakPoints !== null && opponentTiebreakPoints !== undefined) {
+            // This was a tiebreak - participant won if they won this set
+            if (participantGames > opponentGames) {
+              // Participant won the tiebreak
+              // Note: We increment tiebreaksWon counter below after loop
+            }
+          }
+        }
+      }
+      
       // Track performance by surface (if available)
       const surface = (match as any).surface as Surface;
       if (surface) {
@@ -140,7 +174,43 @@ export class StatisticsService implements IStatisticsService {
         } else {
           surfaceStats[surface].losses++;
         }
-        // Would track sets/games here if available in match data
+        
+        // Add sets won/lost for this surface
+        if (match.scores && match.scores.length > 0) {
+          for (const score of match.scores) {
+            const participantGames = isPlayer1 ? score.player1Games : score.player2Games;
+            const opponentGames = isPlayer1 ? score.player2Games : score.player1Games;
+            
+            if (participantGames > opponentGames) {
+              surfaceStats[surface].setsWon++;
+            } else if (opponentGames > participantGames) {
+              surfaceStats[surface].setsLost++;
+            }
+          }
+        }
+      }
+    }
+    
+    // Count tiebreaks won across all matches
+    let tiebreaksWon = 0;
+    for (const match of matches) {
+      if (!match.winnerId || match.status !== MatchStatus.COMPLETED) continue;
+      if (!match.scores || match.scores.length === 0) continue;
+      
+      const isPlayer1 = match.player1Id === participantId;
+      
+      for (const score of match.scores) {
+        const participantGames = isPlayer1 ? score.player1Games : score.player2Games;
+        const opponentGames = isPlayer1 ? score.player2Games : score.player1Games;
+        const participantTiebreakPoints = isPlayer1 ? score.player1TiebreakPoints : score.player2TiebreakPoints;
+        const opponentTiebreakPoints = isPlayer1 ? score.player2TiebreakPoints : score.player1TiebreakPoints;
+        
+        // If tiebreak points exist and participant won the set, they won the tiebreak
+        if (participantTiebreakPoints !== null && participantTiebreakPoints !== undefined &&
+            opponentTiebreakPoints !== null && opponentTiebreakPoints !== undefined &&
+            participantGames > opponentGames) {
+          tiebreaksWon++;
+        }
       }
     }
     
@@ -175,7 +245,7 @@ export class StatisticsService implements IStatisticsService {
       setRatio,
       totalGamesWon,
       totalGamesLost,
-      tiebreaksWon: 0,
+      tiebreaksWon,
       currentWinStreak,
       bestWinStreak,
       currentLossStreak,

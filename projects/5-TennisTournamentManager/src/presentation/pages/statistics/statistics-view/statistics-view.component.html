@@ -1,80 +1,225 @@
-<div class="container p-lg">
-  <h1 class="mb-lg">Player Statistics</h1>
+<div class="statistics-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <button class="back-btn" (click)="goBack()">
+        <span>←</span>
+        <span>Back</span>
+      </button>
 
-  @if (isLoading()) {
-    <div class="text-center p-lg">
-      <p>Loading statistics...</p>
-    </div>
-  }
-
-  @if (errorMessage()) {
-    <div class="alert alert-error">{{ errorMessage() }}</div>
-  }
-
-  @if (statistics()) {
-    <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-      <div class="card">
-        <div class="card-body text-center">
-          <h3 class="text-3xl font-bold text-primary">{{ statistics()!.totalMatches }}</h3>
-          <p class="text-muted">Total Matches</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-body text-center">
-          <h3 class="text-3xl font-bold text-success">{{ statistics()!.totalWins }}</h3>
-          <p class="text-muted">Wins</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-body text-center">
-          <h3 class="text-3xl font-bold text-error">{{ statistics()!.totalLosses }}</h3>
-          <p class="text-muted">Losses</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-body text-center">
-          <h3 class="text-3xl font-bold">{{ statistics()!.winPercentage.toFixed(1) }}%</h3>
-          <p class="text-muted">Win Rate</p>
-        </div>
+      <div class="statistics-header">
+        <h1 class="statistics-title">📊 Player Statistics</h1>
+        @if (statistics() && statistics()!.participantName) {
+          <p class="statistics-subtitle">{{ statistics()!.participantName }}</p>
+        }
       </div>
     </div>
+  </section>
 
-    <div class="card mt-lg">
-      <div class="card-header">
-        <h2 class="card-title">Detailed Statistics</h2>
+  <!-- Main Content -->
+  <main class="statistics-content">
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <p class="loading-text">Loading statistics...</p>
       </div>
-      <div class="card-body">
-        <div class="grid gap-md" style="grid-template-columns: 1fr 1fr;">
-          <div>
-            <h4>Set Statistics</h4>
-            <p><strong>Sets Won:</strong> {{ statistics()!.totalSetsWon }}</p>
-            <p><strong>Sets Lost:</strong> {{ statistics()!.totalSetsLost }}</p>
-            <p><strong>Set Ratio:</strong> {{ statistics()!.setRatio.toFixed(2) }}</p>
-          </div>
+    }
 
-          <div>
-            <h4>Game Statistics</h4>
-            <p><strong>Games Won:</strong> {{ statistics()!.totalGamesWon }}</p>
-            <p><strong>Games Lost:</strong> {{ statistics()!.totalGamesLost }}</p>
-            <p><strong>Tiebreaks Won:</strong> {{ statistics()!.tiebreaksWon }}</p>
+    <!-- Error State -->
+    @if (errorMessage()) {
+      <div class="error-container">
+        <div class="error-icon">⚠️</div>
+        <p class="error-message">{{ errorMessage() }}</p>
+      </div>
+    }
+
+    <!-- Statistics Content -->
+    @if (statistics()) {
+      <!-- Key Stats Overview -->
+      <div class="stats-overview">
+        <div class="stat-card-modern primary">
+          <div class="stat-icon-header">🎾</div>
+          <div class="stat-content-wrapper">
+            <div class="stat-value-large">{{ statistics()!.totalMatches }}</div>
+            <div class="stat-label-large">Matches</div>
+            <div class="stat-sublabel">Total</div>
           </div>
         </div>
 
-        <div class="mt-md">
-          <h4>Streaks</h4>
-          <p><strong>Current Win Streak:</strong> {{ statistics()!.currentWinStreak }}</p>
-          <p><strong>Best Win Streak:</strong> {{ statistics()!.bestWinStreak }}</p>
+        <div class="stat-card-modern success">
+          <div class="stat-icon-header">🏅</div>
+          <div class="stat-content-wrapper">
+            <div class="stat-value-large">{{ statistics()!.totalWins }}</div>
+            <div class="stat-label-large">Wins</div>
+            <div class="stat-sublabel">Total</div>
+          </div>
+        </div>
+
+        <div class="stat-card-modern error">
+          <div class="stat-icon-header">❌</div>
+          <div class="stat-content-wrapper">
+            <div class="stat-value-large">{{ statistics()!.totalLosses }}</div>
+            <div class="stat-label-large">Losses</div>
+            <div class="stat-sublabel">Total</div>
+          </div>
+        </div>
+
+        <div class="stat-card-modern">
+          <div class="stat-icon-header">📊</div>
+          <div class="stat-content-wrapper">
+            <div class="stat-value-large">{{ statistics()!.winPercentage.toFixed(1) }}%</div>
+            <div class="stat-label-large">Win Rate</div>
+            <div class="stat-sublabel">Overall</div>
+          </div>
         </div>
       </div>
-    </div>
-  }
 
-  @if (!isLoading() && !errorMessage() && !statistics()) {
-    <div class="text-center p-lg">
-      <p class="text-muted">No statistics available.</p>
-    </div>
-  }
+      <!-- Three Column Grid: Set Stats, Game Stats, Streaks -->
+      <div class="detail-sections-grid">
+        <!-- Set Statistics -->
+        <div class="detail-section">
+          <div class="section-header">
+            <span class="section-icon">🎯</span>
+            <h2 class="section-title">Set Statistics</h2>
+          </div>
+          <div class="card-body">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-item-label">Sets Won</div>
+                <div class="stat-item-value">{{ statistics()!.totalSetsWon }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-item-label">Sets Lost</div>
+                <div class="stat-item-value">{{ statistics()!.totalSetsLost }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-item-label">Set Ratio</div>
+                <div class="stat-item-value">{{ statistics()!.setRatio.toFixed(2) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game Statistics -->
+        <div class="detail-section">
+          <div class="section-header">
+            <span class="section-icon">🎲</span>
+            <h2 class="section-title">Game Statistics</h2>
+          </div>
+          <div class="card-body">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-item-label">Games Won</div>
+                <div class="stat-item-value">{{ statistics()!.totalGamesWon }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-item-label">Games Lost</div>
+                <div class="stat-item-value">{{ statistics()!.totalGamesLost }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-item-label">Tiebreaks Won</div>
+                <div class="stat-item-value">{{ statistics()!.tiebreaksWon }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Streaks -->
+        <div class="detail-section">
+          <div class="section-header">
+            <span class="section-icon">🔥</span>
+            <h2 class="section-title">Streaks</h2>
+          </div>
+          <div class="card-body">
+            <div class="streak-grid">
+              <!-- Win Streaks -->
+              <div class="streak-card win">
+                <div class="streak-emoji">🏆</div>
+                <div class="streak-value">{{ statistics()!.currentWinStreak }}</div>
+                <div class="streak-label">Current Win Streak</div>
+              </div>
+
+              <div class="streak-card win">
+                <div class="streak-emoji">⭐</div>
+                <div class="streak-value">{{ statistics()!.bestWinStreak }}</div>
+                <div class="streak-label">Best Win Streak</div>
+              </div>
+
+              <!-- Loss Streaks -->
+              <div class="streak-card loss">
+                <div class="streak-emoji">💔</div>
+                <div class="streak-value">{{ statistics()!.currentLossStreak ?? 0 }}</div>
+                <div class="streak-label">Current Loss Streak</div>
+              </div>
+
+              <div class="streak-card loss">
+                <div class="streak-emoji">📉</div>
+                <div class="streak-value">{{ statistics()!.worstLossStreak ?? 0 }}</div>
+                <div class="streak-label">Worst Loss Streak</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End Three Column Grid -->
+
+      <!-- Performance by Surface -->
+      @if (statistics()!.performanceBySurface && Object.keys(statistics()!.performanceBySurface!).length > 0) {
+        <div class="detail-section">
+          <div class="section-header">
+            <span class="section-icon">🏟️</span>
+            <h2 class="section-title">Performance by Surface</h2>
+          </div>
+          <div class="card-body">
+            <div class="surface-list">
+              @for (surfaceKey of Object.keys(statistics()!.performanceBySurface!); track surfaceKey) {
+                @let surfaceStats = statistics()!.performanceBySurface![surfaceKey];
+                <div class="surface-item">
+                  <div class="surface-header">
+                    <span class="surface-name">
+                      @if (surfaceKey === 'HARD') { 🔷 }
+                      @if (surfaceKey === 'CLAY') { 🟤 }
+                      @if (surfaceKey === 'GRASS') { 🟢 }
+                      @if (surfaceKey === 'CARPET') { ⬜ }
+                      {{ surfaceKey }}
+                    </span>
+                    <span class="surface-win-rate">{{ surfaceStats.winPercentage.toFixed(1) }}%</span>
+                  </div>
+                  <div class="surface-stats">
+                    <div class="surface-stat">
+                      <span class="surface-stat-value">{{ surfaceStats.matches }}</span>
+                      <span class="surface-stat-label">Matches</span>
+                    </div>
+                    <div class="surface-stat">
+                      <span class="surface-stat-value">{{ surfaceStats.wins }}</span>
+                      <span class="surface-stat-label">Wins</span>
+                    </div>
+                    <div class="surface-stat">
+                      <span class="surface-stat-value">{{ surfaceStats.losses }}</span>
+                      <span class="surface-stat-label">Losses</span>
+                    </div>
+                    <div class="surface-stat">
+                      <span class="surface-stat-value">{{ surfaceStats.setsWon }}-{{ surfaceStats.setsLost }}</span>
+                      <span class="surface-stat-label">Sets</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- Empty State -->
+    @if (!isLoading() && !errorMessage() && !statistics()) {
+      <div class="empty-state-full">
+        <div class="empty-icon-large">📊</div>
+        <h2 class="empty-title">No Statistics Available</h2>
+        <p class="empty-message">Play some matches to see your statistics here.</p>
+      </div>
+    }
+  </main>
 </div>

@@ -6,6 +6,378 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.43.9] - 2026-03-25
+
+### Improved — Statistics Page Layout Optimization
+
+**Enhancement**: Reorganized Set Statistics, Game Statistics, and Streaks sections into a three-column, one-row layout for better space utilization and visual balance.
+
+**Changes**:
+
+1. **Frontend - Statistics Template** ([statistics-view.component.html](src/presentation/pages/statistics/statistics-view/statistics-view.component.html)):
+   - Wrapped three detail sections (Set Statistics, Game Statistics, Streaks) in `.detail-sections-grid` container
+   - Maintained individual section structure while enabling grid layout
+
+2. **Frontend - Statistics Styles** ([statistics-view.component.css](src/presentation/pages/statistics/statistics-view/statistics-view.component.css)):
+   - **Desktop Layout** (`> 1200px`):
+     - Added `.detail-sections-grid` with `grid-template-columns: repeat(3, 1fr)` for three equal columns
+     - Changed `.stats-grid` from auto-fit grid to vertical `flex-direction: column` layout
+     - Maintained `.streak-grid` as 2x2 grid (2 columns, better fit for 4 streak cards)
+   
+   - **Tablet Layout** (`≤ 1200px`):
+     - Stack sections vertically (single column)
+     - Change `.stats-grid` to 3-column grid for horizontal display of 3 stat items
+     - Change `.streak-grid` to 4-column grid for horizontal display of 4 streak cards
+   
+   - **Mobile Layout** (`≤ 768px`):
+     - Single column for all stats items
+     - 2-column grid for streak cards
+
+**Layout Impact**:
+- **Before**: Three sections stacked vertically, taking up more vertical space
+- **After**: Three sections side-by-side on desktop, creating a more compact, balanced layout
+- **Responsive**: Sections stack vertically on smaller screens for optimal mobile viewing
+
+---
+
+## [1.43.8] - 2026-03-25
+
+### Added — Back Button to Statistics Page
+
+**Enhancement**: Added navigation back button to the statistics page hero section.
+
+**Changes**:
+
+1. **Frontend - Statistics Template** ([statistics-view.component.html](src/presentation/pages/statistics/statistics-view/statistics-view.component.html)):
+   - Added back button in hero section with left arrow (←) and "Back" text
+   - Reorganized hero content with dedicated statistics header wrapper
+
+2. **Frontend - Statistics Component** ([statistics-view.component.ts](src/presentation/pages/statistics/statistics-view/statistics-view.component.ts)):
+   - Added `Router` import from `@angular/router`
+   - Injected `Router` service as private readonly property
+   - Added `goBack()` method that navigates to dashboard (`/dashboard`)
+
+3. **Frontend - Statistics Styles** ([statistics-view.component.css](src/presentation/pages/statistics/statistics-view/statistics-view.component.css)):
+   - Added `.back-btn` styling with glassmorphism effect:
+     - Semi-transparent white background with blur
+     - White border with transparency
+     - Hover effect with brightness increase and translateX animation
+   - Added `.statistics-header` wrapper for centered title/subtitle
+
+**Design**:
+- Button positioned at top-left of hero section
+- Glassmorphism style matching other navigation elements
+- White translucent background with backdrop blur
+- Hover: brightens and slides left (`translateX(-4px)`)
+- Smooth transitions (0.2s ease)
+
+**Navigation**: Back button returns user to dashboard page.
+
+---
+
+## [1.43.7] - 2026-03-25
+
+### Fixed — Set and Game Statistics Calculation
+
+**Bug Fix**: Set and game statistics showing 0 for players who have completed matches.
+
+**Issue**: Despite players having completed matches with scores, the statistics page displayed:
+- Sets Won: 0
+- Sets Lost: 0
+- Set Ratio: 0.00
+- Games Won: 0
+- Games Lost: 0
+- Tiebreaks Won: 0
+
+**Root Cause**: The `getParticipantStatistics()` method in `StatisticsService` was initializing counters for set and game statistics but never actually calculating them from the match score data. The method had a comment "Would track sets/games here if available in match data" but the implementation was missing.
+
+**Changes**:
+
+1. **Backend - Statistics Service** ([statistics.service.ts](src/application/services/statistics.service.ts)):
+   - **Added score parsing logic**: For each completed match, now iterates through the `scores` array
+   - **Determines participant role**: Identifies if participant is player1 or player2 in each match
+   - **Calculates set statistics**: 
+     - Counts sets won (when participant games > opponent games)
+     - Counts sets lost (when opponent games > participant games)
+   - **Calculates game statistics**:
+     - Sums total games won by participant across all sets
+     - Sums total games lost by participant across all sets
+   - **Calculates tiebreak statistics**:
+     - Identifies tiebreak sets (when both tiebreak point fields exist)
+     - Counts tiebreaks won (when participant won a tiebreak set)
+   - **Updates surface performance**:
+     - Now includes sets won/lost per surface in `performanceBySurface` object
+   
+**Implementation Details**:
+```typescript
+// For each set in match.scores:
+- Compare participant games vs opponent games
+- If participant games > opponent games: increment setsWon
+- If opponent games > participant games: increment setsLost
+- Add participant games to totalGamesWon
+- Add opponent games to totalGamesLost
+- If tiebreak points exist and participant won set: increment tiebreaksWon
+```
+
+**Data Sources**: The fix leverages the `BackendScore` interface structure:
+- `setNumber`: Set identifier (1, 2, 3, etc.)
+- `player1Games`: Games won by player 1 in this set
+- `player2Games`: Games won by player 2 in this set
+- `player1TiebreakPoints`: Optional tiebreak points for player 1
+- `player2TiebreakPoints`: Optional tiebreak points for player 2
+
+**Impact**: Statistics page now correctly displays set, game, and tiebreak statistics calculated from actual match scores, providing accurate performance insights for players.
+
+---
+
+## [1.43.6] - 2026-03-25
+
+### Enhanced — Statistics Page with Complete Data Display
+
+**Enhancement**: Complete redesign of the Statistics page to display all available statistical data with modern dashboard styling matching the application's design system.
+
+**Issue**: 
+1. Runtime error: `this.statisticsService.getStatisticsByParticipant is not a function`
+2. Only 12 of 17 available statistical fields were displayed
+3. Loss streak statistics were not shown
+4. Performance by surface breakdown was missing
+5. Inconsistent design with dashboard (missing hero section, gradient backgrounds, styled icons)
+
+**Changes**:
+
+1. **Frontend - Statistics Component** ([statistics-view.component.ts](src/presentation/pages/statistics/statistics-view/statistics-view.component.ts)):
+   - **Bug Fix**: Changed method call from `getStatisticsByParticipant()` to `getParticipantStatistics()` (line 69)
+   - Added CSS import: `import stylesCss from './statistics-view.component.css?inline'`
+   - Added `Object` helper for template iteration: `public readonly Object = Object`
+
+2. **Frontend - Statistics Template** ([statistics-view.component.html](src/presentation/pages/statistics/statistics-view/statistics-view.component.html)):
+   - **Added Hero Section**: Gradient background (primary-dark → primary → secondary) with decorative SVG overlay
+   - **Redesigned Stat Cards**: Horizontal layout with gradient icon backgrounds matching dashboard design:
+     - 🎾 Total Matches (blue gradient)
+     - 🏅 Wins (green gradient)
+     - ❌ Losses (red gradient)
+     - 📊 Win Rate (purple gradient)
+   - **Card Structure**: White cards on gray-50 background with section headers having gradient backgrounds
+   - **Set Statistics Section**: 🎯 Sets Won, Sets Lost, Set Ratio
+   - **Game Statistics Section**: 🎲 Games Won, Games Lost, Tiebreaks Won
+   - **Streaks Section**: 🔥 4-card responsive grid showing:
+     - 🏆 Current Win Streak
+     - ⭐ Best Win Streak
+     - 💔 **Current Loss Streak** (newly added)
+     - 📉 **Worst Loss Streak** (newly added)
+   - **Performance by Surface Section**: 🏟️ Breakdown by court surface:
+     - 🔷 HARD court statistics
+     - 🟤 CLAY court statistics
+     - 🟢 GRASS court statistics
+     - ⬜ CARPET court statistics
+     - Each surface shows: Matches, Wins, Losses, Win %, Sets record
+   - Enhanced loading, error, and empty states
+
+3. **Frontend - Statistics Styles** ([statistics-view.component.css](src/presentation/pages/statistics/statistics-view/statistics-view.component.css)):
+   - **Hero Section**: Linear gradient background with layered text shadows for depth
+   - **Stat Cards**: Horizontal layout with 72px circular icon backgrounds using gradients:
+     - Primary (blue): `linear-gradient(135deg, #e3f2fd, #bbdefb)`
+     - Success (green): `linear-gradient(135deg, #e8f5e9, #c8e6c9)`
+     - Error (red): `linear-gradient(135deg, #ffebee, #ffcdd2)`
+     - Default (purple): `linear-gradient(135deg, #f3e5f5, #e1bee7)`
+   - **Card Shadows**: `0 4px 12px rgba(0, 0, 0, 0.1)` default, `0 8px 24px` on hover
+   - **Section Headers**: Light gradient background matching dashboard cards
+   - **Hover Effects**: translateY(-4px) with enhanced box shadow
+   - **Streak Cards**: Responsive auto-fit grid with color-coded borders (green for wins, red for losses)
+   - **Surface Items**: Interactive hover effects with translateX(4px)
+   - Professional loading spinner and error/empty state designs matching dashboard
+
+**Design Consistency Improvements**:
+- ✅ Hero section with gradient background and white text shadows
+- ✅ Gray-50 page background
+- ✅ White cards with consistent box shadows
+- ✅ Gradient icon backgrounds matching dashboard color scheme
+- ✅ Consistent typography and spacing
+- ✅ Unified hover effects and transitions
+- ✅ Section headers with gradient backgrounds
+- ✅ Responsive grid layouts with auto-fit columns
+
+**Statistics Now Displayed** (17 fields):
+- ✅ Participant Name
+- ✅ Total Matches
+- ✅ Total Wins
+- ✅ Total Losses
+- ✅ Win Percentage
+- ✅ Total Sets Won
+- ✅ Total Sets Lost
+- ✅ Set Ratio
+- ✅ Total Games Won
+- ✅ Total Games Lost
+- ✅ Tiebreaks Won
+- ✅ Current Win Streak
+- ✅ Best Win Streak
+- ✅ **Current Loss Streak** (newly added)
+- ✅ **Worst Loss Streak** (newly added)
+- ✅ **Performance by Surface** (newly added):
+  - Matches, Wins, Losses, Win %, Sets Won, Sets Lost per surface
+
+**Impact**: Statistics page now displays 100% of available data (17+ fields) with professional dashboard design fully consistent with the application's design system, providing comprehensive player performance insights including loss patterns and surface-specific analytics.
+
+---
+
+## [1.43.5] - 2026-03-25
+
+### Improved — Performance Overview Dashboard Design
+
+**Enhancement**: Redesigned Performance Overview section to be more compact and visually consistent with other dashboard components.
+
+**Changes**:
+
+1. **Frontend - Dashboard Template** ([dashboard.component.html](src/presentation/pages/dashboard.component.html)):
+   - Reduced from 6-stat grid to 4-stat compact grid (2x2 layout)
+   - Removed less critical stats (Sets Won, Games Won) to focus on key metrics
+   - Changed from spanning 2 columns to spanning 1 column for better layout
+   - Added emoji icons to each stat for visual clarity
+   - Highlighted W/L ratio with gradient background
+   - Simplified empty state to be more compact
+
+2. **Frontend - Dashboard Styles** ([dashboard.component.css](src/presentation/pages/dashboard.component.css)):
+   - Created new `.perf-stat-compact` class with horizontal layout
+   - Added icon bubbles similar to top stat cards
+   - Reduced padding and font sizes for more compact display
+   - Added hover effects with scale animation
+   - Created `.empty-state-compact` for inline empty state display
+   - Removed old `.performance-grid` and `.performance-card` styles
+
+**Stats Displayed**:
+- 🎾 Matches (total matches played)
+- 🏆 W / L (wins/losses ratio with highlight)
+- 🔥 Current (current win streak)
+- ⭐ Best (best win streak record)
+
+**Impact**: Performance Overview now takes up 50% less space while maintaining readability and improving visual consistency with the dashboard's design language.
+
+---
+
+## [1.43.4] - 2026-03-25
+
+### Fixed — Tournament Name Display in Dashboard
+
+**Bug Fix**: "My Tournaments" section in user dashboard displayed tournament IDs instead of human-readable tournament names.
+
+**Issue**: Dashboard "My Tournaments" section showed raw database IDs like "trn_07ee48b2" and "cat_e012fc66" instead of tournament and category names like "Spring Championship" and "Men's Singles".
+
+**Root Cause**: 
+1. Backend registration query only loaded `participant` and `category` relations, but not the `tournament` relation
+2. Frontend DTO didn't include optional tournament/category object properties
+3. Frontend entity class was missing tournament/category properties
+4. Frontend mapper function was stripping out tournament/category objects in DTO conversion
+
+**Changes**:
+
+1. **Backend - Registration Controller** ([registration.controller.ts](backend/src/presentation/controllers/registration.controller.ts)):
+```typescript
+// Before (line 76-78):
+const registrations = await registrationRepository.find({
+  where,
+  relations: ['participant', 'category'],  // ❌ Missing 'tournament'
+});
+
+// After:
+const registrations = await registrationRepository.find({
+  where,
+  relations: ['participant', 'tournament', 'category'],  // ✅ Includes tournament
+});
+```
+
+2. **Frontend - Registration DTO** ([registration.dto.ts](src/application/dto/registration.dto.ts)):
+```typescript
+// Before:
+export interface RegistrationDto {
+  id: string;
+  participantId: string;
+  tournamentId: string;
+  categoryId: string;
+  status: RegistrationStatus;
+  seed: number | null;
+  registeredAt: Date;
+}
+
+// After:
+export interface RegistrationDto {
+  id: string;
+  participantId: string;
+  tournamentId: string;
+  categoryId: string;
+  status: RegistrationStatus;
+  seed: number | null;
+  registeredAt: Date;
+  tournament?: TournamentDto;  // ✅ Optional populated tournament object
+  category?: CategoryDto;      // ✅ Optional populated category object
+}
+```
+
+3. **Frontend - Registration Entity** ([registration.ts](src/domain/entities/registration.ts)):
+```typescript
+// Added imports:
+import {Tournament} from './tournament';
+import {Category} from './category';
+
+// Added to RegistrationProps interface:
+tournament?: Tournament;
+category?: Category;
+
+// Added to Registration class:
+public readonly tournament?: Tournament;
+public readonly category?: Category;
+
+// Added to constructor:
+this.tournament = props.tournament;
+this.category = props.category;
+```
+
+4. **Frontend - Registration Service Mapper** ([registration.service.ts](src/application/services/registration.service.ts)):
+```typescript
+// Before:
+private mapRegistrationToDto(registration: Registration): RegistrationDto {
+  return {
+    id: registration.id,
+    participantId: registration.participantId,
+    tournamentId: registration.tournamentId,
+    categoryId: registration.categoryId,
+    status: registration.status,
+    seed: registration.seed,
+    registeredAt: registration.registeredAt,
+    // ❌ Missing tournament and category
+  };
+}
+
+// After:
+private mapRegistrationToDto(registration: Registration): RegistrationDto {
+  return {
+    id: registration.id,
+    participantId: registration.participantId,
+    tournamentId: registration.tournamentId,
+    categoryId: registration.categoryId,
+    status: registration.status,
+    seed: registration.seed,
+    registeredAt: registration.registeredAt,
+    tournament: registration.tournament,  // ✅ Include tournament object
+    category: registration.category,      // ✅ Include category object
+  };
+}
+```
+
+5. **Frontend - Dashboard Template** ([dashboard.component.html](src/presentation/pages/dashboard.component.html)):
+```html
+<!-- Before (line 151-152): -->
+<div class="tournament-name">{{ registration.tournamentId }}</div>
+<div class="tournament-category">{{ registration.categoryId }}</div>
+
+<!-- After: -->
+<div class="tournament-name">{{ registration.tournament?.name || 'Unknown Tournament' }}</div>
+<div class="tournament-category">{{ registration.category?.name || 'Unknown Category' }}</div>
+```
+
+**Impact**: Dashboard now displays human-readable tournament and category names ("Spring Championship", "Men's Singles") instead of database IDs, significantly improving user experience.
+
+---
+
 ## [1.43.3] - 2026-03-24
 
 ### Fixed — User List Not Refreshing After Deletion

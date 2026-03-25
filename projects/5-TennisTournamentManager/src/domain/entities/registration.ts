@@ -13,6 +13,8 @@
 
 import {RegistrationStatus} from '../enumerations/registration-status';
 import {AcceptanceType} from '../enumerations/acceptance-type';
+import {Tournament} from './tournament';
+import {Category} from './category';
 
 /**
  * Properties for creating a Registration entity.
@@ -38,6 +40,10 @@ export interface RegistrationProps {
   registeredAt?: Date;
   /** Date the status was last updated. */
   updatedAt?: Date;
+  /** Optional populated tournament object. */
+  tournament?: Tournament;
+  /** Optional populated category object. */
+  category?: Category;
 }
 
 /**
@@ -59,6 +65,8 @@ export class Registration {
   public readonly seed: number | null;
   public readonly registeredAt: Date;
   public readonly updatedAt: Date;
+  public readonly tournament?: Tournament;
+  public readonly category?: Category;
 
   constructor(props: RegistrationProps) {
     this.id = props.id;
@@ -71,6 +79,8 @@ export class Registration {
     this.seed = props.seed ?? null;
     this.registeredAt = props.registeredAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
+    this.tournament = props.tournament;
+    this.category = props.category;
   }
 
   /**

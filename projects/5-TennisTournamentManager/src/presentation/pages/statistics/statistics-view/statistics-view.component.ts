@@ -13,11 +13,12 @@
 
 import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {ActivatedRoute, RouterModule} from '@angular/router';
+import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {StatisticsService} from '@application/services';
 import {type StatisticsDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import templateHtml from './statistics-view.component.html?raw';
+import stylesCss from './statistics-view.component.css?inline';
 
 /**
  * StatisticsViewComponent displays player and tournament statistics.
@@ -27,11 +28,12 @@ import templateHtml from './statistics-view.component.html?raw';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: templateHtml,
-  styles: [],
+  styles: [stylesCss],
 })
 export class StatisticsViewComponent implements OnInit {
   /** Services */
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly statisticsService = inject(StatisticsService);
   private readonly authStateService = inject(AuthStateService);
 
@@ -43,6 +45,9 @@ export class StatisticsViewComponent implements OnInit {
 
   /** Error message */
   public errorMessage = signal<string | null>(null);
+
+  /** Expose Object.keys to template for surface performance iteration */
+  public readonly Object = Object;
 
   /**
    * Initializes component and loads statistics.
@@ -70,7 +75,7 @@ export class StatisticsViewComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      const statistics = await this.statisticsService.getStatisticsByParticipant(participantId);
+      const statistics = await this.statisticsService.getParticipantStatistics(participantId);
       this.statistics.set(statistics);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load statistics';
@@ -78,5 +83,12 @@ export class StatisticsViewComponent implements OnInit {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  /**
+   * Navigates back to dashboard.
+   */
+  public goBack(): void {
+    void this.router.navigate(['/dashboard']);
   }
 }

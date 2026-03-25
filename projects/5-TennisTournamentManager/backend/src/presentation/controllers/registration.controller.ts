@@ -71,7 +71,7 @@ export class RegistrationController {
       
       const registrations = await registrationRepository.find({
         where,
-        relations: ['participant', 'category'],
+        relations: ['participant', 'tournament', 'category'],
       });
       
       res.status(HTTP_STATUS.OK).json(registrations);

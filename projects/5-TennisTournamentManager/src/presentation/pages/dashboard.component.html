@@ -148,8 +148,8 @@
                 @for (registration of registrations().slice(0, 5); track registration.id) {
                   <article class="tournament-item" (click)="goToTournament(registration.tournamentId)">
                     <div class="tournament-info">
-                      <div class="tournament-name">{{ registration.tournamentId }}</div>
-                      <div class="tournament-category">{{ registration.categoryId }}</div>
+                      <div class="tournament-name">{{ registration.tournament?.name || 'Unknown Tournament' }}</div>
+                      <div class="tournament-category">{{ registration.category?.name || 'Unknown Category' }}</div>
                     </div>
                     <div class="tournament-status">
                       <span class="status-badge" [class]="registration.status?.toLowerCase()">
@@ -164,7 +164,7 @@
         </section>
 
         <!-- Performance Stats -->
-        <section class="dashboard-card performance-card">
+        <section class="dashboard-card">
           <header class="card-header">
             <h2 class="card-title">
               <span class="card-icon">📊</span>
@@ -173,41 +173,42 @@
             <a routerLink="/statistics" class="card-link">View details →</a>
           </header>
           
-          <div class="card-body">
+          <div class="card-body card-body-compact">
             @if (statistics()) {
-              <div class="performance-grid">
-                <div class="perf-stat">
-                  <div class="perf-value">{{ statistics()!.totalMatches || 0 }}</div>
-                  <div class="perf-label">Matches Played</div>
-                </div>
-                <div class="perf-stat">
-                  <div class="perf-value">
-                    {{ statistics()!.totalWins || 0 }} / {{ statistics()!.totalLosses || 0 }}
+              <div class="performance-stats">
+                <div class="perf-stat-compact">
+                  <div class="perf-icon">🎾</div>
+                  <div class="perf-content">
+                    <div class="perf-value">{{ statistics()!.totalMatches || 0 }}</div>
+                    <div class="perf-label">Matches</div>
                   </div>
-                  <div class="perf-label">Wins / Losses</div>
                 </div>
-                <div class="perf-stat">
-                  <div class="perf-value">{{ statistics()!.currentWinStreak || 0 }}</div>
-                  <div class="perf-label">Current Streak</div>
+                <div class="perf-stat-compact highlight">
+                  <div class="perf-icon">🏆</div>
+                  <div class="perf-content">
+                    <div class="perf-value">{{ statistics()!.totalWins || 0 }} / {{ statistics()!.totalLosses || 0 }}</div>
+                    <div class="perf-label">W / L</div>
+                  </div>
                 </div>
-                <div class="perf-stat">
-                  <div class="perf-value">{{ statistics()!.bestWinStreak || 0 }}</div>
-                  <div class="perf-label">Best Streak</div>
+                <div class="perf-stat-compact">
+                  <div class="perf-icon">🔥</div>
+                  <div class="perf-content">
+                    <div class="perf-value">{{ statistics()!.currentWinStreak || 0 }}</div>
+                    <div class="perf-label">Current</div>
+                  </div>
                 </div>
-                <div class="perf-stat">
-                  <div class="perf-value">{{ statistics()!.totalSetsWon || 0 }}</div>
-                  <div class="perf-label">Sets Won</div>
-                </div>
-                <div class="perf-stat">
-                  <div class="perf-value">{{ statistics()!.totalGamesWon || 0 }}</div>
-                  <div class="perf-label">Games Won</div>
+                <div class="perf-stat-compact">
+                  <div class="perf-icon">⭐</div>
+                  <div class="perf-content">
+                    <div class="perf-value">{{ statistics()!.bestWinStreak || 0 }}</div>
+                    <div class="perf-label">Best</div>
+                  </div>
                 </div>
               </div>
             } @else {
-              <div class="empty-state">
-                <div class="empty-icon">📈</div>
-                <p class="empty-title">No Statistics Available</p>
-                <p class="empty-message">Play matches to build your statistics</p>
+              <div class="empty-state-compact">
+                <span class="empty-icon-small">📈</span>
+                <span class="empty-text">No statistics yet — play some matches!</span>
               </div>
             }
           </div>
