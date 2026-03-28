@@ -84,6 +84,16 @@
               </div>
               
               <div class="info-item">
+                <label class="info-label">ID/NIE</label>
+                <div class="info-value">{{ user()!.idDocument || 'Not provided' }}</div>
+              </div>
+              
+              <div class="info-item">
+                <label class="info-label">Ranking</label>
+                <div class="info-value">{{ user()!.ranking || 'Not ranked' }}</div>
+              </div>
+              
+              <div class="info-item">
                 <label class="info-label">Account Type</label>
                 <div class="info-value">
                   <span class="role-tag">{{ user()!.role }}</span>
@@ -149,6 +159,34 @@
                     class="form-input"
                     formControlName="phone"
                     placeholder="(Optional) +1 234 567 8900" />
+                </div>
+
+                <div class="form-group full-width">
+                  <label for="idDocument" class="form-label">
+                    ID/NIE <span class="required-indicator">*</span>
+                  </label>
+                  <input
+                    id="idDocument"
+                    type="text"
+                    class="form-input"
+                    formControlName="idDocument"
+                    required
+                    placeholder="ID or NIE document" />
+                  <small class="form-hint">Required for tournament registration (FR9)</small>
+                </div>
+
+                <div class="form-group full-width">
+                  <label for="ranking" class="form-label">
+                    Ranking
+                  </label>
+                  <input
+                    id="ranking"
+                    type="number"
+                    class="form-input"
+                    formControlName="ranking"
+                    min="1"
+                    placeholder="Your tennis ranking (optional)" />
+                  <small class="form-hint">Used for tournament seeding (FR19)</small>
                 </div>
               </div>
 

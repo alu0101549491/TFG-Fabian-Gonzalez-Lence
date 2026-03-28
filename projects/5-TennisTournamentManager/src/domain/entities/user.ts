@@ -36,6 +36,10 @@ export interface UserProps {
   isActive?: boolean;
   /** Phone number for contact and notifications. */
   phone?: string | null;
+  /** ID document (ID/NIE) for tournament registration (FR9, FR14). */
+  idDocument?: string | null;
+  /** Player ranking for tournament seeding (FR9, FR14, FR19). */
+  ranking?: number | null;
   /** GDPR data-processing consent flag (NFR14). */
   gdprConsent?: boolean;
   /** Contact information (value object placeholder). */
@@ -72,6 +76,8 @@ export class User {
   public readonly role: UserRole;
   public readonly isActive: boolean;
   public readonly phone: string | null;
+  public readonly idDocument: string | null;
+  public readonly ranking: number | null;
   public readonly gdprConsent: boolean;
   public readonly contactInfo: Record<string, unknown>;
   public readonly privacySettings: PrivacySettings;
@@ -89,6 +95,8 @@ export class User {
     this.role = props.role;
     this.isActive = props.isActive ?? true;
     this.phone = props.phone ?? null;
+    this.idDocument = props.idDocument ?? null;
+    this.ranking = props.ranking ?? null;
     this.gdprConsent = props.gdprConsent ?? false;
     this.contactInfo = props.contactInfo ?? {};
     this.privacySettings = props.privacySettings ?? PrivacySettings.createDefault();

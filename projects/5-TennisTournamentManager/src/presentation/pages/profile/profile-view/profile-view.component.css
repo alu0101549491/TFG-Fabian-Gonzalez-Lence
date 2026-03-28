@@ -291,6 +291,12 @@
   color: var(--color-error);
 }
 
+.required-indicator {
+  color: var(--color-error);
+  font-weight: var(--font-weight-bold);
+  margin-left: 0.25rem;
+}
+
 .form-input {
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
@@ -310,6 +316,13 @@
   font-size: var(--font-size-sm);
   color: var(--color-error);
   margin-top: var(--spacing-xs);
+}
+
+.form-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+  margin-top: var(--spacing-xs);
+  font-style: italic;
 }
 
 .form-actions {

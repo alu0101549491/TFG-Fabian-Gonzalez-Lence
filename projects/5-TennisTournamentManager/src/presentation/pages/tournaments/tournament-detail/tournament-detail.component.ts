@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal, inject} from '@angular/core';
+import {Component, OnInit, inject, signal, computed} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
@@ -98,6 +98,27 @@ export class TournamentDetailComponent implements OnInit {
   public isSubmittingCategory = signal(false);
 
   /** Category loading state (for refresh button) */
+  public isCategoryLoading = signal(false);
+
+  /**
+   * Checks if current user is registered for this tournament.
+   *
+   * @returns True if user has an active registration
+   */
+  public isRegistered(): boolean {
+    return this.userRegistration() !== null;
+  }
+
+  /**
+   * Checks if current user's profile is complete for tournament registration (FR9).
+   * Returns true if user has ID/NIE configured.
+   */
+  public isProfileComplete = computed(() => {
+    const user = this.authStateService.getCurrentUser();
+    return user?.idDocument && user.idDocument.trim().length > 0;
+  });
+
+  /** Categories loading state for refresh */
   public isLoadingCategories = signal(false);
 
   /** Category error message */
@@ -254,6 +275,13 @@ export class TournamentDetailComponent implements OnInit {
     if (!user) {
       // This should not happen as UI hides register button for unauthenticated users
       alert('Please log in first to register for tournaments');
+      return;
+    }
+
+    // FR9 Requirement: Profile completeness validated by UI (button disabled + warning shown)
+    // This check is redundant but kept as safety fallback
+    if (!this.isProfileComplete()) {
+      alert('Please complete your profile first (ID/NIE required).');
       return;
     }
 

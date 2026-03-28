@@ -6,6 +6,344 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.44.5] - 2026-03-28
+
+### Added — Unique Constraint on ID/NIE Documents and Profile Form Updates
+
+**Enhancement**: Added database-level unique constraint on users.idDocument field and updated profile form to clearly indicate ID/NIE is required for tournament registration.
+
+**Problem**: Users could register with duplicate ID/NIE numbers, violating real-world uniqueness of identification documents and potentially allowing registration fraud.
+
+**Solution**:
+- **Database Migration**: Created migration 004 to add UNIQUE constraint on `users.idDocument`
+- **Migration Intelligence**: Automatically detects and clears duplicate values before applying constraint
+- **Backend Validation**: User controller validates ID/NIE uniqueness before saving (application-level defense)
+- **Profile Form Updates**: Marked ID/NIE field as required with red asterisk, removed "(Optional)" text
+- **User-Friendly Errors**: Returns clear error message "This ID/NIE document is already registered to another user"
+
+**Changes**:
+
+1. **Database Migration** ([backend/src/infrastructure/database/migrations/004-add-unique-constraint-id-document.ts](backend/src/infrastructure/database/migrations/004-add-unique-constraint-id-document.ts)):
+   - Adds `uq_users_idDocument` UNIQUE constraint on `users.idDocument` column
+   - Idempotent: checks if constraint already exists before adding
+   - Conflict resolution: finds duplicate values and sets them to NULL with warning
+   - Logs affected users who need to re-enter unique ID/NIE values
+   - Down method to revert constraint if needed
+
+2. **Backend Validation** ([backend/src/presentation/controllers/user.controller.ts](backend/src/presentation/controllers/user.controller.ts)):
+   - Added ID/NIE uniqueness check in `update()` method (similar to username validation)
+   - Added uniqueness check in `updateByAdmin()` method for admin updates
+   - Trims whitespace from ID/NIE before validation
+   - Throws HTTP 409 CONFLICT with descriptive message if duplicate found
+   - Checks both: different user has same ID/NIE AND not the same user updating their own
+
+3. **Frontend Profile Form** ([src/presentation/pages/profile/profile-view/profile-view.component.html](src/presentation/pages/profile/profile-view/profile-view.component.html)):
+   - Added red asterisk `*` to ID/NIE label to indicate required field
+   - Removed "(Optional)" from ID/NIE placeholder text
+   - Added HTML `required` attribute for browser-level validation
+   - Kept ranking as optional (only used for seeding, not mandatory)
+   - Updated ranking placeholder for clarity: "Your tennis ranking (optional)"
+
+4. **Frontend Styling** ([src/presentation/pages/profile/profile-view/profile-view.component.css](src/presentation/pages/profile/profile-view/profile-view.component.css)):
+   - Added `.required-indicator` class styling (red color, bold)
+   - Ensures visual consistency with existing `.form-label.required` pattern
+
+**Migration Execution**: 
+During migration, detected and cleared 1 duplicate ID/NIE (`79410940J` used by 2 accounts). Affected users notified via NULL value and must re-enter unique documents.
+
+**Impact**: 
+- ✅ Prevents duplicate ID/NIE registration (data integrity)
+- ✅ Clear error messages guide users to fix conflicts
+- ✅ Profile form clearly communicates ID/NIE is required
+- ✅ Defense in depth: database constraint + application validation
+- ✅ FR9 compliance enhanced with uniqueness enforcement
+
+---
+
+## [1.44.4] - 2026-03-28
+
+### Fixed — Profile Validation Warning Not Appearing in Tournament Registration
+
+**Fix**: Added profile incomplete warning box to the correct template file (tournament-detail-new.component.html) and added missing `isRegistered()` method.
+
+**Problem**: The orange warning box for incomplete profiles (FR9) wasn't showing up on tournament detail pages. Investigation revealed two issues:
+1. The component uses `tournament-detail-new.component.html` but the warning was only added to the old `tournament-detail.component.html` template
+2. Template called `isRegistered()` method which didn't exist in the component
+
+**Solution**: 
+- Added warning box and button state management to the correct template file (`tournament-detail-new.component.html`)
+- Implemented `isRegistered()` method that checks `userRegistration()` signal
+- Added debug logging during investigation, then removed after confirmation
+
+**Changes**:
+
+1. **Frontend - Tournament Detail Component** ([src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts](src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+   - Added `isRegistered()` method that returns `this.userRegistration() !== null`
+   - Method with JSDoc documentation explaining it checks user registration status
+
+2. **Frontend - Tournament Detail Template** ([src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html](src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html)):
+   - Added profile incomplete warning box inside registration form (before register button)
+   - Warning only appears when `!isProfileComplete()` returns true
+   - Updated register button:
+     - Disabled condition: `[disabled]="!selectedCategoryId() || !isProfileComplete()"`
+     - Dynamic icon: Shows 🔒 when profile incomplete, 🚀 when complete
+     - Dynamic text: "Complete Profile to Register" vs "Register Now"
+   - Positioned within the category selection flow for logical UX
+
+**CSS Styles**: The existing `.profile-incomplete-warning` styles from the CSS file (added in v1.44.2) already apply to this template since they share the same component class.
+
+**Impact**: Users with incomplete profiles now see the warning box correctly, preventing registration attempts until profile is complete (FR9 requirement fully enforced).
+
+---
+
+## [1.44.3] - 2026-03-28
+
+### Fixed — Missing `computed` Import Breaking Tournament Navigation
+
+**Fix**: Added missing `computed` import in tournament-detail component that was causing compilation errors and breaking tournament detail page navigation.
+
+**Problem**: After adding profile validation with computed signal, the `computed` function was used but not imported from `@angular/core`, causing TypeScript compilation errors that prevented the tournament detail page from loading.
+
+**Solution**: Added `computed` to Angular core imports.
+
+**Changes**:
+
+1. **Frontend - Tournament Detail Component** ([src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts](src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+   - Fixed import statement: `import {Component, OnInit, inject, signal, computed} from '@angular/core';`
+   - Previously missing `computed` even though `isProfileComplete()` computed signal was using it
+
+**Impact**: Tournament detail pages now load correctly when clicking on tournaments from the list.
+
+---
+
+## [1.44.2] - 2026-03-28
+
+### Added — Tournament Registration Profile Validation (FR9)
+
+**Enhancement**: Added proactive UI validation to enforce complete user profiles before tournament registration, ensuring FR9 compliance with superior UX.
+
+**Problem**: Users without ID/NIE could register for tournaments, violating FR9 requirement: "Registered users can register for available tournaments providing: full name, ID/NIE, category, ranking, contact data."
+
+**Solution**: 
+- **Computed Signal**: `isProfileComplete()` reactively checks user profile status
+- **Visual Warning**: Orange info box appears when profile is incomplete, guiding users to Profile page
+- **Button State**: "Register Now" button disabled and shows "🔒 Complete Profile to Register" when profile incomplete
+- **Backend Validation**: Registration service validates participant profile (defense in depth)
+- **Better UX**: Prevents action upfront with visible guidance instead of showing error after clicking
+
+**Changes**:
+
+1. **Frontend - Tournament Detail Component** ([src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts](src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+   - Added `computed` import from Angular core
+   - Created `isProfileComplete()` computed signal that reactively checks if user has `idDocument` configured
+   - Updates automatically when authentication state changes
+   - Updated `registerForTournament()` method to include safety fallback check
+   - Comments reference FR9 requirement for traceability
+
+2. **Frontend - Tournament Detail Template** ([src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html](src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html)):
+   - Added orange warning box that appears when `isProfileComplete()` returns false
+   - Warning includes:
+     - ⚠️ Warning icon with pulse animation
+     - "Profile Incomplete" heading
+     - Explanation text directing users to add ID/NIE
+     - "Complete Profile →" button linking to profile page
+   - Updated "Register Now" button:
+     - Disabled when profile incomplete: `[disabled]="... || !isProfileComplete()"`
+     - Dynamic text: Shows "🔒 Complete Profile to Register" when disabled, "📝 Register Now" when enabled
+   - Only shows warning to authenticated users
+
+3. **Frontend - Tournament Detail Styles** ([src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.css](src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.css)):
+   - Added `.profile-incomplete-warning` styles:
+     - Gradient orange/yellow background (#fff3cd to #ffe8a1)
+     - Yellow border (#ffc107) with subtle shadow
+     - Flexbox layout with icon and content
+     - Slide-in animation on appearance
+   - Added `.warning-icon` with pulse animation for attention
+   - Added `.warning-content` styling for text hierarchy
+   - Added `.profile-link` button styling with hover effects and slide animation
+   - Responsive design considerations
+
+4. **Backend - Registration Service** ([src/application/services/registration.service.ts](src/application/services/registration.service.ts)):
+   - Injected `UserRepositoryImpl` to fetch participant data
+   - Added participant profile validation in `registerParticipant()` method
+   - Fetches full participant record before creating registration
+   - Validates `participant.idDocument` is not null/empty
+   - Throws descriptive error: "Profile incomplete: ID/NIE document is required for tournament registration. Please complete your profile."
+   - Comment references FR9 requirement for traceability
+
+**User Experience Flow**:
+1. **Before Completing Profile**: 
+   - Orange warning box visible with helpful guidance
+   - Register button disabled and shows lock icon
+   - Button text explains: "Complete Profile to Register"
+   - Link directs to profile page
+
+2. **After Adding ID/NIE**: 
+   - Warning box disappears automatically (reactive)
+   - Register button enabled and shows "Register Now"
+   - User can proceed with registration
+
+3. **Error Handling**: 
+   - Backend validation ensures no bypass attempts
+   - Clear error messages if profile incomplete
+   - Frontend and backend validation work together
+
+**Specification Compliance**:
+- ✅ **FR9**: "Registered users can register for available tournaments providing: full name, ID/NIE, category, ranking, contact data"
+  - Full name: Already available via firstName + lastName
+  - ID/NIE: Now required and validated proactively
+  - Category: Selected during registration
+  - Ranking: Optional (recommended for FR19 seeding)
+  - Contact: Already available via email + phone
+
+**Technical Details**:
+- Validation occurs at UI (proactive), component (UX), and service (security) layers
+- ID/NIE field remains optional in profile to allow gradual completion
+- Validation enforced at tournament registration point
+- Computed signal provides reactive updates when user data changes
+- Animations enhance visual feedback and user attention
+
+---
+
+## [1.44.1] - 2026-03-28
+
+### Fixed — Database Migration Idempotency
+
+**Fix**: Made all database migrations idempotent and corrected schema mismatches to allow migrations to run successfully on databases where entity changes were already synced.
+
+**Changes**:
+
+1. **Migration 001 - Performance Indexes** ([backend/src/infrastructure/database/migrations/001-add-performance-indexes.ts](backend/src/infrastructure/database/migrations/001-add-performance-indexes.ts)):
+   - **Fixed**: Removed incorrect index on `matches("tournamentId")` column that doesn't exist
+   - **Reason**: Matches table links to tournaments through `bracketId`, not direct `tournamentId` foreign key
+   - **Updated**: Removed `idx_matches_tournament_id` from both up() and down() methods
+   - **Updated**: Documentation comment to reflect correct index structure
+   - Uses `CREATE INDEX IF NOT EXISTS` for safe re-running
+
+2. **Migration 002 - Remove Referee/Spectator Roles** ([backend/src/infrastructure/database/migrations/002-remove-referee-spectator-roles.ts](backend/src/infrastructure/database/migrations/002-remove-referee-spectator-roles.ts)):
+   - **Made Idempotent**: Added check for REFEREE/SPECTATOR enum values before attempting migration
+   - **Logic**: Queries `pg_enum` table to check if old roles exist; skips migration if already applied
+   - **Prevents Error**: Avoids "invalid input value for enum" error when enum already updated
+   - **Commit Message**: "✓ Migration already applied - REFEREE and SPECTATOR roles not found in enum"
+
+3. **Migration 003 - Add User ID/NIE and Ranking** ([backend/src/infrastructure/database/migrations/003-add-user-id-document-ranking.ts](backend/src/infrastructure/database/migrations/003-add-user-id-document-ranking.ts)):
+   - **Made Idempotent**: Added checks for `idDocument` and `ranking` columns before attempting to add them
+   - **Logic**: Queries `information_schema.columns` to check if columns exist; only adds missing ones
+   - **Prevents Error**: Avoids "column already exists" error when entity changes synced in development
+   - **Granular Logging**: Separate success messages for each column ("✓ Added idDocument column", "✓ Added ranking column")
+   - **Commit Message**: "✓ Migration already applied - idDocument and ranking columns exist" (when both exist)
+
+**Migration Result**:
+```
+Running migrations...
+✓ Migration already applied - REFEREE and SPECTATOR roles not found in enum
+✓ Migration already applied - idDocument and ranking columns exist
+✓ Migrations completed successfully
+```
+
+**Technical Details**:
+- All migrations now use `IF NOT EXISTS` / `IF EXISTS` clauses or runtime checks
+- Migrations can safely run multiple times without errors
+- Database state is checked before applying each schema change
+- Rollback (down) methods also use `IF EXISTS` for safe execution
+
+**Impact**: Development and production databases can now run migrations without conflicts, even when entity synchronization occurred in development mode.
+
+---
+
+## [1.44.0] - 2026-03-28
+
+### Added — User Profile ID/NIE and Ranking Fields (FR9, FR14)
+
+**Enhancement**: Added ID/NIE document and ranking fields to user profiles, fulfilling FR9 and FR14 requirements for complete participant registration data.
+
+**Changes**:
+
+1. **Backend - User Entity** ([backend/src/domain/entities/user.entity.ts](backend/src/domain/entities/user.entity.ts)):
+   - Added `idDocument` field: `varchar(20)`, nullable - stores ID or NIE document for tournament registration
+   - Added `ranking` field: `int`, nullable - stores player tennis ranking for seeding
+   - Fields are participant-level attributes that persist across all tournament registrations
+
+2. **Backend - User Controller** ([backend/src/presentation/controllers/user.controller.ts](backend/src/presentation/controllers/user.controller.ts)):
+   - Updated `update()` method to accept and save `idDocument` and `ranking` fields
+   - Updated `getAll()` method to include these fields in query results
+   - Fields returned in user profile responses (passwordHash excluded as before)
+
+3. **Frontend - User Entity** ([src/domain/entities/user.ts](src/domain/entities/user.ts)):
+   - Added `idDocument?: string | null` to `UserProps` interface with JSDoc: "ID document (ID/NIE) for tournament registration (FR9, FR14)"
+   - Added `ranking?: number | null` to `UserProps` interface with JSDoc: "Player ranking for tournament seeding (FR9, FR14, FR19)"
+   - Added corresponding readonly properties to `User` class
+   - Updated constructor to initialize these fields with `null` default values
+
+4. **Frontend - User DTOs** ([src/application/dto/user.dto.ts](src/application/dto/user.dto.ts)):
+   - Updated `UpdateUserDto` interface to include `idDocument?: string | null` and `ranking?: number | null`
+   - Updated `UserDto` interface to include `idDocument?: string | null` and `ranking?: number | null`
+   - Updated `UserSummaryDto` interface to include `idDocument?: string | null` and `ranking?: number | null`
+
+5. **Frontend - Profile Edit Component** ([src/presentation/pages/profile/profile-view/profile-view.component.ts](src/presentation/pages/profile/profile-view/profile-view.component.ts)):
+   - Added `idDocument` and `ranking` controls to profile form
+   - Updated `populateForm()` method to load these fields from user data
+   - Updated `saveProfile()` method to include `idDocument` and `ranking` in update DTO
+
+6. **Frontend - Profile Edit Template** ([src/presentation/pages/profile/profile-view/profile-view.component.html](src/presentation/pages/profile/profile-view/profile-view.component.html)):
+   - **View Mode**: Added display fields for ID/NIE and Ranking in info grid
+   - **Edit Mode**: Added form fields:
+     - ID/NIE text input with placeholder "(Optional) ID or NIE document" and hint "Required for tournament registration (FR9)"
+     - Ranking number input with min="1", placeholder "(Optional) Your tennis ranking", and hint "Used for tournament seeding (FR19)"
+   - Display shows "Not provided" for missing ID/NIE and "Not ranked" for missing ranking
+
+7. **Frontend - Profile Styles** ([src/presentation/pages/profile/profile-view/profile-view.component.css](src/presentation/pages/profile/profile-view/profile-view.component.css)):
+   - Added `.form-hint` class styling: small gray italic text for helpful hints under form fields
+
+8. **Frontend - Tournament Detail** ([src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html](src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html)):
+   - Updated registered players table to include ID/NIE and Ranking columns
+   - ID/NIE displays as is or "—" if not provided
+   - Ranking displays as bold number or "N/R" (Not Ranked) if not provided
+
+9. **Frontend - Admin User Management** ([src/presentation/pages/admin/user-management/user-management.component.ts](src/presentation/pages/admin/user-management/user-management.component.ts)):
+   - Updated user management table to include ID/NIE and Ranking columns
+   - Added `user-id` and `user-ranking` table cell classes
+   - Displays "—" for missing ID/NIE and "N/R" for missing ranking
+
+**Specification Alignment**:
+- **FR9**: "Registered users can register for available tournaments providing: full name, ID/NIE, category, ranking, contact data" — ✅ ID/NIE and ranking now available in user profile
+- **FR14**: "Participants configure: name, surname, ID/NIE, ranking, phone, email, Telegram, WhatsApp, avatar image, privacy preferences" — ✅ ID/NIE and ranking configurable in profile
+- **FR19**: "System automatically places seeds (best-ranked players) in strategic draw positions according to ranking" — ✅ Ranking data now available for seeding algorithms
+
+**User Experience**:
+- Users set ID/NIE and ranking once in their profile, reused across all tournament registrations
+- Optional fields - users can leave blank if not applicable
+- Visible to tournament administrators for registration approval and seeding decisions
+- Displayed in participant lists for transparency
+
+**Database Migration**:
+
+**Migration File**: [003-add-user-id-document-ranking.ts](../backend/src/infrastructure/database/migrations/003-add-user-id-document-ranking.ts)
+
+**To Apply Migration**:
+```bash
+cd backend
+npm run db:migrate
+```
+
+**Migration Details**:
+- **up()**: Adds two nullable columns to `users` table:
+  - `idDocument` (VARCHAR 20) - stores ID/NIE document
+  - `ranking` (INTEGER) - stores player tennis ranking
+- **down()**: Removes both columns (rollback support)
+- **TypeORM Class**: `AddUserIdDocumentRanking1711789012345`
+
+**Migration Output**:
+```
+Running migrations...
+✓ Added idDocument and ranking columns to users table
+✓ Migrations completed successfully
+```
+
+**Note**: Existing user records will have `NULL` values for these fields until users update their profiles.
+
+---
+
 ## [1.43.9] - 2026-03-25
 
 ### Improved — Statistics Page Layout Optimization

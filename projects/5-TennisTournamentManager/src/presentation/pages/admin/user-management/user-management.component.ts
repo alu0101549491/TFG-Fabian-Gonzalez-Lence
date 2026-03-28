@@ -159,6 +159,8 @@ import {UserRole} from '@domain/enumerations/user-role';
                 <th>Username</th>
                 <th>Email</th>
                 <th>Name</th>
+                <th>ID/NIE</th>
+                <th>Ranking</th>
                 <th>Role</th>
                 <th>Status</th>
                 <th>Last Login</th>
@@ -171,6 +173,8 @@ import {UserRole} from '@domain/enumerations/user-role';
                   <td class="user-username">{{ user.username }}</td>
                   <td class="user-email">{{ user.email }}</td>
                   <td class="user-name">{{ user.firstName }} {{ user.lastName }}</td>
+                  <td class="user-id">{{ user.idDocument || '—' }}</td>
+                  <td class="user-ranking">{{ user.ranking || 'N/R' }}</td>
                   <td>
                     <span [class]="'role-badge role-' + getRoleColor(user.role)">
                       {{ getRoleLabel(user.role) }}

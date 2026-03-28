@@ -76,7 +76,7 @@ export class UserController {
         throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       
-      const {username, firstName, lastName, phone} = req.body;
+      const {username, firstName, lastName, phone, idDocument, ranking} = req.body;
       
       // Check username uniqueness if changing
       if (username && username !== user.username) {
@@ -87,9 +87,24 @@ export class UserController {
         user.username = username;
       }
       
+      // Check ID/NIE uniqueness if changing (FR9 - unique identification)
+      if (idDocument !== undefined && idDocument !== null && idDocument.trim() !== '') {
+        const trimmedDoc = idDocument.trim();
+        if (trimmedDoc !== user.idDocument) {
+          const existingIdDoc = await userRepository.findOne({where: {idDocument: trimmedDoc}});
+          if (existingIdDoc && existingIdDoc.id !== user.id) {
+            throw new AppError('This ID/NIE document is already registered to another user', HTTP_STATUS.CONFLICT, ERROR_CODES.ALREADY_EXISTS);
+          }
+          user.idDocument = trimmedDoc;
+        }
+      } else if (idDocument === null || idDocument === '') {
+        user.idDocument = null;
+      }
+      
       if (firstName) user.firstName = firstName;
       if (lastName) user.lastName = lastName;
       if (phone !== undefined) user.phone = phone;
+      if (ranking !== undefined) user.ranking = ranking;
       
       await userRepository.save(user);
       
@@ -134,6 +149,8 @@ export class UserController {
         'user.role',
         'user.isActive',
         'user.phone',
+        'user.idDocument',
+        'user.ranking',
         'user.createdAt',
         'user.lastLogin',
       ]);
@@ -213,7 +230,7 @@ export class UserController {
   public async updateByAdmin(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
-      const {username, email, firstName, lastName, role, isActive, phone, currentPassword, newPassword} = req.body;
+      const {username, email, firstName, lastName, role, isActive, phone, idDocument, ranking, currentPassword, newPassword} = req.body;
       
       const userRepository = AppDataSource.getRepository(User);
       
@@ -269,11 +286,26 @@ export class UserController {
         user.email = email;
       }
       
+      // Check ID/NIE uniqueness if changing (FR9 - unique identification)
+      if (idDocument !== undefined && idDocument !== null && idDocument.trim() !== '') {
+        const trimmedDoc = idDocument.trim();
+        if (trimmedDoc !== user.idDocument) {
+          const existingIdDoc = await userRepository.findOne({where: {idDocument: trimmedDoc}});
+          if (existingIdDoc && existingIdDoc.id !== user.id) {
+            throw new AppError('This ID/NIE document is already registered to another user', HTTP_STATUS.CONFLICT, ERROR_CODES.ALREADY_EXISTS);
+          }
+          user.idDocument = trimmedDoc;
+        }
+      } else if (idDocument === null || idDocument === '') {
+        user.idDocument = null;
+      }
+      
       if (firstName !== undefined) user.firstName = firstName;
       if (lastName !== undefined) user.lastName = lastName;
       if (role !== undefined) user.role = role;
       if (isActive !== undefined) user.isActive = isActive;
       if (phone !== undefined) user.phone = phone;
+      if (ranking !== undefined) user.ranking = ranking;
       
       await userRepository.save(user);
       

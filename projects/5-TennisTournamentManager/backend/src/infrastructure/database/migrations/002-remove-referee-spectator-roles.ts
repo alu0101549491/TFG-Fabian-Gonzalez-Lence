@@ -28,8 +28,25 @@ import {MigrationInterface, QueryRunner} from 'typeorm';
 export class RemoveRefereeSpectatorRoles1711234567890 implements MigrationInterface {
   /**
    * Apply migration: migrate users and update enum.
+   * Made idempotent - checks if migration already applied.
    */
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Check if REFEREE enum value exists (migration already applied if not)
+    const enumCheckResult = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_enum e
+        JOIN pg_type t ON e.enumtypid = t.oid
+        WHERE t.typname = 'users_role_enum' AND e.enumlabel IN ('REFEREE', 'SPECTATOR')
+      ) AS has_old_roles;
+    `);
+    
+    const hasOldRoles = enumCheckResult[0]?.has_old_roles;
+    
+    if (!hasOldRoles) {
+      console.log('✓ Migration already applied - REFEREE and SPECTATOR roles not found in enum');
+      return;
+    }
+
     // Step 1: Migrate REFEREE users to TOURNAMENT_ADMIN
     await queryRunner.query(`
       UPDATE users 
@@ -71,6 +88,8 @@ export class RemoveRefereeSpectatorRoles1711234567890 implements MigrationInterf
     await queryRunner.query(`
       ALTER TYPE users_role_enum_new RENAME TO users_role_enum;
     `);
+    
+    console.log('✓ Removed REFEREE and SPECTATOR roles from enum');
   }
 
   /**

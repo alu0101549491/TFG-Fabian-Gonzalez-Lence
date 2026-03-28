@@ -60,6 +60,8 @@ export class ProfileViewComponent implements OnInit {
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     phone: [''],
+    idDocument: [''],
+    ranking: [null],
   });
 
   /** Check if current user is system admin */
@@ -92,6 +94,8 @@ export class ProfileViewComponent implements OnInit {
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone || '',
+      idDocument: user.idDocument || '',
+      ranking: user.ranking || null,
     });
   }
 
@@ -135,6 +139,8 @@ export class ProfileViewComponent implements OnInit {
         firstName: formValue.firstName?.trim(),
         lastName: formValue.lastName?.trim(),
         phone: formValue.phone?.trim() || null,
+        idDocument: formValue.idDocument?.trim() || null,
+        ranking: formValue.ranking ? Number(formValue.ranking) : null,
       };
 
       // Call user service to update profile

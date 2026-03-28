@@ -37,6 +37,8 @@ export interface UpdateUserDto {
   firstName?: string;
   lastName?: string;
   phone?: string | null;
+  idDocument?: string | null;
+  ranking?: number | null;
 }
 
 /** DTO for authentication response. */
@@ -55,6 +57,8 @@ export interface UserDto {
   role: UserRole;
   isActive: boolean;
   phone: string | null;
+  idDocument?: string | null;
+  ranking?: number | null;
   createdAt: Date;
   lastLogin: Date | null;
 }
@@ -69,6 +73,8 @@ export interface UserSummaryDto {
   role: UserRole;
   isActive: boolean;
   phone: string | null;
+  idDocument?: string | null;
+  ranking?: number | null;
   createdAt: Date;
   lastLogin: Date | null;
 }

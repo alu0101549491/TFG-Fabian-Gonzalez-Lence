@@ -36,7 +36,6 @@ import {MigrationInterface, QueryRunner} from 'typeorm';
  * - `idx_registrations_tournament_status` (tournamentId, status) - Composite
  * 
  * **Matches Table**:
- * - `idx_matches_tournament_id` (tournamentId) - Tournament matches
  * - `idx_matches_bracket_id` (bracketId) - Bracket matches
  * - `idx_matches_status` (status) - Match status filtering
  * - `idx_matches_scheduled_time` (scheduledTime) - Order of play queries
@@ -98,10 +97,7 @@ export class AddPerformanceIndexes1714607234567 implements MigrationInterface {
     CREATE INDEX IF NOT EXISTS idx_registrations_tournament_status ON registrations("tournamentId", status);
   `);
 
-  // Matches indexes
-  await queryRunner.query(`
-    CREATE INDEX IF NOT EXISTS idx_matches_tournament_id ON matches("tournamentId");
-  `);
+  // Matches indexes (matches are linked to brackets, not directly to tournaments)
   await queryRunner.query(`
     CREATE INDEX IF NOT EXISTS idx_matches_bracket_id ON matches("bracketId");
   `);
@@ -166,7 +162,6 @@ export class AddPerformanceIndexes1714607234567 implements MigrationInterface {
   await queryRunner.query(`DROP INDEX IF EXISTS idx_registrations_tournament_status;`);
 
   // Drop Matches indexes
-  await queryRunner.query(`DROP INDEX IF EXISTS idx_matches_tournament_id;`);
   await queryRunner.query(`DROP INDEX IF EXISTS idx_matches_bracket_id;`);
   await queryRunner.query(`DROP INDEX IF EXISTS idx_matches_status;`);
   await queryRunner.query(`DROP INDEX IF EXISTS idx_matches_scheduled_time;`);

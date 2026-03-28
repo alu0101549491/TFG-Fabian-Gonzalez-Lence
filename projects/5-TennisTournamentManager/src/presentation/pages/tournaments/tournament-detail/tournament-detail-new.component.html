@@ -265,13 +265,37 @@
                         }
                       </div>
                       
+                      <!-- Profile Incomplete Warning (FR9) -->
+                      @if (!isProfileComplete()) {
+                        <div class="profile-incomplete-warning">
+                          <span class="warning-icon">⚠️</span>
+                          <div class="warning-content">
+                            <strong>Profile Incomplete</strong>
+                            <p>Please add your ID/NIE document in your profile before registering for tournaments.</p>
+                            <a routerLink="/profile" class="profile-link">Complete Profile →</a>
+                          </div>
+                        </div>
+                      }
+                      
                       <button 
                         class="register-btn"
                         (click)="registerForTournament()"
-                        [disabled]="!selectedCategoryId()"
+                        [disabled]="!selectedCategoryId() || !isProfileComplete()"
                       >
-                        <span class="btn-icon">🚀</span>
-                        <span>Register Now</span>
+                        <span class="btn-icon">
+                          @if (!isProfileComplete()) {
+                            🔒
+                          } @else {
+                            🚀
+                          }
+                        </span>
+                        <span>
+                          @if (!isProfileComplete()) {
+                            Complete Profile to Register
+                          } @else {
+                            Register Now
+                          }
+                        </span>
                       </button>
                     </div>
                   } @else {

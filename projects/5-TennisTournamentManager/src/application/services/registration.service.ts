@@ -17,6 +17,7 @@ import {CreateRegistrationDto, RegistrationDto, UpdateRegistrationStatusDto} fro
 import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registration.repository';
 import {TournamentRepositoryImpl} from '@infrastructure/repositories/tournament.repository';
 import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repository';
+import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
 import {NotificationService} from './notification.service';
 import {Registration} from '@domain/entities/registration';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
@@ -32,6 +33,7 @@ export class RegistrationService implements IRegistrationService {
   private readonly registrationRepository = inject(RegistrationRepositoryImpl);
   private readonly tournamentRepository = inject(TournamentRepositoryImpl);
   private readonly categoryRepository = inject(CategoryRepositoryImpl);
+  private readonly userRepository = inject(UserRepositoryImpl);
   private readonly notificationService = inject(NotificationService);
   // TODO: inject QuotaManager
 
@@ -54,6 +56,16 @@ export class RegistrationService implements IRegistrationService {
     
     if (!participantId || participantId.trim().length === 0) {
       throw new Error('Participant ID is required');
+    }
+    
+    // FR9 Requirement: Validate participant has completed profile (ID/NIE required)
+    const participant = await this.userRepository.findById(participantId);
+    if (!participant) {
+      throw new Error('Participant not found');
+    }
+    
+    if (!participant.idDocument || participant.idDocument.trim().length === 0) {
+      throw new Error('Profile incomplete: ID/NIE document is required for tournament registration. Please complete your profile.');
     }
     
     // Check if tournament exists and is accepting registrations
