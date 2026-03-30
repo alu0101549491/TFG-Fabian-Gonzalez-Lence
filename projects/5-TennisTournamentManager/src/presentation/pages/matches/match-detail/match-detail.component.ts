@@ -155,23 +155,32 @@ export class MatchDetailComponent implements OnInit {
    */
   private async checkPermissions(match: MatchDto): Promise<void> {
     const user = this.authStateService.getCurrentUser();
-    if (!user || user.role !== UserRole.TOURNAMENT_ADMIN) {
+    if (!user) {
       this.canManageMatch.set(false);
       return;
     }
 
-    try {
-      // Get bracket to find tournament
-      const bracket = await this.bracketService.getBracketById(match.bracketId);
-      const tournament = await this.tournamentService.getTournamentById(bracket.tournamentId);
+    // System admins and tournament admins can manage matches
+    if (user.role === UserRole.SYSTEM_ADMIN || user.role === UserRole.TOURNAMENT_ADMIN) {
+      try {
+        // Get bracket to find tournament
+        const bracket = await this.bracketService.getBracketById(match.bracketId);
+        const tournament = await this.tournamentService.getTournamentById(bracket.tournamentId);
 
-      // Store tournament data for date restrictions
-      this.tournament.set(tournament);
+        // Store tournament data for date restrictions
+        this.tournament.set(tournament);
 
-      // Check if user is the tournament organizer
-      this.canManageMatch.set(tournament.organizerId === user.id);
-    } catch (error) {
-      console.error('Error checking permissions:', error);
+        // System admins can manage any match
+        // Tournament admins can manage matches for tournaments they organize
+        this.canManageMatch.set(
+          user.role === UserRole.SYSTEM_ADMIN || 
+          tournament.organizerId === user.id
+        );
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+        this.canManageMatch.set(false);
+      }
+    } else {
       this.canManageMatch.set(false);
     }
   }

@@ -129,25 +129,93 @@ export class MatchController {
   /**
    * PUT /api/matches/:id
    * Updates match details (status, scores, etc.).
+   * Automatically advances winners to next round in single elimination.
    */
   public async update(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
       const matchRepository = AppDataSource.getRepository(Match);
       
-      const match = await matchRepository.findOne({where: {id}});
+      const match = await matchRepository.findOne({
+        where: {id},
+        relations: ['bracket'],
+      });
       
       if (!match) {
         throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       
-      Object.assign(match, req.body);
-      await matchRepository.save(match);
+      const previousWinnerId = match.winnerId;
       
-      res.status(HTTP_STATUS.OK).json(match);
+      Object.assign(match, req.body);
+      const updatedMatch = await matchRepository.save(match);
+      
+      // If match is completed and has a winner, advance to next round
+      if (updatedMatch.winnerId && updatedMatch.winnerId !== previousWinnerId) {
+        await this.advanceWinnerToNextRound(updatedMatch, matchRepository);
+      }
+      
+      res.status(HTTP_STATUS.OK).json(updatedMatch);
     } catch (error) {
       next(error);
     }
+  }
+
+  /**
+   * Advances the winner of a match to the next round.
+   * For single elimination brackets only.
+   *
+   * @param match - The completed match
+   * @param matchRepository - Match repository
+   */
+  private async advanceWinnerToNextRound(
+    match: Match,
+    matchRepository: any,
+  ): Promise<void> {
+    // Only advance winners in single elimination brackets
+    const bracket = match.bracket;
+    if (!bracket || bracket.bracketType !== 'SINGLE_ELIMINATION') {
+      return;
+    }
+
+    // Don't advance if this is the final match (no next round)
+    const nextRound = match.round + 1;
+    const nextRoundMatches = await matchRepository.find({
+      where: {
+        bracketId: match.bracketId,
+        round: nextRound,
+      },
+      order: {matchNumber: 'ASC'},
+    });
+
+    if (nextRoundMatches.length === 0) {
+      // This was the final match
+      return;
+    }
+
+    // Calculate which match in the next round this winner advances to
+    // In single elimination: matches (2n-1) and (2n) feed into match n
+    const nextMatchIndex = Math.ceil(match.matchNumber / 2) - 1;
+    const nextMatch = nextRoundMatches[nextMatchIndex];
+
+    if (!nextMatch) {
+      console.error(`Could not find next match for match ${match.matchNumber} in round ${match.round}`);
+      return;
+    }
+
+    // Determine if winner goes to participant1 or participant2 slot
+    // Odd match numbers go to participant1, even to participant2
+    if (match.matchNumber % 2 === 1) {
+      nextMatch.participant1Id = match.winnerId;
+    } else {
+      nextMatch.participant2Id = match.winnerId;
+    }
+
+    await matchRepository.save(nextMatch);
+
+    console.log(
+      `✅ Advanced winner ${match.winnerId} from Match ${match.matchNumber} (Round ${match.round}) to Match ${nextMatch.matchNumber} (Round ${nextMatch.round})`
+    );
   }
   
   /**

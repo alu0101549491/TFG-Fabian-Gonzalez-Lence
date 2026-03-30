@@ -65,6 +65,11 @@ export class TournamentDetailComponent implements OnInit {
   /** Registered players with their details */
   public registeredPlayers = signal<Array<{user: User; registration: RegistrationDto}>>([]);
 
+  /** Count of pending registrations */
+  public pendingRegistrationsCount = computed(() => {
+    return this.registeredPlayers().filter(p => p.registration.status === RegistrationStatus.PENDING).length;
+  });
+
   /** Selected category ID for registration */
   public selectedCategoryId = signal<string | null>(null);
 
@@ -937,6 +942,129 @@ export class TournamentDetailComponent implements OnInit {
       const message = error instanceof Error ? error.message : 'Failed to remove participant';
       alert(`Error: ${message}`);
     }
+  }
+
+  /**
+   * Approves all pending registrations.
+   */
+  public async approveAllRegistrations(): Promise<void> {
+    const pendingPlayers = this.registeredPlayers().filter(
+      player => player.registration.status === RegistrationStatus.PENDING
+    );
+
+    if (pendingPlayers.length === 0) {
+      alert('No pending registrations to approve.');
+      return;
+    }
+
+    const confirmed = confirm(
+      `Approve all ${pendingPlayers.length} pending registration${pendingPlayers.length > 1 ? 's' : ''}?\n\n` +
+      `This will approve:\n${pendingPlayers.slice(0, 5).map(p => `• ${p.user.username || p.user.firstName + ' ' + p.user.lastName || p.user.email}`).join('\n')}` +
+      (pendingPlayers.length > 5 ? `\n...and ${pendingPlayers.length - 5} more` : '')
+    );
+    
+    if (!confirmed) return;
+
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to perform this action');
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+    const errors: string[] = [];
+
+    for (const player of pendingPlayers) {
+      try {
+        // Check if category is full
+        const isFull = this.isCategoryFull(player.registration.categoryId);
+        
+        const updateData: UpdateRegistrationStatusDto = {
+          registrationId: player.registration.id,
+          status: RegistrationStatus.ACCEPTED,
+          acceptanceType: isFull ? AcceptanceType.ALTERNATE : AcceptanceType.DIRECT_ACCEPTANCE,
+        };
+
+        await this.registrationService.updateStatus(updateData, currentUser.id);
+        successCount++;
+      } catch (error) {
+        failCount++;
+        const playerName = player.user.username || player.user.firstName + ' ' + player.user.lastName || player.user.email;
+        errors.push(`${playerName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    await this.loadPlayers();
+
+    let message = `✅ Approved ${successCount} registration${successCount !== 1 ? 's' : ''}`;
+    if (failCount > 0) {
+      message += `\n❌ Failed to approve ${failCount}:\n${errors.slice(0, 3).join('\n')}`;
+      if (errors.length > 3) {
+        message += `\n...and ${errors.length - 3} more errors`;
+      }
+    }
+    alert(message);
+  }
+
+  /**
+   * Rejects all pending registrations.
+   */
+  public async rejectAllRegistrations(): Promise<void> {
+    const pendingPlayers = this.registeredPlayers().filter(
+      player => player.registration.status === RegistrationStatus.PENDING
+    );
+
+    if (pendingPlayers.length === 0) {
+      alert('No pending registrations to reject.');
+      return;
+    }
+
+    const confirmed = confirm(
+      `⚠️ WARNING: Reject all ${pendingPlayers.length} pending registration${pendingPlayers.length > 1 ? 's' : ''}?\n\n` +
+      `This will reject:\n${pendingPlayers.slice(0, 5).map(p => `• ${p.user.username || p.user.firstName + ' ' + p.user.lastName || p.user.email}`).join('\n')}` +
+      (pendingPlayers.length > 5 ? `\n...and ${pendingPlayers.length - 5} more` : '') +
+      `\n\nThis action cannot be undone. Players will NOT be able to participate.`
+    );
+    
+    if (!confirmed) return;
+
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to perform this action');
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+    const errors: string[] = [];
+
+    for (const player of pendingPlayers) {
+      try {
+        const updateData: UpdateRegistrationStatusDto = {
+          registrationId: player.registration.id,
+          status: RegistrationStatus.REJECTED,
+        };
+
+        await this.registrationService.updateStatus(updateData, currentUser.id);
+        successCount++;
+      } catch (error) {
+        failCount++;
+        const playerName = player.user.username || player.user.firstName + ' ' + player.user.lastName || player.user.email;
+        errors.push(`${playerName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    await this.loadPlayers();
+
+    let message = `✅ Rejected ${successCount} registration${successCount !== 1 ? 's' : ''}`;
+    if (failCount > 0) {
+      message += `\n❌ Failed to reject ${failCount}:\n${errors.slice(0, 3).join('\n')}`;
+      if (errors.length > 3) {
+        message += `\n...and ${errors.length - 3} more errors`;
+      }
+    }
+    alert(message);
   }
 
   /**

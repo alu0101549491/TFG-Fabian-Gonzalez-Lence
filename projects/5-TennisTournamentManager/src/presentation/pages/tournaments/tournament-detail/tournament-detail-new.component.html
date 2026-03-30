@@ -385,14 +385,34 @@
             <div class="info-card">
               <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2>👥 Registered Participants ({{ registeredPlayers().length }})</h2>
-                <button
-                  class="primary-btn"
-                  (click)="showAddParticipantModal()"
-                  style="padding: 0.5rem 1rem; background-color: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
-                  title="Manually add a participant to this tournament"
-                >
-                  ➕ Add Participant
-                </button>
+                <div style="display: flex; gap: 0.5rem;">
+                  @if (pendingRegistrationsCount() > 0) {
+                    <button
+                      class="approve-all-btn"
+                      (click)="approveAllRegistrations()"
+                      style="padding: 0.5rem 1rem; background-color: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
+                      title="Approve all pending registrations"
+                    >
+                      ✓ Approve All
+                    </button>
+                    <button
+                      class="reject-all-btn"
+                      (click)="rejectAllRegistrations()"
+                      style="padding: 0.5rem 1rem; background-color: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
+                      title="Reject all pending registrations"
+                    >
+                      ✕ Reject All
+                    </button>
+                  }
+                  <button
+                    class="primary-btn"
+                    (click)="showAddParticipantModal()"
+                    style="padding: 0.5rem 1rem; background-color: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
+                    title="Manually add a participant to this tournament"
+                  >
+                    ➕ Add Participant
+                  </button>
+                </div>
               </div>
               
               @if (registeredPlayers().length === 0) {

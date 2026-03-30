@@ -44,9 +44,15 @@ export function errorMiddleware(
   res: Response,
   next: NextFunction
 ): void {
-  console.error('Error:', error);
+  console.error('❌ [ERROR]', {
+    method: req.method,
+    path: req.path,
+    error: error.message,
+    stack: error.stack?.split('\n')[0],
+  });
   
   if (error instanceof AppError) {
+    console.error(`❌ AppError: ${error.statusCode} - ${error.errorCode} - ${error.message}`);
     res.status(error.statusCode).json({
       error: error.errorCode,
       message: error.message,

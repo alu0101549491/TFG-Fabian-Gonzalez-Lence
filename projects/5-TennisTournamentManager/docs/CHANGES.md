@@ -6,6 +6,70 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.46.12] - 2026-03-30
+
+### Added — Automatic Winner Advancement
+
+**Feature**: 
+When a match is completed and a winner is declared, the winner automatically advances to the next round in single elimination brackets. The next round match is updated with the winner's name, eliminating the need for manual participant assignment.
+
+**Why Needed**:
+Previously, when a match was completed, administrators had to manually assign the winner to the next round's match. This was tedious, error-prone, and didn't reflect standard tournament bracket behavior where winners automatically advance.
+
+**Implementation**:
+
+**Backend (match.controller.ts)**:
+- **Modified `update()` method**: Now detects when a match winner is set and triggers automatic advancement
+- **New `advanceWinnerToNextRound()` method**: 
+  - Calculates which next-round match the winner should advance to
+  - Uses the formula: matches (2n-1) and (2n) from round R feed into match n in round R+1
+  - Determines correct participant slot (participant1 or participant2) based on match number parity
+  - Updates the next round match with the winner's ID
+  - Only operates on single elimination brackets
+
+**Logic**:
+```typescript
+// Match pairing examples:
+// Round 1: Match 1 & Match 2 → Round 2: Match 1 (participant1 & participant2)
+// Round 1: Match 3 & Match 4 → Round 2: Match 2 (participant1 & participant2)
+// Odd match numbers → participant1 slot
+// Even match numbers → participant2 slot
+```
+
+**User Experience**:
+1. **Tournament Admin** completes a match by setting a winner
+2. **System automatically**:
+   - Finds the corresponding next round match
+   - Assigns the winner to the correct participant slot
+   - Updates the visual bracket display
+3. **Players see** their names appear in next round matches immediately
+4. **No manual intervention** required from organizers
+
+**Edge Cases Handled**:
+- ✅ Final match (no next round) - no advancement attempted
+- ✅ Round robin and match play brackets - advancement skipped (not applicable)
+- ✅ BYE matches - winner already set during generation
+- ✅ Missing next match - error logged, safe failure
+
+**Example Flow**:
+```
+Quarter-Finals:
+  Match 1: Rafael Nadal defeats Carlos Alcaraz → Winner: Nadal
+  Match 2: Andy Murray vs Daniil Medvedev → (scheduled)
+
+Semi-Finals:
+  Match 5: Rafael Nadal (auto-filled) vs TBD → (scheduled)
+```
+
+**Benefits**:
+- 🚀 Faster tournament progression
+- ✅ Eliminates manual data entry errors  
+- 👥 Better user experience (instant bracket updates)
+- 🏆 Matches real tournament behavior
+- 📊 Maintains bracket integrity
+
+---
+
 ## [1.46.11] - 2026-03-30
 
 ### Fixed — System Admin Authorization
@@ -17,7 +81,9 @@ System administrators were unable to perform tournament organizational tasks (pu
 
 1. **Backend Authorization**: Several authorization checks in `tournament.controller.ts` and `user.controller.ts` were checking for `role !== 'ADMIN'` (an incorrect string literal) instead of `role !== UserRole.SYSTEM_ADMIN` (the proper enum value). Since the `UserRole.SYSTEM_ADMIN` enum equals `'SYSTEM_ADMIN'`, not `'ADMIN'`, these checks always failed for system administrators.
 
-2. **Frontend Permission Check**: The `canManageTournament()` method in `bracket-view.component.ts` was checking for `user.roles` (array) instead of `user.role` (single property). Since `UserDto` has a single `role` field, not a `roles` array, this check always failed, preventing the publish button from appearing.
+2. **Frontend Bracket Permission Check**: The `canManageTournament()` method in `bracket-view.component.ts` was checking for `user.roles` (array) instead of `user.role` (single property). Since `UserDto` has a single `role` field, not a `roles` array, this check always failed, preventing the publish button from appearing.
+
+3. **Frontend Match Permission Check**: The `checkPermissions()` method in `match-detail.component.ts` only checked for `UserRole.TOURNAMENT_ADMIN` and required the user to be the tournament organizer. It didn't recognize `SYSTEM_ADMIN` role at all, preventing system admins from scheduling matches.
 
 **Fixed Authorization Checks**:
 
@@ -33,10 +99,19 @@ System administrators were unable to perform tournament organizational tasks (pu
 **Frontend (bracket-view.component.ts)**:
 - **canManageTournament()**: Changed `user.roles || []` array check to direct `user.role` enum comparison
 
+**Frontend (match-detail.component.ts)**:
+- **checkPermissions()**: 
+  - Added `UserRole.SYSTEM_ADMIN` to the role check (previously only checked `TOURNAMENT_ADMIN`)
+  - System admins can now manage any match
+  - Tournament admins can manage matches for tournaments they organize
+
 **Impact**:
 System administrators can now:
 - ✅ See the "Publish Bracket" button in the UI
 - ✅ Publish brackets successfully
+- ✅ See the "Schedule Match" button for all matches
+- ✅ Schedule matches (assign court and time)
+- ✅ Submit match scores
 - ✅ Upload and delete tournament logos
 - ✅ Update tournament status transitions
 - ✅ Upload and delete user avatars for any user

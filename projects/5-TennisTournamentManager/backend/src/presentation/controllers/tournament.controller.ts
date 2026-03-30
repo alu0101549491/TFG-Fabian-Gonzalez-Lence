@@ -21,6 +21,11 @@ import {Court} from '../../domain/entities/court.entity';
 import {Bracket} from '../../domain/entities/bracket.entity';
 import {Match} from '../../domain/entities/match.entity';
 import {Phase} from '../../domain/entities/phase.entity';
+import {Score} from '../../domain/entities/score.entity';
+import {Standing} from '../../domain/entities/standing.entity';
+import {Announcement} from '../../domain/entities/announcement.entity';
+import {Statistics} from '../../domain/entities/statistics.entity';
+import {OrderOfPlay} from '../../domain/entities/order-of-play.entity';
 import {TournamentStatus} from '../../domain/enumerations/tournament-status';
 import {UserRole} from '../../domain/enumerations/user-role';
 import {AuthRequest} from '../middleware/auth.middleware';
@@ -198,6 +203,11 @@ export class TournamentController {
       const bracketRepository = AppDataSource.getRepository(Bracket);
       const matchRepository = AppDataSource.getRepository(Match);
       const phaseRepository = AppDataSource.getRepository(Phase);
+      const scoreRepository = AppDataSource.getRepository(Score);
+      const standingRepository = AppDataSource.getRepository(Standing);
+      const announcementRepository = AppDataSource.getRepository(Announcement);
+      const statisticsRepository = AppDataSource.getRepository(Statistics);
+      const orderOfPlayRepository = AppDataSource.getRepository(OrderOfPlay);
       
       const tournament = await tournamentRepository.findOne({where: {id}});
       
@@ -216,7 +226,11 @@ export class TournamentController {
       const isTournamentAdmin = user.role === UserRole.TOURNAMENT_ADMIN;
       const isOrganizer = tournament.organizerId === userId;
       
+      console.error(`🗑️ [DELETE Tournament] User: ${user.email}, Role: ${user.role}, isSystemAdmin: ${isSystemAdmin}`);
+      console.error(`🗑️ [DELETE Tournament] Tournament: ${id}, Status: ${tournament.status}, Organizer: ${tournament.organizerId}`);
+      
       if (!isSystemAdmin && !isTournamentAdmin && !isOrganizer) {
+        console.error(`❌ [DELETE Tournament] Authorization failed`);
         throw new AppError(
           'User is not authorized to delete this tournament',
           HTTP_STATUS.FORBIDDEN,
@@ -227,17 +241,32 @@ export class TournamentController {
       // System admins can delete any tournament (including finalized)
       // Tournament admins and organizers cannot delete finalized tournaments
       if (tournament.status === TournamentStatus.FINALIZED && !isSystemAdmin) {
+        console.error(`❌ [DELETE Tournament] Cannot delete FINALIZED tournament. isSystemAdmin: ${isSystemAdmin}`);
         throw new AppError(
-          'Cannot delete finalized tournaments. Historical records must be preserved.',
+          `Cannot delete finalized tournaments. Historical records must be preserved. (User role: ${user.role}, isSystemAdmin: ${isSystemAdmin})`,
           HTTP_STATUS.BAD_REQUEST,
           ERROR_CODES.INVALID_INPUT
         );
       }
       
+      console.error(`✅ [DELETE Tournament] Authorization passed, proceeding with deletion`);
+      
       console.log(`🗑️ Deleting tournament ${id} and all related data...`);
       
       // Delete related data in the correct order to respect foreign key constraints
-      // 1. Delete registrations first (they reference both tournament and category)
+      // 1. Delete announcements (they reference tournament)
+      await announcementRepository.delete({tournamentId: id});
+      console.log(`✅ Deleted announcements for tournament ${id}`);
+      
+      // 2. Delete order of play entries (they reference tournament)
+      await orderOfPlayRepository.delete({tournamentId: id});
+      console.log(`✅ Deleted order of play for tournament ${id}`);
+      
+      // 3. Delete statistics (they reference tournament)
+      await statisticsRepository.delete({tournamentId: id});
+      console.log(`✅ Deleted statistics for tournament ${id}`);
+      
+      // 4. Delete registrations (they reference both tournament and category)
       await registrationRepository.delete({tournamentId: id});
       console.log(`✅ Deleted registrations for tournament ${id}`);
       
@@ -249,10 +278,18 @@ export class TournamentController {
         const brackets = await bracketRepository.find({where: {categoryId: category.id}});
         
         for (const bracket of brackets) {
-          // 2a-i. Delete matches first (they reference brackets)
+          // 2a-i. Get all matches for this bracket to delete their scores first
+          const matches = await matchRepository.find({where: {bracketId: bracket.id}});
+          
+          for (const match of matches) {
+            // Delete scores first (they reference matches)
+            await scoreRepository.delete({matchId: match.id});
+          }
+          
+          // 2a-ii. Delete matches (they reference brackets)
           await matchRepository.delete({bracketId: bracket.id});
           
-          // 2a-ii. Delete phases (they reference brackets)
+          // 2a-iii. Delete phases (they reference brackets)
           await phaseRepository.delete({bracketId: bracket.id});
         }
         
@@ -261,20 +298,30 @@ export class TournamentController {
       }
       console.log(`✅ Deleted brackets, phases, and matches for tournament ${id}`);
       
-      // 3. Delete categories (they reference tournament)
+      // 6. Delete standings (they reference categories)
+      await standingRepository.delete({tournamentId: id});
+      console.log(`✅ Deleted standings for tournament ${id}`);
+      
+      // 7. Delete categories (they reference tournament)
       await categoryRepository.delete({tournamentId: id});
       console.log(`✅ Deleted categories for tournament ${id}`);
       
-      // 4. Delete courts (they reference tournament)
+      // 8. Delete courts (they reference tournament)
       await courtRepository.delete({tournamentId: id});
       console.log(`✅ Deleted courts for tournament ${id}`);
       
-      // 5. Finally, delete the tournament
+      // 9. Finally, delete the tournament
       await tournamentRepository.remove(tournament);
       console.log(`✅ Tournament ${id} deleted successfully`);
       
       res.status(HTTP_STATUS.NO_CONTENT).send();
     } catch (error) {
+      console.error(`❌ [DELETE Tournament] Error during deletion:`, error);
+      if (error instanceof Error) {
+        console.error(`❌ Error name: ${error.name}`);
+        console.error(`❌ Error message: ${error.message}`);
+        console.error(`❌ Error stack:`, error.stack);
+      }
       next(error);
     }
   }
