@@ -23,6 +23,7 @@ import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
 import {MatchGeneratorService} from '../../application/services/match-generator.service';
+import {SeedingService} from '../../application/services/seeding.service';
 import {RegistrationStatus} from '../../domain/enumerations/registration-status';
 import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
 
@@ -122,16 +123,36 @@ export class BracketController {
           status: RegistrationStatus.ACCEPTED,
           acceptanceType: Not(In([AcceptanceType.ALTERNATE, AcceptanceType.WITHDRAWN])),
         },
+        relations: ['participant'], // Include participant data for ranking information
       });
       
-      const participantIds = registrations.map(r => r.participantId);
-      
       console.log(`📊 Found ${registrations.length} ACCEPTED registrations for category ${savedBracket.categoryId} (excluding ALTERNATE/WITHDRAWN)`);
-      console.log(`👥 Participant IDs:`, participantIds);
       
       // Generate matches and phases based on bracket type
-      if (participantIds.length >= 2) {
-        console.log(`🎾 Generating matches for ${participantIds.length} participants...`);
+      if (registrations.length >= 2) {
+        // Calculate bracket size (next power of 2)
+        const participantCount = registrations.length;
+        const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantCount)));
+        
+        // Apply seeding: sort by ranking and assign seed numbers
+        const {participantIds, seededParticipants} = SeedingService.seedBracket(
+          registrations,
+          bracketSize,
+        );
+        
+        console.log(`🎾 Generating seeded bracket: ${registrations.length} participants, bracket size ${bracketSize}`);
+        console.log(`🏆 Seeding:`, seededParticipants.map(p => `Seed #${p.seedNumber} (Ranking: ${p.ranking ?? 'N/A'})`));
+        
+        // Save seed numbers to registration entities
+        for (const seededParticipant of seededParticipants) {
+          await registrationRepository.update(
+            seededParticipant.registration.id,
+            {seedNumber: seededParticipant.seedNumber},
+          );
+        }
+        console.log(`✅ Seed numbers saved to ${seededParticipants.length} registrations`);
+        
+        // Generate matches with seeded participant order
         const {matches, phases} = this.matchGenerator.generateMatches(
           savedBracket.id,
           savedBracket.bracketType,
@@ -149,7 +170,7 @@ export class BracketController {
         
         console.log(`✅ Generated ${matches.length} matches across ${phases.length} phases for bracket ${savedBracket.id}`);
       } else {
-        console.log(`⚠️ Not enough participants (${participantIds.length}) to generate matches. Need at least 2 ACCEPTED registrations.`);
+        console.log(`⚠️ Not enough participants (${registrations.length}) to generate matches. Need at least 2 ACCEPTED registrations.`);
       }
       
       res.status(HTTP_STATUS.CREATED).json(savedBracket);

@@ -15,6 +15,7 @@ import {Response, NextFunction} from 'express';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Match} from '../../domain/entities/match.entity';
 import {Score} from '../../domain/entities/score.entity';
+import {Registration} from '../../domain/entities/registration.entity';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
@@ -24,6 +25,52 @@ import {AppError} from '../middleware/error.middleware';
  * Match controller.
  */
 export class MatchController {
+  /**
+   * Enriches matches with seed information from registrations.
+   * 
+   * @param matches - Array of matches to enrich
+   * @returns Matches with seed information added to participant objects
+   */
+  private async enrichMatchesWithSeeds(matches: Match[]): Promise<any[]> {
+    const registrationRepository = AppDataSource.getRepository(Registration);
+    
+    // Collect all unique participant IDs from matches
+    const participantIds = new Set<string>();
+    for (const match of matches) {
+      if (match.participant1Id) participantIds.add(match.participant1Id);
+      if (match.participant2Id) participantIds.add(match.participant2Id);
+    }
+    
+    // Fetch all registrations for these participants in this bracket's category
+    const registrations = await registrationRepository.find({
+      where: {
+        participantId: Array.from(participantIds) as any,
+      },
+    });
+    
+    // Create a map of participantId -> seed number
+    const seedMap = new Map<string, number | null>();
+    for (const registration of registrations) {
+      seedMap.set(registration.participantId, registration.seedNumber || null);
+    }
+    
+    // Enrich matches with seed info
+    return matches.map(match => {
+      const matchData = {
+        ...match,
+        participant1: match.participant1 ? {
+          ...match.participant1,
+          seed: seedMap.get(match.participant1Id!) || null,
+        } : null,
+        participant2: match.participant2 ? {
+          ...match.participant2,
+          seed: seedMap.get(match.participant2Id!) || null,
+        } : null,
+      };
+      return matchData;
+    });
+  }
+
   /**
    * GET /api/matches
    * Lists matches for a bracket or all matches if bracketId is not provided.
@@ -43,7 +90,10 @@ export class MatchController {
             relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
           });
       
-      res.status(HTTP_STATUS.OK).json(matches);
+      // Enrich with seed information
+      const enrichedMatches = await this.enrichMatchesWithSeeds(matches);
+      
+      res.status(HTTP_STATUS.OK).json(enrichedMatches);
     } catch (error) {
       next(error);
     }
@@ -67,7 +117,10 @@ export class MatchController {
         throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       
-      res.status(HTTP_STATUS.OK).json(match);
+      // Enrich with seed information
+      const enrichedMatches = await this.enrichMatchesWithSeeds([match]);
+      
+      res.status(HTTP_STATUS.OK).json(enrichedMatches[0]);
     } catch (error) {
       next(error);
     }

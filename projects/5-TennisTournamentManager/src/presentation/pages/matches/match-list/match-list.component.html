@@ -108,7 +108,12 @@
                       <div class="participant-icon">👤</div>
                       <div class="participant-info">
                         <div class="participant-label">Participant 1</div>
-                        <div class="participant-name">{{ match.participant1Name }}</div>
+                        <div class="participant-name">
+                          @if (match.participant1?.seed) {
+                            <span class="seed-badge">Seed #{{ match.participant1.seed }}</span>
+                          }
+                          {{ match.participant1Name }}
+                        </div>
                       </div>
                       @if (match.winnerId === match.participant1Id) {
                         <span class="winner-badge">🏆</span>
@@ -123,7 +128,12 @@
                       <div class="participant-icon">👤</div>
                       <div class="participant-info">
                         <div class="participant-label">Participant 2</div>
-                        <div class="participant-name">{{ match.participant2Name }}</div>
+                        <div class="participant-name">
+                          @if (match.participant2?.seed) {
+                            <span class="seed-badge">Seed #{{ match.participant2.seed }}</span>
+                          }
+                          {{ match.participant2Name }}
+                        </div>
                       </div>
                       @if (match.winnerId === match.participant2Id) {
                         <span class="winner-badge">🏆</span>

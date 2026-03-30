@@ -72,15 +72,15 @@
   - [x] **Round Robin** - specify number of groups, qualifiers advancing
   - [x] **Single Elimination** - automatic power-of-2 sizing with Byes
   - [x] **Match Play** - open format
-- [ ] **Apply seeding** - seeds placed in strategic positions
-- [ ] **Preview bracket** before finalization
-- [ ] **Finalize bracket** - matches generated
+- [x] **Apply seeding** - seeds placed in strategic positions ✅ (Tested & Working)
+- [x] **Preview bracket** before finalization
+- [x] **Finalize bracket** - matches generated
 
 #### View Bracket (All Users)
 - [ ] **View bracket visual** - tree structure for elimination, groups for round robin
 - [ ] **See participant names** in each position
 - [ ] **View match schedule** for each match
-- [ ] **See seeds** (marked with "Seed #1", etc.)
+- [x] **See seeds** (marked with "Seed #1", etc.) ✅ (Displayed in matches & participant table)
 - [ ] **Public users can view** brackets without login
 
 #### Modify Bracket (Tournament Admin)

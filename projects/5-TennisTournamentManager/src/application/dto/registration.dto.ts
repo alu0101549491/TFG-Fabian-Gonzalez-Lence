@@ -30,7 +30,7 @@ export interface RegistrationDto {
   categoryId: string;
   status: RegistrationStatus;
   acceptanceType: AcceptanceType;
-  seed: number | null;
+  seedNumber: number | null;
   registeredAt: Date;
   tournament?: TournamentDto;
   category?: CategoryDto;
@@ -40,6 +40,6 @@ export interface RegistrationDto {
 export interface UpdateRegistrationStatusDto {
   registrationId: string;
   status: RegistrationStatus;
-  seed?: number | null;
+  seedNumber?: number | null;
   acceptanceType?: AcceptanceType;
 }

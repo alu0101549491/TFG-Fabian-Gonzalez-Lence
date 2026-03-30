@@ -407,6 +407,7 @@
                       <tr style="border-bottom: 2px solid #ddd; background-color: #f5f5f5;">
                         <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Player</th>
                         <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Category</th>
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Seed</th>
                         <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Status</th>
                         <th style="padding: 0.75rem; text-align: right; font-weight: 600;">Actions</th>
                       </tr>
@@ -425,6 +426,16 @@
                               <span>{{ category.name }}</span>
                             } @else {
                               <span style="color: #999;">N/A</span>
+                            }
+                          </td>
+                          <td style="padding: 0.75rem; text-align: center;">
+                            @if (player.registration.seedNumber) {
+                              <span class="seed-badge-table">
+                                <span class="seed-icon">🏆</span>
+                                <span>Seed #{{ player.registration.seedNumber }}</span>
+                              </span>
+                            } @else {
+                              <span style="color: #999; font-size: 0.875rem;">—</span>
                             }
                           </td>
                           <td style="padding: 0.75rem; text-align: center;">

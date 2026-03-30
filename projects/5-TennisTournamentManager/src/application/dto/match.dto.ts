@@ -29,6 +29,7 @@ export interface MatchParticipant {
   firstName: string;
   lastName: string;
   email: string;
+  seed?: number | null;
 }
 
 /** DTO for match output representation. */

@@ -6,6 +6,122 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.46.9] - 2025-03-30
+
+### Added — Tournament Seeding System
+
+**Feature**: 
+Implemented ITF/ATP standard seeding algorithms to strategically place ranked players in tournament brackets. Seeds are automatically assigned based on player rankings and applied using standard seeding positions to ensure top seeds don't meet in early rounds.
+
+**Why Seeding Matters**:
+Without seeding, the #1 ranked player could face the #2 ranked player in the first round, eliminating a top player too early. Seeding ensures:
+- Seeds #1 and #2 are placed in opposite halves of the bracket (can only meet in finals)
+- Seeds #3 and #4 are placed in opposite quarters
+- Fair, competitive tournament structure following professional tennis standards
+
+**Implementation**:
+
+**1. Backend - SeedingService** (`backend/src/application/services/seeding.service.ts`):
+- Created service with ITF/ATP standard seeding position algorithms
+- Supports bracket sizes: 2, 4, 8, 16, 32, 64 players
+- `assignSeeds()`: Sorts participants by ranking (lower = better), assigns seed numbers
+- `generateSeedingPositions()`: Returns standard ITF positions for bracket size
+- `applySeedingPositions()`: Arranges participants in correct bracket order
+- Unseeded players (no ranking) placed after seeded players
+
+Standard Seeding Positions:
+```
+4-draw: [1, 4, 3, 2]
+8-draw: [1, 8, 4, 5, 3, 6, 2, 7]
+16-draw: [1, 16, 8, 9, 4, 13, 5, 12, 3, 14, 6, 11, 2, 15, 7, 10]
+```
+
+**2. Backend - Bracket Controller** (`bracket.controller.ts`):
+- Updated `create()` method to apply seeding before match generation
+- Fetches registrations with `relations: ['participant']` to access ranking data
+- Calculates bracket size (next power of 2)
+- Calls `SeedingService.seedBracket()` to sort and assign seeds
+- Saves seed numbers to Registration entities
+- Passes seeded participant order to match generator
+- Logs seeding information: participant count, bracket size, seed assignments
+
+**3. Backend - Match Controller** (`match.controller.ts`):
+- Added `enrichMatchesWithSeeds()` method to fetch seed info from registrations
+- Creates seed map: participantId → seedNumber
+- Enriches match participants with seed data before returning to frontend
+- Applied to both `getByBracket()` and `getById()` endpoints
+
+**4. Frontend - Match DTO** (`match.dto.ts`):
+- Added `seed?: number | null` field to `MatchParticipant` interface
+- Allows matches to display seed information for participants
+
+**5. Frontend - Registration DTO** (`registration.dto.ts`):
+- Renamed `seed` to `seedNumber` for consistency with backend entity
+- Updated `RegistrationDto` and `UpdateRegistrationStatusDto`
+
+**6. Frontend - Match List Component** (`match-list.component.html`):
+- Displays seed badges next to participant names in match cards
+- Format: "Seed #1 John Doe"
+- Only shows badge if seed number exists
+
+**7. Frontend - Match List Styling** (`match-list.component.css`):
+- Added `.seed-badge` styling:
+  - Gradient background (primary colors)
+  - Small rounded pill badge
+  - Positioned inline with participant name
+
+**8. Frontend - Tournament Detail Component** (`tournament-detail-new.component.html`):
+- Added "Seed" column to registered participants table
+- Displays seed badge with trophy icon: "🏆 Seed #1"
+- Shows "—" for unseeded players
+
+**9. Frontend - Tournament Detail Styling** (`tournament-detail-new.component.css`):
+- Added `.seed-badge-table` styling:
+  - Orange/amber gradient background
+  - Rounded pill design
+  - Trophy icon for visual distinction
+
+**Database**:
+- Registration entity already has `seedNumber` field (nullable integer)
+- User entity already has `ranking` field (nullable integer)
+- No migrations needed
+
+**Seeding Algorithm Flow**:
+1. Bracket generation triggered
+2. Fetch ACCEPTED registrations (excluding ALTERNATE/WITHDRAWN)
+3. Sort by participant ranking (ascending)
+4. Assign seed numbers: 1, 2, 3, ..., N
+5. Calculate bracket size (next power of 2)
+6. Apply ITF standard seeding positions
+7. Pass ordered participant IDs to match generator
+8. Save seed numbers to database
+9. Display seeds in UI (matches, participant list)
+
+**Example** (8-player bracket):
+```
+Rankings:   100, 150, 175, 200, 225, 250, 275, 300
+Seeds:      #1,  #2,  #3,  #4,  #5,  #6,  #7,  #8
+Positions:  [1,   8,   4,   5,   3,   6,   2,   7]
+Result:     Seed #1 vs #8 in R1, #1 vs #2 only in Finals
+```
+
+**Testing Scenarios**:
+- ✅ 4-player bracket with 4 ranked players
+- ✅ 8-player bracket with 6 ranked, 2 unranked players
+- ✅ 16-player bracket with mixed rankings
+- ✅ Byes assigned to top seeds when participant count < bracket size
+- ✅ Seed numbers displayed in match list and participant table
+- ✅ Unseeded players placed after seeded players
+
+**Console Output**:
+```
+🎾 Generating seeded bracket: 8 participants, bracket size 8
+🏆 Seeding: Seed #1 (Ranking: 100), Seed #2 (Ranking: 150), ...
+✅ Seed numbers saved to 8 registrations
+```
+
+---
+
 ## [1.46.8] - 2025-03-30
 
 ### Fixed — Bracket Participant Count Excludes ALTERNATE Players
