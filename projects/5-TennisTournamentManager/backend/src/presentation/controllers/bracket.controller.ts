@@ -12,6 +12,7 @@
  */
 
 import {Response, NextFunction} from 'express';
+import {Not, In} from 'typeorm';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Bracket} from '../../domain/entities/bracket.entity';
 import {Match} from '../../domain/entities/match.entity';
@@ -23,6 +24,7 @@ import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
 import {MatchGeneratorService} from '../../application/services/match-generator.service';
 import {RegistrationStatus} from '../../domain/enumerations/registration-status';
+import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
 
 /**
  * Bracket controller.
@@ -111,17 +113,20 @@ export class BracketController {
       const savedBracket = await bracketRepository.save(bracket);
       console.log(`✅ Bracket ${savedBracket.id} saved successfully`);
       
-      // Get accepted participants for the category
+      // Get accepted participants for the category (excluding ALTERNATE and WITHDRAWN)
+      // ALTERNATE players are on the waiting list and should not be in the bracket draw
+      // WITHDRAWN players have withdrawn from the tournament
       const registrations = await registrationRepository.find({
         where: {
           categoryId: savedBracket.categoryId,
           status: RegistrationStatus.ACCEPTED,
+          acceptanceType: Not(In([AcceptanceType.ALTERNATE, AcceptanceType.WITHDRAWN])),
         },
       });
       
       const participantIds = registrations.map(r => r.participantId);
       
-      console.log(`📊 Found ${registrations.length} ACCEPTED registrations for category ${savedBracket.categoryId}`);
+      console.log(`📊 Found ${registrations.length} ACCEPTED registrations for category ${savedBracket.categoryId} (excluding ALTERNATE/WITHDRAWN)`);
       console.log(`👥 Participant IDs:`, participantIds);
       
       // Generate matches and phases based on bracket type

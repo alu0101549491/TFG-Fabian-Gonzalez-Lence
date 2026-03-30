@@ -953,14 +953,18 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   /**
-   * Gets the count of accepted participants for a category.
+   * Gets the count of accepted participants for a category who can actually play in the bracket.
+   * Excludes ALTERNATE players (waiting list) but includes LUCKY_LOSER (promoted from waiting list).
    *
    * @param categoryId - The category ID
-   * @returns Number of accepted participants
+   * @returns Number of accepted participants eligible for bracket
    */
   public getAcceptedParticipantCount(categoryId: string): number {
     return this.registeredPlayers().filter(
-      p => p.registration.categoryId === categoryId && p.registration.status === RegistrationStatus.ACCEPTED
+      p => p.registration.categoryId === categoryId 
+        && p.registration.status === RegistrationStatus.ACCEPTED
+        && p.registration.acceptanceType !== AcceptanceType.ALTERNATE
+        && p.registration.acceptanceType !== AcceptanceType.WITHDRAWN
     ).length;
   }
 

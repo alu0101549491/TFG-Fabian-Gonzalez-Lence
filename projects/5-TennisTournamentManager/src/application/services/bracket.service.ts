@@ -20,6 +20,7 @@ import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registrat
 import {BracketGeneratorFactory} from './bracket-generator.factory';
 import {Bracket} from '@domain/entities/bracket';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
+import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {generateId} from '@shared/utils';
 
 /**
@@ -60,10 +61,14 @@ export class BracketService implements IBracketService {
       throw new Error('User ID is required');
     }
     
-    // Get accepted registrations for the category
+    // Get accepted registrations for the category (excluding ALTERNATE and WITHDRAWN)
+    // ALTERNATE players are on the waiting list and should not be in the bracket draw
+    // WITHDRAWN players have withdrawn from the tournament
     const registrations = await this.registrationRepository.findByCategoryId(data.categoryId);
     const acceptedRegistrations = registrations.filter(
       r => r.status === RegistrationStatus.ACCEPTED
+        && r.acceptanceType !== AcceptanceType.ALTERNATE
+        && r.acceptanceType !== AcceptanceType.WITHDRAWN
     );
     
     if (acceptedRegistrations.length === 0) {

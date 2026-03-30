@@ -6,6 +6,86 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.46.8] - 2025-03-30
+
+### Fixed — Bracket Participant Count Excludes ALTERNATE Players
+
+**Issue**: 
+When creating a tournament bracket, the participant count shown in the dropdown and category status was including ALTERNATE players (waiting list). For example, with 2 DIRECT_ACCEPTANCE players and 1 ALTERNATE player, it incorrectly showed "3 participants ready" instead of "2 participants ready". Additionally, the **bracket itself was created with 3 players** instead of 2.
+
+**Root Cause**:
+The issue existed in **three places**:
+1. **Frontend getAcceptedParticipantCount()**: Only filtered by `RegistrationStatus.ACCEPTED`, not by acceptance type
+2. **Frontend bracket.service.ts**: Calculated `size` field from all ACCEPTED registrations, including ALTERNATE
+3. **Backend bracket.controller.ts**: Fetched registrations with only `status: ACCEPTED` filter, including ALTERNATE players
+
+In the system:
+- **Registration Status**: PENDING, ACCEPTED, REJECTED, etc. (lifecycle state)
+- **Acceptance Type**: DIRECT_ACCEPTANCE, ALTERNATE, LUCKY_LOSER, etc. (entry type)
+
+An ALTERNATE player can have:
+- Status: ACCEPTED (they are accepted into the tournament)
+- Acceptance Type: ALTERNATE (they are on the waiting list, not in the draw)
+
+**Solution**:
+Updated all three locations to exclude ALTERNATE and WITHDRAWN acceptance types:
+
+**1. Frontend - tournament-detail.component.ts (getAcceptedParticipantCount())**:
+```typescript
+return this.registeredPlayers().filter(
+  p => p.registration.categoryId === categoryId 
+    && p.registration.status === RegistrationStatus.ACCEPTED
+    && p.registration.acceptanceType !== AcceptanceType.ALTERNATE
+    && p.registration.acceptanceType !== AcceptanceType.WITHDRAWN
+).length;
+```
+
+**2. Frontend - bracket.service.ts (generateBracket method)**:
+```typescript
+const acceptedRegistrations = registrations.filter(
+  r => r.status === RegistrationStatus.ACCEPTED
+    && r.acceptanceType !== AcceptanceType.ALTERNATE
+    && r.acceptanceType !== AcceptanceType.WITHDRAWN
+);
+const participantCount = acceptedRegistrations.length;
+// ... size: participantCount is sent to backend
+```
+
+**3. Backend - bracket.controller.ts (create method)**:
+```typescript
+const registrations = await registrationRepository.find({
+  where: {
+    categoryId: savedBracket.categoryId,
+    status: RegistrationStatus.ACCEPTED,
+    acceptanceType: Not(In([AcceptanceType.ALTERNATE, AcceptanceType.WITHDRAWN])),
+  },
+});
+```
+
+**What Counts for Bracket Generation**:
+- ✅ DIRECT_ACCEPTANCE (DA)
+- ✅ LUCKY_LOSER (LL) - promoted from waiting list, can play
+- ✅ WILD_CARD (WC)
+- ✅ QUALIFIER (QU)
+- ✅ ORGANIZER_ACCEPTANCE (OA)
+- ✅ SPECIAL_EXEMPTION (SE)
+- ✅ JUNIOR_EXEMPTION (JE)
+- ❌ ALTERNATE (ALT) - waiting list, cannot play until promoted
+- ❌ WITHDRAWN (WD) - has withdrawn
+
+**Example**:
+- 2 players with DIRECT_ACCEPTANCE → Shows "2 participants ready" ✅
+- 1 player with ALTERNATE → Not counted ✅
+- 1 player promoted to LUCKY_LOSER → Counted ✅
+- **Bracket creation**: Shows "2 players" and generates bracket with 2 players ✅
+
+**Files Modified**:
+- `tournament-detail.component.ts` (lines 961-968): Updated `getAcceptedParticipantCount()` with acceptance type filters
+- `bracket.service.ts` (lines 16, 66-71): Added AcceptanceType import and filter in `generateBracket()` method
+- `bracket.controller.ts` (lines 14-15, 117-126): Added AcceptanceType import and Not(In()) filter to exclude ALTERNATE/WITHDRAWN
+
+---
+
 ## [1.46.7] - 2025-03-30
 
 ### Improved — Console Log Cleanup
