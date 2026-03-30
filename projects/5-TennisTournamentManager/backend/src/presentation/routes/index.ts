@@ -953,6 +953,19 @@ router.put('/registrations/:id/status', authMiddleware, roleMiddleware([UserRole
 
 /**
  * @swagger
+ * /registrations/migrate-acceptance-types:
+ *   post:
+ *     tags: [Registrations]
+ *     summary: Migrate acceptance types
+ *     description: One-time migration to fix existing registrations without acceptanceType
+ *     responses:
+ *       200:
+ *         description: Migration successful
+ */
+router.post('/registrations/migrate-acceptance-types', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), registrationController.migrateAcceptanceTypes.bind(registrationController));
+
+/**
+ * @swagger
  * /brackets:
  *   post:
  *     tags: [Brackets]

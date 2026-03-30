@@ -128,20 +128,6 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="acceptanceType">Acceptance Type</label>
-          <select
-            id="acceptanceType"
-            class="form-input"
-            [(ngModel)]="formData.acceptanceType"
-            name="acceptanceType"
-          >
-            @for (type of acceptanceTypes; track type) {
-              <option [value]="type">{{ type | enumFormat }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="form-group">
           <label class="form-label" for="rankingSystem">Ranking System</label>
           <select
             id="rankingSystem"

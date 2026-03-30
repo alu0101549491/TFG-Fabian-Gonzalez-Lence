@@ -27,6 +27,14 @@ export interface IUserRepository {
   findById(id: string): Promise<User | null>;
 
   /**
+   * Finds public user information by ID (no authentication required).
+   * Returns only publicly visible user data: id, username, firstName, lastName, avatarUrl.
+   * @param id - The unique identifier
+   * @returns Promise resolving to the user if found, null otherwise
+   */
+  findPublicById(id: string): Promise<User | null>;
+
+  /**
    * Retrieves all users.
    * @returns Promise resolving to an array of users
    */

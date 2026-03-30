@@ -44,6 +44,25 @@ export class UserRepositoryImpl implements IUserRepository {
   }
 
   /**
+   * Finds public user information by ID (no authentication required).
+   * Returns only publicly visible user data: id, username, firstName, lastName, avatarUrl.
+   * 
+   * @param id - The user identifier
+   * @returns Promise resolving to the user or null if not found
+   */
+  public async findPublicById(id: string): Promise<User | null> {
+    try {
+      const response = await this.httpClient.get<User>(`/users/${id}/public`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Retrieves all users from the system.
    * @returns Promise resolving to an array of all users
    */

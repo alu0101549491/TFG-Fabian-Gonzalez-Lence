@@ -15,7 +15,6 @@ import {Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyT
 import {TournamentStatus} from '../enumerations/tournament-status';
 import {TournamentType} from '../enumerations/tournament-type';
 import {Surface} from '../enumerations/surface';
-import {AcceptanceType} from '../enumerations/acceptance-type';
 import {RankingSystem} from '../enumerations/ranking-system';
 import {User} from './user.entity';
 import {Category} from './category.entity';
@@ -77,13 +76,6 @@ export class Tournament {
 
   @Column('varchar', {length: 3, default: 'EUR'})
   public currency!: string;
-
-  @Column({
-    type: 'enum',
-    enum: AcceptanceType,
-    default: AcceptanceType.DIRECT_ACCEPTANCE,
-  })
-  public acceptanceType!: AcceptanceType;
 
   @Column({
     type: 'enum',

@@ -38,13 +38,19 @@ export class AuthStateService {
    */
   private restoreUser(): void {
     const userJson = localStorage.getItem(USER_STORAGE_KEY);
+    console.log('[AuthState] restoreUser - raw localStorage value:', userJson);
+    
     if (userJson) {
       try {
         this.currentUser = JSON.parse(userJson);
+        console.log('[AuthState] restoreUser - parsed user:', this.currentUser);
+        console.log('[AuthState] restoreUser - username value:', this.currentUser?.username);
       } catch (error) {
-        console.error('Failed to restore user from localStorage:', error);
+        console.error('[AuthState] Failed to restore user from localStorage:', error);
         localStorage.removeItem(USER_STORAGE_KEY);
       }
+    } else {
+      console.log('[AuthState] restoreUser - no user in localStorage');
     }
   }
 
@@ -63,12 +69,23 @@ export class AuthStateService {
       throw new Error('User data is required');
     }
     
+    console.log('[AuthState] setAuth called with user:', user);
+    console.log('[AuthState] setAuth - username:', user.username);
+    
+    // Validate critical fields
+    if (!user.username) {
+      console.error('[AuthState] CRITICAL: Attempting to authenticate user without username!', user);
+      throw new Error('Cannot authenticate user without username');
+    }
+    
     // Store token in localStorage
     localStorage.setItem(JWT_STORAGE_KEY, token);
     
     // Store user in memory and localStorage
     this.currentUser = user;
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    
+    console.log('[AuthState] setAuth - stored token and user');
   }
 
   /**
@@ -96,6 +113,8 @@ export class AuthStateService {
    * @returns The current user DTO or null
    */
   public getCurrentUser(): UserDto | null {
+    console.log('[AuthState] getCurrentUser called, returning:', this.currentUser);
+    console.log('[AuthState] getCurrentUser - username:', this.currentUser?.username);
     return this.currentUser;
   }
 
@@ -110,9 +129,20 @@ export class AuthStateService {
       throw new Error('User data is required');
     }
     
+    console.log('[AuthState] setUser called with:', user);
+    console.log('[AuthState] setUser - username:', user.username);
+    
+    // Validate critical fields before storing
+    if (!user.username) {
+      console.error('[AuthState] CRITICAL: Attempting to store user without username!', user);
+      throw new Error('Cannot store user without username');
+    }
+    
     // Update user in memory and localStorage
     this.currentUser = user;
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    
+    console.log('[AuthState] setUser - stored in localStorage');
   }
 
   /**

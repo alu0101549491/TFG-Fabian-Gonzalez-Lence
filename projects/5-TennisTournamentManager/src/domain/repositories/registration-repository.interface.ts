@@ -13,6 +13,7 @@
 
 import {Registration} from '../entities/registration';
 import {RegistrationStatus} from '../enumerations/registration-status';
+import {AcceptanceType} from '../enumerations/acceptance-type';
 
 /**
  * Repository interface for Registration entity data access operations.
@@ -86,7 +87,8 @@ export interface IRegistrationRepository {
    * Updates the status of a registration.
    * @param id - The unique identifier of the registration
    * @param status - The new registration status
+   * @param acceptanceType - Optional acceptance type (for admin setting as alternate)
    * @returns Promise resolving to the updated registration
    */
-  updateStatus(id: string, status: RegistrationStatus): Promise<Registration>;
+  updateStatus(id: string, status: RegistrationStatus, acceptanceType?: AcceptanceType): Promise<Registration>;
 }

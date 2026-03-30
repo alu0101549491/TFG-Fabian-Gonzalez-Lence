@@ -218,16 +218,32 @@
                     <div class="registered-state">
                       <span class="success-icon">✅</span>
                       <div>
-                        <h3>You're Registered!</h3>
-                        <p>You are registered for this tournament</p>
+                        @if (userRegistration()!.acceptanceType === 'DIRECT_ACCEPTANCE') {
+                          <h3>You're Registered!</h3>
+                          <p>Direct Acceptance - Your spot is confirmed</p>
+                        } @else if (userRegistration()!.acceptanceType === 'ALTERNATE') {
+                          <h3>Registered as Alternate</h3>
+                          <p>You're on the waiting list and will be notified if a spot opens</p>
+                        } @else if (userRegistration()!.acceptanceType === 'LUCKY_LOSER') {
+                          <h3>Lucky Loser</h3>
+                          <p>You've been moved from the waiting list to compete</p>
+                        } @else {
+                          <h3>You're Registered!</h3>
+                          <p>You are registered for this tournament</p>
+                        }
                       </div>
                     </div>
                   } @else if (userRegistration()!.status === 'PENDING') {
                     <div class="pending-state">
                       <span class="pending-icon">⏳</span>
                       <div>
-                        <h3>Registration Pending</h3>
-                        <p>Your registration is awaiting approval from the organizer</p>
+                        @if (userRegistration()!.acceptanceType === 'ALTERNATE') {
+                          <h3>Alternate - Awaiting Approval</h3>
+                          <p>You're currently on the waiting list. The organizer will review your registration.</p>
+                        } @else {
+                          <h3>Registration Pending</h3>
+                          <p>Your registration is awaiting approval from the organizer</p>
+                        }
                       </div>
                     </div>
                   } @else if (userRegistration()!.status === 'REJECTED') {
@@ -404,21 +420,44 @@
                             }
                           </td>
                           <td style="padding: 0.75rem; text-align: center;">
-                            <span class="status-badge status-{{ player.registration.status.toLowerCase() }}">
-                              {{ player.registration.status | enumFormat }}
-                            </span>
+                            @if (player.registration.status === 'ACCEPTED' && player.registration.acceptanceType === 'ALTERNATE') {
+                              <span class="status-badge status-alternate" style="background-color: #f59e0b; color: white;">
+                                Alternate
+                              </span>
+                            } @else if (player.registration.status === 'ACCEPTED' && player.registration.acceptanceType === 'LUCKY_LOSER') {
+                              <span class="status-badge status-accepted" style="background-color: #8b5cf6; color: white;">
+                                Lucky Loser
+                              </span>
+                            } @else {
+                              <span class="status-badge status-{{ player.registration.status.toLowerCase() }}">
+                                {{ player.registration.status | enumFormat }}
+                              </span>
+                            }
                           </td>
                           <td style="padding: 0.75rem; text-align: right;">
                             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
                               @if (player.registration.status === 'PENDING') {
-                                <button
-                                  class="action-btn"
-                                  (click)="approveRegistration(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
-                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                                  title="Approve registration"
-                                >
-                                  ✓ Approve
-                                </button>
+                                @if (isCategoryFull(player.registration.categoryId)) {
+                                  <!-- Category is FULL - show Set as Alternate button -->
+                                  <button
+                                    class="action-btn"
+                                    (click)="setAsAlternate(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
+                                    style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                                    title="Set as alternate (waiting list)"
+                                  >
+                                    ⏳ Set as Alternate
+                                  </button>
+                                } @else {
+                                  <!-- Category has spots available - show Approve button -->
+                                  <button
+                                    class="action-btn"
+                                    (click)="approveRegistration(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
+                                    style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                                    title="Approve registration"
+                                  >
+                                    ✓ Approve
+                                  </button>
+                                }
                                 <button
                                   class="action-btn"
                                   (click)="rejectRegistration(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"

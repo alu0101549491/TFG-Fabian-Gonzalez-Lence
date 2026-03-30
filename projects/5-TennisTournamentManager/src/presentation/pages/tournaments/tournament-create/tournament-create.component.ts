@@ -19,7 +19,6 @@ import {TournamentService} from '@application/services';
 import {type CreateTournamentDto} from '@application/dto';
 import {Surface} from '@domain/enumerations/surface';
 import {TournamentType} from '@domain/enumerations/tournament-type';
-import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {EnumFormatPipe} from '@shared/pipes';
@@ -60,7 +59,6 @@ export class TournamentCreateComponent {
     maxParticipants: 32,
     registrationFee: 0,
     currency: 'EUR',
-    acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE,
     rankingSystem: RankingSystem.POINTS_BASED,
     registrationOpenDate: '',
     registrationCloseDate: '',
@@ -77,9 +75,6 @@ export class TournamentCreateComponent {
 
   /** Available tournament types */
   public readonly tournamentTypes = Object.values(TournamentType);
-
-  /** Available acceptance types */
-  public readonly acceptanceTypes = Object.values(AcceptanceType);
 
   /** Available ranking systems */
   public readonly rankingSystems = Object.values(RankingSystem);
@@ -149,7 +144,6 @@ export class TournamentCreateComponent {
         maxParticipants: Number(this.formData.maxParticipants),
         registrationFee: this.formData.registrationFee ? Number(this.formData.registrationFee) : 0,
         currency: this.formData.currency || 'EUR',
-        acceptanceType: this.formData.acceptanceType,
         rankingSystem: this.formData.rankingSystem,
         registrationOpenDate: this.formData.registrationOpenDate
           ? new Date(this.formData.registrationOpenDate)

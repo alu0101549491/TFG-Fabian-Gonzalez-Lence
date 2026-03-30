@@ -14,7 +14,6 @@
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {TournamentType} from '@domain/enumerations/tournament-type';
 import {Surface} from '@domain/enumerations/surface';
-import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
 
 /** DTO for creating a tournament. */
@@ -29,7 +28,6 @@ export interface CreateTournamentDto {
   maxParticipants: number;
   registrationFee?: number;
   currency?: string;
-  acceptanceType?: AcceptanceType;
   rankingSystem?: RankingSystem;
   registrationOpenDate?: Date;
   registrationCloseDate?: Date;
@@ -47,7 +45,6 @@ export interface UpdateTournamentDto {
   tournamentType?: TournamentType;
   maxParticipants?: number;
   registrationFee?: number;
-  acceptanceType?: AcceptanceType;
   rankingSystem?: RankingSystem;
   status?: TournamentStatus;
 }
@@ -66,7 +63,6 @@ export interface TournamentDto {
   maxParticipants: number;
   registrationFee: number;
   currency: string;
-  acceptanceType: AcceptanceType;
   rankingSystem: RankingSystem;
   organizerId: string;
   createdAt: Date;

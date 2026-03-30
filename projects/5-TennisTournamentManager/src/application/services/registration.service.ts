@@ -146,7 +146,8 @@ export class RegistrationService implements IRegistrationService {
     // Update registration status via the /status endpoint
     const savedRegistration = await this.registrationRepository.updateStatus(
       data.registrationId,
-      data.status
+      data.status,
+      data.acceptanceType
     );
     
     // Send notification
@@ -265,6 +266,7 @@ export class RegistrationService implements IRegistrationService {
       tournamentId: registration.tournamentId,
       categoryId: registration.categoryId,
       status: registration.status,
+      acceptanceType: registration.acceptanceType,
       seed: registration.seed,
       registeredAt: registration.registeredAt,
       tournament: registration.tournament,

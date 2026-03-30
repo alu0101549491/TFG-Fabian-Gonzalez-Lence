@@ -19,7 +19,6 @@ import {TournamentService} from '@application/services';
 import {type UpdateTournamentDto} from '@application/dto';
 import {Surface} from '@domain/enumerations/surface';
 import {TournamentType} from '@domain/enumerations/tournament-type';
-import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {AuthStateService} from '@presentation/services/auth-state.service';
@@ -62,7 +61,6 @@ export class TournamentEditComponent implements OnInit {
     tournamentType: TournamentType.SINGLES,
     maxParticipants: 32,
     registrationFee: 0,
-    acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE,
     rankingSystem: RankingSystem.POINTS_BASED,
     status: TournamentStatus.DRAFT,
   };
@@ -81,9 +79,6 @@ export class TournamentEditComponent implements OnInit {
 
   /** Available tournament types */
   public readonly tournamentTypes = Object.values(TournamentType);
-
-  /** Available acceptance types */
-  public readonly acceptanceTypes = Object.values(AcceptanceType);
 
   /** Available ranking systems */
   public readonly rankingSystems = Object.values(RankingSystem);
@@ -126,7 +121,6 @@ export class TournamentEditComponent implements OnInit {
         tournamentType: tournament.tournamentType,
         maxParticipants: tournament.maxParticipants,
         registrationFee: tournament.registrationFee,
-        acceptanceType: tournament.acceptanceType,
         rankingSystem: tournament.rankingSystem,
         status: tournament.status,
       };
@@ -205,7 +199,6 @@ export class TournamentEditComponent implements OnInit {
         tournamentType: this.formData.tournamentType,
         maxParticipants: Number(this.formData.maxParticipants),
         registrationFee: this.formData.registrationFee ? Number(this.formData.registrationFee) : 0,
-        acceptanceType: this.formData.acceptanceType,
         rankingSystem: this.formData.rankingSystem,
         status: this.formData.status,
       };

@@ -66,8 +66,12 @@ export class AuthController {
         user: {
           id: user.id,
           email: user.email,
+          username: user.username,
           firstName: user.firstName,
           lastName: user.lastName,
+          phone: user.phone,
+          idDocument: user.idDocument,
+          ranking: user.ranking,
           role: user.role,
         },
       });
@@ -145,6 +149,9 @@ export class AuthController {
           username: user.username,
           firstName: user.firstName,
           lastName: user.lastName,
+          phone: user.phone,
+          idDocument: user.idDocument,
+          ranking: user.ranking,
           role: user.role,
         },
       });

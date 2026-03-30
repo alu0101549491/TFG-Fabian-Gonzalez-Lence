@@ -15,6 +15,7 @@ import {Injectable, inject} from '@angular/core';
 import {Registration} from '@domain/entities/registration';
 import {IRegistrationRepository} from '@domain/repositories/registration.repository.interface';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
+import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {AxiosClient} from '../http/axios-client';
 
 /**
@@ -126,10 +127,15 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * Updates the status of a registration.
    * @param id - The registration identifier
    * @param status - The new registration status
+   * @param acceptanceType - Optional acceptance type (for admin setting as alternate)
    * @returns Promise resolving to the updated registration
    */
-  public async updateStatus(id: string, status: RegistrationStatus): Promise<Registration> {
-    const response = await this.httpClient.put<Registration>(`/registrations/${id}/status`, {status});
+  public async updateStatus(id: string, status: RegistrationStatus, acceptanceType?: AcceptanceType): Promise<Registration> {
+    const body: {status: RegistrationStatus; acceptanceType?: AcceptanceType} = {status};
+    if (acceptanceType !== undefined) {
+      body.acceptanceType = acceptanceType;
+    }
+    const response = await this.httpClient.put<Registration>(`/registrations/${id}/status`, body);
     return response;
   }
 }

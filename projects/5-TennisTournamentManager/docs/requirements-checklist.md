@@ -46,15 +46,15 @@
 #### Register for Tournament (Registered Participant)
 - [x] **View available tournaments** (registration open)
 - [x] **Click "Register"** on a tournament
-- [ ] **Fill registration form**: name, ID/NIE, category, ranking, contact
+- [X] **Fill registration form**: name, ID/NIE, category, ranking, contact
 - [X] **Submit registration** - should show confirmation
-- [ ] **Check registration quota** - if full, should be assigned ALT (Alternate) status
+- [X] **Check registration quota** - if full, should be assigned ALT (Alternate) status
 
 #### Manage Registrations (Tournament Admin)
-- [ ] **View all registrations** for a tournament
+- [X] **View all registrations** for a tournament
 - [ ] **Manually add participant** - admin can enroll anyone
-- [ ] **Assign entry states** - DA, WC, OA, SE, JE, QU, LL, ALT, WD
-- [ ] **View quota status** - see how many DA, WC, ALT spots remain
+- [X] **Assign entry states** - DA, WC, OA, SE, JE, QU, LL, ALT, WD
+- [X] **View quota status** - see how many DA, WC, ALT spots remain
 
 #### Withdraw from Tournament (Participant)
 - [ ] **Navigate to "My Registrations"**

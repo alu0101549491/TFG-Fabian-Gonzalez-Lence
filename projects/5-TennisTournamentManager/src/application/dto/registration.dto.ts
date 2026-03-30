@@ -12,6 +12,7 @@
  */
 
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
+import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {TournamentDto} from './tournament.dto';
 import {CategoryDto} from './category.dto';
 
@@ -28,6 +29,7 @@ export interface RegistrationDto {
   tournamentId: string;
   categoryId: string;
   status: RegistrationStatus;
+  acceptanceType: AcceptanceType;
   seed: number | null;
   registeredAt: Date;
   tournament?: TournamentDto;
@@ -39,4 +41,5 @@ export interface UpdateRegistrationStatusDto {
   registrationId: string;
   status: RegistrationStatus;
   seed?: number | null;
+  acceptanceType?: AcceptanceType;
 }

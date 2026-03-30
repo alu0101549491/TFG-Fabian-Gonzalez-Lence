@@ -75,10 +75,25 @@ export class ProfileViewComponent implements OnInit {
    */
   public ngOnInit(): void {
     const currentUser = this.authStateService.getCurrentUser();
+    
+    console.log('[Profile] ngOnInit - currentUser:', currentUser);
+    
     if (currentUser) {
+      // Validate user has required fields
+      if (!currentUser.username) {
+        console.error('[Profile] CRITICAL: User has no username!', currentUser);
+        alert('Profile data corrupted. Please log in again.');
+        this.authStateService.clearAuth();
+        void this.router.navigate(['/login']);
+        return;
+      }
+      
       this.user.set(currentUser);
       this.populateForm(currentUser);
+      
+      console.log('[Profile] Form populated with values:', this.profileForm.value);
     } else {
+      console.warn('[Profile] No current user, redirecting to login');
       void this.router.navigate(['/login']);
     }
   }
@@ -103,13 +118,26 @@ export class ProfileViewComponent implements OnInit {
    * Toggles edit mode.
    */
   public toggleEdit(): void {
+    console.log('[Profile] toggleEdit() called, current isEditing:', this.isEditing());
+    
+    // Safety check: ensure user still exists
+    const currentUser = this.user();
+    if (!currentUser) {
+      console.error('[Profile] toggleEdit called but no user - likely logged out');
+      return;
+    }
+    
     this.isEditing.set(!this.isEditing());
+    
     if (!this.isEditing()) {
-      const currentUser = this.user();
+      console.log('[Profile] Exiting edit mode, resetting form to current user data');
       if (currentUser) {
         this.populateForm(currentUser);
       }
+    } else {
+      console.log('[Profile] Entering edit mode');
     }
+    
     this.errorMessage.set(null);
     this.successMessage.set(null);
   }
@@ -118,7 +146,20 @@ export class ProfileViewComponent implements OnInit {
    * Saves profile changes.
    */
   public async saveProfile(): Promise<void> {
+    console.log('[Profile] saveProfile() called');
+    
+    // Safety check: ensure component hasn't been destroyed or user logged out
+    const currentUser = this.user();
+    if (!currentUser) {
+      console.error('[Profile] saveProfile called but no user - likely component destroyed');
+      return;
+    }
+    
+    console.log('[Profile] Form valid:', this.profileForm.valid);
+    console.log('[Profile] Form values:', this.profileForm.value);
+    
     if (this.profileForm.invalid) {
+      console.warn('[Profile] Form invalid, aborting save');
       this.profileForm.markAllAsTouched();
       return;
     }
@@ -142,6 +183,8 @@ export class ProfileViewComponent implements OnInit {
         idDocument: formValue.idDocument?.trim() || null,
         ranking: formValue.ranking ? Number(formValue.ranking) : null,
       };
+
+      console.log('[Profile] Sending update DTO:', updateDto);
 
       // Call user service to update profile
       const updatedUser = await this.userService.updateProfile(currentUser.id, updateDto);
@@ -173,7 +216,25 @@ export class ProfileViewComponent implements OnInit {
    * Logs out the current user.
    */
   public logout(): void {
+    console.log('[Profile] logout() called');
+    
+    // Save current state to check if in edit mode
+    const wasEditing = this.isEditing();
+    console.log('[Profile] Was in edit mode:', wasEditing);
+    console.log('[Profile] Current form values:', this.profileForm.value);
+    
+    // If in edit mode, cancel editing without saving
+    if (wasEditing) {
+      console.warn('[Profile] Canceling edit mode before logout');
+      this.isEditing.set(false);
+    }
+    
+    console.log('[Profile] Clearing auth state');
+    // Clear auth state
     this.authStateService.clearAuth();
+    
+    console.log('[Profile] Navigating to login page');
+    // Navigate to login
     void this.router.navigate(['/login']);
   }
 }

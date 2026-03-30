@@ -47,7 +47,7 @@
             Profile Information
           </h2>
           @if (!isEditing()) {
-            <button class="edit-btn" (click)="toggleEdit()">
+            <button type="button" class="edit-btn" (click)="toggleEdit()">
               <span class="btn-icon">✏️</span>
               <span>Edit Profile</span>
             </button>
@@ -227,7 +227,7 @@
 
         <div class="card-body">
           <div class="actions-grid">
-            <button class="action-item" routerLink="/dashboard">
+            <button type="button" class="action-item" routerLink="/dashboard">
               <div class="action-icon">⬅️</div>
               <div class="action-content">
                 <div class="action-title">Back to Home</div>
@@ -236,7 +236,7 @@
               <div class="action-arrow">→</div>
             </button>
 
-            <button class="action-item" routerLink="/notifications">
+            <button type="button" class="action-item" routerLink="/notifications">
               <div class="action-icon">🔔</div>
               <div class="action-content">
                 <div class="action-title">Notifications</div>
@@ -246,7 +246,7 @@
             </button>
 
             @if (isSystemAdmin()) {
-              <button class="action-item admin" routerLink="/admin/users">
+              <button type="button" class="action-item admin" routerLink="/admin/users">
                 <div class="action-icon">👥</div>
                 <div class="action-content">
                   <div class="action-title">User Management</div>
@@ -256,7 +256,7 @@
               </button>
             }
 
-            <button class="action-item danger" (click)="logout()">
+            <button type="button" class="action-item danger" (click)="logout()">
               <div class="action-icon">🚪</div>
               <div class="action-content">
                 <div class="action-title">Logout</div>

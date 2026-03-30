@@ -65,6 +65,9 @@ export class UserController {
       const {id} = req.params;
       const userRepository = AppDataSource.getRepository(User);
       
+      console.log(`[User Update] User ${req.user?.id} updating profile ${id}`);
+      console.log(`[User Update] Request body:`, req.body);
+      
       // Verify user owns this profile or is admin
       if (req.user?.id !== id && req.user?.role !== UserRole.SYSTEM_ADMIN) {
         throw new AppError('Cannot update other users profiles', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
@@ -77,6 +80,21 @@ export class UserController {
       }
       
       const {username, firstName, lastName, phone, idDocument, ranking} = req.body;
+      
+      // Validate username is not empty if provided (username is required field)
+      if (username !== undefined) {
+        if (!username || username.trim() === '') {
+          throw new AppError('Username cannot be empty', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+        }
+      }
+      
+      // Validate firstName and lastName are not empty if provided (required fields)
+      if (firstName !== undefined && (!firstName || firstName.trim() === '')) {
+        throw new AppError('First name cannot be empty', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+      }
+      if (lastName !== undefined && (!lastName || lastName.trim() === '')) {
+        throw new AppError('Last name cannot be empty', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+      }
       
       // Check username uniqueness if changing
       if (username && username !== user.username) {

@@ -24,6 +24,7 @@ import {type User} from '@domain/entities/user';
 import {UserRole} from '@domain/enumerations/user-role';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
+import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {Gender} from '@domain/enumerations/gender';
 import {AgeGroup} from '@domain/enumerations/age-group';
 import {BracketType} from '@domain/enumerations/bracket-type';
@@ -196,11 +197,11 @@ export class TournamentDetailComponent implements OnInit {
       // Fetch all registrations for this tournament
       const registrations = await this.registrationService.getRegistrationsByTournament(this.tournamentId);
       
-      // Fetch user details for each registration
+      // Fetch user details for each registration using public endpoint (no auth required)
       const playersWithDetails = await Promise.all(
         registrations.map(async (registration) => {
           try {
-            const user = await this.userRepository.findById(registration.participantId);
+            const user = await this.userRepository.findPublicById(registration.participantId);
             return user ? { user, registration } : null;
           } catch (error) {
             console.error(`Failed to load user ${registration.participantId}:`, error);
@@ -300,7 +301,17 @@ export class TournamentDetailComponent implements OnInit {
         user.id
       );
       this.userRegistration.set(newRegistration);
-      alert('Successfully registered for tournament!');
+      
+      // FR12: Show different messages based on acceptance type (quota management)
+      if (newRegistration.acceptanceType === AcceptanceType.DIRECT_ACCEPTANCE) {
+        alert('✅ Successfully registered! (Direct Acceptance)\n\nYour registration has been confirmed.');
+      } else if (newRegistration.acceptanceType === AcceptanceType.ALTERNATE) {
+        alert('⏳ Registered as Alternate\n\nThe category is currently full, so you\'ve been added to the waiting list. You\'ll be notified if a spot becomes available.');
+      } else {
+        // Fallback for other acceptance types
+        alert('Successfully registered for tournament!');
+      }
+      
       await this.loadPlayers();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';
@@ -706,6 +717,7 @@ export class TournamentDetailComponent implements OnInit {
       const updateData: UpdateRegistrationStatusDto = {
         registrationId,
         status: RegistrationStatus.ACCEPTED,
+        acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE, // Explicitly set DA
       };
 
       await this.registrationService.updateStatus(updateData, currentUser.id);
@@ -715,6 +727,70 @@ export class TournamentDetailComponent implements OnInit {
       const message = error instanceof Error ? error.message : 'Failed to approve registration';
       alert(`Error: ${message}`);
     }
+  }
+
+  /**
+   * Sets a pending registration as alternate (waiting list).
+   * @param registrationId - The registration ID to set as alternate
+   * @param playerName - Player name for confirmation message
+   */
+  public async setAsAlternate(registrationId: string, playerName: string): Promise<void> {
+    const confirmed = confirm(
+      `Place ${playerName} on the waiting list as an alternate?\n\n` +
+      `They will be notified and can participate if a spot opens up.`
+    );
+    if (!confirmed) return;
+
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to perform this action');
+      return;
+    }
+
+    try {
+      const updateData: UpdateRegistrationStatusDto = {
+        registrationId,
+        status: RegistrationStatus.ACCEPTED,
+        acceptanceType: AcceptanceType.ALTERNATE,
+      };
+
+      await this.registrationService.updateStatus(updateData, currentUser.id);
+      await this.loadPlayers();
+      alert(`${playerName} has been placed on the waiting list as an alternate.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to set as alternate';
+      alert(`Error: ${message}`);
+    }
+  }
+
+  /**
+   * Checks if a category has reached its maximum participant capacity.
+   * Counts only ACCEPTED registrations with DIRECT_ACCEPTANCE or LUCKY_LOSER.
+   * @param categoryId - The category ID to check
+   * @returns True if category is at full capacity
+   */
+  public isCategoryFull(categoryId: string): boolean {
+    // Find the category to get maxParticipants
+    const category = this.categories().find(c => c.id === categoryId);
+    if (!category) {
+      return false;
+    }
+
+    // Get all players for this category
+    const categoryPlayers = this.registeredPlayers().filter(p => p.registration.categoryId === categoryId);
+    
+    // Count ACCEPTED registrations with DA or LL for this category
+    const acceptedCount = categoryPlayers.filter(
+      player => {
+        const isAccepted = player.registration.status === RegistrationStatus.ACCEPTED;
+        const acceptanceType = player.registration.acceptanceType;
+        const isDAorLL = acceptanceType === AcceptanceType.DIRECT_ACCEPTANCE || acceptanceType === AcceptanceType.LUCKY_LOSER;
+        
+        return isAccepted && isDAorLL;
+      }
+    ).length;
+
+    return acceptedCount >= category.maxParticipants;
   }
 
   /**
