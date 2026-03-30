@@ -52,9 +52,9 @@
 
 #### Manage Registrations (Tournament Admin)
 - [X] **View all registrations** for a tournament
-- [ ] **Manually add participant** - admin can enroll anyone
+- [X] **Manually add participant** - admin can enroll anyone
 - [X] **Assign entry states** - DA, WC, OA, SE, JE, QU, LL, ALT, WD
-- [X] **View quota status** - see how many DA, WC, ALT spots remain
+- [X] **Check quota status** - see how many DA, WC, ALT spots remain
 
 #### Withdraw from Tournament (Participant)
 - [ ] **Navigate to "My Registrations"**

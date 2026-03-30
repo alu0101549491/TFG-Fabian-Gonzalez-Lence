@@ -135,6 +135,55 @@ export class UserController {
   }
   
   /**
+   * GET /api/users/eligible-participants
+   * Lists users eligible for tournament registration (tournament admin and system admin).
+   * Returns only PLAYER role users with active status.
+   */
+  public async getEligibleParticipants(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {searchQuery} = req.query;
+      const userRepository = AppDataSource.getRepository(User);
+      
+      const queryBuilder = userRepository.createQueryBuilder('user');
+      
+      // Only return PLAYER role users who are active
+      queryBuilder.where('user.role = :role', {role: UserRole.PLAYER});
+      queryBuilder.andWhere('user.isActive = :isActive', {isActive: true});
+      
+      // Optional search filter
+      if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
+        queryBuilder.andWhere(
+          '(LOWER(user.username) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search) OR LOWER(user.firstName) LIKE LOWER(:search) OR LOWER(user.lastName) LIKE LOWER(:search))',
+          {search: `%${searchQuery.trim()}%`}
+        );
+      }
+      
+      // Select only necessary fields (exclude sensitive data like passwordHash)
+      queryBuilder.select([
+        'user.id',
+        'user.username',
+        'user.email',
+        'user.firstName',
+        'user.lastName',
+        'user.role',
+        'user.isActive',
+        'user.phone',
+        'user.idDocument',
+        'user.ranking',
+      ]);
+      
+      queryBuilder.orderBy('user.lastName', 'ASC');
+      queryBuilder.addOrderBy('user.firstName', 'ASC');
+      
+      const users = await queryBuilder.getMany();
+      
+      res.status(HTTP_STATUS.OK).json(users);
+    } catch (error) {
+      next(error);
+    }
+  }
+  
+  /**
    * GET /api/users
    * Lists all users (admin only).
    */

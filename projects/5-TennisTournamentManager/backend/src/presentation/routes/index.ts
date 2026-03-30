@@ -240,6 +240,35 @@ router.get('/users/stats', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN
 
 /**
  * @swagger
+ * /users/eligible-participants:
+ *   get:
+ *     tags: [Users]
+ *     summary: Get eligible participants for tournaments
+ *     description: Get active PLAYER role users eligible for tournament registration (TOURNAMENT_ADMIN and SYSTEM_ADMIN only)
+ *     parameters:
+ *       - in: query
+ *         name: searchQuery
+ *         schema:
+ *           type: string
+ *         description: Search by name, username, or email
+ *     responses:
+ *       200:
+ *         description: List of eligible participants
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get('/users/eligible-participants', authMiddleware, roleMiddleware([UserRole.TOURNAMENT_ADMIN, UserRole.SYSTEM_ADMIN]), apiCache(30), userController.getEligibleParticipants.bind(userController));
+
+/**
+ * @swagger
  * /users:
  *   get:
  *     tags: [Users]

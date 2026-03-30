@@ -87,6 +87,34 @@ export class UserManagementService {
   }
 
   /**
+   * Retrieves users eligible for tournament registration.
+   * Only returns active PLAYER role users. Accessible by tournament and system admins.
+   *
+   * @param searchQuery - Optional search query to filter users
+   * @param bypassCache - If true, forces fresh data fetch (bypasses HTTP cache)
+   * @returns Promise resolving to array of eligible participant summaries
+   */
+  public async getEligibleParticipants(searchQuery?: string, bypassCache = false): Promise<UserSummaryDto[]> {
+    let params = new HttpParams();
+
+    if (searchQuery) {
+      params = params.set('searchQuery', searchQuery);
+    }
+
+    // Add cache-buster timestamp if bypassing cache
+    if (bypassCache) {
+      params = params.set('_t', Date.now().toString());
+    }
+
+    return firstValueFrom(
+      this.http.get<UserSummaryDto[]>(`${this.apiUrl}/eligible-participants`, {
+        params,
+        headers: bypassCache ? {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'} : {}
+      })
+    );
+  }
+
+  /**
    * Retrieves user statistics.
    *
    * @param bypassCache - If true, forces fresh data fetch (bypasses HTTP cache)

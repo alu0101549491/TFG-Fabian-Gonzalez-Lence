@@ -383,8 +383,16 @@
           <!-- Participant Management (for organizers) -->
           @if (isAuthenticated() && canManageTournament()) {
             <div class="info-card">
-              <div class="card-header">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2>👥 Registered Participants ({{ registeredPlayers().length }})</h2>
+                <button
+                  class="primary-btn"
+                  (click)="showAddParticipantModal()"
+                  style="padding: 0.5rem 1rem; background-color: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
+                  title="Manually add a participant to this tournament"
+                >
+                  ➕ Add Participant
+                </button>
               </div>
               
               @if (registeredPlayers().length === 0) {
@@ -467,6 +475,17 @@
                                   ✕ Reject
                                 </button>
                               } @else if (player.registration.status === 'ACCEPTED') {
+                                <!-- Show Promote button for alternates when spots are available -->
+                                @if (player.registration.acceptanceType === 'ALTERNATE' && !isCategoryFull(player.registration.categoryId)) {
+                                  <button
+                                    class="action-btn"
+                                    (click)="promoteFromAlternate(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
+                                    style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #8b5cf6; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                                    title="Promote to main draw (lucky loser)"
+                                  >
+                                    ⬆️ Promote
+                                  </button>
+                                }
                                 <button
                                   class="action-btn delete"
                                   (click)="removeParticipant(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
@@ -816,5 +835,121 @@
       </div>
     </div>
     }
+  }
+
+  <!-- Add Participant Modal -->
+  @if (showAddParticipantDialog()) {
+    <div class="modal-overlay" (click)="hideAddParticipantModal()" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+      <div class="modal-content" (click)="$event.stopPropagation()" style="background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+        <div style="padding: 2rem; border-bottom: 1px solid #eee;">
+          <h2 style="margin: 0; font-size: 1.5rem; color: #1f2937;">➕ Add Participant</h2>
+          <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.875rem;">Manually enroll a user in this tournament</p>
+        </div>
+
+        <form #addParticipantForm="ngForm" (ngSubmit)="addParticipantManually()" style="padding: 2rem;">
+          <!-- User Search -->
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+              Participant <span style="color: red;">*</span>
+            </label>
+            <div style="position: relative;">
+              <input
+                type="text"
+                class="form-input"
+                [(ngModel)]="addParticipantFormData.userSearchQuery"
+                (ngModelChange)="searchUsers($event)"
+                name="userSearch"
+                placeholder="Search by name or email..."
+                autocomplete="off"
+                style="width: 100%; padding: 0.625rem; border: 1px solid #ddd; border-radius: 4px;"
+              />
+              
+              <!-- User Search Results Dropdown -->
+              @if (addParticipantFormData.userSearchQuery && filteredUsers().length > 0) {
+                <div style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.25rem; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10;">
+                  @for (user of filteredUsers(); track user.id) {
+                    <div
+                      (click)="selectUser(user)"
+                      style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid #f3f4f6; transition: background-color 0.2s;"
+                      [style.background-color]="addParticipantFormData.selectedUserId === user.id ? '#eff6ff' : 'white'"
+                      (mouseenter)="$any($event.target).style.backgroundColor='#f9fafb'"
+                      (mouseleave)="$any($event.target).style.backgroundColor=addParticipantFormData.selectedUserId===user.id?'#eff6ff':'white'"
+                    >
+                      <div style="font-weight: 500; color: #1f2937;">{{ user.username || (user.firstName + ' ' + user.lastName) }}</div>
+                      <div style="font-size: 0.875rem; color: #6b7280;">{{ user.email }}</div>
+                    </div>
+                  }
+                </div>
+              }
+              
+              <!-- Selected User Display -->
+              @if (addParticipantFormData.selectedUserId && addParticipantFormData.selectedUserName) {
+                <div style="margin-top: 0.5rem; padding: 0.5rem; background-color: #eff6ff; border: 1px solid #blue; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: #1e40af; font-weight: 500;">✓ {{ addParticipantFormData.selectedUserName }}</span>
+                  <button
+                    type="button"
+                    (click)="clearUserSelection()"
+                    style="background: none; border: none; color: #6b7280; cursor: pointer; padding: 0.25rem;"
+                    title="Clear selection"
+                  >
+                    ✕
+                  </button>
+                </div>
+              }
+            </div>
+            <small style="display: block; margin-top: 0.25rem; color: #6b7280;">Search for a registered user to add to the tournament</small>
+          </div>
+
+          <!-- Category Selection -->
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+              Category <span style="color: red;">*</span>
+            </label>
+            <select
+              class="form-input"
+              [(ngModel)]="addParticipantFormData.categoryId"
+              name="category"
+              required
+              style="width: 100%; padding: 0.625rem; border: 1px solid #ddd; border-radius: 4px;"
+            >
+              <option [value]="null">-- Select a category --</option>
+              @for (category of categories(); track category.id) {
+                <option [value]="category.id">
+                  {{ category.name }} ({{ category.gender | enumFormat }} • {{ category.ageGroup | enumFormat }})
+                </option>
+              }
+            </select>
+            <small style="display: block; margin-top: 0.25rem; color: #6b7280;">Choose which category to register the participant for</small>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
+            <button 
+              type="submit" 
+              class="register-btn"
+              [disabled]="!addParticipantForm.valid || !addParticipantFormData.selectedUserId || isAddingParticipant()"
+              style="flex: 1; padding: 0.75rem; background-color: #3b82f6; color: white; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;"
+              [style.opacity]="!addParticipantForm.valid || !addParticipantFormData.selectedUserId || isAddingParticipant() ? '0.5' : '1'"
+              [style.cursor]="!addParticipantForm.valid || !addParticipantFormData.selectedUserId || isAddingParticipant() ? 'not-allowed' : 'pointer'"
+            >
+              @if (isAddingParticipant()) {
+                <span>🔄 Adding...</span>
+              } @else {
+                <span>➕ Add Participant</span>
+              }
+            </button>
+            
+            <button 
+              type="button" 
+              (click)="hideAddParticipantModal()"
+              [disabled]="isAddingParticipant()"
+              style="padding: 0.75rem 1.5rem; background-color: #e5e7eb; color: #374151; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   }
 </div>

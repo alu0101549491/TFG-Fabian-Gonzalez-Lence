@@ -17,7 +17,8 @@ import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {combineLatest} from 'rxjs';
 import {TournamentService, RegistrationService, CategoryService, BracketService} from '@application/services';
-import {type TournamentDto, type RegistrationDto, type CreateCategoryDto, type CategoryDto, type UpdateRegistrationStatusDto} from '@application/dto';
+import {UserManagementService} from '@application/services/user-management.service';
+import {type TournamentDto, type RegistrationDto, type CreateCategoryDto, type CategoryDto, type UpdateRegistrationStatusDto, type UserSummaryDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
 import {type User} from '@domain/entities/user';
@@ -53,6 +54,7 @@ export class TournamentDetailComponent implements OnInit {
   private readonly bracketService = inject(BracketService);
   private readonly authStateService = inject(AuthStateService);
   private readonly userRepository = inject(UserRepositoryImpl);
+  private readonly userManagementService = inject(UserManagementService);
 
   /** Tournament data */
   public tournament = signal<TournamentDto | null>(null);
@@ -139,6 +141,37 @@ export class TournamentDetailComponent implements OnInit {
 
   /** Bracket generation state */
   public isGeneratingBracket = signal(false);
+
+  /** Add Participant Modal State */
+  public showAddParticipantDialog = signal(false);
+  
+  /** All users in the system (for adding participants) */
+  public allUsers = signal<UserSummaryDto[]>([]);
+  
+  /** Filtered users based on search query */
+  public filteredUsers = computed(() => {
+    const query = this.addParticipantFormData.userSearchQuery.toLowerCase().trim();
+    if (!query) return [];
+    
+    return this.allUsers().filter(user => {
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
+      const username = (user.username || '').toLowerCase();
+      const email = (user.email || '').toLowerCase();
+      
+      return fullName.includes(query) || username.includes(query) || email.includes(query);
+    }).slice(0, 10); // Limit to 10 results for performance
+  });
+  
+  /** Add participant form data */
+  public addParticipantFormData = {
+    userSearchQuery: '',
+    selectedUserId: null as string | null,
+    selectedUserName: null as string | null,
+    categoryId: null as string | null,
+  };
+  
+  /** Flag indicating if participant is being added */
+  public isAddingParticipant = signal(false);
 
   /**
    * Initializes component and loads tournament data.
@@ -764,6 +797,43 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   /**
+   * Promotes an alternate player to the main draw as a lucky loser.
+   * Called when spots open up and admin wants to move alternate to active participant.
+   * @param registrationId - The registration ID to promote
+   * @param playerName - Player name for confirmation message
+   */
+  public async promoteFromAlternate(registrationId: string, playerName: string): Promise<void> {
+    const confirmed = confirm(
+      `Promote ${playerName} from waiting list to main draw?\n\n` +
+      `• Status: Alternate → Lucky Loser\n` +
+      `• They will now count toward the category quota\n` +
+      `• They can participate in matches`
+    );
+    if (!confirmed) return;
+
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to perform this action');
+      return;
+    }
+
+    try {
+      const updateData: UpdateRegistrationStatusDto = {
+        registrationId,
+        status: RegistrationStatus.ACCEPTED,
+        acceptanceType: AcceptanceType.LUCKY_LOSER, // Promoted from alternate to main draw
+      };
+
+      await this.registrationService.updateStatus(updateData, currentUser.id);
+      await this.loadPlayers();
+      alert(`✅ ${playerName} has been promoted to the main draw as a Lucky Loser!`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to promote player';
+      alert(`Error: ${message}`);
+    }
+  }
+
+  /**
    * Checks if a category has reached its maximum participant capacity.
    * Counts only ACCEPTED registrations with DIRECT_ACCEPTANCE or LUCKY_LOSER.
    * @param categoryId - The category ID to check
@@ -1017,6 +1087,206 @@ export class TournamentDetailComponent implements OnInit {
       }
     } finally {
       this.isGeneratingBracket.set(false);
+    }
+  }
+
+  // ============================================================================
+  // Add Participant Modal Methods (FR12 Manual Enrollment)
+  // ============================================================================
+
+  /**
+   * Opens the Add Participant modal and loads available users.
+   * Allows admin to manually enroll any system user into the tournament.
+   */
+  public async showAddParticipantModal(): Promise<void> {
+    // Load eligible participants (PLAYER role, active users) if not already loaded
+    if (this.allUsers().length === 0) {
+      try {
+        const users = await this.userManagementService.getEligibleParticipants();
+        this.allUsers.set(users);
+      } catch (error) {
+        console.error('Failed to load users:', error);
+        alert('Failed to load users. Please try again.');
+        return;
+      }
+    }
+    
+    this.showAddParticipantDialog.set(true);
+  }
+
+  /**
+   * Closes the Add Participant modal and resets form data.
+   */
+  public hideAddParticipantModal(): void {
+    this.showAddParticipantDialog.set(false);
+    this.addParticipantFormData.userSearchQuery = '';
+    this.addParticipantFormData.selectedUserId = null;
+    this.addParticipantFormData.selectedUserName = null;
+    this.addParticipantFormData.categoryId = null;
+  }
+
+  /**
+   * Handles user search input changes.
+   * Triggers filtering of users by search query.
+   *
+   * @param _query - Search query entered by user (unused, filtering handled by computed signal)
+   */
+  public searchUsers(_query: string): void {
+    // The filteredUsers computed signal will automatically update
+    // when userSearchQuery changes (through ngModel binding)
+  }
+
+  /**
+   * Selects a user from the search results.
+   *
+   * @param user - The selected user
+   */
+  public selectUser(user: UserSummaryDto): void {
+    this.addParticipantFormData.selectedUserId = user.id;
+    this.addParticipantFormData.selectedUserName = user.username || `${user.firstName} ${user.lastName}`;
+    this.addParticipantFormData.userSearchQuery = ''; // Clear search to hide dropdown
+  }
+
+  /**
+   * Clears the selected user.
+   */
+  public clearUserSelection(): void {
+    this.addParticipantFormData.selectedUserId = null;
+    this.addParticipantFormData.selectedUserName = null;
+  }
+
+  /**
+   * Submits the add participant form and registers the selected user.
+   * Validates form data, checks for duplicates, and creates registration.
+   */
+  public async addParticipantManually(): Promise<void> {
+    // Validate form data
+    if (!this.addParticipantFormData.selectedUserId) {
+      alert('Please select a participant.');
+      return;
+    }
+
+    if (!this.addParticipantFormData.categoryId) {
+      alert('Please select a category.');
+      return;
+    }
+
+    if (!this.tournamentId) {
+      alert('Tournament ID is missing.');
+      return;
+    }
+
+    // Check if user is already registered in this category
+    const existingRegistration = this.registeredPlayers().find(
+      p => p.user.id === this.addParticipantFormData.selectedUserId &&
+           p.registration.categoryId === this.addParticipantFormData.categoryId
+    );
+
+    if (existingRegistration) {
+      // Allow re-registration if the player is WITHDRAWN or CANCELLED
+      if (existingRegistration.registration.status === RegistrationStatus.WITHDRAWN ||
+          existingRegistration.registration.status === RegistrationStatus.CANCELLED) {
+        
+        const confirmed = confirm(
+          `This player was previously ${existingRegistration.registration.status.toLowerCase()} from this category.\n\n` +
+          `Would you like to re-register them?\n\n` +
+          `• The registration will be set to PENDING\n` +
+          `• You can approve it to restore their participation\n` +
+          `• Quota rules will apply (ACCEPTED or ALTERNATE based on availability)`
+        );
+        
+        if (!confirmed) {
+          return;
+        }
+        
+        // Re-register by updating existing registration to PENDING
+        this.isAddingParticipant.set(true);
+        try {
+          const currentUser = this.authStateService.getCurrentUser();
+          if (!currentUser) {
+            alert('You must be logged in to perform this action.');
+            return;
+          }
+          
+          await this.registrationService.updateStatus(
+            {
+              registrationId: existingRegistration.registration.id!,
+              status: RegistrationStatus.PENDING,
+            },
+            currentUser.id
+          );
+          
+          alert(`✅ Player re-registered successfully!\n\nThe registration is now PENDING. You can approve it from the participants list.\n\nQuota logic will apply when approving.`);
+          
+          // Reload players to show the updated registration
+          await this.loadPlayers();
+          
+          // Close modal and reset form
+          this.hideAddParticipantModal();
+        } catch (error) {
+          let message = 'Failed to re-register participant.';
+          
+          if (error && typeof error === 'object') {
+            const axiosError = error as {response?: {data?: {message?: string; error?: string}}};
+            if (axiosError.response?.data?.message) {
+              message = axiosError.response.data.message;
+            } else if (axiosError.response?.data?.error) {
+              message = axiosError.response.data.error;
+            } else if (error instanceof Error) {
+              message = error.message;
+            }
+          }
+          
+          console.error('Re-register error:', error);
+          alert(`Error: ${message}`);
+        } finally {
+          this.isAddingParticipant.set(false);
+        }
+        return;
+      }
+      
+      // Player is actively registered (PENDING, ACCEPTED, REJECTED)
+      alert(`This user is already registered in the selected category.\n\nStatus: ${existingRegistration.registration.status}`);
+      return;
+    }
+
+    this.isAddingParticipant.set(true);
+
+    try {
+      // Register the participant (initial status will be PENDING)
+      await this.registrationService.registerParticipant(
+        {
+          tournamentId: this.tournamentId,
+          categoryId: this.addParticipantFormData.categoryId,
+        },
+        this.addParticipantFormData.selectedUserId
+      );
+
+      alert(`✅ Participant added successfully!\n\nThe registration is pending approval. You can now approve it from the participants list.`);
+      
+      // Reload players to show the new participant
+      await this.loadPlayers();
+      
+      // Close modal and reset form
+      this.hideAddParticipantModal();
+    } catch (error) {
+      let message = 'Failed to add participant.';
+      
+      if (error && typeof error === 'object') {
+        const axiosError = error as {response?: {data?: {message?: string; error?: string}}};
+        if (axiosError.response?.data?.message) {
+          message = axiosError.response.data.message;
+        } else if (axiosError.response?.data?.error) {
+          message = axiosError.response.data.error;
+        } else if (error instanceof Error) {
+          message = error.message;
+        }
+      }
+      
+      console.error('Add participant error:', error);
+      alert(`Error: ${message}`);
+    } finally {
+      this.isAddingParticipant.set(false);
     }
   }
 }

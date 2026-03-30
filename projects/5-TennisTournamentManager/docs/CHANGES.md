@@ -6,6 +6,301 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.46.1] - 2026-03-30
+
+### Fixed — 403 Forbidden Error When Adding Participants (Role Permission Issue)
+
+**Problem**: 
+Tournament administrators received a **403 Forbidden** error when clicking "Add Participant" button. The feature was calling `/api/users` endpoint which requires `SYSTEM_ADMIN` role, but tournament admins have `TOURNAMENT_ADMIN` role.
+
+**Error**:
+```
+GET http://localhost:4200/api/users 403 (Forbidden)
+Failed to load users. Please try again.
+```
+
+**Root Cause**:
+- `/api/users` endpoint restricted to `SYSTEM_ADMIN` only
+- Tournament admins need access to users for enrollment but shouldn't see ALL users
+- Security principle: tournament admins should only access users eligible for tournament registration
+
+**Solution**:
+Created new dedicated endpoint for tournament participant enrollment:
+
+**Backend** ([user.controller.ts](../backend/src/presentation/controllers/user.controller.ts)):
+- **New Method**: `getEligibleParticipants()`
+  - Returns only **PLAYER role** users (not admins, referees, or spectators)
+  - Filters to **active users only**
+  - Supports optional search query
+  - Orders by last name, first name
+  - Excludes sensitive data (passwordHash)
+
+**Routes** ([routes/index.ts](../backend/src/presentation/routes/index.ts)):
+- **New Endpoint**: `GET /api/users/eligible-participants`
+- **Access**: `TOURNAMENT_ADMIN` and `SYSTEM_ADMIN`
+- **Caching**: 30-second API cache
+- **Important**: Route placed BEFORE `/api/users` (more specific routes first)
+
+**Frontend** ([user-management.service.ts](../src/application/services/user-management.service.ts)):
+- **New Method**: `getEligibleParticipants(searchQuery?, bypassCache?)`
+- **Updated Component**: `tournament-detail.component.ts` now calls `getEligibleParticipants()` instead of `getAllUsers()`
+
+**Security Improvement**:
+- Tournament admins can now **only see PLAYER role users** (appropriate for enrollment)
+- System admins retain full user list access via `/api/users`
+- Prevents unnecessary exposure of admin/referee/spectator accounts to tournament organizers
+
+**UX Impact**:
+- ✅ "Add Participant" button now works for tournament admins
+- ✅ User search dropdown shows only eligible players
+- ✅ Faster performance (fewer users returned, more focused results)
+- ✅ Cleaner UX (tournament admins don't see irrelevant user types)
+
+**Before**: Tournament admins → 403 error → feature unusable  
+**After**: Tournament admins → see active players → enroll successfully
+
+---
+
+### Fixed — Add Participant Button Disabled After Selecting User
+
+**Problem**: 
+After selecting a user from the search dropdown, the "Add Participant" button remained disabled even though both user and category were selected.
+
+**Root Cause**:
+- Search input field had `required` attribute in Angular form validation
+- When user selected from dropdown, code cleared search query to hide dropdown: `userSearchQuery = ''`
+- Empty required field → form invalid → button disabled
+
+**Solution** ([tournament-detail-new.component.html](../src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html)):
+- **Removed** `required` attribute from user search input
+- Search input is just a helper for finding users (not the actual required data)
+- Actual validation handled by checking `selectedUserId` exists in submit button disable condition
+
+**Button Validation Logic**:
+```typescript
+[disabled]="!addParticipantForm.valid || !addParticipantFormData.selectedUserId || isAddingParticipant()"
+```
+- ✅ Form valid (category selected)
+- ✅ User selected (`selectedUserId` populated)
+- ✅ Not currently submitting
+
+**Result**: 
+- Button now becomes enabled immediately after selecting user and category
+- Form validation focuses on actual required data (selectedUserId, categoryId) not search helpers
+
+---
+
+### Enhanced — Allow Re-Registration of Withdrawn/Cancelled Players
+
+**User Feedback**: 
+When trying to manually add a withdrawn player (xicboi), the system blocked it with "already registered... Status: WITHDRAWN". User suggested: "maybe could be better to allow to re register the player and instead of withdrawn it could appear again as accepted (if there's space for him and no other alternate player is set to accepted, if not, set xicboi as alternate)"
+
+**Previous Behavior**:
+- Frontend duplicate check blocked re-registration of ANY existing registration
+- Error message: "This user is already registered... Status: WITHDRAWN"
+- Admin forced to manually change status in participants table
+- Poor UX for handling withdrawn/cancelled players
+
+**Enhanced UX** ([tournament-detail.component.ts](../src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+
+**Now Detects Withdrawn/Cancelled Players**:
+```typescript
+if (existingRegistration.status === WITHDRAWN || existingRegistration.status === CANCELLED) {
+  // Show confirmation dialog explaining re-registration process
+  if (confirmed) {
+    // Update existing registration to PENDING (preserves history)
+    await updateStatus({ registrationId, status: PENDING });
+    // Admin can then approve normally → quota logic applies
+  }
+}
+```
+
+**Re-Registration Flow**:
+1. Admin tries to add withdrawn player via "Add Participant"
+2. **Confirmation Dialog** appears:
+   - "This player was previously withdrawn from this category"
+   - "Would you like to re-register them?"
+   - Explains: Registration set to PENDING → approve to restore → quota rules apply
+3. If confirmed:
+   - **Updates existing registration** to `PENDING` (preserves registration history)
+   - Admin sees player in pending list
+   - **Approve normally** → Quota logic applies:
+     - If category has space → `ACCEPTED` + `DIRECT_ACCEPTANCE`
+     - If category full → `ACCEPTED` + `ALTERNATE`
+
+**Benefits**:
+- ✅ **Preserves History**: Updates existing registration instead of creating duplicate
+- ✅ **Quota Aware**: When admin approves, normal quota logic applies (DA vs ALTERNATE)
+- ✅ **Clear Communication**: Confirmation dialog explains what happens
+- ✅ **Flexible**: Admin can decline if they want to keep player withdrawn
+- ✅ **Consistent**: Uses same approval flow as new registrations
+
+**Still Blocks**:
+- Active registrations (PENDING, ACCEPTED, REJECTED) → shows current status
+- Prevents creating duplicate registrations for same user + category
+
+**Example Scenario**:
+```
+Tournament: Max 2 players
+Current: pepito (ACCEPTED), xicboi (WITHDRAWN)
+
+Admin re-registers xicboi:
+1. Confirmation → "Previously withdrawn, re-register?"
+2. Status changed: WITHDRAWN → PENDING
+3. Admin approves xicboi
+4. Quota check: 1 accepted < 2 max
+5. Result: xicboi → ACCEPTED + DIRECT_ACCEPTANCE ✅
+
+If tournament was full (2/2):
+5. Result: xicboi → ACCEPTED + ALTERNATE 🟠 (waiting list)
+```
+
+**UX Polish**: 
+Turned error ("can't add withdrawn players") into helpful feature ("let's bring them back!").
+
+---
+
+### Added — Promote Alternate Players When Spots Open Up
+
+**User Suggestion**: 
+"another thing that could be done is that when having a spot for the category and a player set as alternate, the admin could set this player as accepted"
+
+**Problem**:
+When spots open up (e.g., player withdraws), ALTERNATE players (waiting list) had no direct way to be promoted to active participants. Admin would have to:
+- Manually remove the alternate registration
+- Re-add the player as new registration
+- Approve the new registration
+
+**Solution** — Added "⬆️ Promote" Button:
+
+**Smart Detection** ([tournament-detail-new.component.html](../src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html)):
+```html
+@if (player.status === 'ACCEPTED' && player.acceptanceType === 'ALTERNATE' && !isCategoryFull(categoryId)) {
+  <button (click)="promoteFromAlternate()">⬆️ Promote</button>
+}
+```
+
+**When Button Appears**:
+- ✅ Player is `ACCEPTED` (already approved, just on waiting list)
+- ✅ Player is `ALTERNATE` (waiting list status)
+- ✅ Category has available spots (spot opened up)
+
+**Promotion Flow** ([tournament-detail.component.ts](../src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+1. Admin clicks "⬆️ Promote" on alternate player
+2. **Confirmation Dialog**:
+   ```
+   Promote [player] from waiting list to main draw?
+   
+   • Status: Alternate → Lucky Loser
+   • They will now count toward the category quota
+   • They can participate in matches
+   ```
+3. If confirmed:
+   - Updates `acceptanceType`: `ALTERNATE` → `LUCKY_LOSER`
+   - Status badge changes: 🟠 "Alternate" → 🟣 "Lucky Loser"
+   - Player now counts toward quota (can participate in matches)
+
+**Acceptance Type Hierarchy**:
+1. **DIRECT_ACCEPTANCE** (DA) — Original participants, approved when spots available
+2. **LUCKY_LOSER** (LL) — Promoted from waiting list to fill opened spots
+3. **ALTERNATE** (ALT) — Waiting list, doesn't count toward quota
+
+**Example Scenario**:
+```
+Tournament: Max 2 players
+Initial state:
+- pepito: ACCEPTED + DIRECT_ACCEPTANCE ✅
+- xicboi: ACCEPTED + DIRECT_ACCEPTANCE ✅
+- maria: ACCEPTED + ALTERNATE 🟠 (waiting list)
+
+xicboi withdraws:
+- pepito: ACCEPTED + DIRECT_ACCEPTANCE ✅
+- maria: ACCEPTED + ALTERNATE 🟠 (waiting list)
+- Available spots: 1
+
+Admin sees "⬆️ Promote" button next to maria:
+- Clicks Promote
+- maria: ACCEPTED + LUCKY_LOSER 🟣
+- Available spots: 0
+
+Result: maria promoted from waiting list to active participant!
+```
+
+**Benefits**:
+- ✅ **One-Click Promotion**: No need to remove/re-add player
+- ✅ **Preserves History**: Maintains registration record, just changes acceptanceType
+- ✅ **Smart Visibility**: Button only appears when promotion makes sense
+- ✅ **Clear Labels**: "Lucky Loser" status shows they were promoted from waiting list
+- ✅ **Quota Aware**: Button disappears when category fills up again
+
+**UX Enhancement**: 
+Alternates are no longer "stuck" on waiting list - admins have clear action to promote them when spots open up.
+
+---
+
+## [1.46.0] - 2026-03-30
+
+### Added — FR12: Manual Participant Enrollment (Admin can enroll anyone)
+
+**Feature**: 
+Tournament administrators can now manually enroll any registered system user into a tournament, bypassing the self-registration flow.
+
+**Use Cases**:
+- Enroll players who cannot register themselves (technical issues, accessibility, etc.)
+- Add late registrations after tournament status changes
+- Pre-register VIP players or special invitees
+- Handle bulk enrollments for sponsored players
+
+**Implementation**:
+
+**Frontend** ([tournament-detail.component.ts](../src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts)):
+- Added "➕ Add Participant" button to participants table header
+- Modal UI with user search, category selection, and form validation
+- Real-time user search with filtered dropdown (max 10 results)
+- Selected user display with clear button
+- Duplicate registration check before submission
+- Automatic participant list refresh after successful enrollment
+
+**Modal Features**:
+- **User Search**: Type-ahead search by name, username, or email
+- **Category Selection**: Dropdown showing all tournament categories
+- **Duplicate Check**: Prevents re-registration in same category
+- **Loading States**: Disables submit button during API call
+- **Error Handling**: User-friendly error messages from backend
+
+**Services** ([user-management.service.ts](../src/application/services/user-management.service.ts)):
+- Integrated `UserManagementService.getAllUsers()` for system user list
+- Supports filtering by role, isActive, and search query
+- Cache-busting option for fresh data
+
+**Registration Flow**:
+1. Admin clicks "Add Participant" button
+2. Modal opens with all system users loaded
+3. Admin searches and selects user
+4. Admin selects category
+5. System validates (no duplicate, profile complete)
+6. Registration created with status `PENDING`
+7. Admin can then approve normally (will respect quota logic)
+
+**Important**: 
+- Manual enrollment creates registration with `PENDING` status (not auto-approved)
+- Admin must approve after enrollment, which will apply quota logic:
+  - If category has space → `ACCEPTED` + `DIRECT_ACCEPTANCE`
+  - If category full → `ACCEPTED` + `ALTERNATE` (waiting list)
+- Validates user has complete profile (idDocument required)
+
+**UX Flow**:
+```
+Admin → Tournament Detail → "Add Participant" → Search Users → Select User → 
+Select Category → Submit → Registration Created (PENDING) → Admin Approves → 
+Quota Logic Applied → Player Shown in List
+```
+
+**Result**: 
+Administrators have full control over tournament enrollment, enabling flexible registration management beyond self-service flow.
+
+---
+
 ## [1.45.9] - 2026-03-30
 
 ### Enhanced — UX: Status Badge Now Shows "Alternate" for Waiting List Players
