@@ -152,6 +152,21 @@
             }
           </div>
         }
+
+        <!-- Visual Bracket Display -->
+        @if (matches().length > 0) {
+          <h2 class="section-title">
+            <span class="section-icon">🏆</span>
+            <span>Bracket View</span>
+          </h2>
+
+          <div class="visual-bracket-section">
+            <app-visual-bracket 
+              [bracket]="bracket()!" 
+              [matches]="matches()"
+            ></app-visual-bracket>
+          </div>
+        }
       } @else {
         <!-- No Bracket State -->
         <div class="empty-state">

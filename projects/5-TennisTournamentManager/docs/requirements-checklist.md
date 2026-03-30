@@ -77,11 +77,11 @@
 - [x] **Finalize bracket** - matches generated
 
 #### View Bracket (All Users)
-- [ ] **View bracket visual** - tree structure for elimination, groups for round robin
-- [ ] **See participant names** in each position
+- [x] **View bracket visual** - tree structure for elimination, groups for round robin ✅
+- [x] **See participant names** in each position ✅
 - [ ] **View match schedule** for each match
 - [x] **See seeds** (marked with "Seed #1", etc.) ✅ (Displayed in matches & participant table)
-- [ ] **Public users can view** brackets without login
+- [x] **Public users can view** brackets without login
 
 #### Modify Bracket (Tournament Admin)
 - [ ] **Manual seed override** - change seed positions

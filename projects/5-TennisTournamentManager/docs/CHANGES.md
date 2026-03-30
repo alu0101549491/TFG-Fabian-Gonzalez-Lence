@@ -6,6 +6,171 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.46.11] - 2026-03-30
+
+### Fixed — System Admin Authorization
+
+**Issue**: 
+System administrators were unable to perform tournament organizational tasks (publishing brackets, scheduling matches, uploading logos, etc.) due to incorrect role checks in authorization logic.
+
+**Root Causes**:
+
+1. **Backend Authorization**: Several authorization checks in `tournament.controller.ts` and `user.controller.ts` were checking for `role !== 'ADMIN'` (an incorrect string literal) instead of `role !== UserRole.SYSTEM_ADMIN` (the proper enum value). Since the `UserRole.SYSTEM_ADMIN` enum equals `'SYSTEM_ADMIN'`, not `'ADMIN'`, these checks always failed for system administrators.
+
+2. **Frontend Permission Check**: The `canManageTournament()` method in `bracket-view.component.ts` was checking for `user.roles` (array) instead of `user.role` (single property). Since `UserDto` has a single `role` field, not a `roles` array, this check always failed, preventing the publish button from appearing.
+
+**Fixed Authorization Checks**:
+
+**Backend (tournament.controller.ts)**:
+1. **Upload tournament logo** (line 304): Changed `'ADMIN'` → `UserRole.SYSTEM_ADMIN`
+2. **Update tournament status** (line 403): Changed string literals to enum constants for both `SYSTEM_ADMIN` and `TOURNAMENT_ADMIN`
+3. **Delete tournament logo** (line 460): Changed `'ADMIN'` → `UserRole.SYSTEM_ADMIN`
+
+**Backend (user.controller.ts)**:
+1. **Upload user avatar** (line 471): Changed `'ADMIN'` → `UserRole.SYSTEM_ADMIN`
+2. **Delete user avatar** (line 545): Changed `'ADMIN'` → `UserRole.SYSTEM_ADMIN`
+
+**Frontend (bracket-view.component.ts)**:
+- **canManageTournament()**: Changed `user.roles || []` array check to direct `user.role` enum comparison
+
+**Impact**:
+System administrators can now:
+- ✅ See the "Publish Bracket" button in the UI
+- ✅ Publish brackets successfully
+- ✅ Upload and delete tournament logos
+- ✅ Update tournament status transitions
+- ✅ Upload and delete user avatars for any user
+- ✅ Perform all organizational tasks previously restricted to tournament admins or organizers
+
+**Testing**:
+System admin user (`admin@tennistournament.com`) can now test publishing brackets, scheduling matches, and managing tournament resources without being the tournament organizer.
+
+---
+
+## [1.46.10] - 2025-03-30
+
+### Added — Visual Bracket Display Component
+
+**Feature**: 
+Implemented visual bracket display to show tournament progression with tree structure for single elimination, organized groups for round robin, and match listings for match play formats. Participants can now see the complete bracket layout with seeds, match results, and advancement paths.
+
+**Why Needed**:
+The bracket page previously only showed information cards and phase summaries without a visual representation of the tournament structure. Users couldn't see matchups, bracket progression, or how winners advance through rounds. This made it difficult to understand tournament status at a glance.
+
+**Implementation**:
+
+**1. Visual Bracket Component** (`src/presentation/components/visual-bracket/`):
+- Created standalone component for displaying brackets visually
+- Input properties: `bracket: BracketDto`, `matches: MatchDto[]`
+- Organized matches by rounds with proper naming (Final, Semi-Finals, Quarter-Finals, etc.)
+- Clickable match cards that navigate to match detail page
+
+**2. Component Features**:
+
+**Single Elimination Bracket**:
+- Horizontal rounds layout (scrollable if needed)
+- Each round shows all matches in that stage
+- Match cards display:
+  - Match number
+  - Both participants with seed numbers
+  - Winner highlighted with trophy icon and green gradient
+  - BYE display for empty positions
+  - Match status badge (Scheduled, In Progress, Completed)
+- VS divider between participants
+- Hover effects for interactivity
+
+**Round Robin Format**:
+- Matches organized by round
+- Grid layout for multiple matches
+- Shows all participants in group stage format
+- Match cards with participant names and seeds
+
+**Match Play Format**:
+- Simple grid of all matches
+- Flexible open format display
+
+**3. Match Card Styling**:
+- **Default**: White background, gray border
+- **Completed**: Green border, subtle green gradient background
+- **In Progress**: Amber border, subtle yellow gradient background
+- **Winner**: Bold green gradient, white text, trophy animation
+- **Seed badges**: Circular badges with gradient, numbered display
+- **Hover**: Lift effect, primary color border, enhanced shadow
+
+**4. Integration with Bracket View**:
+- Updated `bracket-view.component.ts`:
+  - Added `MatchService` injection
+  - Added `matches` signal to store bracket matches
+  - Load matches when bracket loads (parallel with phases)
+  - Pass matches to visual bracket component
+  - Reload matches when bracket regenerated
+- Updated template to include `<app-visual-bracket>` component
+- Added section title "Bracket View" with trophy icon
+
+**5. Responsive Design**:
+- Horizontal scroll for single elimination on smaller screens
+- Round cards minimum width 300px (desktop), 250px (mobile)
+- Grid layouts adapt to available space
+- Touch-friendly click targets
+
+**6. User Experience**:
+- **Real participant names** displayed (e.g., "John Doe" vs "Jane Smith")
+- **Seed numbers** shown if assigned ("Seed #1", "Seed #2")
+- **Winner indication**: Trophy icon + green highlight
+- **Match status visual cues**: Color-coded borders and backgrounds
+- **Click to view details**: Each match card navigates to match page
+- **BYE display**: Grayed out for unassigned positions
+
+**Technical Details**:
+- Component uses Angular signals for reactive data
+- Computed signal `matchesByRound` organizes matches by round number
+- Helper methods: `getParticipantName()`, `getParticipantSeed()`, `isWinner()`
+- Round naming logic: Automatically labels Final, Semi-Finals, etc.
+- Matches sorted by `matchNumber` within each round
+
+**Example Visual**:
+```
+┌─────────────┬─────────────┬─────────────┐
+│  Round 1    │  Semi-Finals │    Final    │
+├─────────────┼─────────────┼─────────────┤
+│ Match 1     │             │             │
+│ ① Seed #1   │             │             │
+│ vs          │   Match 5   │   Match 7   │
+│ ⑧ Seed #8   │   Winner 1  │   Winner 5  │
+│             │   vs        │   vs        │
+│ Match 2     │   Winner 2  │   Winner 6  │
+│ ④ Seed #4   │             │             │
+│ vs          │   Match 6   │             │
+│ ⑤ Seed #5   │   Winner 3  │             │
+│             │   vs        │             │
+│ ...         │   Winner 4  │             │
+└─────────────┴─────────────┴─────────────┘
+```
+
+**Console Verification**:
+No additional console logs needed - visual display is self-evident in UI.
+
+**Benefits**:
+- ✅ Tournament progression clearly visible
+- ✅ Participants can see their bracket position
+- ✅ Winners advance through stages visually
+- ✅ Seed positioning immediately apparent
+- ✅ Match status updates shown in real-time colors
+- ✅ Easy navigation to match details
+- ✅ Professional tournament bracket appearance
+
+**Files Created**:
+- `src/presentation/components/visual-bracket/visual-bracket.component.ts`
+- `src/presentation/components/visual-bracket/visual-bracket.component.html`
+- `src/presentation/components/visual-bracket/visual-bracket.component.css`
+
+**Files Modified**:
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts`
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.html`
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.css`
+
+---
+
 ## [1.46.9] - 2025-03-30
 
 ### Added — Tournament Seeding System

@@ -359,6 +359,15 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* Visual Bracket Section */
+.visual-bracket-section {
+  background: var(--color-white);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: var(--spacing-xl);
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;

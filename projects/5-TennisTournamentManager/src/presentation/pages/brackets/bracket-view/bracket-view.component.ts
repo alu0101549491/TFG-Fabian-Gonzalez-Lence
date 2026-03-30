@@ -14,11 +14,12 @@
 import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
-import {BracketService, TournamentService} from '@application/services';
-import {type BracketDto, type PhaseDto, type TournamentDto} from '@application/dto';
+import {BracketService, TournamentService, MatchService} from '@application/services';
+import {type BracketDto, type PhaseDto, type TournamentDto, type MatchDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {UserRole} from '@domain/enumerations/user-role';
 import {EnumFormatPipe} from '@shared/pipes';
+import {VisualBracketComponent} from '@presentation/components/visual-bracket/visual-bracket.component';
 import templateHtml from './bracket-view.component.html?raw';
 import styles from './bracket-view.component.css?raw';
 
@@ -28,7 +29,7 @@ import styles from './bracket-view.component.css?raw';
 @Component({
   selector: 'app-bracket-view',
   standalone: true,
-  imports: [CommonModule, RouterModule, EnumFormatPipe],
+  imports: [CommonModule, RouterModule, EnumFormatPipe, VisualBracketComponent],
   template: templateHtml,
   styles: [styles],
 })
@@ -38,6 +39,7 @@ export class BracketViewComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly bracketService = inject(BracketService);
   private readonly tournamentService = inject(TournamentService);
+  private readonly matchService = inject(MatchService);
   private readonly authStateService = inject(AuthStateService);
 
   /** Tournament ID */
@@ -51,6 +53,9 @@ export class BracketViewComponent implements OnInit {
 
   /** Bracket phases */
   public phases = signal<PhaseDto[]>([]);
+
+  /** Bracket matches */
+  public matches = signal<MatchDto[]>([]);
 
   /** Loading state */
   public isLoading = signal(false);
@@ -111,8 +116,15 @@ export class BracketViewComponent implements OnInit {
       const brackets = await this.bracketService.getBracketsByTournament(tournamentId);
       if (brackets.length > 0) {
         this.bracket.set(brackets[0]);
-        const phases = await this.bracketService.getPhases(brackets[0].id);
+        
+        // Load phases and matches in parallel
+        const [phases, matches] = await Promise.all([
+          this.bracketService.getPhases(brackets[0].id),
+          this.matchService.getMatchesByBracket(brackets[0].id),
+        ]);
+        
         this.phases.set(phases);
+        this.matches.set(matches);
       }
     } catch (error) {
       // Bracket not found is not an error - it's expected if no bracket generated yet
@@ -132,13 +144,10 @@ export class BracketViewComponent implements OnInit {
     const tournament = this.tournament();
     if (!tournament) return false;
 
-    // Safe check for roles array
-    const userRoles = user.roles || [];
-
     return (
       user.id === tournament.organizerId ||
-      userRoles.includes(UserRole.TOURNAMENT_ADMIN) ||
-      userRoles.includes(UserRole.SYSTEM_ADMIN)
+      user.role === UserRole.TOURNAMENT_ADMIN ||
+      user.role === UserRole.SYSTEM_ADMIN
     );
   }
 
@@ -202,9 +211,15 @@ export class BracketViewComponent implements OnInit {
       // Update the bracket signal with the fresh data from the server
       this.bracket.set(updatedBracket);
       alert('Bracket regenerated successfully!');
-      // Reload phases as they might have changed
-      const phases = await this.bracketService.getPhases(updatedBracket.id);
+      
+      // Reload phases and matches as they might have changed
+      const [phases, matches] = await Promise.all([
+        this.bracketService.getPhases(updatedBracket.id),
+        this.matchService.getMatchesByBracket(updatedBracket.id),
+      ]);
+      
       this.phases.set(phases);
+      this.matches.set(matches);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to regenerate bracket';
       alert(`Error: ${message}`);

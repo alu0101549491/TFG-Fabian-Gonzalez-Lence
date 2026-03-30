@@ -468,7 +468,7 @@ export class UserController {
       }
 
       // Verify authorization (users can only upload their own avatar, admins can upload for anyone)
-      if (req.user?.id !== id && req.user?.role !== 'ADMIN') {
+      if (req.user?.id !== id && req.user?.role !== UserRole.SYSTEM_ADMIN) {
         throw new AppError(
           'Unauthorized to upload avatar for this user',
           HTTP_STATUS.FORBIDDEN,
@@ -542,7 +542,7 @@ export class UserController {
       }
 
       // Verify authorization
-      if (req.user?.id !== id && req.user?.role !== 'ADMIN') {
+      if (req.user?.id !== id && req.user?.role !== UserRole.SYSTEM_ADMIN) {
         throw new AppError(
           'Unauthorized to delete avatar for this user',
           HTTP_STATUS.FORBIDDEN,

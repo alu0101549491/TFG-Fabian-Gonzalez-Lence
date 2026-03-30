@@ -301,7 +301,7 @@ export class TournamentController {
       }
 
       // Verify authorization (only organizer or admin can upload logo)
-      if (tournament.organizerId !== req.user?.id && req.user?.role !== 'ADMIN') {
+      if (tournament.organizerId !== req.user?.id && req.user?.role !== UserRole.SYSTEM_ADMIN) {
         throw new AppError(
           'Unauthorized to upload logo for this tournament',
           HTTP_STATUS.FORBIDDEN,
@@ -400,7 +400,7 @@ export class TournamentController {
       }
 
       // Verify authorization
-      const isAdmin = req.user?.role === 'SYSTEM_ADMIN' || req.user?.role === 'TOURNAMENT_ADMIN';
+      const isAdmin = req.user?.role === UserRole.SYSTEM_ADMIN || req.user?.role === UserRole.TOURNAMENT_ADMIN;
       const isOrganizer = tournament.organizerId === req.user?.id;
 
       if (!isAdmin && !isOrganizer) {
@@ -457,7 +457,7 @@ export class TournamentController {
       }
 
       // Verify authorization
-      if (tournament.organizerId !== req.user?.id && req.user?.role !== 'ADMIN') {
+      if (tournament.organizerId !== req.user?.id && req.user?.role !== UserRole.SYSTEM_ADMIN) {
         throw new AppError(
           'Unauthorized to delete logo for this tournament',
           HTTP_STATUS.FORBIDDEN,

@@ -77,6 +77,7 @@ async function seedDatabase(): Promise<void> {
     // Create System Administrator
     const systemAdmin = userRepository.create({
       id: generateId('usr'),
+      username: 'admin',
       email: 'admin@tennistournament.com',
       passwordHash: adminPassword,
       firstName: 'System',
@@ -93,6 +94,7 @@ async function seedDatabase(): Promise<void> {
     // Create Tournament Administrator
     const tournamentAdmin = userRepository.create({
       id: generateId('usr'),
+      username: 'tournament_admin',
       email: 'tournament@tennistournament.com',
       passwordHash: tournamentAdminPassword,
       firstName: 'Tournament',
@@ -109,6 +111,7 @@ async function seedDatabase(): Promise<void> {
     // Create Registered Participant (Player)
     const player1 = userRepository.create({
       id: generateId('usr'),
+      username: 'carlos_rodriguez',
       email: 'player@example.com',
       passwordHash: playerPassword,
       firstName: 'Carlos',
@@ -125,6 +128,7 @@ async function seedDatabase(): Promise<void> {
     // Create second player
     const player2 = userRepository.create({
       id: generateId('usr'),
+      username: 'maria_garcia',
       email: 'maria@example.com',
       passwordHash: playerPassword,
       firstName: 'Maria',
