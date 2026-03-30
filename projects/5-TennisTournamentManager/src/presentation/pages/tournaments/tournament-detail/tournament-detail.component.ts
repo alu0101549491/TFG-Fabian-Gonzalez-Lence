@@ -148,12 +148,25 @@ export class TournamentDetailComponent implements OnInit {
   /** All users in the system (for adding participants) */
   public allUsers = signal<UserSummaryDto[]>([]);
   
-  /** Filtered users based on search query */
+  /** Filtered users based on search query and excluding already registered players */
   public filteredUsers = computed(() => {
-    const query = this.addParticipantFormData.userSearchQuery.toLowerCase().trim();
+    const query = this.userSearchQuery().toLowerCase().trim();
     if (!query) return [];
     
+    // Get list of already registered participant IDs (excluding WITHDRAWN)
+    const registeredPlayerIds = new Set(
+      this.registeredPlayers()
+        .filter(p => p.registration.status !== RegistrationStatus.WITHDRAWN)
+        .map(p => p.registration.participantId)
+    );
+    
     return this.allUsers().filter(user => {
+      // Exclude users who are already registered (except WITHDRAWN)
+      if (registeredPlayerIds.has(user.id)) {
+        return false;
+      }
+      
+      // Filter by search query
       const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
       const username = (user.username || '').toLowerCase();
       const email = (user.email || '').toLowerCase();
@@ -162,9 +175,11 @@ export class TournamentDetailComponent implements OnInit {
     }).slice(0, 10); // Limit to 10 results for performance
   });
   
+  /** User search query signal */
+  public userSearchQuery = signal('');
+  
   /** Add participant form data */
   public addParticipantFormData = {
-    userSearchQuery: '',
     selectedUserId: null as string | null,
     selectedUserName: null as string | null,
     categoryId: null as string | null,
@@ -1105,7 +1120,7 @@ export class TournamentDetailComponent implements OnInit {
         const users = await this.userManagementService.getEligibleParticipants();
         this.allUsers.set(users);
       } catch (error) {
-        console.error('Failed to load users:', error);
+        console.error('❌ Failed to load users:', error);
         alert('Failed to load users. Please try again.');
         return;
       }
@@ -1119,7 +1134,7 @@ export class TournamentDetailComponent implements OnInit {
    */
   public hideAddParticipantModal(): void {
     this.showAddParticipantDialog.set(false);
-    this.addParticipantFormData.userSearchQuery = '';
+    this.userSearchQuery.set('');
     this.addParticipantFormData.selectedUserId = null;
     this.addParticipantFormData.selectedUserName = null;
     this.addParticipantFormData.categoryId = null;
@@ -1127,13 +1142,11 @@ export class TournamentDetailComponent implements OnInit {
 
   /**
    * Handles user search input changes.
-   * Triggers filtering of users by search query.
-   *
-   * @param _query - Search query entered by user (unused, filtering handled by computed signal)
+   * Note: Now handled directly in template via userSearchQuery.set()
+   * This method is kept for backwards compatibility but is no longer used.
    */
   public searchUsers(_query: string): void {
-    // The filteredUsers computed signal will automatically update
-    // when userSearchQuery changes (through ngModel binding)
+    // No longer needed - template directly updates userSearchQuery signal
   }
 
   /**
@@ -1144,7 +1157,7 @@ export class TournamentDetailComponent implements OnInit {
   public selectUser(user: UserSummaryDto): void {
     this.addParticipantFormData.selectedUserId = user.id;
     this.addParticipantFormData.selectedUserName = user.username || `${user.firstName} ${user.lastName}`;
-    this.addParticipantFormData.userSearchQuery = ''; // Clear search to hide dropdown
+    this.userSearchQuery.set(''); // Clear search to hide dropdown
   }
 
   /**

@@ -6,6 +6,513 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.46.7] - 2025-03-30
+
+### Improved — Console Log Cleanup
+
+**Issue**: 
+Console was cluttered with repetitive debug messages from auth-state service, user controller, and tournament detail component. Every page load and user action generated dozens of "[AuthState]" messages making it difficult to read actual debugging information.
+
+**Changes**:
+Removed verbose debug `console.log` statements from:
+- `auth-state.service.ts`: Removed logs from `restoreUser()`, `setAuth()`, `getCurrentUser()`, and `setUser()` methods
+- `user.controller.ts`: Removed "getEligibleParticipants" and "User Update" debug logs
+- `tournament-detail.component.ts`: Removed "Loaded eligible participants" log
+
+**Preserved**:
+- `console.error()` statements for actual error conditions (critical for debugging failures)
+- Error handling and error messages remain unchanged
+
+**Result**:
+- ✅ Cleaner console output and output is actually readable
+- ✅ Easier to spot important warnings and errors
+- ✅ Production-ready logging (errors only, no noise)
+- ✅ Better developer experience when debugging
+
+---
+
+## [1.46.6] - 2025-03-30
+
+### Fixed — Add Participant Dropdown Not Updating on Search
+
+**Issue**: 
+When typing in the Add Participant search box, the dropdown would not update in real-time. After typing "x", then deleting it and typing "p", the dropdown would still show results for "x" instead of "p". No debug logs appeared when changing the search query.
+
+**Root Cause**:
+The `addParticipantFormData.userSearchQuery` was a plain object property, not a Signal. The `filteredUsers` computed signal depends on this search query, but computed signals in Angular only recalculate when **signals** they depend on change. Since `userSearchQuery` was not a signal, typing new text did not trigger the filter to recalculate.
+
+**Solution**:
+Converted `userSearchQuery` from a plain property to a Signal:
+
+**Before**:
+```typescript
+public filteredUsers = computed(() => {
+  const query = this.addParticipantFormData.userSearchQuery.toLowerCase().trim();
+  // ...
+});
+
+public addParticipantFormData = {
+  userSearchQuery: '',  // Plain property - computed doesn't track changes
+  selectedUserId: null,
+  // ...
+};
+```
+
+**After**:
+```typescript
+public filteredUsers = computed(() => {
+  const query = this.userSearchQuery().toLowerCase().trim();  // Reads from signal
+  // ...
+});
+
+public userSearchQuery = signal('');  // Signal - computed tracks changes
+```
+
+**Template Changes**:
+```html
+<!-- Before -->
+<input [(ngModel)]="addParticipantFormData.userSearchQuery"
+       (ngModelChange)="searchUsers($event)" />
+
+<!-- After -->
+<input [ngModel]="userSearchQuery()"
+       (ngModelChange)="userSearchQuery.set($event)" />
+```
+
+**Benefits**:
+- ✅ Real-time filtering: Dropdown updates instantly as you type
+- ✅ Proper reactivity: Computed signal recalculates on every keystroke
+- ✅ No manual triggering needed: Angular's signal system handles updates automatically
+- ✅ Better performance: Only recalculates when search query actually changes
+
+**Files Modified**:
+- `tournament-detail.component.ts`: Converted `userSearchQuery` to signal, updated `selectUser()` and `hideAddParticipantModal()`
+- `tournament-detail-new.component.html`: Updated input binding and conditional checks
+
+---
+
+## [1.46.5] - 2025-03-30
+
+### Fixed — Add Participant Dropdown Exclusion Logic
+
+**Issue**: 
+The Add Participant dropdown was showing ALL active PLAYER role users, including those already registered in the tournament. This allowed administrators to accidentally create duplicate enrollments for the same player in the same category.
+
+**Root Cause**:
+The `filteredUsers` computed signal only filtered by search query (name, username, email) without checking if users were already registered in the current tournament.
+
+**Solution**:
+Enhanced the dropdown filter to exclude users who are already registered in the tournament (with any status: PENDING, ACCEPTED, ALTERNATE, etc.), while **allowing WITHDRAWN players to re-register**.
+
+**Implementation Details**:
+```typescript
+// Build exclusion set of registered player IDs (excluding WITHDRAWN)
+const registeredPlayerIds = new Set(
+  this.registeredPlayers()
+    .filter(p => p.registration.status !== RegistrationStatus.WITHDRAWN)
+    .map(p => p.registration.participantId)
+);
+
+// Filter out already-registered users
+return this.allUsers().filter(user => {
+  if (registeredPlayerIds.has(user.id)) {
+    return false;  // Exclude: user is already registered
+  }
+  // Apply search query filters...
+});
+```
+
+**New Filtering Logic**:
+
+| User Status | Registration Status | Appears in Dropdown? | Reason |
+|-------------|---------------------|----------------------|--------|
+| Active PLAYER | Not registered | ✅ YES | Eligible for enrollment |
+| Active PLAYER | PENDING | ❌ NO | Already in tournament queue |
+| Active PLAYER | ACCEPTED | ❌ NO | Already enrolled |
+| Active PLAYER | ALTERNATE | ❌ NO | Already on waiting list |
+| Active PLAYER | LUCKY_LOSER | ❌ NO | Already promoted from waitlist |
+| Active PLAYER | **WITHDRAWN** | ✅ YES | Can re-register after withdrawal |
+| Active PLAYER | REJECTED | ❌ NO | Previously rejected |
+| Active PLAYER | CANCELLED | ❌ NO | Registration cancelled |
+
+**Updated "No Results" Message**:
+```
+🔍
+No players found
+Only active PLAYER role users appear here.
+Already registered players (pending, accepted, etc.) are excluded.
+✓ Withdrawn players can be re-registered.
+```
+
+**Benefits**:
+- ✅ Prevents duplicate enrollments
+- ✅ Maintains data integrity
+- ✅ Allows withdrawn players to re-register (re-registration flow from v1.46.1)
+- ✅ Reactive updates via computed signal
+- ✅ Performant Set-based lookup (O(1) instead of array iteration)
+
+**Files Modified**:
+- `tournament-detail.component.ts` (lines 152-177): Updated `filteredUsers` computed signal
+- `tournament-detail-new.component.html` (lines 873-886): Updated "No Results" message
+
+---
+
+## [1.46.4] - 2026-03-30
+
+### Improved — Add Participant Search Debugging & User Filtering
+
+**Enhancement**: 
+Added console logging and UI feedback to help diagnose why certain users (like "pepito") don't appear in the Add Participant dropdown when tournament admins search for them.
+
+**New UI Feature - "No Results" Message**:
+When searching for a user and no matches are found, a helpful message now appears:
+```
+🔍
+No players found
+Only active PLAYER role users appear here.
+Check user's role and status in User Management.
+```
+
+**User Filtering Criteria**:
+The Add Participant feature ONLY shows users who meet ALL of these criteria:
+1. ✅ **Role = PLAYER** (excludes SYSTEM_ADMIN, TOURNAMENT_ADMIN, REFEREE, SPECTATOR)
+2. ✅ **isActive = true** (excludes deactivated/suspended users)
+
+**Why a User Might Not Appear**:
+
+**Scenario 1 - Wrong Role**:
+```
+User: "pepito"
+Role: TOURNAMENT_ADMIN  ← NOT PLAYER
+isActive: true
+Result: ❌ WILL NOT APPEAR (only PLAYER role users shown for tournament enrollment)
+```
+
+**Scenario 2 - Inactive User**:
+```
+User: "pepito"
+Role: PLAYER
+isActive: false  ← NOT ACTIVE
+Result: ❌ WILL NOT APPEAR (only active users can be enrolled)
+```
+
+**Scenario 3 - Should Appear**:
+```
+User: "pepito"
+Role: PLAYER
+isActive: true
+Result: ✅ WILL APPEAR when searching "pepito" or part of first/last name
+```
+
+**Debugging Logs Added**:
+
+**Frontend** ([tournament-detail.component.ts](../src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts) line 1102):
+```typescript
+console.log(`✅ Loaded ${users.length} eligible participants (PLAYER role, active):`, 
+  users.map(u => ({
+    id: u.id,
+    username: u.username,
+    name: `${u.firstName} ${u.lastName}`,
+    email: u.email
+  }))
+);
+```
+
+**Backend** ([user.controller.ts](../backend/src/presentation/controllers/user.controller.ts) line 173):
+```typescript
+console.log(`📋 getEligibleParticipants: Found ${users.length} eligible players`);
+console.log(`   Users: ${users.map(u => `${u.username} (${u.firstName} ${u.lastName})`).join(', ')}`);
+```
+
+**How to Debug**:
+1. **Open tournament detail page** as admin
+2. **Click "➕ Add Participant"** button
+3. **Open browser console** (F12)
+4. **Look for log**: `✅ Loaded X eligible participants`
+5. **Check if "pepito" is in the list**
+   - ✅ **If YES**: Search should work (check spelling, case-insensitive)
+   - ❌ **If NO**: User doesn't meet criteria (check role and isActive status)
+
+**How to Fix Missing Users**:
+
+**Option A - Change User Role** (if user should be a player):
+1. Login as **System Admin**
+2. Navigate to **Admin → User Management**
+3. Find **"pepito"** user
+4. Click **Edit**
+5. Change **Role** to **PLAYER**
+6. Ensure **Active** is checked
+7. Save changes
+
+**Option B - Activate User** (if user is inactive):
+1. Same steps as above
+2. Check the **Active** checkbox
+3. Save changes
+
+**Search Logic** (case-insensitive, searches in):
+- ✅ Username (`pepito`)
+- ✅ First name
+- ✅ Last name  
+- ✅ Email
+- ✅ Shows top 10 matches
+
+**Security Rationale**:
+- Tournament admins should only enroll **players** (not other admins or referees)
+- Inactive users shouldn't be enrolled (may be banned, suspended, or deactivated accounts)
+- This prevents accidental or malicious enrollment of system administrators
+
+**Frontend Search Implementation**:
+```typescript
+filteredUsers = computed(() => {
+  const query = this.addParticipantFormData.userSearchQuery.toLowerCase().trim();
+  if (!query) return [];
+  
+  return this.allUsers().filter(user => {
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
+    const username = (user.username || '').toLowerCase();
+    const email = (user.email || '').toLowerCase();
+    
+    return fullName.includes(query) || username.includes(query) || email.includes(query);
+  }).slice(0, 10); // Top 10 results
+});
+```
+
+**Related**:
+- Backend endpoint: `GET /api/users/eligible-participants` (TOURNAMENT_ADMIN + SYSTEM_ADMIN access)
+- Original feature: Version 1.46.1 (Manual participant enrollment)
+- Permission fix: Version 1.46.3 (Player withdrawal)
+
+---
+
+## [1.46.3] - 2026-03-30
+
+### Fixed — Player Withdrawal Permission Error (403 Forbidden)
+
+**Problem**: 
+Players received "Insufficient permissions to access this resource" error when attempting to withdraw from tournaments via the My Registrations page. After the error, the player was automatically logged out.
+
+**Root Cause**:
+- Backend route `PUT /api/registrations/:id/status` only allowed `SYSTEM_ADMIN` and `TOURNAMENT_ADMIN` roles
+- When a `PLAYER` attempted to withdraw (update status to `WITHDRAWN`), the `roleMiddleware` blocked the request with 403 Forbidden
+- The 403 error likely triggered the frontend auth logic to assume the session was invalid, logging out the user
+
+**Solution**:
+
+**Backend - Route** ([routes/index.ts](../backend/src/presentation/routes/index.ts) line 981):
+```typescript
+// Before: Only admins could access
+router.put('/registrations/:id/status', authMiddleware, 
+  roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), 
+  registrationController.updateStatus);
+
+// After: Players can now access (with restrictions)
+router.put('/registrations/:id/status', authMiddleware, 
+  roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN, UserRole.PLAYER]), 
+  registrationController.updateStatus);
+```
+
+**Backend - Controller** ([registration.controller.ts](../backend/src/presentation/controllers/registration.controller.ts) lines 201-268):
+Added authorization logic to safely allow player access:
+
+```typescript
+// Authorization: Players can only withdraw their own registrations
+if (currentUser.role === 'PLAYER') {
+  // 1. Check ownership
+  if (registration.participantId !== currentUser.id) {
+    throw new AppError('You can only withdraw your own registrations', 403);
+  }
+  
+  // 2. Restrict to WITHDRAWN status only
+  if (status !== RegistrationStatus.WITHDRAWN) {
+    throw new AppError('Players can only withdraw from tournaments', 403);
+  }
+  
+  // 3. Prevent acceptance type changes
+  if (acceptanceType) {
+    throw new AppError('Players cannot change acceptance type', 403);
+  }
+}
+```
+
+**Security Measures**:
+1. ✅ **Ownership Validation**: Players can ONLY modify their own registrations (`registration.participantId === currentUser.id`)
+2. ✅ **Status Restriction**: Players can ONLY set status to `WITHDRAWN` (cannot approve, reject, or cancel)
+3. ✅ **Acceptance Type Protection**: Players cannot modify `acceptanceType` (DA, LL, ALT remain admin-controlled)
+4. ✅ **Admin Privileges Preserved**: Admins retain full control over all registrations
+
+**User Flow (After Fix)**:
+```
+Player clicks "Withdraw" on My Registrations page
+  ↓
+PUT /api/registrations/{id}/status with {status: 'WITHDRAWN'}
+  ↓
+Backend checks:
+  - ✅ User authenticated (authMiddleware)
+  - ✅ User is PLAYER, TOURNAMENT_ADMIN, or SYSTEM_ADMIN (roleMiddleware)
+  - ✅ If PLAYER: owns registration + status is WITHDRAWN only
+  ↓
+Registration updated to WITHDRAWN
+  ↓
+Frontend refreshes list, shows "🚪 You withdrew from this tournament"
+```
+
+**Testing**:
+- ✅ Player can withdraw own registrations
+- ✅ Player CANNOT withdraw other players' registrations  
+- ✅ Player CANNOT approve/reject registrations
+- ✅ Player CANNOT change acceptance type
+- ✅ Admins retain full update capabilities
+- ✅ No automatic logout after withdrawal
+
+**Related**:
+- Frontend: [my-registrations.component.ts](../src/presentation/pages/registrations/my-registrations/my-registrations.component.ts) line 117
+- Backend withdrawal logic: Already implemented, just needed permission fix
+
+---
+
+## [1.46.2] - 2026-03-30
+
+### Added — My Registrations Page (Player Self-Service Registration Management)
+
+**Feature**: 
+Players can now view and manage all their tournament registrations from a dedicated page, replacing the Settings link in Quick Links.
+
+**Visual Design**:
+- **Hero Section**: Gradient background (green → blue) matching tournament list page
+- **Back Button**: Glass-morphism style button in hero for navigation
+- **Card Layout**: Elevated white cards with hover effects and shadows
+- **Status Badges**: Color-coded pills (green for accepted, orange for alternate, purple for lucky loser, etc.)
+- **CSS Variables**: Consistent styling using app-wide design tokens
+- **Responsive**: Mobile-optimized grid layout with breakpoints at 768px and 480px
+
+**Motivation**:
+- Players needed centralized view of their tournament participation
+- Enable self-service withdrawal without admin intervention
+- Support requirements checklist items:
+  1. Navigate to "My Registrations"
+  2. View all registrations with status
+  3. Withdraw from tournaments with confirmation
+  4. Automatic alternate promotion on withdrawal (future enhancement)
+
+**Implementation**:
+
+**Component** ([my-registrations.component.ts](../src/presentation/pages/registrations/my-registrations/my-registrations.component.ts)):
+- **View All Registrations**: Loads user's registrations with tournament/category names
+- **Status Badges**: Visual indicators for registration state (Pending, Accepted, Alternate, Lucky Loser, Withdrawn, Rejected)
+- **Withdraw Action**: Players can withdraw from PENDING or ACCEPTED registrations
+- **Confirmation Dialog**: Prevents accidental withdrawals
+- **Enriched Data**: Interface `RegistrationWithDetails` adds tournamentName and categoryName
+- **Real-time Updates**: Refreshes list after withdrawal
+
+**Key Methods**:
+```typescript
+async loadMyRegistrations() {
+  // Fetches registrations for current user
+  // Enriches with tournament/category names
+}
+
+async withdrawFromTournament(id, tournamentName, categoryName) {
+  const confirmed = confirm("Withdraw from {tournament} - {category}?");
+  await registrationService.updateStatus({id, status: WITHDRAWN});
+  await this.loadMyRegistrations(); // Refresh
+}
+
+canWithdraw(registration): boolean {
+  return registration.status === PENDING || registration.status === ACCEPTED;
+}
+```
+
+**Status Display** ([my-registrations.component.html](../src/presentation/pages/registrations/my-registrations/my-registrations.component.html)):
+- **Accepted** (Green): `ACCEPTED` + `DIRECT_ACCEPTANCE` → "Accepted"
+- **Alternate** (Orange): `ACCEPTED` + `ALTERNATE` → "Alternate" (waiting list)
+- **Lucky Loser** (Purple): `ACCEPTED` + `LUCKY_LOSER` → "Lucky Loser" (promoted)
+- **Pending** (Blue): `PENDING` → "Pending" (awaiting approval)
+- **Withdrawn** (Gray): `WITHDRAWN` → "Withdrawn"
+- **Rejected** (Red): `REJECTED` → "Rejected"
+
+**Styling** ([my-registrations.component.css](../src/presentation/pages/registrations/my-registrations/my-registrations.component.css)):
+- Card-based layout for registrations
+- Responsive grid (auto-fills with min 400px cards)
+- Status badges with color coding
+- Hover effects on cards
+- Mobile-friendly design with collapsing layouts
+- Empty state: "No registrations yet" with link to browse tournaments
+- Loading spinner during data fetch
+- Error handling with retry button
+
+**Routing** ([app.routes.ts](../src/presentation/app.routes.ts)):
+```typescript
+{
+  path: 'my-registrations',
+  canActivate: [authGuard],  // Requires authentication
+  loadComponent: () => import('./pages/registrations/my-registrations/...')
+}
+```
+
+**Navigation** ([dashboard.component.html](../src/presentation/pages/dashboard.component.html)):
+- **Removed**: Settings link (⚙️)
+- **Added**: My Registrations link (📋)
+- Maintains 2×3 Quick Links grid layout
+- New links: Browse Tournaments, My Matches, Standings, Rankings, My Profile, **My Registrations**
+
+**Status Information Messages**:
+- **Pending**: "⏳ Awaiting organizer approval"
+- **Alternate**: "🟠 On waiting list - may be promoted if spots open up"
+- **Lucky Loser**: "🍀 Promoted from waiting list - ready to compete!"
+- **Accepted**: "✅ Registration confirmed - ready to compete!"
+- **Rejected**: "❌ Registration was not approved"
+- **Withdrawn**: "🚪 You withdrew from this tournament"
+
+**Card Layout**:
+Each registration card displays:
+1. **Tournament Name** (clickable link to tournament detail)
+2. **Category Name**
+3. **Status Badge** (color-coded)
+4. **Registration Date** (formatted: "Mar 30, 2026, 10:45 AM")
+5. **Seed Number** (if assigned)
+6. **Status Information** (contextual message)
+7. **Actions**:
+   - "👁️ View Tournament" (always visible)
+   - "🚪 Withdraw" (only for PENDING/ACCEPTED)
+
+**User Flow**:
+```
+Dashboard → Quick Links → My Registrations
+  ↓
+View all registrations with status
+  ↓
+Select tournament → Click "Withdraw"
+  ↓
+Confirm dialog → "Withdraw from Tournament X - Category Y?"
+  ↓
+Status updated to WITHDRAWN → List refreshes
+  ↓
+Player removed from participants → Spot opens for alternates
+```
+
+**Benefits**:
+- ✅ **Player Autonomy**: Self-service withdrawal without admin contact
+- ✅ **Transparency**: Clear visibility of all registration statuses
+- ✅ **Status Awareness**: Understand position (accepted, alternate, pending)
+- ✅ **Quick Access**: One-click navigation from dashboard
+- ✅ **Error Prevention**: Confirmation dialogs prevent accidents
+- ✅ **Real-time Updates**: Immediate feedback after actions
+- ✅ **Mobile Friendly**: Responsive design for all devices
+
+**Future Enhancements** (Not Yet Implemented):
+- ⏳ **Automatic Alternate Promotion**: When player withdraws, next alternate auto-promoted to LUCKY_LOSER (currently manual via admin "⬆️ Promote" button)
+- ⏳ **Re-registration from My Registrations**: Allow withdrawn players to re-register directly
+
+**Testing Notes**:
+- Login as player with multiple registrations
+- Verify all statuses display correctly
+- Test withdrawal flow (PENDING and ACCEPTED)
+- Confirm withdrawn status appears immediately
+- Verify navigation from dashboard Quick Links
+- Test responsive layout on mobile devices
+
+---
+
 ## [1.46.1] - 2026-03-30
 
 ### Fixed — 403 Forbidden Error When Adding Participants (Role Permission Issue)

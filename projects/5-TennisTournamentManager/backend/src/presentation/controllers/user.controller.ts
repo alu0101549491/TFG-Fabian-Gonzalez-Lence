@@ -65,9 +65,6 @@ export class UserController {
       const {id} = req.params;
       const userRepository = AppDataSource.getRepository(User);
       
-      console.log(`[User Update] User ${req.user?.id} updating profile ${id}`);
-      console.log(`[User Update] Request body:`, req.body);
-      
       // Verify user owns this profile or is admin
       if (req.user?.id !== id && req.user?.role !== UserRole.SYSTEM_ADMIN) {
         throw new AppError('Cannot update other users profiles', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);

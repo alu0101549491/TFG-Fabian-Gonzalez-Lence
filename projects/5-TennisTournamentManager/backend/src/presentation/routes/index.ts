@@ -969,7 +969,7 @@ router.get('/registrations/:id', registrationController.getById.bind(registratio
  *             properties:
  *               status:
  *                 type: string
- *                 enum: [ACCEPTED, REJECTED]
+ *                 enum: [ACCEPTED, REJECTED, WITHDRAWN]
  *     responses:
  *       200:
  *         description: Status updated
@@ -978,7 +978,7 @@ router.get('/registrations/:id', registrationController.getById.bind(registratio
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.put('/registrations/:id/status', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), registrationController.updateStatus.bind(registrationController));
+router.put('/registrations/:id/status', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN, UserRole.PLAYER]), registrationController.updateStatus.bind(registrationController));
 
 /**
  * @swagger

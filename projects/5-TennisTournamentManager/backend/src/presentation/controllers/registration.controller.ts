@@ -197,14 +197,21 @@ export class RegistrationController {
    * PATCH /api/registrations/:id/status
    * Updates registration status and optionally acceptance type.
    * FR12: Enforces quota when approving with DA/LL acceptance type.
+   * Security: Players can only withdraw their own registrations.
    */
   public async updateStatus(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
       const {status, acceptanceType} = req.body;
+      const currentUser = req.user;
+      
+      if (!currentUser) {
+        throw new AppError('Authentication required', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
+      }
       
       console.log(`📝 Updating registration ${id}:`);
       console.log(`  - New status: ${status}`);
+      console.log(`  - User: ${currentUser.id} (${currentUser.role})`);
       if (acceptanceType) console.log(`  - New acceptance type: ${acceptanceType}`);
       
       const registrationRepository = AppDataSource.getRepository(Registration);
@@ -214,6 +221,41 @@ export class RegistrationController {
       if (!registration) {
         console.log(`❌ Registration ${id} not found`);
         throw new AppError('Registration not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Authorization: Players can only withdraw their own registrations
+      if (currentUser.role === 'PLAYER') {
+        // Check if player owns this registration
+        if (registration.participantId !== currentUser.id) {
+          console.log(`❌ Player ${currentUser.id} attempting to modify registration owned by ${registration.participantId}`);
+          throw new AppError(
+            'You can only withdraw your own registrations',
+            HTTP_STATUS.FORBIDDEN,
+            ERROR_CODES.FORBIDDEN
+          );
+        }
+        
+        // Players can only set status to WITHDRAWN
+        if (status !== RegistrationStatus.WITHDRAWN) {
+          console.log(`❌ Player attempting to set status to ${status} (only WITHDRAWN allowed)`);
+          throw new AppError(
+            'Players can only withdraw from tournaments',
+            HTTP_STATUS.FORBIDDEN,
+            ERROR_CODES.FORBIDDEN
+          );
+        }
+        
+        // Players cannot change acceptance type
+        if (acceptanceType) {
+          console.log(`❌ Player attempting to change acceptance type (not allowed)`);
+          throw new AppError(
+            'Players cannot change acceptance type',
+            HTTP_STATUS.FORBIDDEN,
+            ERROR_CODES.FORBIDDEN
+          );
+        }
+        
+        console.log(`✅ Authorization passed: Player withdrawing own registration`);
       }
       
       console.log(`📊 Current state:`);

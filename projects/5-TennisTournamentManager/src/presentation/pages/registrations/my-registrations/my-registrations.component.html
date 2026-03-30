@@ -1,0 +1,153 @@
+<div class="registrations-list-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-top">
+        <button
+          class="back-button"
+          (click)="goBack()"
+          type="button"
+          title="Go back">
+          ← Back
+        </button>
+      </div>
+      <h1 class="hero-title">📋 My Registrations</h1>
+      <p class="hero-subtitle">Manage your tournament registrations</p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Error State -->
+    @if (errorMessage() && !isLoading()) {
+      <div class="error-card">
+        <div class="error-icon">⚠️</div>
+        <p class="error-message">{{ errorMessage() }}</p>
+        <button class="retry-btn" (click)="ngOnInit()">
+          ↻ Retry
+        </button>
+      </div>
+    }
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-card">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Loading your registrations...</p>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (!isLoading() && !errorMessage() && registrations().length === 0) {
+      <div class="empty-card">
+        <span class="empty-icon">🎾</span>
+        <h2 class="empty-title">No Registrations Yet</h2>
+        <p class="empty-text">You haven't registered for any tournaments.</p>
+        <a routerLink="/tournaments" class="browse-btn">
+          🔍 Browse Tournaments
+        </a>
+      </div>
+    }
+
+    <!-- Registrations Grid -->
+    @if (!isLoading() && !errorMessage() && registrations().length > 0) {
+      <div class="registrations-grid">
+        @for (registration of registrations(); track registration.id) {
+          <div class="registration-card">
+            <!-- Card Header -->
+            <div class="registration-card-header">
+              <div class="tournament-info">
+                <h3 class="tournament-title">
+                  <a [routerLink]="['/tournaments', registration.tournamentId]">
+                    {{ registration.tournamentName }}
+                  </a>
+                </h3>
+                <p class="category-name">{{ registration.categoryName }}</p>
+              </div>
+              
+              <!-- Status Badge -->
+              <span 
+                class="status-badge"
+                [ngClass]="getStatusBadgeClass(registration)">
+                {{ getStatusText(registration) }}
+              </span>
+            </div>
+
+            <!-- Card Body -->
+            <div class="registration-card-body">
+              <div class="registration-meta">
+                <div class="meta-item">
+                  <span class="meta-label">📅 Registered</span>
+                  <span class="meta-value">{{ registration.registeredAt | date:'MMM d, y' }}</span>
+                </div>
+
+                @if (registration.seed) {
+                  <div class="meta-item">
+                    <span class="meta-label">🎯 Seed</span>
+                    <span class="meta-value">#{{ registration.seed }}</span>
+                  </div>
+                }
+              </div>
+
+              <!-- Status Information -->
+              @if (registration.status === RegistrationStatus.PENDING) {
+                <div class="status-info info-pending">
+                  <span class="info-icon">⏳</span>
+                  <span class="info-text">Awaiting organizer approval</span>
+                </div>
+              } @else if (registration.status === RegistrationStatus.ACCEPTED && registration.acceptanceType === AcceptanceType.ALTERNATE) {
+                <div class="status-info info-alternate">
+                  <span class="info-icon">🟠</span>
+                  <span class="info-text">On waiting list - may be promoted if spots open up</span>
+                </div>
+              } @else if (registration.status === RegistrationStatus.ACCEPTED && registration.acceptanceType === AcceptanceType.LUCKY_LOSER) {
+                <div class="status-info info-lucky-loser">
+                  <span class="info-icon">🍀</span>
+                  <span class="info-text">Promoted from waiting list - ready to compete!</span>
+                </div>
+              } @else if (registration.status === RegistrationStatus.ACCEPTED) {
+                <div class="status-info info-accepted">
+                  <span class="info-icon">✅</span>
+                  <span class="info-text">Registration confirmed - ready to compete!</span>
+                </div>
+              } @else if (registration.status === RegistrationStatus.REJECTED) {
+                <div class="status-info info-rejected">
+                  <span class="info-icon">❌</span>
+                  <span class="info-text">Registration was not approved</span>
+                </div>
+              } @else if (registration.status === RegistrationStatus.WITHDRAWN) {
+                <div class="status-info info-withdrawn">
+                  <span class="info-icon">🚪</span>
+                  <span class="info-text">You withdrew from this tournament</span>
+                </div>
+              }
+            </div>
+
+            <!-- Card Footer -->
+            <div class="registration-card-footer">
+              <a 
+                [routerLink]="['/tournaments', registration.tournamentId]" 
+                class="view-details">
+                View Details →
+              </a>
+
+              @if (canWithdraw(registration)) {
+                <button 
+                  class="withdraw-btn"
+                  (click)="withdrawFromTournament(registration.id!, registration.tournamentName!, registration.categoryName!)"
+                  [disabled]="isWithdrawing()">
+                  @if (isWithdrawing()) {
+                    🔄 Withdrawing...
+                  } @else {
+                    🚪 Withdraw
+                  }
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </main>
+</div>

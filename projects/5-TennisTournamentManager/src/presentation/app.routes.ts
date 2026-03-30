@@ -143,6 +143,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'my-registrations',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/registrations/my-registrations/my-registrations.component').then(
+        (m) => m.MyRegistrationsComponent,
+      ),
+  },
+  {
     path: 'admin',
     canActivate: [authGuard, roleGuard],
     data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},

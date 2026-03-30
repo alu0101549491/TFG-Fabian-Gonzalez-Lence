@@ -57,22 +57,21 @@
 - [X] **Check quota status** - see how many DA, WC, ALT spots remain
 
 #### Withdraw from Tournament (Participant)
-- [ ] **Navigate to "My Registrations"**
-- [ ] **Click "Withdraw"** button
-- [ ] **Confirm withdrawal** - status changes to WD
-- [ ] **Check if ALT promoted** - next alternate becomes LL (Lucky Loser)
+- [X] **Navigate to "My Registrations"**
+- [X] **Click "Withdraw"** button
+- [X] **Confirm withdrawal** - status changes to WD
 
 ---
 
 ### **D. BRACKET/DRAW GENERATION** 🎯
 
 #### Generate Bracket (Tournament Admin)
-- [ ] **Navigate to tournament** → "Brackets" tab
-- [ ] **Click "Generate Bracket"**
-- [ ] **Select bracket type**:
-  - [ ] **Round Robin** - specify number of groups, qualifiers advancing
-  - [ ] **Single Elimination** - automatic power-of-2 sizing with Byes
-  - [ ] **Match Play** - open format
+- [x] **Navigate to tournament** → "Brackets" tab
+- [x] **Click "Generate Bracket"**
+- [x] **Select bracket type**:
+  - [x] **Round Robin** - specify number of groups, qualifiers advancing
+  - [x] **Single Elimination** - automatic power-of-2 sizing with Byes
+  - [x] **Match Play** - open format
 - [ ] **Apply seeding** - seeds placed in strategic positions
 - [ ] **Preview bracket** before finalization
 - [ ] **Finalize bracket** - matches generated

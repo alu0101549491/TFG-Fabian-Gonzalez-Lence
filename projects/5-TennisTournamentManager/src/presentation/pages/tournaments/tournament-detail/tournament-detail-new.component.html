@@ -856,8 +856,8 @@
               <input
                 type="text"
                 class="form-input"
-                [(ngModel)]="addParticipantFormData.userSearchQuery"
-                (ngModelChange)="searchUsers($event)"
+                [ngModel]="userSearchQuery()"
+                (ngModelChange)="userSearchQuery.set($event)"
                 name="userSearch"
                 placeholder="Search by name or email..."
                 autocomplete="off"
@@ -865,7 +865,7 @@
               />
               
               <!-- User Search Results Dropdown -->
-              @if (addParticipantFormData.userSearchQuery && filteredUsers().length > 0) {
+              @if (userSearchQuery() && filteredUsers().length > 0) {
                 <div style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.25rem; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10;">
                   @for (user of filteredUsers(); track user.id) {
                     <div
@@ -879,6 +879,21 @@
                       <div style="font-size: 0.875rem; color: #6b7280;">{{ user.email }}</div>
                     </div>
                   }
+                </div>
+              }
+              
+              <!-- No Results Message -->
+              @if (userSearchQuery() && userSearchQuery().length >= 2 && filteredUsers().length === 0) {
+                <div style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.25rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; padding: 1rem; text-align: center;">
+                  <div style="color: #6b7280; font-size: 0.875rem;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+                    <div style="font-weight: 500; margin-bottom: 0.25rem;">No players found</div>
+                    <div style="font-size: 0.75rem; line-height: 1.4;">
+                      Only <strong>active PLAYER role</strong> users appear here.<br/>
+                      Already registered players (pending, accepted, etc.) are excluded.<br/>
+                      <span style="color: #059669;">✓ Withdrawn players can be re-registered.</span>
+                    </div>
+                  </div>
                 </div>
               }
               
