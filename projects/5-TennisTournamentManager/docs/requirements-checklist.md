@@ -84,9 +84,9 @@
 - [x] **Public users can view** brackets without login
 
 #### Modify Bracket (Tournament Admin)
-- [ ] **Manual seed override** - change seed positions
+- [x] **Manual seed override** - change seed positions
 - [x] **Regenerate bracket** - option to recreate (warns about losing results)
-- [ ] **Migrate results** - if regenerating, option to preserve completed matches
+- [x] **Migrate results** - if regenerating, option to preserve completed matches
 
 ---
 

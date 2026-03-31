@@ -193,6 +193,12 @@ export class TournamentDetailComponent implements OnInit {
   /** Flag indicating if participant is being added */
   public isAddingParticipant = signal(false);
 
+  /** Seed editing state - tracks which registration is being edited */
+  public editingSeedRegistrationId = signal<string | null>(null);
+
+  /** Temporary seed number value during editing */
+  public tempSeedNumber = signal<number | null>(null);
+
   /**
    * Initializes component and loads tournament data.
    */
@@ -1433,6 +1439,97 @@ export class TournamentDetailComponent implements OnInit {
     } finally {
       this.isAddingParticipant.set(false);
     }
+  }
+
+  /**
+   * Starts editing the seed number for a registration.
+   *
+   * @param registrationId - ID of the registration to edit
+   * @param currentSeedNumber - Current seed number value
+   */
+  public startEditingSeed(registrationId: string, currentSeedNumber: number | null): void {
+    this.editingSeedRegistrationId.set(registrationId);
+    this.tempSeedNumber.set(currentSeedNumber);
+  }
+
+  /**
+   * Cancels seed editing.
+   */
+  public cancelEditingSeed(): void {
+    this.editingSeedRegistrationId.set(null);
+    this.tempSeedNumber.set(null);
+  }
+
+  /**
+   * Saves the updated seed number for a registration.
+   *
+   * @param registrationId - ID of the registration to update
+   */
+  public async saveSeedNumber(registrationId: string): Promise<void> {
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to update seed numbers');
+      return;
+    }
+
+    const seedNumber = this.tempSeedNumber();
+
+    // Validate seed number
+    if (seedNumber !== null && (seedNumber < 1 || !Number.isInteger(seedNumber))) {
+      alert('Seed number must be a positive integer');
+      return;
+    }
+
+    try {
+      console.log(`🔄 Updating seed number for registration ${registrationId} to ${seedNumber}`);
+      const updatedRegistration = await this.registrationService.updateSeedNumber(registrationId, seedNumber, currentUser.id);
+      console.log('✅ Backend update successful:', updatedRegistration);
+      
+      // Update the player in the list directly for immediate UI update
+      const currentPlayers = this.registeredPlayers();
+      const updatedPlayers = currentPlayers.map(p => 
+        p.registration.id === registrationId 
+          ? { ...p, registration: updatedRegistration }
+          : p
+      );
+      this.registeredPlayers.set(updatedPlayers);
+      console.log('✅ UI updated with new seed number');
+      
+      // Also reload all players to ensure consistency
+      await this.loadPlayers();
+      console.log('✅ Player list reloaded');
+      
+      // Clear editing state
+      this.cancelEditingSeed();
+      
+      alert('Seed number updated successfully!');
+    } catch (error) {
+      let message = 'Failed to update seed number.';
+      
+      if (error && typeof error === 'object') {
+        const axiosError = error as {response?: {data?: {message?: string; error?: string}}};
+        if (axiosError.response?.data?.message) {
+          message = axiosError.response.data.message;
+        } else if (axiosError.response?.data?.error) {
+          message = axiosError.response.data.error;
+        } else if (error instanceof Error) {
+          message = error.message;
+        }
+      }
+      
+      console.error('❌ Update seed number error:', error);
+      alert(`Error: ${message}`);
+    }
+  }
+
+  /**
+   * Checks if a registration is currently being edited for seed.
+   *
+   * @param registrationId - ID of the registration
+   * @returns True if this registration is being edited
+   */
+  public isEditingSeed(registrationId: string): boolean {
+    return this.editingSeedRegistrationId() === registrationId;
   }
 }
 

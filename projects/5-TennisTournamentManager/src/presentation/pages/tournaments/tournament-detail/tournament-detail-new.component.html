@@ -449,13 +449,53 @@
                             }
                           </td>
                           <td style="padding: 0.75rem; text-align: center;">
-                            @if (player.registration.seedNumber) {
-                              <span class="seed-badge-table">
-                                <span class="seed-icon">🏆</span>
-                                <span>Seed #{{ player.registration.seedNumber }}</span>
-                              </span>
+                            @if (isEditingSeed(player.registration.id)) {
+                              <!-- Editing mode -->
+                              <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                <input 
+                                  type="number" 
+                                  [(ngModel)]="tempSeedNumber"
+                                  min="1"
+                                  step="1"
+                                  placeholder="Seed #"
+                                  style="width: 80px; padding: 0.25rem 0.5rem; border: 2px solid #4CAF50; border-radius: 4px; text-align: center;"
+                                />
+                                <button 
+                                  (click)="saveSeedNumber(player.registration.id)"
+                                  style="padding: 0.25rem 0.5rem; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
+                                  title="Save seed number"
+                                >
+                                  ✓
+                                </button>
+                                <button 
+                                  (click)="cancelEditingSeed()"
+                                  style="padding: 0.25rem 0.5rem; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
+                                  title="Cancel"
+                                >
+                                  ✕
+                                </button>
+                              </div>
                             } @else {
-                              <span style="color: #999; font-size: 0.875rem;">—</span>
+                              <!-- Display mode -->
+                              <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                @if (player.registration.seedNumber) {
+                                  <span class="seed-badge-table">
+                                    <span class="seed-icon">🏆</span>
+                                    <span>Seed #{{ player.registration.seedNumber }}</span>
+                                  </span>
+                                } @else {
+                                  <span style="color: #999; font-size: 0.875rem;">—</span>
+                                }
+                                @if (canManageTournament()) {
+                                  <button 
+                                    (click)="startEditingSeed(player.registration.id, player.registration.seedNumber)"
+                                    style="padding: 0.25rem 0.5rem; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;"
+                                    title="Edit seed number"
+                                  >
+                                    ✏️
+                                  </button>
+                                }
+                              </div>
                             }
                           </td>
                           <td style="padding: 0.75rem; text-align: center;">

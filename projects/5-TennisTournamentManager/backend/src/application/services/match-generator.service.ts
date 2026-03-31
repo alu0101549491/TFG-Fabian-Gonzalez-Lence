@@ -249,11 +249,12 @@ export class MatchGeneratorService {
   /**
    * Generates match play bracket (flexible open format).
    * 
-   * For small brackets (2-4 participants), generates initial matches.
-   * For larger brackets, creates empty phase for manual scheduling.
+   * Creates initial pairings by matching participants of similar ranking levels.
+   * Pairs consecutive participants (1 vs 2, 3 vs 4, etc.) for competitive balance.
+   * If odd number of participants, last one will be matched later.
    *
    * @param bracketId - Bracket identifier
-   * @param participantIds - Participant IDs
+   * @param participantIds - Participant IDs (should be sorted by seed/ranking)
    * @returns Matches and single phase
    */
   private generateMatchPlay(
@@ -271,40 +272,32 @@ export class MatchGeneratorService {
     phase.name = 'Open Play';
     phase.isCompleted = false;
     
-    // For small brackets (2-4 participants), generate initial matches
-    if (participantIds.length === 2) {
-      // Create single match for 2 participants
-      const match = new Match();
-      match.id = generateId('mch');
-      match.bracketId = bracketId;
-      match.phaseId = phase.id;
-      match.round = 1;
-      match.matchNumber = 1;
-      match.participant1Id = participantIds[0];
-      match.participant2Id = participantIds[1];
-      match.status = MatchStatus.SCHEDULED;
-      matches.push(match);
-      phase.matchCount = 1;
-    } else if (participantIds.length >= 3 && participantIds.length <= 4) {
-      // For 3-4 participants, create initial matches (everyone vs first player)
-      for (let i = 1; i < participantIds.length; i++) {
+    // Generate initial pairings by pairing consecutive participants
+    // This pairs participants of similar ranking levels (1 vs 2, 3 vs 4, etc.)
+    const isOddNumber = participantIds.length % 2 !== 0;
+    const pairingCount = isOddNumber 
+      ? Math.floor(participantIds.length / 2) 
+      : participantIds.length / 2;
+
+    for (let i = 0; i < pairingCount; i++) {
+      const player1Index = i * 2;
+      const player2Index = i * 2 + 1;
+
+      if (player1Index < participantIds.length && player2Index < participantIds.length) {
         const match = new Match();
         match.id = generateId('mch');
         match.bracketId = bracketId;
         match.phaseId = phase.id;
         match.round = 1;
-        match.matchNumber = i;
-        match.participant1Id = participantIds[0];
-        match.participant2Id = participantIds[i];
+        match.matchNumber = i + 1;
+        match.participant1Id = participantIds[player1Index];
+        match.participant2Id = participantIds[player2Index];
         match.status = MatchStatus.SCHEDULED;
         matches.push(match);
       }
-      phase.matchCount = participantIds.length - 1;
-    } else {
-      // For larger brackets or no participants, leave empty for manual scheduling
-      phase.matchCount = 0;
     }
     
+    phase.matchCount = matches.length;
     phases.push(phase);
     
     return {matches, phases};

@@ -59,7 +59,7 @@
             @if (!bracket()!.isPublished) {
               <button 
                 class="action-btn regenerate" 
-                (click)="regenerateBracket()"
+                (click)="showRegenerateConfirmation()"
                 [disabled]="isRegenerating()"
               >
                 @if (isRegenerating()) {
@@ -193,3 +193,61 @@
     </div>
   }
 </div>
+
+<!-- Regenerate Bracket Confirmation Modal -->
+@if (showRegenerateModal()) {
+  <div class="modal-overlay" (click)="hideRegenerateModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>🔄 Regenerate Bracket</h2>
+        <button class="close-btn" (click)="hideRegenerateModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="warning-message">
+          <span class="warning-icon">⚠️</span>
+          <div class="warning-content">
+            <p class="warning-title">Warning: This action will regenerate the bracket structure</p>
+            <p class="warning-text">
+              Regenerating the bracket will reset all match pairings and potentially affect
+              the tournament structure. This action cannot be undone.
+            </p>
+          </div>
+        </div>
+
+        @if (hasCompletedMatches()) {
+          <div class="option-section">
+            <label class="checkbox-container">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="keepResults"
+                class="preserve-checkbox"
+              />
+              <span class="checkbox-label">
+                <strong>Preserve completed match results</strong>
+                <span class="checkbox-description">
+                  Keep scores and winners from completed matches when regenerating
+                </span>
+              </span>
+            </label>
+          </div>
+        } @else {
+          <div class="info-message">
+            <span class="info-icon">ℹ️</span>
+            <span>No matches have been completed yet. All matches will be reset.</span>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="hideRegenerateModal()">
+          Cancel
+        </button>
+        <button class="btn-danger" (click)="executeRegenerateBracket()">
+          <span>🔄</span>
+          <span>Regenerate Bracket</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}

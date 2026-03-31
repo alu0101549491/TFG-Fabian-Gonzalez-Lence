@@ -982,6 +982,44 @@ router.put('/registrations/:id/status', authMiddleware, roleMiddleware([UserRole
 
 /**
  * @swagger
+ * /registrations/{id}:
+ *   put:
+ *     tags: [Registrations]
+ *     summary: Update registration (e.g., seed number)
+ *     description: Update registration properties like seed number (TOURNAMENT_ADMIN or SYSTEM_ADMIN)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               seedNumber:
+ *                 type: integer
+ *                 nullable: true
+ *                 description: Seed position (must be unique within category)
+ *     responses:
+ *       200:
+ *         description: Registration updated successfully
+ *       400:
+ *         description: Invalid seed number or duplicate
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Registration not found
+ */
+router.put('/registrations/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), registrationController.update.bind(registrationController));
+
+/**
+ * @swagger
  * /registrations/migrate-acceptance-types:
  *   post:
  *     tags: [Registrations]

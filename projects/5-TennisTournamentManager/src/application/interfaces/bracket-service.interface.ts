@@ -65,7 +65,8 @@ export interface IBracketService {
    *
    * @param bracketId - ID of the bracket to regenerate
    * @param userId - ID of the user performing the regeneration
+   * @param keepResults - Whether to preserve existing match results
    * @returns Regenerated bracket information
    */
-  regenerateBracket(bracketId: string, userId: string): Promise<BracketDto>;
+  regenerateBracket(bracketId: string, userId: string, keepResults?: boolean): Promise<BracketDto>;
 }

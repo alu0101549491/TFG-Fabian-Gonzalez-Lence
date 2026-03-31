@@ -206,6 +206,63 @@ export class RegistrationService implements IRegistrationService {
   }
 
   /**
+   * Updates the seed number for a registration.
+   *
+   * @param registrationId - ID of the registration
+   * @param seedNumber - New seed number (null to remove seed)
+   * @param adminId - ID of the administrator performing the update
+   * @returns Updated registration information
+   */
+  public async updateSeedNumber(
+    registrationId: string,
+    seedNumber: number | null,
+    adminId: string
+  ): Promise<RegistrationDto> {
+    // Validate input
+    if (!registrationId || registrationId.trim().length === 0) {
+      throw new Error('Registration ID is required');
+    }
+
+    if (!adminId || adminId.trim().length === 0) {
+      throw new Error('Admin ID is required');
+    }
+
+    if (seedNumber !== null && (seedNumber < 1 || !Number.isInteger(seedNumber))) {
+      throw new Error('Seed number must be a positive integer or null');
+    }
+
+    // Check if registration exists
+    const registration = await this.registrationRepository.findById(registrationId);
+    if (!registration) {
+      throw new Error('Registration not found');
+    }
+
+    // If assigning a seed number, check for duplicates in the same category
+    if (seedNumber !== null) {
+      const categoryRegistrations = await this.registrationRepository.findByCategoryId(
+        registration.categoryId
+      );
+      const duplicateSeed = categoryRegistrations.find(
+        r => r.id !== registrationId && r.seedNumber === seedNumber
+      );
+      if (duplicateSeed) {
+        throw new Error(`Seed number ${seedNumber} is already assigned to another player in this category`);
+      }
+    }
+
+    // Update seed number
+    const updatedRegistration = new Registration({
+      ...registration,
+      seedNumber,
+      updatedAt: new Date(),
+    });
+
+    const savedRegistration = await this.registrationRepository.update(updatedRegistration);
+
+    return this.mapRegistrationToDto(savedRegistration);
+  }
+
+  /**
    * Retrieves all registrations for a tournament.
    *
    * @param tournamentId - ID of the tournament
@@ -267,7 +324,7 @@ export class RegistrationService implements IRegistrationService {
       categoryId: registration.categoryId,
       status: registration.status,
       acceptanceType: registration.acceptanceType,
-      seed: registration.seed,
+      seedNumber: registration.seedNumber,
       registeredAt: registration.registeredAt,
       tournament: registration.tournament,
       category: registration.category,

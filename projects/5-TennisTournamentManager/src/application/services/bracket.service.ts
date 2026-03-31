@@ -217,9 +217,10 @@ export class BracketService implements IBracketService {
    *
    * @param bracketId - ID of the bracket to regenerate
    * @param userId - ID of the user performing the regeneration
+   * @param keepResults - Whether to preserve existing match results (default: false)
    * @returns Regenerated bracket information
    */
-  public async regenerateBracket(bracketId: string, userId: string): Promise<BracketDto> {
+  public async regenerateBracket(bracketId: string, userId: string, keepResults = false): Promise<BracketDto> {
     // Validate input
     if (!bracketId || bracketId.trim().length === 0) {
       throw new Error('Bracket ID is required');
@@ -236,7 +237,8 @@ export class BracketService implements IBracketService {
     }
     
     // Validate business rule: cannot regenerate published bracket without keeping results
-    if (bracket.isPublished && !false) {
+    // Note: bracket is a plain object from HTTP response, not a Bracket entity instance
+    if (bracket.isPublished && !keepResults) {
       throw new Error('Cannot regenerate published bracket without keeping results.');
     }
     

@@ -13,6 +13,7 @@
 
 import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {BracketService, TournamentService, MatchService} from '@application/services';
 import {type BracketDto, type PhaseDto, type TournamentDto, type MatchDto} from '@application/dto';
@@ -29,7 +30,7 @@ import styles from './bracket-view.component.css?raw';
 @Component({
   selector: 'app-bracket-view',
   standalone: true,
-  imports: [CommonModule, RouterModule, EnumFormatPipe, VisualBracketComponent],
+  imports: [CommonModule, FormsModule, RouterModule, EnumFormatPipe, VisualBracketComponent],
   template: templateHtml,
   styles: [styles],
 })
@@ -68,6 +69,12 @@ export class BracketViewComponent implements OnInit {
 
   /** Regenerating state */
   public isRegenerating = signal(false);
+
+  /** Show regenerate confirmation modal */
+  public showRegenerateModal = signal(false);
+
+  /** Whether to preserve results when regenerating */
+  public keepResults = signal(false);
 
   /**
    * Initializes component and loads bracket data.
@@ -186,17 +193,37 @@ export class BracketViewComponent implements OnInit {
   }
 
   /**
-   * Regenerates the bracket structure.
+   * Checks if bracket has any completed matches.
+   *
+   * @returns True if there are matches with results
    */
-  public async regenerateBracket(): Promise<void> {
+  public hasCompletedMatches(): boolean {
+    const matches = this.matches();
+    return matches.some(m => m.winnerId !== null && m.winnerId !== undefined);
+  }
+
+  /**
+   * Shows the regenerate bracket confirmation modal.
+   */
+  public showRegenerateConfirmation(): void {
+    this.keepResults.set(false);
+    this.showRegenerateModal.set(true);
+  }
+
+  /**
+   * Hides the regenerate bracket confirmation modal.
+   */
+  public hideRegenerateModal(): void {
+    this.showRegenerateModal.set(false);
+    this.keepResults.set(false);
+  }
+
+  /**
+   * Executes the bracket regeneration with selected options.
+   */
+  public async executeRegenerateBracket(): Promise<void> {
     const bracket = this.bracket();
     if (!bracket) return;
-
-    const confirmed = confirm(
-      'Regenerate bracket?\n\n' +
-      'WARNING: This will reset all matches and pairings. This action cannot be undone.'
-    );
-    if (!confirmed) return;
 
     const currentUser = this.authStateService.getCurrentUser();
     if (!currentUser) {
@@ -204,10 +231,16 @@ export class BracketViewComponent implements OnInit {
       return;
     }
 
+    // Hide modal and start regeneration
+    this.hideRegenerateModal();
     this.isRegenerating.set(true);
 
     try {
-      const updatedBracket = await this.bracketService.regenerateBracket(bracket.id, currentUser.id);
+      const updatedBracket = await this.bracketService.regenerateBracket(
+        bracket.id,
+        currentUser.id,
+        this.keepResults()
+      );
       // Update the bracket signal with the fresh data from the server
       this.bracket.set(updatedBracket);
       alert('Bracket regenerated successfully!');

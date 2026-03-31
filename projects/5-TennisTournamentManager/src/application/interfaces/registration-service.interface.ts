@@ -46,6 +46,16 @@ export interface IRegistrationService {
   withdrawRegistration(registrationId: string, time: string, userId: string): Promise<void>;
 
   /**
+   * Updates the seed number for a registration.
+   *
+   * @param registrationId - ID of the registration
+   * @param seedNumber - New seed number (null to remove seed)
+   * @param adminId - ID of the administrator performing the update
+   * @returns Updated registration information
+   */
+  updateSeedNumber(registrationId: string, seedNumber: number | null, adminId: string): Promise<RegistrationDto>;
+
+  /**
    * Retrieves all registrations for a tournament.
    *
    * @param tournamentId - ID of the tournament

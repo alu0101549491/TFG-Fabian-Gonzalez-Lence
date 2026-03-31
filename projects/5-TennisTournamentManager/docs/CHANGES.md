@@ -6,6 +6,314 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.46.18] - 2026-03-31
+
+### Fixed — Registration Update Request Body Format
+
+**Bug Fix**:
+Fixed seed number updates not persisting to database due to incorrect request body format.
+
+**Issue**:
+When administrators tried to update seed numbers, the UI showed success messages but the seed number wasn't actually changing in the database. Backend logs showed `New seed number: undefined` even though the frontend was sending the value.
+
+**Root Cause**:
+The registration repository was sending the entire Registration entity object to the backend:
+```typescript
+// Sent: { id: 'reg_...', tournamentId: '...', categoryId: '...', ... }
+```
+
+But the backend controller expected a simple DTO with just the seed number:
+```typescript
+const {seedNumber} = req.body; // Expected: { seedNumber: 9 }
+```
+
+This mismatch caused `seedNumber` to be destructured as `undefined`, so the backend was updating the registration with `seedNumber: undefined`, which didn't change the existing value.
+
+**Solution**:
+Updated the registration repository's `update()` method to send only the seed number in the request body:
+
+**Before (broken)**:
+```typescript
+this.httpClient.put(`/registrations/${registration.id}`, registration);
+```
+
+**After (fixed)**:
+```typescript
+this.httpClient.put(`/registrations/${registration.id}`, { seedNumber: registration.seedNumber });
+```
+
+**Files Modified**:
+- `src/infrastructure/repositories/registration.repository.ts` - Fixed request body format
+- `docs/CHANGES.md` - Updated changelog
+
+**Testing**:
+Seed number updates now work correctly:
+- ✅ Backend receives correct seedNumber value
+- ✅ Database updates persist properly
+- ✅ UI reflects updated seed numbers immediately
+- ✅ Changes persist after page reload
+
+---
+
+### Fixed — Bracket Regenerate Method Error
+
+**Bug Fix**:
+Fixed "bracket.regenerate is not a function" error when trying to regenerate a bracket.
+
+**Issue**:
+When administrators tried to regenerate a bracket using the new preserve results feature, the application threw an error: `bracket.regenerate is not a function`. This was because the bracket repository returns plain objects from HTTP responses, not Bracket entity instances.
+
+**Root Cause**:
+The `regenerateBracket()` service method was calling `bracket.regenerate(keepResults)`, expecting the bracket to be a Bracket entity instance with methods. However, the bracket repository returns plain JavaScript objects from the API response, which don't have entity methods.
+
+**Solution**:
+Inlined the business rule validation directly in the service method instead of calling the entity method:
+
+```typescript
+// Before (broken):
+bracket.regenerate(keepResults);
+
+// After (fixed):
+if (bracket.isPublished && !keepResults) {
+  throw new Error('Cannot regenerate published bracket without keeping results.');
+}
+```
+
+This maintains the same business logic validation while working with plain objects from the HTTP API.
+
+**Files Modified**:
+- `src/application/services/bracket.service.ts` - Inlined regenerate validation
+- `docs/CHANGES.md` - Updated changelog
+
+---
+
+### Improved — Bracket View Page Styling
+
+**UI Enhancement**:
+Enhanced the visual design of the Bracket View page to improve readability and create a more cohesive look matching the app's design system.
+
+**Changes Made**:
+
+**1. Section Titles as Gradient Dividers**:
+- Transformed "Bracket Phases" and "Bracket View" titles into prominent gradient dividers
+- Features green-to-turquoise gradient (primary → primary-light → secondary colors)
+- Centered white text with uppercase styling for emphasis
+- Added subtle shadow for depth and visual separation
+- Acts as clear page section dividers matching mockup design
+
+**2. Phase Card Title Readability**:
+- Explicitly set phase card titles (Quarterfinals, Semifinals, Final) to white color
+- Ensures maximum contrast against gradient background
+- Improved text readability across all phase cards
+
+**Visual Impact**:
+- Section dividers now clearly separate page sections
+- Matches the app's green/turquoise color scheme
+- Professional, modern appearance with gradient styling
+- Better visual hierarchy and content organization
+
+**Files Modified**:
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.css` - Updated section-title and phase-name styles
+- `docs/CHANGES.md` - Updated changelog
+
+---
+
+## [1.46.17] - 2026-03-31
+
+### Fixed — Seed Number Update API Endpoint and DTO Mapping
+
+**Bug Fixes**:
+1. Added missing backend API endpoint for general registration updates
+2. Fixed frontend DTO mapper using wrong property name for seed number
+
+**Issue 1 - Missing Backend Endpoint**:
+When administrators tried to update seed numbers using the manual seed override feature (version 1.46.15), the frontend API call was returning a 404 error. The frontend was calling `PUT /api/registrations/{id}` but the backend only had `PUT /api/registrations/{id}/status` for status-specific updates.
+
+**Issue 2 - DTO Mapping Bug**:
+After fixing the endpoint, seed numbers were being saved to the database correctly but not appearing in the frontend UI. The DTO mapper in `registration.service.ts` was using `seed: registration.seed` instead of `seedNumber: registration.seedNumber`, causing the frontend to receive an object without the `seedNumber` property.
+
+**Error Details**:
+```
+AxiosError: Request failed with status code 404
+PUT /api/registrations/reg_5cabe44f 404 (Not Found)
+
+// After endpoint fix:
+✅ Backend update successful (seedNumber: 1 saved to DB)
+❌ UI still shows "—" (empty state) instead of "Seed #1"
+```
+
+**Root Causes**:
+1. Frontend implementation (v1.46.15) was complete but backend endpoint was missing
+2. DTO mapper had incorrect property name (`seed` vs `seedNumber`)
+
+**Solutions**:
+
+**1. Registration Controller** (`registration.controller.ts`):
+- Added `update()` method to handle general registration updates
+- Validates seed number is positive integer or null
+- Checks for duplicate seed numbers within same category
+- Returns updated registration with relations for consistent format
+- Admin-only access control with proper error handling
+
+**2. API Routes** (`routes/index.ts`):
+- Added `PUT /api/registrations/:id` route
+- Requires authentication and admin role (SYSTEM_ADMIN or TOURNAMENT_ADMIN)
+- Swagger documentation included
+
+**3. Frontend DTO Mapper** (`registration.service.ts`):
+- Fixed `mapRegistrationToDto()` to use `seedNumber: registration.seedNumber`
+- Was incorrectly using `seed: registration.seed` (non-existent property)
+- Now properly maps the seed number from backend response to frontend DTO
+
+**4. Frontend UI Update** (`tournament-detail.component.ts`):
+- Improved `saveSeedNumber()` to immediately update UI with backend response
+- Uses returned registration data for instant feedback
+- Reloads full player list for consistency
+- Added debug logging for troubleshooting
+
+**Validation Rules**:
+- Seed numbers must be positive integers (≥ 1) or null
+- No duplicate seed numbers within the same category
+- Proper 400 error responses for validation failures
+- 404 error if registration not found
+
+**Files Modified**:
+- `backend/src/presentation/controllers/registration.controller.ts` - Added update() method with relations
+- `backend/src/presentation/routes/index.ts` - Added PUT /registrations/:id route
+- `src/application/services/registration.service.ts` - Fixed DTO mapper property name
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` - Optimized UI update
+- `docs/CHANGES.md` - Updated changelog
+
+**Testing**:
+Seed number updates now work end-to-end:
+- ✅ Backend saves seed number correctly to database
+- ✅ Backend returns updated registration with seedNumber property
+- ✅ Frontend DTO mapper preserves seedNumber in data transfer
+- ✅ UI displays seed number immediately after save
+- ✅ Changes persist after page reload
+- ✅ Validation prevents duplicates within category
+
+---
+
+## [1.46.16] - 2026-03-31
+
+### Fixed — Match Play Bracket Not Generating Matches
+
+**Bug Fix**:
+Fixed Match Play bracket generation to create initial pairings for all participant counts, not just 2-4 participants.
+
+**Issue**:
+When generating a Match Play bracket with 5 or more participants, the system was creating an empty bracket with 0 matches. The backend implementation had logic that only generated matches for 2-4 participants and left larger brackets empty "for manual scheduling."
+
+**Root Cause**:
+Backend match-generator.service.ts had outdated logic:
+- 2 participants: Created 1 match
+- 3-4 participants: Created initial matches (everyone vs first player)
+- 5+ participants: Created 0 matches ❌
+
+The frontend match-play.generator.ts had the correct implementation that created initial pairings for any number of participants.
+
+**Solution**:
+Updated backend to match the frontend algorithm:
+- Pairs consecutive participants (1 vs 2, 3 vs 4, 5 vs 6, etc.)
+- Creates competitive matches between participants of similar ranking levels
+- Handles odd numbers of participants (last player doesn't get initial match)
+- Works for any number of participants ≥ 2
+
+**Example**:
+- 8 participants: Creates 4 matches (1v2, 3v4, 5v6, 7v8)
+- 7 participants: Creates 3 matches (1v2, 3v4, 5v6, player 7 waits)
+- 2 participants: Creates 1 match (1v2)
+
+**Files Modified**:
+- `backend/src/application/services/match-generator.service.ts` - Fixed generateMatchPlay() method
+
+---
+
+## [1.46.15] - 2026-03-31
+
+### Added — Manual Seed Override Feature
+
+**New Feature**:
+Tournament administrators can now manually edit seed numbers for registered participants before bracket generation. This allows for flexible seeding adjustments based on player rankings, past performance, or tournament committee decisions.
+
+**Implementation**:
+
+**1. Registration Service** (`registration.service.ts`):
+- Added `updateSeedNumber(registrationId, seedNumber, adminId)` method
+- Validates seed number is positive integer or null
+- Checks for duplicate seed numbers within the same category
+- Updates registration with new seed value
+
+**2. Tournament Detail Component** (`tournament-detail.component.ts`):
+- Added inline seed editing in participants table
+- Edit mode with number input field
+- Save/Cancel buttons for each edit operation
+- Real-time validation and feedback
+
+**3. User Interface** (`tournament-detail-new.component.html`):
+- Edit button (✏️) appears next to each seed number for administrators
+- Inline editing with input field and action buttons
+- Visual feedback during edit mode
+- Success/error alerts after save operation
+
+**Business Rules**:
+- Only tournament administrators can edit seed numbers
+- Seed numbers must be positive integers
+- No duplicate seed numbers allowed within the same category
+- Seed can be set to null to remove seeding
+
+**Files Modified**:
+- `src/application/services/registration.service.ts`
+- `src/application/interfaces/registration-service.interface.ts`
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts`
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html`
+
+---
+
+### Added — Preserve Results Option When Regenerating Bracket
+
+**New Feature**:
+When regenerating a bracket, tournament administrators now have the option to preserve completed match results. This allows bracket structure changes without losing match history.
+
+**Implementation**:
+
+**1. Bracket Service** (`bracket.service.ts`):
+- Updated `regenerateBracket` method to accept optional `keepResults` parameter (default: false)
+- Calls domain entity `regenerate(keepResults)` for business rule validation
+- Validates that published brackets cannot be regenerated without preserving results
+
+**2. Bracket View Component** (`bracket-view.component.ts`):
+- Replaced simple confirm dialog with custom modal
+- Added checkbox option to preserve completed match results
+- Shows checkbox only if bracket has completed matches
+- Validates completed matches before showing option
+- Displays informative messages based on match state
+
+**3. Modal UI** (`bracket-view.component.html` + CSS):
+- Professional modal design with warning section
+- Checkbox with clear description: "Preserve completed match results"
+- Info message when no matches completed: "No matches have been completed yet"
+- Cancel and Regenerate buttons with appropriate styling
+- Responsive design for mobile devices
+
+**User Experience**:
+- Click "Regenerate Bracket" button
+- Modal appears with regeneration warning
+- If matches completed: checkbox option to preserve results
+- If no matches: info message indicates all will be reset
+- Confirm regeneration with selected options
+- Bracket regenerates with or without preserving results
+
+**Files Modified**:
+- `src/application/services/bracket.service.ts`
+- `src/application/interfaces/bracket-service.interface.ts`
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts`
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.html`
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.css`
+
+---
+
 ## [1.46.14] - 2026-03-31
 
 ### Changed — RETIRED Match Status Color to Orange

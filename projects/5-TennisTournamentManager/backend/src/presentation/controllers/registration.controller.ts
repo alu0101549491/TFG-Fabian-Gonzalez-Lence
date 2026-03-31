@@ -329,6 +329,94 @@ export class RegistrationController {
   }
 
   /**
+   * PUT /api/registrations/:id
+   * Updates registration (e.g., seed number).
+   * Security: Only admins can update registrations.
+   * Validates seed number uniqueness within category.
+   * 
+   * @param {AuthRequest} req - Request with registration ID and update data
+   * @param {Response} res - Response with updated registration
+   * @param {NextFunction} next - Error handler
+   */
+  public async update(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const currentUser = req.user;
+      
+      if (!currentUser) {
+        throw new AppError('Authentication required', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
+      }
+      
+      console.log(`📝 Updating registration ${id}:`);
+      console.log(`  - Full req.body:`, JSON.stringify(req.body, null, 2));
+      console.log(`  - req.body type:`, typeof req.body);
+      console.log(`  - req.body keys:`, Object.keys(req.body));
+      
+      const {seedNumber} = req.body;
+      console.log(`  - Extracted seedNumber: ${seedNumber}`);
+      console.log(`  - User: ${currentUser.id} (${currentUser.role})`);
+      
+      const registrationRepository = AppDataSource.getRepository(Registration);
+      
+      const registration = await registrationRepository.findOne({where: {id}});
+      
+      if (!registration) {
+        console.log(`❌ Registration ${id} not found`);
+        throw new AppError('Registration not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Validate seed number if provided
+      if (seedNumber !== undefined && seedNumber !== null) {
+        // Must be a positive integer
+        if (!Number.isInteger(seedNumber) || seedNumber < 1) {
+          throw new AppError(
+            'Seed number must be a positive integer',
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.INVALID_INPUT
+          );
+        }
+        
+        // Check for duplicate seed number in the same category
+        const duplicateSeed = await registrationRepository
+          .createQueryBuilder('registration')
+          .where('registration.categoryId = :categoryId', {categoryId: registration.categoryId})
+          .andWhere('registration.id != :currentId', {currentId: id})
+          .andWhere('registration.seedNumber = :seedNumber', {seedNumber})
+          .getOne();
+        
+        if (duplicateSeed) {
+          console.log(`❌ Seed number ${seedNumber} already assigned to registration ${duplicateSeed.id}`);
+          throw new AppError(
+            `Seed number ${seedNumber} is already assigned to another player in this category`,
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.VALIDATION_ERROR
+          );
+        }
+        
+        console.log(`✅ Seed number validation passed`);
+      }
+      
+      // Update seed number
+      registration.seedNumber = seedNumber;
+      const saved = await registrationRepository.save(registration);
+      
+      // Reload with relations for consistent response format
+      const updatedRegistration = await registrationRepository.findOne({
+        where: {id},
+        relations: ['participant', 'category'],
+      });
+      
+      console.log(`✅ Registration ${id} updated successfully`);
+      console.log(`  - New seed number: ${saved.seedNumber}`);
+      
+      res.status(HTTP_STATUS.OK).json(updatedRegistration);
+    } catch (error) {
+      console.error('❌ Error updating registration:', error);
+      next(error);
+    }
+  }
+
+  /**
    * POST /api/registrations/migrate-acceptance-types
    * Migration endpoint to fix existing registrations without acceptanceType.
    * Sets all null/undefined acceptanceType to DIRECT_ACCEPTANCE.
