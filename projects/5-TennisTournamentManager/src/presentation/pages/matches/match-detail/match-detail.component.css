@@ -592,14 +592,24 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   max-width: 500px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 85vh; /* Reduced from 90vh to ensure footer visibility */
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease;
+  overflow: hidden; /* Prevent any overflow from breaking layout */
 }
 
 .modal-content.large {
   max-width: 700px;
+}
+
+/* Form inside modal-content must participate in flex layout */
+.modal-content > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @keyframes slideUp {
@@ -621,6 +631,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
+  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .modal-header h3 {
@@ -657,7 +668,8 @@
 .modal-body {
   padding: var(--spacing-xl);
   overflow-y: auto;
-  flex: 1;
+  flex: 1 1 auto; /* Allow body to grow and shrink, but scroll if needed */
+  min-height: 0; /* Important: allows flexbox to shrink below content size */
 }
 
 /* Modal Footer */
@@ -668,6 +680,8 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--spacing-md);
+  flex-shrink: 0; /* Prevent footer from shrinking */
+  background: var(--color-white); /* Ensure footer background covers scrolled content */
 }
 
 /* Form Elements */
@@ -1023,6 +1037,11 @@
     max-height: 100vh;
     border-radius: 0;
   }
+  
+  .modal-body {
+    /* Ensure proper scrolling on mobile with zoom */
+    -webkit-overflow-scrolling: touch;
+  }
 
   .form-row {
     grid-template-columns: 1fr;
@@ -1034,5 +1053,28 @@
 
   .score-inputs input {
     width: 60px;
+  }
+}
+
+/* High Zoom / Small Height Adjustments */
+@media (max-height: 600px) {
+  .modal-content {
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: var(--spacing-md);
+  }
+  
+  .modal-body {
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+  
+  .modal-footer {
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+  
+  .form-group {
+    margin-bottom: var(--spacing-md);
   }
 }

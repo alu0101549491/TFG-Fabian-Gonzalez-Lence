@@ -6,6 +6,131 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.46.14] - 2026-03-31
+
+### Changed — RETIRED Match Status Color to Orange
+
+**Enhancement**:
+Updated the visual styling of RETIRED match status badges across all components to use a distinctive orange color, making them visually consistent with other status states (e.g., COMPLETED uses green).
+
+**Motivation**:
+Previously, RETIRED status badges were either missing styling or displayed in red (#FF5722), which was visually confusing and inconsistent with the color scheme for other terminal match states. The user requested orange coloring to provide better visual distinction while maintaining consistency with the overall design system.
+
+**Changes Made**:
+
+**1. Status Badge Styling:**
+- **visual-bracket.component.css**: Added new `.status-badge.status-retired` style with orange color scheme
+  - Background: `#fed7aa` (light orange)
+  - Text: `#ea580c` (dark orange)
+
+- **match-list.component.css**: Updated `.badge-retired` style from red to orange
+  - Changed background from `rgba(244, 67, 54, 0.15)` (red) to `rgba(234, 88, 12, 0.15)` (orange)
+  - Changed text color from `#C62828` (red) to `#ea580c` (orange)
+
+- **variables.css**: Updated global CSS variable for consistency
+  - Changed `--color-retired` from `#FF5722` (red-orange) to `#F97316` (bright orange)
+  - This affects all components using the CSS variable system
+
+**2. Background Fading for RETIRED Matches:**
+- **visual-bracket.component.css**: 
+  - Added `.match-card.match-retired` style with orange gradient background
+    - Border color: `#f97316` (orange)
+    - Background: `linear-gradient(to bottom, var(--color-white), #ffedd5)` (white to light orange)
+  - Added `.match-card.match-retired .participant.winner` style with orange gradient for winner cards
+    - Background: `linear-gradient(135deg, #fb923c 0%, #ea580c 100%)` (orange gradient)
+    - Box shadow: `0 2px 8px rgba(249, 115, 22, 0.3)` (orange glow)
+
+- **visual-bracket.component.html**:
+  - Added `[class.match-retired]="match.status === MatchStatus.RETIRED"` binding for single elimination brackets
+  - Added `[class.match-retired]="match.status === MatchStatus.RETIRED"` binding for round robin brackets
+
+**Visual Impact**:
+- RETIRED badges now display with consistent orange coloring across visual bracket, match lists, and all other components
+- RETIRED match cards now have a subtle orange gradient background (similar to green for COMPLETED matches)
+- Winner cards in RETIRED matches display with orange gradient background (similar to green for COMPLETED matches)
+- Orange provides clear visual distinction from other states:
+  - SCHEDULED: Blue
+  - IN_PROGRESS: Yellow
+  - COMPLETED: Green (with green gradient backgrounds)
+  - RETIRED: Orange (with orange gradient backgrounds) ✨
+  - POSTPONED/DEFAULTED: Red
+
+**Files Modified**:
+- `src/presentation/components/visual-bracket/visual-bracket.component.css`
+- `src/presentation/components/visual-bracket/visual-bracket.component.html`
+- `src/presentation/pages/matches/match-list/match-list.component.css`
+- `src/styles/variables.css`
+
+---
+
+## [1.46.13] - 2026-03-31
+
+### Fixed — Match Score Modal Layout on High Zoom
+
+**Issue**: 
+When users zoomed in their browser (e.g., 150%, 200%), the "Record Match Scores" modal would break its layout, pushing the footer buttons (Cancel and Record Result) outside the white modal container, making them inaccessible. Additionally, at 100% zoom, the buttons were sometimes pushed below the viewport.
+
+**Root Cause**:
+The modal layout used flexbox with `flex-direction: column`, but there were two critical issues:
+1. The modal body could grow indefinitely without scrolling
+2. **Critical**: A `<form>` element wrapped both `modal-body` and `modal-footer`, but the form wasn't configured to participate in the flex layout, breaking the parent flex container's constraints
+
+**HTML Structure**:
+```html
+<div class="modal-content">        <!-- flex container -->
+  <div class="modal-header">...</div>
+  <form>                             <!-- This was breaking flex layout! -->
+    <div class="modal-body">...</div>
+    <div class="modal-footer">...</div>
+  </form>
+</div>
+```
+
+**Solution**:
+Implemented proper flex layout constraints throughout the hierarchy:
+
+1. **Modal Container**:
+   - Added `overflow: hidden` to prevent content from breaking the container bounds
+   - Reduced `max-height` from 90vh to 85vh for better visibility guarantee
+
+2. **Form Element** (NEW - Critical Fix):
+   - Added `.modal-content > form` selector with flex properties:
+     - `display: flex; flex-direction: column` - makes form a flex container
+     - `flex: 1 1 auto` - allows form to grow/shrink as needed
+     - `min-height: 0` - allows flexbox to shrink below content size
+     - `overflow: hidden` - contains overflow within flex layout
+   - This ensures the form participates properly in the parent's flex layout
+
+3. **Modal Header & Footer**:
+   - Added `flex-shrink: 0` to prevent them from compressing
+   - Ensured footer has white background to cover scrolled content
+   - These elements now stay fixed at top/bottom
+
+4. **Modal Body**:
+   - Changed from `flex: 1` to `flex: 1 1 auto` for proper grow/shrink behavior
+   - Added `min-height: 0` (critical for flexbox to allow shrinking below content size)
+   - Maintains `overflow-y: auto` for scrolling when content exceeds available space
+   - Added `-webkit-overflow-scrolling: touch` for smooth mobile scrolling
+
+5. **High Zoom Media Query**:
+   - Added `@media (max-height: 600px)` to handle high zoom or small screens
+   - Reduces padding on header/body/footer to maximize content space
+   - Increases `max-height` to 95vh for more vertical space
+
+**Result**:
+- ✅ Modal maintains its white rectangle at all zoom levels (100% - 300%+)
+- ✅ Cancel and Record Result buttons **always visible** at 100% zoom and all zoom levels
+- ✅ Content scrolls smoothly when it exceeds available space
+- ✅ Header with title and close button always visible at top
+- ✅ Proper flex layout hierarchy respected throughout
+- ✅ Works on desktop, mobile, and tablet devices
+- ✅ Handles both browser zoom and viewport size changes
+
+**Files Modified**:
+- `match-detail.component.css`: Updated modal flexbox layout, added form flex properties, and overflow handling
+
+---
+
 ## [1.46.12] - 2026-03-30
 
 ### Added — Automatic Winner Advancement

@@ -17,6 +17,7 @@
                   class="match-card"
                   [class.match-completed]="match.status === MatchStatus.COMPLETED"
                   [class.match-in-progress]="match.status === MatchStatus.IN_PROGRESS"
+                  [class.match-retired]="match.status === MatchStatus.RETIRED"
                   (click)="goToMatch(match.id)"
                 >
                   <!-- Match Number -->
@@ -89,6 +90,7 @@
               <div 
                 class="match-card"
                 [class.match-completed]="match.status === MatchStatus.COMPLETED"
+                [class.match-retired]="match.status === MatchStatus.RETIRED"
                 (click)="goToMatch(match.id)"
               >
                 <div class="match-header">

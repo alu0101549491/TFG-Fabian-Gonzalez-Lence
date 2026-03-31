@@ -94,6 +94,11 @@
   background: linear-gradient(to bottom, var(--color-white), #fefce8);
 }
 
+.match-card.match-retired {
+  border-color: #f97316;
+  background: linear-gradient(to bottom, var(--color-white), #ffedd5);
+}
+
 .match-number {
   font-size: 0.75rem;
   font-weight: 600;
@@ -130,6 +135,13 @@
   color: var(--color-white);
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.match-card.match-retired .participant.winner {
+  background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+  color: var(--color-white);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
 
 .participant.bye {
@@ -228,6 +240,11 @@
 .status-badge.status-completed {
   background: #d1fae5;
   color: #059669;
+}
+
+.status-badge.status-retired {
+  background: #fed7aa;
+  color: #ea580c;
 }
 
 .status-badge.status-postponed {
