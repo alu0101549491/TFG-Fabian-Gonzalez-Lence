@@ -86,47 +86,55 @@
 #### Modify Bracket (Tournament Admin)
 - [x] **Manual seed override** - change seed positions
 - [x] **Regenerate bracket** - option to recreate (warns about losing results)
-- [x] **Migrate results** - if regenerating, option to preserve completed matches
+- [?] **Migrate results** - if regenerating, option to preserve completed matches ⚠️ (discarded due to complexity)
 
 ---
 
 ### **E. MATCH MANAGEMENT** 🎾
 
 #### Enter Result (Participant)
-- [ ] **Navigate to "My Matches"**
-- [ ] **Click "Enter Result"** on TBP (To Be Played) match
-- [ ] **Enter score**: sets, games (e.g., 6-4, 6-3)
-- [ ] **Select match state**: CO (Completed), RET (Retired)
-- [ ] **Add ball provider** (optional)
-- [ ] **Add comments** (optional)
-- [ ] **Submit result** - status becomes "Pending Confirmation"
+- [x] **Navigate to "My Matches"** ✅ IMPLEMENTED - `/my-matches` route with MyMatchesComponent
+- [x] **Click "Enter Result"** on SCHEDULED match ✅ Modal opens from match card
+- [x] **Enter score**: sets, games (e.g., 6-4, 6-3) ✅ Set-by-set form with validation
+- [x] **Select match state**: CO (Completed), RET (Retired) ✅ Dropdown with statuses
+- [ ] **Add ball provider** (optional) ⚠️ NOT YET IMPLEMENTED
+- [x] **Add comments** (optional) ✅ playerComments field in form
+- [x] **Submit result** - status becomes "Pending Confirmation" ✅ Creates MatchResult entity with PENDING_CONFIRMATION
+> **Backend**: `POST /api/matches/:id/result` (MatchController.submitResultAsParticipant) ✅ WORKING  
+> **Frontend**: MyMatchesComponent with tabbed interface and result entry modal ✅ WORKING  
+> **Note**: Opponent confirmation/dispute workflow is NOT yet implemented (next feature)
 
 #### Confirm Result (Opponent)
-- [ ] **Receive notification** about pending result
+- [ ] **Receive notification** about pending result ⚠️ NOT IMPLEMENTED
 - [ ] **Navigate to pending match**
 - [ ] **Review entered result**
 - [ ] **Click "Confirm"** - result becomes official
 - [ ] **Standings update automatically**
+> **Note**: Domain service `ResultConfirmationService.confirmResult()` exists but not wired to backend/UI
 
 #### Dispute Result (Participant)
-- [ ] **Click "Dispute"** instead of confirm
+- [ ] **Click "Dispute"** instead of confirm ⚠️ NOT IMPLEMENTED
 - [ ] **Add reason** for dispute
 - [ ] **Submit dispute** - admin receives notification
 - [ ] **Admin reviews** - can validate, modify, or cancel match
+> **Note**: Domain service `ResultConfirmationService.disputeResult()` exists but no backend routes or UI
 
 #### Enter Result as Admin (Tournament Admin)
-- [ ] **Navigate to any match**
-- [ ] **Click "Enter Result as Admin"**
-- [ ] **Enter score** - **no confirmation needed**, immediately official
-- [ ] **Select special states**: WO (Walkover), DEF (Default), ABN (Abandoned), CAN (Cancelled)
-- [ ] **Verify standings update** immediately
+- [x] **Navigate to any match** ✅ IMPLEMENTED
+- [x] **Click "Enter Result as Admin"** ✅ "Record Result" button in match-detail page
+- [x] **Enter score** - **no confirmation needed**, immediately official ✅ Works
+- [x] **Select special states**: WO (Walkover), DEF (Default), ABN (Abandoned), CAN (Cancelled) ✅ All MatchStatus enums available
+- [ ] **Verify standings update** immediately ⚠️ Winner advancement works for single elimination
+> **Backend**: `POST /api/matches/:id/score` (MatchController.submitScore)  
+> **Frontend**: match-detail.component with scoring modal
 
 #### Suspend/Resume Match
-- [ ] **Admin clicks "Suspend Match"** - state becomes SUS
+- [ ] **Admin clicks "Suspend Match"** - state becomes SUS ⚠️ NOT IMPLEMENTED
 - [ ] **Save current score** (e.g., 6-4, 3-2)
 - [ ] **Add suspension reason** (weather, light, time)
 - [ ] **Resume match** - continues from saved score
 - [ ] **Complete match** - final result updates standings
+> **Note**: MatchStatus.SUSPENDED enum exists but no suspend/resume workflow implemented
 
 ---
 

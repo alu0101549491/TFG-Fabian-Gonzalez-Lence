@@ -6,6 +6,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.47.0] - 2026-03-31
+
+### Added — Participant Result Submission Feature (FR24) ✅ COMPLETE
+
+**Feature**: Participants can now submit match results directly through the "My Matches" page.
+
+**Backend Changes**:
+- **New Entity**: `MatchResult` for tracking result submissions with confirmation workflow
+  - Fields: matchId, submittedBy, winnerId, setScores, player1Games, player2Games
+  - Status tracking: PENDING_CONFIRMATION, CONFIRMED, DISPUTED, ANNULLED
+  - Support for playerComments and adminNotes
+- **New Endpoint**: `POST /api/matches/:id/result` for participant result submission
+  - Validates: user is a participant, match status allows submission (SCHEDULED)
+  - Creates MatchResult with PENDING_CONFIRMATION status
+  - Returns 201 with result details
+- **Database**: New `match_results` table with proper foreign key relationships
+
+**Frontend Changes**:
+- **New Component**: `MyMatchesComponent` at `/my-matches` (auth required)
+  - Shows all matches for current participant
+  - Groups matches by status: To Be Played, Completed, Other
+  - Displays match details: opponents, seeds, court, scheduled time
+  - "Enter Result" button for SCHEDULED matches
+- **Result Entry Modal**:
+  - Winner selection buttons for both participants
+  - Set score inputs (3 sets) with format validation (e.g., "6-4", "7-6(3)")
+  - Optional comments field
+  - Clear info message: "Your opponent will need to confirm this result"
+- **Service Layer**: Added `MatchService.getMatchesByCurrentUser()` to fetch participant's matches
+- **Navigation**: Added "My Matches" link in dashboard quick links (points to `/my-matches`)
+
+**Fixed**:
+- Import path for `AuthStateService` (was incorrectly importing from @application/services instead of @presentation/services)
+- Replaced non-existent `MatchStatus.TO_BE_PLAYED` with correct enum value `MatchStatus.SCHEDULED`
+- Added type annotation for `currentUserId` computed signal to resolve TypeScript type inference issue
+
+**User Flow**:
+1. Participant navigates to "My Matches" from dashboard
+2. Views their scheduled, in-progress, and completed matches
+3. Clicks "Enter Result" on a SCHEDULED match
+4. Selects winner, enters set scores (e.g., "6-4", "6-3"), adds optional comments
+5. Submits → Result status: PENDING_CONFIRMATION
+6. Opponent receives notification (TODO: implement in future)
+7. Opponent can confirm/dispute result (TODO: implement confirm/dispute UI)
+
+**Technical Notes**:
+- Result submission does NOT immediately update match status or standings
+- Requires opponent confirmation workflow to be fully functional
+- Admin result entry (existing feature) bypasses confirmation and updates standings immediately
+- Backend validates participant authorization before accepting submissions
+
+**Future Work** (FR25-FR27):
+- [ ] Opponent confirmation UI (FR25)
+- [ ] Dispute workflow UI (FR26)
+- [ ] Notification system for pending confirmations
+- [ ] Admin review panel for disputed results (FR27)
+
+**Database Migration Required**:
+New table: `match_results` with columns for submission tracking and confirmation workflow.
+
+---
+
 ## [1.46.23] - 2026-03-31
 
 ### Changed — Simplified Bracket Regeneration (Removed "Preserve Results" Feature)

@@ -19,6 +19,7 @@ export {Registration} from './registration.entity';
 export {Bracket} from './bracket.entity';
 export {Phase} from './phase.entity';
 export {Match} from './match.entity';
+export {MatchResult} from './match-result.entity';
 export {Score} from './score.entity';
 export {Standing} from './standing.entity';
 export {GlobalRanking} from './global-ranking.entity';

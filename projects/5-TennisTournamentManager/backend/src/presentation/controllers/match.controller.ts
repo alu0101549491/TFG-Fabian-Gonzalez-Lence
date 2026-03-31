@@ -16,6 +16,8 @@ import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Match} from '../../domain/entities/match.entity';
 import {Score} from '../../domain/entities/score.entity';
 import {Registration} from '../../domain/entities/registration.entity';
+import {MatchResult, ConfirmationStatus} from '../../domain/entities/match-result.entity';
+import {MatchStatus} from '../../domain/enumerations/match-status';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
@@ -240,4 +242,77 @@ export class MatchController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/matches/:id/result
+   * Submits a match result as a participant (FR24).
+   * Result will be PENDING_CONFIRMATION until opponent confirms.
+   */
+  public async submitResultAsParticipant(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new AppError('User not authenticated', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
+      }
+
+      const matchRepository = AppDataSource.getRepository(Match);
+      const matchResultRepository = AppDataSource.getRepository(MatchResult);
+
+      // Fetch match to validate
+      const match = await matchRepository.findOne({
+        where: {id},
+        relations: ['participant1', 'participant2'],
+      });
+
+      if (!match) {
+        throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Verify user is a participant
+      if (match.participant1Id !== userId && match.participant2Id !== userId) {
+        throw new AppError('Only match participants can submit results', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+      }
+
+      // Verify match can accept results (TBP, SCHEDULED, or IN_PROGRESS)
+      const allowedStatuses = [MatchStatus.TO_BE_PLAYED, MatchStatus.SCHEDULED];
+      if (!allowedStatuses.includes(match.status)) {
+        throw new AppError(`Cannot submit results for match in status ${match.status}`, HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      const {winnerId, setScores, player1Games, player2Games, playerComments} = req.body;
+
+      // Validate required fields
+      if (!winnerId || !setScores || setScores.length === 0) {
+        throw new AppError('winnerId and setScores are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Create result entity
+      const result = matchResultRepository.create({
+        id: generateId('res'),
+        matchId: id,
+        submittedBy: userId,
+        winnerId,
+        setScores,
+        player1Games: player1Games || 0,
+        player2Games: player2Games || 0,
+        confirmationStatus: ConfirmationStatus.PENDING_CONFIRMATION,
+        playerComments: playerComments || null,
+        isAdminEntry: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await matchResultRepository.save(result);
+
+      // TODO: Send notification to opponent
+      // await notificationService.notifyPendingConfirmation(matchId, opponentId);
+
+      res.status(HTTP_STATUS.CREATED).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+

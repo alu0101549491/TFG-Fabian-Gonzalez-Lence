@@ -1308,6 +1308,52 @@ router.post('/matches/:id/score', authMiddleware, roleMiddleware([UserRole.SYSTE
 
 /**
  * @swagger
+ * /matches/{id}/result:
+ *   post:
+ *     tags: [Matches]
+ *     summary: Submit match result as participant (FR24)
+ *     description: Participant submits result which requires opponent confirmation
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [winnerId, setScores]
+ *             properties:
+ *               winnerId:
+ *                 type: string
+ *               setScores:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["6-4", "6-3"]
+ *               player1Games:
+ *                 type: integer
+ *               player2Games:
+ *                 type: integer
+ *               playerComments:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Result submitted (PENDING_CONFIRMATION)
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: User is not a participant
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.post('/matches/:id/result', authMiddleware, matchController.submitResultAsParticipant.bind(matchController));
+
+/**
+ * @swagger
  * /categories:
  *   get:
  *     tags: [Categories]

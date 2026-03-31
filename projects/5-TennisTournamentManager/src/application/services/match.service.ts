@@ -876,6 +876,50 @@ export class MatchService implements IMatchService {
   }
 
   /**
+   * Retrieves all matches (convenience method).
+   *
+   * @returns List of all matches
+   */
+  public async getMatches(): Promise<MatchDto[]> {
+    return this.getAllMatches();
+  }
+
+  /**
+   * Submits a match result as a participant (FR24).
+   * Result will be PENDING_CONFIRMATION until opponent confirms.
+   *
+   * @param matchId - ID of the match
+   * @param data - Result submission data
+   * @returns Created match result
+   */
+  public async submitMatchResult(
+    matchId: string,
+    data: {
+      winnerId: string;
+      setScores: string[];
+      player1Games?: number;
+      player2Games?: number;
+      playerComments?: string;
+    }
+  ): Promise<any> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!data.winnerId || data.winnerId.trim().length === 0) {
+      throw new Error('Winner ID is required');
+    }
+
+    if (!data.setScores || data.setScores.length === 0) {
+      throw new Error('Set scores are required');
+    }
+
+    // Call backend endpoint
+    const response = await this.matchRepository.submitResult(matchId, data);
+    return response;
+  }
+
+  /**
    * Maps a Match entity to MatchDto.
    *
    * @param match - Match entity

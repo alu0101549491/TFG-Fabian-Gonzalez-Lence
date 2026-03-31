@@ -1,0 +1,245 @@
+<div class="my-matches-container">
+  <div class="page-header">
+    <h1>My Matches</h1>
+    <p class="subtitle">View and submit results for your matches</p>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <p>Loading your matches...</p>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="error-banner">
+      <p>{{ errorMessage() }}</p>
+      <button (click)="loadMyMatches()">Retry</button>
+    </div>
+  } @else {
+    <!-- To Be Played Matches -->
+    @if (groupedMatches().toBePlayed.length > 0) {
+      <section class="match-section">
+        <h2>
+          <span class="status-badge status-tbp">To Be Played</span>
+          ({{ groupedMatches().toBePlayed.length }})
+        </h2>
+        <div class="matches-list">
+          @for (match of groupedMatches().toBePlayed; track match.id) {
+            <div class="match-card">
+              <div class="match-header">
+                <span class="match-number">Match #{{ match.matchNumber }}</span>
+                <span class="round-badge">Round {{ match.round }}</span>
+              </div>
+              
+              <div class="match-body">
+                <div class="participants">
+                  <div class="participant">
+                    <span class="player-name">{{ match.participant1Name }}</span>
+                    @if (match.participant1?.seed) {
+                      <span class="seed-badge">Seed #{{ match.participant1.seed }}</span>
+                    }
+                  </div>
+                  <span class="vs">vs</span>
+                  <div class="participant">
+                    <span class="player-name">{{ match.participant2Name }}</span>
+                    @if (match.participant2?.seed) {
+                      <span class="seed-badge">Seed #{{ match.participant2.seed }}</span>
+                    }
+                  </div>
+                </div>
+
+                @if (match.scheduledTime) {
+                  <div class="match-info">
+                    <strong>Scheduled:</strong> {{ match.scheduledTime | date: 'medium' }}
+                  </div>
+                }
+
+                @if (match.courtName) {
+                  <div class="match-info">
+                    <strong>Court:</strong> {{ match.courtName }}
+                  </div>
+                }
+              </div>
+
+              <div class="match-actions">
+                <button class="btn-primary" (click)="openResultModal(match)">
+                  Enter Result
+                </button>
+                <button class="btn-secondary" (click)="viewMatchDetail(match.id)">
+                  View Details
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Completed Matches -->
+    @if (groupedMatches().completed.length > 0) {
+      <section class="match-section">
+        <h2>
+          <span class="status-badge status-completed">Completed</span>
+          ({{ groupedMatches().completed.length }})
+        </h2>
+        <div class="matches-list">
+          @for (match of groupedMatches().completed; track match.id) {
+            <div class="match-card completed">
+              <div class="match-header">
+                <span class="match-number">Match #{{ match.matchNumber }}</span>
+                <span class="winner-badge">Winner: {{ match.winner?.username || 'TBD' }}</span>
+              </div>
+              
+              <div class="match-body">
+                <div class="participants">
+                  <div class="participant" [class.winner]="match.winnerId === match.participant1Id">
+                    <span class="player-name">{{ match.participant1Name }}</span>
+                  </div>
+                  <span class="score-display">
+                    @for (score of match.scores; track score.id) {
+                      <span>{{ score.player1Games }}-{{ score.player2Games }}</span>
+                    }
+                  </span>
+                  <div class="participant" [class.winner]="match.winnerId === match.participant2Id">
+                    <span class="player-name">{{ match.participant2Name }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="match-actions">
+                <button class="btn-secondary" (click)="viewMatchDetail(match.id)">
+                  View Details
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Other Matches (Retired, Walkover, etc.) -->
+    @if (groupedMatches().other.length > 0) {
+      <section class="match-section">
+        <h2>Other Matches ({{ groupedMatches().other.length }})</h2>
+        <div class="matches-list">
+          @for (match of groupedMatches().other; track match.id) {
+            <div class="match-card">
+              <div class="match-header">
+                <span class="match-number">Match #{{ match.matchNumber }}</span>
+                <span class="status-badge">{{ match.status | enumFormat }}</span>
+              </div>
+              
+              <div class="match-body">
+                <div class="participants">
+                  <span class="player-name">{{ match.participant1Name }}</span>
+                  <span class="vs">vs</span>
+                  <span class="player-name">{{ match.participant2Name }}</span>
+                </div>
+              </div>
+
+              <div class="match-actions">
+                <button class="btn-secondary" (click)="viewMatchDetail(match.id)">
+                  View Details
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    @if (matches().length === 0) {
+      <div class="empty-state">
+        <p>You don't have any matches yet.</p>
+        <p class="help-text">Register for a tournament to participate in matches.</p>
+        <a routerLink="/tournaments" class="btn-primary">Browse Tournaments</a>
+      </div>
+    }
+  }
+
+  <!-- Result Entry Modal -->
+  @if (showResultModal() && selectedMatch()) {
+    <div class="modal-overlay" (click)="closeResultModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Enter Match Result</h2>
+          <button class="close-btn" (click)="closeResultModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="match-summary">
+            <p>
+              <strong>{{ selectedMatch()!.participant1Name }}</strong> vs 
+              <strong>{{ selectedMatch()!.participant2Name }}</strong>
+            </p>
+          </div>
+
+          <form (submit)="submitResult(); $event.preventDefault()">
+            <!-- Winner Selection -->
+            <div class="form-group">
+              <label>Select Winner *</label>
+              <div class="winner-buttons">
+                <button
+                  type="button"
+                  class="winner-btn"
+                  [class.selected]="resultForm().winnerId === selectedMatch()!.participant1Id"
+                  (click)="selectWinner(selectedMatch()!.participant1Id!)">
+                  {{ selectedMatch()!.participant1Name }}
+                </button>
+                <button
+                  type="button"
+                  class="winner-btn"
+                  [class.selected]="resultForm().winnerId === selectedMatch()!.participant2Id"
+                  (click)="selectWinner(selectedMatch()!.participant2Id!)">
+                  {{ selectedMatch()!.participant2Name }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Set Scores -->
+            <div class="form-group">
+              <label>Set Scores *</label>
+              <div class="set-scores">
+                @for (score of [0, 1, 2]; track score) {
+                  <input
+                    type="text"
+                    placeholder="e.g. 6-4"
+                    [(ngModel)]="resultForm().setScores[score]"
+                    (ngModelChange)="updateSetScore(score, $event)"
+                    [name]="'setScore' + score"
+                    class="set-input" />
+                }
+              </div>
+              <p class="help-text">Enter scores in format "6-4", "7-6(3)", etc.</p>
+            </div>
+
+            <!-- Optional Comments -->
+            <div class="form-group">
+              <label>Comments (optional)</label>
+              <textarea
+                [(ngModel)]="resultForm().playerComments"
+                name="playerComments"
+                rows="3"
+                placeholder="Any additional comments about the match..."></textarea>
+            </div>
+
+            @if (errorMessage()) {
+              <div class="error-message">{{ errorMessage() }}</div>
+            }
+
+            <div class="modal-actions">
+              <button type="button" class="btn-secondary" (click)="closeResultModal()">
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary" [disabled]="isLoading()">
+                {{ isLoading() ? 'Submitting...' : 'Submit Result' }}
+              </button>
+            </div>
+
+            <p class="info-note">
+              ℹ️ Your opponent will need to confirm this result before it becomes official.
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  }
+</div>

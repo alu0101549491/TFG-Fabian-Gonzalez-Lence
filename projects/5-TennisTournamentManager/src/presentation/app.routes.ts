@@ -85,6 +85,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'my-matches',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/matches/my-matches/my-matches.component').then(
+        (m) => m.MyMatchesComponent,
+      ),
+  },
+  {
     path: 'matches/:id',
     loadComponent: () =>
       import('./pages/matches/match-detail/match-detail.component').then(

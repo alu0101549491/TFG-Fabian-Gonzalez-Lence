@@ -253,4 +253,26 @@ export class MatchRepositoryImpl implements IMatchRepository {
     const response = await this.httpClient.get<Match[]>(`/matches?status=${status}`);
     return response;
   }
+
+  /**
+   * Submits a match result as a participant (FR24).
+   * Result will be PENDING_CONFIRMATION until opponent confirms.
+   *
+   * @param matchId - ID of the match
+   * @param data - Result submission data
+   * @returns Created match result
+   */
+  public async submitResult(
+    matchId: string,
+    data: {
+      winnerId: string;
+      setScores: string[];
+      player1Games?: number;
+      player2Games?: number;
+      playerComments?: string;
+    }
+  ): Promise<any> {
+    const response = await this.httpClient.post(`/matches/${matchId}/result`, data);
+    return response;
+  }
 }
