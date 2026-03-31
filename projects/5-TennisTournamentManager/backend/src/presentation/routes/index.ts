@@ -1145,6 +1145,33 @@ router.put('/brackets/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMI
 
 /**
  * @swagger
+ * /brackets/{id}/regenerate:
+ *   post:
+ *     tags: [Brackets]
+ *     summary: Regenerate bracket with updated seeds
+ *     description: Completely regenerates bracket by deleting all matches/scores/phases and creating new ones using updated registration seed numbers. Cannot be used on published brackets. (SYSTEM_ADMIN or TOURNAMENT_ADMIN)
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Bracket regenerated successfully
+ *       400:
+ *         description: Invalid operation (e.g., published bracket)
+ *       404:
+ *         description: Bracket not found
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/brackets/:id/regenerate', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), bracketController.regenerate.bind(bracketController));
+
+/**
+ * @swagger
  * /matches:
  *   get:
  *     tags: [Matches]

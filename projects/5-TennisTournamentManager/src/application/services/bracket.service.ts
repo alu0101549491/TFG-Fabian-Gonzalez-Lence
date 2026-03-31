@@ -230,26 +230,17 @@ export class BracketService implements IBracketService {
       throw new Error('User ID is required');
     }
     
-    // Check if bracket exists
-    const bracket = await this.bracketRepository.findById(bracketId);
-    if (!bracket) {
-      throw new Error('Bracket not found');
-    }
-    
-    // Validate business rule: cannot regenerate published bracket without keeping results
-    // Note: bracket is a plain object from HTTP response, not a Bracket entity instance
-    if (bracket.isPublished && !keepResults) {
-      throw new Error('Cannot regenerate published bracket without keeping results.');
-    }
-    
-    // In real implementation, regenerate bracket structure
-    // const generator = this.bracketGeneratorFactory.createGenerator(bracket.bracketType);
-    // generator would regenerate the bracket
-    
-    const savedBracket = await this.bracketRepository.update(bracket);
+    // Call backend regenerate endpoint which will:
+    // 1. Fetch bracket
+    // 2. Validate business rules (published + !keepResults = error)
+    // 3. Delete old matches/phases (if !keepResults)
+    // 4. Fetch UPDATED registrations with new seed numbers
+    // 5. Regenerate matches with updated seeding
+    // 6. Save new matches/phases
+    const regeneratedBracket = await this.bracketRepository.regenerate(bracketId, keepResults);
     
     // Map to DTO
-    return this.mapBracketToDto(savedBracket);
+    return this.mapBracketToDto(regeneratedBracket);
   }
 
   /**

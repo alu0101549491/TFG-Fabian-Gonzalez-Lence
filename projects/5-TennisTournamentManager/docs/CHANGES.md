@@ -6,6 +6,227 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.46.23] - 2026-03-31
+
+### Changed — Simplified Bracket Regeneration (Removed "Preserve Results" Feature)
+
+**Design Decision**:
+Removed the "preserve results" option from bracket regeneration. Regenerating now **always** resets all matches, scores, and phases to start fresh with updated seeds.
+
+**Rationale**:
+The "preserve results while updating seeds" feature was overly complex to implement correctly:
+- **Technical complexity**: Mapping participants to new positions while maintaining tournament integrity
+- **Edge cases**: Handling eliminated players, different round structures, rematch scenarios
+- **Rare use case**: In real tournaments, seed changes BEFORE matches start, not during play
+- **User confusion**: Unclear expectations about what "preserve" means when bracket structure changes
+
+**New Behavior**:
+Bracket regeneration is now simpler and clearer:
+1. **Always deletes** all matches, scores, and phases
+2. **Fetches updated** registration data with new seed numbers
+3. **Creates new** bracket structure from scratch
+4. **Clear warning** in UI: "This will completely reset the bracket"
+
+**UI Changes**:
+- **Removed**: "Preserve completed match results" checkbox
+- **Updated warning**: "Regenerating the bracket will delete ALL matches, scores, and results, then create a new bracket structure using the updated seed numbers."
+- **Added info message**: If bracket has completed matches, shows: "This bracket has completed matches. All match results will be permanently deleted."
+
+**Backend Changes**:
+- Removed `keepResults` parameter from API endpoint
+- Removed validation logic for preserving scores
+- Simplified regenerate flow to always reset
+- Cannot regenerate published brackets (prevents accidental changes to live tournaments)
+
+**Use Case Flow**:
+1. Tournament organizer creates bracket with initial seeds
+2. Realizes seeding needs adjustment (e.g., late player withdrawal, ranking errors)
+3. Updates seed numbers using inline editing
+4. Clicks "Regenerate Bracket" → Clear warning about reset
+5. Confirms → Bracket recreates with updated seeding
+
+**If matches have already been played**:
+- Don't regenerate - seed changes won't help completed tournaments
+- OR accept that regeneration will reset everything
+- Results can be manually re-entered if absolutely necessary
+
+**Files Modified**:
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.html` (removed checkbox)
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts` (removed keepResults signal and logic)
+- `backend/src/presentation/controllers/bracket.controller.ts` (removed keepResults parameter and validation)
+- `backend/src/presentation/routes/index.ts` (updated Swagger documentation)
+
+**Impact**: Bracket regeneration is now simpler, clearer, and prevents confusion about what "preserve results" means. Organizers adjust seeds before matches start, not during tournaments.
+
+---
+
+## [1.46.22] - 2026-03-31
+
+### Fixed — Regenerate Bracket Checkbox Not Working + Added Score Preservation Protection
+
+**Bug Fixes**:
+
+**Issue 1: Checkbox binding not working**
+The "Preserve completed match results" checkbox in the regenerate modal wasn't working because it used `[(ngModel)]` with an Angular signal, which isn't supported.
+
+**Solution**:
+- Fixed to use proper signal binding: `[checked]="keepResults()"` + `(change)="keepResults.set($any($event.target).checked)"`
+
+**Issue 2: Accidental data loss**
+When regenerating brackets with completed matches, the default was `keepResults = false`, causing users to accidentally lose all match scores without realizing.
+
+**Solution**:
+- **Smart default**: If there are completed matches, the checkbox now defaults to **checked** (preserve results)
+- **Backend validation**: Added check that blocks regeneration with `keepResults = true` until the feature is fully implemented
+- **Clear error message**: "Regenerating brackets while preserving scores is not yet implemented. Please uncheck 'Preserve completed match results' to regenerate (this will reset all matches)."
+
+**Current Behavior**:
+1. **If no completed matches exist**: Regenerate freely with updated seeds ✅
+2. **If completed matches exist**:
+   - Checkbox defaults to **CHECKED** (preserve results)
+   - But if user tries to regenerate with checkbox checked → Error (not yet implemented)
+   - User must **UNCHECK** the box to proceed → All scores will be deleted and bracket regenerated
+
+**Why `keepResults = true` is blocked**:
+Properly implementing score preservation during regeneration is complex and requires:
+- Mapping participants to new seeding positions
+- Updating match pairings without losing scores  
+- Handling edge cases (eliminated players now in different rounds)
+- This will be implemented in a future version
+
+**Temporary Workaround**:
+If you need to change seeding after matches have started:
+1. **Option A**: Accept that regenerating will reset all scores (uncheck the box)
+2. **Option B**: Don't regenerate - manually adjust remaining matches
+3. **Option C**: Wait for the `keepResults = true` feature to be implemented
+
+**Files Modified**:
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.html` (fixed checkbox binding)
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts` (smart default for keepResults)
+- `backend/src/presentation/controllers/bracket.controller.ts` (added validation and warnings)
+
+**Impact**: Users are now protected from accidentally losing match data, with clear warnings about what will happen when regenerating brackets with completed matches.
+
+---
+
+## [1.46.21] - 2026-03-31
+
+### Fixed — Foreign Key Constraint Violation in Bracket Regeneration
+
+**Bug Fix**:
+Fixed database foreign key constraint error when regenerating brackets with recorded match scores.
+
+**Issue**:
+When attempting to regenerate a bracket that had match scores recorded, the operation failed with:
+```
+update or delete on table "matches" violates foreign key constraint "FK_9012285dd168d361368836fa967" on table "scores"
+```
+
+**Root Cause**:
+The regenerate method was attempting to delete matches before deleting scores. Since scores have a foreign key reference to matches, the database prevented the deletion to maintain referential integrity.
+
+**Solution**:
+Updated the deletion order in the `regenerate()` method to respect foreign key dependencies:
+
+1. **Delete scores first** (child records with foreign key to matches)
+2. **Delete matches second** (parent records)
+3. **Delete phases third** (no dependencies on matches)
+
+**Code Changes** ([bracket.controller.ts](../backend/src/presentation/controllers/bracket.controller.ts)):
+```typescript
+// Before (broken):
+const matchDeleteResult = await matchRepository.delete({bracketId: id});
+const phaseDeleteResult = await phaseRepository.delete({bracketId: id});
+
+// After (fixed):
+// Step 1: Delete scores first
+const existingMatches = await matchRepository.find({where: {bracketId: id}});
+const matchIds = existingMatches.map(m => m.id);
+if (matchIds.length > 0) {
+  await scoreRepository.createQueryBuilder()
+    .delete()
+    .where('matchId IN (:...matchIds)', {matchIds})
+    .execute();
+}
+
+// Step 2: Delete matches
+await matchRepository.delete({bracketId: id});
+
+// Step 3: Delete phases
+await phaseRepository.delete({bracketId: id});
+```
+
+**Also Fixed**:
+- Updated HTTP interceptor to preserve authentication tokens on POST/PUT/DELETE requests
+- Previously, 401 errors on "public pages" would clear tokens even for authenticated mutations
+
+**Files Modified**:
+- `backend/src/presentation/controllers/bracket.controller.ts` (regenerate method)
+- `src/infrastructure/http/axios-client.ts` (response interceptor)
+
+**Impact**: Bracket regeneration now works correctly even when matches have recorded scores, properly cleaning up all related data before regenerating the bracket structure.
+
+---
+
+## [1.46.20] - 2026-03-31
+
+### Implemented — Bracket Regeneration with Updated Seeds
+
+**Feature Implementation**:
+Implemented real bracket regeneration functionality that applies updated seed numbers when regenerating brackets.
+
+**Issue**:
+After manually changing seed numbers using the inline editing feature, regenerating the bracket didn't update match pairings. The matches remained the same because the regenerate function was just a stub that called `update()` without actually regenerating matches.
+
+**Solution**:
+Implemented complete bracket regeneration flow:
+
+**Backend** ([bracket.controller.ts](../backend/src/presentation/controllers/bracket.controller.ts)):
+- Added `regenerate()` method (POST `/api/brackets/:id/regenerate`)
+- Validates published bracket regeneration rules (requires `keepResults: true`)
+- Deletes existing matches and phases (if `!keepResults`)
+- **Fetches UPDATED registrations** with new seed numbers from database
+- Applies updated seeding using `SeedingService.seedBracket()`
+- Generates new matches and phases with updated seeding
+- Logs detailed regeneration process with participant names and seeds
+
+**Backend Routes** ([index.ts](../backend/src/presentation/routes/index.ts)):
+- Registered new route: `POST /brackets/:id/regenerate`
+- Requires SYSTEM_ADMIN or TOURNAMENT_ADMIN role
+- Swagger documentation added
+
+**Frontend Repository** ([bracket.repository.ts](../src/infrastructure/repositories/bracket.repository.ts)):
+- Added `regenerate()` method to call new backend endpoint
+- Accepts `keepResults` parameter for published brackets
+
+**Frontend Service** ([bracket.service.ts](../src/application/services/bracket.service.ts)):
+- Updated `regenerateBracket()` method to call repository's `regenerate()` instead of `update()`
+- Added comprehensive documentation explaining the regeneration process
+
+**Workflow**:
+1. Admin updates seed numbers using inline editing (e.g., Zverev #7→#9, Federer #2→#7)
+2. Admin clicks "Regenerate Bracket" button
+3. Backend fetches registrations with updated seeds
+4. Backend deletes old matches/phases
+5. Backend regenerates matches with new seeding order
+6. UI reloads and displays updated bracket with correct pairings
+
+**Example**:
+- Before: Roger Federer (Seed #2) vs Alexander Zverev (Seed #7)
+- Change seeds: Federer #7, Zverev #9
+- Regenerate bracket
+- After: Match pairings update to reflect new seeding positions
+
+**Files Modified**:
+- `backend/src/presentation/controllers/bracket.controller.ts` (added regenerate method)
+- `backend/src/presentation/routes/index.ts` (registered route)
+- `src/infrastructure/repositories/bracket.repository.ts` (added regenerate method)
+- `src/application/services/bracket.service.ts` (updated regenerateBracket method)
+
+**Impact**: Bracket regeneration now properly applies seed number changes, allowing admins to adjust tournament seeding and immediately see the effect on match pairings.
+
+---
+
 ## [1.46.19] - 2026-03-31
 
 ### Fixed — Property Name Inconsistency: `seed` vs `seedNumber`

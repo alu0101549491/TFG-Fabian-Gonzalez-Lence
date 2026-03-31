@@ -73,9 +73,6 @@ export class BracketViewComponent implements OnInit {
   /** Show regenerate confirmation modal */
   public showRegenerateModal = signal(false);
 
-  /** Whether to preserve results when regenerating */
-  public keepResults = signal(false);
-
   /**
    * Initializes component and loads bracket data.
    */
@@ -206,7 +203,6 @@ export class BracketViewComponent implements OnInit {
    * Shows the regenerate bracket confirmation modal.
    */
   public showRegenerateConfirmation(): void {
-    this.keepResults.set(false);
     this.showRegenerateModal.set(true);
   }
 
@@ -215,7 +211,6 @@ export class BracketViewComponent implements OnInit {
    */
   public hideRegenerateModal(): void {
     this.showRegenerateModal.set(false);
-    this.keepResults.set(false);
   }
 
   /**
@@ -236,16 +231,17 @@ export class BracketViewComponent implements OnInit {
     this.isRegenerating.set(true);
 
     try {
+      // Always regenerate without keeping results (full reset)
       const updatedBracket = await this.bracketService.regenerateBracket(
         bracket.id,
         currentUser.id,
-        this.keepResults()
+        false // keepResults = false (always reset)
       );
       // Update the bracket signal with the fresh data from the server
       this.bracket.set(updatedBracket);
-      alert('Bracket regenerated successfully!');
+      alert('Bracket regenerated successfully with updated seeds!');
       
-      // Reload phases and matches as they might have changed
+      // Reload phases and matches as they have been regenerated
       const [phases, matches] = await Promise.all([
         this.bracketService.getPhases(updatedBracket.id),
         this.matchService.getMatchesByBracket(updatedBracket.id),

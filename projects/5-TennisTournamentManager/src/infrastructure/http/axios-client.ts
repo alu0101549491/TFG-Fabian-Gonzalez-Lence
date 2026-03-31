@@ -74,22 +74,29 @@ export class AxiosClient {
             currentPath.includes('/standings') ||
             currentPath.includes('/order-of-play');
           
+          // Check if this is a mutation (POST/PUT/DELETE) that requires authentication
+          const isMutation = ['post', 'put', 'patch', 'delete'].includes(
+            error.config?.method?.toLowerCase() || ''
+          );
+          
           console.log('[HTTP Interceptor]', {
             status: error.response?.status,
             url: error.config?.url,
+            method: error.config?.method,
             currentPath,
             isAuthPage,
             isPublicPage,
+            isMutation,
             willRedirect: !isAuthPage && !isPublicPage,
             tokenExists: !!localStorage.getItem(JWT_STORAGE_KEY)
           });
           
-          // If on a public page, clear invalid token but don't redirect
-          // This prevents future requests from sending the bad token
-          if (isPublicPage) {
-            console.warn('[HTTP Interceptor] Clearing invalid token on public page');
+          // If on a public page with a mutation, DON'T clear token (user needs to re-login)
+          // If on a public page with a GET, clear token (it's expired/invalid)
+          if (isPublicPage && !isMutation) {
+            console.warn('[HTTP Interceptor] Clearing invalid token on public page (GET request)');
             localStorage.removeItem(JWT_STORAGE_KEY);
-          } else if (!isAuthPage) {
+          } else if (!isAuthPage && !isPublicPage) {
             // Only redirect if not on auth pages or public pages
             // (expired session on protected routes)
             localStorage.removeItem(JWT_STORAGE_KEY);

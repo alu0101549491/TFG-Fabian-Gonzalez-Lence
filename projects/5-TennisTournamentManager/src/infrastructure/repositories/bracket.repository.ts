@@ -106,4 +106,16 @@ export class BracketRepositoryImpl implements IBracketRepository {
       throw error;
     }
   }
-}
+  /**
+   * Regenerates bracket matches/phases with updated registration seeds.
+   * @param bracketId - The bracket identifier
+   * @param keepResults - Whether to keep existing match results (for published brackets)
+   * @returns Promise resolving to the updated bracket
+   */
+  public async regenerate(bracketId: string, keepResults = false): Promise<Bracket> {
+    const response = await this.httpClient.post<Bracket>(
+      `/brackets/${bracketId}/regenerate`,
+      { keepResults }
+    );
+    return response;
+  }}

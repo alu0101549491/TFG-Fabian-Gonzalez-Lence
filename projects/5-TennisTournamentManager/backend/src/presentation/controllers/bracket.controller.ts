@@ -18,6 +18,7 @@ import {Bracket} from '../../domain/entities/bracket.entity';
 import {Match} from '../../domain/entities/match.entity';
 import {Phase} from '../../domain/entities/phase.entity';
 import {Registration} from '../../domain/entities/registration.entity';
+import {Score} from '../../domain/entities/score.entity';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
@@ -184,6 +185,132 @@ export class BracketController {
     }
   }
   
+  /**
+   * POST /api/brackets/:id/regenerate
+   * Regenerates bracket matches/phases with updated registration seeds.
+   * Deletes all existing matches, scores, and phases, then creates new ones.
+   */
+  public async regenerate(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      
+      console.log(`🔄 Regenerating bracket ${id}...`);
+      
+      const bracketRepository = AppDataSource.getRepository(Bracket);
+      const matchRepository = AppDataSource.getRepository(Match);
+      const phaseRepository = AppDataSource.getRepository(Phase);
+      const registrationRepository = AppDataSource.getRepository(Registration);
+      const scoreRepository = AppDataSource.getRepository(Score);
+      
+      // Fetch bracket
+      const bracket = await bracketRepository.findOne({where: {id}});
+      if (!bracket) {
+        throw new AppError('Bracket not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.RESOURCE_NOT_FOUND);
+      }
+      
+      // Validate: cannot regenerate published bracket
+      if (bracket.isPublished) {
+        throw new AppError(
+          'Cannot regenerate a published bracket. Unpublish it first to make changes.',
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_OPERATION
+        );
+      }
+      
+      // Check if there are completed matches (for logging/warning)
+      const existingMatches = await matchRepository.find({where: {bracketId: id}});
+      const matchIds = existingMatches.map(m => m.id);
+      let scoreCount = 0;
+      
+      if (matchIds.length > 0) {
+        scoreCount = await scoreRepository
+          .createQueryBuilder('score')
+          .where('score.matchId IN (:...matchIds)', {matchIds})
+          .getCount();
+      }
+      
+      if (scoreCount > 0) {
+        console.warn(`⚠️ Regenerating bracket ${id} with ${scoreCount} completed match(es). All scores will be deleted.`);
+      }
+      
+      // Delete existing scores, matches, and phases (always regenerate from scratch)
+      console.log(`🗑️ Deleting existing scores, matches, and phases...`);
+      
+      // Step 1: Delete scores first (foreign key references matches)
+      // Note: existingMatches and matchIds already fetched above for validation
+      if (matchIds.length > 0) {
+        const scoreDeleteResult = await scoreRepository
+          .createQueryBuilder()
+          .delete()
+          .where('matchId IN (:...matchIds)', {matchIds})
+          .execute();
+        console.log(`  Deleted ${scoreDeleteResult.affected || 0} scores`);
+      }
+      
+      // Step 2: Delete matches
+      const matchDeleteResult = await matchRepository.delete({bracketId: id});
+      console.log(`  Deleted ${matchDeleteResult.affected || 0} matches`);
+      
+      // Step 3: Delete phases
+      const phaseDeleteResult = await phaseRepository.delete({bracketId: id});
+      console.log(`  Deleted ${phaseDeleteResult.affected || 0} phases`);
+      
+      // Fetch UPDATED accepted registrations (with new seed numbers!)
+      const registrations = await registrationRepository.find({
+        where: {
+          categoryId: bracket.categoryId,
+          status: RegistrationStatus.ACCEPTED,
+          acceptanceType: Not(In([AcceptanceType.ALTERNATE, AcceptanceType.WITHDRAWN])),
+        },
+        relations: ['participant'],
+      });
+      
+      console.log(`📊 Found ${registrations.length} ACCEPTED registrations for category ${bracket.categoryId}`);
+      
+      if (registrations.length < 2) {
+        throw new AppError(
+          'At least 2 accepted participants are required to regenerate bracket',
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_OPERATION
+        );
+      }
+      
+      // Calculate bracket size
+      const participantCount = registrations.length;
+      const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantCount)));
+      
+      // Apply UPDATED seeding (uses current seedNumber from registrations)
+      const {participantIds, seededParticipants} = SeedingService.seedBracket(
+        registrations,
+        bracketSize,
+      );
+      
+      console.log(`🎾 Regenerating bracket with updated seeds:`);
+      console.log(`🏆 Seeding:`, seededParticipants.map(p => 
+        `Seed #${p.seedNumber} - ${p.registration.participant?.firstName} ${p.registration.participant?.lastName}`
+      ));
+      
+      // Generate new matches with updated seeding
+      const {matches, phases} = this.matchGenerator.generateMatches(
+        bracket.id,
+        bracket.bracketType,
+        participantIds,
+        bracket.totalRounds,
+      );
+      
+      console.log(`💾 Saving ${phases.length} phases and ${matches.length} matches...`);
+      await phaseRepository.save(phases);
+      await matchRepository.save(matches);
+      
+      console.log(`✅ Bracket ${id} regenerated successfully with ${matches.length} matches`);
+      
+      res.status(HTTP_STATUS.OK).json(bracket);
+    } catch (error) {
+      console.error('❌ Error regenerating bracket:', error);
+      next(error);
+    }
+  }
+
   /**
    * GET /api/brackets/:id
    * Retrieves bracket details.
