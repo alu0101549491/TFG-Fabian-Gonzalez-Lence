@@ -123,9 +123,9 @@ export class SingleEliminationGenerator implements IBracketGenerator {
    */
   private sortBySeed(registrations: Registration[]): Registration[] {
     return [...registrations].sort((a, b) => {
-      if (a.seed === null) return 1;
-      if (b.seed === null) return -1;
-      return a.seed - b.seed;
+      if (a.seedNumber === null) return 1;
+      if (b.seedNumber === null) return -1;
+      return a.seedNumber - b.seedNumber;
     });
   }
 
@@ -171,8 +171,8 @@ export class SingleEliminationGenerator implements IBracketGenerator {
     const positions: (string | null)[] = new Array(bracketSize).fill( null);
 
     // Separate seeded and unseeded registrations
-    const seeded = registrations.filter(r => r.seed !== null);
-    const unseeded = registrations.filter(r => r.seed === null);
+    const seeded = registrations.filter(r => r.seedNumber !== null);
+    const unseeded = registrations.filter(r => r.seedNumber === null);
 
     // Get strategic positions for seeded participants
     if (seeded.length > 0) {

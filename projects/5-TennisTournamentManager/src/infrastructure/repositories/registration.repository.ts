@@ -70,17 +70,10 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    */
   public async update(registration: Registration): Promise<Registration> {
     // Backend expects only seedNumber in request body, not full registration object
-    const payload = { seedNumber: registration.seedNumber };
-    console.log(`🔵 FRONTEND: Sending PUT request to /registrations/${registration.id}`);
-    console.log(`🔵 FRONTEND: Payload:`, JSON.stringify(payload, null, 2));
-    console.log(`🔵 FRONTEND: registration.seedNumber value:`, registration.seedNumber);
-    
     const response = await this.httpClient.put<Registration>(
       `/registrations/${registration.id}`, 
-      payload
+      { seedNumber: registration.seedNumber }
     );
-    
-    console.log(`🔵 FRONTEND: Response received:`, JSON.stringify(response, null, 2));
     return response;
   }
 

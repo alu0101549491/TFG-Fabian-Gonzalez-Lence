@@ -341,6 +341,7 @@ export class RegistrationController {
   public async update(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
+      const {seedNumber} = req.body;
       const currentUser = req.user;
       
       if (!currentUser) {
@@ -348,12 +349,7 @@ export class RegistrationController {
       }
       
       console.log(`📝 Updating registration ${id}:`);
-      console.log(`  - Full req.body:`, JSON.stringify(req.body, null, 2));
-      console.log(`  - req.body type:`, typeof req.body);
-      console.log(`  - req.body keys:`, Object.keys(req.body));
-      
-      const {seedNumber} = req.body;
-      console.log(`  - Extracted seedNumber: ${seedNumber}`);
+      console.log(`  - New seed number: ${seedNumber}`);
       console.log(`  - User: ${currentUser.id} (${currentUser.role})`);
       
       const registrationRepository = AppDataSource.getRepository(Registration);

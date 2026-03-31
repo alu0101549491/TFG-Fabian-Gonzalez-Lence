@@ -434,7 +434,7 @@ export class ExportService implements IExportService {
         userId: reg.userId,
         status: reg.status,
         acceptanceType: reg.acceptanceType,
-        seed: reg.seed,
+        seedNumber: reg.seedNumber,
         registeredAt: this.formatDate(reg.createdAt),
       })),
       matches: matches.map((match) => ({

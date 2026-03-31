@@ -119,9 +119,9 @@ export class MatchPlayGenerator implements IBracketGenerator {
    */
   private sortBySeed(registrations: Registration[]): Registration[] {
     return [...registrations].sort((a, b) => {
-      if (a.seed === null) return 1;
-      if (b.seed === null) return -1;
-      return a.seed - b.seed;
+      if (a.seedNumber === null) return 1;
+      if (b.seedNumber === null) return -1;
+      return a.seedNumber - b.seedNumber;
     });
   }
 

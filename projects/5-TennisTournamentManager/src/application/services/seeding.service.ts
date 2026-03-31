@@ -74,10 +74,10 @@ export class SeedingService {
     // Participants without ranking go to the end
     const sortedRegistrations = [...registrations].sort((a, b) => {
       // Handle cases where participants don't have ranking
-      if (!a.seed && !b.seed) return 0;
-      if (!a.seed) return 1;
-      if (!b.seed) return -1;
-      return a.seed - b.seed;
+      if (!a.seedNumber && !b.seedNumber) return 0;
+      if (!a.seedNumber) return 1;
+      if (!b.seedNumber) return -1;
+      return a.seedNumber - b.seedNumber;
     });
 
     // Assign seed numbers to top participants
@@ -135,10 +135,10 @@ export class SeedingService {
     // Map seeds to positions
     for (let i = 0; i < sorted.length && i < positions.length; i++) {
       const registration = sorted[i];
-      if (registration.seed !== null) {
+      if (registration.seedNumber !== null) {
         seededParticipants.push({
           participantId: registration.participantId,
-          seedNumber: registration.seed,
+          seedNumber: registration.seedNumber,
           drawPosition: positions[i],
           registrationId: registration.id
         });
@@ -187,7 +187,7 @@ export class SeedingService {
     
     for (let i = 0; i < sorted.length; i++) {
       const registration = sorted[i];
-      if (registration.seed !== null) {
+      if (registration.seedNumber !== null) {
         // Calculate group using serpentine distribution
         const cyclePosition = i % (numberOfGroups * 2);
         const groupNumber = cyclePosition < numberOfGroups
@@ -196,7 +196,7 @@ export class SeedingService {
 
         groupAssignments.push({
           participantId: registration.participantId,
-          seedNumber: registration.seed,
+          seedNumber: registration.seedNumber,
           groupNumber
         });
       }
@@ -242,8 +242,8 @@ export class SeedingService {
     errors: string[];
   } {
     const errors: string[] = [];
-    const seededRegistrations = registrations.filter(r => r.seed !== null);
-    const seedNumbers = seededRegistrations.map(r => r.seed!);
+    const seededRegistrations = registrations.filter(r => r.seedNumber !== null);
+    const seedNumbers = seededRegistrations.map(r => r.seedNumber!);
 
     // Check for duplicates
     const uniqueSeeds = new Set(seedNumbers);

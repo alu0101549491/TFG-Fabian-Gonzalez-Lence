@@ -83,9 +83,9 @@ describe('SeedingService', () => {
       const result = await service.assignSeedNumbers(registrations, 2);
 
       expect(result).toHaveLength(3);
-      expect(result[0].seed).toBe(1); // Best ranking gets seed 1
-      expect(result[1].seed).toBe(2); // Second best gets seed 2
-      expect(result[2].seed).toBeNull(); // Third is unseeded
+      expect(result[0].seedNumber).toBe(1); // Best ranking gets seed 1
+      expect(result[1].seedNumber).toBe(2); // Second best gets seed 2
+      expect(result[2].seedNumber).toBeNull(); // Third is unseeded
     });
 
     it('should throw error if numberOfSeeds is less than 1', async () => {
@@ -290,7 +290,7 @@ describe('SeedingService', () => {
 
       const result = await service.overrideSeed('reg1', 2);
 
-      expect(result.seed).toBe(2);
+      expect(result.seedNumber).toBe(2);
       expect(mockRepository.update).toHaveBeenCalled();
     });
 
@@ -301,7 +301,7 @@ describe('SeedingService', () => {
         tournamentId: 't1',
         categoryId: 'c1',
         acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE,
-        seed: 3,
+        seedNumber: 3,
         createdAt: new Date(),
       });
 
@@ -310,7 +310,7 @@ describe('SeedingService', () => {
 
       const result = await service.overrideSeed('reg1', null);
 
-      expect(result.seed).toBeNull();
+      expect(result.seedNumber).toBeNull();
     });
 
     it('should throw error if registration not found', async () => {

@@ -6,6 +6,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.46.19] - 2026-03-31
+
+### Fixed — Property Name Inconsistency: `seed` vs `seedNumber`
+
+**Critical Bug Fix**:
+Fixed seed number updates completely failing due to property name mismatch in the Registration entity.
+
+**Issue**:
+- Seed number updates showed `registration.seedNumber value: undefined` in logs
+- Service layer correctly set `seedNumber: 9` but value was lost
+- Database always received `null` for seed updates
+
+**Root Cause**:
+The Registration entity used `seed` as the property name, but the entire codebase (backend API, DTOs, services, repositories) used `seedNumber`. When the service created an updated registration:
+```typescript
+const updatedRegistration = new Registration({
+  ...registration,
+  seedNumber,  // ❌ Constructor expects 'seed', ignores 'seedNumber'
+  updatedAt: new Date(),
+});
+```
+The constructor ignored `seedNumber` and defaulted to `null`.
+
+**Solution**:
+Updated Registration entity and all related code to use `seedNumber` consistently:
+- **Entity**: `registration.ts` - Changed property from `seed` to `seedNumber` in interface and class
+- **Services**: 
+  - `seeding.service.ts` - Updated all sorting/filtering logic
+  - `match-play.generator.ts` - Updated seed sorting
+  - `single-elimination.generator.ts` - Updated seed sorting and filtering
+  - `export.service.ts` - Updated export mapping
+- **Tests**: `seeding.service.test.ts` - Updated all assertions
+
+**Files Modified**:
+- `src/domain/entities/registration.ts` (lines 39, 67, 79)
+- `src/application/services/seeding.service.ts` (6 occurrences)
+- `src/application/services/generators/match-play.generator.ts` (sortBySeed method)
+- `src/application/services/generators/single-elimination.generator.ts` (sortBySeed + filtering)
+- `src/application/services/export.service.ts` (export mapping)
+- `tests/application/services/seeding.service.test.ts` (3 test cases)
+
+**Impact**: Now all seed updates work correctly throughout the application.
+
+---
+
 ## [1.46.18] - 2026-03-31
 
 ### Fixed — Registration Update Request Body Format

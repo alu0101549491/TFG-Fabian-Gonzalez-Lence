@@ -35,7 +35,7 @@ export interface RegistrationProps {
   /** Participant's ranking. */
   ranking?: number;
   /** Seed number assigned (null if unseeded). */
-  seed?: number | null;
+  seedNumber?: number | null;
   /** Registration date. */
   registeredAt?: Date;
   /** Date the status was last updated. */
@@ -62,7 +62,7 @@ export class Registration {
   public readonly status: RegistrationStatus;
   public readonly acceptanceType: AcceptanceType;
   public readonly ranking: number;
-  public readonly seed: number | null;
+  public readonly seedNumber: number | null;
   public readonly registeredAt: Date;
   public readonly updatedAt: Date;
   public readonly tournament?: Tournament;
@@ -76,7 +76,7 @@ export class Registration {
     this.status = props.status ?? RegistrationStatus.PENDING;
     this.acceptanceType = props.acceptanceType ?? AcceptanceType.DIRECT_ACCEPTANCE;
     this.ranking = props.ranking ?? 0;
-    this.seed = props.seed ?? null;
+    this.seedNumber = props.seedNumber ?? null;
     this.registeredAt = props.registeredAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
     this.tournament = props.tournament;
