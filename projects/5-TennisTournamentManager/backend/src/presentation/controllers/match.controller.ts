@@ -79,18 +79,32 @@ export class MatchController {
    */
   public async getByBracket(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {bracketId} = req.query;
+      const {bracketId, participantId} = req.query;
       const matchRepository = AppDataSource.getRepository(Match);
       
-      // If bracketId is provided, filter by bracket; otherwise return all matches
-      const matches = bracketId
-        ? await matchRepository.find({
-            where: {bracketId: bracketId as string},
-            relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
-          })
-        : await matchRepository.find({
-            relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
-          });
+      // Build where clause dynamically based on query parameters
+      let whereClause: any = {};
+      if (bracketId) {
+        whereClause.bracketId = bracketId as string;
+      }
+      
+      // If participantId is provided, use OR condition to find matches where user is either participant
+      let matches: Match[];
+      if (participantId) {
+        matches = await matchRepository.find({
+          where: [
+            {...whereClause, participant1Id: participantId as string},
+            {...whereClause, participant2Id: participantId as string},
+          ],
+          relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
+        });
+      } else {
+        // If no participantId, filter by bracket or return all matches
+        matches = await matchRepository.find({
+          where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
+          relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
+        });
+      }
       
       // Enrich with seed information
       const enrichedMatches = await this.enrichMatchesWithSeeds(matches);

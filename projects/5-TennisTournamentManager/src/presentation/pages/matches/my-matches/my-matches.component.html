@@ -1,19 +1,36 @@
 <div class="my-matches-container">
-  <div class="page-header">
-    <h1>My Matches</h1>
-    <p class="subtitle">View and submit results for your matches</p>
-  </div>
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-top">
+        <button
+          class="back-button"
+          (click)="goBack()"
+          type="button"
+          title="Go back">
+          ← Back
+        </button>
+      </div>
+      <h1 class="hero-title">My Matches 🎾</h1>
+      <p class="hero-subtitle">View and submit results for your matches</p>
+    </div>
+  </section>
 
-  @if (isLoading()) {
-    <div class="loading-state">
-      <p>Loading your matches...</p>
-    </div>
-  } @else if (errorMessage()) {
-    <div class="error-banner">
-      <p>{{ errorMessage() }}</p>
-      <button (click)="loadMyMatches()">Retry</button>
-    </div>
-  } @else {
+  <!-- Main Content -->
+  <main class="main-content">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading your matches...</p>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="error-banner">
+        <div class="error-icon">⚠️</div>
+        <p>{{ errorMessage() }}</p>
+        <button class="btn-primary" (click)="loadMyMatches()">Retry</button>
+      </div>
+    } @else {
     <!-- To Be Played Matches -->
     @if (groupedMatches().toBePlayed.length > 0) {
       <section class="match-section">
@@ -30,41 +47,84 @@
               </div>
               
               <div class="match-body">
-                <div class="participants">
-                  <div class="participant">
-                    <span class="player-name">{{ match.participant1Name }}</span>
-                    @if (match.participant1?.seed) {
-                      <span class="seed-badge">Seed #{{ match.participant1.seed }}</span>
+                <div class="participants-grid">
+                  <!-- Participant 1 -->
+                  <div class="participant-box">
+                    @if (match.participant1) {
+                      <div class="participant-content">
+                        <div class="avatar">{{ getInitials(match.participant1.firstName, match.participant1.lastName) }}</div>
+                        <div class="participant-details">
+                          <h3 class="participant-name">{{ match.participant1Name }}</h3>
+                          @if (match.participant1.email) {
+                            <p class="participant-email">{{ match.participant1.email }}</p>
+                          }
+                          @if (match.participant1.seed) {
+                            <span class="seed-badge">Seed #{{ match.participant1.seed }}</span>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="participant-tbd">
+                        <span class="tbd-icon">❓</span>
+                        <span class="tbd-text">TBD</span>
+                      </div>
                     }
                   </div>
-                  <span class="vs">vs</span>
-                  <div class="participant">
-                    <span class="player-name">{{ match.participant2Name }}</span>
-                    @if (match.participant2?.seed) {
-                      <span class="seed-badge">Seed #{{ match.participant2.seed }}</span>
+
+                  <!-- VS Divider -->
+                  <div class="vs-divider">
+                    <span class="vs-text">VS</span>
+                  </div>
+
+                  <!-- Participant 2 -->
+                  <div class="participant-box">
+                    @if (match.participant2) {
+                      <div class="participant-content">
+                        <div class="avatar">{{ getInitials(match.participant2.firstName, match.participant2.lastName) }}</div>
+                        <div class="participant-details">
+                          <h3 class="participant-name">{{ match.participant2Name }}</h3>
+                          @if (match.participant2.email) {
+                            <p class="participant-email">{{ match.participant2.email }}</p>
+                          }
+                          @if (match.participant2.seed) {
+                            <span class="seed-badge">Seed #{{ match.participant2.seed }}</span>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="participant-tbd">
+                        <span class="tbd-icon">❓</span>
+                        <span class="tbd-text">TBD</span>
+                      </div>
                     }
                   </div>
                 </div>
 
-                @if (match.scheduledTime) {
-                  <div class="match-info">
-                    <strong>Scheduled:</strong> {{ match.scheduledTime | date: 'medium' }}
+                <!-- Match Information -->
+                <div class="match-info-grid">
+                  <div class="info-item">
+                    <span class="info-icon">📅</span>
+                    <div class="info-content">
+                      <span class="info-label">Scheduled</span>
+                      <span class="info-value">{{ match.scheduledTime ? (match.scheduledTime | date: 'short') : 'Not scheduled' }}</span>
+                    </div>
                   </div>
-                }
-
-                @if (match.courtName) {
-                  <div class="match-info">
-                    <strong>Court:</strong> {{ match.courtName }}
+                  <div class="info-item">
+                    <span class="info-icon">🏟️</span>
+                    <div class="info-content">
+                      <span class="info-label">Court</span>
+                      <span class="info-value">{{ match.courtName || 'Not assigned' }}</span>
+                    </div>
                   </div>
-                }
+                </div>
               </div>
 
               <div class="match-actions">
                 <button class="btn-primary" (click)="openResultModal(match)">
-                  Enter Result
+                  ✏️ Enter Result
                 </button>
                 <button class="btn-secondary" (click)="viewMatchDetail(match.id)">
-                  View Details
+                  👁️ View Details
                 </button>
               </div>
             </div>
@@ -85,28 +145,79 @@
             <div class="match-card completed">
               <div class="match-header">
                 <span class="match-number">Match #{{ match.matchNumber }}</span>
-                <span class="winner-badge">Winner: {{ match.winner?.username || 'TBD' }}</span>
+                <span class="round-badge">Round {{ match.round }}</span>
               </div>
               
               <div class="match-body">
-                <div class="participants">
-                  <div class="participant" [class.winner]="match.winnerId === match.participant1Id">
-                    <span class="player-name">{{ match.participant1Name }}</span>
-                  </div>
-                  <span class="score-display">
-                    @for (score of match.scores; track score.id) {
-                      <span>{{ score.player1Games }}-{{ score.player2Games }}</span>
+                <div class="participants-grid">
+                  <!-- Participant 1 -->
+                  <div class="participant-box" [class.winner]="match.winnerId === match.participant1Id">
+                    @if (match.participant1) {
+                      <div class="participant-content">
+                        <div class="avatar">{{ getInitials(match.participant1.firstName, match.participant1.lastName) }}</div>
+                        <div class="participant-details">
+                          <h3 class="participant-name">
+                            {{ match.participant1Name }}
+                            @if (match.winnerId === match.participant1Id) {
+                              <span class="winner-crown">👑</span>
+                            }
+                          </h3>
+                          @if (match.participant1.email) {
+                            <p class="participant-email">{{ match.participant1.email }}</p>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="participant-tbd">
+                        <span class="tbd-icon">❓</span>
+                        <span class="tbd-text">TBD</span>
+                      </div>
                     }
-                  </span>
-                  <div class="participant" [class.winner]="match.winnerId === match.participant2Id">
-                    <span class="player-name">{{ match.participant2Name }}</span>
+                  </div>
+
+                  <!-- Score Display -->
+                  <div class="score-divider">
+                    @if (match.scores && match.scores.length > 0) {
+                      <div class="score-sets">
+                        @for (score of match.scores; track score.id) {
+                          <span class="score-set">{{ score.player1Games }}-{{ score.player2Games }}</span>
+                        }
+                      </div>
+                    } @else {
+                      <span class="vs-text">VS</span>
+                    }
+                  </div>
+
+                  <!-- Participant 2 -->
+                  <div class="participant-box" [class.winner]="match.winnerId === match.participant2Id">
+                    @if (match.participant2) {
+                      <div class="participant-content">
+                        <div class="avatar">{{ getInitials(match.participant2.firstName, match.participant2.lastName) }}</div>
+                        <div class="participant-details">
+                          <h3 class="participant-name">
+                            {{ match.participant2Name }}
+                            @if (match.winnerId === match.participant2Id) {
+                              <span class="winner-crown">👑</span>
+                            }
+                          </h3>
+                          @if (match.participant2.email) {
+                            <p class="participant-email">{{ match.participant2.email }}</p>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="participant-tbd">
+                        <span class="tbd-icon">❓</span>
+                        <span class="tbd-text">TBD</span>
+                      </div>
+                    }
                   </div>
                 </div>
               </div>
 
               <div class="match-actions">
                 <button class="btn-secondary" (click)="viewMatchDetail(match.id)">
-                  View Details
+                  👁️ View Details
                 </button>
               </div>
             </div>
@@ -148,98 +259,111 @@
 
     @if (matches().length === 0) {
       <div class="empty-state">
-        <p>You don't have any matches yet.</p>
+        <div class="empty-icon">🎾</div>
+        <h3>No Matches Yet</h3>
         <p class="help-text">Register for a tournament to participate in matches.</p>
         <a routerLink="/tournaments" class="btn-primary">Browse Tournaments</a>
       </div>
     }
   }
+  </main>
 
   <!-- Result Entry Modal -->
   @if (showResultModal() && selectedMatch()) {
     <div class="modal-overlay" (click)="closeResultModal()">
       <div class="modal-content" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h2>Enter Match Result</h2>
-          <button class="close-btn" (click)="closeResultModal()">&times;</button>
+          <h3>🎾 Enter Match Result</h3>
+          <button class="close-btn" (click)="closeResultModal()">×</button>
         </div>
 
-        <div class="modal-body">
-          <div class="match-summary">
-            <p>
-              <strong>{{ selectedMatch()!.participant1Name }}</strong> vs 
-              <strong>{{ selectedMatch()!.participant2Name }}</strong>
-            </p>
-          </div>
-
-          <form (submit)="submitResult(); $event.preventDefault()">
+        <form (submit)="submitResult(); $event.preventDefault()">
+          <div class="modal-body">
             <!-- Winner Selection -->
             <div class="form-group">
-              <label>Select Winner *</label>
-              <div class="winner-buttons">
-                <button
-                  type="button"
-                  class="winner-btn"
-                  [class.selected]="resultForm().winnerId === selectedMatch()!.participant1Id"
-                  (click)="selectWinner(selectedMatch()!.participant1Id!)">
-                  {{ selectedMatch()!.participant1Name }}
-                </button>
-                <button
-                  type="button"
-                  class="winner-btn"
-                  [class.selected]="resultForm().winnerId === selectedMatch()!.participant2Id"
-                  (click)="selectWinner(selectedMatch()!.participant2Id!)">
-                  {{ selectedMatch()!.participant2Name }}
-                </button>
+              <label>Winner</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    [(ngModel)]="resultForm().winnerId"
+                    [value]="selectedMatch()!.participant1Id"
+                    name="winnerId"
+                    (change)="selectWinner(selectedMatch()!.participant1Id!)"
+                    required
+                  />
+                  <span>{{ selectedMatch()!.participant1Name }}</span>
+                </label>
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    [(ngModel)]="resultForm().winnerId"
+                    [value]="selectedMatch()!.participant2Id"
+                    name="winnerId"
+                    (change)="selectWinner(selectedMatch()!.participant2Id!)"
+                    required
+                  />
+                  <span>{{ selectedMatch()!.participant2Name }}</span>
+                </label>
               </div>
             </div>
 
             <!-- Set Scores -->
             <div class="form-group">
-              <label>Set Scores *</label>
-              <div class="set-scores">
-                @for (score of [0, 1, 2]; track score) {
-                  <input
-                    type="text"
-                    placeholder="e.g. 6-4"
-                    [(ngModel)]="resultForm().setScores[score]"
-                    (ngModelChange)="updateSetScore(score, $event)"
-                    [name]="'setScore' + score"
-                    class="set-input" />
-                }
-              </div>
-              <p class="help-text">Enter scores in format "6-4", "7-6(3)", etc.</p>
-            </div>
-
-            <!-- Optional Comments -->
-            <div class="form-group">
-              <label>Comments (optional)</label>
-              <textarea
-                [(ngModel)]="resultForm().playerComments"
-                name="playerComments"
-                rows="3"
-                placeholder="Any additional comments about the match..."></textarea>
+              <label>Sets</label>
+              @for (set of resultForm().sets; track $index) {
+                <div class="set-input set-row">
+                  <label>SET {{ $index + 1 }}</label>
+                  <div class="score-inputs">
+                    <input
+                      type="number"
+                      [(ngModel)]="set.participant1Score"
+                      [name]="'set' + $index + 'p1'"
+                      min="0"
+                      max="7"
+                      placeholder="0"
+                    />
+                    <span class="vs-text">-</span>
+                    <input
+                      type="number"
+                      [(ngModel)]="set.participant2Score"
+                      [name]="'set' + $index + 'p2'"
+                      min="0"
+                      max="7"
+                      placeholder="0"
+                    />
+                    @if (resultForm().sets.length > 1) {
+                      <button type="button" class="remove-set-btn" (click)="removeSet($index)">×</button>
+                    }
+                  </div>
+                </div>
+              }
+              @if (resultForm().sets.length < 5) {
+                <button type="button" class="add-set-btn" (click)="addSet()">+ Add Set</button>
+              }
             </div>
 
             @if (errorMessage()) {
-              <div class="error-message">{{ errorMessage() }}</div>
+              <div class="error-alert">
+                <span>⚠️</span>
+                <span>{{ errorMessage() }}</span>
+              </div>
             }
 
-            <div class="modal-actions">
-              <button type="button" class="btn-secondary" (click)="closeResultModal()">
-                Cancel
-              </button>
-              <button type="submit" class="btn-primary" [disabled]="isLoading()">
-                {{ isLoading() ? 'Submitting...' : 'Submit Result' }}
-              </button>
-            </div>
-
-            <p class="info-note">
+            <div class="info-note">
               ℹ️ Your opponent will need to confirm this result before it becomes official.
-            </p>
-          </form>
-        </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" (click)="closeResultModal()" [disabled]="isLoading()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="isLoading()">
+              {{ isLoading() ? 'Submitting...' : 'Submit Result' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   }
-</div>

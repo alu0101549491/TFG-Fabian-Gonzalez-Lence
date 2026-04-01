@@ -30,17 +30,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Displays match details: opponents, seeds, court, scheduled time
   - "Enter Result" button for SCHEDULED matches
 - **Result Entry Modal**:
-  - Winner selection buttons for both participants
-  - Set score inputs (3 sets) with format validation (e.g., "6-4", "7-6(3)")
-  - Optional comments field
-  - Clear info message: "Your opponent will need to confirm this result"
+  - Matches the "Record Match Scores" admin modal styling exactly
+  - Tennis ball icon (🎾) in modal header
+  - Circular close button (32px) with gray background
+  - Flex layout structure with proper overflow handling for long forms
+  - Radio button cards for winner selection with green highlight (#rgba(46, 125, 50, 0.1))
+  - Structured set input with labeled rows (SET 1, SET 2, SET 3)
+  - Number inputs (0-7) for scores separated by dash, 90px wide, 48px tall, center-aligned
+  - Remove set button (×) with red styling (36px circle)
+  - "+ Add Set" button to dynamically add up to 5 sets (green border, fills on hover)
+  - Modal footer separated with border-top
+  - Blue info banner at bottom about opponent confirmation requirement
+  - Mobile responsive: full-screen on small devices, reduced padding on short screens
 - **Service Layer**: Added `MatchService.getMatchesByCurrentUser()` to fetch participant's matches
 - **Navigation**: Added "My Matches" link in dashboard quick links (points to `/my-matches`)
+
+**UI/UX Improvements**:
+- **Hero Section**: Added modern gradient hero with tennis ball icon
+- **Back Button**: Added "← Back" button in hero section for easy navigation to dashboard
+- **Modern Styling**: Updated to match app-wide design system
+  - CSS custom properties (--color-primary, --spacing-lg, etc.)
+  - Consistent card shadows and hover effects
+  - Gradient backgrounds on badges and buttons
+  - Smooth animations and transitions
+- **Redesigned Match Cards**: Complete visual overhaul inspired by Match Details page
+  - **Avatar Circles**: Display participant initials in colored circular avatars
+  - **Participant Cards**: Clean card layout with names, emails, and seed badges
+  - **VS Divider**: Prominent visual separator between participants
+  - **Score Display**: Dark badges for set scores in completed matches
+  - **Winner Indication**: 👑 crown emoji and green gradient for winners
+  - **Match Information Grid**: Structured display of scheduled time and court with icons
+  - **TBD State**: Improved placeholder design for unassigned participants
+- **Responsive Design**: Mobile-optimized layout with stacked participant cards on small screens
+- **Empty State**: Improved with icon and clear call-to-action
+- **Loading State**: Animated spinner with modern styling
 
 **Fixed**:
 - Import path for `AuthStateService` (was incorrectly importing from @application/services instead of @presentation/services)
 - Replaced non-existent `MatchStatus.TO_BE_PLAYED` with correct enum value `MatchStatus.SCHEDULED`
 - Added type annotation for `currentUserId` computed signal to resolve TypeScript type inference issue
+- My Matches page now correctly uses `getMatchesByParticipant()` method instead of non-existent `getMatchesByCurrentUser()`
+- Fixed name formatting to use `firstName` and `lastName` from `MatchParticipant` DTO instead of non-existent `username` field
 
 **User Flow**:
 1. Participant navigates to "My Matches" from dashboard
