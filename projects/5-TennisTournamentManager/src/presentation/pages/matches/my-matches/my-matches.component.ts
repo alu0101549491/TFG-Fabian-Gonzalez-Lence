@@ -33,6 +33,13 @@ interface EnhancedMatch extends MatchDto {
   isMyTurn: boolean;
   opponentId: string | null;
   opponentName: string | null;
+  pendingResult?: {
+    id: string;
+    submittedBy: string;
+    winnerId: string;
+    setScores: string[];
+    confirmationStatus: string;
+  } | null;
 }
 
 /**
@@ -75,6 +82,19 @@ export class MyMatchesComponent implements OnInit {
       completed: completedMatches,
       other: otherMatches,
     };
+  });
+
+  /** Matches with pending results requiring confirmation */
+  public pendingMatches = computed(() => {
+    const toBePlayed = this.groupedMatches().toBePlayed;
+    const pending = toBePlayed.filter(m => m.pendingResult);
+    return pending;
+  });
+
+  /** Matches to be played without pending results */
+  public toBePlayedWithoutPending = computed(() => {
+    const toBePlayed = this.groupedMatches().toBePlayed;
+    return toBePlayed.filter(m => !m.pendingResult);
   });
 
   /** Loading state */
@@ -145,7 +165,7 @@ export class MyMatchesComponent implements OnInit {
         
         const opponentName = isParticipant1 ? participant2Name : participant1Name;
 
-        return {
+        const enhanced = {
           ...match,
           participant1Name,
           participant2Name,
@@ -153,7 +173,10 @@ export class MyMatchesComponent implements OnInit {
           isMyTurn: match.status === MatchStatus.SCHEDULED,
           opponentId,
           opponentName,
+          pendingResult: (match as any).pendingResult || null,
         };
+
+        return enhanced;
       });
 
       this.matches.set(enhanced);
@@ -311,5 +334,155 @@ export class MyMatchesComponent implements OnInit {
       ...form,
       winnerId: participantId,
     }));
+  }
+
+  /**
+   * Confirms a pending match result (FR25).
+   *
+   * @param match - The match with pending result
+   */
+  public async confirmResult(match: EnhancedMatch): Promise<void> {
+    if (!match.pendingResult) {
+      return;
+    }
+
+    const userId = this.currentUserId();
+    if (!userId) {
+      this.errorMessage.set('User not authenticated');
+      return;
+    }
+
+    // Verify user is not the submitter
+    if (match.pendingResult.submittedBy === userId) {
+      this.errorMessage.set('You cannot confirm your own result');
+      return;
+    }
+
+    const confirm = window.confirm(
+      `Confirm this result?\n\nWinner: ${match.pendingResult.winnerId === match.participant1Id ? match.participant1Name : match.participant2Name}\nScores: ${match.pendingResult.setScores.join(', ')}`
+    );
+
+    if (!confirm) {
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      await this.matchService.confirmMatchResult(match.id);
+      alert('Result confirmed successfully!');
+      await this.loadMyMatches();
+    } catch (error) {
+      console.error('Error confirming result:', error);
+      this.errorMessage.set('Failed to confirm result. Please try again.');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  /** Show dispute modal */
+  public showDisputeModal = signal(false);
+
+  /** Match for dispute */
+  public disputeMatch = signal<EnhancedMatch | null>(null);
+
+  /** Dispute reason */
+  public disputeReason = signal('');
+
+  /**
+   * Opens the dispute modal.
+   *
+   * @param match - The match with pending result
+   */
+  public openDisputeModal(match: EnhancedMatch): void {
+    if (!match.pendingResult) {
+      return;
+    }
+
+    const userId = this.currentUserId();
+    if (!userId) {
+      this.errorMessage.set('User not authenticated');
+      return;
+    }
+
+    // Verify user is not the submitter
+    if (match.pendingResult.submittedBy === userId) {
+      this.errorMessage.set('You cannot dispute your own result');
+      return;
+    }
+
+    this.disputeMatch.set(match);
+    this.disputeReason.set('');
+    this.showDisputeModal.set(true);
+  }
+
+  /**
+   * Closes the dispute modal.
+   */
+  public closeDisputeModal(): void {
+    this.showDisputeModal.set(false);
+    this.disputeMatch.set(null);
+    this.disputeReason.set('');
+  }
+
+  /**
+   * Submits a dispute for a pending result (FR26).
+   */
+  public async submitDispute(): Promise<void> {
+    const match = this.disputeMatch();
+    const reason = this.disputeReason();
+
+    if (!match || !reason.trim()) {
+      this.errorMessage.set('Please provide a reason for disputing');
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      await this.matchService.disputeMatchResult(match.id, reason);
+      alert('Result disputed successfully. An administrator will review it.');
+      this.closeDisputeModal();
+      await this.loadMyMatches();
+    } catch (error) {
+      console.error('Error disputing result:', error);
+      this.errorMessage.set('Failed to dispute result. Please try again.');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  /**
+   * Checks if the current user needs to confirm a result.
+   *
+   * @param match - The match to check
+   * @returns True if user needs to confirm
+   */
+  public needsConfirmation(match: EnhancedMatch): boolean {
+    const userId = this.currentUserId();
+    if (!userId || !match.pendingResult) {
+      return false;
+    }
+
+    // User needs to confirm if they're not the submitter
+    return match.pendingResult.submittedBy !== userId;
+  }
+
+  /**
+   * Checks if the current user is waiting for confirmation.
+   *
+   * @param match - The match to check
+   * @returns True if user is waiting
+   */
+  public isWaitingForConfirmation(match: EnhancedMatch): boolean {
+    const userId = this.currentUserId();
+    if (!userId || !match.pendingResult) {
+      return false;
+    }
+
+    // User is waiting if they submitted the result
+    return match.pendingResult.submittedBy === userId;
   }
 }

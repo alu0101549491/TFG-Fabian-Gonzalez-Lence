@@ -32,14 +32,14 @@
       </div>
     } @else {
     <!-- To Be Played Matches -->
-    @if (groupedMatches().toBePlayed.length > 0) {
+    @if (toBePlayedWithoutPending().length > 0) {
       <section class="match-section">
         <h2>
           <span class="status-badge status-tbp">To Be Played</span>
-          ({{ groupedMatches().toBePlayed.length }})
+          ({{ toBePlayedWithoutPending().length }})
         </h2>
         <div class="matches-list">
-          @for (match of groupedMatches().toBePlayed; track match.id) {
+          @for (match of toBePlayedWithoutPending(); track match.id) {
             <div class="match-card">
               <div class="match-header">
                 <span class="match-number">Match #{{ match.matchNumber }}</span>
@@ -127,6 +127,103 @@
                   👁️ View Details
                 </button>
               </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Pending Confirmations Section -->
+    @if (pendingMatches().length > 0) {
+      <section class="match-section pending-section">
+        <h2>
+          <span class="status-badge status-pending">⏳ Pending Confirmation</span>
+          ({{ pendingMatches().length }})
+        </h2>
+        <div class="matches-list">
+          @for (match of pendingMatches(); track match.id) {
+            <div class="match-card pending-card">
+              <div class="match-header">
+                <span class="match-number">Match #{{ match.matchNumber }}</span>
+                <span class="round-badge">Round {{ match.round }}</span>
+                @if (needsConfirmation(match)) {
+                  <span class="action-required-badge">⚠️ Action Required</span>
+                }
+              </div>
+              
+              <div class="match-body">
+                <!-- Submitted Result Display -->
+                <div class="result-banner">
+                  <h4>📋 Submitted Result</h4>
+                  @if (match.pendingResult) {
+                    <div class="result-details">
+                      <div class="result-scores">
+                        <strong>Scores:</strong> {{ match.pendingResult.setScores.join(', ') }}
+                      </div>
+                      <div class="result-winner">
+                        <strong>Winner:</strong> 
+                        {{ match.pendingResult.winnerId === match.participant1Id ? match.participant1Name : match.participant2Name }}
+                      </div>
+                      @if (isWaitingForConfirmation(match)) {
+                        <div class="waiting-message">
+                          ⏳ Waiting for opponent to confirm...
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <!-- Participants with Winner Indication -->
+                <div class="participants-grid">
+                  <div class="participant-box" [class.potential-winner]="match.pendingResult?.winnerId === match.participant1Id">
+                    @if (match.participant1) {
+                      <div class="participant-content">
+                        <div class="avatar">{{ getInitials(match.participant1.firstName, match.participant1.lastName) }}</div>
+                        <div class="participant-details">
+                          <h3 class="participant-name">
+                            {{ match.participant1Name }}
+                            @if (match.pendingResult?.winnerId === match.participant1Id) {
+                              <span class="potential-crown">🏆</span>
+                            }
+                          </h3>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="vs-divider">
+                    <span class="vs-text">VS</span>
+                  </div>
+
+                  <div class="participant-box" [class.potential-winner]="match.pendingResult?.winnerId === match.participant2Id">
+                    @if (match.participant2) {
+                      <div class="participant-content">
+                        <div class="avatar">{{ getInitials(match.participant2.firstName, match.participant2.lastName) }}</div>
+                        <div class="participant-details">
+                          <h3 class="participant-name">
+                            {{ match.participant2Name }}
+                            @if (match.pendingResult?.winnerId === match.participant2Id) {
+                              <span class="potential-crown">🏆</span>
+                            }
+                          </h3>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons for Confirmation/Dispute -->
+              @if (needsConfirmation(match)) {
+                <div class="match-actions confirmation-actions">
+                  <button class="btn-confirm" (click)="confirmResult(match)">
+                    ✅ Confirm Result
+                  </button>
+                  <button class="btn-dispute" (click)="openDisputeModal(match)">
+                    ⚠️ Dispute Result
+                  </button>
+                </div>
+              }
             </div>
           }
         </div>
@@ -367,3 +464,64 @@
       </div>
     </div>
   }
+
+  <!-- Dispute Result Modal -->
+  @if (showDisputeModal() && disputeMatch()) {
+    <div class="modal-overlay" (click)="closeDisputeModal()">
+      <div class="modal-content modal-dispute" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>⚠️ Dispute Match Result</h3>
+          <button class="close-btn" (click)="closeDisputeModal()">×</button>
+        </div>
+
+        <form (submit)="submitDispute(); $event.preventDefault()">
+          <div class="modal-body">
+            <!-- Submitted Result Display -->
+            @if (disputeMatch()!.pendingResult) {
+              <div class="result-summary">
+                <h4>Submitted Result</h4>
+                <div class="result-info">
+                  <p><strong>Winner:</strong> {{ disputeMatch()!.pendingResult!.winnerId === disputeMatch()!.participant1Id ? disputeMatch()!.participant1Name : disputeMatch()!.participant2Name }}</p>
+                  <p><strong>Scores:</strong> {{ disputeMatch()!.pendingResult!.setScores.join(', ') }}</p>
+                </div>
+              </div>
+            }
+
+            <!-- Dispute Reason -->
+            <div class="form-group">
+              <label for="disputeReason">Reason for Dispute *</label>
+              <textarea
+                id="disputeReason"
+                [(ngModel)]="disputeReason"
+                [ngModelOptions]="{standalone: true}"
+                rows="4"
+                placeholder="Please explain why you disagree with this result..."
+                required
+              ></textarea>
+            </div>
+
+            @if (errorMessage()) {
+              <div class="error-alert">
+                <span>⚠️</span>
+                <span>{{ errorMessage() }}</span>
+              </div>
+            }
+
+            <div class="warning-note">
+              ⚠️ An administrator will review your dispute and make a final decision.
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" (click)="closeDisputeModal()" [disabled]="isLoading()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-dispute" [disabled]="isLoading()">
+              {{ isLoading() ? 'Submitting...' : 'Submit Dispute' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

@@ -356,7 +356,7 @@
                   <th>Category</th>
                   <th>Status</th>
                   <th>Registered On</th>
-                  @if (registeredPlayers()[0]?.registration.seed !== null) {
+                  @if (registeredPlayers()[0]?.registration.seedNumber !== null) {
                     <th>Seed</th>
                   }
                 </tr>
@@ -389,9 +389,9 @@
                       </span>
                     </td>
                     <td>{{ formatDate(player.registration.registeredAt) }}</td>
-                    @if (player.registration.seed !== null) {
+                    @if (player.registration.seedNumber !== null) {
                       <td>
-                        <strong>{{ player.registration.seed }}</strong>
+                        <strong>{{ player.registration.seedNumber }}</strong>
                       </td>
                     }
                   </tr>

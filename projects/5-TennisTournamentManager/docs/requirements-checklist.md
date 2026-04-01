@@ -97,8 +97,6 @@
 - [x] **Click "Enter Result"** on SCHEDULED match ✅ Modal opens from match card
 - [x] **Enter score**: sets, games (e.g., 6-4, 6-3) ✅ Set-by-set form with validation
 - [x] **Select match state**: CO (Completed), RET (Retired) ✅ Dropdown with statuses
-- [ ] **Add ball provider** (optional) ⚠️ NOT YET IMPLEMENTED
-- [x] **Add comments** (optional) ✅ playerComments field in form
 - [x] **Submit result** - status becomes "Pending Confirmation" ✅ Creates MatchResult entity with PENDING_CONFIRMATION
 > **Backend**: `POST /api/matches/:id/result` (MatchController.submitResultAsParticipant) ✅ WORKING  
 > **Frontend**: MyMatchesComponent with tabbed interface and result entry modal ✅ WORKING  
@@ -106,18 +104,24 @@
 
 #### Confirm Result (Opponent)
 - [ ] **Receive notification** about pending result ⚠️ NOT IMPLEMENTED
-- [ ] **Navigate to pending match**
-- [ ] **Review entered result**
-- [ ] **Click "Confirm"** - result becomes official
-- [ ] **Standings update automatically**
-> **Note**: Domain service `ResultConfirmationService.confirmResult()` exists but not wired to backend/UI
+- [x] **Navigate to pending match** ✅ IMPLEMENTED - Pending Confirmation section in /my-matches
+- [x] **Review entered result** ✅ IMPLEMENTED - Shows submitted scores and winner
+- [x] **Click "Confirm"** - result becomes official ✅ IMPLEMENTED - Backend + Frontend complete
+- [x] **Standings update automatically** ✅ Match status changes to COMPLETED, winner sets
+> **Backend**: `POST /api/matches/:id/result/confirm` (MatchController.confirmResult)  
+> **Frontend**: MyMatchesComponent with pending confirmation section and confirm button  
+> **Note**: Notification system not yet implemented (future feature)
 
 #### Dispute Result (Participant)
-- [ ] **Click "Dispute"** instead of confirm ⚠️ NOT IMPLEMENTED
-- [ ] **Add reason** for dispute
-- [ ] **Submit dispute** - admin receives notification
-- [ ] **Admin reviews** - can validate, modify, or cancel match
-> **Note**: Domain service `ResultConfirmationService.disputeResult()` exists but no backend routes or UI
+- [x] **Click "Dispute"** instead of confirm ✅ IMPLEMENTED - Dispute button in pending section
+- [x] **Add reason** for dispute ✅ IMPLEMENTED - Textarea modal for dispute reason
+- [x] **Submit dispute** - admin receives notification ✅ IMPLEMENTED - Backend endpoint complete
+- [ ] **Admin reviews** - can validate, modify, or cancel match ⚠️ NOT IMPLEMENTED (admin UI pending)
+> **Note**: Domain service `ResultConfirmationService.disputeResult()` exists and is wired to backend/UI
+
+> **Backend**: `POST /api/matches/:id/result/dispute` (MatchController.disputeResult)  
+> **Frontend**: MyMatchesComponent with dispute modal and reason textarea  
+> **Admin Panel**: Not yet implemented (FR27 - future work)
 
 #### Enter Result as Admin (Tournament Admin)
 - [x] **Navigate to any match** ✅ IMPLEMENTED

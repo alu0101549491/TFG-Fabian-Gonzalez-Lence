@@ -20,6 +20,7 @@ import {Registration} from '../../domain/entities/registration.entity';
 import {Court} from '../../domain/entities/court.entity';
 import {Bracket} from '../../domain/entities/bracket.entity';
 import {Match} from '../../domain/entities/match.entity';
+import {MatchResult} from '../../domain/entities/match-result.entity';
 import {Phase} from '../../domain/entities/phase.entity';
 import {Score} from '../../domain/entities/score.entity';
 import {Standing} from '../../domain/entities/standing.entity';
@@ -173,13 +174,19 @@ export class TournamentController {
    * Deletes a tournament and all its related data (brackets, matches, phases, categories, registrations, courts).
    * 
    * Cascade deletion order:
-   * 1. Registrations (reference tournament and category)
-   * 2. Matches (reference brackets)
-   * 3. Phases (reference brackets)
-   * 4. Brackets (reference categories)
-   * 5. Categories (reference tournament)
-   * 6. Courts (reference tournament)
-   * 7. Tournament
+   * 1. Announcements (reference tournament)
+   * 2. Order of play (reference tournament)
+   * 3. Statistics (reference tournament)
+   * 4. Registrations (reference tournament and category)
+   * 5. Match results (reference matches) - MUST BE DELETED BEFORE MATCHES
+   * 6. Scores (reference matches) - MUST BE DELETED BEFORE MATCHES
+   * 7. Matches (reference brackets)
+   * 8. Phases (reference brackets)
+   * 9. Brackets (reference categories)
+   * 10. Standings (reference categories)
+   * 11. Categories (reference tournament)
+   * 12. Courts (reference tournament)
+   * 13. Tournament
    * 
    * Authorization:
    * - System admins can delete any tournament (including finalized)
@@ -202,6 +209,7 @@ export class TournamentController {
       const courtRepository = AppDataSource.getRepository(Court);
       const bracketRepository = AppDataSource.getRepository(Bracket);
       const matchRepository = AppDataSource.getRepository(Match);
+      const matchResultRepository = AppDataSource.getRepository(MatchResult);
       const phaseRepository = AppDataSource.getRepository(Phase);
       const scoreRepository = AppDataSource.getRepository(Score);
       const standingRepository = AppDataSource.getRepository(Standing);
@@ -278,11 +286,13 @@ export class TournamentController {
         const brackets = await bracketRepository.find({where: {categoryId: category.id}});
         
         for (const bracket of brackets) {
-          // 2a-i. Get all matches for this bracket to delete their scores first
+          // 2a-i. Get all matches for this bracket to delete their scores and results first
           const matches = await matchRepository.find({where: {bracketId: bracket.id}});
           
           for (const match of matches) {
-            // Delete scores first (they reference matches)
+            // Delete match results first (they reference matches)
+            await matchResultRepository.delete({matchId: match.id});
+            // Delete scores (they reference matches)
             await scoreRepository.delete({matchId: match.id});
           }
           

@@ -1,0 +1,318 @@
+<div class="disputed-matches-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-top">
+        <button
+          class="back-button"
+          (click)="goBack()"
+          type="button"
+          title="Go back">
+          ← Back
+        </button>
+      </div>
+      <h1 class="hero-title">Disputed Matches ⚠️</h1>
+      <p class="hero-subtitle">Review and resolve disputed results</p>
+    </div>
+  </section>
+
+  <main class="main-content">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading disputed results...</p>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="error-banner">
+      <div class="error-icon">⚠️</div>
+      <p>{{ errorMessage() }}</p>
+      <button class="btn-primary" (click)="loadDisputedResults()">Retry</button>
+    </div>
+  } @else if (disputedResults().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">✅</div>
+      <p>No disputed results to review</p>
+      <p class="empty-subtitle">All match results are confirmed</p>
+    </div>
+  } @else {
+    <div class="disputed-list">
+      @for (result of disputedResults(); track result.id) {
+        <div class="dispute-card">
+          <!-- Card Header -->
+          <div class="dispute-header">
+            <div class="header-left">
+              <span class="match-number">Match #{{ result.match?.matchNumber }}</span>
+              <span class="round-badge">Round {{ result.match?.round }}</span>
+            </div>
+            <div class="header-right">
+              <span class="dispute-badge">⚠️ DISPUTED</span>
+            </div>
+          </div>
+
+          <div class="dispute-body">
+            <!-- Participants Grid with Avatars -->
+            <div class="participants-grid">
+              <!-- Participant 1 -->
+              <div class="participant-box" [class.declared-winner]="result.winnerId === result.match?.participant1?.id">
+                <div class="participant-content">
+                  <div class="avatar">
+                    {{ getInitials(result.match?.participant1) }}
+                  </div>
+                  <div class="participant-details">
+                    <h4 class="participant-name">
+                      {{ getFullName(result.match?.participant1) }}
+                      @if (result.winnerId === result.match?.participant1?.id) {
+                        <span class="crown-icon">🏆</span>
+                      }
+                    </h4>
+                    @if (result.match?.participant1?.email) {
+                      <p class="participant-email">{{ result.match.participant1.email }}</p>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- VS Divider with Scores -->
+              <div class="vs-divider">
+                <span class="vs-text">VS</span>
+                <div class="scores-display">
+                  @for (score of result.setScores; track $index) {
+                    <span class="score-badge">{{ score }}</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Participant 2 -->
+              <div class="participant-box" [class.declared-winner]="result.winnerId === result.match?.participant2?.id">
+                <div class="participant-content">
+                  <div class="avatar">
+                    {{ getInitials(result.match?.participant2) }}
+                  </div>
+                  <div class="participant-details">
+                    <h4 class="participant-name">
+                      {{ getFullName(result.match?.participant2) }}
+                      @if (result.winnerId === result.match?.participant2?.id) {
+                        <span class="crown-icon">🏆</span>
+                      }
+                    </h4>
+                    @if (result.match?.participant2?.email) {
+                      <p class="participant-email">{{ result.match.participant2.email }}</p>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dispute Information Panel -->
+            <div class="dispute-info-panel">
+              <div class="info-section">
+                <div class="section-header">
+                  <span class="section-icon">⚠️</span>
+                  <h4 class="section-title">Dispute Reason</h4>
+                </div>
+                <div class="section-content">
+                  <p class="dispute-reason-text">{{ result.disputeReason }}</p>
+                </div>
+              </div>
+
+              @if (result.playerComments) {
+                <div class="info-section">
+                  <div class="section-header">
+                    <span class="section-icon">💬</span>
+                    <h4 class="section-title">Additional Comments</h4>
+                  </div>
+                  <div class="section-content">
+                    <p class="comments-text">{{ result.playerComments }}</p>
+                  </div>
+                </div>
+              }
+
+              <!-- Metadata -->
+              <div class="dispute-metadata">
+                <div class="metadata-item">
+                  <span class="metadata-icon">📅</span>
+                  <span class="metadata-label">Disputed on:</span>
+                  <span class="metadata-value">{{ formatDate(result.disputedAt) }}</span>
+                </div>
+                @if (result.match?.tournament?.name) {
+                  <div class="metadata-item">
+                    <span class="metadata-icon">🏆</span>
+                    <span class="metadata-label">Tournament:</span>
+                    <span class="metadata-value">{{ result.match.tournament.name }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="dispute-actions">
+            <button class="btn-resolve" (click)="openResolutionModal(result)">
+              <span class="btn-icon">✅</span>
+              <span class="btn-text">Resolve Dispute</span>
+            </button>
+            <button class="btn-annul" (click)="openAnnulModal(result)">
+              <span class="btn-icon">❌</span>
+              <span class="btn-text">Annul Match</span>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</main>
+</div>
+
+<!-- Resolution Modal -->
+@if (showModal() && selectedResult()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>⚖️ Resolve Dispute - Match #{{ selectedResult()!.match?.matchNumber }}</h3>
+        <button class="close-btn" (click)="closeModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Match Info -->
+        <div class="modal-match-info">
+          <p><strong>{{ getFullName(selectedResult()!.match?.participant1) }}</strong> vs <strong>{{ getFullName(selectedResult()!.match?.participant2) }}</strong></p>
+          <p class="dispute-reason-modal"><strong>Dispute Reason:</strong> {{ selectedResult()!.disputeReason }}</p>
+        </div>
+
+        <!-- Winner Selection -->
+        <div class="form-group">
+          <label>Select Winner</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input
+                type="radio"
+                [checked]="resolutionForm().winnerId === selectedResult()!.match?.participant1?.id"
+                (change)="updateWinnerId(selectedResult()!.match?.participant1?.id!)"
+                name="winnerId"
+              />
+              <span>{{ getFullName(selectedResult()!.match?.participant1) }}</span>
+            </label>
+            <label class="radio-label">
+              <input
+                type="radio"
+                [checked]="resolutionForm().winnerId === selectedResult()!.match?.participant2?.id"
+                (change)="updateWinnerId(selectedResult()!.match?.participant2?.id!)"
+                name="winnerId"
+              />
+              <span>{{ getFullName(selectedResult()!.match?.participant2) }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Set Scores -->
+        <div class="form-group">
+          <label>Sets</label>
+          @for (set of resolutionForm().sets; track $index) {
+            <div class="set-row">
+              <label>SET {{ $index + 1 }}</label>
+              <div class="score-inputs">
+                <input
+                  type="number"
+                  [value]="set.participant1Score"
+                  (input)="updateParticipant1Score($index, $any($event.target).valueAsNumber || 0)"
+                  min="0"
+                  max="7"
+                  placeholder="0"
+                />
+                <span class="vs-text">-</span>
+                <input
+                  type="number"
+                  [value]="set.participant2Score"
+                  (input)="updateParticipant2Score($index, $any($event.target).valueAsNumber || 0)"
+                  min="0"
+                  max="7"
+                  placeholder="0"
+                />
+                @if (resolutionForm().sets.length > 1) {
+                  <button type="button" class="remove-set-btn" (click)="removeSet($index)">×</button>
+                }
+              </div>
+            </div>
+          }
+          @if (resolutionForm().sets.length < 5) {
+            <button type="button" class="add-set-btn" (click)="addSet()">+ Add Set</button>
+          }
+        </div>
+
+        <!-- Resolution Notes -->
+        <div class="form-group">
+          <label>Resolution Notes (optional)</label>
+          <textarea
+            class="form-textarea"
+            [value]="resolutionForm().resolutionNotes"
+            (input)="updateResolutionNotes($any($event.target).value)"
+            placeholder="Explain the resolution decision..."
+            rows="3"
+          ></textarea>
+        </div>
+
+        <!-- Info Note -->
+        <div class="info-note">
+          ℹ️ This will finalize the match result. Both players will be notified.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeModal()" [disabled]="isLoading()">
+          Cancel
+        </button>
+        <button type="button" class="btn-primary" (click)="resolveDispute()" [disabled]="isLoading()">
+          {{ isLoading() ? 'Resolving...' : '✅ Confirm Resolution' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Annul Modal -->
+@if (showAnnulModal() && selectedResult()) {
+  <div class="modal-overlay" (click)="closeAnnulModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>🗑️ Annul Match Result</h3>
+        <button class="close-btn" (click)="closeAnnulModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Match Info -->
+        <div class="modal-match-info">
+          <p><strong>{{ getFullName(selectedResult()!.match?.participant1) }}</strong> vs <strong>{{ getFullName(selectedResult()!.match?.participant2) }}</strong></p>
+          <p class="dispute-reason-modal"><strong>Match #{{ selectedResult()!.match?.matchNumber }}</strong> - Round {{ selectedResult()!.match?.round }}</p>
+        </div>
+
+        <!-- Warning -->
+        <div class="error-alert">
+          <span>⚠️</span>
+          <span>If neither result is correct, annul and require both players to resubmit.</span>
+        </div>
+
+        <!-- Annul Reason -->
+        <div class="form-group">
+          <label>Annul Reason *</label>
+          <textarea
+            class="form-textarea"
+            [value]="annulReason()"
+            (input)="updateAnnulReason($any($event.target).value)"
+            placeholder="Explain why this match result is being annulled..."
+            rows="4"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeAnnulModal()" [disabled]="isLoading()">
+          Cancel
+        </button>
+        <button type="button" class="btn-annul" (click)="annulResult()" [disabled]="isLoading() || !annulReason().trim()">
+          {{ isLoading() ? 'Annulling...' : '🗑️ Annul Match' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

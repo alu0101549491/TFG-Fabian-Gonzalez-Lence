@@ -85,6 +85,9 @@ export class MatchRepositoryImpl implements IMatchRepository {
     if (response.courtName !== undefined) {
       (match as any).courtName = response.courtName;
     }
+    if (response.pendingResult !== undefined) {
+      (match as any).pendingResult = response.pendingResult;
+    }
     
     return match;
   }
@@ -273,6 +276,31 @@ export class MatchRepositoryImpl implements IMatchRepository {
     }
   ): Promise<any> {
     const response = await this.httpClient.post(`/matches/${matchId}/result`, data);
+    return response;
+  }
+
+  /**
+   * Confirms a pending match result (FR25).
+   *
+   * @param matchId - ID of the match
+   * @returns Confirmed match result
+   */
+  public async confirmResult(matchId: string): Promise<any> {
+    const response = await this.httpClient.post(`/matches/${matchId}/result/confirm`, {});
+    return response;
+  }
+
+  /**
+   * Disputes a pending match result (FR26).
+   *
+   * @param matchId - ID of the match
+   * @param disputeReason - Reason for disputing the result
+   * @returns Disputed match result
+   */
+  public async disputeResult(matchId: string, disputeReason: string): Promise<any> {
+    const response = await this.httpClient.post(`/matches/${matchId}/result/dispute`, {
+      disputeReason,
+    });
     return response;
   }
 }

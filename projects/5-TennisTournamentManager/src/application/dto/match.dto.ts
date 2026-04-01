@@ -52,6 +52,13 @@ export interface MatchDto {
   participant1?: MatchParticipant | null;
   participant2?: MatchParticipant | null;
   winner?: MatchParticipant | null;
+  pendingResult?: {
+    id: string;
+    submittedBy: string;
+    winnerId: string;
+    setScores: string[];
+    confirmationStatus: string;
+  } | null;
 }
 
 /** DTO for updating match status. */

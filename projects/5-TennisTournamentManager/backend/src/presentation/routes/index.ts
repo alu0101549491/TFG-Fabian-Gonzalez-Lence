@@ -31,6 +31,7 @@ import {PaymentController} from '../controllers/payment.controller';
 import {SanctionController} from '../controllers/sanction.controller';
 import {AuditLogController} from '../controllers/audit-log.controller';
 import {authMiddleware} from '../middleware/auth.middleware';
+import {adminMiddleware} from '../middleware/admin.middleware';
 import {roleMiddleware} from '../middleware/role.middleware';
 import {uploadImage} from '../middlewares/upload.middleware';
 import {apiCache, noCache} from '../middlewares/cache.middleware';
@@ -1351,6 +1352,188 @@ router.post('/matches/:id/score', authMiddleware, roleMiddleware([UserRole.SYSTE
  *         $ref: '#/components/responses/NotFound'
  */
 router.post('/matches/:id/result', authMiddleware, matchController.submitResultAsParticipant.bind(matchController));
+
+/**
+ * @swagger
+ * /matches/{id}/result/confirm:
+ *   post:
+ *     tags: [Matches]
+ *     summary: Confirm match result (FR25)
+ *     description: Opponent confirms pending result, making it official
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Match ID
+ *     responses:
+ *       200:
+ *         description: Result confirmed successfully
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Not authorized (not the opponent or trying to confirm own result)
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.post('/matches/:id/result/confirm', authMiddleware, matchController.confirmResult.bind(matchController));
+
+/**
+ * @swagger
+ * /matches/{id}/result/dispute:
+ *   post:
+ *     tags: [Matches]
+ *     summary: Dispute match result (FR26)
+ *     description: Opponent disputes pending result, requiring admin review
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Match ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - disputeReason
+ *             properties:
+ *               disputeReason:
+ *                 type: string
+ *                 description: Reason for disputing the result
+ *     responses:
+ *       200:
+ *         description: Result disputed successfully
+ *       400:
+ *         description: Missing dispute reason
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Not authorized (not the opponent or trying to dispute own result)
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.post('/matches/:id/result/dispute', authMiddleware, matchController.disputeResult.bind(matchController));
+
+/**
+ * @swagger
+ * /admin/matches/disputed:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get all disputed match results (FR27)
+ *     description: Retrieves all match results with DISPUTED status for admin review
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of disputed results with match details
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Admin access required
+ */
+router.get('/admin/matches/disputed', authMiddleware, adminMiddleware, matchController.getDisputedResults.bind(matchController));
+
+/**
+ * @swagger
+ * /admin/matches/{id}/result/resolve:
+ *   put:
+ *     tags: [Admin]
+ *     summary: Resolve disputed match result (FR27)
+ *     description: Admin confirms or modifies disputed result
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Match ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - winnerId
+ *               - setScores
+ *             properties:
+ *               winnerId:
+ *                 type: string
+ *                 description: Winner participant ID
+ *               setScores:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Set scores (e.g., ["6-4", "6-3"])
+ *               resolutionNotes:
+ *                 type: string
+ *                 description: Admin notes explaining the resolution
+ *     responses:
+ *       200:
+ *         description: Dispute resolved successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Admin access required
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.put('/admin/matches/:id/result/resolve', authMiddleware, adminMiddleware, matchController.resolveDispute.bind(matchController));
+
+/**
+ * @swagger
+ * /admin/matches/{id}/result/annul:
+ *   delete:
+ *     tags: [Admin]
+ *     summary: Annul disputed match result (FR27)
+ *     description: Admin annuls disputed result and resets match
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Match ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - annulReason
+ *             properties:
+ *               annulReason:
+ *                 type: string
+ *                 description: Reason for annulling the result
+ *     responses:
+ *       200:
+ *         description: Result annulled successfully
+ *       400:
+ *         description: Missing annul reason
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Admin access required
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/admin/matches/:id/result/annul', authMiddleware, adminMiddleware, matchController.annulResult.bind(matchController));
 
 /**
  * @swagger

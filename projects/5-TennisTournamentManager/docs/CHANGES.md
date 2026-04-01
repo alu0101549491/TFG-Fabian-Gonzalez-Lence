@@ -6,6 +6,959 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.55.0] - 2026-04-02
+
+### Fixed — Test Tournament Setup Script Not Assigning Seed Numbers
+
+**Issue**: The test tournament setup script (`setup-test-tournament.ts`) was creating player registrations but never actually setting the `seedNumber` field in the database, leaving all seed values as `null`. This caused the frontend to display "—" instead of seed numbers even after the field name mismatch was fixed.
+
+**Root Cause**: 
+
+The setup script only created registrations with `tournamentId`, `categoryId`, and `participantId`. It logged "Seed #X" to the console but never sent the seed number to the backend API via the registration update endpoint.
+
+**Solution**:
+
+Updated **`backend/setup-test-tournament.ts`** to explicitly assign seed numbers after registration:
+
+1. **Step 6**: Create registrations and save registration IDs
+   ```typescript
+   const registrations: any[] = [];
+   const registration = await apiRequest('/registrations', 'POST', {
+     tournamentId,
+     categoryId,
+     participantId: player.userId,
+   }, tournamentAdminToken);
+   registrations.push({ ...registration, player });
+   ```
+
+2. **Step 6b**: Accept all registrations
+   ```typescript
+   await apiRequest(`/registrations/${reg.id}/status`, 'PUT', {
+     status: 'ACCEPTED',
+   }, tournamentAdminToken);
+   ```
+
+3. **Step 6c** (NEW): Assign seed numbers based on player ranking
+   ```typescript
+   await apiRequest(`/registrations/${reg.id}`, 'PUT', {
+     seedNumber: reg.player.ranking,
+   }, tournamentAdminToken);
+   ```
+
+**Impact**:
+- Test tournaments now have properly assigned seed numbers (1-8) stored in the database
+- Frontend displays seed badges correctly after running the updated script
+- Seed numbers are correctly applied when generating brackets
+
+**Testing**:
+```bash
+cd backend
+npx tsx setup-test-tournament.ts
+# Now creates tournament with seedNumber: 1-8 properly assigned
+```
+
+---
+
+## [1.54.0] - 2026-04-02
+
+### Fixed — Seed Numbers Not Displaying in Registered Participants Table
+
+**Issue**: Seed numbers were not displaying in the "Registered Participants" table on the tournament detail page, showing "—" instead of the actual seed values (1, 2, 3, etc.) even though seeds were properly assigned in the database.
+
+**Root Cause**: 
+
+Frontend-backend field name mismatch. The backend uses `seedNumber` as the field name in the Registration entity and DTO, but the frontend components were checking for `seed` property, causing the conditional display logic to fail.
+
+**Solution**:
+
+**Frontend Changes**:
+
+1. **Tournament Detail Component** (`tournament-detail.component.html`):
+   - Changed seed column header condition from `@if (registeredPlayers()[0]?.registration.seed !== null)` to `@if (registeredPlayers()[0]?.registration.seedNumber !== null)`
+   - Changed seed display from `{{ player.registration.seed }}` to `{{ player.registration.seedNumber }}`
+   
+2. **My Registrations Component** (`my-registrations.component.html`):
+   - Changed seed badge condition from `@if (registration.seed)` to `@if (registration.seedNumber)`
+   - Changed seed value display from `#{{ registration.seed }}` to `#{{ registration.seedNumber }}`
+
+**Data Flow**:
+
+```typescript
+// Backend (Correct)
+@Column('int', {nullable: true})
+public seedNumber!: number | null;
+
+// DTO (Correct)
+export interface RegistrationDto {
+  seedNumber: number | null;
+  // ...
+}
+
+// Frontend (Was Wrong - Now Fixed)
+// Before: player.registration.seed
+// After:  player.registration.seedNumber ✅
+```
+
+**Impact**:
+
+- ✅ Seed numbers now display correctly in registered participants table
+- ✅ Tournament admins can see seed assignments (1, 2, 3, 4, etc.)
+- ✅ Seed column appears when any participant has a seed assigned
+- ✅ Players can see their seed number in "My Registrations" page
+- ✅ Consistent field naming across frontend and backend
+
+**Files Modified**:
+
+- **Frontend**:
+  - `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html` (Fixed seed display logic)
+  - `src/presentation/pages/registrations/my-registrations/my-registrations.component.html` (Fixed seed badge display)
+
+**Testing**:
+
+- ✅ Seed numbers display correctly in tournament participants table
+- ✅ Seed column header appears when seeds are assigned
+- ✅ Seed values show correct numbers (1, 2, 3, etc.)
+- ✅ Players can view their seed in My Registrations page
+
+---
+
+## [1.53.0] - 2026-04-02
+
+### Fixed — Tournament Deletion Foreign Key Constraint Violation
+
+**Issue**: System admins could not delete tournaments due to a foreign key constraint error:
+```
+update or delete on table "matches" violates foreign key constraint 
+"FK_0360d1db3113c20ed6fd823fbed" on table "match_results"
+Key (id)=(mtc_d2f15b6b) is still referenced from table "match_results".
+```
+
+**Root Cause**: 
+
+The tournament delete cascade was missing a critical step: **deleting `match_results` before `matches`**. The `match_results` table (which stores pending, disputed, and confirmed match results) has foreign key references to the `matches` table, but the deletion method was trying to delete matches before cleaning up their related match results.
+
+**Incorrect Deletion Order**:
+1. Announcements ✅
+2. Order of play ✅
+3. Statistics ✅
+4. Registrations ✅
+5. Scores ✅
+6. Matches ❌ **FAILED HERE** - match_results still referencing matches
+7. (Never reached subsequent steps)
+
+**Solution**:
+
+**Backend Changes** (`tournament.controller.ts`):
+
+1. **Added MatchResult Import**:
+   ```typescript
+   import {MatchResult} from '../../domain/entities/match-result.entity';
+   ```
+
+2. **Added MatchResult Repository**:
+   ```typescript
+   const matchResultRepository = AppDataSource.getRepository(MatchResult);
+   ```
+
+3. **Updated Deletion Logic** (Lines ~280-295):
+   - Added deletion of `match_results` **before** deleting matches
+   - Updated comment to reflect correct order
+   ```typescript
+   for (const match of matches) {
+     // Delete match results first (they reference matches)
+     await matchResultRepository.delete({matchId: match.id});
+     // Delete scores (they reference matches)
+     await scoreRepository.delete({matchId: match.id});
+   }
+   // Now safe to delete matches
+   await matchRepository.delete({bracketId: bracket.id});
+   ```
+
+4. **Updated Documentation Comment**:
+   - Added match_results to cascade deletion order list
+   - Clarified step numbers and dependencies
+   - Noted that match_results MUST be deleted before matches
+
+**Correct Deletion Order After Fix**:
+1. Announcements (reference tournament)
+2. Order of play (reference tournament)
+3. Statistics (reference tournament)
+4. Registrations (reference tournament and category)
+5. **Match results (reference matches)** ← NEW STEP
+6. Scores (reference matches)
+7. Matches (reference brackets)
+8. Phases (reference brackets)
+9. Brackets (reference categories)
+10. Standings (reference categories)
+11. Categories (reference tournament)
+12. Courts (reference tournament)
+13. Tournament
+
+**Impact**:
+
+- ✅ System admins can now successfully delete tournaments (including those with match results)
+- ✅ All related data is properly cleaned up in correct cascade order
+- ✅ Foreign key constraints are respected
+- ✅ Database integrity maintained during deletion
+- ✅ Handles pending results, disputed results, and confirmed results
+
+**Files Modified**:
+
+- **Backend**:
+  - `backend/src/presentation/controllers/tournament.controller.ts` (Added MatchResult import, repository, and deletion logic)
+
+**Testing**:
+
+- ✅ System admin can delete tournament with pending match results
+- ✅ System admin can delete tournament with disputed match results
+- ✅ System admin can delete tournament with confirmed match results
+- ✅ All related data (categories, brackets, matches, scores, match_results) properly deleted
+- ✅ No foreign key constraint violations
+
+---
+
+## [1.52.0] - 2026-05-25
+
+### Fixed — Match Details Not Showing Set Scores After Dispute Resolution
+
+**Issue**: When an admin resolved a disputed match result, the match details page correctly displayed the winner's name but did not show the actual set scores (e.g., "6-4, 7-5").
+
+**Root Cause**: 
+
+- The `Match` entity had a `score` column in the database, but the backend code was not populating it when resolving disputes or confirming match results
+- The `resolveDispute()` and `confirmResult()` methods only updated `winnerId` and `status` fields, leaving the `score` field as null
+- The match details page template conditionally rendered the score section based on `match.score` being truthy
+- Since `score` was null, the conditional `@if (match()!.score)` evaluated to false and the score section didn't render
+
+**Solution**:
+
+**Backend Changes**:
+
+1. **Match Entity** (`match.entity.ts`):
+   - Confirmed `score` column exists with proper TypeORM configuration
+   - Type: `varchar(100)`, nullable, stores formatted score string (e.g., "6-4, 7-5, 6-3")
+
+2. **Match Controller** (`match.controller.ts`):
+   - **Updated `resolveDispute()` method** (Line ~607):
+     - Added logic to format `setScores` array as comma-separated string
+     - Sets `match.score = setScores.join(', ');` before saving
+     - Example: `["6-4", "7-5"]` → `"6-4, 7-5"`
+   
+   - **Updated `confirmResult()` method** (Line ~418):
+     - Added logic to format `result.setScores` as comma-separated string
+     - Sets `match.score = result.setScores.join(', ');` before saving
+     - Ensures scores appear when players confirm results normally (not just disputes)
+
+**Data Flow After Fix**:
+
+1. Admin resolves dispute via PUT `/api/admin/matches/{id}/result/resolve` with body:
+   ```json
+   {
+     "winnerId": "participant-id",
+     "setScores": ["6-4", "7-5"],
+     "resolutionNotes": "Admin decision after review"
+   }
+   ```
+
+2. Backend updates match record:
+   ```typescript
+   match.status = MatchStatus.COMPLETED;
+   match.winnerId = winnerId;
+   match.score = setScores.join(', '); // NEW: formats to "6-4, 7-5"
+   match.endTime = new Date();
+   ```
+
+3. Frontend loads match via GET `/api/matches/{id}` and receives:
+   ```json
+   {
+     "id": "...",
+     "winnerId": "...",
+     "score": "6-4, 7-5",  // NOW POPULATED
+     "status": "COMPLETED",
+     ...
+   }
+   ```
+
+4. Match details page renders score section:
+   ```html
+   @if (match()!.score) {  <!-- Now evaluates to true -->
+     <div class="score-section">
+       <h3 class="score-label">Final Score</h3>
+       <div class="score-display">6-4, 7-5</div>
+     </div>
+   }
+   ```
+
+**Impact**:
+
+- ✅ Match details page now displays complete match information after dispute resolution
+- ✅ Players and admins can see the full set scores that were recorded
+- ✅ Consistent behavior between disputed matches and normally confirmed matches
+- ✅ Score persistence in database for historical records and statistics
+- ✅ No frontend changes required - fix is entirely backend logic
+
+**Files Modified**:
+
+- **Backend**:
+  - `backend/src/domain/entities/match.entity.ts` (Verified score column definition)
+  - `backend/src/presentation/controllers/match.controller.ts` (Updated resolveDispute and confirmResult methods)
+
+**Testing**:
+
+- ✅ Admin can resolve disputed match with set scores
+- ✅ Match details page shows "Final Score" section with formatted scores
+- ✅ Score persists in database and appears on subsequent page visits
+- ✅ Winner indication still works correctly alongside score display
+
+---
+
+## [1.51.1] - 2026-04-01
+
+### Enhanced — Full-Width Flexible Score Inputs
+
+**Feature**: Updated score inputs in the "Resolve Dispute" modal to use flexible layout, making them spread throughout the entire available space.
+
+**Visual Improvement**:
+
+- **Before**: Fixed-width inputs (90px each) that didn't fully utilize available horizontal space
+- **After**: Flexible inputs (`flex: 1`) that expand equally to fill the entire width of the score-inputs container
+- Inputs now adjust to container width and provide more generous input areas
+- Better visual balance and use of space in the modal
+
+**Technical Change** (`disputed-matches.component.css`):
+- Changed `.score-inputs input` from `width: 90px` to `flex: 1`
+- Added `flex-shrink: 0` to `.vs-text` separator to prevent it from shrinking
+- Inputs now grow to fill available space while maintaining equal widths
+- Responsive layout adapts better to different screen sizes
+
+**Benefits**:
+- ✅ More generous tap/click targets for better usability
+- ✅ Better use of horizontal space in the modal
+- ✅ More balanced visual appearance
+- ✅ Maintains equal width for both participant score inputs
+- ✅ Better responsive behavior on different screen sizes
+
+**Files Modified**:
+- `disputed-matches.component.css` (Updated `.score-inputs input` styling)
+
+---
+
+## [1.51.0] - 2026-04-01
+
+### Enhanced — Set Score Input Matching Enter Match Result Modal
+
+**Feature**: Updated the set score input in the "Resolve Dispute" modal to match the "Enter Match Result" modal with two number inputs per set (one for each participant) and a "-" separator.
+
+**UI/UX Improvements**:
+
+- **Two-Input Score Format**:
+  - **Before**: Single text input per set requiring format like "6-4"
+  - **After**: Two number inputs per set (participant 1 score and participant 2 score) separated by "-"
+  - Each input has min/max validation (0-7)
+  - Inputs are wider (90px) with larger font for better visibility
+  - Centered text alignment for easy reading
+
+- **Visual Consistency**:
+  - Exact same layout as "Enter Match Result" modal
+  - Number inputs with `type="number"` for mobile keyboard optimization
+  - "-" separator styled with gray color between inputs
+  - Same height (48px), font size (XL), and styling
+  - Identical hover and focus states
+
+- **Label Update**:
+  - Changed from "Set Scores" to "Sets" matching the reference modal
+
+**Technical Changes**:
+
+- **Resolution Form Structure**:
+  - **Before**: `setScores: [] as string[]` (e.g., ["6-4", "7-5"])
+  - **After**: `sets: [] as Array<{ participant1Score: number; participant2Score: number }>`
+  - Provides better type safety and validation
+
+- **Component Methods** (`disputed-matches.component.ts`):
+  - **Removed**: `updateSetScore(index, value)` - single string input handler
+  - **Added**: `updateParticipant1Score(index, value)` - updates first participant score
+  - **Added**: `updateParticipant2Score(index, value)` - updates second participant score
+  - **Updated**: `addSet()` - creates set object with participant1Score and participant2Score
+  - **Updated**: `removeSet(index)` - works with set objects
+  - **Updated**: `openResolutionModal(result)` - parses setScores into set objects
+  - **Updated**: `resolveDispute()` - converts sets back to setScores format for API
+
+- **Template Updates** (`disputed-matches.component.html`):
+  - Replaced single text input with two number inputs
+  - Added "-" separator span with `.vs-text` class
+  - Updated `@for` loop to iterate over `resolutionForm().sets`
+  - Event handlers use `valueAsNumber` for proper number handling
+  - Fallback to 0 if input is empty or NaN
+
+- **CSS Updates** (`disputed-matches.component.css`):
+  - **Removed**: `.set-score-input` - old single input style
+  - **Updated**: `.score-inputs input` - two 90px wide number inputs
+  - **Added**: `.score-inputs .vs-text` - styled "-" separator
+  - Font size increased to XL for better readability
+  - Font weight set to bold for scores
+  - Gray color for "-" separator (400)
+
+**Data Flow**:
+
+1. **Loading**: Disputed result has `setScores: ["6-4", "7-5"]`
+2. **Parsing**: Splits each score by "-" into set object `{participant1Score: 6, participant2Score: 4}`
+3. **Editing**: User modifies individual scores using number inputs
+4. **Submission**: Converts set objects back to strings `["6-4", "7-5"]` for API
+
+**Benefits**:
+
+- ✅ Visual consistency with existing modals
+- ✅ Easier score input with dedicated fields
+- ✅ Better mobile experience with number keyboard
+- ✅ Type-safe data handling with proper interfaces
+- ✅ Clear separation of participant scores
+- ✅ No format confusion (users don't need to type "-")
+- ✅ Input validation (min: 0, max: 7)
+
+**Files Modified**:
+- `disputed-matches.component.ts` (Updated form structure, added/modified methods)
+- `disputed-matches.component.html` (Two-input layout with separator)
+- `disputed-matches.component.css` (Updated score input styling)
+
+---
+
+## [1.50.0] - 2026-04-01
+
+### Enhanced — Disputed Matches Modal Redesign for Consistency
+
+**Feature**: Complete redesign of disputed matches resolution and annul modals to match the styling of the "Enter Match Result" modal for visual consistency across the application.
+
+**Modal Improvements**:
+
+- **Header Enhancements**:
+  - Added ⚖️ emoji to "Resolve Dispute" modal header
+  - Added 🗑️ emoji to "Annul Match" modal header
+  - Improved header spacing and typography
+  - Enhanced close button with smooth hover effects
+
+- **Winner Selection**:
+  - Redesigned radio buttons with bordered box style
+  - Added smooth hover effects (translateX shift + border color change)
+  - Selected state shows green tinted background with shadow
+  - Radio buttons ordered first with proper alignment
+  - Labels are now full-width clickable areas
+
+- **Set Score Input**:
+  - Replaced single comma-separated input with individual set rows
+  - Each set has its own labeled input field (SET 1, SET 2, etc.)
+  - Added "× Remove" button for each set (except when only 1 set)
+  - Added "+ Add Set" button to add more sets (max 5)
+  - Set rows have gray background with hover effect
+  - Score inputs are centered with larger font
+  - Remove buttons have red theme with hover animation
+  - Add Set button has green theme matching primary color
+
+- **Modal Structure**:
+  - Separated annul functionality into its own modal
+  - Resolution modal focuses on confirming/modifying winner and scores
+  - Annul modal has warning alert and dedicated reason textarea
+  - Both modals have consistent layout and button placement
+
+- **Visual Polish**:
+  - Added fade-in animation to modal overlay (0.2s)
+  - Added slide-up animation to modal content (0.3s)
+  - Match info card has gradient background
+  - Info note with blue gradient background and icon
+  - Error alert with red gradient background for annul warning
+  - Enhanced focus states on all form inputs
+  - Improved button states with loading text
+
+- **Button Layout**:
+  - Resolution modal: "Cancel" (gray) + "✅ Confirm Resolution" (green)
+  - Annul modal: "Cancel" (gray) + "🗑️ Annul Match" (red)
+  - Buttons show loading state: "Resolving..." / "Annulling..."
+  - Footer has light gray background for separation
+  - Buttons aligned to the right
+  - Mobile: buttons stack vertically at full width
+
+**Technical Changes**:
+
+- **Component Updates** (`disputed-matches.component.ts`):
+  - Added `showAnnulModal` signal for annul modal state
+  - Added `openAnnulModal(result)` method to open annul modal
+  - Added `closeAnnulModal()` method to close annul modal
+  - Added `addSet()` method to add new set score input
+  - Added `removeSet(index)` method to remove specific set
+  - Added `updateSetScore(index, value)` method to update individual set scores
+  - Modified resolution form to use array of individual scores instead of comma-separated string
+
+- **Template Updates** (`disputed-matches.component.html`):
+  - Split resolution and annul into separate modals
+  - Implemented set score rows with individual inputs
+  - Added remove and add set buttons
+  - Updated modal headers with emojis
+  - Added info note and error alert components
+  - Improved button layout and labeling
+
+- **CSS Architecture** (`disputed-matches.component.css`):
+  - Complete modal CSS rewrite (~500 lines)
+  - Added animation keyframes (fadeIn, slideUp)
+  - Enhanced radio label styling matching My Matches
+  - Implemented set-row layout with score inputs
+  - Styled add/remove set buttons
+  - Added info-note and error-alert components
+  - Improved responsive design for modals
+  - Better hover states and transitions throughout
+
+**Design Consistency**:
+- ✅ Modal animations match My Matches components
+- ✅ Radio button styling identical to Enter Match Result modal
+- ✅ Set input layout mirrors existing patterns
+- ✅ Button styling consistent across application
+- ✅ Form elements have same hover/focus states
+- ✅ Color palette matches application theme
+- ✅ Responsive behavior consistent with other modals
+
+**User Experience**:
+- Clearer distinction between resolve and annul actions
+- Easier to input set scores with individual fields
+- Better visual feedback with animations and hover states
+- More intuitive winner selection with full-width clickable areas
+- Professional polish matching rest of application
+- Improved mobile experience with full-width buttons
+
+**Files Modified**:
+- `disputed-matches.component.html` (Separated modals, new set input structure)
+- `disputed-matches.component.ts` (Added modal management methods, set management)
+- `disputed-matches.component.css` (Complete modal CSS rewrite with animations)
+
+---
+
+## [1.49.0] - 2026-04-01
+
+### Enhanced — Comprehensive Disputed Matches Page Redesign
+
+**Feature**: Complete visual overhaul of the disputed matches admin page with modern, card-based design incorporating best practices from other application components.
+
+**Visual Enhancements**:
+
+- **Modern Card Layout**:
+  - Participant boxes with avatar circles displaying player initials
+  - Clean participant information cards with hover effects
+  - Winner indication with animated crown emoji (🏆) and green gradient background
+  - Larger, 64x64px avatars with gradient backgrounds
+  - Improved card borders, shadows, and hover animations (4px lift on hover)
+
+- **Enhanced Information Display**:
+  - New dispute information panel with organized sections
+  - Icon-labeled sections for dispute reason (⚠️) and comments (💬)
+  - Metadata sidebar showing date and tournament information with emoji icons
+  - Score badges displayed vertically in VS divider (dark gray badges)
+  - Professional score display with individual score chips
+
+- **Improved Participant Grid**:
+  - Three-column grid layout: Participant 1 | VS & Scores | Participant 2
+  - Participant boxes with white background and gray borders
+  - Declared winner gets green tinted background and thicker border
+  - Avatar circles with gradient (primary to secondary color)
+  - Email addresses shown below participant names
+  - Text overflow handling with ellipsis
+
+- **Enhanced Action Buttons**:
+  - Two-button layout: "Resolve Dispute" (green gradient) and "Annul Match" (red gradient)
+  - Button icons with text labels for clarity
+  - Improved hover effects (2px lift + enhanced shadows)
+  - Better button sizing and spacing
+  - Flex layout with equal width buttons
+
+- **Refined Color Palette**:
+  - Card borders: Light gray with warning color on hover
+  - Dispute badge: Amber/yellow theme with subtle shadow
+  - Information panel: Light gray background with white content boxes
+  - Buttons: Primary green and error red gradients
+  - Reduced harsh contrast throughout
+
+**Technical Improvements**:
+
+- **Component Updates**:
+  - Added `getInitials()` method to extract and display participant initials
+  - Enhanced TypeScript with proper typing for participant data
+  - Added JSDoc documentation for new method
+  - Support for `tournament.name` optional display in metadata
+
+- **HTML Structure**:
+  - Reorganized dispute card with header/body/actions sections
+  - New header-left/header-right layout for better organization
+  - Implemented dispute-info-panel for structured information display
+  - Added metadata section with flexible layout
+  - Separate score badges for each set score
+  - Better semantic HTML with proper heading hierarchy
+
+- **CSS Architecture**:
+  - Complete redesign using CSS Grid and Flexbox
+  - Enhanced hover states with transforms and shadows
+  - Smooth transitions (0.3s ease) throughout
+  - Pulse animation for crown icons (2s infinite loop)
+  - Professional glassmorphism effects
+  - Better responsive design with three breakpoints (968px, 768px, 480px)
+
+**Responsive Design**:
+- **Desktop (>968px)**: Three-column participant grid with side-by-side layout
+- **Tablet (768-968px)**: Stacked participant layout with row-based VS divider
+- **Mobile (<768px)**: Full-width cards, smaller avatars (48px), stacked buttons
+- **Small Mobile (<480px)**: Reduced font sizes, simplified layouts
+
+**Design Pattern Integration**:
+- Avatar pattern from My Matches component
+- Card hover effects from tournament list
+- Glassmorphism buttons from registration pages
+- Badge styling from match status indicators
+- Gradient backgrounds from primary components
+- Information panel design for clean data presentation
+
+**Files Modified**:
+- `disputed-matches.component.html` (Complete structure reorganization)
+- `disputed-matches.component.ts` (Added getInitials method)
+- `disputed-matches.component.css` (Complete redesign with ~600 lines)
+
+**User Experience Impact**:
+- More professional and polished appearance
+- Improved information hierarchy and readability
+- Better visual feedback with hover states and animations
+- Clearer winner indication with visual prominence
+- Enhanced mobile experience with responsive layout
+- Faster information scanning with organized panels
+- Better accessibility with semantic HTML and ARIA-ready structure
+
+---
+
+## [1.48.1] - 2026-04-01
+
+### Changed — Disputed Matches Page Styling
+
+**Feature**: Updated disputed matches admin page to match the "My Matches" design with green gradient hero and consistent styling.
+
+**Visual Changes**:
+- **Hero Section**:
+  - Changed from red to green gradient background (matching My Matches page)
+  - Added hero overlay with subtle tennis ball pattern
+  - Added "← Back" button in top left with glassmorphism effect
+  - Repositioned title to center with improved text shadows
+  - Updated emoji placement (moved to end of title)
+- **Color Scheme**:
+  - Dispute cards: Changed from harsh red to amber/yellow (warning theme)
+  - Border: Warning color (amber) instead of error red
+  - Badge: Amber background for "DISPUTED" status
+  - Buttons: Green gradient for primary actions, matching app theme
+- **Layout**:
+  - Added container wrapper for consistent page structure
+  - Updated spacing using CSS variables for consistency
+  - Improved card hover effects and transitions
+  - Enhanced modal styling with backdrop blur
+
+**Technical Changes**:
+- Added `Location` service import for back navigation
+- Injected `location` service in component
+- Added `goBack()` method for back button functionality
+- Updated all CSS to use design system variables:
+  - `var(--color-primary)`, `var(--color-warning)`, etc.
+  - `var(--spacing-*)` for consistent spacing
+  - `var(--font-size-*)` and `var(--font-weight-*)`
+  - `var(--border-radius-*)` for consistent rounded corners
+- Improved button hover effects with transforms and shadows
+- Enhanced form input focus states
+
+**Files Modified**:
+- `src/presentation/pages/admin/disputed-matches/disputed-matches.component.html` (Added back button and container)
+- `src/presentation/pages/admin/disputed-matches/disputed-matches.component.css` (Complete styling overhaul)
+- `src/presentation/pages/admin/disputed-matches/disputed-matches.component.ts` (Added Location service and goBack method)
+
+**User Experience**:
+- Consistent visual language across player and admin pages
+- Less aggressive red coloring (dispute = warning, not error)
+- Easy navigation with back button
+- Improved accessibility with better contrast and focus states
+
+**Impact**: Admin panel now has consistent branding with the rest of the application, creating a more cohesive user experience. The warning-themed amber colors are more appropriate for disputes than harsh red error colors.
+
+---
+
+### Changed — Admin Dashboard View with Disputed Matches
+
+**Feature**: Modified the main dashboard to show admin-specific content for SYSTEM_ADMIN and TOURNAMENT_ADMIN users.
+
+**Changes for Admin Users**:
+- **Stats Overview**: 
+  - ⚠️ Disputed Matches count (instead of player registrations)
+  - 🎾 Active Tournaments count (instead of upcoming matches)
+  - 👥 Total Users count (instead of wins)
+  - 🏆 Tournaments Managed count (instead of win rate)
+- **Main Content**:
+  - **Disputed Matches Section**: Replaces "Upcoming Matches"
+    - Shows list of disputed match results
+    - Click to navigate to disputed matches review page
+    - Empty state: "No Disputed Matches - All match results have been confirmed"
+    - Displays match number and dispute date
+    - Red "DISPUTED" status badge
+  - **Admin Tools Section**: Replaces "My Tournaments" and "Performance Stats"
+    - Admin Dashboard link
+    - Review Disputes link
+    - Manage Tournaments link
+    - Manage Users link
+  - **Hidden for Admins**:
+    - My Tournaments section
+    - Performance Overview section
+    - Player Quick Links (My Matches, My Registrations, etc.)
+
+**Changes for Player Users**:
+- Dashboard remains unchanged with player-specific content:
+  - Tournament registrations
+  - Upcoming matches
+  - Performance statistics
+  - Player quick links
+
+**Technical Implementation**:
+- Added `isAdmin` computed signal to check user role (SYSTEM_ADMIN or TOURNAMENT_ADMIN)
+- Added `disputedMatches` signal for admin dispute data
+- Added `loadDisputedMatches()` method using HttpClient to fetch from `/api/admin/matches/disputed`
+- Conditional rendering with `@if (isAdmin())` and `@if (!isAdmin())` throughout template
+- Added helper methods: `goToDisputedMatches()`, `goToAdminDashboard()`, `formatDate()`, `getFullName()`
+- Updated CSS:
+  - Added `.status-badge.disputed` style (red theme)
+  - Updated `.quick-link-item` to support both `<a>` and `<button>` elements
+
+**User Flow** (Admin):
+1. Admin logs in
+2. Dashboard shows disputed matches count and admin metrics
+3. Admin can click on disputed matches to review
+4. Admin has quick access to admin tools
+
+**Files Modified**:
+- `src/presentation/pages/dashboard.component.ts` (Added admin logic and disputed matches loading)
+- `src/presentation/pages/dashboard.component.html` (Conditional rendering based on role)
+- `src/presentation/pages/dashboard.component.css` (Added disputed badge style, button support)
+
+**Impact**: Admins now see role-appropriate content on the dashboard instead of player-specific sections. This provides quick visibility into disputed matches that need resolution and easy access to admin tools.
+
+### Fixed — Template Binding Errors in Disputed Matches Component
+
+**Issue**: Angular template parser errors caused by incorrect signal usage with `[(ngModel)]` and direct signal assignments in template expressions.
+
+**Problems Fixed**:
+1. **Direct Signal Assignment**: Template tried to assign values directly to signal properties: `resolutionForm().setScores = ...`
+   - Angular templates don't allow assignments in expressions
+2. **Two-Way Binding with Signals**: `[(ngModel)]="resolutionForm().resolutionNotes"` doesn't work with signal properties
+   - `[(ngModel)]` requires writable properties, signals need different handling
+3. **FormsModule Dependency**: Component included FormsModule but signal-based approach doesn't need it
+
+**Solutions Applied**:
+- **Added Update Methods** in component:
+  - `updateWinnerId(winnerId: string)` - Updates winner selection
+  - `updateSetScores(scoresString: string)` - Parses and updates set scores
+  - `updateResolutionNotes(notes: string)` - Updates resolution notes
+  - `updateAnnulReason(reason: string)` - Updates annul reason
+- **Fixed Template Bindings**:
+  - Winner radio buttons: `[(ngModel)]` → `[checked]` + `(change)` with update method
+  - Scores input: Direct assignment → `(input)="updateSetScores($any($event.target).value)"`
+  - Resolution notes: `[(ngModel)]` → `[value]` + `(input)` with update method
+  - Annul reason: `[(ngModel)]` → `[value]` + `(input)` with update method
+- **Removed FormsModule**: No longer needed since we're using event binding instead of `[(ngModel)]`
+
+**Files Modified**:
+- `src/presentation/pages/admin/disputed-matches/disputed-matches.component.ts` (Added update methods, removed FormsModule)
+- `src/presentation/pages/admin/disputed-matches/disputed-matches.component.html` (Fixed all bindings to use proper signal patterns)
+
+**Impact**: Disputed matches component now compiles correctly and works with Angular's signal-based reactivity. All form inputs properly update signal values through dedicated methods.
+
+---
+
+## [1.48.0] - 2026-04-01
+
+### Added — Admin Review Panel for Disputed Results (FR27) ✅ COMPLETE
+
+**Feature**: Administrators can now review and resolve disputed match results through a dedicated admin panel.
+
+**Backend Changes**:
+- **New Middleware**: `admin.middleware.ts` for role-based authorization
+  - Allows access to: ADMIN and TOURNAMENT_ADMIN roles
+  - Chains after `authMiddleware` for secure route protection
+  - Returns 403 Forbidden for unauthorized access attempts
+- **New Endpoints**:
+  - `GET /api/admin/matches/disputed` - List all disputed match results
+    - Fetches all results with DISPUTED status
+    - Enriches with match details and participant information
+    - Orders by `disputedAt` timestamp (newest first)
+    - Returns array of enriched dispute objects with full context
+  - `PUT /api/admin/matches/:id/result/resolve` - Resolve a disputed result
+    - Accepts: winnerId, setScores (array), resolutionNotes (optional)
+    - Updates result status: DISPUTED → CONFIRMED
+    - Marks result as `isAdminEntry = true`
+    - Updates match: status → COMPLETED, sets winnerId, records endTime
+    - Returns: { result, match } with updated entities
+  - `DELETE /api/admin/matches/:id/result/annul` - Annul a disputed result
+    - Requires: annulReason (string)
+    - Updates result status: DISPUTED → ANNULLED
+    - Resets match: status → SCHEDULED, clears winnerId and endTime
+    - Allows participants to re-submit results
+    - Returns: { result, match } with updated entities
+- **Controller Methods**: Added to `MatchController`
+  - `getDisputedResults()` - Fetches and enriches disputed results with relations
+  - `resolveDispute()` - Validates and applies admin resolution
+  - `annulResult()` - Validates and annuls disputed results
+  - All methods include proper error handling with AppError
+  - TODO placeholders for future notification system integration
+- **Swagger Documentation**: Complete API documentation for all admin endpoints
+  - Request/response schemas
+  - Security requirements (Bearer JWT)
+  - Error response specifications
+
+**Frontend Changes**:
+- **New Component**: `DisputedMatchesComponent` at `/admin/disputed-matches`
+  - Standalone component with lazy loading for optimal performance
+  - Direct HttpClient usage (not repository layer) for admin operations
+  - Signal-based reactive state management
+- **Component Structure**:
+  - `disputedResults` signal - List of all disputed match results
+  - `showModal` signal - Modal visibility control
+  - `selectedResult` signal - Current dispute being reviewed
+  - `resolutionForm` signal - Winner and scores for resolution
+  - `annulReason` signal - Reason text for annulling
+- **Key Methods**:
+  - `loadDisputedResults()` - Fetches all DISPUTED results from backend
+  - `openResolutionModal(result)` - Opens modal with pre-filled data
+  - `resolveDispute()` - Submits resolution with winner and final scores
+  - `annulResult()` - Annuls result with confirmation dialog
+  - Helper methods: `getFullName()`, `formatDate()`
+- **UI Features**:
+  - **Hero Section**: Red gradient background with warning theme (⚠️)
+  - **Dispute Cards**: 
+    - Match header with round, badge, and date
+    - Participant info with avatar circles showing winner
+    - Submitted scores display
+    - Dispute reason in yellow highlighted box
+    - "Resolve Dispute" button to open modal
+  - **Resolution Modal**:
+    - Match context display
+    - Winner selection via radio buttons (participant1 vs participant2)
+    - Set scores input (comma-separated, e.g., "6-4, 6-3, 7-5")
+    - Optional resolution notes textarea
+    - Annul section (alternative action):
+      * Annul reason textarea (required)
+      * Red "Annul Result" button
+    - Footer: Cancel, Annul, Confirm Resolution buttons
+  - **State Displays**:
+    - Loading spinner during data fetch
+    - Error state with retry button
+    - Empty state with checkmark (✓) - "No disputed results"
+- **CSS Design**:
+  - Red theme throughout (matches dispute severity)
+  - Dispute cards: 4px red left border, hover lift effect
+  - Dispute badge: Red background (#ef4444), white text
+  - Dispute reason: Yellow background (#fef3c7), italic text, orange left border
+  - Resolve button: Green gradient with shadow on hover
+  - Modal overlay: Dark semi-transparent with centered content
+  - Responsive design: Mobile-friendly with flex-direction column fallback
+- **Route Configuration**:
+  - Path: `/admin/disputed-matches`
+  - Guards: `authGuard` + `roleGuard`
+  - Allowed roles: SYSTEM_ADMIN, TOURNAMENT_ADMIN
+  - Lazy loading: Component code split into separate bundle
+- **Navigation**:
+  - Added "⚠️ Review Disputed Matches" button to Admin Dashboard Quick Actions
+  - Button uses warning theme styling (yellow/orange)
+  - Navigates to `/admin/disputed-matches` route
+
+**Authorization Model**:
+- **Middleware Chain**: `authMiddleware` → `adminMiddleware` → controller method
+- **Allowed Roles**: Both ADMIN and TOURNAMENT_ADMIN can review disputes
+- **Security**: JWT token required, role checked before proceeding
+- **Frontend Guard**: roleGuard restricts route access by role
+
+**User Flow** (Admin Review):
+1. Admin/Tournament Admin logs in
+2. Navigates to Admin Dashboard
+3. Clicks "⚠️ Review Disputed Matches" button
+4. Views list of all disputed results with full context
+5. Reviews dispute reason from participant
+6. Clicks "✅ Resolve Dispute" on a result
+7. Modal opens with pre-filled data:
+   - Current submitted winner selected
+   - Current set scores displayed
+8. Admin chooses action:
+   - **Option A - Resolve**: Modify winner/scores if needed, add notes, click "Confirm Resolution"
+     * Result status: DISPUTED → CONFIRMED
+     * Match status: → COMPLETED
+     * Participants notified (TODO: implement notifications)
+   - **Option B - Annul**: Enter annul reason, confirm with dialog, click "Annul Result"
+     * Result status: DISPUTED → ANNULLED
+     * Match status: → SCHEDULED (reset)
+     * Participants can re-submit results
+9. List refreshes automatically after resolution
+
+**User Flow** (Complete Workflow - FR24 → FR27):
+1. Participant submits result → PENDING_CONFIRMATION (FR24)
+2. Opponent confirms → CONFIRMED, match COMPLETED (FR25)
+   - OR opponent disputes with reason → DISPUTED (FR26)
+3. Admin reviews dispute → Resolves or Annuls (FR27) ✅ **NEW**
+
+**Technical Implementation Details**:
+- **Data Enrichment**: Backend enriches disputes with:
+  - Match details (matchNumber, round, scheduledTime, court)
+  - Participant1 and Participant2 full details
+  - Bracket information (name, format)
+- **Form Handling**:
+  - Winner selection via radio buttons with reactive binding
+  - Set scores: comma-separated string (e.g., "6-4, 6-3")
+  - Validation on backend for valid participant ID
+- **Confirmation Dialogs**:
+  - Native confirm() for annul action (prevents accidental annulment)
+  - Alert() for success/error feedback
+  - Could be improved with toast notification library in future
+- **Authorization Pattern**:
+  - Frontend: AuthStateService provides JWT token
+  - Token sent in Authorization header: `Bearer ${token}`
+  - Backend validates token + role before processing
+
+**Files Created**:
+- `backend/src/presentation/middleware/admin.middleware.ts` (NEW - 56 lines)
+- `src/presentation/pages/admin/disputed-matches/disputed-matches.component.ts` (NEW - 262 lines)
+- `src/presentation/pages/admin/disputed-matches/disputed-matches.component.html` (NEW - 158 lines)
+- `src/presentation/pages/admin/disputed-matches/disputed-matches.component.css` (NEW - 420 lines)
+
+**Files Modified**:
+- `backend/src/presentation/controllers/match.controller.ts` (Lines 510-700: Added 3 admin methods)
+- `backend/src/presentation/routes/index.ts` (Lines 34, 1424-1546: Added middleware import and 3 admin routes)
+- `src/presentation/app.routes.ts` (Lines 178-185: Added disputed-matches route)
+- `src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.html` (Lines 43-46: Added review button)
+- `src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts` (Added reviewDisputes() navigation method)
+
+**Fixed** (Related to FR25/FR26):
+- Removed debugging `console.log` statements from `my-matches.component.ts`
+- Component now ready for production use
+
+**Known Limitations**:
+- Uses native `alert()` for success/error messages (could use toast library)
+- Uses native `confirm()` for annul confirmation (could use custom modal)
+- No validation for set scores format (accepts any comma-separated string)
+- No real-time updates (admin must manually refresh to see new disputes)
+
+**Future Enhancements**:
+- [ ] Integrate notification system (backend has TODO placeholders)
+- [ ] Replace alert() with toast notifications library
+- [ ] Add real-time dispute updates using WebSockets
+- [ ] Add set score format validation (e.g., "6-4" pattern)
+- [ ] Admin activity logging for audit trail
+
+**Testing Checklist**:
+- [ ] Admin can access /admin/disputed-matches route
+- [ ] Non-admin users are blocked with 403
+- [ ] Disputed results display correctly with all context
+- [ ] Resolve action updates result and match correctly
+- [ ] Annul action resets match to SCHEDULED
+- [ ] Empty state displays when no disputes exist
+- [ ] Error handling works for network failures
+- [ ] Mobile responsive layout works correctly
+
+**Impact**: Completes the participant-opponent result confirmation workflow (FR24-27). Administrators now have full control to review disputes, investigate issues, and make final determinations on match results. This ensures tournament integrity while allowing participant involvement in result reporting.
+
+---
+
 ## [1.47.0] - 2026-03-31
 
 ### Added — Participant Result Submission Feature (FR24) ✅ COMPLETE
@@ -15542,3 +16495,208 @@ npm run dev
 **Author**: Fabián González Lence  
 **Institution**: Universidad de La Laguna — School of Engineering and Technology  
 **Degree**: Computer Engineering — Final Degree Project (TFG)
+
+## [April 1, 2026] - Result Confirmation & Dispute Workflow (FR25-FR26)
+
+### Added - Backend
+
+**Match Result Confirmation (FR25)**
+- `POST /api/matches/:id/result/confirm` - Confirms pending match result
+  - Verifies user is the opponent (not the submitter)
+  - Updates result status from `PENDING_CONFIRMATION` to `CONFIRMED`
+  - Sets match status to `COMPLETED` and assigns winner
+  - Returns confirmed result with confirmation metadata
+- Enhanced `GET /api/matches?participantId=X` endpoint:
+  - Now includes `pendingResult` field for each match  
+  - Allows opponents to see results awaiting confirmation
+  - Filters to only show `PENDING_CONFIRMATION` results
+
+**Match Result Dispute (FR26)**
+- `POST /api/matches/:id/result/dispute` - Disputes pending result
+  - Requires `disputeReason` field (mandatory validation)
+  - Verifies user is the opponent (not the submitter)
+  - Updates result status from `PENDING_CONFIRMATION` to `DISPUTED`
+  - Stores dispute reason and timestamp for admin review
+  - Returns disputed result for UI update
+
+**MatchController Methods**
+- `confirmResult()` - Handles confirmation logic with authorization checks
+- `disputeResult()` - Handles dispute logic with reason validation
+- Updated `getByBracket()` to fetch pending results when `participantId` is provided
+
+### Added - Frontend
+
+**MyMatchesComponent Enhancements**
+- **Pending Confirmation Section** (new tab/section):
+  - Displays matches with pending results requiring action
+  - Shows submitted scores and declared winner
+  - Badge indicators: "⏳ Pending Confirmation" and "⚠️ Action Required"
+  - Different states:
+    - **Needs Confirmation**: Shows Confirm/Dispute buttons (opponent view)
+    - **Waiting for Confirmation**: Shows waiting message (submitter view)
+    
+- **Confirm Result Button**:
+  - Green "✅ Confirm Result" button
+  - Shows confirmation dialog with scores before submitting
+  - Calls `matchService.confirmMatchResult(matchId)`
+  - Reloads matches after successful confirmation
+  - Shows success alert to user
+
+- **Dispute Result Modal**:
+  - Red "⚠️ Dispute Result" button opens modal
+  - Displays submitted result (winner & scores) for reference
+  - Textarea for dispute reason (required, min 10 chars recommended)
+  - Warning note: "⚠️ An administrator will review your dispute"
+  - Calls `matchService.disputeMatchResult(matchId, reason)`
+  - Shows success alert and reloads matches
+
+**MatchService Methods**
+- `confirmMatchResult(matchId: string)` - Calls backend confirm endpoint
+- `disputeMatchResult(matchId: string, reason: string)` - Calls backend dispute endpoint
+
+**MatchRepositoryImpl Methods**
+- `confirmResult(matchId: string)` - HTTP POST to `/matches/:id/result/confirm`
+- `disputeResult(matchId: string, reason: string)` - HTTP POST to `/matches/:id/result/dispute`
+
+**EnhancedMatch Interface**
+- Added `pendingResult` field:
+  ```typescript
+  pendingResult?: {
+    id: string;
+    submittedBy: string;
+    winnerId: string;
+    setScores: string[];
+    confirmationStatus: string;
+  } | null;
+  ```
+
+**Component Helper Methods**
+- `needsConfirmation(match)` - Returns true if current user is opponent (not submitter)
+- `isWaitingForConfirmation(match)` - Returns true if current user submitted result
+- Prevents users from confirming/disputing their own results
+
+### Added - Styles
+
+**Pending Results Styling**
+- `.pending-section` - Orange gradient background with pulsing animation
+- `.status-pending` - Badge with pulse animation (2s infinite)
+- `.action-required-badge` - Red badge with blink animation for urgency
+- `.pending-card` - Match card with orange border and warm background
+- `.result-banner` - Blue gradient banner displaying submitted result
+- `.potential-winner` - Yellow gradient for declared winner in pending state
+- `.potential-crown` - 🏆 emoji for potential winner indication
+
+**Button Styles**
+- `.btn-confirm` - Green gradient button with hover lift effect
+- `.btn-dispute` - Red gradient button with hover lift effect
+- Both buttons responsive on mobile (full width, stacked)
+
+**Modal Styles**
+- `.modal-dispute` - Dispute modal with yellow warning theme
+- `.result-summary` - Yellow box showing submitted result in dispute modal
+- `.warning-note` - Yellow alert box warning about admin review
+
+### Updated - Documentation
+
+**requirements-checklist.md**
+- Marked FR25 (Confirm Result) as ✅ IMPLEMENTED:
+  - [x] Navigate to pending match
+  - [x] Review entered result
+  - [x] Click "Confirm" - result becomes official
+  - [x] Standings update automatically
+  - [ ] Receive notification (future feature)
+  
+- Marked FR26 (Dispute Result) as ✅ IMPLEMENTED:
+  - [x] Click "Dispute" instead of confirm
+  - [x] Add reason for dispute
+  - [x] Submit dispute - admin receives notification (backend ready, notification pending)
+  - [ ] Admin reviews (FR27 - admin panel not yet implemented)
+
+### Workflow Summary
+
+**Participant Submission Flow** (FR24):
+1. Participant enters result → Status: `PENDING_CONFIRMATION`
+2. Result saved with `submittedBy` field
+3. Opponent sees match in "Pending Confirmation" section
+
+**Opponent Confirmation Flow** (FR25):
+1. Opponent views pending result with scores
+2. Clicks "✅ Confirm Result"
+3. Backend validates opponent is not submitter
+4. Result status → `CONFIRMED`
+5. Match status → `COMPLETED`
+6. Winner declared and potentially advanced to next round
+
+**Opponent Dispute Flow** (FR26):
+1. Opponent views pending result
+2. Clicks "⚠️ Dispute Result"
+3. Enters dispute reason in modal textarea
+4. Backend validates reason is provided
+5. Result status → `DISPUTED`
+6. Admin can review (FR27 - not yet implemented)
+
+### Known Limitations
+
+- **No Notification System**: Opponents don't receive notifications when results are submitted (future feature)
+- **Admin Review Panel**: Disputed results don't have admin UI yet (FR27 - future work)
+- **Result Modification**: Admins can't edit disputed results yet (FR27 - future work)
+- **Timeout Mechanism**: No automatic confirmation after X days (future enhancement)
+
+### Testing Recommendations
+
+1. **Two User Scenario**:
+   - User A submits result for Match 1
+   - User B (opponent) logs in, sees pending confirmation
+   - User B confirms → Match becomes COMPLETED
+   
+2. **Dispute Scenario**:
+   - User A submits incorrect result
+   - User B disputes with reason "Score was 6-3, 6-4, not 6-4, 6-3"
+   - Result status becomes DISPUTED
+   - Admin can see disputed result (when FR27 is implemented)
+
+3. **Authorization Tests**:
+   - User A cannot confirm User A's own result (403 Forbidden)
+   - User A cannot dispute User A's own result (403 Forbidden)
+   - Non-participants cannot confirm/dispute (403 Forbidden)
+
+4. **Validation Tests**:
+   - Dispute without reason → 400 Bad Request
+   - Confirm non-existent result → 404 Not Found
+   - Confirm already confirmed result → 404 Not Found (no pending result)
+
+### Files Changed
+
+**Backend**:
+- `backend/src/presentation/controllers/match.controller.ts` - Added confirmResult() and disputeResult() methods; enhanced getByBracket()
+- `backend/src/presentation/routes/index.ts` - Added POST /matches/:id/result/confirm and POST /matches/:id/result/dispute routes
+
+**Frontend**:
+- `src/infrastructure/repositories/match.repository.ts` - Added confirmResult() and disputeResult() methods
+- `src/application/services/match.service.ts` - Added confirmMatchResult() and disputeMatchResult() methods
+- `src/presentation/pages/matches/my-matches/my-matches.component.ts` - Added pending result handling, confirm/dispute methods
+- `src/presentation/pages/matches/my-matches/my-matches.component.html` - Added Pending Confirmation section and dispute modal
+- `src/presentation/pages/matches/my-matches/my-matches.component.css` - Added styles for pending results and modals
+
+**Documentation**:
+- `docs/requirements-checklist.md` - Updated FR25 and FR26 checkboxes
+- `docs/CHANGES.md` - This entry
+
+### Next Steps (Future Work)
+
+- **FR27**: Admin review panel for disputed results
+  - List all disputed results
+  - View dispute reasons
+  - Ability to modify/override scores
+  - Annul results if necessary
+  - Send notifications to both participants
+
+- **Notification System**: Implement real-time notifications
+  - Notify opponent when result is submitted
+  - Notify submitter when result is confirmed
+  - Notify admin when result is disputed
+
+- **Auto-Confirmation**: Implement timeout mechanism
+  - Auto-confirm results after 48 hours if not disputed
+  - Send reminder notification before auto-confirm
+

@@ -158,20 +158,54 @@ async function main(): Promise<void> {
     // Step 6: Register all players
     console.log('📝 Step 6: Registering players in tournament...');
     
+    const registrations: any[] = [];
     for (const player of createdPlayers) {
       try {
-        await apiRequest('/registrations', 'POST', {
+        const registration = await apiRequest('/registrations', 'POST', {
           tournamentId,
           categoryId,
           participantId: player.userId,
         }, tournamentAdminToken);
 
-        console.log(`  ✅ Registered: ${player.firstName} ${player.lastName} (Seed #${player.ranking})`);
+        registrations.push({
+          ...registration,
+          player,
+        });
+
+        console.log(`  ✅ Registered: ${player.firstName} ${player.lastName}`);
       } catch (error: any) {
         console.log(`  ⚠️  Failed to register ${player.firstName} ${player.lastName}: ${error.message}`);
       }
     }
     console.log(`\n✅ All players registered\n`);
+
+    // Step 6b: Accept all registrations
+    console.log('📝 Step 6b: Accepting all registrations...');
+    for (const reg of registrations) {
+      try {
+        await apiRequest(`/registrations/${reg.id}/status`, 'PUT', {
+          status: 'ACCEPTED',
+        }, tournamentAdminToken);
+        console.log(`  ✅ Accepted: ${reg.player.firstName} ${reg.player.lastName}`);
+      } catch (error: any) {
+        console.log(`  ⚠️  Failed to accept ${reg.player.firstName} ${reg.player.lastName}: ${error.message}`);
+      }
+    }
+    console.log(`\n✅ All registrations accepted\n`);
+
+    // Step 6c: Assign seed numbers based on player ranking
+    console.log('📝 Step 6c: Assigning seed numbers...');
+    for (const reg of registrations) {
+      try {
+        await apiRequest(`/registrations/${reg.id}`, 'PUT', {
+          seedNumber: reg.player.ranking,
+        }, tournamentAdminToken);
+        console.log(`  ✅ Seed #${reg.player.ranking}: ${reg.player.firstName} ${reg.player.lastName}`);
+      } catch (error: any) {
+        console.log(`  ⚠️  Failed to set seed for ${reg.player.firstName} ${reg.player.lastName}: ${error.message}`);
+      }
+    }
+    console.log(`\n✅ All seed numbers assigned\n`);
 
     // Step 7: Generate bracket
     console.log('📝 Step 7: Generating single elimination bracket...');

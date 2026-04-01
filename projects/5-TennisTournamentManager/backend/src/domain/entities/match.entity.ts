@@ -70,6 +70,9 @@ export class Match {
   @Column('timestamp', {nullable: true})
   public endTime!: Date | null;
 
+  @Column('varchar', {length: 100, nullable: true})
+  public score!: string | null;
+
   @CreateDateColumn()
   public createdAt!: Date;
 

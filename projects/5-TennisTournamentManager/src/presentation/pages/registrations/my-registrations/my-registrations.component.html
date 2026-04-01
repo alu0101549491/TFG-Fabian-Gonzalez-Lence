@@ -82,10 +82,10 @@
                   <span class="meta-value">{{ registration.registeredAt | date:'MMM d, y' }}</span>
                 </div>
 
-                @if (registration.seed) {
+                @if (registration.seedNumber) {
                   <div class="meta-item">
                     <span class="meta-label">🎯 Seed</span>
-                    <span class="meta-value">#{{ registration.seed }}</span>
+                    <span class="meta-value">#{{ registration.seedNumber }}</span>
                   </div>
                 }
               </div>

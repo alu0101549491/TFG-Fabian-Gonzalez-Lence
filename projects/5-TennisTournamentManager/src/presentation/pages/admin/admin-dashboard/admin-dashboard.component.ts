@@ -101,6 +101,13 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   /**
+   * Navigates to disputed matches review page.
+   */
+  public reviewDisputes(): void {
+    void this.router.navigate(['/admin/disputed-matches']);
+  }
+
+  /**
    * Formats date for display.
    *
    * @param date - Date to format

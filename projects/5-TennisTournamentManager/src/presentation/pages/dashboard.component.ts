@@ -14,6 +14,7 @@
 import {Component, inject, OnInit, signal, computed} from '@angular/core';
 import {Router, RouterModule} from '@angular/router';
 import {CommonModule} from '@angular/common';
+import {HttpClient} from '@angular/common/http';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {RegistrationService} from '@application/services/registration.service';
 import {StatisticsService} from '@application/services/statistics.service';
@@ -21,7 +22,9 @@ import {MatchService} from '@application/services/match.service';
 import {RegistrationDto} from '@application/dto';
 import {StatisticsDto} from '@application/dto/statistics.dto';
 import {MatchDto} from '@application/dto/match.dto';
+import {UserRole} from '@domain/enumerations/user-role';
 import {EnumFormatPipe} from '@shared/pipes';
+import {environment} from '../../environments/environment';
 import templateHtml from './dashboard.component.html?raw';
 import styles from './dashboard.component.css?inline';
 
@@ -49,9 +52,16 @@ export class DashboardComponent implements OnInit {
   private readonly statisticsService = inject(StatisticsService);
   private readonly matchService = inject(MatchService);
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   /** Current user */
   protected readonly currentUser = computed(() => this.authState.getCurrentUser());
+
+  /** Check if current user is admin */
+  protected readonly isAdmin = computed(() => {
+    const user = this.currentUser();
+    return user?.role === UserRole.SYSTEM_ADMIN || user?.role === UserRole.TOURNAMENT_ADMIN;
+  });
 
   /** Loading state */
   protected readonly isLoading = signal(true);
@@ -67,6 +77,9 @@ export class DashboardComponent implements OnInit {
 
   /** Upcoming matches */
   protected readonly upcomingMatches = signal<MatchDto[]>([]);
+
+  /** Disputed matches (for admin view) */
+  protected readonly disputedMatches = signal<any[]>([]);
 
   /** Win percentage computed */
   protected readonly winPercentage = computed(() => {
@@ -98,25 +111,35 @@ export class DashboardComponent implements OnInit {
       this.isLoading.set(true);
       this.errorMessage.set(null);
 
-      // Load data in parallel - each service failure returns empty/null data instead of crashing
-      const [registrations, stats, matches] = await Promise.all([
-        this.registrationService.getRegistrationsByParticipant(user.id).catch((err) => {
-          console.warn('Failed to load registrations:', err.message);
+      // Load different data based on user role
+      if (this.isAdmin()) {
+        // Admin users: Load disputed matches
+        const disputedResults = await this.loadDisputedMatches().catch((err) => {
+          console.warn('Failed to load disputed matches:', err.message);
           return [];
-        }),
-        this.statisticsService.getParticipantStatistics(user.id).catch((err) => {
-          console.warn('Failed to load statistics:', err.message);
-          return null;
-        }),
-        this.loadUserMatches(user.id).catch((err) => {
-          console.warn('Failed to load matches:', err.message);
-          return [];
-        }),
-      ]);
+        });
+        this.disputedMatches.set(disputedResults);
+      } else {
+        // Regular players: Load registrations, stats, and matches
+        const [registrations, stats, matches] = await Promise.all([
+          this.registrationService.getRegistrationsByParticipant(user.id).catch((err) => {
+            console.warn('Failed to load registrations:', err.message);
+            return [];
+          }),
+          this.statisticsService.getParticipantStatistics(user.id).catch((err) => {
+            console.warn('Failed to load statistics:', err.message);
+            return null;
+          }),
+          this.loadUserMatches(user.id).catch((err) => {
+            console.warn('Failed to load matches:', err.message);
+            return [];
+          }),
+        ]);
 
-      this.registrations.set(registrations);
-      this.statistics.set(stats);
-      this.upcomingMatches.set(matches);
+        this.registrations.set(registrations);
+        this.statistics.set(stats);
+        this.upcomingMatches.set(matches);
+      }
     } catch (error) {
       // This catch should rarely trigger now since individual promises handle their errors
       const message = error instanceof Error ? error.message : 'Failed to load dashboard data';
@@ -205,5 +228,65 @@ export class DashboardComponent implements OnInit {
    */
   protected goToMatch(matchId: string): void {
     void this.router.navigate(['/matches', matchId]);
+  }
+
+  /**
+   * Loads disputed matches for admin users.
+   * 
+   * @returns List of disputed results
+   */
+  private async loadDisputedMatches(): Promise<any[]> {
+    const token = this.authState.getToken();
+    if (!token) return [];
+
+    const response = await this.http.get<any[]>(
+      `${environment.apiUrl}/admin/matches/disputed`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).toPromise();
+
+    return response || [];
+  }
+
+  /**
+   * Navigate to disputed matches page.
+   */
+  protected goToDisputedMatches(): void {
+    void this.router.navigate(['/admin/disputed-matches']);
+  }
+
+  /**
+   * Navigate to admin dashboard.
+   */
+  protected goToAdminDashboard(): void {
+    void this.router.navigate(['/admin/dashboard']);
+  }
+
+  /**
+   * Formats date for display.
+   * 
+   * @param date - Date to format
+   * @returns Formatted date string
+   */
+  protected formatDate(date: Date | string): string {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  /**
+   * Gets full name from first and last name.
+   * 
+   * @param firstName - First name
+   * @param lastName - Last name
+   * @returns Full name
+   */
+  protected getFullName(firstName: string, lastName: string): string {
+    return `${firstName} ${lastName}`;
   }
 }

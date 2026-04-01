@@ -367,6 +367,12 @@
   border: 1px solid var(--color-info);
 }
 
+.status-badge.disputed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+  border: 1px solid #ef4444;
+}
+
 /* Performance Stats - Compact Design */
 .card-body-compact {
   padding: var(--spacing-md);
@@ -480,6 +486,11 @@
   font-weight: var(--font-weight-medium);
   transition: all 0.2s ease;
   border: 1px solid transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .quick-link-item:hover {

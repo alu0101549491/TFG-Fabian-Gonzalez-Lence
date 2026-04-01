@@ -81,6 +81,7 @@ export class MatchController {
     try {
       const {bracketId, participantId} = req.query;
       const matchRepository = AppDataSource.getRepository(Match);
+      const matchResultRepository = AppDataSource.getRepository(MatchResult);
       
       // Build where clause dynamically based on query parameters
       let whereClause: any = {};
@@ -109,7 +110,28 @@ export class MatchController {
       // Enrich with seed information
       const enrichedMatches = await this.enrichMatchesWithSeeds(matches);
       
-      res.status(HTTP_STATUS.OK).json(enrichedMatches);
+      // If participantId is provided, include pending results for each match
+      if (participantId) {
+        const matchesWithResults = await Promise.all(enrichedMatches.map(async (match: any) => {
+          // Find pending result for this match
+          const pendingResult = await matchResultRepository.findOne({
+            where: {
+              matchId: match.id,
+              confirmationStatus: ConfirmationStatus.PENDING_CONFIRMATION,
+            },
+          });
+          
+          // Add pendingResult to match data
+          return {
+            ...match,
+            pendingResult: pendingResult || null,
+          };
+        }));
+        
+        res.status(HTTP_STATUS.OK).json(matchesWithResults);
+      } else {
+        res.status(HTTP_STATUS.OK).json(enrichedMatches);
+      }
     } catch (error) {
       next(error);
     }
@@ -324,6 +346,343 @@ export class MatchController {
       // await notificationService.notifyPendingConfirmation(matchId, opponentId);
 
       res.status(HTTP_STATUS.CREATED).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/matches/:id/result/confirm
+   * Confirms a pending match result (FR25).
+   * Called by the opponent to accept the submitted result.
+   */
+  public async confirmResult(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params; // match ID
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new AppError('User not authenticated', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
+      }
+
+      const matchRepository = AppDataSource.getRepository(Match);
+      const matchResultRepository = AppDataSource.getRepository(MatchResult);
+
+      // Fetch match to validate
+      const match = await matchRepository.findOne({
+        where: {id},
+        relations: ['participant1', 'participant2'],
+      });
+
+      if (!match) {
+        throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Verify user is a participant
+      if (match.participant1Id !== userId && match.participant2Id !== userId) {
+        throw new AppError('Only match participants can confirm results', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+      }
+
+      // Find pending result for this match
+      const result = await matchResultRepository.findOne({
+        where: {
+          matchId: id,
+          confirmationStatus: ConfirmationStatus.PENDING_CONFIRMATION,
+        },
+      });
+
+      if (!result) {
+        throw new AppError('No pending result found for this match', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Verify user is NOT the submitter (can't confirm own result)
+      if (result.submittedBy === userId) {
+        throw new AppError('Cannot confirm your own result', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+      }
+
+      // Update result status
+      result.confirmationStatus = ConfirmationStatus.CONFIRMED;
+      result.confirmedBy = userId;
+      result.confirmedAt = new Date();
+      result.updatedAt = new Date();
+
+      await matchResultRepository.save(result);
+
+      // Update match status to COMPLETED and set winner
+      match.status = MatchStatus.COMPLETED;
+      match.winnerId = result.winnerId;
+      match.score = result.setScores.join(', '); // Format setScores as comma-separated string
+      match.updatedAt = new Date();
+      await matchRepository.save(match);
+
+      // TODO: Advance winner to next round if single elimination
+      // TODO: Send notification to submitter
+      // await notificationService.notifyResultConfirmed(matchId, result.submittedBy);
+
+      res.status(HTTP_STATUS.OK).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/matches/:id/result/dispute
+   * Disputes a pending match result (FR26).
+   * Called by the opponent if they disagree with the submitted result.
+   */
+  public async disputeResult(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params; // match ID
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new AppError('User not authenticated', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
+      }
+
+      const {disputeReason} = req.body;
+
+      if (!disputeReason || disputeReason.trim() === '') {
+        throw new AppError('Dispute reason is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      const matchRepository = AppDataSource.getRepository(Match);
+      const matchResultRepository = AppDataSource.getRepository(MatchResult);
+
+      // Fetch match to validate
+      const match = await matchRepository.findOne({
+        where: {id},
+        relations: ['participant1', 'participant2'],
+      });
+
+      if (!match) {
+        throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Verify user is a participant
+      if (match.participant1Id !== userId && match.participant2Id !== userId) {
+        throw new AppError('Only match participants can dispute results', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+      }
+
+      // Find pending result for this match
+      const result = await matchResultRepository.findOne({
+        where: {
+          matchId: id,
+          confirmationStatus: ConfirmationStatus.PENDING_CONFIRMATION,
+        },
+      });
+
+      if (!result) {
+        throw new AppError('No pending result found for this match', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Verify user is NOT the submitter (can't dispute own result)
+      if (result.submittedBy === userId) {
+        throw new AppError('Cannot dispute your own result', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+      }
+
+      // Update result status
+      result.confirmationStatus = ConfirmationStatus.DISPUTED;
+      result.disputeReason = disputeReason;
+      result.disputedAt = new Date();
+      result.updatedAt = new Date();
+
+      await matchResultRepository.save(result);
+
+      // TODO: Send notification to administrators
+      // await notificationService.notifyResultDisputed(matchId, disputeReason);
+
+      res.status(HTTP_STATUS.OK).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/admin/matches/disputed
+   * Retrieves all disputed match results (FR27).
+   * Admin only.
+   */
+  public async getDisputedResults(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const matchResultRepository = AppDataSource.getRepository(MatchResult);
+      const matchRepository = AppDataSource.getRepository(Match);
+
+      // Find all disputed results
+      const disputedResults = await matchResultRepository.find({
+        where: {
+          confirmationStatus: ConfirmationStatus.DISPUTED,
+        },
+        order: {
+          disputedAt: 'DESC',
+        },
+      });
+
+      // Enrich with match details
+      const enrichedResults = await Promise.all(disputedResults.map(async (result) => {
+        const match = await matchRepository.findOne({
+          where: {id: result.matchId},
+          relations: ['participant1', 'participant2', 'bracket'],
+        });
+
+        return {
+          ...result,
+          match: match ? {
+            id: match.id,
+            matchNumber: match.matchNumber,
+            round: match.round,
+            bracketId: match.bracketId,
+            participant1: match.participant1 ? {
+              id: match.participant1.id,
+              firstName: match.participant1.firstName,
+              lastName: match.participant1.lastName,
+              email: match.participant1.email,
+            } : null,
+            participant2: match.participant2 ? {
+              id: match.participant2.id,
+              firstName: match.participant2.firstName,
+              lastName: match.participant2.lastName,
+              email: match.participant2.email,
+            } : null,
+          } : null,
+        };
+      }));
+
+      res.status(HTTP_STATUS.OK).json(enrichedResults);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PUT /api/admin/matches/:id/result/resolve
+   * Resolves a disputed result by confirming or modifying it (FR27).
+   * Admin only.
+   */
+  public async resolveDispute(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params; // match ID
+      const {winnerId, setScores, resolutionNotes} = req.body;
+
+      if (!winnerId || !setScores || setScores.length === 0) {
+        throw new AppError('winnerId and setScores are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      const matchRepository = AppDataSource.getRepository(Match);
+      const matchResultRepository = AppDataSource.getRepository(MatchResult);
+
+      // Fetch match
+      const match = await matchRepository.findOne({
+        where: {id},
+        relations: ['participant1', 'participant2'],
+      });
+
+      if (!match) {
+        throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Find disputed result
+      const result = await matchResultRepository.findOne({
+        where: {
+          matchId: id,
+          confirmationStatus: ConfirmationStatus.DISPUTED,
+        },
+      });
+
+      if (!result) {
+        throw new AppError('No disputed result found for this match', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Update result with admin resolution
+      result.winnerId = winnerId;
+      result.setScores = setScores;
+      result.confirmationStatus = ConfirmationStatus.CONFIRMED;
+      result.isAdminEntry = true;
+      result.playerComments = resolutionNotes ? `ADMIN RESOLUTION: ${resolutionNotes}` : result.playerComments;
+      result.updatedAt = new Date();
+
+      await matchResultRepository.save(result);
+
+      // Update match status to COMPLETED
+      match.status = MatchStatus.COMPLETED;
+      match.winnerId = winnerId;
+      match.score = setScores.join(', '); // Format setScores as comma-separated string
+      match.endTime = new Date();
+      match.updatedAt = new Date();
+
+      await matchRepository.save(match);
+
+      // TODO: Notify both participants
+      // await notificationService.notifyDisputeResolved(matchId, result);
+
+      res.status(HTTP_STATUS.OK).json({
+        result,
+        match,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * DELETE /api/admin/matches/:id/result/annul
+   * Annuls a disputed result (FR27).
+   * Admin only.
+   */
+  public async annulResult(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params; // match ID
+      const {annulReason} = req.body;
+
+      if (!annulReason || annulReason.trim() === '') {
+        throw new AppError('Annul reason is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      const matchRepository = AppDataSource.getRepository(Match);
+      const matchResultRepository = AppDataSource.getRepository(MatchResult);
+
+      // Fetch match
+      const match = await matchRepository.findOne({
+        where: {id},
+      });
+
+      if (!match) {
+        throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Find disputed result
+      const result = await matchResultRepository.findOne({
+        where: {
+          matchId: id,
+          confirmationStatus: ConfirmationStatus.DISPUTED,
+        },
+      });
+
+      if (!result) {
+        throw new AppError('No disputed result found for this match', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Update result to ANNULLED
+      result.confirmationStatus = ConfirmationStatus.ANNULLED;
+      result.playerComments = annulReason;
+      result.updatedAt = new Date();
+
+      await matchResultRepository.save(result);
+
+      // Reset match to SCHEDULED
+      match.status = MatchStatus.SCHEDULED;
+      match.winnerId = null;
+      match.endTime = null;
+      match.updatedAt = new Date();
+
+      await matchRepository.save(match);
+
+      // TODO: Notify both participants
+      // await notificationService.notifyResultAnnulled(matchId, annulReason);
+
+      res.status(HTTP_STATUS.OK).json({
+        result,
+        match,
+      });
     } catch (error) {
       next(error);
     }

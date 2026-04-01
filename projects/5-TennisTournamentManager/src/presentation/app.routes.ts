@@ -177,6 +177,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'admin/disputed-matches',
+    canActivate: [authGuard, roleGuard],
+    data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},
+    loadComponent: () =>
+      import('./pages/admin/disputed-matches/disputed-matches.component').then(
+        (m) => m.DisputedMatchesComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'home',
   },

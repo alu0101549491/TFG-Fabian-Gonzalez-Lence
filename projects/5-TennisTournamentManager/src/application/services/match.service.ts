@@ -920,6 +920,43 @@ export class MatchService implements IMatchService {
   }
 
   /**
+   * Confirms a pending match result (FR25).
+   * Called by the opponent to accept the submitted result.
+   *
+   * @param matchId - ID of the match
+   * @returns Confirmed match result
+   */
+  public async confirmMatchResult(matchId: string): Promise<any> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    const response = await this.matchRepository.confirmResult(matchId);
+    return response;
+  }
+
+  /**
+   * Disputes a pending match result (FR26).
+   * Called by the opponent if they disagree with the submitted result.
+   *
+   * @param matchId - ID of the match
+   * @param disputeReason - Reason for disputing
+   * @returns Disputed match result
+   */
+  public async disputeMatchResult(matchId: string, disputeReason: string): Promise<any> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!disputeReason || disputeReason.trim().length === 0) {
+      throw new Error('Dispute reason is required');
+    }
+
+    const response = await this.matchRepository.disputeResult(matchId, disputeReason);
+    return response;
+  }
+
+  /**
    * Maps a Match entity to MatchDto.
    *
    * @param match - Match entity
@@ -962,6 +999,7 @@ export class MatchService implements IMatchService {
         lastName: (match as any).winner.lastName,
         email: (match as any).winner.email,
       } : null,
+      pendingResult: (match as any).pendingResult || null,
     };
   }
 }
