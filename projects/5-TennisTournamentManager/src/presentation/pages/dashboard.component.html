@@ -256,8 +256,18 @@
           <section class="dashboard-card">
             <header class="card-header">
               <h2 class="card-title">
-                <span class="card-icon">⚙️</span>
-                Admin Tools
+                <span class="card-icon">
+                  @if (isSystemAdmin()) {
+                    ⚙️
+                  } @else {
+                    🎾
+                  }
+                </span>
+                @if (isSystemAdmin()) {
+                  Admin Tools
+                } @else {
+                  Tournament Admin Tools
+                }
               </h2>
             </header>
             
@@ -275,10 +285,16 @@
                   <span class="quick-link-icon">🏆</span>
                   <span class="quick-link-text">Manage Tournaments</span>
                 </a>
-                <a routerLink="/admin/users" class="quick-link-item">
-                  <span class="quick-link-icon">👥</span>
-                  <span class="quick-link-text">Manage Users</span>
+                <a routerLink="/tournaments" class="quick-link-item">
+                  <span class="quick-link-icon">📅</span>
+                  <span class="quick-link-text">Order of Play</span>
                 </a>
+                @if (isSystemAdmin()) {
+                  <a routerLink="/admin/users" class="quick-link-item">
+                    <span class="quick-link-icon">👥</span>
+                    <span class="quick-link-text">Manage Users</span>
+                  </a>
+                }
               </div>
             </div>
           </section>

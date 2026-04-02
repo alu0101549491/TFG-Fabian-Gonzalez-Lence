@@ -149,25 +149,32 @@
 ### **F. ORDER OF PLAY** 📅
 
 #### Generate Order of Play (Tournament Admin)
-- [ ] **Navigate to "Order of Play"** tab
-- [ ] **Click "Generate Schedule"**
-- [ ] **System assigns** matches to courts with times
-- [ ] **Review proposed schedule**
-- [ ] **Adjust manually** - drag matches to different courts/times
-- [ ] **Publish order of play** - participants receive notifications
+- [x] **Navigate to "Order of Play"** tab ✅ OrderOfPlayAdminComponent implemented
+- [x] **Click "Generate Schedule"** ✅ Generate button with configurable options
+- [x] **System assigns** matches to courts with times ✅ ScheduleGenerationService with automatic assignment
+- [x] **Review proposed schedule** ✅ Table view shows all scheduled matches
+- [x] **Adjust manually** - drag matches to different courts/times ✅ Reschedule modal for manual adjustments
+- [x] **Publish order of play** - participants receive notifications ✅ Publish endpoint with notification integration (v1.63.0)
+> **Backend**: `POST /api/order-of-play/generate`, `PUT /api/order-of-play/:id/reschedule`, `POST /api/order-of-play/:id/publish`  
+> **Frontend**: OrderOfPlayAdminComponent with generation form, schedule table, reschedule modal  
+> **Note**: Automatic scheduling with conflict detection, WebSocket real-time updates, participant notifications
 
 #### View Order of Play (All Users)
-- [ ] **Navigate to "Order of Play"**
-- [ ] **View matches by court** and time
-- [ ] **Filter by date**
-- [ ] **See own matches highlighted** (if participant)
-- [ ] **Public users can view** order of play
+- [x] **Navigate to "Order of Play"** ✅ OrderOfPlayViewComponent with calendar layout
+- [x] **View matches by court** and time ✅ Grouped by court with sorted times
+- [x] **Filter by date** ✅ Date picker to change viewing date
+- [x] **See own matches highlighted** (if participant) ✅ User matches highlighted in view
+- [x] **Public users can view** order of play ✅ No authentication required for viewing
+> **Backend**: `GET /api/order-of-play?tournamentId=xxx&date=yyyy-mm-dd`  
+> **Frontend**: OrderOfPlayViewComponent with filters and user match highlighting
 
 #### Update Order of Play (Tournament Admin)
-- [ ] **Reschedule match** - change court or time
-- [ ] **System checks conflicts** (overlapping assignments)
-- [ ] **Publish update** - affected participants notified
-- [ ] **Real-time updates** - changes visible in <5 seconds
+- [x] **Reschedule match** - change court or time ✅ Reschedule API with conflict validation
+- [x] **System checks conflicts** (overlapping assignments) ✅ isTimeSlotAvailable() validates before saving
+- [x] **Publish update** - affected participants notified ✅ Notification sent on reschedule
+- [x] **Real-time updates** - changes visible in <5 seconds ✅ WebSocket emitOrderOfPlayChange() broadcasts updates
+> **Backend**: Conflict detection in ScheduleGenerationService, WebSocket integration  
+> **Note**: Full implementation complete (v1.63.0) - ready for end-to-end testing
 
 ---
 

@@ -63,6 +63,18 @@ export class DashboardComponent implements OnInit {
     return user?.role === UserRole.SYSTEM_ADMIN || user?.role === UserRole.TOURNAMENT_ADMIN;
   });
 
+  /** Check if current user is system admin */
+  protected readonly isSystemAdmin = computed(() => {
+    const user = this.currentUser();
+    return user?.role === UserRole.SYSTEM_ADMIN;
+  });
+
+  /** Check if current user is tournament admin */
+  protected readonly isTournamentAdmin = computed(() => {
+    const user = this.currentUser();
+    return user?.role === UserRole.TOURNAMENT_ADMIN;
+  });
+
   /** Loading state */
   protected readonly isLoading = signal(true);
 

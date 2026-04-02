@@ -326,6 +326,15 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   /**
+   * Navigates to order of play management for this tournament (admin only).
+   */
+  public manageOrderOfPlay(): void {
+    if (this.tournamentId) {
+      void this.router.navigate(['/order-of-play', this.tournamentId]);
+    }
+  }
+
+  /**
    * Handles tournament registration.
    */
   public async registerForTournament(): Promise<void> {

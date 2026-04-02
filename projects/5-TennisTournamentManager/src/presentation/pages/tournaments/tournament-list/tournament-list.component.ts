@@ -91,11 +91,11 @@ export class TournamentListComponent implements OnInit {
   /**
    * Checks if the current user is a tournament administrator.
    *
-   * @returns True if user has TOURNAMENT_ADMIN role
+   * @returns True if user has TOURNAMENT_ADMIN or SYSTEM_ADMIN role
    */
   public isTournamentAdmin(): boolean {
     const user = this.authStateService.getCurrentUser();
-    return user?.role === UserRole.TOURNAMENT_ADMIN;
+    return user?.role === UserRole.TOURNAMENT_ADMIN || user?.role === UserRole.SYSTEM_ADMIN;
   }
 
   /**

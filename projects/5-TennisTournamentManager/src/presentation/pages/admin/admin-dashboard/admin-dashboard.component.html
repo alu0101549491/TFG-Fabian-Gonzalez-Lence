@@ -1,5 +1,11 @@
 <div class="container p-lg">
-  <h1 class="mb-lg">Admin Dashboard</h1>
+  <h1 class="mb-lg">
+    @if (isSystemAdmin()) {
+      System Admin Dashboard
+    } @else {
+      Tournament Admin Dashboard
+    }
+  </h1>
 
   @if (isLoading()) {
     <div class="text-center p-lg">
@@ -11,39 +17,62 @@
     <div class="alert alert-error">{{ errorMessage() }}</div>
   }
 
-  <!-- Statistics Cards -->
-  <div class="grid gap-md mb-lg" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-    <div class="card">
-      <div class="card-body text-center">
-        <h3 class="text-3xl font-bold text-primary">{{ totalTournaments() }}</h3>
-        <p class="text-muted">Total Tournaments</p>
+  <!-- Statistics Cards (System Admin only) -->
+  @if (isSystemAdmin()) {
+    <div class="grid gap-md mb-lg" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+      <div class="card">
+        <div class="card-body text-center">
+          <h3 class="text-3xl font-bold text-primary">{{ totalTournaments() }}</h3>
+          <p class="text-muted">Total Tournaments</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body text-center">
+          <h3 class="text-3xl font-bold text-success">{{ activeTournaments() }}</h3>
+          <p class="text-muted">Active Tournaments</p>
+        </div>
       </div>
     </div>
+  }
 
-    <div class="card">
-      <div class="card-body text-center">
-        <h3 class="text-3xl font-bold text-success">{{ activeTournaments() }}</h3>
-        <p class="text-muted">Active Tournaments</p>
+  <!-- System Admin Tools (System Admin only) -->
+  @if (isSystemAdmin()) {
+    <div class="card mb-lg">
+      <div class="card-header">
+        <h3 class="card-title">⚙️ System Admin Tools</h3>
+      </div>
+      <div class="card-body">
+        <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <button class="btn btn-secondary" (click)="manageUsers()">
+            👥 Manage Users
+          </button>
+          <button class="btn btn-warning" (click)="reviewDisputes()">
+            ⚠️ Review All Disputes
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  }
 
-  <!-- Quick Actions -->
+  <!-- Tournament Admin Tools (Both roles) -->
   <div class="card mb-lg">
     <div class="card-header">
-      <h3 class="card-title">Quick Actions</h3>
+      <h3 class="card-title">🎾 Tournament Admin Tools</h3>
     </div>
     <div class="card-body">
-      <div class="flex gap-md">
+      <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
         <button class="btn btn-primary" (click)="manageTournaments()">
-          Manage Tournaments
+          🏆 Manage Tournaments
         </button>
-        <button class="btn btn-secondary" (click)="manageUsers()">
-          Manage Users
+        <button class="btn btn-primary" (click)="manageOrderOfPlay()">
+          📅 Order of Play
         </button>
-        <button class="btn btn-warning" (click)="reviewDisputes()">
-          ⚠️ Review Disputed Matches
-        </button>
+        @if (isTournamentAdmin()) {
+          <button class="btn btn-warning" (click)="reviewDisputes()">
+            ⚠️ Review Disputes
+          </button>
+        }
       </div>
     </div>
   </div>

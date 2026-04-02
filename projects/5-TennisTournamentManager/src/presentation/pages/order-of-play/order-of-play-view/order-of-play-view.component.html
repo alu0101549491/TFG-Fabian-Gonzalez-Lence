@@ -1,45 +1,175 @@
-<div class="container p-lg">
-  <h1 class="mb-lg">Order of Play</h1>
-
-  <div class="card mb-lg">
-    <div class="card-body">
-      <label class="form-label">Select Date:</label>
-      <input
-        type="date"
-        class="form-control"
-        [value]="selectedDate.toISOString().split('T')[0]"
-        (change)="changeDate(new Date($any($event.target).value))"
-        style="max-width: 300px;"
-      />
-    </div>
-  </div>
-
-  @if (isLoading()) {
-    <div class="text-center p-lg">
-      <p>Loading schedule...</p>
-    </div>
-  }
-
-  @if (errorMessage()) {
-    <div class="alert alert-error">{{ errorMessage() }}</div>
-  }
-
-  @if (orderOfPlay()) {
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">{{ formatDate(orderOfPlay()!.playDate) }}</h3>
+<div class="order-of-play-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-top">
+        <button class="back-button" (click)="goBack()">← Back</button>
       </div>
-      <div class="card-body">
-        <p><strong>Tournament ID:</strong> {{ orderOfPlay()!.tournamentId }}</p>
-        <p class="text-muted">Match schedule for this day will be displayed here.</p>
-        <!-- In a real implementation, would display the actual match schedule -->
+      <h1 class="hero-title">Order of Play 📅</h1>
+      <p class="hero-subtitle">View daily match schedules across all courts</p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Date Selector & Court Filter -->
+    <div class="controls-card">
+      <div class="controls-grid">
+        <!-- Date Selector -->
+        <div class="control-group">
+          <label for="date">📅 Select Date:</label>
+          <input
+            type="date"
+            id="date"
+            [value]="selectedDate().toISOString().split('T')[0]"
+            (change)="onDateChange($event)"
+          />
+        </div>
+
+        <!-- Court Filter -->
+        @if (availableCourts().length > 0) {
+          <div class="control-group">
+            <label>🎾 Filter by Court:</label>
+            <div class="court-filters">
+              <button
+                (click)="filterByCourt(null)"
+                [class.active]="selectedCourt() === null"
+                class="court-filter-btn"
+              >
+                All Courts
+              </button>
+              @for (courtId of availableCourts(); track courtId) {
+                <button
+                  (click)="filterByCourt(courtId)"
+                  [class.active]="selectedCourt() === courtId"
+                  class="court-filter-btn"
+                >
+                  {{ getCourtName(courtId) }}
+                </button>
+              }
+            </div>
+          </div>
+        }
       </div>
     </div>
-  }
 
-  @if (!isLoading() && !errorMessage() && !orderOfPlay()) {
-    <div class="text-center p-lg">
-      <p class="text-muted">No matches scheduled for this date.</p>
-    </div>
-  }
+    <!-- Error Message -->
+    @if (errorMessage()) {
+      <div class="error-banner">
+        <div class="error-icon">⚠️</div>
+        <p>{{ errorMessage() }}</p>
+      </div>
+    }
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading schedule...</p>
+      </div>
+    }
+
+
+    <!-- Schedule Display -->
+    @if (!isLoading() && orderOfPlay()) {
+      @if (filteredMatches().length > 0) {
+        <!-- Schedule Header -->
+        <div class="schedule-header">
+          <div class="schedule-info">
+            <h2>{{ formatDate(selectedDate()) }}</h2>
+            <p>{{ filteredMatches().length }} matches scheduled</p>
+          </div>
+          @if (orderOfPlay().isPublished) {
+            <span class="status-badge published">
+              📢 Published
+            </span>
+          } @else {
+            <span class="status-badge draft">
+              📝 Draft
+            </span>
+          }
+        </div>
+
+        <!-- Matches by Court -->
+        @for (entry of matchesByCourt() | keyvalue; track entry.key) {
+          <div class="court-section">
+            <!-- Court Header -->
+            <div class="court-header">
+              <h3>🎾 {{ entry.key }}</h3>
+            </div>
+
+            <!-- Matches List -->
+            <div class="court-matches">
+              @for (match of entry.value; track match.matchId) {
+                <div
+                  [class.user-match]="match.isUserMatch"
+                  class="match-item"
+                >
+                  <div class="match-header">
+                    <!-- Time & Badge -->
+                    <div style="display: flex; align-items: center; gap: var(--spacing-md); flex-wrap: wrap;">
+                      <span class="match-time">
+                        🕐 {{ formatTime(match.time) }}
+                      </span>
+                      @if (match.isUserMatch) {
+                        <span class="your-match-badge">
+                          ⭐ Your Match
+                        </span>
+                      }
+                    </div>
+
+                    <!-- Match Link -->
+                    <a
+                      [routerLink]="['/matches', match.matchId]"
+                      class="btn btn-primary"
+                      style="text-decoration: none; font-size: var(--font-size-sm);"
+                    >
+                      View Match →
+                    </a>
+                  </div>
+
+                  <!-- Participants -->
+                  <div class="match-participants">
+                    <div style="margin-bottom: var(--spacing-xs);">
+                      {{ match.participants[0] || 'TBD' }}
+                    </div>
+                    <div style="color: var(--color-gray-500); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
+                      vs
+                    </div>
+                    <div>
+                      {{ match.participants[1] || 'TBD' }}
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      } @else {
+        <!-- Empty State -->
+        <div class="empty-state">
+          <div class="empty-icon">📅</div>
+          <h3>No Matches Scheduled</h3>
+          <p class="help-text">
+            @if (selectedCourt()) {
+              No matches scheduled for this court on this date.
+            } @else {
+              No matches scheduled for this date yet.
+            }
+          </p>
+        </div>
+      }
+    }
+
+    <!-- Initial Empty State -->
+    @if (!isLoading() && !orderOfPlay()) {
+      <div class="empty-state">
+        <div class="empty-icon">📅</div>
+        <h3>No Schedule Available</h3>
+        <p class="help-text">Select a date to view the order of play.</p>
+      </div>
+    }
+  </main>
 </div>
+

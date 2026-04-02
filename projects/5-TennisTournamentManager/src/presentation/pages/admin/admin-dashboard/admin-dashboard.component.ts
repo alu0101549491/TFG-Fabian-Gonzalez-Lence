@@ -50,15 +50,28 @@ export class AdminDashboardComponent implements OnInit {
   public totalTournaments = signal(0);
   public activeTournaments = signal(0);
 
+  /** Current user */
+  private currentUser = this.authStateService.getCurrentUser();
+
+  /** Check if user is system admin */
+  public isSystemAdmin = signal(false);
+
+  /** Check if user is tournament admin */
+  public isTournamentAdmin = signal(false);
+
   /**
    * Initializes component and verifies admin access.
    */
   public ngOnInit(): void {
     const user = this.authStateService.getCurrentUser();
-    if (!user || user.role !== UserRole.ADMIN) {
+    if (!user || (user.role !== UserRole.SYSTEM_ADMIN && user.role !== UserRole.TOURNAMENT_ADMIN)) {
       void this.router.navigate(['/']);
       return;
     }
+
+    // Set role flags
+    this.isSystemAdmin.set(user.role === UserRole.SYSTEM_ADMIN);
+    this.isTournamentAdmin.set(user.role === UserRole.TOURNAMENT_ADMIN);
 
     void this.loadDashboardData();
   }
@@ -105,6 +118,15 @@ export class AdminDashboardComponent implements OnInit {
    */
   public reviewDisputes(): void {
     void this.router.navigate(['/admin/disputed-matches']);
+  }
+
+  /**
+   * Navigates to order of play management.
+   * For tournament admins managing their tournaments.
+   */
+  public manageOrderOfPlay(): void {
+    // Navigate to tournaments list where they can select which tournament to manage
+    void this.router.navigate(['/tournaments']);
   }
 
   /**

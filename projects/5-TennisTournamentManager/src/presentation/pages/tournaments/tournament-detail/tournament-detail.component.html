@@ -434,6 +434,18 @@
           </button>
         </div>
       </div>
+
+      @if (canManageTournament()) {
+        <div class="card">
+          <div class="card-body text-center">
+            <h4>Order of Play</h4>
+            <p class="text-sm text-muted mb-md">Manage match schedules</p>
+            <button class="btn btn-secondary btn-block" (click)="manageOrderOfPlay()">
+              Manage Schedule
+            </button>
+          </div>
+        </div>
+      }
     </div>
   }
 </div>

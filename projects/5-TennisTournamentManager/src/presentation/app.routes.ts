@@ -100,7 +100,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'order-of-play',
+    path: 'order-of-play/:id',
     loadComponent: () =>
       import('./pages/order-of-play/order-of-play-view/order-of-play-view.component').then(
         (m) => m.OrderOfPlayViewComponent,

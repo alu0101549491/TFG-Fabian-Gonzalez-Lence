@@ -1789,6 +1789,10 @@ router.get('/rankings', apiCache(600), rankingController.getAll.bind(rankingCont
 // Order of Play routes
 // Cache order of play for 5 minutes
 router.get('/order-of-play', apiCache(300), orderOfPlayController.getByDate.bind(orderOfPlayController));
+router.get('/order-of-play/tournament/:tournamentId', authMiddleware, orderOfPlayController.getByTournament.bind(orderOfPlayController));
+router.post('/order-of-play/generate', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), orderOfPlayController.generateSchedule.bind(orderOfPlayController));
+router.put('/order-of-play/:id/reschedule', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), orderOfPlayController.rescheduleMatch.bind(orderOfPlayController));
+router.post('/order-of-play/:id/publish', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), orderOfPlayController.publishOrderOfPlay.bind(orderOfPlayController));
 
 /**
  * @swagger

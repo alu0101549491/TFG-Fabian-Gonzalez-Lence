@@ -191,6 +191,19 @@
                 <span>→</span>
               </div>
             </footer>
+
+            <!-- Admin Actions -->
+            @if (isTournamentAdmin()) {
+              <div class="admin-actions">
+                <a
+                  class="admin-action-btn"
+                  [routerLink]="['/order-of-play', tournament.id]"
+                  (click)="$event.stopPropagation()"
+                  title="Manage match schedules">
+                  📅 Order of Play
+                </a>
+              </div>
+            }
           </article>
         }
       </div>

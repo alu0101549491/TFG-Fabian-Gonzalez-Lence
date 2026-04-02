@@ -6,6 +6,308 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.66.0] - 2026-04-02
+
+### Changed — Simplified Order of Play Routes
+
+**Feature**: Consolidated order of play functionality into a single styled page with cleaner routes.
+
+**Routes Updated**:
+
+1. **Order of Play Route** (`src/presentation/app.routes.ts`):
+   - Changed from `/order-of-play` to `/order-of-play/:id` (tournament-specific)
+   - Removed redundant `/admin/order-of-play/:id` route
+   - Single styled component serves both viewing and management purposes
+   - Cleaner URL structure: `/order-of-play/:tournamentId` instead of `/admin/order-of-play/:tournamentId`
+
+2. **Navigation Updates**:
+   - Tournament List: "📅 Order of Play" button → `/order-of-play/:id`
+   - Tournament Detail: "Manage Schedule" button → `/order-of-play/:id`
+   - All admin navigation links updated to new route structure
+
+3. **Authentication Fix** (`order-of-play-view.component.ts`):
+   - Fixed `TypeError: this.authService.currentUser is not a function`
+   - Changed from `AuthenticationService` to `AuthStateService`
+   - Updated to use `getCurrentUser()` method instead of non-existent `currentUser()` property
+   - Now correctly identifies user's matches in the schedule
+
+**Component Architecture**:
+
+```
+Before:
+- /order-of-play → OrderOfPlayViewComponent (basic view)
+- /admin/order-of-play/:id → OrderOfPlayAdminComponent (admin features)
+
+After:
+- /order-of-play/:id → OrderOfPlayViewComponent (unified styled view with tournament filtering)
+```
+
+**Benefits**:
+
+- **Cleaner URLs**: Removed unnecessary `/admin/` prefix from routes
+- **Single Source of Truth**: One styled component instead of two separate pages
+- **Simplified Navigation**: Direct tournament-specific routes
+- **Better UX**: Users see the same beautiful interface whether viewing or managing
+- **Tournament Filtering**: Component automatically filters matches for specified tournament ID
+- **Fixed Authentication**: Properly identifies user matches and displays "Your Match" badges
+
+**Impact**: Streamlined the Order of Play feature by eliminating redundant admin routes and consolidating functionality into the existing styled component. The URL structure is now cleaner and more intuitive (`/order-of-play/:tournamentId` vs `/admin/order-of-play/:tournamentId`), and all navigation throughout the app has been updated to use the new route pattern. Fixed critical authentication bug that prevented the component from properly identifying user matches.
+
+---
+
+## [1.65.0] - 2026-04-02
+
+### Changed — Admin Dashboard Role Separation
+
+**Feature**: Restructured admin dashboard to distinguish between System Admin tools and Tournament Admin tools with proper role-based access control.
+
+**Changes**:
+
+1. **Main Dashboard Quick Access** (`src/presentation/pages/dashboard.component.ts/html`):
+   - Added `isSystemAdmin()` and `isTournamentAdmin()` computed properties
+   - Dynamic section title: "Admin Tools" (system admin) vs "Tournament Admin Tools" (tournament admin)
+   - Dynamic icon: ⚙️ (system admin) vs 🎾 (tournament admin)
+   - "Manage Users" link only visible to system admins
+   - Tournament admins see: Admin Dashboard, Review Disputes, Manage Tournaments, **Order of Play**
+   - System admins see all tools including "Manage Users"
+
+2. **Tournament List Page Enhancement** (`src/presentation/pages/tournaments/tournament-list/`):
+   - Added admin actions section to each tournament card
+   - "📅 Order of Play" button visible only to admins (both roles)
+   - Uses `routerLink` for direct, declarative navigation to order of play management page
+   - Updated `isTournamentAdmin()` to include both SYSTEM_ADMIN and TOURNAMENT_ADMIN roles
+   - Event propagation stopped inline to prevent card click
+   - Green gradient background styling for admin actions section
+   - Link styled as button with no text decoration
+
+2. **Role-Based Dashboard Access** (`src/presentation/pages/admin/admin-dashboard/`):
+   - Dashboard now accepts both `SYSTEM_ADMIN` and `TOURNAMENT_ADMIN` roles
+   - Dynamic dashboard title based on user role
+   - Separate tool sections with appropriate visibility
+
+2. **System Admin Tools Section** (SYSTEM_ADMIN only):
+   - ⚙️ System Admin Tools card
+   - 👥 Manage Users - system-wide user administration
+   - ⚠️ Review All Disputes - view all disputed matches across tournaments
+   - System statistics (total tournaments, active tournaments)
+
+3. **Tournament Admin Tools Section** (Both SYSTEM_ADMIN and TOURNAMENT_ADMIN):
+   - 🎾 Tournament Admin Tools card
+   - 🏆 Manage Tournaments - create and manage tournaments
+   - 📅 Order of Play - manage match schedules for tournaments
+   - ⚠️ Review Disputes - review disputes in their managed tournaments (TOURNAMENT_ADMIN only)
+
+**Access Matrix**:
+
+**Main Dashboard Quick Links:**
+
+| Tool | System Admin | Tournament Admin |
+|------|-------------|------------------|
+| Admin Dashboard | ✅ | ✅ |
+| Review Disputes | ✅ | ✅ |
+| Manage Tournaments | ✅ | ✅ |
+| **Order of Play** | ✅ | ✅ |
+| Manage Users | ✅ | ❌ |
+
+**Admin Dashboard Page:**
+
+| Tool | System Admin | Tournament Admin |
+|------|-------------|------------------|
+| Manage Users | ✅ | ❌ |
+| Review All Disputes | ✅ | ❌ |
+| System Statistics | ✅ | ❌ |
+| Manage Tournaments | ✅ | ✅ |
+| Order of Play | ✅ | ✅ |
+| Review Own Disputes | ❌ | ✅ |
+
+**Navigation Flow**:
+
+```
+Tournament Admin Dashboard
+  └── 🎾 Tournament Admin Tools
+      ├── 🏆 Manage Tournaments → /tournaments
+      ├── 📅 Order of Play → /tournaments → Select tournament → Click "📅 Order of Play" button
+      └── ⚠️ Review Disputes → /admin/disputed-matches (filtered)
+
+Tournament List Page (for admins)
+  └── Each Tournament Card
+      └── 📅 Order of Play button → /admin/order-of-play/:tournamentId
+
+System Admin Dashboard
+  ├── System Statistics (overview cards)
+  ├── ⚙️ System Admin Tools
+  │   ├── 👥 Manage Users (coming soon)
+  │   └── ⚠️ Review All Disputes → /admin/disputed-matches
+  └── 🎾 Tournament Admin Tools
+      ├── 🏆 Manage Tournaments → /tournaments
+      └── 📅 Order of Play → /tournaments → Select tournament
+```
+
+**UI Improvements**:
+
+- **Main Dashboard**: Dynamic section title and icon based on role
+- **Main Dashboard**: Conditional "Manage Users" link (system admin only)
+- **Tournament List**: Direct "Order of Play" buttons on tournament cards for admins
+- **Tournament List**: Green gradient background for admin actions section
+- Clear visual separation between system-level and tournament-level tools
+- Icon-based navigation buttons for better scannability
+- Conditional rendering based on user role
+- Tournament admins see focused, relevant tools without system-wide options
+- System admins have access to both system and tournament management
+
+**Impact**: Tournament administrators now have a streamlined workflow to manage match schedules. From the dashboard, clicking "Order of Play" takes them to the tournaments list where each tournament card displays a dedicated "📅 Order of Play" button for direct access to the schedule management page. This eliminates the need to navigate through tournament details, providing a faster, more intuitive path to schedule management. System administrators retain full platform control with the same optimized navigation flow.
+
+---
+
+## [1.64.0] - 2026-04-02
+
+### Changed — Order of Play UI/UX Improvements
+
+**Feature**: Applied consistent styling to Order of Play view component with hero section pattern and added tournament admin navigation access.
+
+**Frontend Changes**:
+
+1. **Order of Play View Component Styling** (`src/presentation/pages/order-of-play/order-of-play-view/`):
+   - Added hero section with green gradient background matching app theme
+   - Implemented back button with glassmorphism effect in hero section
+   - Created comprehensive CSS file with responsive design
+   - Converted from Tailwind blue theme to app's green/white color scheme
+   - Enhanced court sections with gradient headers
+   - Improved match cards with hover effects and "Your Match" badges
+   - Better visual hierarchy for schedules grouped by court
+   - Responsive design for mobile and tablet views
+
+2. **Tournament Detail Page Integration** (`src/presentation/pages/tournaments/tournament-detail/`):
+   - Added "Order of Play" card to quick actions section (admin only)
+   - Card visible only to system admins and tournament admins via `canManageTournament()` check
+   - "Manage Schedule" button navigates to `/admin/order-of-play/:tournamentId`
+   - Provides easy access point for tournament administrators to manage match schedules
+
+**Visual Improvements**:
+
+- **Hero Section**: Green gradient with tennis ball SVG overlay pattern
+- **Back Button**: Glass-morphic button with smooth hover animation
+- **Court Headers**: Green gradient with white text and emoji icons
+- **Match Items**: Hover effects with green accent for user matches
+- **Status Badges**: Color-coded published (green) and draft (yellow) indicators
+- **Court Filters**: Toggle buttons with active state highlighting
+- **Loading States**: Branded spinner with primary color
+- **Empty States**: Large emoji icons with helpful guidance text
+
+**Navigation Flow**:
+
+```
+1. Tournament Detail Page (admin view)
+2. Click "Manage Schedule" in Order of Play card
+3. Navigate to /admin/order-of-play/:tournamentId
+4. View/manage schedules with consistent app styling
+5. Use back button to return to previous page
+```
+
+**CSS Variables Used**:
+
+- `--color-primary` / `--color-primary-dark` - Main green brand colors
+- `--color-secondary` - Accent color for gradients
+- `--color-white` - Text on colored backgrounds
+- `--spacing-*` - Consistent spacing scale
+- `--border-radius-*` - Rounded corners
+- `--font-weight-*` - Typography weights
+
+**Impact**: Creates a cohesive visual experience across the application, making the Order of Play feature feel like a native part of the app rather than an add-on. Administrators now have clear entry points to manage schedules directly from the tournament detail page.
+
+---
+
+## [1.63.0] - 2026-04-02
+
+### Added — Complete Order of Play System Implementation
+
+**Feature**: Full order of play (match scheduling) system with automatic schedule generation, manual adjustments, conflict detection, real-time updates, and participant notifications.
+
+**Backend Implementation**:
+
+1. **ScheduleGenerationService** (`backend/src/application/services/schedule-generation.service.ts`):
+   - `generateSchedule()` - Automatic assignment of matches to courts with times
+   - `detectConflicts()` - Identifies overlapping matches on same court
+   - `isTimeSlotAvailable()` - Validates proposed reschedules
+   - `suggestNextAvailableSlot()` - Finds next free time slot
+   - Supports two strategies: simultaneous (parallel on all courts) or sequential
+   - Configurable: start date/time, match duration, break time between matches
+
+2. **OrderOfPlayController Endpoints** (`backend/src/presentation/controllers/order-of-play.controller.ts`):
+   - `POST /api/order-of-play/generate` - Generate automatic schedule for unscheduled matches (admin only)
+   - `PUT /api/order-of-play/:id/reschedule` - Reschedule specific match to new court/time (admin only)
+   - `POST /api/order-of-play/:id/publish` - Publish schedule and notify all participants (admin only)
+   - `GET /api/order-of-play/tournament/:tournamentId` - Get all schedules for tournament
+   - Enhanced `GET /api/order-of-play` - Get schedule by date with enriched participant data
+
+3. **Integration Features**:
+   - Uses existing Match entity fields: `courtId`, `courtName`, `scheduledTime`
+   - WebSocket real-time updates via `emitOrderOfPlayChange()` on tournament channel
+   - Notification integration: participants notified when matches scheduled or rescheduled
+   - Conflict detection prevents overlapping court bookings
+
+**Frontend Implementation**:
+
+1. **OrderOfPlayAdminComponent** (`src/presentation/pages/order-of-play/order-of-play-admin/`):
+   - Schedule generation form with configurable options
+   - Current schedule table view with all matches
+   - Reschedule modal for manual adjustments
+   - Publish button to notify participants
+   - Real-time success/error feedback
+
+2. **OrderOfPlayViewComponent** (existing, enhanced):
+   - Calendar/timeline view of scheduled matches
+   - Group by court with sorted times
+   - Filter by date and court
+   - Highlights current user's matches
+   - Public access for viewing published schedules
+
+**Workflow**:
+
+```
+1. Admin: Configure generation options (start date/time, durations, strategy)
+2. System: Automatically assigns unscheduled matches to available courts
+3. Admin: Review proposed schedule, detect conflicts
+4. Admin: Manual adjustments via drag-drop or reschedule modal
+5. System: Validates time slots, prevents overlapping bookings
+6. Admin: Publish schedule
+7. System: Sends notifications to all participants
+8. System: WebSocket broadcasts updates to connected clients
+9. Participants: View personal match schedule in real-time
+```
+
+**Technical Details**:
+
+- **Schedule Algorithm**: Round-robin assignment across available courts
+- **Conflict Detection**: Checks for time overlaps on same court before saving
+- **Match Duration**: Default 90 minutes with 15-minute break between matches
+- **Simultaneous Matches**: Parallel scheduling across multiple courts (configurable)
+- **Real-Time**: WebSocket broadcasts to `tournament:{id}` room on schedule changes
+
+**Example Generation Request**:
+```json
+POST /api/order-of-play/generate
+{
+  "tournamentId": "trn_abc123",
+  "startDate": "2026-04-05",
+  "startTime": "09:00",
+  "matchDuration": 90,
+  "breakTime": 15,
+  "simultaneousMatches": true
+}
+
+Response:
+{
+  "message": "Schedule generated successfully",
+  "scheduledCount": 16,
+  "conflicts": [] // empty if no conflicts
+}
+```
+
+**Impact**: Completes tournament administration workflow by automating the tedious task of match scheduling while allowing administrators full control over manual adjustments. Participants receive timely notifications about their match times with real-time updates for any changes.
+
+---
+
 ## [1.62.0] - 2026-04-02
 
 ### Added — Automatic Winner Advancement in Single Elimination Brackets

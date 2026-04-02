@@ -111,4 +111,76 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
     const response = await this.httpClient.get<OrderOfPlay[]>(`/order-of-play?matchId=${matchId}`);
     return response;
   }
+
+  /**
+   * Generates order of play schedule for a tournament.
+   * @param tournamentId - The tournament identifier
+   * @param date - The schedule date
+   * @param startTime - The start time (HH:mm format)
+   * @param matchDuration - Duration per match in minutes (optional, default 90)
+   * @returns Promise resolving to the generated order of play
+   */
+  public async generateSchedule(
+    tournamentId: string,
+    date: string,
+    startTime: string,
+    matchDuration?: number
+  ): Promise<OrderOfPlay> {
+    const response = await this.httpClient.post<OrderOfPlay>(
+      `/order-of-play/${tournamentId}/generate`,
+      { date, startTime, matchDuration }
+    );
+    return response;
+  }
+
+  /**
+   * Updates an existing order of play schedule.
+   * @param id - The order of play identifier
+   * @param matches - Updated match assignments
+   * @returns Promise resolving to the updated order of play
+   */
+  public async updateSchedule(
+    id: string,
+    matches: Array<{
+      matchId: string;
+      courtId: string;
+      courtName: string;
+      time: string;
+      participants: string[];
+    }>
+  ): Promise<OrderOfPlay> {
+    const response = await this.httpClient.put<OrderOfPlay>(`/order-of-play/${id}`, { matches });
+    return response;
+  }
+
+  /**
+   * Publishes an order of play schedule.
+   * @param id - The order of play identifier
+   * @returns Promise resolving to the published order of play
+   */
+  public async publishSchedule(id: string): Promise<OrderOfPlay> {
+    const response = await this.httpClient.post<OrderOfPlay>(`/order-of-play/${id}/publish`, {});
+    return response;
+  }
+
+  /**
+   * Retrieves order of play for a specific tournament and date.
+   * @param tournamentId - The tournament identifier
+   * @param date - The date to query
+   * @returns Promise resolving to the order of play or null if not found
+   */
+  public async getOrderOfPlayByDate(tournamentId: string, date: Date): Promise<OrderOfPlay | null> {
+    try {
+      const dateStr = date.toISOString().split('T')[0];
+      const response = await this.httpClient.get<OrderOfPlay>(
+        `/order-of-play?tournamentId=${tournamentId}&date=${dateStr}`
+      );
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
 }
