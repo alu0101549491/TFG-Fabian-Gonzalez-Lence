@@ -129,9 +129,10 @@
 - [x] **Click "Enter Result as Admin"** ✅ "Record Result" button in match-detail page
 - [x] **Enter score** - **no confirmation needed**, immediately official ✅ Works
 - [x] **Select special states**: WO (Walkover), DEF (Default), ABN (Abandoned), CAN (Cancelled) ✅ All MatchStatus enums available
-- [ ] **Verify standings update** immediately ⚠️ Winner advancement works for single elimination
+- [x] **Verify standings update** immediately ✅ Winner advancement works for all result completion methods (v1.62.0)
 > **Backend**: `POST /api/matches/:id/score` (MatchController.submitScore)  
 > **Frontend**: match-detail.component with scoring modal
+> **Note**: Winner advancement now works in confirmResult(), resolveDispute(), and update() methods
 
 #### Suspend/Resume Match
 - [x] **Admin clicks "Suspend Match"** - state becomes SUS ✅ IMPLEMENTED

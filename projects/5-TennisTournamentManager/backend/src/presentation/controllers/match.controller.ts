@@ -383,7 +383,7 @@ export class MatchController {
       // Fetch match to validate
       const match = await matchRepository.findOne({
         where: {id},
-        relations: ['participant1', 'participant2'],
+        relations: ['participant1', 'participant2', 'bracket'],
       });
 
       if (!match) {
@@ -432,7 +432,8 @@ export class MatchController {
       const confirmerName = confirmer ? `${confirmer.firstName} ${confirmer.lastName}` : 'Your opponent';
       await this.notificationService.notifyResultConfirmed(id, result.submittedBy, confirmerName);
 
-      // TODO: Advance winner to next round if single elimination
+      // Advance winner to next round if single elimination
+      await this.advanceWinnerToNextRound(match, matchRepository);
 
       res.status(HTTP_STATUS.OK).json(result);
     } catch (error) {
@@ -591,7 +592,7 @@ export class MatchController {
       // Fetch match
       const match = await matchRepository.findOne({
         where: {id},
-        relations: ['participant1', 'participant2'],
+        relations: ['participant1', 'participant2', 'bracket'],
       });
 
       if (!match) {
@@ -628,6 +629,9 @@ export class MatchController {
       match.updatedAt = new Date();
 
       await matchRepository.save(match);
+
+      // Advance winner to next round if single elimination
+      await this.advanceWinnerToNextRound(match, matchRepository);
 
       // TODO: Notify both participants
       // await notificationService.notifyDisputeResolved(matchId, result);

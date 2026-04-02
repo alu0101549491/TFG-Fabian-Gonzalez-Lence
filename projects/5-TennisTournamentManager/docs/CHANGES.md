@@ -6,6 +6,67 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.62.0] - 2026-04-02
+
+### Added — Automatic Winner Advancement in Single Elimination Brackets
+
+**Feature**: Winners now automatically advance to the next round in single elimination brackets when match results are confirmed by participants or resolved by administrators.
+
+**What Was Fixed**:
+
+Previously, the automatic winner advancement only worked when admins directly submitted scores using `PUT /api/matches/:id`. Winners did **NOT** advance when:
+- Participants used the submit → confirm workflow (`POST /api/matches/:id/result/confirm`)
+- Admins resolved disputed matches (`PUT /api/admin/matches/:id/result/resolve`)
+
+**Implementation**:
+
+1. **Match Controller** (`backend/src/presentation/controllers/match.controller.ts`):
+   - **Line ~387**: Added `'bracket'` relation when fetching match in `confirmResult()` method
+   - **Line ~436**: Calls `advanceWinnerToNextRound()` after participant confirms result
+   - **Line ~595**: Added `'bracket'` relation when fetching match in `resolveDispute()` method
+   - **Line ~633**: Calls `advanceWinnerToNextRound()` after admin resolves disputed result
+
+2. **Winner Advancement Logic** (existing `advanceWinnerToNextRound()` method):
+   - Only applies to SINGLE_ELIMINATION brackets (no effect on Round Robin or Match Play)
+   - Calculates next round match position using formula: `Math.ceil(matchNumber / 2) - 1`
+   - Places winner in correct participant slot (odd matches → participant1, even → participant2)
+   - Handles final matches gracefully (no advancement when next round doesn't exist)
+   - Logs advancement for debugging: `✅ Advanced winner {id} from Match X (Round N) to Match Y (Round M)`
+
+**Workflow Examples**:
+
+**Scenario 1 - Participant Confirmation**:
+```
+1. Player A submits result for Match 1 (Round 1) → result is PENDING_CONFIRMATION
+2. Player B confirms result → match is COMPLETED, winner set
+3. ✅ Winner automatically placed in Match 1 (Round 2) as participant1
+4. Notification sent to Player A confirming result
+```
+
+**Scenario 2 - Admin Resolution of Dispute**:
+```
+1. Player A submits result for Match 2 (Round 1)
+2. Player B disputes result with reason
+3. Admin reviews dispute and sets final winner
+4. ✅ Winner automatically placed in Match 1 (Round 2) as participant2
+5. Match marked as COMPLETED with admin resolution notes
+```
+
+**Technical Details**:
+- Match advancement uses existing database relations (no schema changes needed)
+- Bracket relation must be loaded for type checking (`bracketType === 'SINGLE_ELIMINATION'`)
+- Method is idempotent (safe to call multiple times, won't overwrite existing participants)
+- Console logging provides visibility into advancement operations
+
+**Testing**:
+- Code compiles without errors ✅
+- Logic validated through code inspection ✅
+- Ready for end-to-end testing with live tournament data
+
+**Impact**: Completes the match workflow automation for both participant-driven and admin-driven result confirmation paths. All three result completion methods now properly advance winners in elimination brackets.
+
+---
+
 ## [1.61.0] - 2026-04-02
 
 ### Added — Backend Notification System Implementation
