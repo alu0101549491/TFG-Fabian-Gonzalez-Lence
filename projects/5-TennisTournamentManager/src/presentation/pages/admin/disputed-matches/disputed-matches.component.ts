@@ -260,13 +260,21 @@ export class DisputedMatchesComponent implements OnInit {
     }
 
     // Convert sets to setScores format (e.g., ["6-4", "7-5"])
-    const setScores = form.sets.map(set => `${set.participant1Score}-${set.participant2Score}`);
+    // Filter out empty sets (0-0) before sending
+    const setScores = form.sets
+      .filter(set => set.participant1Score > 0 || set.participant2Score > 0)
+      .map(set => `${set.participant1Score}-${set.participant2Score}`);
+
+    if (setScores.length === 0) {
+      alert('Please enter at least one set score');
+      return;
+    }
 
     this.isLoading.set(true);
 
     try {
       const token = this.authStateService.getToken();
-      await this.http
+      const response: any = await this.http
         .put(
           `${environment.apiUrl}/admin/matches/${result.matchId}/result/resolve`,
           {
@@ -277,6 +285,11 @@ export class DisputedMatchesComponent implements OnInit {
           { headers: { Authorization: `Bearer ${token}` } }
         )
         .toPromise();
+
+      console.log('✅ Dispute resolved successfully:', response);
+      console.log('  - Match ID:', response.match?.id);
+      console.log('  - Winner ID:', response.match?.winnerId);
+      console.log('  - Score saved:', response.match?.score);
 
       alert('Dispute resolved successfully');
       this.closeModal();

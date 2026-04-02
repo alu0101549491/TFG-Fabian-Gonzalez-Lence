@@ -64,6 +64,7 @@ export class MatchRepositoryImpl implements IMatchRepository {
       createdAt: response.createdAt ? new Date(response.createdAt) : new Date(),
       updatedAt: response.updatedAt ? new Date(response.updatedAt) : new Date(),
       scores: response.scores ?? [],  // Include scores from backend
+      score: response.score ?? null,  // Include score string (from dispute resolution)
     });
     
     // Preserve participant objects from backend for display

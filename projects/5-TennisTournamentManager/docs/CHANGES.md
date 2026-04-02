@@ -6,6 +6,194 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.58.0] - 2026-04-02
+
+### Fixed — Match Scores Not Displaying After Dispute Resolution
+
+**Issue**: After an admin resolved a disputed match and entered the set scores (e.g., "0-2, 3-0"), the Match Details page would show the winner badge but NOT display the actual score. The console confirmed the score was correctly saved to the database, but the UI remained blank where the score should appear.
+
+**Root Cause #1 - Missing Frontend Property**: 
+
+The frontend Match entity didn't have a `score` property to hold the string field from the backend. It only had `scores` (array of Score entities), so the backend's `match.score` field was being ignored when mapping API responses.
+
+Backend Match entity (correctly includes score):
+```typescript
+@Column('varchar', {length: 100, nullable: true})
+public score!: string | null;  // ✅ Has field
+```
+
+Frontend Match entity (missing score):
+```typescript
+// ❌ No score property defined
+public readonly scores?: BackendScore[];  // Only has scores array
+```
+
+**Root Cause #2 - Repository Not Mapping Field**:
+
+The `mapBackendToMatch()` method in the match repository didn't map the `score` field from the API response:
+
+```typescript
+// Before (incomplete)
+const match = new Match({
+  // ... other fields ...
+  scores: response.scores ?? [],  // Only maps scores array
+  // ❌ Missing: score field
+});
+```
+
+**Root Cause #3 - Service Only Formatting Score Entities**:
+
+The `formatMatchScores()` method in `match.service.ts` only looked at the `match.scores` relation (Score entities from manual recording) and ignored the `match.score` string field (set during dispute resolution by admins). 
+
+When a dispute is resolved:
+- Backend correctly saves: `match.score = "0-2, 3-0"` (string field)
+- Backend does NOT create Score entities in the scores table
+
+When manually recording scores:
+- Backend creates Score entities with setNumber, player1Games, player2Games, etc.
+- These entities are loaded via the `match.scores` relation
+
+The frontend only knew how to format Score entities, not the string field:
+
+```typescript
+// Before (incomplete)
+private formatMatchScores(match: any): string {
+  const scores = match.scores; // Only looks at Score entities
+  if (!scores || scores.length === 0) {
+    return ''; // Returns empty for dispute-resolved matches!
+  }
+  // ... formatting logic ...
+}
+```
+
+**Solution**:
+
+**1. Added `score` property to frontend Match entity** (`src/domain/entities/match.ts`):
+```typescript
+export interface MatchProps {
+  // ... existing properties ...
+  scores?: BackendScore[];
+  score?: string | null;  // ✅ Added
+}
+
+export class Match {
+  // ... existing properties ...
+  public readonly scores?: BackendScore[];
+  public readonly score?: string | null;  // ✅ Added
+
+  constructor(props: MatchProps) {
+    // ... existing initialization ...
+    this.scores = props.scores;
+    this.score = props.score ?? null;  // ✅ Added
+  }
+}
+```
+
+**2. Updated repository mapping** (`src/infrastructure/repositories/match.repository.ts`):
+```typescript
+// After (complete)
+private mapBackendToMatch(response: any): Match {
+  const match = new Match({
+    // ... other fields ...
+    scores: response.scores ?? [],
+    score: response.score ?? null,  // ✅ Now maps score string
+  });
+  // ...
+}
+```
+
+**3. Updated service to check both score sources** (`src/application/services/match.service.ts`):
+```typescript
+// After (complete)
+private formatMatchScores(match: any): string {
+  // PRIORITY 1: Check match.score string field (from dispute resolution)
+  if (match.score && typeof match.score === 'string' && match.score.trim().length > 0) {
+    return match.score; // Return "0-2, 3-0" directly
+  }
+
+  // PRIORITY 2: Format from Score entities (from manual score recording)
+  const scores = match.scores;
+  if (!scores || scores.length === 0) {
+    return '';
+  }
+  // ... format Score entities as "6-4, 3-6, 7-6(5)" ...
+}
+```
+
+**Impact**:
+- ✅ Dispute-resolved matches now display scores: "0-2, 3-0"
+- ✅ Manually-recorded matches still work with full formatting: "6-4, 3-6, 7-6(5)"
+- ✅ Handles both scoring workflows correctly
+- ✅ Frontend Match entity now mirrors backend structure
+- ✅ No database schema changes required
+
+**Files Modified**:
+- `src/domain/entities/match.ts` (added score property)
+- `src/infrastructure/repositories/match.repository.ts` (map score field)
+- `src/application/services/match.service.ts` (check score string first)
+
+---
+
+## [1.57.0] - 2026-04-02
+
+### Fixed — Empty Sets Included in Dispute Resolution Scores
+
+**Issue**: When resolving a disputed match as an admin, empty sets (0-0) from unfilled form fields were being included in the final score saved to the database. For example, if an admin entered only 2 sets but the form had 3 set input rows, the score would be saved as "2-0, 0-3, 0-0" instead of "2-0, 0-3".
+
+**Root Cause**: 
+
+The `resolveDispute()` method in the DisputedMatchesComponent was converting ALL sets in the form to score strings without filtering out empty sets:
+
+```typescript
+// Before (incorrect)
+const setScores = form.sets.map(set => `${set.participant1Score}-${set.participant2Score}`);
+// This would include ["2-0", "0-3", "0-0"] even if only 2 sets were played
+```
+
+**Solution**:
+
+Updated **`disputed-matches.component.ts`** to filter out empty sets before sending to backend:
+
+```typescript
+// After (correct)
+const setScores = form.sets
+  .filter(set => set.participant1Score > 0 || set.participant2Score > 0)
+  .map(set => `${set.participant1Score}-${set.participant2Score}`);
+// Now correctly sends only ["2-0", "0-3"]
+```
+
+**Additional Improvements**:
+
+1. **Validation**: Added check to ensure at least one set score is entered before submitting
+   ```typescript
+   if (setScores.length === 0) {
+     alert('Please enter at least one set score');
+     return;
+   }
+   ```
+
+2. **Debug Logging**: Added console logs to help diagnose score saving issues
+   ```typescript
+   console.log('✅ Dispute resolved successfully:', response);
+   console.log('  - Match ID:', response.match?.id);
+   console.log('  - Winner ID:', response.match?.winnerId);
+   console.log('  - Score saved:', response.match?.score);
+   ```
+
+**Impact**:
+- Dispute resolution now saves only the actual played sets
+- Empty form rows don't pollute the match score
+- Admins can clearly see in console what score was saved
+- Match detail pages display correct, clean scores (e.g., "6-4, 7-5" instead of "6-4, 7-5, 0-0, 0-0, 0-0")
+
+**Testing**:
+After resolving a dispute, check browser console for confirmation that the correct score was saved.
+
+**User Action Required**:
+If you recently resolved a dispute and need to see the updated score on the match details page, **refresh the page** (F5 or Ctrl+R) to load the latest data from the server.
+
+---
+
 ## [1.56.0] - 2026-04-02
 
 ### Fixed — Test Players Missing ID Documents and Rankings

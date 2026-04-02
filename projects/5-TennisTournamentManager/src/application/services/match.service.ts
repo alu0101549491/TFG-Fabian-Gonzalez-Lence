@@ -60,12 +60,21 @@ export class MatchService implements IMatchService {
 
   /**
    * Formats scores from the match object (scores come from backend with match data).
+   * Handles two score sources:
+   * 1. Score entities (from manual score recording with Score table)
+   * 2. match.score string field (from dispute resolution/admin entry)
    * 
    * @param match - Match entity with scores
    * @returns Formatted score string or empty string if no scores
    */
   private formatMatchScores(match: any): string {
     try {
+      // PRIORITY 1: Check if match has a score string field (from dispute resolution)
+      if (match.score && typeof match.score === 'string' && match.score.trim().length > 0) {
+        return match.score;
+      }
+
+      // PRIORITY 2: Format from Score entities (from manual score recording)
       const scores = match.scores;
       
       if (!scores || scores.length === 0) {

@@ -58,6 +58,8 @@ export interface MatchProps {
   updatedAt?: Date;
   /** Scores from backend (if already loaded with match data). */
   scores?: BackendScore[];
+  /** Score string (e.g., "6-4, 3-6, 7-6" - from dispute resolution or manual entry). */
+  score?: string | null;
 }
 
 /**
@@ -95,6 +97,8 @@ export class Match {
   public readonly updatedAt: Date;
   /** Scores from backend (populated when match is fetched with relations). */
   public readonly scores?: BackendScore[];
+  /** Score string from backend (e.g., "6-4, 3-6, 7-6"). */
+  public readonly score?: string | null;
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -112,6 +116,7 @@ export class Match {
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
     this.scores = props.scores;
+    this.score = props.score ?? null;
   }
 
   /**
