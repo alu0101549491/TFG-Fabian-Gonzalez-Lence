@@ -86,9 +86,11 @@ async function main(): Promise<void> {
           password: player.password,
           role: 'PLAYER',
           isActive: true,
+          ranking: player.ranking,
+          idDocument: `${player.lastName.toUpperCase().substring(0, 3)}${Math.floor(1000000 + Math.random() * 9000000)}X`,
         }, sysAdminToken);
 
-        console.log(`  ✅ Created user: ${player.firstName} ${player.lastName} (Ranking: ${player.ranking})`);
+        console.log(`  ✅ Created user: ${player.firstName} ${player.lastName} (Ranking: ${player.ranking}, ID: ${userResponse.idDocument || 'N/A'})`);
         createdPlayers.push({ ...player, userId: userResponse.id });
       } catch (error: any) {
         if (error.message.includes('exists') || error.message.includes('duplicate')) {
@@ -97,6 +99,15 @@ async function main(): Promise<void> {
           const usersResponse = await apiRequest('/users', 'GET', null, sysAdminToken);
           const existingUser = usersResponse.find((u: any) => u.email === player.email);
           if (existingUser) {
+            // Update existing user to ensure they have idDocument and ranking
+            if (!existingUser.idDocument || !existingUser.ranking) {
+              console.log(`  🔧 Updating ${player.firstName} ${player.lastName} with missing fields...`);
+              const updatedUser = await apiRequest(`/users/${existingUser.id}`, 'PUT', {
+                idDocument: existingUser.idDocument || `${player.lastName.toUpperCase().substring(0, 3)}${Math.floor(1000000 + Math.random() * 9000000)}X`,
+                ranking: existingUser.ranking || player.ranking,
+              }, sysAdminToken);
+              console.log(`  ✅ Updated user with ID: ${updatedUser.idDocument}, Ranking: ${updatedUser.ranking}`);
+            }
             createdPlayers.push({ ...player, userId: existingUser.id });
           }
         } else {

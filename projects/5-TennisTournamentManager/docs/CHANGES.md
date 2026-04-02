@@ -6,6 +6,62 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.56.0] - 2026-04-02
+
+### Fixed — Test Players Missing ID Documents and Rankings
+
+**Issue**: Test players created by the tournament setup script had incomplete profiles - missing `idDocument` and `ranking` fields. This triggered the FR9 profile completeness check, preventing them from registering for tournaments with the error message "Please add your ID/NIE document in your profile before registering for tournaments."
+
+**Root Cause**: 
+
+The `setup-test-tournament.ts` script only set basic user fields (`username`, `email`, `firstName`, `lastName`, `password`, `role`, `isActive`) when creating players, but didn't populate the required `idDocument` field or the `ranking` field needed for seeding.
+
+**Solution**:
+
+Updated **`backend/setup-test-tournament.ts`** to include complete profile data:
+
+1. **New User Creation**: Added `idDocument` and `ranking` fields
+   ```typescript
+   const userResponse = await apiRequest('/users', 'POST', {
+     username: player.username,
+     email: player.email,
+     firstName: player.firstName,
+     lastName: player.lastName,
+     password: player.password,
+     role: 'PLAYER',
+     isActive: true,
+     ranking: player.ranking,  // NEW: For seeding
+     idDocument: `${player.lastName.toUpperCase().substring(0, 3)}${Math.floor(1000000 + Math.random() * 9000000)}X`,  // NEW: Simulated Spanish ID
+   }, sysAdminToken);
+   ```
+
+2. **Existing User Update**: Script now updates existing users that are missing these fields
+   ```typescript
+   if (!existingUser.idDocument || !existingUser.ranking) {
+     const updatedUser = await apiRequest(`/users/${existingUser.id}`, 'PUT', {
+       idDocument: existingUser.idDocument || `${player.lastName.toUpperCase().substring(0, 3)}${...}X`,
+       ranking: existingUser.ranking || player.ranking,
+     }, sysAdminToken);
+   }
+   ```
+
+**ID Document Format**: Generated IDs follow pattern `{LASTNAME_PREFIX}{7_RANDOM_DIGITS}X` (e.g., `NAD8472639X` for Nadal)
+
+**Impact**:
+- Test players now have complete profiles meeting FR9 requirements
+- Can register for tournaments immediately without manual profile updates
+- Rankings are set for proper seeding in brackets
+- Script handles both new user creation and existing user updates
+
+**Testing**:
+```bash
+cd backend
+npx tsx setup-test-tournament.ts
+# Creates 8 players with complete profiles ready for tournament registration
+```
+
+---
+
 ## [1.55.0] - 2026-04-02
 
 ### Fixed — Test Tournament Setup Script Not Assigning Seed Numbers
