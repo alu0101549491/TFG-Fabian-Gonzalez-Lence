@@ -421,5 +421,63 @@ export class OrderOfPlayController {
       next(error);
     }
   }
+
+  /**
+   * GET /api/order-of-play/tournament/:tournamentId/scheduled-matches
+   * Retrieves all matches with SCHEDULED status for a tournament.
+   * Includes both time-assigned matches and those awaiting schedule.
+   */
+  public async getScheduledMatches(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {tournamentId} = req.params;
+
+      const matchRepository = AppDataSource.getRepository(Match);
+
+      // Get all matches with SCHEDULED status for this tournament
+      const scheduledMatches = await matchRepository
+        .createQueryBuilder('match')
+        .leftJoinAndSelect('match.bracket', 'bracket')
+        .leftJoinAndSelect('match.court', 'court')
+        .leftJoinAndSelect('match.participant1', 'participant1')
+        .leftJoinAndSelect('match.participant2', 'participant2')
+        .where('bracket.tournamentId = :tournamentId', {tournamentId})
+        .andWhere('match.status = :status', {status: MatchStatus.SCHEDULED})
+        .orderBy('match.scheduledTime', 'ASC', 'NULLS LAST')
+        .addOrderBy('match.round', 'ASC')
+        .addOrderBy('match.matchNumber', 'ASC')
+        .getMany();
+
+      // Format matches for Order of Play display
+      const formattedMatches = scheduledMatches.map(match => ({
+        matchId: match.id,
+        courtId: match.courtId,
+        courtName: match.courtName || match.court?.name || null,
+        scheduledTime: match.scheduledTime,
+        round: match.round,
+        matchNumber: match.matchNumber,
+        participants: [
+          match.participant1 ? `${match.participant1.firstName} ${match.participant1.lastName}` : 'TBD',
+          match.participant2 ? `${match.participant2.firstName} ${match.participant2.lastName}` : 'TBD',
+        ],
+        participantIds: [
+          match.participant1Id,
+          match.participant2Id,
+        ],
+        status: match.status,
+      }));
+
+      // Group by time assignment status
+      const withTime = formattedMatches.filter(m => m.scheduledTime !== null);
+      const withoutTime = formattedMatches.filter(m => m.scheduledTime === null);
+
+      res.status(HTTP_STATUS.OK).json({
+        scheduledMatches: withTime,
+        awaitingSchedule: withoutTime,
+        totalCount: formattedMatches.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 

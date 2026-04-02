@@ -183,4 +183,55 @@ export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
       throw error;
     }
   }
+
+  /**
+   * Retrieves all scheduled matches for a tournament.
+   * Returns matches with and without specific time assignments.
+   * @param tournamentId - The tournament identifier
+   * @returns Promise resolving to scheduled matches data
+   */
+  public async getScheduledMatchesForTournament(tournamentId: string): Promise<{
+    scheduledMatches: Array<{
+      matchId: string;
+      courtId: string | null;
+      courtName: string | null;
+      scheduledTime: string | null;
+      participants: string[];
+      participantIds: string[];
+      status: string;
+    }>;
+    awaitingSchedule: Array<{
+      matchId: string;
+      courtId: string | null;
+      courtName: string | null;
+      scheduledTime: string | null;
+      participants: string[];
+      participantIds: string[];
+      status: string;
+    }>;
+    totalCount: number;
+  }> {
+    const response = await this.httpClient.get<{
+      scheduledMatches: Array<{
+        matchId: string;
+        courtId: string | null;
+        courtName: string | null;
+        scheduledTime: string | null;
+        participants: string[];
+        participantIds: string[];
+        status: string;
+      }>;
+      awaitingSchedule: Array<{
+        matchId: string;
+        courtId: string | null;
+        courtName: string | null;
+        scheduledTime: string | null;
+        participants: string[];
+        participantIds: string[];
+        status: string;
+      }>;
+      totalCount: number;
+    }>(`/order-of-play/tournament/${tournamentId}/scheduled-matches`);
+    return response;
+  }
 }

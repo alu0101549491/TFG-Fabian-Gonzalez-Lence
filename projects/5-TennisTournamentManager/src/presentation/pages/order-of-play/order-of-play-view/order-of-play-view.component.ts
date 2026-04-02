@@ -149,11 +149,39 @@ export class OrderOfPlayViewComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      const orderOfPlay = await this.orderOfPlayRepository.getOrderOfPlayByDate(
-        this.tournamentId(),
-        this.selectedDate(),
+      // Fetch all scheduled matches for the tournament
+      const data = await this.orderOfPlayRepository.getScheduledMatchesForTournament(
+        this.tournamentId()
       );
-      this.orderOfPlay.set(orderOfPlay);
+
+      // Format matches for display
+      const userId = this.currentUserId();
+      const allMatches = [
+        ...data.scheduledMatches.map(m => ({
+          matchId: m.matchId,
+          courtId: m.courtId || 'unassigned',
+          courtName: m.courtName || 'Awaiting Court Assignment',
+          time: m.scheduledTime || new Date().toISOString(),
+          participants: m.participants,
+          isUserMatch: userId ? m.participantIds.some((id: any) => id === userId) : false,
+          hasScheduledTime: !!m.scheduledTime,
+        })),
+        ...data.awaitingSchedule.map(m => ({
+          matchId: m.matchId,
+          courtId: 'unassigned',
+          courtName: 'Awaiting Court Assignment',
+          time: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // Far future for sorting
+          participants: m.participants,
+          isUserMatch: userId ? m.participantIds.some((id: any) => id === userId) : false,
+          hasScheduledTime: false,
+        }))
+      ];
+
+      // Set the order of play with formatted matches
+      this.orderOfPlay.set({
+        matches: allMatches,
+        isPublished: false,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load order of play';
       this.errorMessage.set(message);
