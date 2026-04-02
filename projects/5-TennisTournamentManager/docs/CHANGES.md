@@ -6,6 +6,243 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.60.0] - 2026-04-02
+
+### Enhanced — Resume Match with Optional Rescheduling
+
+**Enhancement**: The resume match modal now includes optional date/time fields, allowing administrators to reschedule a suspended match while resuming it in a single action. This eliminates the previous two-step workflow.
+
+**Previous Workflow (Two Steps)**:
+1. Suspended on 04/07 due to rain
+2. Admin must:
+   - First: Click "Schedule Match" → Update to 08/07
+   - Then: Click "Resume Match" → Change status back to IN_PROGRESS
+
+**New Workflow (One Step)**:
+1. Suspended on 04/07 due to rain
+2. Admin clicks "Resume Match" → Modal shows:
+   - Previous suspension reason
+   - Current score
+   - **NEW**: Date and time input fields (optional)
+   - Enter new date: 08/07, time: 10:00
+3. Submit → Match is BOTH rescheduled AND resumed in single operation
+
+**What Was Changed**:
+
+**Backend Changes**:
+
+1. **Match Controller** (`backend/src/presentation/controllers/match.controller.ts`):
+   - Updated `POST /api/matches/:id/resume` to accept optional `scheduledTime` in request body
+   - If `scheduledTime` provided, updates `match.scheduledTime = new Date(scheduledTime)`
+   - Maintains backward compatibility (still works without scheduledTime)
+
+2. **API Routes** (`backend/src/presentation/routes/index.ts`):
+   - Updated Swagger documentation with `requestBody` schema
+   - Added `scheduledTime` parameter (type: string, format: date-time, optional)
+   - Example: "2026-04-08T10:00:00.000Z"
+
+**Frontend Changes**:
+
+1. **Match Repository** (`src/infrastructure/repositories/match.repository.ts`):
+   - `resumeMatch(matchId, scheduledTime?)` - Optional scheduledTime parameter
+   - Includes `scheduledTime` in POST body if provided: `const body = scheduledTime ? {scheduledTime} : {};`
+
+2. **Match Service** (`src/application/services/match.service.ts`):
+   - `resumeMatch(matchId, scheduledTime?)` - Optional scheduledTime parameter
+   - Forwards to repository with same optional parameter
+
+3. **Match Detail Component** (`src/presentation/pages/matches/match-detail/match-detail.component.ts`):
+   - **New Form Model**: `resumeForm = {scheduledDate: '', scheduledTime: ''}`
+   - **Updated `openResumeModal()`**:
+     - Populates form fields with current `match.scheduledTime` if it exists
+     - Converts to date (YYYY-MM-DD) and time (HH:MM) format
+     - Leaves empty if no scheduled time
+   - **Updated `submitResume()`**:
+     - Combines `scheduledDate` and `scheduledTime` into ISO string if both provided
+     - Calls `matchService.resumeMatch(matchId, scheduledTime?)` with optional parameter
+     - Still works without scheduling (backward compatible)
+
+4. **Resume Modal Template** (`match-detail.component.html`):
+   - **NEW Form Section**: "📅 Reschedule Match (Optional)"
+   - Two form inputs:
+     - Date picker: `[(ngModel)]="resumeForm.scheduledDate"`
+     - Time picker: `[(ngModel)]="resumeForm.scheduledTime"`
+   - Hint text: "Update the scheduled date/time if the match will be played on a different date"
+   - Wrapped in `<form (ngSubmit)="submitResume()">` for proper form handling
+   - Submit button changed from `(click)` to `type="submit"`
+
+**Workflow Example**:
+
+**Scenario**: Match suspended on April 4th due to heavy rain, will be played on April 8th at 10:00 AM
+
+1. Admin navigates to match detail page (status: SUSPENDED)
+2. Clicks "▶️ Resume Match" button
+3. Modal displays:
+   - Previous suspension reason: "Heavy rain, court unplayable"
+   - Current score: "6-4, 3-2"
+   - **Date field**: Pre-filled with current scheduled date (04/04) or empty
+   - **Time field**: Pre-filled with current scheduled time or empty
+4. Admin updates:
+   - Date: 2026-04-08
+   - Time: 10:00
+5. Clicks "Resume Match"
+6. Backend:
+   - Updates `match.status = IN_PROGRESS`
+   - Updates `match.scheduledTime = 2026-04-08T10:00:00.000Z`
+   - Saves to database
+7. Success message: "Match resumed successfully"
+8. Page reloads showing updated schedule and IN_PROGRESS status
+
+**Benefits**:
+- ✅ Reduces admin workload (one action instead of two)
+- ✅ More intuitive workflow (rescheduling naturally happens when resuming)
+- ✅ Prevents forgetting to update schedule (all in one modal)
+- ✅ Backward compatible (scheduling is optional, can resume without rescheduling)
+- ✅ Pre-fills current scheduled time for easy editing
+
+**Files Modified**:
+- `backend/src/presentation/controllers/match.controller.ts`
+- `backend/src/presentation/routes/index.ts`
+- `src/infrastructure/repositories/match.repository.ts`
+- `src/application/services/match.service.ts`
+- `src/presentation/pages/matches/match-detail/match-detail.component.ts`
+- `src/presentation/pages/matches/match-detail/match-detail.component.html`
+
+---
+
+## [1.59.0] - 2026-04-02
+
+### Added — Match Suspend/Resume Functionality
+
+**Feature**: Tournament administrators can now suspend in-progress matches due to external circumstances (weather, poor light, time constraints) and later resume them. This implements the complete suspend/resume workflow that was previously only defined at the domain layer.
+
+**What Was Added**:
+
+**Backend Changes**:
+
+1. **Match Entity** (`backend/src/domain/entities/match.entity.ts`):
+   - Added `suspensionReason` field (TEXT, nullable) to store the reason for suspension
+   
+2. **Match Controller** (`backend/src/presentation/controllers/match.controller.ts`):
+   - `POST /api/matches/:id/suspend` - Suspends an IN_PROGRESS match
+     - Validates match status is IN_PROGRESS
+     - Requires non-empty suspensionReason
+     - Updates match status to SUSPENDED
+     - Saves suspension reason
+   - `POST /api/matches/:id/resume` - Resumes a SUSPENDED match
+     - Validates match status is SUSPENDED
+     - Changes status back to IN_PROGRESS
+     - Preserves suspension reason for historical record
+
+3. **Routes** (`backend/src/presentation/routes/index.ts`):
+   - Added routes with admin-only middleware (SYSTEM_ADMIN, TOURNAMENT_ADMIN)
+   - Full Swagger documentation included
+
+**Frontend Changes**:
+
+1. **Match Entity** (`src/domain/entities/match.ts`):
+   - Added `suspensionReason?: string | null` property
+   - Updated constructor to initialize suspension reason
+
+2. **Match Service** (`src/application/services/match.service.ts`):
+   - `suspendMatch(matchId, suspensionReason)` - Calls backend suspend endpoint
+   - `resumeMatch(matchId)` - Calls backend resume endpoint
+   - Proper error handling and validation
+
+3. **Match Repository** (`src/infrastructure/repositories/match.repository.ts`):
+   - `suspendMatch()` - HTTP POST to `/matches/:id/suspend`
+   - `resumeMatch()` - HTTP POST to `/matches/:id/resume`
+   - Updated `mapBackendToMatch()` to include `suspensionReason` field
+
+4. **Match Detail Component** (`src/presentation/pages/matches/match-detail/`):
+   - **New UI Elements**:
+     - "Suspend Match" button (⏸️) - shown when match status is IN_PROGRESS and user is admin
+     - "Resume Match" button (▶️) - shown when match status is SUSPENDED and user is admin
+   - **Suspend Modal**:
+     - Textarea for entering suspension reason (required)
+     - Info message explaining score preservation
+     - Submit validation ensures reason is non-empty
+   - **Resume Modal**:
+     - Displays previous suspension reason
+     - Shows current score if available
+     - Confirmation message about returning to IN_PROGRESS status
+   - **Component Logic**:
+     - `showSuspendModal` and `showResumeModal` signals
+     - `suspendForm` with suspensionReason field
+     - `openSuspendModal()`, `openResumeModal()` methods
+     - `submitSuspend()`, `submitResume()` async handlers
+     - Updated `closeModals()` to include new modals
+
+5. **Styling** (`match-detail.component.css`):
+   - `.action-btn.suspend` hover styles (warning color)
+   - `.action-btn.resume` hover styles (success color)
+   - `.btn-warning` button variant (orange/yellow theme)
+   - `.info-box` component for displaying suspension details
+   - `.info-text` for informational messages in modals
+
+**Workflow**:
+
+1. **Suspend Match**:
+   - Admin opens match detail page for IN_PROGRESS match
+   - Clicks "Suspend Match" button
+   - Modal opens with textarea for suspension reason
+   - Enters reason (e.g., "Heavy rain, court unplayable")
+   - Submits → Backend validates → Match status changes to SUSPENDED
+   - Current score is preserved in `match.score` field
+   - Success message displayed, page reloads to show updated status
+
+2. **Resume Match**:
+   - Admin opens match detail page for SUSPENDED match
+   - Clicks "Resume Match" button
+   - Modal displays:
+     - Previous suspension reason ("Heavy rain, court unplayable")
+     - Current score ("6-4, 3-2" if available)
+     - Info about status change
+   - Clicks "Resume Match" → Backend validates → Match status changes to IN_PROGRESS
+   - Match can now be completed normally
+   - Success message displayed, page reloads
+
+**Validation Rules**:
+- ✅ Can only suspend if match status is IN_PROGRESS
+- ✅ Suspension reason is required (non-empty string)
+- ✅ Can only resume if match status is SUSPENDED
+- ✅ Score is preserved during suspension
+- ✅ Suspension reason is preserved for historical record
+- ✅ Only admins (SYSTEM_ADMIN, TOURNAMENT_ADMIN) can suspend/resume
+
+**Domain Rules Implemented**:
+- Frontend Match entity `suspend(reason)` method validates IN_PROGRESS status
+- Frontend Match entity `resume()` method validates SUSPENDED status
+- Backend enforces same validations at API level
+- All validations from domain layer are respected
+
+**Testing**:
+- ✅ Backend endpoints validated with Swagger docs
+- ✅ Frontend modals display correctly with proper styling
+- ✅ Form validation prevents empty suspension reasons
+- ✅ Admin-only access enforced (regular users don't see buttons)
+- ✅ Match state transitions work correctly (IN_PROGRESS ↔ SUSPENDED)
+
+**Files Modified**:
+- `backend/src/domain/entities/match.entity.ts`
+- `backend/src/presentation/controllers/match.controller.ts`
+- `backend/src/presentation/routes/index.ts`
+- `src/domain/entities/match.ts`
+- `src/application/services/match.service.ts`
+- `src/infrastructure/repositories/match.repository.ts`
+- `src/presentation/pages/matches/match-detail/match-detail.component.ts`
+- `src/presentation/pages/matches/match-detail/match-detail.component.html`
+- `src/presentation/pages/matches/match-detail/match-detail.component.css`
+
+**Checklist Status Update**:
+- [x] Admin clicks "Suspend Match" - state becomes SUSPENDED ✅ IMPLEMENTED
+- [x] Save current score - preserved in match.score field ✅ WORKING
+- [x] Add suspension reason - required textarea in modal ✅ IMPLEMENTED
+- [x] Resume match - continues from saved score ✅ IMPLEMENTED
+- [x] Complete match - can be completed after resumption ✅ WORKING
+
+---
+
 ## [1.58.0] - 2026-04-02
 
 ### Fixed — Match Scores Not Displaying After Dispute Resolution

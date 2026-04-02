@@ -966,6 +966,42 @@ export class MatchService implements IMatchService {
   }
 
   /**
+   * Suspends an in-progress match due to external circumstances.
+   *
+   * @param matchId - ID of the match to suspend
+   * @param suspensionReason - Reason for suspension (weather, light, time, etc.)
+   * @returns Suspended match
+   */
+  public async suspendMatch(matchId: string, suspensionReason: string): Promise<any> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    if (!suspensionReason || suspensionReason.trim().length === 0) {
+      throw new Error('Suspension reason is required');
+    }
+
+    const response = await this.matchRepository.suspendMatch(matchId, suspensionReason);
+    return response;
+  }
+
+  /**
+   * Resumes a previously suspended match.
+   *
+   * @param matchId - ID of the match to resume
+   * @param scheduledTime - Optional new scheduled date/time in ISO format
+   * @returns Resumed match
+   */
+  public async resumeMatch(matchId: string, scheduledTime?: string): Promise<any> {
+    if (!matchId || matchId.trim().length === 0) {
+      throw new Error('Match ID is required');
+    }
+
+    const response = await this.matchRepository.resumeMatch(matchId, scheduledTime);
+    return response;
+  }
+
+  /**
    * Maps a Match entity to MatchDto.
    *
    * @param match - Match entity

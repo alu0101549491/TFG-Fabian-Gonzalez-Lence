@@ -177,6 +177,21 @@
                 <span>🔄</span>
                 <span>Update Status</span>
               </button>
+              
+              @if (match()!.status === 'IN_PROGRESS' && canManageMatch()) {
+                <button class="action-btn suspend" (click)="openSuspendModal()" [disabled]="isSubmitting()">
+                  <span>⏸️</span>
+                  <span>Suspend Match</span>
+                </button>
+              }
+              
+              @if (match()!.status === 'SUSPENDED' && canManageMatch()) {
+                <button class="action-btn resume" (click)="openResumeModal()" [disabled]="isSubmitting()">
+                  <span>▶️</span>
+                  <span>Resume Match</span>
+                </button>
+              }
+              
               <button class="action-btn cancel" (click)="openCancelModal()" [disabled]="isSubmitting() || match()!.status === 'CANCELLED'">
                 <span>❌</span>
                 <span>Cancel Match</span>
@@ -487,6 +502,129 @@
               </button>
               <button type="submit" class="btn-danger" [disabled]="isSubmitting()">
                 {{ isSubmitting() ? 'Cancelling...' : 'Cancel Match' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+
+    <!-- Suspend Match Modal -->
+    @if (showSuspendModal()) {
+      <div class="modal-overlay" (click)="closeModals()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>⏸️ Suspend Match</h3>
+            <button class="close-btn" (click)="closeModals()">×</button>
+          </div>
+          <form (ngSubmit)="submitSuspend()">
+            <div class="modal-body">
+              @if (errorMessage()) {
+                <div class="error-alert">
+                  <span>⚠️</span>
+                  <span>{{ errorMessage() }}</span>
+                </div>
+              }
+              
+              <div class="form-group">
+                <label for="suspensionReason">Suspension Reason *</label>
+                <textarea 
+                  id="suspensionReason" 
+                  [(ngModel)]="suspendForm.suspensionReason" 
+                  name="suspensionReason"
+                  rows="4"
+                  placeholder="e.g., Match suspended due to rain, poor light conditions, time constraints..."
+                  required
+                ></textarea>
+              </div>
+
+              <p class="info-text">
+                <span>ℹ️</span>
+                <span>The match can be resumed later. Current score will be preserved.</span>
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSubmitting()">
+                Cancel
+              </button>
+              <button type="submit" class="btn-warning" [disabled]="isSubmitting()">
+                {{ isSubmitting() ? 'Suspending...' : 'Suspend Match' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+
+    <!-- Resume Match Modal -->
+    @if (showResumeModal()) {
+      <div class="modal-overlay" (click)="closeModals()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>▶️ Resume Match</h3>
+            <button class="close-btn" (click)="closeModals()">×</button>
+          </div>
+          <form (ngSubmit)="submitResume()">
+            <div class="modal-body">
+              @if (errorMessage()) {
+                <div class="error-alert">
+                  <span>⚠️</span>
+                  <span>{{ errorMessage() }}</span>
+                </div>
+              }
+              
+              @if (match()!.suspensionReason) {
+                <div class="info-box">
+                  <h4>Previous Suspension Reason:</h4>
+                  <p>{{ match()!.suspensionReason }}</p>
+                </div>
+              }
+
+              @if (match()!.score) {
+                <div class="info-box">
+                  <h4>Current Score:</h4>
+                  <p class="score-display">{{ match()!.score }}</p>
+                </div>
+              }
+
+              <div class="form-section">
+                <h4 class="form-section-title">📅 Reschedule Match (Optional)</h4>
+                <p class="form-hint">Update the scheduled date/time if the match will be played on a different date.</p>
+                
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="resumeScheduledDate">Date</label>
+                    <input 
+                      type="date" 
+                      id="resumeScheduledDate" 
+                      [(ngModel)]="resumeForm.scheduledDate" 
+                      name="scheduledDate"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="resumeScheduledTime">Time</label>
+                    <input 
+                      type="time" 
+                      id="resumeScheduledTime" 
+                      [(ngModel)]="resumeForm.scheduledTime" 
+                      name="scheduledTime"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <p class="info-text">
+                <span>ℹ️</span>
+                <span>Match will be set back to IN PROGRESS status and can be completed normally.</span>
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSubmitting()">
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+                {{ isSubmitting() ? 'Resuming...' : 'Resume Match' }}
               </button>
             </div>
           </form>

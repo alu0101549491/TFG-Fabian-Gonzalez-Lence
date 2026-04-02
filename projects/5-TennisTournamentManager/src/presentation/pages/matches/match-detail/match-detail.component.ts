@@ -66,6 +66,8 @@ export class MatchDetailComponent implements OnInit {
   public showStatusModal = signal(false);
   public showScoresModal = signal(false);
   public showCancelModal = signal(false);
+  public showSuspendModal = signal(false);
+  public showResumeModal = signal(false);
 
   /** Form states */
   public scheduleForm = {
@@ -87,6 +89,15 @@ export class MatchDetailComponent implements OnInit {
 
   public cancelForm = {
     reason: '',
+  };
+
+  public suspendForm = {
+    suspensionReason: '',
+  };
+
+  public resumeForm = {
+    scheduledDate: '',
+    scheduledTime: '',
   };
 
   /** Available statuses */
@@ -241,6 +252,36 @@ export class MatchDetailComponent implements OnInit {
   }
 
   /**
+   * Opens the suspend match modal.
+   */
+  public openSuspendModal(): void {
+    this.showSuspendModal.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.suspendForm.suspensionReason = '';
+  }
+
+  /**
+   * Opens the resume match modal.
+   */
+  public openResumeModal(): void {
+    this.showResumeModal.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    // Populate form with current scheduled time if it exists
+    const match = this.match();
+    if (match?.scheduledTime) {
+      const scheduledDate = new Date(match.scheduledTime);
+      this.resumeForm.scheduledDate = scheduledDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      this.resumeForm.scheduledTime = scheduledDate.toTimeString().slice(0, 5); // HH:MM
+    } else {
+      this.resumeForm.scheduledDate = '';
+      this.resumeForm.scheduledTime = '';
+    }
+  }
+
+  /**
    * Closes all modals.
    */
   public closeModals(): void {
@@ -248,6 +289,8 @@ export class MatchDetailComponent implements OnInit {
     this.showStatusModal.set(false);
     this.showScoresModal.set(false);
     this.showCancelModal.set(false);
+    this.showSuspendModal.set(false);
+    this.showResumeModal.set(false);
   }
 
   // Action handlers
@@ -397,6 +440,65 @@ export class MatchDetailComponent implements OnInit {
 await this.loadMatch(this.match()!.id);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to cancel match';
+      this.errorMessage.set(message);
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  /**
+   * Submits the suspend match form.
+   */
+  public async submitSuspend(): Promise<void> {
+    if (!this.match()) return;
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      if (!this.suspendForm.suspensionReason.trim()) {
+        throw new Error('Suspension reason is required');
+      }
+
+      await this.matchService.suspendMatch(
+        this.match()!.id,
+        this.suspendForm.suspensionReason
+      );
+
+      this.successMessage.set('Match suspended successfully');
+      this.closeModals();
+      await this.loadMatch(this.match()!.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to suspend match';
+      this.errorMessage.set(message);
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  /**
+   * Submits the resume match action.
+   */
+  public async submitResume(): Promise<void> {
+    if (!this.match()) return;
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      // Combine date and time into ISO string if provided
+      let scheduledTime: string | undefined = undefined;
+      if (this.resumeForm.scheduledDate && this.resumeForm.scheduledTime) {
+        scheduledTime = `${this.resumeForm.scheduledDate}T${this.resumeForm.scheduledTime}:00.000Z`;
+      }
+
+      await this.matchService.resumeMatch(this.match()!.id, scheduledTime);
+
+      this.successMessage.set('Match resumed successfully');
+      this.closeModals();
+      await this.loadMatch(this.match()!.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to resume match';
       this.errorMessage.set(message);
     } finally {
       this.isSubmitting.set(false);

@@ -133,12 +133,14 @@
 > **Frontend**: match-detail.component with scoring modal
 
 #### Suspend/Resume Match
-- [ ] **Admin clicks "Suspend Match"** - state becomes SUS ⚠️ NOT IMPLEMENTED
-- [ ] **Save current score** (e.g., 6-4, 3-2)
-- [ ] **Add suspension reason** (weather, light, time)
-- [ ] **Resume match** - continues from saved score
-- [ ] **Complete match** - final result updates standings
-> **Note**: MatchStatus.SUSPENDED enum exists but no suspend/resume workflow implemented
+- [x] **Admin clicks "Suspend Match"** - state becomes SUS ✅ IMPLEMENTED
+- [x] **Save current score** (e.g., 6-4, 3-2) ✅ Preserved in match.score field
+- [x] **Add suspension reason** (weather, light, time) ✅ Required textarea in modal
+- [x] **Resume match** - continues from saved score ✅ Status changes back to IN_PROGRESS
+- [x] **Complete match** - final result updates standings ✅ Can complete after resumption
+> **Backend**: `POST /api/matches/:id/suspend`, `POST /api/matches/:id/resume` (MatchController)  
+> **Frontend**: Match detail page with suspend/resume buttons and modals  
+> **Note**: Full workflow implemented (v1.59.0) - admin-only, validates status transitions
 
 ---
 

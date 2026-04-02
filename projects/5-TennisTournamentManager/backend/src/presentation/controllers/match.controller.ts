@@ -687,5 +687,112 @@ export class MatchController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/matches/:id/suspend
+   * Suspends an in-progress match with a reason.
+   * 
+   * @param req - Express request with match ID in params and suspensionReason in body
+   * @param res - Express response
+   * @param next - Express next function
+   */
+  public async suspendMatch(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const {suspensionReason} = req.body;
+
+      if (!suspensionReason || suspensionReason.trim().length === 0) {
+        throw new AppError('Suspension reason is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+      }
+
+      const matchRepository = AppDataSource.getRepository(Match);
+      const match = await matchRepository.findOne({
+        where: {id},
+        relations: ['bracket', 'participant1', 'participant2'],
+      });
+
+      if (!match) {
+        throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Validate match can be suspended
+      if (match.status !== MatchStatus.IN_PROGRESS) {
+        throw new AppError(
+          `Cannot suspend match in status ${match.status}. Match must be IN_PROGRESS.`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+
+      // Update match status to SUSPENDED
+      match.status = MatchStatus.SUSPENDED;
+      match.suspensionReason = suspensionReason.trim();
+      match.updatedAt = new Date();
+
+      await matchRepository.save(match);
+
+      // TODO: Notify participants about suspension
+      // await notificationService.notifyMatchSuspended(matchId, suspensionReason);
+
+      res.status(HTTP_STATUS.OK).json(match);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/matches/:id/resume
+   * Resumes a suspended match, transitioning it back to IN_PROGRESS.
+   * Optionally accepts new scheduled date/time to reschedule the match.
+   * 
+   * @param req - Express request with match ID in params and optional scheduledTime in body
+   * @param res - Express response
+   * @param next - Express next function
+   */
+  public async resumeMatch(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const {scheduledTime} = req.body;
+
+      const matchRepository = AppDataSource.getRepository(Match);
+      const match = await matchRepository.findOne({
+        where: {id},
+        relations: ['bracket', 'participant1', 'participant2'],
+      });
+
+      if (!match) {
+        throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Validate match can be resumed
+      if (match.status !== MatchStatus.SUSPENDED) {
+        throw new AppError(
+          `Cannot resume match in status ${match.status}. Match must be SUSPENDED.`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+
+      // Update match status back to IN_PROGRESS
+      match.status = MatchStatus.IN_PROGRESS;
+      
+      // Update scheduled time if provided
+      if (scheduledTime) {
+        match.scheduledTime = new Date(scheduledTime);
+      }
+      
+      // Keep suspension reason for historical record
+      match.updatedAt = new Date();
+
+      await matchRepository.save(match);
+
+      // TODO: Notify participants about resumption
+      // await notificationService.notifyMatchResumed(matchId);
+
+      res.status(HTTP_STATUS.OK).json(match);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 

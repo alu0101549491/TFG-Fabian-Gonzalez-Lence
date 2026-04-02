@@ -73,6 +73,9 @@ export class Match {
   @Column('varchar', {length: 100, nullable: true})
   public score!: string | null;
 
+  @Column('text', {nullable: true})
+  public suspensionReason!: string | null;
+
   @CreateDateColumn()
   public createdAt!: Date;
 

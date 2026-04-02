@@ -60,6 +60,8 @@ export interface MatchProps {
   scores?: BackendScore[];
   /** Score string (e.g., "6-4, 3-6, 7-6" - from dispute resolution or manual entry). */
   score?: string | null;
+  /** Reason for suspension (if match status is SUSPENDED). */
+  suspensionReason?: string | null;
 }
 
 /**
@@ -99,6 +101,8 @@ export class Match {
   public readonly scores?: BackendScore[];
   /** Score string from backend (e.g., "6-4, 3-6, 7-6"). */
   public readonly score?: string | null;
+  /** Suspension reason (populated if match status is SUSPENDED). */
+  public readonly suspensionReason?: string | null;
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -117,6 +121,7 @@ export class Match {
     this.updatedAt = props.updatedAt ?? new Date();
     this.scores = props.scores;
     this.score = props.score ?? null;
+    this.suspensionReason = props.suspensionReason ?? null;
   }
 
   /**

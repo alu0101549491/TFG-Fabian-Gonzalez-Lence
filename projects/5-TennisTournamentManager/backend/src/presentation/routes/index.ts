@@ -1425,6 +1425,91 @@ router.post('/matches/:id/result/dispute', authMiddleware, matchController.dispu
 
 /**
  * @swagger
+ * /matches/{id}/suspend:
+ *   post:
+ *     tags: [Matches]
+ *     summary: Suspend an in-progress match
+ *     description: Suspends a match currently in progress due to weather, light, or other circumstances (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Match ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - suspensionReason
+ *             properties:
+ *               suspensionReason:
+ *                 type: string
+ *                 description: Reason for suspension (weather, light, time, etc.)
+ *                 example: "Match suspended due to rain"
+ *     responses:
+ *       200:
+ *         description: Match suspended successfully
+ *       400:
+ *         description: Invalid status or missing reason
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Admin access required
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.post('/matches/:id/suspend', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), matchController.suspendMatch.bind(matchController));
+
+/**
+ * @swagger
+ * /matches/{id}/resume:
+ *   post:
+ *     tags: [Matches]
+ *     summary: Resume a suspended match
+ *     description: Resumes a previously suspended match, transitioning it back to IN_PROGRESS. Optionally reschedules the match to a new date/time (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Match ID
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               scheduledTime:
+ *                 type: string
+ *                 format: date-time
+ *                 description: New scheduled date/time for the match (optional)
+ *                 example: "2026-04-08T10:00:00.000Z"
+ *     responses:
+ *       200:
+ *         description: Match resumed successfully
+ *       400:
+ *         description: Match is not in SUSPENDED status
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Admin access required
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.post('/matches/:id/resume', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), matchController.resumeMatch.bind(matchController));
+
+/**
+ * @swagger
  * /admin/matches/disputed:
  *   get:
  *     tags: [Admin]

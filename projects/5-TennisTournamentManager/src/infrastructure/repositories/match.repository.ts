@@ -65,6 +65,7 @@ export class MatchRepositoryImpl implements IMatchRepository {
       updatedAt: response.updatedAt ? new Date(response.updatedAt) : new Date(),
       scores: response.scores ?? [],  // Include scores from backend
       score: response.score ?? null,  // Include score string (from dispute resolution)
+      suspensionReason: response.suspensionReason ?? null,  // Include suspension reason
     });
     
     // Preserve participant objects from backend for display
@@ -302,6 +303,33 @@ export class MatchRepositoryImpl implements IMatchRepository {
     const response = await this.httpClient.post(`/matches/${matchId}/result/dispute`, {
       disputeReason,
     });
+    return response;
+  }
+
+  /**
+   * Suspends an in-progress match.
+   *
+   * @param matchId - ID of the match to suspend
+   * @param suspensionReason - Reason for suspension (weather, light, etc.)
+   * @returns Suspended match
+   */
+  public async suspendMatch(matchId: string, suspensionReason: string): Promise<any> {
+    const response = await this.httpClient.post(`/matches/${matchId}/suspend`, {
+      suspensionReason,
+    });
+    return response;
+  }
+
+  /**
+   * Resumes a previously suspended match.
+   *
+   * @param matchId - ID of the match to resume
+   * @param scheduledTime - Optional new scheduled date/time in ISO format
+   * @returns Resumed match
+   */
+  public async resumeMatch(matchId: string, scheduledTime?: string): Promise<any> {
+    const body = scheduledTime ? {scheduledTime} : {};
+    const response = await this.httpClient.post(`/matches/${matchId}/resume`, body);
     return response;
   }
 }
