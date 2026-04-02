@@ -22,11 +22,17 @@ import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
+import {NotificationService} from '../../application/services/notification.service';
 
 /**
  * Match controller.
  */
 export class MatchController {
+  private readonly notificationService: NotificationService;
+
+  constructor() {
+    this.notificationService = new NotificationService();
+  }
   /**
    * Enriches matches with seed information from registrations.
    * 
@@ -342,8 +348,14 @@ export class MatchController {
 
       await matchResultRepository.save(result);
 
-      // TODO: Send notification to opponent
-      // await notificationService.notifyPendingConfirmation(matchId, opponentId);
+      // Notify opponent about pending result
+      const opponentId = match.participant1Id === userId ? match.participant2Id : match.participant1Id;
+      const submitter = match.participant1Id === userId ? match.participant1 : match.participant2;
+      const submitterName = submitter ? `${submitter.firstName} ${submitter.lastName}` : 'Your opponent';
+      
+      if (opponentId) {
+        await this.notificationService.notifyResultEntered(id, opponentId, submitterName);
+      }
 
       res.status(HTTP_STATUS.CREATED).json(result);
     } catch (error) {
@@ -415,9 +427,12 @@ export class MatchController {
       match.updatedAt = new Date();
       await matchRepository.save(match);
 
+      // Notify submitter that result was confirmed
+      const confirmer = match.participant1Id === userId ? match.participant1 : match.participant2;
+      const confirmerName = confirmer ? `${confirmer.firstName} ${confirmer.lastName}` : 'Your opponent';
+      await this.notificationService.notifyResultConfirmed(id, result.submittedBy, confirmerName);
+
       // TODO: Advance winner to next round if single elimination
-      // TODO: Send notification to submitter
-      // await notificationService.notifyResultConfirmed(matchId, result.submittedBy);
 
       res.status(HTTP_STATUS.OK).json(result);
     } catch (error) {
@@ -488,8 +503,11 @@ export class MatchController {
 
       await matchResultRepository.save(result);
 
-      // TODO: Send notification to administrators
-      // await notificationService.notifyResultDisputed(matchId, disputeReason);
+      // Notify administrators about the dispute
+      const adminUserIds = await this.notificationService.getAdminUserIds();
+      const disputer = match.participant1Id === userId ? match.participant1 : match.participant2;
+      const disputerName = disputer ? `${disputer.firstName} ${disputer.lastName}` : 'A participant';
+      await this.notificationService.notifyResultDisputed(id, adminUserIds, disputerName, disputeReason);
 
       res.status(HTTP_STATUS.OK).json(result);
     } catch (error) {

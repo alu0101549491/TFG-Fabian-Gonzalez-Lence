@@ -6,6 +6,110 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.61.0] - 2026-04-02
+
+### Added — Backend Notification System Implementation
+
+**Feature**: Backend notification service now creates and sends real-time notifications for match result events. Participants and administrators receive in-app notifications when results are submitted, confirmed, or disputed.
+
+**What Was Added**:
+
+**Backend Changes**:
+
+1. **NotificationService** (`backend/src/application/services/notification.service.ts`):
+   - `createNotification()` - Core method to create and save notifications to database
+   - `notifyResultEntered()` - Notifies opponent when match result is submitted (pending confirmation)
+   - `notifyResultConfirmed()` - Notifies original submitter when opponent confirms result
+   - `notifyResultDisputed()` - Notifies all administrators when result is disputed
+   - `notifyMatchScheduled()` - Notifies participants when match is scheduled
+   - `getAdminUserIds()` - Helper to retrieve all admin user IDs
+   - WebSocket integration via `emitNotification()` for real-time delivery
+
+2. **Match Controller** (`backend/src/presentation/controllers/match.controller.ts`):
+   - **Line ~345**: After `submitResultAsParticipant()` saves result → notifies opponent
+   - **Line ~425**: After `confirmResult()` completes → notifies original submitter
+   - **Line ~492**: After `disputeResult()` saves dispute → notifies all admins
+   - Includes participant names in notifications for better context
+
+**Notification Flow**:
+
+1. **Result Submission** (Player A submits score):
+   ```
+   POST /api/matches/:id/result
+   → Creates MatchResult with PENDING_CONFIRMATION status
+   → Notification sent to Player B: "🎾 Match Result Pending Confirmation"
+   → WebSocket emits real-time notification
+   ```
+
+2. **Result Confirmation** (Player B confirms):
+   ```
+   POST /api/matches/:id/result/confirm
+   → Updates MatchResult to CONFIRMED
+   → Updates Match to COMPLETED with winner
+   → Notification sent to Player A: "✅ Match Result Confirmed"
+   → WebSocket emits confirmation
+   ```
+
+3. **Result Dispute** (Player B disputes):
+   ```
+   POST /api/matches/:id/result/dispute
+   → Updates MatchResult to DISPUTED with reason
+   → Notification sent to ALL admins: "⚠️ Match Result Disputed"
+   → Includes dispute reason in notification metadata
+   → WebSocket emits to admin users
+   ```
+
+**Database Changes**:
+- Notifications are persisted to `notifications` table
+- Each notification includes:
+  - `id`: Generated with 'ntf' prefix
+  - `userId`: Recipient user ID
+  - `type`: RESULT_ENTERED notification type
+  - `channels`: [IN_APP] (expandable to EMAIL, TELEGRAM, WEB_PUSH)
+  - `title`: Short notification title with emoji
+  - `message`: Descriptive message with participant names
+  - `metadata`: JSON object with `matchId` and context
+  - `isRead`: Boolean flag (defaults to false)
+  - `createdAt`: Timestamp
+
+**Real-Time Delivery**:
+- Uses existing WebSocket server (`emitNotification()`)
+- Notifications appear instantly in connected clients
+- Event: `notification:new` with notification data
+
+**Benefits**:
+- ✅ Participants know immediately when action is needed
+- ✅ Reduces missed confirmations and delayed dispute resolutions
+- ✅ Admins alerted in real-time about disputes requiring resolution
+- ✅ Notification history preserved in database
+- ✅ Foundation for email/push notifications (channels expandable)
+
+**Files Added**:
+- `backend/src/application/services/notification.service.ts`
+
+**Files Modified**:
+- `backend/src/presentation/controllers/match.controller.ts`
+
+**Implementation Status**:
+- ✅ Backend service complete
+- ✅ Match event wiring complete
+- ✅ WebSocket real-time delivery
+- ⏳ UI notification bell (pending)
+- ⏳ Email/Telegram channels (future)
+- ⏳ Notification preferences UI (future)
+
+**Testing**:
+To verify notifications are working:
+1. Submit a match result as Player A
+2. Check database: `SELECT * FROM notifications WHERE userId = 'player_b_id'`
+3. Should see notification with type='RESULT_ENTERED', title='🎾 Match Result Pending Confirmation'
+4. Confirm the result as Player B
+5. Check database for Player A's notification with title='✅ Match Result Confirmed'
+6. Dispute a result as Player B
+7. Check database for admin notifications with type='RESULT_ENTERED', title='⚠️ Match Result Disputed'
+
+---
+
 ## [1.60.0] - 2026-04-02
 
 ### Enhanced — Resume Match with Optional Rescheduling

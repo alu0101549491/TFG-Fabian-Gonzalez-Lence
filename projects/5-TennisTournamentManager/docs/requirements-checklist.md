@@ -103,25 +103,26 @@
 > **Note**: Opponent confirmation/dispute workflow is NOT yet implemented (next feature)
 
 #### Confirm Result (Opponent)
-- [ ] **Receive notification** about pending result ⚠️ NOT IMPLEMENTED
+- [ ] **Receive notification** about pending result ⚠️ BACKEND IN PROGRESS - UI pending
 - [x] **Navigate to pending match** ✅ IMPLEMENTED - Pending Confirmation section in /my-matches
 - [x] **Review entered result** ✅ IMPLEMENTED - Shows submitted scores and winner
 - [x] **Click "Confirm"** - result becomes official ✅ IMPLEMENTED - Backend + Frontend complete
 - [x] **Standings update automatically** ✅ Match status changes to COMPLETED, winner sets
 > **Backend**: `POST /api/matches/:id/result/confirm` (MatchController.confirmResult)  
 > **Frontend**: MyMatchesComponent with pending confirmation section and confirm button  
-> **Note**: Notification system not yet implemented (future feature)
+> **Note**: Notification backend service being implemented (v1.61.0)
 
 #### Dispute Result (Participant)
 - [x] **Click "Dispute"** instead of confirm ✅ IMPLEMENTED - Dispute button in pending section
 - [x] **Add reason** for dispute ✅ IMPLEMENTED - Textarea modal for dispute reason
-- [x] **Submit dispute** - admin receives notification ✅ IMPLEMENTED - Backend endpoint complete
-- [ ] **Admin reviews** - can validate, modify, or cancel match ⚠️ NOT IMPLEMENTED (admin UI pending)
-> **Note**: Domain service `ResultConfirmationService.disputeResult()` exists and is wired to backend/UI
+- [x] **Submit dispute** - admin receives notification ✅ BACKEND IN PROGRESS - Notification wiring
+- [x] **Admin reviews** - can validate, modify, or cancel match ✅ FULLY IMPLEMENTED
+> **Admin UI**: `/admin/disputed-matches` - DisputedMatchesComponent with resolution form
 
 > **Backend**: `POST /api/matches/:id/result/dispute` (MatchController.disputeResult)  
-> **Frontend**: MyMatchesComponent with dispute modal and reason textarea  
-> **Admin Panel**: Not yet implemented (FR27 - future work)
+> **Backend**: `GET /admin/matches/disputed`, `PUT /admin/matches/:id/result/resolve`  
+> **Frontend**: MyMatchesComponent with dispute modal + DisputedMatchesComponent (admin panel)  
+> **Note**: Full admin review UI exists with score editing, winner selection, and resolution notes
 
 #### Enter Result as Admin (Tournament Admin)
 - [x] **Navigate to any match** ✅ IMPLEMENTED
