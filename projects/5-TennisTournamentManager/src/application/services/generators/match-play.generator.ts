@@ -167,7 +167,7 @@ export class MatchPlayGenerator implements IBracketGenerator {
           phaseId,
           player1Id: participants[player1Index],
           player2Id: participants[player2Index],
-          status: MatchStatus.SCHEDULED,
+          status: MatchStatus.NOT_SCHEDULED,
           matchOrder: matchCounter,
           createdAt: new Date(),
           updatedAt: new Date()

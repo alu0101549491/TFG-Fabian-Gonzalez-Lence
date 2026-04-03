@@ -131,7 +131,7 @@ export class MatchGeneratorService {
         match.participant1Id = playersWithoutByes[playerIndex++] || null;
         match.participant2Id = playersWithoutByes[playerIndex++] || null;
         match.winnerId = null;
-        match.status = MatchStatus.SCHEDULED;
+        match.status = MatchStatus.NOT_SCHEDULED;
       }
       
       match.courtId = null;
@@ -157,7 +157,7 @@ export class MatchGeneratorService {
         match.participant1Id = null; // TBD - winner of previous matches
         match.participant2Id = null;
         match.winnerId = null;
-        match.status = MatchStatus.SCHEDULED;
+        match.status = MatchStatus.NOT_SCHEDULED;
         match.courtId = null;
         match.scheduledTime = null;
         match.startTime = null;
@@ -233,7 +233,7 @@ export class MatchGeneratorService {
         match.participant1Id = player1;
         match.participant2Id = player2;
         match.winnerId = null;
-        match.status = MatchStatus.SCHEDULED;
+        match.status = MatchStatus.NOT_SCHEDULED;
         match.courtId = null;
         match.scheduledTime = null;
         match.startTime = null;
@@ -292,7 +292,7 @@ export class MatchGeneratorService {
         match.matchNumber = i + 1;
         match.participant1Id = participantIds[player1Index];
         match.participant2Id = participantIds[player2Index];
-        match.status = MatchStatus.SCHEDULED;
+        match.status = MatchStatus.NOT_SCHEDULED;
         matches.push(match);
       }
     }

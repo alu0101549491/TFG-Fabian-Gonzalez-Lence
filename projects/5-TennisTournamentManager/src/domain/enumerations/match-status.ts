@@ -16,7 +16,9 @@
  * Follows the State Pattern for valid transitions.
  */
 export enum MatchStatus {
-  /** Match scheduled but not yet started (TBP — To Be Played). */
+  /** Match created but not yet scheduled (awaiting players, time, court). */
+  NOT_SCHEDULED = 'NOT_SCHEDULED',
+  /** Match fully scheduled with players, time, and court assigned (TBP — To Be Played). */
   SCHEDULED = 'SCHEDULED',
   /** Match is currently being played (IP — In Progress). */
   IN_PROGRESS = 'IN_PROGRESS',

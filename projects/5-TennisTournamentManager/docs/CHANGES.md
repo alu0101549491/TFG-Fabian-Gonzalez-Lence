@@ -6,6 +6,98 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.67.0] - 2026-04-02
+
+### Fixed — Match Status Logic for Order of Play
+
+**Issue**: Matches were appearing in Order of Play even when they lacked players, dates, times, or court assignments. The status "SCHEDULED" was being used incorrectly for all newly created matches.
+
+**Root Cause**: 
+- New matches were created with `status = SCHEDULED` by default
+- "SCHEDULED" was being used for both pending matches and fully scheduled matches  
+- Order of Play was showing all SCHEDULED matches, including incomplete ones
+
+**Solution Implemented**:
+
+1. **Added NOT_SCHEDULED Status** (`backend/src/domain/enumerations/match-status.ts`):
+   ```typescript
+   enum MatchStatus {
+     NOT_SCHEDULED = 'NOT_SCHEDULED', // New: match created but not yet scheduled
+     SCHEDULED = 'SCHEDULED',         // Updated: match fully scheduled (players + time + court)
+     IN_PROGRESS = 'IN_PROGRESS',
+     COMPLETED = 'COMPLETED',
+     // ... other statuses
+   }
+   ```
+
+2. **Updated Match Entity** (`backend/src/domain/entities/match.entity.ts`):
+   - Changed default status from `SCHEDULED` to `NOT_SCHEDULED`
+   - Matches now start as NOT_SCHEDULED when created
+
+3. **Updated Match Generation** (`backend/src/application/services/match-generator.service.ts`):
+   - Changed 4 occurrences: `status = MatchStatus.SCHEDULED` → `status = MatchStatus.NOT_SCHEDULED`
+   - Applies to: elimination brackets, round-robin, placeholder matches
+
+4. **Status Transition Logic**:
+   - **Schedule Generation** (`order-of-play.controller.ts` line ~143):
+     - When generating automated schedule, sets `status = MatchStatus.SCHEDULED`
+     - Triggered when assigning court, time, and participants via schedule algorithm
+   
+   - **Manual Scheduling** (`order-of-play.controller.ts` line ~276):
+     - When admin manually schedules match, sets `status = MatchStatus.SCHEDULED`
+     - Triggered via "Reschedule Match" functionality
+
+5. **Fixed Invalid Reference** (`match.controller.ts` line ~321):
+   - Removed reference to non-existent `MatchStatus.TO_BE_PLAYED`
+   - Updated allowed statuses for result submission: `[SCHEDULED, IN_PROGRESS]`
+   - Prevents NOT_SCHEDULED matches from accepting results
+
+**Match Status Lifecycle**:
+```
+Created → NOT_SCHEDULED (no schedule details)
+         ↓ (time/court assigned)
+      SCHEDULED (fully scheduled: players + time + court)
+         ↓ (match starts)
+      IN_PROGRESS
+         ↓ (match ends)
+      COMPLETED
+```
+
+**Order of Play Behavior**:
+- **Before**: Showed all matches with status=SCHEDULED (including incomplete ones)
+- **After**: Only shows fully scheduled matches (with players, time, and court)
+- Empty placeholder matches with "TBD vs TBD" no longer appear
+
+**Database Impact**:
+- Existing matches with status=SCHEDULED remain unchanged
+- New matches created after this update will use NOT_SCHEDULED status
+- Status automatically updates to SCHEDULED when time/court assigned
+
+**Frontend Changes**:
+
+1. **Updated Match Status Enum** (`src/domain/enumerations/match-status.ts`):
+   - Added `NOT_SCHEDULED` status to frontend enum
+   - Now appears in "Update Match Status" dropdown in match detail pages
+
+2. **Updated Match Entity** (`src/domain/entities/match.ts`):
+   - Changed default status from `SCHEDULED` to `NOT_SCHEDULED`
+   - Matches created in frontend now start as NOT_SCHEDULED
+
+3. **Updated Match Generators** (single-elimination, round-robin, match-play):
+   - All generator services now create matches with `NOT_SCHEDULED` status
+   - Applies to: test data, mock matches, bracket generation
+
+4. **Updated Statistics Service** (`src/application/services/statistics.service.ts`):
+   - "Pending" match count now includes both NOT_SCHEDULED and SCHEDULED statuses
+   - Provides accurate statistics for tournament organizers
+
+**UI Changes**:
+- ✅ "Not Scheduled" now appears in match status dropdown
+- ✅ New matches show as "Not Scheduled" until scheduled
+- ✅ Statistics correctly count both unscheduled and scheduled matches as "pending"
+
+---
+
 ## [1.66.0] - 2026-04-02
 
 ### Changed — Simplified Order of Play Routes

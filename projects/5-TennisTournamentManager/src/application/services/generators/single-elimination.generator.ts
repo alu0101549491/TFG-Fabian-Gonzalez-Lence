@@ -210,7 +210,7 @@ export class SingleEliminationGenerator implements IBracketGenerator {
           phaseId,
           player1Id: player1,
           player2Id: player2,
-          status: MatchStatus.SCHEDULED,
+          status: MatchStatus.NOT_SCHEDULED,
           matchOrder: matchCounter++,
           createdAt: new Date(),
           updatedAt: new Date()

@@ -317,7 +317,7 @@ export class StatisticsService implements IStatisticsService {
     // Calculate result distribution
     const resultDistribution: ResultDistributionDto = {
       completed: allMatches.filter((m) => m.status === MatchStatus.COMPLETED).length,
-      pending: allMatches.filter((m) => m.status === MatchStatus.SCHEDULED).length,
+      pending: allMatches.filter((m) => m.status === MatchStatus.NOT_SCHEDULED || m.status === MatchStatus.SCHEDULED).length,
       inProgress: allMatches.filter((m) => m.status === MatchStatus.IN_PROGRESS).length,
       cancelled: allMatches.filter((m) => m.status === MatchStatus.CANCELLED).length,
       walkovers: allMatches.filter((m) => m.status === MatchStatus.WALKOVER).length,

@@ -317,8 +317,8 @@ export class MatchController {
         throw new AppError('Only match participants can submit results', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
       }
 
-      // Verify match can accept results (TBP, SCHEDULED, or IN_PROGRESS)
-      const allowedStatuses = [MatchStatus.TO_BE_PLAYED, MatchStatus.SCHEDULED];
+      // Verify match can accept results (SCHEDULED or IN_PROGRESS)
+      const allowedStatuses = [MatchStatus.SCHEDULED, MatchStatus.IN_PROGRESS];
       if (!allowedStatuses.includes(match.status)) {
         throw new AppError(`Cannot submit results for match in status ${match.status}`, HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
       }

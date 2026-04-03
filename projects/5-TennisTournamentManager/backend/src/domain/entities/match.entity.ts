@@ -51,7 +51,7 @@ export class Match {
   @Column({
     type: 'enum',
     enum: MatchStatus,
-    default: MatchStatus.SCHEDULED,
+    default: MatchStatus.NOT_SCHEDULED,
   })
   public status!: MatchStatus;
 

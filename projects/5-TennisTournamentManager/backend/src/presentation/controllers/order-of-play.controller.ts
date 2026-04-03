@@ -141,6 +141,7 @@ export class OrderOfPlayController {
           courtId: scheduled.courtId,
           courtName: scheduled.courtName,
           scheduledTime: scheduled.scheduledTime,
+          status: MatchStatus.SCHEDULED,
           updatedAt: new Date(),
         });
       }
@@ -272,6 +273,7 @@ export class OrderOfPlayController {
       match.courtId = courtId;
       match.courtName = court.name;
       match.scheduledTime = new Date(scheduledTime);
+      match.status = MatchStatus.SCHEDULED;
       match.updatedAt = new Date();
 
       await matchRepository.save(match);
@@ -425,7 +427,7 @@ export class OrderOfPlayController {
   /**
    * GET /api/order-of-play/tournament/:tournamentId/scheduled-matches
    * Retrieves all matches with SCHEDULED status for a tournament.
-   * Includes both time-assigned matches and those awaiting schedule.
+   * Only includes matches that have been assigned players, time, and court.
    */
   public async getScheduledMatches(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {

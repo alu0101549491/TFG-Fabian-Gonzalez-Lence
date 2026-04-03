@@ -112,7 +112,7 @@ export class Match {
     this.player1Id = props.player1Id;
     this.player2Id = props.player2Id;
     this.winnerId = props.winnerId ?? null;
-    this.status = props.status ?? MatchStatus.SCHEDULED;
+    this.status = props.status ?? MatchStatus.NOT_SCHEDULED;
     this.scheduledTime = props.scheduledTime ?? null;
     this.startedAt = props.startedAt ?? null;
     this.completedAt = props.completedAt ?? null;
