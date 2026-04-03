@@ -93,12 +93,20 @@ export class OrderOfPlayController {
       }
 
       // Get all unscheduled matches for this tournament
+      // Include matches that:
+      // 1. Have both participants assigned (ready to play)
+      // 2. Don't have a scheduled time yet
+      // 3. Are either NOT_SCHEDULED or SCHEDULED status
       const unscheduledMatches = await matchRepository
         .createQueryBuilder('match')
         .leftJoinAndSelect('match.bracket', 'bracket')
         .where('bracket.tournamentId = :tournamentId', {tournamentId})
-        .andWhere('match.status = :status', {status: MatchStatus.SCHEDULED})
+        .andWhere('match.status IN (:...statuses)', {
+          statuses: [MatchStatus.NOT_SCHEDULED, MatchStatus.SCHEDULED],
+        })
         .andWhere('match.scheduledTime IS NULL')
+        .andWhere('match.participant1Id IS NOT NULL')
+        .andWhere('match.participant2Id IS NOT NULL')
         .orderBy('match.round', 'ASC')
         .addOrderBy('match.matchNumber', 'ASC')
         .getMany();
@@ -111,13 +119,21 @@ export class OrderOfPlayController {
         return;
       }
 
-      // Get available courts for tournament
+      // Get available courts for tournament that match the tournament's surface
       const courts = await courtRepository.find({
-        where: {tournamentId, isAvailable: true},
+        where: {
+          tournamentId,
+          isAvailable: true,
+          surface: tournament.surface, // Only use courts matching tournament surface
+        },
       });
 
       if (courts.length === 0) {
-        throw new AppError('No available courts found for tournament', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+        throw new AppError(
+          `No available ${tournament.surface} courts found for tournament`, 
+          HTTP_STATUS.BAD_REQUEST, 
+          ERROR_CODES.INVALID_INPUT
+        );
       }
 
       // Generate schedule

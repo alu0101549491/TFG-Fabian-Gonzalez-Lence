@@ -8,6 +8,107 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.69.5] - 2026-04-03
 
+### Improved — Surface-Aware Court Assignment in Auto-Scheduling
+
+**Algorithm Enhancement**: Auto-scheduling now intelligently assigns matches only to courts matching the tournament's surface type.
+
+**User Request**: "The algorithm should reschedule the matches to be assigned to the proper court (if is a grass tournament, should use the grass courts)"
+
+**Issue Resolved**:
+- **Before**: Algorithm used ALL available courts regardless of surface type
+- **After**: Algorithm filters courts by tournament surface (HARD → Hard Courts, CLAY → Clay Courts, GRASS → Grass Courts)
+- **Impact**: Matches now always play on the correct surface type for the tournament
+
+**Changes Made**:
+- Updated court query in `generateSchedule()` to add `surface: tournament.surface` filter
+- Error message now specifies which surface type is missing (e.g., "No available HARD courts found")
+- Respects tournament configuration and court specialization
+
+**Example Scenarios**:
+- **HARD Tournament** → Uses only "Hard Court 1" and "Hard Court 2" (2 courts max)
+- **CLAY Tournament** → Uses only "Clay Court 1" and "Clay Court 2" (2 courts max)
+- **GRASS Tournament** → Uses only "Grass Court 1" and "Grass Court 2" (2 courts max)
+
+**User Experience**: Tournament directors can now confidently auto-generate schedules knowing matches will be assigned to appropriate courts for their tournament's surface type, maintaining consistency with professional tournament standards.
+
+### Restructured — Court System with Surface-Based Organization
+
+**Feature Enhancement**: Reorganized court system to have 2 courts per surface type and added visual court information display.
+
+**User Request**: "Configure the page to have 2 courts for each type of ground, showing somewhere which courts have which type of ground and the total amount of courts"
+
+**Changes Made**:
+
+1. **Database restructuring**:
+   - Removed old naming scheme (Court 1, Court 2, etc.)
+   - Added 6 courts total: 2 per surface type
+   - New naming: "Hard Court 1/2", "Clay Court 1/2", "Grass Court 1/2"
+   - All courts set to `isAvailable = true` by default
+
+2. **Court Information Display** (Order of Play page):
+   - **Location**: Below date/court filters, before admin controls
+   - **Total Count Badge**: Shows total available courts (e.g., "6 Total")
+   - **Grouped by Surface**: Courts organized into surface type groups
+   - **Surface Icons**: 🏟️ Hard, 🟤 Clay, 🟢 Grass
+   - **Court Chips**: Individual court cards showing name and availability
+   - **Responsive Grid**: Auto-fits based on screen width (min 280px per column)
+
+3. **Visual Features**:
+   - Hover effects on surface groups and court chips
+   - Unavailable courts highlighted in red with "UNAVAILABLE" badge
+   - Count badges showing number of courts per surface
+   - Clean, modern card-based design matching app aesthetic
+
+4. **Auto-scheduling Impact**:
+   - Algorithm now uses all 6 courts for round-robin distribution
+   - Can schedule up to 6 simultaneous matches
+   - Better court utilization across different surface types
+
+**User Experience**: Tournament admins and players can now see at a glance:
+- Total number of courts available
+- Which courts belong to which surface type
+- Court availability status
+- Logical organization for large tournaments
+
+### Added — Real-Time Conflict Detection in Reschedule Modal
+
+**UX Enhancement**: Added visual feedback when selecting a time slot that conflicts with another match on the same court.
+
+**Issue Resolved**:
+- **Problem**: Users only discovered conflicts after attempting to save and seeing console PUT errors
+- **User Feedback**: "I figured out by pure instinct, and a PUT error at the console"
+- **Impact**: Poor UX with no proactive guidance about scheduling conflicts
+
+**Changes Made**:
+1. **Real-Time Validation**: Checks for conflicts as you type court name or change time
+2. **Visual Warning**: Yellow alert box displays when conflict detected:
+   - Shows conflicting match participants
+   - Shows existing match time
+   - Shows court name
+   - Example: "⚠️ Time conflict: Andy Murray vs Daniil Medvedev is scheduled at 09:00 AM on Court 2"
+3. **Smart Detection**: Compares time ranges (90-minute match duration) for overlaps
+4. **Live Updates**: Conflict check triggers on every input change (`ngModelChange`)
+
+**User Experience**: Tournament admins now see immediate feedback before attempting to save, preventing frustration and reducing trial-and-error. The warning appears/disappears dynamically as you adjust the court or time.
+
+### Fixed — Schedule Generation Finding Matches
+
+**Bug Fix**: Automatic schedule generation now correctly finds matches that are ready to be scheduled.
+
+**Issue Resolved**:
+- **Problem**: "✅ 0 matches scheduled successfully!" when matches were ready to schedule
+- **Root Cause**: Query only looked for `status = SCHEDULED`, missing `NOT_SCHEDULED` matches
+- **Impact**: Matches with both participants assigned but `NOT_SCHEDULED` status were ignored
+
+**Changes Made**:
+1. **Updated Query Logic** in `generateSchedule()`:
+   - **Before**: Only `status = SCHEDULED AND scheduledTime IS NULL`
+   - **After**: `status IN (NOT_SCHEDULED, SCHEDULED) AND scheduledTime IS NULL AND both participants assigned`
+2. **Participant Validation**: Now checks `participant1Id IS NOT NULL AND participant2Id IS NOT NULL`
+3. **Smart Filtering**: Only schedules matches where both players are known (skips future rounds)
+
+**User Experience**: Tournament admins can now generate schedules for Round 1 matches immediately after the draw is complete, before manually setting each match to SCHEDULED status.
+
 ### Added — Public Order of Play Access
 
 **Feature**: Added "📅 Order of Play" link to tournament cards, making match schedules accessible to all users (public, players, and admins).

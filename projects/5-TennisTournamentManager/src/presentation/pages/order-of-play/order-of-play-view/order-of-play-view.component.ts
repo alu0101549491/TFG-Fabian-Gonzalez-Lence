@@ -19,6 +19,7 @@ import {OrderOfPlayRepositoryImpl} from '@infrastructure/repositories/order-of-p
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {AxiosClient} from '@infrastructure/http/axios-client';
 import {UserRole} from '@domain/enumerations/user-role';
+import {EnumFormatPipe} from '@shared/pipes/enum-format.pipe';
 import templateHtml from './order-of-play-view.component.html?raw';
 import styles from './order-of-play-view.component.css?inline';
 
@@ -37,7 +38,7 @@ interface MatchSchedule {
 @Component({
   selector: 'app-order-of-play-view',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, EnumFormatPipe],
   template: templateHtml,
   styles: [styles],
 })
@@ -107,6 +108,28 @@ export class OrderOfPlayViewComponent implements OnInit {
     scheduledTime: '',
   });
 
+  /** Admin: Conflict warning message */
+  public conflictWarning = signal<string | null>(null);
+
+  /** Courts data for the tournament */
+  public courts = signal<any[]>([]);
+
+  /** Court statistics grouped by surface */
+  public courtStats = computed(() => {
+    const allCourts = this.courts();
+    const stats = new Map<string, {count: number; courts: any[]}>();
+    
+    for (const court of allCourts) {
+      const surface = court.surface;
+      const existing = stats.get(surface) || {count: 0, courts: []};
+      existing.count++;
+      existing.courts.push(court);
+      stats.set(surface, existing);
+    }
+    
+    return stats;
+  });
+
   /** Matches extracted from order of play */
   public matches = computed(() => {
     const oop = this.orderOfPlay();
@@ -174,8 +197,23 @@ export class OrderOfPlayViewComponent implements OnInit {
       if (tournamentId) {
         this.tournamentId.set(tournamentId);
         void this.loadOrderOfPlay();
+        void this.loadCourts();
       }
     });
+  }
+
+  /**
+   * Loads courts for the tournament.
+   */
+  private async loadCourts(): Promise<void> {
+    try {
+      const courts = await this.http.get<any[]>(
+        `/courts?tournamentId=${this.tournamentId()}`
+      );
+      this.courts.set(courts);
+    } catch (error) {
+      console.error('Failed to load courts:', error);
+    }
   }
 
   /**
@@ -374,6 +412,58 @@ export class OrderOfPlayViewComponent implements OnInit {
    */
   public closeRescheduleModal(): void {
     this.selectedMatch.set(null);
+    this.conflictWarning.set(null);
+  }
+
+  /**
+   * Checks for time slot conflicts when rescheduling.
+   */
+  public checkConflicts(): void {
+    const form = this.rescheduleForm();
+    const currentMatch = this.selectedMatch();
+    
+    if (!form.courtId || !form.scheduledTime || !currentMatch) {
+      this.conflictWarning.set(null);
+      return;
+    }
+
+    const newTime = new Date(form.scheduledTime);
+    const matchDuration = 90; // minutes
+    const newEndTime = new Date(newTime.getTime() + matchDuration * 60000);
+
+    // Get all matches on the selected court
+    const allMatches = this.matches();
+    const courtMatches = allMatches.filter(
+      (m: any) => 
+        m.courtName === form.courtId && 
+        m.matchId !== currentMatch.matchId // Exclude current match
+    );
+
+    // Check for overlaps
+    for (const match of courtMatches) {
+      const existingTime = new Date(match.time);
+      const existingEndTime = new Date(existingTime.getTime() + matchDuration * 60000);
+
+      // Check if time ranges overlap
+      const overlaps = 
+        (newTime >= existingTime && newTime < existingEndTime) || // New starts during existing
+        (newEndTime > existingTime && newEndTime <= existingEndTime) || // New ends during existing
+        (newTime <= existingTime && newEndTime >= existingEndTime); // New encompasses existing
+
+      if (overlaps) {
+        const existingTimeStr = existingTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const participants = match.participants.join(' vs ');
+        this.conflictWarning.set(
+          `⚠️ Time conflict: ${participants} is scheduled at ${existingTimeStr} on ${form.courtId}`
+        );
+        return;
+      }
+    }
+
+    this.conflictWarning.set(null);
   }
 
   /**

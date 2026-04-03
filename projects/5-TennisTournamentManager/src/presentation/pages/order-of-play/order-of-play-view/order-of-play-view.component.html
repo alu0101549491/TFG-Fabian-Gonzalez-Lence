@@ -54,6 +54,45 @@
       </div>
     </div>
 
+    <!-- Court Information -->
+    @if (courts().length > 0) {
+      <div class="court-info-card">
+        <div class="court-info-header">
+          <h3>🎾 Available Courts</h3>
+          <span class="total-courts-badge">{{ courts().length }} Total</span>
+        </div>
+        
+        <div class="court-stats-grid">
+          @for (entry of courtStats() | keyvalue; track entry.key) {
+            <div class="surface-group">
+              <div class="surface-header">
+                <span class="surface-icon">
+                  @switch (entry.key) {
+                    @case ('HARD') { 🏟️ }
+                    @case ('CLAY') { 🟤 }
+                    @case ('GRASS') { 🟢 }
+                    @default { 🎾 }
+                  }
+                </span>
+                <span class="surface-name">{{ entry.key | enumFormat }}</span>
+                <span class="surface-count">{{ entry.value.count }}</span>
+              </div>
+              <div class="court-list">
+                @for (court of entry.value.courts; track court.id) {
+                  <div class="court-chip" [class.unavailable]="!court.isAvailable">
+                    <span class="court-name">{{ court.name }}</span>
+                    @if (!court.isAvailable) {
+                      <span class="unavailable-badge">Unavailable</span>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     <!-- ADMIN: Schedule Generation Controls -->
     @if (isAdmin()) {
       <div class="admin-controls-card">
@@ -291,6 +330,7 @@
                 type="text" 
                 class="form-control" 
                 [(ngModel)]="rescheduleForm().courtId"
+                (ngModelChange)="checkConflicts()"
                 placeholder="e.g., Court 2, Court 4"
               />
               <small style="color: var(--gray-600); margin-top: 0.25rem; display: block;">
@@ -304,8 +344,15 @@
                 type="datetime-local" 
                 class="form-control" 
                 [(ngModel)]="rescheduleForm().scheduledTime"
+                (ngModelChange)="checkConflicts()"
               />
             </div>
+
+            @if (conflictWarning()) {
+              <div class="conflict-warning">
+                {{ conflictWarning() }}
+              </div>
+            }
           </div>
           
           <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
