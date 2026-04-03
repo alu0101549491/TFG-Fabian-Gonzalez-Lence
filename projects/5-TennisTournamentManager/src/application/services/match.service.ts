@@ -395,6 +395,7 @@ export class MatchService implements IMatchService {
         ...match,
         courtId,
         scheduledTime: time,
+        status: MatchStatus.SCHEDULED,
         updatedAt: new Date(),
       })
     );

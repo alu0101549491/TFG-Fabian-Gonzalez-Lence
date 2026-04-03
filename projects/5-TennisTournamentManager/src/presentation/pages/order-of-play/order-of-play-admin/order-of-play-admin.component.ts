@@ -203,7 +203,7 @@ export class OrderOfPlayAdminComponent implements OnInit {
       const form = this.rescheduleForm();
       await this.http.put(`/order-of-play/${match.matchId}/reschedule`, form);
 
-      this.successMessage.set('✅ Match rescheduled successfully!');
+      this.successMessage.set('Match rescheduled successfully!');
       this.closeRescheduleModal();
       
       // Reload schedule

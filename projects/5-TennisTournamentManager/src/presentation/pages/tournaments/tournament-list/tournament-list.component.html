@@ -186,6 +186,14 @@
                 <span>👥</span>
                 <span>View participants</span>
               </div>
+              <a
+                class="order-of-play-link"
+                [routerLink]="['/order-of-play', tournament.id]"
+                (click)="$event.stopPropagation()"
+                title="View match schedule">
+                <span>📅</span>
+                <span>Order of Play</span>
+              </a>
               <div class="view-details">
                 <span>View Details</span>
                 <span>→</span>

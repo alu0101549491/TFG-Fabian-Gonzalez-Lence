@@ -330,6 +330,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-md);
 }
 
 .participants-count {
@@ -339,6 +340,25 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-gray-700);
+}
+
+.order-of-play-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-success);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+}
+
+.order-of-play-link:hover {
+  background: rgba(46, 125, 50, 0.1);
+  color: var(--color-success-dark);
+  transform: translateY(-1px);
 }
 
 .view-details {

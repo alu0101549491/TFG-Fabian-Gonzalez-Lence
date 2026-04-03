@@ -17,6 +17,8 @@ import {ActivatedRoute, RouterModule} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {OrderOfPlayRepositoryImpl} from '@infrastructure/repositories/order-of-play.repository';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import {AxiosClient} from '@infrastructure/http/axios-client';
+import {UserRole} from '@domain/enumerations/user-role';
 import templateHtml from './order-of-play-view.component.html?raw';
 import styles from './order-of-play-view.component.css?inline';
 
@@ -45,6 +47,7 @@ export class OrderOfPlayViewComponent implements OnInit {
   private readonly orderOfPlayRepository = inject(OrderOfPlayRepositoryImpl);
   private readonly authStateService = inject(AuthStateService);
   private readonly location = inject(Location);
+  private readonly http = inject(AxiosClient);
 
   /** Tournament ID */
   public tournamentId = signal<string>('');
@@ -68,6 +71,40 @@ export class OrderOfPlayViewComponent implements OnInit {
   private currentUserId = computed(() => {
     const user = this.authStateService.getCurrentUser();
     return user?.id || null;
+  });
+
+  /** Check if current user is admin (Tournament Admin or System Admin) */
+  public isAdmin = computed(() => {
+    const user = this.authStateService.getCurrentUser();
+    if (!user) return false;
+    return user.role === UserRole.SYSTEM_ADMIN || user.role === UserRole.TOURNAMENT_ADMIN;
+  });
+
+  /** Admin: Schedule generation options */
+  public scheduleOptions = signal({
+    startDate: new Date().toISOString().split('T')[0],
+    startTime: '09:00',
+    matchDuration: 90,
+    breakTime: 15,
+    simultaneousMatches: true,
+  });
+
+  /** Admin: Generation state */
+  public isGenerating = signal(false);
+
+  /** Admin: Publishing state */
+  public isPublishing = signal(false);
+
+  /** Admin: Success message */
+  public successMessage = signal<string | null>(null);
+
+  /** Admin: Selected match for rescheduling */
+  public selectedMatch = signal<any | null>(null);
+
+  /** Admin: Reschedule form */
+  public rescheduleForm = signal({
+    courtId: '',
+    scheduledTime: '',
   });
 
   /** Matches extracted from order of play */
@@ -258,5 +295,149 @@ export class OrderOfPlayViewComponent implements OnInit {
    */
   public goBack(): void {
     this.location.back();
+  }
+
+  // ===========================
+  // ADMIN METHODS
+  // ===========================
+
+  /**
+   * Generates automatic schedule for unscheduled matches (Admin only).
+   */
+  public async generateSchedule(): Promise<void> {
+    this.isGenerating.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      const opts = this.scheduleOptions();
+      const response = await this.http.post<{
+        message: string;
+        scheduledCount: number;
+        conflicts?: string[];
+      }>('/order-of-play/generate', {
+        tournamentId: this.tournamentId(),
+        ...opts,
+      });
+
+      this.successMessage.set(
+        `✅ ${response.scheduledCount} matches scheduled successfully!`
+      );
+
+      if (response.conflicts && response.conflicts.length > 0) {
+        console.warn('Schedule conflicts:', response.conflicts);
+        this.errorMessage.set(
+          `⚠️ ${response.conflicts.length} conflicts detected. Check console for details.`
+        );
+      }
+
+      // Reload schedule
+      await this.loadOrderOfPlay();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate schedule';
+      this.errorMessage.set(message);
+    } finally {
+      this.isGenerating.set(false);
+    }
+  }
+
+  /**
+   * Opens reschedule modal for a match (Admin only).
+   *
+   * @param match - Match to reschedule
+   */
+  public openRescheduleModal(match: MatchSchedule): void {
+    this.selectedMatch.set(match);
+    
+    // Format datetime for datetime-local input (YYYY-MM-DDThh:mm) without timezone conversion
+    const date = new Date(match.time);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const formattedTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    
+    // Use court name directly as courtId (e.g., "Court 2")
+    const courtId = match.courtName && match.courtName !== 'Awaiting Court Assignment' 
+      ? match.courtName 
+      : '';
+    
+    this.rescheduleForm.set({
+      courtId,
+      scheduledTime: formattedTime,
+    });
+  }
+
+  /**
+   * Closes the reschedule modal.
+   */
+  public closeRescheduleModal(): void {
+    this.selectedMatch.set(null);
+  }
+
+  /**
+   * Saves rescheduled match (Admin only).
+   */
+  public async saveReschedule(): Promise<void> {
+    const match = this.selectedMatch();
+    if (!match) return;
+
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      const form = this.rescheduleForm();
+      
+      // Validate form inputs
+      if (!form.courtId || !form.scheduledTime) {
+        this.errorMessage.set('Please fill in both court and time');
+        return;
+      }
+
+      // Backend expects the match ID in the URL path
+      await this.http.put(`/order-of-play/${match.matchId}/reschedule`, {
+        courtId: form.courtId,
+        scheduledTime: form.scheduledTime,
+      });
+
+      this.successMessage.set('Match rescheduled successfully!');
+      this.closeRescheduleModal();
+      await this.loadOrderOfPlay();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to reschedule match';
+      this.errorMessage.set(message);
+    }
+  }
+
+  /**
+   * Publishes the order of play for the selected date (Admin only).
+   */
+  public async publishOrderOfPlay(): Promise<void> {
+    this.isPublishing.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      // Get the orderOfPlayId for the current date
+      // For now, we'll publish all scheduled matches for this tournament
+      const response = await this.http.post<{
+        message: string;
+        notifiedCount: number;
+      }>(`/order-of-play/tournament/${this.tournamentId()}/publish`, {
+        date: this.selectedDate().toISOString().split('T')[0],
+      });
+
+      this.successMessage.set(
+        `✅ Published! ${response.notifiedCount} participants notified.`
+      );
+
+      await this.loadOrderOfPlay();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to publish order of play';
+      this.errorMessage.set(message);
+    } finally {
+      this.isPublishing.set(false);
+    }
   }
 }

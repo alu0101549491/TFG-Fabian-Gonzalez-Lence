@@ -226,8 +226,13 @@ export class OrderOfPlayController {
         throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
 
-      // Verify court exists and belongs to tournament
-      const court = await courtRepository.findOne({where: {id: courtId}});
+      // Find court by name OR by id (to support both court names and UUIDs)
+      let court = await courtRepository.findOne({where: {name: courtId}});
+      if (!court) {
+        // Try finding by UUID as fallback
+        court = await courtRepository.findOne({where: {id: courtId}});
+      }
+      
       if (!court) {
         throw new AppError('Court not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
@@ -235,6 +240,9 @@ export class OrderOfPlayController {
       if (court.tournamentId !== match.bracket.tournamentId) {
         throw new AppError('Court does not belong to match tournament', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
       }
+
+      // Use the court's UUID for the rest of the logic
+      const actualCourtId = court.id;
 
       // Get current schedule for tournament
       const tournamentMatches = await matchRepository
@@ -252,10 +260,10 @@ export class OrderOfPlayController {
         estimatedDuration: 90, // default
       }));
 
-      // Check if new slot is available
+      // Check if new slot is available (using actual court UUID)
       const isAvailable = this.scheduleService.isTimeSlotAvailable(
         id,
-        courtId,
+        actualCourtId,
         new Date(scheduledTime),
         90,
         currentSchedule
@@ -269,8 +277,8 @@ export class OrderOfPlayController {
         );
       }
 
-      // Update match
-      match.courtId = courtId;
+      // Update match with court UUID and name
+      match.courtId = actualCourtId; // Use the resolved court UUID
       match.courtName = court.name;
       match.scheduledTime = new Date(scheduledTime);
       match.status = MatchStatus.SCHEDULED;
@@ -294,14 +302,16 @@ export class OrderOfPlayController {
         if (matchIndex >= 0) {
           matches[matchIndex] = {
             matchId: id,
-            courtId,
+            courtId: actualCourtId, // Use UUID
+            courtName: court.name,   // Include court name for display
             time: new Date(scheduledTime).toISOString(),
             participants: matches[matchIndex].participants,
           };
         } else {
           matches.push({
             matchId: id,
-            courtId,
+            courtId: actualCourtId, // Use UUID
+            courtName: court.name,   // Include court name for display
             time: new Date(scheduledTime).toISOString(),
             participants: [],
           });

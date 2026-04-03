@@ -6,6 +6,415 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.69.5] - 2026-04-03
+
+### Added — Public Order of Play Access
+
+**Feature**: Added "📅 Order of Play" link to tournament cards, making match schedules accessible to all users (public, players, and admins).
+
+**Issue Resolved**:
+- **Problem**: Only Tournament Admins could access Order of Play from tournament cards
+- **User Impact**: Players and public users had no direct way to view match schedules
+- **Solution**: Added public link in tournament card footer alongside existing "View participants" and "View Details" options
+
+**Changes Made**:
+1. **Tournament Card Footer**: Added new "📅 Order of Play" link
+2. **Accessibility**: Link visible to all users regardless of role
+3. **Routing**: Links to `/order-of-play/:id` (public viewing page)
+4. **Styling**: Green color with hover effects, consistent with tournament card design
+5. **UX**: Clicking link goes directly to schedule without opening tournament details first
+
+**User Experience**: Players can now quickly access their match schedules from the tournament list page. The link prevents event propagation so it doesn't trigger the card click to view tournament details.
+
+### Improved — Success Message Visibility
+
+**UI Enhancement**: Enhanced the success message display for match rescheduling to improve visibility and reduce visual clutter.
+
+**Changes Made**:
+1. **Removed Duplicate Checkmark**: Removed emoji from message text (icon already displayed separately)
+2. **Enhanced Text Visibility**:
+   - Changed text color from dark green to white (`#ffffff`)
+   - Increased font weight from medium to bold
+   - Added subtle text shadow for better contrast against gradient background
+3. **Consistency**: Applied changes to both view and admin components
+
+**Visual Impact**: Success message now displays with a single checkmark icon and bold white text that stands out clearly against the green gradient background.
+
+### Improved — Court Header Text Visibility
+
+**UI Fix**: Enhanced court name visibility in the Order of Play schedule view.
+
+**Changes Made**:
+- Added explicit white color (`#ffffff`) to court header text
+- Ensures "🎾 Court 2" and other court names are clearly visible against the green gradient background
+- Improved readability with better text contrast
+
+---
+
+## [1.69.4] - 2026-04-03
+
+### Fixed — Reschedule Match Court Name Resolution
+
+**Bug Fix**: Backend now accepts court names (e.g., "Court 2") in reschedule requests and automatically resolves them to court UUIDs for database operations.
+
+**Issue Resolved**:
+- **Problem**: Reschedule request returned "Court not found" error
+- **Root Cause**: Backend expected court UUID but frontend sent court name
+- **User Experience**: Users enter human-readable names like "Court 2", not UUIDs
+- **Impact**: Rescheduling was impossible despite correct authentication
+
+**Changes Made**:
+
+1. **Court Lookup Enhancement** (`rescheduleMatch()` method):
+   - **Before**: `courtRepository.findOne({where: {id: courtId}})` (UUID only)
+   - **After**: First tries `findOne({where: {name: courtId}})`, then falls back to UUID
+   - **Supports**: Both "Court 2" (name) and "crt_abc123..." (UUID)
+
+2. **Internal UUID Usage**:
+   - Introduced `actualCourtId` variable to store resolved court UUID
+   - All database operations use UUID internally
+   - Court name used only for display purposes
+
+3. **Match Update**:
+   - Sets `match.courtId = actualCourtId` (UUID for database integrity)
+   - Sets `match.courtName = court.name` (name for display)
+   - Ensures referential integrity with courts table
+
+4. **Order of Play Data**:
+   - Stores both `courtId` (UUID) and `courtName` (display name)
+   - Prevents data loss when court names change
+   - Maintains correct relationships
+
+**Technical Details**:
+- Lookup order: By name first, then by UUID (backward compatible)
+- Validates court belongs to match's tournament
+- Checks time slot availability using court UUID
+- Stores UUID in `matches.courtId` for data integrity
+- Includes court name in OrderOfPlay JSON for frontend display
+
+**User Workflow**:
+1. User opens reschedule modal → sees "Court 2" (court name)
+2. User changes to "Court 4" and clicks save
+3. Frontend sends: `{courtId: "Court 4", scheduledTime: "..."}`
+4. Backend resolves "Court 4" → finds court UUID
+5. Backend saves UUID in database, name for display
+6. Success! Match rescheduled
+
+**Files Modified**:
+- `backend/src/presentation/controllers/order-of-play.controller.ts` (lines 228-318)
+
+---
+
+## [1.69.3] - 2026-04-03
+
+### Fixed — Order of Play Public Access (401 Unauthorized)
+
+**Bug Fix**: Removed authentication requirement from Order of Play viewing endpoints, allowing public access to match schedules without requiring login.
+
+**Issue Resolved**:
+- **Problem**: Users getting "401 Unauthorized" when viewing Order of Play page
+- **Error**: `GET /api/order-of-play/tournament/:id/scheduled-matches 401 (Unauthorized)`
+- **Root Cause**: Backend endpoints required authentication for viewing public schedule information
+- **Impact**: Users couldn't view match schedules unless logged in (poor UX for public-facing feature)
+
+**Changes Made**:
+
+1. **Made Order of Play Endpoints Public** (backend routes):
+   - **Removed** `authMiddleware` from: `GET /order-of-play/tournament/:tournamentId`
+   - **Removed** `authMiddleware` from: `GET /order-of-play/tournament/:tournamentId/scheduled-matches`
+   - **Rationale**: Match schedules should be publicly viewable information
+
+2. **Admin Actions Still Protected**:
+   - **POST** `/order-of-play/generate` - Still requires SYSTEM_ADMIN or TOURNAMENT_ADMIN
+   - **PUT** `/order-of-play/:id/reschedule` - Still requires SYSTEM_ADMIN or TOURNAMENT_ADMIN  
+   - **POST** `/order-of-play/:id/publish` - Still requires SYSTEM_ADMIN or TOURNAMENT_ADMIN
+
+**Security Considerations**:
+- Public endpoints only expose match schedules (court, time, participants)
+- No sensitive data in returned objects (user emails, phone numbers, etc.)
+- Admin controls remain protected by authentication and role-based access
+- Frontend conditionally shows admin features only to authorized users
+
+**User Experience**:
+- Users can now view Order of Play without logging in
+- No more "Request failed with status code 401" errors
+- Expired/invalid tokens no longer block viewing schedules
+- Admin users see additional controls when authenticated
+
+**Files Modified**:
+- `backend/src/presentation/routes/index.ts` (lines 1792-1793)
+
+---
+
+## [1.69.2] - 2026-04-03
+
+### Fixed — Reschedule Match API Endpoint & Time Display
+
+**Bug Fix**: Corrected the API endpoint path used when rescheduling matches through the Order of Play view, resolving 404 errors that prevented admins from updating match schedules. Also fixed timezone issue causing incorrect time pre-fill and court ID validation errors.
+
+**Issues Resolved**:
+
+1. **404 Not Found Error**:
+   - **Problem**: Clicking "SAVE CHANGES" in the Reschedule Match modal returned "404 Not Found"
+   - **Root Cause**: Frontend was sending court NAME (e.g., "Court 2") instead of court UUID to backend
+   - **Backend Validation**: Controller expects `courtId` to be a valid UUID from `courts` table
+   - **Impact**: Backend couldn't find court by name, causing validation errors
+
+2. **Incorrect Time Pre-fill**:
+   - **Problem**: Match showing 18:15 would pre-fill modal with 17:00 (1 hour earlier)
+   - **Root Cause**: Using `.toISOString()` converted local time to UTC, causing timezone offset
+   - **Impact**: Admins had to manually correct time when rescheduling
+
+**Changes Made**:
+
+1. **Court ID Text Input** (Simple and Intuitive):
+   - **Field Type**: Text input showing court identifier string
+   - **Pre-fill**: Uses match's current court name (e.g., "Court 2")
+   - **User Editable**: Can change to any court identifier (e.g., "Court 4", "Central Court")
+   - **Backend Handling**: Backend receives court name string and handles UUID conversion internally
+   - **No Dropdown Complexity**: Direct text editing for maximum flexibility
+
+2. **Courts Loading** - Removed unnecessary complexity
+
+3. **Fixed Time Formatting** (`openRescheduleModal()` method):
+   - Replaced: `new Date(match.time).toISOString().slice(0, 16)` (UTC conversion)
+   - With: Manual formatting using `getFullYear()`, `getMonth()`, `getHours()`, etc. (local time)
+   - Format: `YYYY-MM-DDThh:mm` for datetime-local input
+   - Now preserves the exact time displayed on match card (e.g., 18:15 → 18:15)
+
+4. **Court ID Resolution** (`openRescheduleModal()` method):
+   - Prefers existing `match.courtId` if valid
+   - Falls back to finding court by `match.courtName` from loaded courts
+   - Ensures modal always pre-selects correct court UUID
+
+5. **Added Debug Logging** (`saveReschedule()` method):
+   - Logs request details before sending (match ID, endpoint, courtId, scheduledTime)
+   - Logs response after successful reschedule
+   - Helps diagnose future API issues
+
+4. **Improved Court ID Prefill**:
+   - Fixed modal pre-filling "unassigned" when match has court name but no court ID
+   - Now uses fallback logic: `courtId || courtName || ''`
+   - Ensures court selection field shows actual court name (e.g., "Court 2")
+
+**Technical Details**:
+- Backend route: `PUT /api/order-of-play/:id/reschedule`
+- Controller: `OrderOfPlayController.rescheduleMatch()`
+- Authorization: Requires SYSTEM_ADMIN or TOURNAMENT_ADMIN role
+- Request body: `{ courtId: string, scheduledTime: string }`
+- Side effects: Updates match, validates conflicts, sends notifications, emits WebSocket events
+
+**Files Modified**:
+- `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts`
+
+**Testing**:
+- Verified reschedule modal opens with correct court information
+- Confirmed API calls reach backend controller successfully
+- Validated success/error messages display appropriately
+
+---
+
+## [1.69.1] - 2026-04-03
+
+### Enhanced — Order of Play Visual Design
+
+**Enhancement**: Completely refreshed the Order of Play page UI/UX to match the application's modern design system, creating a more polished and professional administrative interface.
+
+**Visual Improvements**:
+
+1. **Enhanced Interactive Elements**:
+   - **Gradient Buttons**: All buttons now use gradient backgrounds with smooth hover animations
+   - **Transform Effects**: Cards and buttons lift on hover with translateY animations
+   - **Enhanced Shadows**: Multi-layer shadows create depth (4px → 8px → 16px on hover)
+   - **Pulse Effects**: Active elements have subtle transform and shadow transitions
+
+2. **Court Section Cards**:
+   - **Gradient Headers**: Linear gradients from primary-dark to primary
+   - **Decorative Overlays**: Translucent circle backgrounds for visual interest
+   - **Hover States**: Border color changes and elevation on hover
+   - **Match Spacing**: Individual match cards with borders instead of dividers
+   - **Left Accent Bar**: 4px gradient bar appears on match hover
+
+3. **Status Badges**:
+   - **Published**: Green gradient with border (success theme)
+   - **Draft**: Gray gradient with border (neutral theme)
+   - **Your Match**: Gold gradient badge with shadow
+   - **Uppercase Styling**: Bold, uppercase, letter-spaced text
+
+4. **Admin Controls**:
+   - **Header Gradient**: Primary dark to primary with decorative overlay
+   - **Card Borders**: 2px solid primary border
+   - **Enhanced Shadow**: 6px shadow with 20px blur on hover
+   - **Form Inputs**: 2px borders with focus glow effects
+
+5. **Form Elements**:
+   - **Date Inputs**: 2px borders with hover color change
+   - **Court Filters**: Gradient active state with elevation
+   - **Submit Buttons**: Gradient backgrounds with uppercase text
+   - **Focus States**: 4px glow ring on all interactive elements
+
+6. **Modal Dialogs**:
+   - **Border Accent**: 2px primary-light border
+   - **Header Gradient**: Subtle green gradient background
+   - **Close Button**: Circular with rotate animation on hover
+   - **Slide Animation**: Enhanced slide-up with fade-in
+
+7. **Match Cards**:
+   - **Individual Cards**: Each match is a separate elevated card
+   - **Hover Transform**: Slides 4px right with left accent bar reveal
+   - **User Matches**: Gold gradient background with special border
+   - **Shadow Layers**: Progressive shadow depth on interaction
+
+8. **Typography & Spacing**:
+   - **Bold Weights**: Increased font-weight from semibold to bold
+   - **Letter Spacing**: 0.5px on badges and buttons
+   - **Text Shadows**: Added to gradient headers for depth
+   - **Icon Integration**: Emoji icons perfectly aligned with flex gap
+
+**Technical Implementation**:
+- Used `linear-gradient()` for buttons, cards, and headers
+- Applied `transform: translateY()` for elevation effects
+- Implemented `::before` pseudo-elements for decorative backgrounds
+- Added `transition: all 0.3s ease` for smooth state changes
+- Used `box-shadow` layers: 4px (rest), 8px (hover), 16px (active)
+- Applied `text-transform: uppercase` with `letter-spacing` for emphasis
+
+**Color System Applied**:
+- Primary: `#2E7D32` (dark green) → `#4CAF50` (green)
+- Secondary: `#8BC34A` (light green)
+- Success: `#4CAF50` (green)
+- Warning: `#FFC107` (amber/gold)
+- Error: `#D32F2F` (red)
+- Gray Scale: 50, 100, 200, 300, 400, 600, 700, 800, 900
+
+**Responsive Behavior Maintained**:
+- All enhancements work seamlessly on mobile/tablet
+- Hover effects disabled on touch devices
+- Card grids collapse appropriately
+- Buttons remain accessible with proper touch targets
+
+**Files Modified**:
+- `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.css`
+
+**Design Consistency**:
+- Matches patterns from: match-detail, tournament-list, standings-view
+- Uses shared color variables from global theme
+- Follows Google Material Design elevation principles
+- Implements consistent micro-interactions throughout
+
+---
+
+## [1.69.0] - 2026-04-03
+
+### Added — Admin Controls in Order of Play View
+
+**Feature**: Integrated full admin functionality into the Order of Play public view, making schedule management tools accessible to Tournament Admins and System Admins directly from the main scheduling interface.
+
+**What Changed**:
+
+1. **Role-Based UI** (`src/presentation/pages/order-of-play/order-of-play-view/`):
+   - Added `isAdmin()` computed property that checks if user is SYSTEM_ADMIN or TOURNAMENT_ADMIN
+   - Admin controls now conditionally displayed based on user role
+   - Public participants see standard view, admins see enhanced management interface
+
+2. **Admin Controls Section** (TypeScript + HTML + CSS):
+   - **Generate Schedule Form**: Configure start date/time, match duration, break time
+   - **Generate Button**: Automatically schedules all NOT_SCHEDULED matches
+   - **Reschedule Button**: Appears on each match for quick rescheduling
+   - **Publish Button**: Appears in schedule header when draft status
+   - **Success/Error Messages**: Real-time feedback for all admin actions
+
+3. **Schedule Generation** (`generateSchedule()` method):
+   - Calls `/order-of-play/generate` API endpoint
+   - Configurable parameters: startDate, startTime, matchDuration, breakTime
+   - Displays count of scheduled matches and any conflicts detected
+   - Auto-reloads schedule after generation
+
+4. **Match Rescheduling** (`openRescheduleModal()`, `saveReschedule()` methods):
+   - Modal interface for changing court and time
+   - Calls `/order-of-play/:matchId/reschedule` API endpoint
+   - Validates time slot availability (conflict detection)
+   - Real-time schedule updates after reschedule
+
+5. **Schedule Publishing** (`publishOrderOfPlay()` method):
+   - Publishes schedule for selected date
+   - Sends notifications to all scheduled participants
+   - Changes status badge from "Draft" to "Published"
+   - Shows count of notified participants
+
+**Technical Implementation**:
+- Added `AxiosClient` injection for admin API calls
+- Added `UserRole` import for role checking
+- Added admin state signals: `scheduleOptions`, `isGenerating`, `isPublishing`, `selectedMatch`, `rescheduleForm`
+- Added comprehensive CSS styling for admin controls, modals, buttons
+- Integrated reschedule modal with form validation
+
+**User Experience**:
+- ✅ Admins see "🔧 Admin Controls" card at top of Order of Play page
+- ✅ Generate schedule with custom parameters
+- ✅ Reschedule individual matches with "🔄 Reschedule" button
+- ✅ Publish schedule with "📢 Publish Schedule" button
+- ✅ Real-time success/error feedback
+- ✅ Modal overlays for reschedule actions
+- ✅ Responsive design maintained for all devices
+
+**Benefits**:
+- Single unified interface for viewing and managing schedules
+- No need to navigate to separate admin page
+- Immediate context for rescheduling (see all matches on court)
+- Faster workflow for tournament administrators
+- Maintains accessibility for public participants
+
+**Files Modified**:
+- `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts`
+- `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.html`
+- `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.css`
+
+**Related Features**:
+- v1.67.0: NOT_SCHEDULED status implementation
+- v1.68.0: Schedule Match modal status fix
+- v1.63.0: Order of Play backend implementation
+
+---
+
+## [1.68.0] - 2026-04-02
+
+### Fixed — Schedule Match Modal Not Updating Match Status
+
+**Issue**: When using the "Schedule Match" modal to manually schedule a match (setting court, date, and time), the match status remained at "Not Scheduled" instead of updating to "Scheduled". This caused manually scheduled matches to not appear in the Order of Play view.
+
+**Root Cause**:
+- Frontend service method `scheduleMatch()` was updating only `courtId`, `courtName`, and `scheduledTime` fields
+- The `status` field was not included in the update payload
+- Backend expects status to be set to `SCHEDULED` when a match is assigned a court and time
+
+**Solution Implemented**:
+
+1. **Updated Frontend Match Service** (`src/application/services/match.service.ts` line ~390):
+   - Added `status: MatchStatus.SCHEDULED` to the match update object in `scheduleMatch()` method
+   - Now correctly transitions match from `NOT_SCHEDULED` to `SCHEDULED` when scheduling via UI modal
+   
+   ```typescript
+   const scheduledMatch = new Match({
+     ...match,
+     courtId,
+     scheduledTime: time,
+     status: MatchStatus.SCHEDULED,  // ✅ Added
+     updatedAt: new Date(),
+   });
+   ```
+
+**Impact**:
+- ✅ Manually scheduled matches now correctly appear in Order of Play
+- ✅ Match status transitions properly: NOT_SCHEDULED → SCHEDULED
+- ✅ Consistent behavior between auto-scheduling and manual scheduling workflows
+- ✅ Fixed confusion where scheduled matches didn't show up in schedule view
+
+**Files Modified**:
+- `src/application/services/match.service.ts`
+
+---
+
 ## [1.67.0] - 2026-04-02
 
 ### Fixed — Match Status Logic for Order of Play

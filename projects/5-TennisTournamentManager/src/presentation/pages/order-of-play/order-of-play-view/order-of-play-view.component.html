@@ -54,6 +54,70 @@
       </div>
     </div>
 
+    <!-- ADMIN: Schedule Generation Controls -->
+    @if (isAdmin()) {
+      <div class="admin-controls-card">
+        <div class="admin-header">
+          <h3>🔧 Admin Controls</h3>
+        </div>
+        
+        <div class="admin-body">
+          <h4>Generate Automatic Schedule</h4>
+          <div class="admin-form-grid">
+            <div class="form-group">
+              <label>Start Date</label>
+              <input 
+                type="date" 
+                class="form-control" 
+                [(ngModel)]="scheduleOptions().startDate"
+              />
+            </div>
+            <div class="form-group">
+              <label>Start Time</label>
+              <input 
+                type="time" 
+                class="form-control" 
+                [(ngModel)]="scheduleOptions().startTime"
+              />
+            </div>
+            <div class="form-group">
+              <label>Match Duration (min)</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="scheduleOptions().matchDuration"
+              />
+            </div>
+            <div class="form-group">
+              <label>Break Time (min)</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="scheduleOptions().breakTime"
+              />
+            </div>
+          </div>
+          
+          <button 
+            class="btn btn-success"
+            (click)="generateSchedule()"
+            [disabled]="isGenerating()"
+            style="margin-top: 1rem;"
+          >
+            {{ isGenerating() ? '⏳ Generating...' : '📅 Generate Schedule' }}
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Success Message -->
+    @if (successMessage()) {
+      <div class="success-banner">
+        <div class="success-icon">✅</div>
+        <p>{{ successMessage() }}</p>
+      </div>
+    }
+
     <!-- Error Message -->
     @if (errorMessage()) {
       <div class="error-banner">
@@ -80,15 +144,28 @@
             <h2>{{ formatDate(selectedDate()) }}</h2>
             <p>{{ filteredMatches().length }} matches scheduled</p>
           </div>
-          @if (orderOfPlay().isPublished) {
-            <span class="status-badge published">
-              📢 Published
-            </span>
-          } @else {
-            <span class="status-badge draft">
-              📝 Draft
-            </span>
-          }
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            @if (orderOfPlay().isPublished) {
+              <span class="status-badge published">
+                📢 Published
+              </span>
+            } @else {
+              <span class="status-badge draft">
+                📝 Draft
+              </span>
+            }
+            
+            <!-- ADMIN: Publish Button -->
+            @if (isAdmin() && !orderOfPlay().isPublished) {
+              <button 
+                class="btn btn-primary"
+                (click)="publishOrderOfPlay()"
+                [disabled]="isPublishing()"
+              >
+                {{ isPublishing() ? '⏳ Publishing...' : '📢 Publish Schedule' }}
+              </button>
+            }
+          </div>
         </div>
 
         <!-- Matches by Court -->
@@ -119,14 +196,28 @@
                       }
                     </div>
 
-                    <!-- Match Link -->
-                    <a
-                      [routerLink]="['/matches', match.matchId]"
-                      class="btn btn-primary"
-                      style="text-decoration: none; font-size: var(--font-size-sm);"
-                    >
-                      View Match →
-                    </a>
+                    <!-- Match Actions -->
+                    <div style="display: flex; gap: 0.5rem;">
+                      <!-- ADMIN: Reschedule Button -->
+                      @if (isAdmin()) {
+                        <button
+                          class="btn btn-warning"
+                          (click)="openRescheduleModal(match)"
+                          style="font-size: var(--font-size-sm); padding: 0.4rem 0.8rem;"
+                        >
+                          🔄 Reschedule
+                        </button>
+                      }
+                      
+                      <!-- Match Link -->
+                      <a
+                        [routerLink]="['/matches', match.matchId]"
+                        class="btn btn-primary"
+                        style="text-decoration: none; font-size: var(--font-size-sm);"
+                      >
+                        View Match →
+                      </a>
+                    </div>
                   </div>
 
                   <!-- Participants -->
@@ -171,5 +262,69 @@
       </div>
     }
   </main>
+
+  <!-- ADMIN: Reschedule Match Modal -->
+  @if (isAdmin() && selectedMatch()) {
+    <div class="modal-overlay" (click)="closeRescheduleModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()" style="max-width: 500px;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5>🔄 Reschedule Match</h5>
+            <button 
+              class="close-btn" 
+              (click)="closeRescheduleModal()"
+              style="background: none; border: none; font-size: 1.5rem; cursor: pointer;"
+            >
+              ×
+            </button>
+          </div>
+          
+          <div class="modal-body">
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label><strong>Match:</strong></label>
+              <p>{{ selectedMatch()!.participants[0] || 'TBD' }} vs {{ selectedMatch()!.participants[1] || 'TBD' }}</p>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label>Court ID</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="rescheduleForm().courtId"
+                placeholder="e.g., Court 2, Court 4"
+              />
+              <small style="color: var(--gray-600); margin-top: 0.25rem; display: block;">
+                Enter the court identifier (e.g., "Court 2", "Central Court")
+              </small>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label>Scheduled Time</label>
+              <input 
+                type="datetime-local" 
+                class="form-control" 
+                [(ngModel)]="rescheduleForm().scheduledTime"
+              />
+            </div>
+          </div>
+          
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+            <button 
+              class="btn btn-secondary" 
+              (click)="closeRescheduleModal()"
+            >
+              Cancel
+            </button>
+            <button 
+              class="btn btn-primary" 
+              (click)="saveReschedule()"
+            >
+              💾 Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
 </div>
 
