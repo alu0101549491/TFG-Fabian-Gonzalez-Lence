@@ -150,7 +150,7 @@ export class OrderOfPlayAdminComponent implements OnInit {
       });
 
       this.successMessage.set(
-        `✅ ${response.scheduledCount} matches scheduled successfully!`
+        `${response.scheduledCount} matches scheduled successfully!`
       );
 
       if (response.conflicts && response.conflicts.length > 0) {

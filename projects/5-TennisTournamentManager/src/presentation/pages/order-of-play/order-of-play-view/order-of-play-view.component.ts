@@ -27,9 +27,10 @@ interface MatchSchedule {
   matchId: string;
   courtId: string;
   courtName: string;
-  time: string;
+  time: string | null;
   participants: string[];
   isUserMatch?: boolean;
+  hasScheduledTime: boolean;
 }
 
 /**
@@ -90,6 +91,22 @@ export class OrderOfPlayViewComponent implements OnInit {
     simultaneousMatches: true,
   });
 
+  /**
+   * Updates a schedule option field.
+   *
+   * @param field - Field name to update
+   * @param event - Input event
+   */
+  public updateScheduleOption(field: string, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.type === 'number' ? parseInt(target.value, 10) : target.value;
+    
+    this.scheduleOptions.update(opts => ({
+      ...opts,
+      [field]: value,
+    }));
+  }
+
   /** Admin: Generation state */
   public isGenerating = signal(false);
 
@@ -111,6 +128,9 @@ export class OrderOfPlayViewComponent implements OnInit {
   /** Admin: Conflict warning message */
   public conflictWarning = signal<string | null>(null);
 
+  /** Admin: Flag to track if error is due to missing courts */
+  public missingCourts = signal<boolean>(false);
+
   /** Courts data for the tournament */
   public courts = signal<any[]>([]);
 
@@ -129,6 +149,18 @@ export class OrderOfPlayViewComponent implements OnInit {
     
     return stats;
   });
+
+  /** Check if any matches are scheduled (for enabling regenerate button) */
+  public hasScheduledMatches = computed(() => {
+    const allMatches = this.matches();
+    return allMatches.some((m: MatchSchedule) => m.hasScheduledTime);
+  });
+
+  /** Court management UI state */
+  public showAddCourtModal = signal<boolean>(false);
+  public newCourtName = signal<string>('');
+  public editingCourtId = signal<string | null>(null);
+  public editingCourtName = signal<string>('');
 
   /** Matches extracted from order of play */
   public matches = computed(() => {
@@ -169,7 +201,13 @@ export class OrderOfPlayViewComponent implements OnInit {
 
     // Sort matches within each court by time
     for (const [court, courtMatches] of grouped) {
-      courtMatches.sort((a, b) => a.time.localeCompare(b.time));
+      courtMatches.sort((a, b) => {
+        // Null times (unscheduled) go to the end
+        if (!a.time && !b.time) return 0;
+        if (!a.time) return 1;
+        if (!b.time) return -1;
+        return a.time.localeCompare(b.time);
+      });
       grouped.set(court, courtMatches);
     }
 
@@ -236,7 +274,7 @@ export class OrderOfPlayViewComponent implements OnInit {
           matchId: m.matchId,
           courtId: m.courtId || 'unassigned',
           courtName: m.courtName || 'Awaiting Court Assignment',
-          time: m.scheduledTime || new Date().toISOString(),
+          time: m.scheduledTime || null,
           participants: m.participants,
           isUserMatch: userId ? m.participantIds.some((id: any) => id === userId) : false,
           hasScheduledTime: !!m.scheduledTime,
@@ -245,7 +283,7 @@ export class OrderOfPlayViewComponent implements OnInit {
           matchId: m.matchId,
           courtId: 'unassigned',
           courtName: 'Awaiting Court Assignment',
-          time: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // Far future for sorting
+          time: null,
           participants: m.participants,
           isUserMatch: userId ? m.participantIds.some((id: any) => id === userId) : false,
           hasScheduledTime: false,
@@ -255,7 +293,7 @@ export class OrderOfPlayViewComponent implements OnInit {
       // Set the order of play with formatted matches
       this.orderOfPlay.set({
         matches: allMatches,
-        isPublished: false,
+        isPublished: (data as any).isPublished ?? false,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load order of play';
@@ -305,10 +343,11 @@ export class OrderOfPlayViewComponent implements OnInit {
   /**
    * Formats time for display.
    *
-   * @param timeStr - ISO time string
+   * @param timeStr - ISO time string or null
    * @returns Formatted time string
    */
-  public formatTime(timeStr: string): string {
+  public formatTime(timeStr: string | null): string {
+    if (!timeStr) return 'Time pending';
     return new Date(timeStr).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
@@ -349,17 +388,113 @@ export class OrderOfPlayViewComponent implements OnInit {
 
     try {
       const opts = this.scheduleOptions();
+      const payload = {
+        tournamentId: this.tournamentId(),
+        ...opts,
+      };
+      
       const response = await this.http.post<{
         message: string;
         scheduledCount: number;
         conflicts?: string[];
-      }>('/order-of-play/generate', {
+      }>('/order-of-play/generate', payload);
+
+      this.successMessage.set(
+        `${response.scheduledCount} matches scheduled successfully!`
+      );
+
+      if (response.conflicts && response.conflicts.length > 0) {
+        console.warn('Schedule conflicts:', response.conflicts);
+        this.errorMessage.set(
+          `⚠️ ${response.conflicts.length} conflicts detected. Check console for details.`
+        );
+      }
+
+      // Reload schedule
+      await this.loadOrderOfPlay();
+    } catch (error: any) {
+      console.error('Generate schedule error:', error);
+      let message = 'Failed to generate schedule';
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+        // Check if error is about missing courts
+        if (message.includes('No available') && message.includes('courts found')) {
+          this.missingCourts.set(true);
+        }
+      } else if (error.message) {
+        message = error.message;
+      }
+      this.errorMessage.set(message);
+    } finally {
+      this.isGenerating.set(false);
+    }
+  }
+
+  /**
+   * Initializes default courts for the tournament (Admin only).
+   */
+  public async initializeCourts(): Promise<void> {
+    this.isGenerating.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.missingCourts.set(false);
+
+    try {
+      const response = await this.http.post<{
+        message: string;
+        courts: any[];
+      }>(`/courts/initialize/${this.tournamentId()}`, {
+        courtCount: 2, // Create 2 courts by default
+      });
+
+      this.successMessage.set(
+        `✅ ${response.courts.length} court(s) created! You can now generate the schedule.`
+      );
+
+      // Reload courts
+      await this.loadCourts();
+    } catch (error: any) {
+      console.error('Initialize courts error:', error);
+      let message = 'Failed to initialize courts';
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+      this.errorMessage.set(message);
+    } finally {
+      this.isGenerating.set(false);
+    }
+  }
+
+  /**
+   * Regenerates the entire schedule with new parameters, clearing existing schedules (Admin only).
+   */
+  public async regenerateSchedule(): Promise<void> {
+    // Confirm before regenerating
+    const confirmed = confirm(
+      '⚠️ This will clear all existing schedules and regenerate them with the new parameters. Continue?'
+    );
+    
+    if (!confirmed) return;
+
+    this.isGenerating.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      const opts = this.scheduleOptions();
+      const response = await this.http.post<{
+        message: string;
+        scheduledCount: number;
+        conflicts?: string[];
+      }>('/order-of-play/regenerate', {
         tournamentId: this.tournamentId(),
         ...opts,
       });
 
       this.successMessage.set(
-        `✅ ${response.scheduledCount} matches scheduled successfully!`
+        `🔄 Schedule regenerated! ${response.scheduledCount} matches rescheduled.`
       );
 
       if (response.conflicts && response.conflicts.length > 0) {
@@ -372,7 +507,7 @@ export class OrderOfPlayViewComponent implements OnInit {
       // Reload schedule
       await this.loadOrderOfPlay();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to generate schedule';
+      const message = error instanceof Error ? error.message : 'Failed to regenerate schedule';
       this.errorMessage.set(message);
     } finally {
       this.isGenerating.set(false);
@@ -388,7 +523,18 @@ export class OrderOfPlayViewComponent implements OnInit {
     this.selectedMatch.set(match);
     
     // Format datetime for datetime-local input (YYYY-MM-DDThh:mm) without timezone conversion
-    const date = new Date(match.time);
+    // Use match time if available, otherwise use scheduling options start date/time
+    let date: Date;
+    if (match.time) {
+      date = new Date(match.time);
+    } else {
+      // Default to start date/time from scheduling options
+      const opts = this.scheduleOptions();
+      date = new Date(opts.startDate);
+      const [hours, minutes] = opts.startTime.split(':');
+      date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+    }
+    
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -417,6 +563,7 @@ export class OrderOfPlayViewComponent implements OnInit {
 
   /**
    * Checks for time slot conflicts when rescheduling.
+   * Validates both overlaps and minimum break time between matches.
    */
   public checkConflicts(): void {
     const form = this.rescheduleForm();
@@ -428,7 +575,8 @@ export class OrderOfPlayViewComponent implements OnInit {
     }
 
     const newTime = new Date(form.scheduledTime);
-    const matchDuration = 90; // minutes
+    const matchDuration = this.scheduleOptions().matchDuration || 90; // Use settings or default
+    const breakTime = this.scheduleOptions().breakTime || 15; // Use settings or default
     const newEndTime = new Date(newTime.getTime() + matchDuration * 60000);
 
     // Get all matches on the selected court
@@ -439,7 +587,7 @@ export class OrderOfPlayViewComponent implements OnInit {
         m.matchId !== currentMatch.matchId // Exclude current match
     );
 
-    // Check for overlaps
+    // Check for overlaps and break time violations
     for (const match of courtMatches) {
       const existingTime = new Date(match.time);
       const existingEndTime = new Date(existingTime.getTime() + matchDuration * 60000);
@@ -457,9 +605,39 @@ export class OrderOfPlayViewComponent implements OnInit {
         });
         const participants = match.participants.join(' vs ');
         this.conflictWarning.set(
-          `⚠️ Time conflict: ${participants} is scheduled at ${existingTimeStr} on ${form.courtId}`
+          `⚠️ Time overlap: ${participants} is scheduled at ${existingTimeStr} on ${form.courtId}`
         );
         return;
+      }
+
+      // Check for break time violation if new match is after existing match
+      if (newTime >= existingEndTime) {
+        const timeSinceExistingEnd = (newTime.getTime() - existingEndTime.getTime()) / 1000 / 60;
+        if (timeSinceExistingEnd < breakTime) {
+          const existingTimeStr = existingTime.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          this.conflictWarning.set(
+            `⚠️ Insufficient break time: Only ${Math.floor(timeSinceExistingEnd)} minutes after match at ${existingTimeStr}. Need ${breakTime} minutes break.`
+          );
+          return;
+        }
+      }
+
+      // Check for break time violation if new match is before existing match
+      if (newEndTime <= existingTime) {
+        const timeUntilExistingStart = (existingTime.getTime() - newEndTime.getTime()) / 1000 / 60;
+        if (timeUntilExistingStart < breakTime) {
+          const existingTimeStr = existingTime.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          this.conflictWarning.set(
+            `⚠️ Insufficient break time: Only ${Math.floor(timeUntilExistingStart)} minutes before match at ${existingTimeStr}. Need ${breakTime} minutes break.`
+          );
+          return;
+        }
       }
     }
 
@@ -485,10 +663,11 @@ export class OrderOfPlayViewComponent implements OnInit {
         return;
       }
 
-      // Backend expects the match ID in the URL path
+      // Backend expects the match ID in the URL path and break time for validation
       await this.http.put(`/order-of-play/${match.matchId}/reschedule`, {
         courtId: form.courtId,
         scheduledTime: form.scheduledTime,
+        breakTime: this.scheduleOptions().breakTime || 15, // Pass break time for backend validation
       });
 
       this.successMessage.set('Match rescheduled successfully!');
@@ -509,8 +688,6 @@ export class OrderOfPlayViewComponent implements OnInit {
     this.successMessage.set(null);
 
     try {
-      // Get the orderOfPlayId for the current date
-      // For now, we'll publish all scheduled matches for this tournament
       const response = await this.http.post<{
         message: string;
         notifiedCount: number;
@@ -519,7 +696,7 @@ export class OrderOfPlayViewComponent implements OnInit {
       });
 
       this.successMessage.set(
-        `✅ Published! ${response.notifiedCount} participants notified.`
+        `Published! ${response.notifiedCount} participants notified.`
       );
 
       await this.loadOrderOfPlay();
@@ -528,6 +705,160 @@ export class OrderOfPlayViewComponent implements OnInit {
       this.errorMessage.set(message);
     } finally {
       this.isPublishing.set(false);
+    }
+  }
+
+  /**
+   * Opens the add court modal (Admin only).
+   */
+  public openAddCourtModal(): void {
+    this.showAddCourtModal.set(true);
+    this.newCourtName.set('');
+    this.errorMessage.set(null);
+  }
+
+  /**
+   * Closes the add court modal (Admin only).
+   */
+  public closeAddCourtModal(): void {
+    this.showAddCourtModal.set(false);
+    this.newCourtName.set('');
+  }
+
+  /**
+   * Creates a new court for the tournament (Admin only).
+   */
+  public async createCourt(): Promise<void> {
+    const name = this.newCourtName().trim();
+    
+    if (!name) {
+      this.errorMessage.set('Court name is required');
+      return;
+    }
+
+    this.isGenerating.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      await this.http.post('/courts', {
+        tournamentId: this.tournamentId(),
+        name,
+      });
+
+      this.successMessage.set(`✅ Court "${name}" created successfully!`);
+      this.closeAddCourtModal();
+      
+      // Reload courts
+      await this.loadCourts();
+    } catch (error: any) {
+      console.error('Create court error:', error);
+      let message = 'Failed to create court';
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+      this.errorMessage.set(message);
+    } finally {
+      this.isGenerating.set(false);
+    }
+  }
+
+  /**
+   * Starts editing a court's name (Admin only).
+   *
+   * @param courtId - ID of the court to edit
+   * @param currentName - Current name of the court
+   */
+  public startEditCourt(courtId: string, currentName: string): void {
+    this.editingCourtId.set(courtId);
+    this.editingCourtName.set(currentName);
+    this.errorMessage.set(null);
+  }
+
+  /**
+   * Cancels editing a court (Admin only).
+   */
+  public cancelEditCourt(): void {
+    this.editingCourtId.set(null);
+    this.editingCourtName.set('');
+  }
+
+  /**
+   * Updates a court's name (Admin only).
+   *
+   * @param courtId - ID of the court to update
+   */
+  public async updateCourt(courtId: string): Promise<void> {
+    const name = this.editingCourtName().trim();
+    
+    if (!name) {
+      this.errorMessage.set('Court name is required');
+      return;
+    }
+
+    this.isGenerating.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      await this.http.put(`/courts/${courtId}`, {name});
+
+      this.successMessage.set(`✅ Court updated successfully!`);
+      this.cancelEditCourt();
+      
+      // Reload courts
+      await this.loadCourts();
+    } catch (error: any) {
+      console.error('Update court error:', error);
+      let message = 'Failed to update court';
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+      this.errorMessage.set(message);
+    } finally {
+      this.isGenerating.set(false);
+    }
+  }
+
+  /**
+   * Deletes a court (Admin only).
+   *
+   * @param courtId - ID of the court to delete
+   * @param courtName - Name of the court (for confirmation)
+   */
+  public async deleteCourt(courtId: string, courtName: string): Promise<void> {
+    const confirmed = confirm(
+      `⚠️ Are you sure you want to delete "${courtName}"? This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+
+    this.isGenerating.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      await this.http.delete(`/courts/${courtId}`);
+
+      this.successMessage.set(`✅ Court "${courtName}" deleted successfully!`);
+      
+      // Reload courts
+      await this.loadCourts();
+    } catch (error: any) {
+      console.error('Delete court error:', error);
+      let message = 'Failed to delete court';
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+      this.errorMessage.set(message);
+    } finally {
+      this.isGenerating.set(false);
     }
   }
 }

@@ -222,7 +222,7 @@ export class OrderOfPlayController {
   public async rescheduleMatch(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params; // match ID
-      const {courtId, scheduledTime} = req.body;
+      const {courtId, scheduledTime, breakTime = 15} = req.body;
 
       if (!courtId || !scheduledTime) {
         throw new AppError('courtId and scheduledTime are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
@@ -276,18 +276,19 @@ export class OrderOfPlayController {
         estimatedDuration: 90, // default
       }));
 
-      // Check if new slot is available (using actual court UUID)
+      // Check if new slot is available with break time enforcement
       const isAvailable = this.scheduleService.isTimeSlotAvailable(
         id,
         actualCourtId,
         new Date(scheduledTime),
         90,
-        currentSchedule
+        currentSchedule,
+        breakTime // Pass break time for validation
       );
 
       if (!isAvailable) {
         throw new AppError(
-          'Time slot conflict: Another match is scheduled at this time on this court',
+          `Time slot conflict: Insufficient break time (${breakTime} minutes required) or overlap with another match`,
           HTTP_STATUS.CONFLICT,
           ERROR_CODES.INVALID_INPUT
         );
@@ -431,6 +432,113 @@ export class OrderOfPlayController {
   }
 
   /**
+   * POST /api/order-of-play/tournament/:tournamentId/publish
+   * Publishes all scheduled matches for a tournament, notifying participants.
+   * Admin only.
+   */
+  public async publishByTournament(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {tournamentId} = req.params;
+      const {date} = req.body;
+
+      const matchRepository = AppDataSource.getRepository(Match);
+      const oopRepository = AppDataSource.getRepository(OrderOfPlay);
+
+      // Get all scheduled matches for the tournament
+      const matches = await matchRepository
+        .createQueryBuilder('match')
+        .leftJoinAndSelect('match.bracket', 'bracket')
+        .leftJoinAndSelect('match.participant1', 'participant1')
+        .leftJoinAndSelect('match.participant2', 'participant2')
+        .where('bracket.tournamentId = :tournamentId', {tournamentId})
+        .andWhere('match.scheduledTime IS NOT NULL')
+        .getMany();
+
+      if (matches.length === 0) {
+        throw new AppError('No scheduled matches found to publish', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Group matches by date and create/update OrderOfPlay records
+      const matchesByDate = new Map<string, typeof matches>();
+      for (const match of matches) {
+        const dateKey = match.scheduledTime!.toISOString().split('T')[0];
+        const existing = matchesByDate.get(dateKey) || [];
+        existing.push(match);
+        matchesByDate.set(dateKey, existing);
+      }
+
+      // Collect all unique participant IDs
+      const participantIds = new Set<string>();
+      for (const match of matches) {
+        if (match.participant1Id) participantIds.add(match.participant1Id);
+        if (match.participant2Id) participantIds.add(match.participant2Id);
+      }
+
+      // Create or update OrderOfPlay records for each date
+      for (const [dateKey, dateMatches] of matchesByDate.entries()) {
+        const matchDate = new Date(dateKey);
+        
+        let oop = await oopRepository.findOne({
+          where: {tournamentId, date: matchDate},
+        });
+
+        const matchesData = dateMatches.map(m => ({
+          matchId: m.id,
+          courtId: m.courtId,
+          courtName: m.courtName,
+          time: m.scheduledTime!.toISOString(),
+          participants: [
+            m.participant1 ? `${m.participant1.firstName} ${m.participant1.lastName}` : 'TBD',
+            m.participant2 ? `${m.participant2.firstName} ${m.participant2.lastName}` : 'TBD',
+          ],
+        }));
+
+        if (oop) {
+          oop.matches = matchesData as any;
+          oop.isPublished = true;
+          oop.updatedAt = new Date();
+        } else {
+          oop = oopRepository.create({
+            id: `oop_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            tournamentId,
+            date: matchDate,
+            matches: matchesData as any,
+            isPublished: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+
+        await oopRepository.save(oop);
+        emitOrderOfPlayChange(tournamentId, oop);
+      }
+
+      // Send notifications to all participants
+      for (const participantId of participantIds) {
+        try {
+          await this.notificationService.createNotification(
+            participantId,
+            'ORDER_OF_PLAY_PUBLISHED' as any,
+            '📅 Order of Play Published',
+            'The match schedule has been published. Check your upcoming matches!',
+            {tournamentId}
+          );
+        } catch (error) {
+          console.error(`Failed to notify participant ${participantId}:`, error);
+        }
+      }
+
+      res.status(HTTP_STATUS.OK).json({
+        message: 'Order of play published',
+        notifiedCount: participantIds.size,
+        datesPublished: matchesByDate.size,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * GET /api/order-of-play/tournament/:tournamentId
    * Retrieves all order of play records for a tournament.
    */
@@ -461,7 +569,8 @@ export class OrderOfPlayController {
 
       const matchRepository = AppDataSource.getRepository(Match);
 
-      // Get all matches with SCHEDULED status for this tournament
+      // Get all matches that are ready to be scheduled or already scheduled for this tournament
+      // Include matches with SCHEDULED or NOT_SCHEDULED status that have participants assigned
       const scheduledMatches = await matchRepository
         .createQueryBuilder('match')
         .leftJoinAndSelect('match.bracket', 'bracket')
@@ -469,7 +578,11 @@ export class OrderOfPlayController {
         .leftJoinAndSelect('match.participant1', 'participant1')
         .leftJoinAndSelect('match.participant2', 'participant2')
         .where('bracket.tournamentId = :tournamentId', {tournamentId})
-        .andWhere('match.status = :status', {status: MatchStatus.SCHEDULED})
+        .andWhere('match.status IN (:...statuses)', {
+          statuses: [MatchStatus.SCHEDULED, MatchStatus.NOT_SCHEDULED],
+        })
+        .andWhere('match.participant1Id IS NOT NULL')
+        .andWhere('match.participant2Id IS NOT NULL')
         .orderBy('match.scheduledTime', 'ASC', 'NULLS LAST')
         .addOrderBy('match.round', 'ASC')
         .addOrderBy('match.matchNumber', 'ASC')
@@ -498,10 +611,180 @@ export class OrderOfPlayController {
       const withTime = formattedMatches.filter(m => m.scheduledTime !== null);
       const withoutTime = formattedMatches.filter(m => m.scheduledTime === null);
 
+      // Check if order of play is published for the date of scheduled matches
+      const oopRepository = AppDataSource.getRepository(OrderOfPlay);
+      let isPublished = false;
+      
+      if (withTime.length > 0) {
+        // Get the date of the first scheduled match
+        const firstMatchDate = new Date(withTime[0].scheduledTime!);
+        firstMatchDate.setHours(0, 0, 0, 0);
+        
+        const orderOfPlay = await oopRepository.findOne({
+          where: {tournamentId, date: firstMatchDate},
+        });
+        
+        isPublished = orderOfPlay?.isPublished ?? false;
+      }
+
       res.status(HTTP_STATUS.OK).json({
         scheduledMatches: withTime,
         awaitingSchedule: withoutTime,
         totalCount: formattedMatches.length,
+        isPublished,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/order-of-play/regenerate
+   * Clears all existing schedules and regenerates a new schedule with updated parameters.
+   * Admin only.
+   */
+  public async regenerateSchedule(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {
+        tournamentId,
+        startDate,
+        startTime,
+        matchDuration,
+        breakTime,
+        simultaneousMatches
+      } = req.body;
+
+      if (!tournamentId || !startDate) {
+        throw new AppError('tournamentId and startDate are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      const matchRepository = AppDataSource.getRepository(Match);
+      const courtRepository = AppDataSource.getRepository(Court);
+      const tournamentRepository = AppDataSource.getRepository(Tournament);
+      const oopRepository = AppDataSource.getRepository(OrderOfPlay);
+
+      // Verify tournament exists
+      const tournament = await tournamentRepository.findOne({where: {id: tournamentId}});
+      if (!tournament) {
+        throw new AppError('Tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Get all matches for this tournament that have both participants assigned
+      // (regardless of current scheduling status)
+      const matchesToReschedule = await matchRepository
+        .createQueryBuilder('match')
+        .leftJoinAndSelect('match.bracket', 'bracket')
+        .where('bracket.tournamentId = :tournamentId', {tournamentId})
+        .andWhere('match.participant1Id IS NOT NULL')
+        .andWhere('match.participant2Id IS NOT NULL')
+        .andWhere('match.status IN (:...statuses)', {
+          statuses: [MatchStatus.NOT_SCHEDULED, MatchStatus.SCHEDULED],
+        })
+        .orderBy('match.round', 'ASC')
+        .addOrderBy('match.matchNumber', 'ASC')
+        .getMany();
+
+      if (matchesToReschedule.length === 0) {
+        res.status(HTTP_STATUS.OK).json({
+          message: 'No matches found to reschedule',
+          scheduledCount: 0,
+        });
+        return;
+      }
+
+      // Clear all scheduled times and courts for these matches
+      for (const match of matchesToReschedule) {
+        match.scheduledTime = null;
+        match.courtId = null;
+        match.courtName = null;
+        match.status = MatchStatus.NOT_SCHEDULED;
+        match.updatedAt = new Date();
+      }
+      await matchRepository.save(matchesToReschedule);
+
+      // Clear all OrderOfPlay records for this tournament
+      await oopRepository.delete({tournamentId});
+
+      // Get available courts for tournament that match the tournament's surface
+      const courts = await courtRepository.find({
+        where: {
+          tournamentId,
+          isAvailable: true,
+          surface: tournament.surface,
+        },
+      });
+
+      if (courts.length === 0) {
+        throw new AppError(
+          `No available ${tournament.surface} courts found for tournament`, 
+          HTTP_STATUS.BAD_REQUEST, 
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
+
+      // Generate new schedule using the same logic as generateSchedule
+      const schedule = this.scheduleService.generateSchedule(matchesToReschedule, courts, {
+        startDate: new Date(startDate),
+        startTime,
+        matchDuration,
+        breakTime,
+        simultaneousMatches,
+      });
+
+      // Check for conflicts
+      const conflicts = this.scheduleService.detectConflicts(schedule);
+      if (conflicts.length > 0) {
+        console.warn('Regenerated schedule has conflicts:', conflicts);
+      }
+
+      // Apply schedule to matches
+      for (const scheduled of schedule) {
+        await matchRepository.update(scheduled.matchId, {
+          courtId: scheduled.courtId,
+          courtName: scheduled.courtName,
+          scheduledTime: scheduled.scheduledTime,
+          status: MatchStatus.SCHEDULED,
+          updatedAt: new Date(),
+        });
+      }
+
+      // Create OrderOfPlay records for each date
+      const matchesByDate = new Map<string, typeof schedule>();
+      for (const scheduled of schedule) {
+        const dateKey = scheduled.scheduledTime.toISOString().split('T')[0];
+        const existing = matchesByDate.get(dateKey) || [];
+        existing.push(scheduled);
+        matchesByDate.set(dateKey, existing);
+      }
+
+      for (const [dateKey, daySchedule] of matchesByDate) {
+        const date = new Date(dateKey);
+        
+        const matches = daySchedule.map(s => ({
+          matchId: s.matchId,
+          courtId: s.courtId,
+          time: s.scheduledTime.toISOString(),
+          participants: [],
+        }));
+
+        const orderOfPlay = oopRepository.create({
+          id: generateId('oop'),
+          tournamentId,
+          date,
+          matches: matches as any,
+          isPublished: false,
+        });
+
+        await oopRepository.save(orderOfPlay);
+        
+        // Emit WebSocket event for real-time updates
+        emitOrderOfPlayChange(tournamentId, orderOfPlay);
+      }
+
+      res.status(HTTP_STATUS.OK).json({
+        message: 'Schedule regenerated successfully',
+        scheduledCount: schedule.length,
+        conflicts: conflicts.length > 0 ? conflicts : undefined,
       });
     } catch (error) {
       next(error);

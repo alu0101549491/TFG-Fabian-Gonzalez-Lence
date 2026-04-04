@@ -1701,6 +1701,9 @@ router.delete('/categories/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM
 // Court routes
 // Cache courts for 10 minutes (rarely change)
 router.get('/courts', apiCache(600), courtController.getByTournament.bind(courtController));
+router.post('/courts', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), courtController.create.bind(courtController));
+router.put('/courts/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), courtController.update.bind(courtController));
+router.delete('/courts/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), courtController.delete.bind(courtController));
 
 /**
  * @swagger
@@ -1792,8 +1795,10 @@ router.get('/order-of-play', apiCache(300), orderOfPlayController.getByDate.bind
 router.get('/order-of-play/tournament/:tournamentId', orderOfPlayController.getByTournament.bind(orderOfPlayController));
 router.get('/order-of-play/tournament/:tournamentId/scheduled-matches', orderOfPlayController.getScheduledMatches.bind(orderOfPlayController));
 router.post('/order-of-play/generate', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), orderOfPlayController.generateSchedule.bind(orderOfPlayController));
+router.post('/order-of-play/regenerate', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), orderOfPlayController.regenerateSchedule.bind(orderOfPlayController));
 router.put('/order-of-play/:id/reschedule', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), orderOfPlayController.rescheduleMatch.bind(orderOfPlayController));
 router.post('/order-of-play/:id/publish', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), orderOfPlayController.publishOrderOfPlay.bind(orderOfPlayController));
+router.post('/order-of-play/tournament/:tournamentId/publish', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), orderOfPlayController.publishByTournament.bind(orderOfPlayController));
 
 /**
  * @swagger

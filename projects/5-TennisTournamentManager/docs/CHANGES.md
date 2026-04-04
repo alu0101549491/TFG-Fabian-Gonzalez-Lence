@@ -6,7 +6,459 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.71.0] - 2026-04-04
+
+### Added — Individual Court Management UI
+
+**Feature**: Complete CRUD (Create, Read, Update, Delete) interface for managing courts individually, replacing bulk initialization system.
+
+**User Request**: "I'd prefer to have the upper panel and a + button to add a court...instead of dropping an error and pressing a button to generate always 2 courts"
+
+**Problem Analysis**:
+- Bulk initialization created exactly 2 courts every time
+- No way to modify court names after creation
+- No way to delete individual courts
+- Error-driven workflow (error appears, then fix) instead of proactive management
+- Users wanted granular control over court creation and management
+
+**Solution**:
+
+1. **Backend — Individual Court CRUD Endpoints** (`court.controller.ts`):
+   - `POST /courts`: Create a single court with custom name
+     - Validates tournament exists
+     - Checks for duplicate court names within tournament
+     - Uses tournament's surface type automatically
+     - Returns created court object
+   - `PUT /courts/:id`: Update court name
+     - Validates court exists
+     - Prevents duplicate names within same tournament
+     - Returns updated court object
+   - `DELETE /courts/:id`: Delete individual court
+     - Validates court exists
+     - Returns success message
+   - All endpoints restricted to admin users (Tournament Admin or System Admin)
+
+2. **Frontend — Interactive Court Management Panel** (`order-of-play-view.component`):
+   - **Add Court Modal**:
+     - "➕ Add Court" button always visible in court header for admins
+     - Modal dialog with court name input
+     - Auto-focuses input field
+     - Submit on Enter key, close on Escape
+     - Validates non-empty name before creation
+     - Success message: "✅ Court '[name]' created successfully!"
+   
+   - **Inline Edit Mode**:
+     - Click ✎ (edit icon) on any court to enter edit mode
+     - Court chip transforms to inline input field
+     - ✓ (save) button commits changes
+     - ✕ (cancel) button reverts changes
+     - Same Enter/Escape keyboard shortcuts
+     - Success message: "✅ Court updated successfully!"
+   
+   - **Delete with Confirmation**:
+     - Click 🗑 (delete icon) on any court
+     - Confirmation dialog: "⚠️ Are you sure you want to delete '[name]'?"
+     - Can cancel at confirmation stage
+     - Success message: "✅ Court '[name]' deleted successfully!"
+   
+   - **UI State Management**:
+     - New signals:
+       - `showAddCourtModal`: Controls modal visibility
+       - `newCourtName`: Tracks new court name input
+       - `editingCourtId`: Tracks which court is being edited (null = none)
+       - `editingCourtName`: Tracks edited name during inline edit
+     - Methods:
+       - `openAddCourtModal()`, `closeAddCourtModal()`
+       - `createCourt()`: Handles court creation
+       - `startEditCourt(id, name)`, `cancelEditCourt()`
+       - `updateCourt(id)`: Handles court update
+       - `deleteCourt(id, name)`: Handles court deletion with confirmation
+
+3. **UI/UX Improvements**:
+   - Court panel now shows even when no courts exist (with helpful message)
+   - No more error-driven workflow — users can proactively add courts
+   - Real-time updates after any CRUD operation
+   - Smooth transitions and visual feedback
+   - Consistent error handling across all operations
+
+4. **Styling Enhancements** (`order-of-play-view.component.css`):
+   - Modal overlay with backdrop blur effect
+   - Responsive modal design (max 500px width)
+   - Court chip edit mode styling with green highlight
+   - Inline input field with focus states
+   - Icon buttons with hover effects (green for edit, red for delete)
+   - Add Court button with primary color and shadow
+   - Form validation states and hints
+   - Mobile-friendly button sizes and touch targets
+
+5. **Removed Features**:
+   - Deprecated `POST /courts/initialize/:tournamentId` endpoint
+   - Removed `initializeCourts()` method from frontend
+   - Removed "Initialize Courts" button from error banner
+   - Updated error message to guide users to "Add Court" button
+
+**Technical Details**:
+- Backend: Express, TypeORM, PostgreSQL
+- Frontend: Angular 18+ signals, standalone components
+- Authentication: Role-based middleware (admin-only access)
+- Validation: Duplicate name prevention, required field checks
+- Error handling: Comprehensive try-catch with user-friendly messages
+
+**Database Changes**: None (uses existing `courts` table structure)
+
+**Breaking Changes**: Removed bulk initialization endpoint (replaced with individual creation)
+
+**Benefits**:
+- ✅ Users have full control over court names
+- ✅ Can create courts one at a time as needed
+- ✅ Can modify court names after creation
+- ✅ Can remove unwanted courts
+- ✅ Proactive management instead of reactive error fixing
+- ✅ Better user experience with modern UI patterns
+
+---
+
+## [1.70.4] - 2026-04-04
+
+### Added — Court Initialization for Tournaments
+
+**Feature**: Automatic court creation system with helpful UI recovery when courts are missing.
+
+**User Report**: "No available HARD courts found for tournament - that doesn't make sense, the previous tournament that used the hard courts have been deleted"
+
+**Problem Analysis**:
+- Courts are tournament-specific (tied to tournamentId), not shared globally
+- When a tournament is deleted, its courts are also deleted
+- New tournaments don't automatically get courts unless specified during creation
+- Users expected courts to be reusable or auto-created
+
+**Root Cause**:
+- `Tournament` entity has `OneToMany` relationship with `Court` but no cascade
+- Courts must be explicitly created for each tournament
+- No UI or API endpoint existed to add courts to existing tournaments
+- Error message didn't explain how to fix the problem
+
+**Solution**:
+
+1. **Backend — Court Initialization Endpoint** (`court.controller.ts`):
+   - Added `POST /courts/initialize/:tournamentId` endpoint
+   - Creates default courts based on tournament surface type
+   - Defaults to 2 courts, configurable via `courtCount` parameter
+   - Names courts appropriately: "Hard Court 1", "Clay Court 2", etc.
+   - Validates tournament exists and prevents duplicate court creation
+   - Admin-only access (Tournament Admin or System Admin)
+
+2. **Frontend — Smart Error Recovery** (`order-of-play-view.component`):
+   - Detects "No available courts" errors automatically
+   - Shows "🎾 Initialize Courts for Tournament" button in error banner
+   - One-click court creation without leaving the page
+   - Success message confirms court creation: "✅ 2 court(s) created!"
+   - Automatically reloads courts after creation
+
+3. **Backend — Enhanced Court Controller**:
+   - Added imports: `Tournament`, `generateId`
+   - Improved JSDoc documentation
+   - Validates no existing courts before creating new ones
+   - Returns created courts in response for confirmation
+
+**User Experience**:
+- Click "Generate Schedule" → sees error about missing courts
+- Error banner shows "Initialize Courts" button
+- Click button → courts created automatically
+- Can now generate schedule successfully
+- No need to delete and recreate tournament
+
+**Technical Details**:
+- Courts use tournament surface from parent tournament
+- Court IDs generated with `crt_` prefix
+- All courts marked `isAvailable: true` by default
+- Endpoint prevents accidental duplicate court creation
+
+**Future Consideration**:
+User also suggested: "If courts aren't available, find the first available slot and use every gap to schedule matches"
+- This would require more sophisticated scheduling algorithm
+- Currently out of scope, tracked for future enhancement
+- Would need to query existing match schedules across all tournaments
+
+---
+
+## [1.70.3] - 2026-04-04
+
+### Fixed — Generate Schedule 400 Bad Request Error
+
+**Bug Fix**: Fixed form binding issue causing 400 error when generating schedule.
+
+**User Report**: "POST http://localhost:4200/api/order-of-play/generate 400 (Bad Request) got this when pressing generate schedule"
+
+**Root Cause**:
+- Schedule options form used `[(ngModel)]` with Angular signals
+- Two-way binding doesn't work with signals (they're read-only)
+- Form inputs weren't updating the signal values
+- Backend received invalid/missing data causing 400 error
+
+**Technical Details**:
+- Signals in Angular 18+ don't support direct `[(ngModel)]` binding
+- Need to use `[value]` for one-way binding and `(input)` for updates
+- Signal must be updated using `.update()` or `.set()` method
+
+**Solution**:
+
+1. **Template** (`order-of-play-view.component.html`):
+   - Replaced `[(ngModel)]="scheduleOptions().field"` with:
+     - `[value]="scheduleOptions().field"` (one-way binding from signal)
+     - `(input)="updateScheduleOption('field', $event)"` (manual update handler)
+
+2. **Component** (`order-of-play-view.component.ts`):
+   - Added `updateScheduleOption()` method to handle form changes
+   - Parses number inputs correctly (`parseInt()` for match duration and break time)
+   - Uses `signal.update()` to immutably update the signal state
+   - Added debug logging for troubleshooting
+
+**User Experience**:
+- Generate Schedule button now works correctly
+- Form changes properly update the scheduling parameters
+- Console shows payload being sent for debugging
+- Better error messages display backend validation errors
+
+---
+
+## [1.70.2] - 2026-04-04
+
+### Enhanced — Regenerate Schedule Button State Management
+
+**UX Improvement**: "Regenerate Schedule" button now disabled when no matches are scheduled.
+
+**User Request**: "As all the matches (or some of them) are not scheduled, the 'Regenerate Schedule' button should be disabled until all the matches are scheduled"
+
+**Rationale**:
+- Regenerating only makes sense when there are existing scheduled matches to recalculate
+- Having the button enabled for unscheduled matches was confusing
+- Users should use "Generate Schedule" first, then "Regenerate Schedule" for adjustments
+
+**Implementation**:
+
+1. **Component Logic** (`order-of-play-view.component.ts`):
+   - Added `hasScheduledMatches` computed property
+   - Checks if any matches have `hasScheduledTime === true`
+   - Returns boolean for button state management
+
+2. **Template** (`order-of-play-view.component.html`):
+   - Updated disabled condition: `isGenerating() || !hasScheduledMatches()`
+   - Added contextual tooltip:
+     - When disabled: "No scheduled matches to regenerate. Use Generate Schedule first."
+     - When enabled: "Clear and regenerate all schedules with new parameters"
+
+**User Experience**:
+- Button appears grayed out when no matches are scheduled
+- Hover tooltip explains why button is disabled
+- Prevents confusion about when to use "Generate" vs "Regenerate"
+- Clear workflow: Generate → (optional) Regenerate with new parameters
+
+---
+
+## [1.70.1] - 2026-04-04
+
+### Fixed — Unscheduled Matches Showing System Time
+
+**Bug Fix**: Matches awaiting court assignment no longer display confusing system time.
+
+**User Report**: "A time is set for some reason, this time is set by default as the system time, maybe we can remove this to make more clear that the match isn't scheduled at all"
+
+**Problem**:
+- Matches without scheduled times were displaying current system time (e.g., "11:32")
+- Created confusion about whether matches were actually scheduled
+- No visual distinction between scheduled and unscheduled matches
+
+**Root Cause**:
+- Component set default time to `new Date().toISOString()` for matches without scheduled time
+- Awaiting matches used far-future date for sorting purposes
+- Template unconditionally displayed time regardless of scheduling status
+
+**Solution**:
+
+1. **Component Logic** (`order-of-play-view.component.ts`):
+   - Set `time` to `null` for unscheduled matches instead of system/future time
+   - Added null-safe sorting: unscheduled matches sort to end of court list
+   - Updated `formatTime()` to handle null values defensively
+   - `openRescheduleModal()` defaults to scheduling options start date/time for unscheduled matches
+
+2. **Template Display** (`order-of-play-view.component.html`):
+   - Added conditional display based on `hasScheduledTime` property
+   - Scheduled matches: Show `🕐 HH:MM` time
+   - Unscheduled matches: Show `⏳ Time pending` (italic, reduced opacity)
+
+3. **Type Safety**:
+   - Updated `MatchSchedule` interface: `time: string | null`
+   - Added `hasScheduledTime: boolean` property
+
+**User Experience**:
+- Awaiting Court Assignment matches now clearly show "⏳ Time pending"
+- Scheduled matches show actual time "🕐 09:00"
+- Visual styling (italic, reduced opacity) reinforces pending status
+- Rescheduling unscheduled matches defaults to scheduling options instead of random time
+
+---
+
+## [1.70.0] - 2026-04-04
+
+### Added — Regenerate Schedule with Updated Parameters
+
+**Feature Enhancement**: Admins can now regenerate entire tournament schedules when changing scheduling parameters.
+
+**User Request**: "When changing something in the rescheduling tool (initial time to 12:00) the matches aren't rescheduled to comply with the requirements set in the upper panel"
+
+**Problem**: 
+- Manual rescheduling didn't respect break time and match duration settings
+- No way to recalculate entire schedule when changing start time or other parameters
+- Scheduling parameters were only used for initial generation, not for adjustments
+
+**Solution**:
+
+1. **Backend — Regenerate Endpoint** (`order-of-play.controller.ts`):
+   - Added `regenerateSchedule()` method that:
+     - Clears all scheduled times, courts, and statuses for matches with participants
+     - Deletes all existing OrderOfPlay records for the tournament
+     - Regenerates entire schedule with new parameters (start time, match duration, break time)
+     - Creates fresh OrderOfPlay records with updated schedule
+   - Route: `POST /order-of-play/regenerate`
+   - Only accessible to Tournament Admins and System Admins
+
+2. **Backend — Break Time Enforcement** (`schedule-generation.service.ts`):
+   - Updated `isTimeSlotAvailable()` to enforce minimum break time between matches
+   - Added `breakTime` parameter (default: 15 minutes)
+   - Validates both overlaps AND break time violations:
+     - If proposed match is after existing: ensures break time since existing match ended
+     - If proposed match is before existing: ensures break time until existing match starts
+   - Returns false if insufficient break time between matches
+
+3. **Backend — Reschedule Validation** (`order-of-play.controller.ts`):
+   - Updated `rescheduleMatch()` to accept `breakTime` parameter from request
+   - Passes break time to `isTimeSlotAvailable()` for validation
+   - Enhanced error message to indicate break time requirement
+
+4. **Frontend — Regenerate Button** (`order-of-play-view.component`):
+   - Added `regenerateSchedule()` method with confirmation dialog
+   - Shows warning: "⚠️ This will clear all existing schedules and regenerate them with the new parameters"
+   - New button: "🔄 Regenerate Schedule" (yellow/warning style)
+   - Placed next to "Generate Schedule" button for easy access
+
+5. **Frontend — Break Time Conflict Detection** (`order-of-play-view.component.ts`):
+   - Updated `checkConflicts()` to validate break time in real-time
+   - Uses match duration and break time from scheduling parameters
+   - Displays detailed warnings:
+     - "⚠️ Insufficient break time: Only X minutes after match at HH:MM. Need 15 minutes break."
+     - "⚠️ Insufficient break time: Only X minutes before match at HH:MM. Need 15 minutes break."
+   - Prevents saving matches with break time violations
+
+**User Experience**:
+- Admins can change start time, match duration, or break time in upper panel
+- Click "Regenerate Schedule" to recalculate entire schedule with new parameters
+- Manual rescheduling now respects break time settings
+- Real-time warnings show exact break time violations with specific minutes needed
+- Confirmation dialog prevents accidental regeneration
+
+**Use Cases**:
+- Tournament delayed by weather → change start time and regenerate
+- Matches running longer than expected → increase match duration and regenerate
+- Need more cleanup time between matches → increase break time and regenerate
+
+---
+
+## [1.69.6] - 2026-04-04
+
+### Fixed — Published Schedule Still Showing as "Draft"
+
+**Bug Fix**: Order of Play page now correctly displays "Published" status instead of always showing "Draft".
+
+**Issue Resolved**:
+- **Problem**: After publishing schedule successfully, status badge still showed "📝 Draft" instead of "✅ Published"
+- **Root Cause**: 
+  1. Backend `getScheduledMatches` endpoint didn't return `isPublished` status
+  2. Frontend hardcoded `isPublished: false` regardless of actual database state
+- **Impact**: Users couldn't see if schedule was published, causing confusion about system state
+
+**Changes Made**:
+
+1. **Backend Enhancement** (`order-of-play.controller.ts`):
+   - Modified `getScheduledMatches()` to query OrderOfPlay record for the date of scheduled matches
+   - Returns `isPublished` status based on actual database record
+   - Checks the date of the first scheduled match to find the correct OrderOfPlay record
+
+2. **Frontend Fix** (`order-of-play-view.component.ts`):
+   - Changed from hardcoded `isPublished: false` to reading `data.isPublished` from backend response
+   - Status badge now reflects actual published state from database
+
+**User Experience**: 
+- Status badge correctly shows "✅ Published" after publishing schedule
+- "Publish Schedule" button only appears when status is "Draft"
+- Clear visual feedback about schedule publication state
+
+### Enhanced — Republish Schedule After Changes
+
+**Feature Enhancement**: Tournament admins can now republish schedules to notify participants of changes.
+
+**User Request**: "When making a new change in one of the matches I can't republish the schedule"
+
+**Issue Resolved**:
+- **Problem**: After publishing, "Publish Schedule" button disappeared even for admins
+- **Impact**: Admins couldn't republish after rescheduling matches, participants weren't notified of changes
+
+**Changes Made**:
+- Publish button now always visible to admins (Tournament Admin and System Admin)
+- Button text changes dynamically:
+  - "📢 Publish Schedule" when status is Draft
+  - "🔄 Republish Schedule" when already published
+- Republishing updates OrderOfPlay record and sends new notifications to all participants
+
+**User Experience**: 
+- Admins can reschedule matches and republish to notify participants
+- Clear distinction between initial publish and republish actions
+- Participants receive updated schedule notifications after changes
+
+---
+
 ## [1.69.5] - 2026-04-03
+
+### Fixed — Publish Schedule 404 Error
+
+**Bug Fix**: Added missing backend route for publishing schedule by tournament ID.
+
+**Issue Resolved**:
+- **Problem**: Clicking "Publish Schedule" resulted in 404 (Not Found) error
+- **Root Cause**: Frontend called `POST /order-of-play/tournament/:tournamentId/publish` but route didn't exist
+- **Backend had**: `POST /order-of-play/:id/publish` (requires OrderOfPlay ID)
+- **Frontend needed**: `POST /order-of-play/tournament/:tournamentId/publish` (uses tournament ID)
+
+**Changes Made**:
+1. **New Backend Method**: `publishByTournament()` in order-of-play.controller
+   - Accepts tournament ID and optional date filter
+   - Finds all scheduled matches for the tournament
+   - Groups matches by date and creates/updates OrderOfPlay records
+   - Sends notifications to all unique participants
+   - Returns count of notified participants
+2. **New Route**: `POST /api/order-of-play/tournament/:tournamentId/publish`
+3. **Frontend Update**: Removed duplicate checkmark emoji from success message
+
+**User Experience**: Tournament admins can now successfully publish schedules. All participants with scheduled matches receive notifications about the published schedule.
+
+### Fixed — Order of Play Shows Unscheduled Matches
+
+**Bug Fix**: Order of Play page now displays matches that haven't been scheduled yet, not just matches with assigned times.
+
+**Issue Resolved**:
+- **Problem**: After clearing court assignments, page showed "No Matches Scheduled" even though matches existed
+- **Root Cause**: `getScheduledMatches` endpoint only queried matches with `status = SCHEDULED`, excluding `NOT_SCHEDULED` matches
+- **Impact**: Users couldn't see unscheduled matches or know they needed to generate a schedule
+
+**Changes Made**:
+- Updated `getScheduledMatches()` query to include both `SCHEDULED` and `NOT_SCHEDULED` status
+- Added participant validation: only shows matches with both participants assigned
+- Maintains separate groups: `scheduledMatches` (with times) and `awaitingSchedule` (without times)
+
+**User Experience**: 
+- Unscheduled matches now appear under "Awaiting Court Assignment" 
+- Tournament admins can see which matches need scheduling
+- Clear visual distinction between scheduled and unscheduled matches
 
 ### Improved — Surface-Aware Court Assignment in Auto-Scheduling
 

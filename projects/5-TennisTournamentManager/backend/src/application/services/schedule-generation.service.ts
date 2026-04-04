@@ -195,12 +195,14 @@ export class ScheduleGenerationService {
 
   /**
    * Validates if a new time slot is available for a specific match and court.
+   * Enforces both overlap prevention and minimum break time between matches.
    *
    * @param matchId - Match ID to reschedule
    * @param courtId - Court ID for the match
    * @param proposedTime - Proposed new scheduled time
    * @param duration - Match duration in minutes
    * @param existingSchedule - Current schedule to check against
+   * @param breakTime - Minimum break time required between matches in minutes (default: 15)
    * @returns true if slot is available, false if conflict exists
    */
   public isTimeSlotAvailable(
@@ -208,7 +210,8 @@ export class ScheduleGenerationService {
     courtId: string,
     proposedTime: Date,
     duration: number,
-    existingSchedule: ScheduledMatch[]
+    existingSchedule: ScheduledMatch[],
+    breakTime: number = 15
   ): boolean {
     const proposedEnd = new Date(proposedTime);
     proposedEnd.setMinutes(proposedEnd.getMinutes() + duration);
@@ -222,7 +225,7 @@ export class ScheduleGenerationService {
       const existingEnd = new Date(existing.scheduledTime);
       existingEnd.setMinutes(existingEnd.getMinutes() + existing.estimatedDuration);
 
-      // Check for overlap
+      // Check for direct overlap
       const hasOverlap = (
         (proposedTime >= existing.scheduledTime && proposedTime < existingEnd) ||
         (proposedEnd > existing.scheduledTime && proposedEnd <= existingEnd) ||
@@ -231,6 +234,23 @@ export class ScheduleGenerationService {
 
       if (hasOverlap) {
         return false;
+      }
+
+      // Check for break time violation
+      // If proposed match starts after existing match ends
+      if (proposedTime >= existingEnd) {
+        const timeSinceExistingEnd = (proposedTime.getTime() - existingEnd.getTime()) / 1000 / 60;
+        if (timeSinceExistingEnd < breakTime) {
+          return false; // Insufficient break time after existing match
+        }
+      }
+
+      // If proposed match ends before existing match starts
+      if (proposedEnd <= existing.scheduledTime) {
+        const timeUntilExistingStart = (existing.scheduledTime.getTime() - proposedEnd.getTime()) / 1000 / 60;
+        if (timeUntilExistingStart < breakTime) {
+          return false; // Insufficient break time before existing match
+        }
       }
     }
 
