@@ -63,8 +63,8 @@ export class OrderOfPlayViewComponent implements OnInit {
   /** Error message */
   public errorMessage = signal<string | null>(null);
 
-  /** Selected date */
-  public selectedDate = signal<Date>(new Date());
+  /** Selected date (null = show all dates) */
+  public selectedDate = signal<Date | null>(null);
 
   /** Selected court filter (null = all courts) */
   public selectedCourt = signal<string | null>(null);
@@ -176,16 +176,30 @@ export class OrderOfPlayViewComponent implements OnInit {
     }));
   });
 
-  /** Filtered matches by selected court */
+  /** Filtered matches by selected date and court */
   public filteredMatches = computed(() => {
     const allMatches = this.matches();
+    const selectedDate = this.selectedDate();
     const court = this.selectedCourt();
 
-    if (!court) {
-      return allMatches;
+    let filtered = allMatches;
+
+    // Filter by date if a date is selected
+    if (selectedDate) {
+      const targetDate = selectedDate.toISOString().split('T')[0];
+      filtered = filtered.filter((m: MatchSchedule) => {
+        if (!m.time) return false; // Exclude unscheduled matches when filtering by date
+        const matchDate = new Date(m.time).toISOString().split('T')[0];
+        return matchDate === targetDate;
+      });
     }
 
-    return allMatches.filter((m: MatchSchedule) => m.courtId === court);
+    // Filter by court if a court is selected
+    if (court) {
+      filtered = filtered.filter((m: MatchSchedule) => m.courtId === court);
+    }
+
+    return filtered;
   });
 
   /** Matches grouped by court */
@@ -304,7 +318,7 @@ export class OrderOfPlayViewComponent implements OnInit {
   }
 
   /**
-   * Changes the selected date and reloads.
+   * Changes the selected date to filter matches.
    *
    * @param event - Date change event
    */
@@ -312,8 +326,14 @@ export class OrderOfPlayViewComponent implements OnInit {
     const target = event.target as HTMLInputElement;
     if (target.value) {
       this.selectedDate.set(new Date(target.value));
-      void this.loadOrderOfPlay();
     }
+  }
+
+  /**
+   * Clears the date filter to show all matches.
+   */
+  public clearDateFilter(): void {
+    this.selectedDate.set(null);
   }
 
   /**

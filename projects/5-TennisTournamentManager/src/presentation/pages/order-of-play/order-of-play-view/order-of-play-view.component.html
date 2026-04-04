@@ -25,14 +25,26 @@
           <div class="header-right">
             <!-- Date Selector -->
             <div class="header-control">
-              <label for="admin-date">📅 Select Date:</label>
-              <input
-                type="date"
-                id="admin-date"
-                [value]="selectedDate().toISOString().split('T')[0]"
-                (change)="onDateChange($event)"
-                class="header-input"
-              />
+              <label for="admin-date">📅 Filter by Date:</label>
+              <div class="date-filter-group">
+                <input
+                  type="date"
+                  id="admin-date"
+                  [value]="selectedDate() ? selectedDate()!.toISOString().split('T')[0] : ''"
+                  (change)="onDateChange($event)"
+                  class="header-input"
+                  placeholder="All dates"
+                />
+                @if (selectedDate()) {
+                  <button
+                    (click)="clearDateFilter()"
+                    class="clear-date-btn"
+                    type="button"
+                    title="Show all dates">
+                    ✕
+                  </button>
+                }
+              </div>
             </div>
 
             <!-- Court Filter -->
@@ -233,13 +245,24 @@
         <div class="controls-grid">
           <!-- Date Selector -->
           <div class="control-group">
-            <label for="date">📅 Select Date:</label>
-            <input
-              type="date"
-              id="date"
-              [value]="selectedDate().toISOString().split('T')[0]"
-              (change)="onDateChange($event)"
-            />
+            <label for="date">📅 Filter by Date:</label>
+            <div class="date-filter-wrapper">
+              <input
+                type="date"
+                id="date"
+                [value]="selectedDate() ? selectedDate()!.toISOString().split('T')[0] : ''"
+                (change)="onDateChange($event)"
+              />
+              @if (selectedDate()) {
+                <button
+                  (click)="clearDateFilter()"
+                  class="clear-date-btn-inline"
+                  type="button"
+                  title="Show all dates">
+                  ✕ Clear
+                </button>
+              }
+            </div>
           </div>
 
           <!-- Court Filter -->

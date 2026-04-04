@@ -215,6 +215,64 @@
   box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
 }
 
+/* Date filter styling */
+.date-filter-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.clear-date-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-error);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+}
+
+.clear-date-btn:hover {
+  background: var(--color-error-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+}
+
+.date-filter-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.clear-date-btn-inline {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-error);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  white-space: nowrap;
+}
+
+.clear-date-btn-inline:hover {
+  background: var(--color-error-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+}
+
 @media (max-width: 968px) {
   .unified-header {
     flex-direction: column;

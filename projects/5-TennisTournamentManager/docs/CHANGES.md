@@ -6,6 +6,63 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.71.5] - 2026-04-09
+
+### Fixed — Date Filter Now Correctly Filters Matches
+
+**Issue**: Date filter in Order of Play was non-functional - selecting a date did not filter the displayed matches.
+
+**User Request**: 
+- "I see this select date useless, do you think its useful"
+- "But now doesn't filter anything at all...by default the page should show the matches for all dates, but when introducing a date in that, the page must show only the matches scheduled for that date (also the user should be able to reset this filter by default to show again all matches)"
+
+**Root Cause**: `selectedDate` signal was always initialized with a Date object, and `filteredMatches` computed property did not include date filtering logic. The component fetched all matches but never filtered them by the selected date.
+
+**Changes**:
+
+1. **Nullable Date State**:
+   - Changed `selectedDate` from `signal<Date>(new Date())` to `signal<Date | null>(null)`
+   - `null` represents "show all dates" (default state)
+   - Selecting a date filters to only matches scheduled for that date
+
+2. **Date Filtering Logic**:
+   - Enhanced `filteredMatches` computed property with date comparison
+   - When `selectedDate` is not null, filters matches by matching date strings (YYYY-MM-DD)
+   - Excludes unscheduled matches (no `time` property) when date filter is active
+   - Unscheduled matches shown when no date filter applied
+
+3. **Clear Filter Functionality**:
+   - Added `clearDateFilter()` method that sets `selectedDate.set(null)`
+   - Added "Clear" button that appears conditionally when date is selected
+   - Admin header: Compact "✕" button next to date input
+   - Non-admin section: "✕ Clear" button with text label
+
+4. **UI Improvements**:
+   - Null-safe value bindings for date inputs: `selectedDate() ? selectedDate()!.toISOString().split('T')[0] : ''`
+   - Changed label from "Select Date" to "Filter by Date" for clarity
+   - Added `.date-filter-group` and `.date-filter-wrapper` containers
+   - CSS styling for `.clear-date-btn` and `.clear-date-btn-inline`
+
+5. **Simplified Date Change Handler**:
+   - Removed unnecessary `loadOrderOfPlay()` call from `onDateChange()`
+   - Date change now only updates `selectedDate` signal
+   - Filtering handled reactively by `filteredMatches` computed property
+
+**Technical Details**:
+- Client-side filtering approach (data already loaded from backend)
+- Date comparison uses ISO string format (YYYY-MM-DD) for reliability
+- Clear buttons styled with error color (red) for high visibility
+- Hover states and transitions for improved UX
+- Maintains independent court filtering functionality
+
+**User Experience**:
+- Default view: All scheduled and unscheduled matches visible
+- Select date: Only matches scheduled for that date appear
+- Click clear: Returns to showing all matches
+- Intuitive and reversible filtering behavior
+
+---
+
 ## [1.71.4] - 2026-04-04
 
 ### Improved — Centered VS Badge in Match Cards with Increased Spacing
