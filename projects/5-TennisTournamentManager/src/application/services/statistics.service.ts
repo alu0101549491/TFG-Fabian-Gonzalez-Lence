@@ -27,6 +27,7 @@ import {StatisticsRepositoryImpl} from '@infrastructure/repositories/statistics.
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
 import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registration.repository';
 import {TournamentRepositoryImpl} from '@infrastructure/repositories/tournament.repository';
+import {UserService} from './user.service';
 import {Surface} from '../../domain/enumerations/surface';
 import {MatchStatus} from '../../domain/enumerations/match-status';
 
@@ -60,6 +61,11 @@ export class StatisticsService implements IStatisticsService {
    * Tournament repository for tournament data access.
    */
   private readonly tournamentRepository = inject(TournamentRepositoryImpl);
+
+  /**
+   * User service for fetching participant information.
+   */
+  private readonly userService = inject(UserService);
 
   /**
    * Retrieves enhanced statistics for a participant (FR45).
@@ -324,12 +330,16 @@ export class StatisticsService implements IStatisticsService {
       retirements: allMatches.filter((m) => m.status === MatchStatus.RETIRED).length,
     };
     
-    // Calculate participant activity
+    // Calculate participant activity and performance
     const participantActivity: Map<string, {matches: number, sets: number, games: number}> = new Map();
     const participantPerformance: Map<string, {wins: number, losses: number, streak: number}> = new Map();
     
+    // First pass: count wins/losses and activity
     for (const match of allMatches) {
-      if (match.status === MatchStatus.COMPLETED) {
+      // Count matches that have a definitive result (completed, retired, or walkover)
+      if (match.status === MatchStatus.COMPLETED || 
+          match.status === MatchStatus.RETIRED || 
+          match.status === MatchStatus.WALKOVER) {
         // Track activity for both players
         const player1 = match.player1Id || '';
         const player2 = match.player2Id || '';
@@ -343,6 +353,51 @@ export class StatisticsService implements IStatisticsService {
         
         participantActivity.get(player1)!.matches++;
         participantActivity.get(player2)!.matches++;
+        
+        // Parse scores to count sets and games PLAYED (both players play the same sets/games)
+        if (match.scores && match.scores.length > 0) {
+          let setsPlayed = 0;
+          let totalGamesInMatch = 0;
+          
+          for (const scoreEntry of match.scores) {
+            const player1Games = scoreEntry.player1Games || 0;
+            const player2Games = scoreEntry.player2Games || 0;
+            
+            // Only count sets that were actually played (not 0-0 placeholder sets)
+            if (player1Games > 0 || player2Games > 0) {
+              setsPlayed++;
+              totalGamesInMatch += player1Games + player2Games;
+            }
+          }
+          
+          // Both players played the same number of sets and games
+          participantActivity.get(player1)!.sets += setsPlayed;
+          participantActivity.get(player1)!.games += totalGamesInMatch;
+          participantActivity.get(player2)!.sets += setsPlayed;
+          participantActivity.get(player2)!.games += totalGamesInMatch;
+        } else if (match.score && match.score.trim().length > 0) {
+          // Fallback: parse score string (format: "6-4, 3-6, 7-6")
+          const sets = match.score.split(',').map(s => s.trim()).filter(s => s.length > 0);
+          let setsPlayed = 0;
+          let totalGamesInMatch = 0;
+          
+          for (const setScore of sets) {
+            const games = setScore.split('-').map(g => parseInt(g.trim(), 10));
+            if (games.length === 2 && !isNaN(games[0]) && !isNaN(games[1])) {
+              // Only count sets that were actually played
+              if (games[0] > 0 || games[1] > 0) {
+                setsPlayed++;
+                totalGamesInMatch += games[0] + games[1];
+              }
+            }
+          }
+          
+          // Both players played the same number of sets and games
+          participantActivity.get(player1)!.sets += setsPlayed;
+          participantActivity.get(player1)!.games += totalGamesInMatch;
+          participantActivity.get(player2)!.sets += setsPlayed;
+          participantActivity.get(player2)!.games += totalGamesInMatch;
+        }
         
         // Track performance        
         if (!participantPerformance.has(player1)) {
@@ -362,11 +417,91 @@ export class StatisticsService implements IStatisticsService {
       }
     }
     
+    // Second pass: calculate current win streaks by sorting matches chronologically
+    const finishedMatches = allMatches.filter(
+      (m) => m.status === MatchStatus.COMPLETED || 
+             m.status === MatchStatus.RETIRED || 
+             m.status === MatchStatus.WALKOVER
+    ).sort((a, b) => {
+      // Sort by completion date (most recent last)
+      const dateA = a.completedAt || a.updatedAt;
+      const dateB = b.completedAt || b.updatedAt;
+      return dateA.getTime() - dateB.getTime();
+    });
+    
+    // Calculate streaks for each participant
+    const participantMatches: Map<string, Array<{date: Date, won: boolean}>> = new Map();
+    
+    for (const match of finishedMatches) {
+      const player1 = match.player1Id || '';
+      const player2 = match.player2Id || '';
+      const matchDate = match.completedAt || match.updatedAt;
+      
+      if (!participantMatches.has(player1)) {
+        participantMatches.set(player1, []);
+      }
+      if (!participantMatches.has(player2)) {
+        participantMatches.set(player2, []);
+      }
+      
+      participantMatches.get(player1)!.push({
+        date: matchDate,
+        won: match.winnerId === player1
+      });
+      participantMatches.get(player2)!.push({
+        date: matchDate,
+        won: match.winnerId === player2
+      });
+    }
+    
+    // Calculate current streak for each participant (from most recent matches backwards)
+    for (const [participantId, matches] of participantMatches.entries()) {
+      let currentStreak = 0;
+      
+      // Iterate from most recent match backwards
+      for (let i = matches.length - 1; i >= 0; i--) {
+        if (matches[i].won) {
+          currentStreak++;
+        } else {
+          // Streak broken by a loss
+          break;
+        }
+      }
+      
+      // Update the streak in performance map
+      if (participantPerformance.has(participantId)) {
+        participantPerformance.get(participantId)!.streak = currentStreak;
+      }
+    }
+    
+    // Fetch participant names for all participants with activity or performance data
+    const allParticipantIds = new Set<string>([
+      ...participantActivity.keys(),
+      ...participantPerformance.keys()
+    ]);
+    
+    // Fetch user info in parallel for all participants
+    const participantNames = new Map<string, string>();
+    await Promise.all(
+      Array.from(allParticipantIds).map(async (participantId) => {
+        try {
+          const user = await this.userService.getPublicUserInfo(participantId);
+          const fullName = user.firstName && user.lastName 
+            ? `${user.firstName} ${user.lastName}` 
+            : user.username || 'Unknown';
+          participantNames.set(participantId, fullName);
+        } catch (error) {
+          // If user not found, use 'Unknown'
+          participantNames.set(participantId, 'Unknown');
+        }
+      })
+    );
+    
     // Convert to DTOs and sort
     const mostActiveParticipants: ParticipantActivityDto[] = Array.from(participantActivity.entries())
       .map(([participantId, activity]) => ({
         participantId,
-        participantName: 'Unknown', // Would fetch from user service
+        participantName: participantNames.get(participantId) || 'Unknown',
         matchesPlayed: activity.matches,
         setsPlayed: activity.sets,
         gamesPlayed: activity.games,
@@ -377,7 +512,7 @@ export class StatisticsService implements IStatisticsService {
     const topPerformers: ParticipantPerformanceDto[] = Array.from(participantPerformance.entries())
       .map(([participantId, performance]) => ({
         participantId,
-        participantName: 'Unknown', // Would fetch from user service
+        participantName: participantNames.get(participantId) || 'Unknown',
         wins: performance.wins,
         losses: performance.losses,
         winPercentage: performance.wins + performance.losses > 0 
@@ -388,12 +523,15 @@ export class StatisticsService implements IStatisticsService {
       .sort((a, b) => b.winPercentage - a.winPercentage)
       .slice(0, 10);
     
+    // Calculate total finished matches (completed, retired, walkover all count as finished)
+    const totalFinishedMatches = resultDistribution.completed + resultDistribution.retirements + resultDistribution.walkovers;
+    
     return {
       tournamentId,
       tournamentName: tournament.name,
       totalParticipants: registrations.length,
       totalMatches: allMatches.length,
-      completedMatches: resultDistribution.completed,
+      completedMatches: totalFinishedMatches,
       pendingMatches: resultDistribution.pending,
       resultDistribution,
       mostActiveParticipants,

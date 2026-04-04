@@ -64,6 +64,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'tournaments/:id/statistics',
+    loadComponent: () =>
+      import('./pages/tournaments/tournament-statistics/tournament-statistics.component').then(
+        (m) => m.TournamentStatisticsComponent,
+      ),
+  },
+  {
     path: 'tournaments/:id',
     loadComponent: () =>
       import('./pages/tournaments/tournament-detail/tournament-detail.component').then(

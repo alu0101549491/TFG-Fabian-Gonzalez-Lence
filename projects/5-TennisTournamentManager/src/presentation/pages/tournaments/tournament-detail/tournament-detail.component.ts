@@ -326,6 +326,15 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   /**
+   * Navigates to tournament statistics view for this tournament.
+   */
+  public viewTournamentStatistics(): void {
+    if (this.tournamentId) {
+      void this.router.navigate(['/tournaments', this.tournamentId, 'statistics']);
+    }
+  }
+
+  /**
    * Navigates to order of play management for this tournament (admin only).
    */
   public manageOrderOfPlay(): void {

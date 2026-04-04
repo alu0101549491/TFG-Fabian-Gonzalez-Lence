@@ -6,6 +6,214 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.73.0] - 2026-04-09
+
+### Added — Tournament Statistics UI Integration
+
+**Feature**: Complete UI integration for tournament-wide statistics view, allowing users to see comprehensive analytics for any tournament.
+
+**User Requirements**:
+- FR46: Tournament statistics (total participants, matches, result distribution, top performers)
+- FR63: Statistics export to PDF and Excel (admin only)
+- Section H of manual testing checklist
+
+**Implementation**:
+
+1. **TournamentStatisticsComponent** (New Component):
+   - **Location**: `presentation/pages/tournaments/tournament-statistics/`
+   - **Route**: `/tournaments/:id/statistics`
+   - **Template**: Full-featured statistics dashboard with:
+     - Hero section with tournament name
+     - Key stats overview (4 cards: participants, total matches, completed, pending)
+     - Progress bar showing tournament completion percentage
+     - Result distribution grid (6 categories: CO, PENDING, IN_PROGRESS, CANCELLED, WO, RET)
+     - Top performers table with medals for top 3, sorted by win percentage
+     - Most active participants table sorted by matches played
+     - Export section with PDF and Excel buttons (admin-only visibility)
+   - **Styling**: Modern card-based layout with responsive grid design
+     - Uses CSS variables from `variables.css` for consistent theming
+     - Hero gradient: `linear-gradient(135deg, var(--color-primary-dark), var(--color-primary), var(--color-secondary))`
+     - Color palette: Forest green (#2E7D32) and blue (#1976D2) matching app theme
+     - Spacing scale, typography, shadows, and border-radius using CSS variable tokens
+     - Responsive design with mobile-first approach
+     - Interactive elements with hover states and transitions
+
+2. **Tournament Detail Page Integration**:
+   - **Added**: "Statistics" tile to Quick Actions section
+   - **Icon**: 📈 (chart with upwards trend)
+   - **Description**: "View tournament stats"
+   - **Method**: `viewTournamentStatistics()` navigates to `/tournaments/:id/statistics`
+   - **Placement**: Fourth tile after Bracket, Matches, and Standings
+
+3. **Routing Configuration**:
+   - Added route in `app.routes.ts`: `tournaments/:id/statistics`
+   - Lazy loading with dynamic import
+   - No authentication required (public access)
+
+4. **Backend Integration**:
+   - Calls `StatisticsService.getDetailedTournamentStatistics(tournamentId)`
+   - Returns `TournamentStatisticsDto` with:
+     - `tournamentName`, `totalParticipants`, `totalMatches`
+     - `completedMatches`, `pendingMatches`
+     - `resultDistribution`: breakdown by match status
+     - `mostActiveParticipants`: top 10 by matches played
+     - `topPerformers`: top 10 by win percentage with current streaks
+
+5. **Export Functionality** (Admin-Only):
+   - Export buttons visible only when `user.role === 'SYSTEM_ADMIN' || 'TOURNAMENT_ADMIN'`
+   - `exportToPDF()`: Placeholder for PDF export via ExportService (FR63)
+   - `exportToExcel()`: Placeholder for Excel export via ExportService (FR63)
+   - Role-based access control implemented in component
+
+6. **Features & UI Elements**:
+   - **Loading State**: Spinner with "Loading tournament statistics..." message
+   - **Error State**: User-friendly error display with icon
+   - **Back Button**: Returns to tournament detail page or tournament list
+   - **Responsive Design**: Grid layout adapts to mobile/tablet/desktop
+   - **Visual Hierarchy**: Color-coded stats (completed=green, pending=orange, etc.)
+   - **Medals**: 🥇🥈🥉 for top 3 performers
+   - **Progress Visualization**: Animated progress bar with percentage label
+
+**Files Created**:
+- `src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.ts` (172 lines)
+- `src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.html` (276 lines)
+- `src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.css` (429 lines)
+
+**Files Modified**:
+- `src/presentation/app.routes.ts`: Added tournament statistics route
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts`: Added `viewTournamentStatistics()` method
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html`: Added Statistics tile to Quick Actions
+- `src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.css`: Refactored to use CSS variables from `variables.css` for consistent styling across the app (replaced hardcoded colors, spacing, typography, and border-radius with CSS variable tokens)
+
+**Testing**:
+- Navigate to any tournament detail page
+- Click "Statistics" tile in Quick Actions
+- Verify comprehensive statistics display
+- Check admin-only export button visibility
+- Verify responsive layout on different screen sizes
+
+**Outstanding**: Actual PDF/Excel export API endpoint integration (backend endpoint exists, UI calls placeholder)
+
+**Bug Fix** (2026-04-04):
+- Fixed tournament progress calculation to correctly count retired matches and walkovers as completed
+  - **Before**: Only matches with status `COMPLETED` counted toward progress (1/7 = 14.3%)
+  - **After**: Matches with `COMPLETED`, `RETIRED`, or `WALKOVER` all count as finished (2/7 = 28.6%)
+  - **Rationale**: Retirements and walkovers are finished matches with determined winners, should contribute to tournament completion percentage
+  - **Impact**: Progress bar, participant activity tracking, and top performers now accurately reflect all finished matches
+  - **Modified**: `StatisticsService.getDetailedTournamentStatistics()` - lines 335-340, 393-395
+
+- Fixed participant names showing as "Unknown" in tournament statistics tables
+  - **Before**: All participant names displayed as "Unknown" in Top Performers and Most Active Participants tables
+  - **After**: Actual participant names fetched from UserService and displayed correctly
+  - **Implementation**: 
+    - Injected UserService into StatisticsService
+    - Collect all unique participant IDs from activity/performance maps
+    - Fetch user info in parallel using `UserService.getPublicUserInfo()`
+    - Create map of participantId → fullName (firstName + lastName, fallback to username)
+    - Use map to populate participantName field in DTOs
+  - **Impact**: Tournament statistics now show actual participant names instead of "Unknown"
+  - **Modified**: `StatisticsService` - added UserService injection, updated `getDetailedTournamentStatistics()` lines 375-398
+
+- Fixed current win streak calculation in tournament statistics (Top Performers table)
+  - **Before**: Streak column always showed 0 for all participants
+  - **After**: Correctly calculates current consecutive win streak based on match chronology
+  - **Logic**: 
+    - Sort all finished matches by completion date (chronologically)
+    - For each participant, track their match results in order
+    - Count consecutive wins from most recent match backwards
+    - Streak breaks (resets to 0) when a loss is encountered
+  - **Examples**:
+    - Player wins 1 match → Streak = 1
+    - Player wins 2 matches in a row → Streak = 2
+    - Player wins 2, then loses 1 → Streak = 0
+    - Player wins 2, loses 1, wins 1 → Streak = 1
+  - **Impact**: Top Performers table now accurately shows current win streaks
+  - **Modified**: `StatisticsService.getDetailedTournamentStatistics()` - added second pass for streak calculation (lines 370-424)
+
+- Fixed sets and games counting in tournament statistics (Most Active Participants table)
+  - **Before**: Sets Played and Games Played columns always showed 0 for all participants
+  - **After**: Correctly parses match scores to count total sets and games played by each participant
+  - **Logic Change**: Changed from counting sets/games WON to counting sets/games PLAYED
+    - Sets Played: Total number of sets actually played in the match (both players get same count)
+    - Games Played: Sum of all games in those sets (e.g., 6-4 = 10 games total for both players)
+    - Ignores placeholder sets with 0-0 score (sets not yet played)
+  - **Implementation**:
+    - Primary method: Parse `match.scores` array (BackendScore[]) with player1Games/player2Games
+    - Fallback method: Parse `match.score` string (format: "6-4, 3-6, 7-6")
+    - Count only sets where at least one game was played (skip 0-0 sets)
+    - Both players in a match get credited with the same sets/games played
+  - **Example**: Match score "3-0, 0-0, 0-0" (1 set played, Nadal 3 - Alcaraz 0)
+    - Both Nadal and Alcaraz: 1 set played, 3 games played (3+0)
+  - **Impact**: Most Active Participants now shows accurate set and game participation statistics for ALL players
+  - **Modified**: `StatisticsService.getDetailedTournamentStatistics()` - updated score parsing logic (lines 357-403)
+
+---
+
+## [VERIFIED] - 2026-04-09
+
+### Verified — Section H (Statistics) Implementation Status (Backend)
+
+**Feature**: Comprehensive statistics system for personal player statistics and tournament-wide analytics.
+
+**User Requirements**:
+- FR45: Personal participant statistics (win/loss, streaks, performance by surface, head-to-head)
+- FR46: Tournament statistics (total participants, matches, result distribution, top performers)
+- FR63: Statistics export to PDF and Excel (admin only)
+
+**Implementation Status**:
+
+1. **Personal Statistics** ✅ FULLY IMPLEMENTED:
+   - **Route**: `/statistics` configured in app.routes.ts
+   - **Component**: StatisticsViewComponent displays comprehensive statistics
+   - **Service Method**: `StatisticsService.getParticipantStatistics(participantId)`
+   - **Backend**: `StatisticsController.getByPlayer()` API endpoint
+   - **Tracked Statistics**:
+     - Matches: total, wins, losses, win percentage
+     - Sets: won, lost, ratio
+     - Games: won, lost
+     - Tiebreaks won
+     - Win streaks: currentWinStreak, bestWinStreak
+     - Loss streaks: currentLossStreak, worstLossStreak (bonus feature)
+     - Performance by surface: wins/losses breakdown by surface type
+   - **Matchup History**: `getHeadToHead(player1Id, player2Id)` method with detailed match history
+   - **Dashboard Integration**: Statistics widget with "View details →" link
+
+2. **Tournament Statistics** ✅ IMPLEMENTED:
+   - **Service Methods**:
+     - `getTournamentStatistics(tournamentId)`: Per-participant stats for tournament
+     - `getDetailedTournamentStatistics(tournamentId)`: Comprehensive tournament analytics
+   - **Tracked Metrics**:
+     - Total participants (from registrations)
+     - Total matches with status breakdown
+     - Result distribution: COMPLETED, PENDING, IN_PROGRESS, CANCELLED, WALKOVER, RETIRED
+     - Most active participants: Top 10 by matches played
+     - Top performers: Top 10 by win percentage
+   - **⚠️ Note**: Tournament view "Statistics" tab integration not verified
+
+3. **Export Statistics** ✅ IMPLEMENTED:
+   - **Service Method**: `ExportService.exportStatistics(request)`
+   - **Supported Formats**: PDF, Excel (as per FR63)
+   - **DTO**: `StatisticsExportRequestDto` with tournamentId, format, includeIndividualStats
+   - **Implementation**:
+     - `exportStatisticsToPDF()`: Generate PDF report
+     - `exportStatisticsToExcel()`: Generate Excel spreadsheet
+   - **⚠️ Note**: Admin-only access enforcement needs UI verification
+
+**Files Verified**:
+- `src/application/services/statistics.service.ts` (500+ lines)
+- `src/presentation/pages/statistics/statistics-view/statistics-view.component.ts`
+- `src/presentation/pages/statistics/statistics-view/statistics-view.component.html`
+- `src/application/services/export.service.ts`
+- `src/application/dto/statistics.dto.ts`
+- `src/domain/entities/statistics.ts`
+- `backend/src/presentation/controllers/statistics.controller.ts`
+
+**Outstanding Verification**:
+- [ ] Tournament statistics tab in tournament detail view
+- [ ] Admin-only export button visibility/access control
+
+---
+
 ## [1.72.0] - 2026-04-09
 
 ### Added — Comprehensive Tiebreaker System Integration

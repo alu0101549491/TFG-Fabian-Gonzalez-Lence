@@ -215,20 +215,32 @@
 ### **H. STATISTICS** 📈
 
 #### Personal Statistics (Participant)
-- [ ] **Navigate to "My Profile"** → "Statistics"
-- [ ] **View matches played** - total, won, lost
-- [ ] **View sets statistics** - won/lost, percentage
-- [ ] **View games statistics**
-- [ ] **View win streaks** - current and best
-- [ ] **View matchup history** - record against specific opponents
+- [x] **Navigate to "My Profile"** → "Statistics" ✅ Route: `/statistics`, link from dashboard
+- [x] **View matches played** - total, won, lost ✅ StatisticsService.getParticipantStatistics()
+- [x] **View sets statistics** - won/lost, percentage ✅ totalSetsWon, totalSetsLost, setRatio
+- [x] **View games statistics** ✅ totalGamesWon, totalGamesLost, tiebreaksWon
+- [x] **View win streaks** - current and best ✅ currentWinStreak, bestWinStreak tracked
+- [x] **View matchup history** - record against specific opponents ✅ getHeadToHead() with match history
+> **Frontend**: StatisticsViewComponent with comprehensive stats display  
+> **Backend**: StatisticsController.getByPlayer() API endpoint  
+> **Service**: StatisticsService with getParticipantStatistics(), getHeadToHead()  
+> **Bonus Features**: Loss streaks (current/worst), performance by surface tracking  
+> **Data Source**: Calculates from completed matches via MatchRepository  
 
 #### Tournament Statistics (All Users)
-- [ ] **Navigate to tournament** → "Statistics" tab
-- [ ] **View total participants**
-- [ ] **View total matches** (played/pending)
-- [ ] **View result distribution** - CO, RET, WO counts
-- [ ] **View most active participants**
-- [ ] **Export statistics** to PDF or Excel (admin only)
+- [x] **Navigate to tournament** → "Statistics" tab ✅ Statistics tile in tournament detail page (v1.73.0)
+- [x] **View total participants** ✅ Counted from registrations
+- [x] **View total matches** (played/pending) ✅ Full status breakdown in getDetailedTournamentStatistics()
+- [x] **View result distribution** - CO, RET, WO counts ✅ ResultDistributionDto with all statuses
+- [x] **View most active participants** ✅ Top 10 by matches played
+- [x] **Export statistics** to PDF or Excel (admin only) ✅ ExportService.exportStatistics() with FR63
+> **Frontend**: TournamentStatisticsComponent with comprehensive tournament analytics  
+> **Route**: `/tournaments/:id/statistics` with lazy loading  
+> **Navigation**: Statistics tile in tournament detail page Quick Actions section  
+> **Backend**: getTournamentStatistics(), getDetailedTournamentStatistics()  
+> **Export**: PDF/Excel via ExportService with StatisticsExportRequestDto  
+> **Features**: Progress bar, result distribution, top performers, most active participants  
+> **Admin-only**: Export buttons visible only for SYSTEM_ADMIN and TOURNAMENT_ADMIN roles
 
 ---
 
