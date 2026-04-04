@@ -6,6 +6,268 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.71.4] - 2026-04-04
+
+### Improved — Centered VS Badge in Match Cards with Increased Spacing
+
+**Feature**: Adjusted match card layout to center the VS badge between the two players with significantly increased spacing for better visual balance and clarity.
+
+**User Requests**: 
+- "Instead of having the players centered in this card, I'd prefer them to have the vs text centered between each other"
+- "Make the players way more separated from the vs button"
+
+**Changes**:
+
+1. **Layout Adjustment**:
+   - Changed `.match-participants-new` from `justify-content: space-between;` to `justify-content: center;`
+   - Updated `.player-card` from `flex: 1;` to `flex: 0 1 auto;` with `max-width: 45%;`
+   - VS badge now truly centered between the two player cards
+   - Increased gap from `var(--spacing-lg)` to `var(--spacing-3xl)` for much more separation
+
+2. **Visual Improvement**:
+   - Players no longer stretch to fill the full width
+   - VS badge positioned equidistant from both players
+   - Significantly increased spacing between players and VS badge
+   - More breathing room and clearer visual separation
+   - Better visual hierarchy focusing on the matchup
+
+**Technical Details**:
+- `justify-content: center;` centers all flex items in the container
+- `flex: 0 1 auto;` prevents player cards from growing to fill space
+- `gap: var(--spacing-3xl);` provides much larger spacing between elements
+- `max-width: 45%;` ensures players don't extend too far on large screens
+- Responsive behavior preserved for mobile devices
+
+**Benefits**:
+- ✅ Much more visually balanced match card layout
+- ✅ VS badge acts as true center point between players
+- ✅ Clearer separation between players and VS badge
+- ✅ More breathing room creates professional appearance
+- ✅ Better emphasizes the head-to-head nature of the match
+- ✅ Maintains responsive design on all screen sizes
+
+---
+
+## [1.71.3] - 2026-04-04
+
+### Improved — Optimized Scheduling Management Header Layout
+
+**Feature**: Moved date selector and court filter controls to the panel header, renamed to "Scheduling Management" for better clarity, and reorganized header layout for improved space efficiency.
+
+**User Request**: "The 'select date' and 'filter court' could be added to the rightside of the title 'Tournament Management' (that could really be named after by 'Scheduling Management'), making this title to be at the top left side of the panel"
+
+**Changes**:
+
+1. **Renamed Panel**:
+   - "Tournament Management" → "Scheduling Management"
+   - More accurate description of panel's primary function
+   - Subtitle updated: "Manage courts and schedule generation in one place"
+
+2. **Header Layout Reorganization**:
+   - **Left side**: Title and subtitle (left-aligned)
+   - **Right side**: Date selector and court filter controls
+   - Horizontal flex layout with space-between
+   - Better visual hierarchy and space utilization
+
+3. **Integrated Controls**:
+   - Date selector moved from separate panel to header-right
+   - Court filter buttons moved from separate panel to header-right
+   - Compact styling to fit header layout
+   - Controls only show in unified panel for admins
+   - Non-admin users still see separate controls card below
+
+4. **Responsive Behavior**:
+   - On mobile/tablet (<968px): Header stacks vertically
+   - Controls move below title on smaller screens
+   - Date input expands to full width on mobile
+   - Maintains usability across all screen sizes
+
+5. **Styling Enhancements** (`order-of-play-view.component.css`):
+   - `.unified-header`: Changed from centered to flex layout
+   - `.header-left`: Container for title and subtitle
+   - `.header-right`: Container for date/court controls
+   - `.header-control`: Individual control wrapper
+   - `.header-input`: Compact input styling (160px min-width)
+   - `.header-filter-btn`: Smaller filter buttons (xs size)
+   - `.header-court-filters`: Flex container for filter buttons
+   - Added responsive media queries for mobile layout
+
+6. **HTML Structure** (`order-of-play-view.component.html`):
+   - Split unified-header into header-left and header-right divs
+   - Moved date selector and court filter into header-right
+   - Added conditional rendering: controls-card only for non-admins
+   - Preserved all existing functionality and event handlers
+
+**Benefits**:
+- ✅ More efficient use of horizontal space
+- ✅ Reduced vertical scrolling (one less panel section)
+- ✅ Better visual balance with left/right layout
+- ✅ More accurate panel naming ("Scheduling" vs "Tournament")
+- ✅ Cleaner, more professional dashboard appearance
+- ✅ All controls accessible without scrolling
+- ✅ Maintains responsive design on all devices
+
+**Technical Details**:
+- Title aligned left, controls aligned right using flexbox
+- Controls use compact sizing (xs fonts, sm padding)
+- Wrap behavior on smaller screens preserves usability
+- Non-admin users retain original separate controls panel
+- No breaking changes to component logic or methods
+
+**Before**: 
+- Centered "Tournament Management" title
+- Separate "Date Selector & Court Filter" panel below
+
+**After**: 
+- Left-aligned "Scheduling Management" title
+- Date and court filter integrated in header-right
+- Single cohesive panel for all admin controls
+
+---
+
+## [1.71.2] - 2026-04-04
+
+### Improved — Unified Tournament Management Panel
+
+**Feature**: Consolidated three separate panels (Date/Court Filter, Available Courts, Admin Controls) into one streamlined, visually appealing component for better space efficiency and user experience.
+
+**User Request**: "Maybe we can mix this three panels in a one condensed component more useful and visually appealing"
+
+**Changes**:
+
+1. **New Unified Management Card** (Admin Only):
+   - Single comprehensive panel replacing separate court and admin sections
+   - Two-column grid layout for efficient space usage
+   - Left column: Court management with compact list
+   - Right column: Schedule generation form
+   - Centralizes all tournament management in one place
+
+2. **Compact Court List**:
+   - Streamlined display with surface icons (🏟️ 🟤 🟢)
+   - Inline edit/delete actions
+   - Scrollable list (max 400px height) for many courts
+   - Shows court surface icon, name, and availability status
+   - Edit and delete buttons appear on hover
+
+3. **Condensed Schedule Form**:
+   - Two-column grid for form fields (Start Date/Time, Duration/Break)
+   - Smaller, more compact input fields
+   - Full-width action buttons
+   - Cleaner labels with uppercase styling
+   - Better visual hierarchy
+
+4. **Layout Improvements**:
+   - Gradient background on unified card
+   - Centered header with subtitle
+   - Better spacing and padding
+   - Responsive design: Stacks vertically on tablets/mobile (<968px)
+   - Hover effects and transitions throughout
+
+5. **Visual Enhancements** (`order-of-play-view.component.css`):
+   - `.unified-management-card`: Main container with gradient
+   - `.unified-grid`: Two-column responsive grid
+   - `.management-section`: Individual section styling
+   - `.compact-court-list`: Scrollable court list
+   - `.compact-court-item`: Streamlined court display
+   - `.schedule-form`: Condensed form layout
+   - `.form-row`: Two-column grid for inputs
+   - `.action-btn`: Smaller icon buttons (28px)
+   - Added hover states and smooth transitions
+
+6. **Preserved Functionality**:
+   - Date selector and court filter remain at top (navigation)
+   - Add Court modal still accessible
+   - All CRUD operations intact
+   - Success/error messages below unified panel
+   - Same functionality, better organization
+
+**Benefits**:
+- ✅ Reduced vertical scrolling (3 panels → 1)
+- ✅ Better use of horizontal space with grid layout
+- ✅ More modern, dashboard-like appearance
+- ✅ Easier to see all management options at once
+- ✅ Cleaner, less cluttered interface
+- ✅ Responsive on all screen sizes
+
+**Technical Details**:
+- Grid switches to single column on screens < 968px
+- Court list scrollable when > 6-7 courts
+- All existing signals and methods unchanged
+- CSS uses existing design tokens for consistency
+
+**Before**: Three separate cards stacked vertically (Date/Filter, Courts, Admin Controls)
+
+**After**: One unified management panel with side-by-side layout (Courts | Schedule Generator)
+
+---
+
+## [1.71.1] - 2026-04-04
+
+### Improved — Enhanced Match Card UI in Order of Play
+
+**Feature**: Redesigned match cards with avatar-based player display and date information for better visual hierarchy and user experience.
+
+**User Request**: "Now with styling issues, let's modify this card, make the players look similar to the second picture and add the date of the match"
+
+**Changes**:
+
+1. **Player Display with Avatars**:
+   - Replaced simple text-based player names with avatar circles
+   - Avatars show player initials (e.g., "AM" for Andy Murray)
+   - Gradient background (primary green) with shadow effects
+   - Player names displayed next to avatars
+   - Horizontal layout with VS badge between players
+
+2. **VS Badge**:
+   - Prominent badge with secondary color gradient
+   - Positioned centrally between player avatars
+   - Clear visual separator for match participants
+
+3. **Date Display**:
+   - Added match date below the time (e.g., "📅 April 4, 2026")
+   - Only shows when match has scheduled time
+   - Formatted as "Month Day, Year" for readability
+
+4. **Helper Functions** (`order-of-play-view.component.ts`):
+   - `formatDate(timeStr)`: Converts ISO time to readable date format
+   - `getInitials(name)`: Extracts initials from full names
+     - Handles "Andy Murray" → "AM"
+     - Handles "TBD" → "TB"
+     - Handles single names → first 2 characters
+
+5. **Styling Enhancements** (`order-of-play-view.component.css`):
+   - `.match-participants-new`: Flexbox layout for player cards
+   - `.player-card`: Container with avatar + name
+   - `.player-avatar`: 52px circular avatar with gradient
+   - `.vs-badge`: Styled badge with shadow
+   - `.match-date`: Subtle gray text for date
+   - `.match-time-info`: Flexible container for time, date, and badges
+   - `.match-actions`: Cleaner button layout
+   - Responsive design: Stack vertically on mobile (<768px)
+
+6. **Visual Improvements**:
+   - Better spacing and alignment
+   - Consistent button sizing in match actions
+   - Time and date grouped together logically
+   - Avatar initials bold and centered
+   - Professional gradient colors matching app theme
+
+**Technical Details**:
+- Avatar colors match tournament primary theme
+- Initials extracted dynamically from participant names
+- Graceful handling of TBD/pending participants
+- Responsive layout adapts to screen size
+- No breaking changes to data structure
+
+**Benefits**:
+- ✅ More visual and easier to scan match cards
+- ✅ Professional appearance with player avatars
+- ✅ Date context helps understand scheduling
+- ✅ Better information hierarchy with grouped elements
+- ✅ Consistent with modern sports app design patterns
+
+---
+
 ## [1.71.0] - 2026-04-04
 
 ### Added — Individual Court Management UI

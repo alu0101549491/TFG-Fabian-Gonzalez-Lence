@@ -13,148 +13,260 @@
 
   <!-- Main Content -->
   <main class="main-content">
-    <!-- Date Selector & Court Filter -->
-    <div class="controls-card">
-      <div class="controls-grid">
-        <!-- Date Selector -->
-        <div class="control-group">
-          <label for="date">📅 Select Date:</label>
-          <input
-            type="date"
-            id="date"
-            [value]="selectedDate().toISOString().split('T')[0]"
-            (change)="onDateChange($event)"
-          />
-        </div>
-
-        <!-- Court Filter -->
-        @if (availableCourts().length > 0) {
-          <div class="control-group">
-            <label>🎾 Filter by Court:</label>
-            <div class="court-filters">
-              <button
-                (click)="filterByCourt(null)"
-                [class.active]="selectedCourt() === null"
-                class="court-filter-btn"
-              >
-                All Courts
-              </button>
-              @for (courtId of availableCourts(); track courtId) {
-                <button
-                  (click)="filterByCourt(courtId)"
-                  [class.active]="selectedCourt() === courtId"
-                  class="court-filter-btn"
-                >
-                  {{ getCourtName(courtId) }}
-                </button>
-              }
+    <!-- Unified Scheduling Management Panel (Admin Only) -->
+    @if (isAdmin()) {
+      <div class="unified-management-card">
+        <div class="unified-header">
+          <div class="header-left">
+            <h2>🎛️ Scheduling Management</h2>
+            <p class="unified-subtitle">Manage courts and schedule generation in one place</p>
+          </div>
+          
+          <div class="header-right">
+            <!-- Date Selector -->
+            <div class="header-control">
+              <label for="admin-date">📅 Select Date:</label>
+              <input
+                type="date"
+                id="admin-date"
+                [value]="selectedDate().toISOString().split('T')[0]"
+                (change)="onDateChange($event)"
+                class="header-input"
+              />
             </div>
-          </div>
-        }
-      </div>
-    </div>
 
-    <!-- Court Information -->
-    @if (courts().length > 0 || isAdmin()) {
-      <div class="court-info-card">
-        <div class="court-info-header">
-          <h3>🎾 Available Courts</h3>
-          <div class="court-header-actions">
-            <span class="total-courts-badge">{{ courts().length }} Total</span>
-            @if (isAdmin()) {
-              <button 
-                class="add-court-btn" 
-                (click)="openAddCourtModal()"
-                type="button"
-                title="Add a new court">
-                <span class="btn-icon">➕</span>
-                Add Court
-              </button>
-            }
-          </div>
-        </div>
-        
-        @if (courts().length > 0) {
-          <div class="court-stats-grid">
-            @for (entry of courtStats() | keyvalue; track entry.key) {
-              <div class="surface-group">
-                <div class="surface-header">
-                  <span class="surface-icon">
-                    @switch (entry.key) {
-                      @case ('HARD') { 🏟️ }
-                      @case ('CLAY') { 🟤 }
-                      @case ('GRASS') { 🟢 }
-                      @default { 🎾 }
-                    }
-                  </span>
-                  <span class="surface-name">{{ entry.key | enumFormat }}</span>
-                  <span class="surface-count">{{ entry.value.count }}</span>
-                </div>
-                <div class="court-list">
-                  @for (court of entry.value.courts; track court.id) {
-                    <div class="court-chip" [class.unavailable]="!court.isAvailable" [class.editing]="editingCourtId() === court.id">
-                      @if (editingCourtId() === court.id) {
-                        <!-- Edit mode -->
-                        <input 
-                          type="text" 
-                          class="court-name-input"
-                          [value]="editingCourtName()"
-                          (input)="editingCourtName.set($any($event.target).value)"
-                          (keyup.enter)="updateCourt(court.id)"
-                          (keyup.escape)="cancelEditCourt()"
-                          autofocus />
-                        <div class="court-actions">
-                          <button 
-                            class="save-btn" 
-                            (click)="updateCourt(court.id)"
-                            type="button"
-                            title="Save">
-                            ✓
-                          </button>
-                          <button 
-                            class="cancel-btn" 
-                            (click)="cancelEditCourt()"
-                            type="button"
-                            title="Cancel">
-                            ✕
-                          </button>
-                        </div>
-                      } @else {
-                        <!-- Display mode -->
-                        <span class="court-name">{{ court.name }}</span>
-                        @if (!court.isAvailable) {
-                          <span class="unavailable-badge">Unavailable</span>
-                        }
-                        @if (isAdmin()) {
-                          <div class="court-actions">
-                            <button 
-                              class="edit-btn" 
-                              (click)="startEditCourt(court.id, court.name)"
-                              type="button"
-                              title="Edit court name">
-                              ✎
-                            </button>
-                            <button 
-                              class="delete-btn" 
-                              (click)="deleteCourt(court.id, court.name)"
-                              type="button"
-                              title="Delete court">
-                              🗑
-                            </button>
-                          </div>
-                        }
-                      }
-                    </div>
+            <!-- Court Filter -->
+            @if (availableCourts().length > 0) {
+              <div class="header-control">
+                <label>🎾 Filter by Court:</label>
+                <div class="header-court-filters">
+                  <button
+                    (click)="filterByCourt(null)"
+                    [class.active]="selectedCourt() === null"
+                    class="header-filter-btn"
+                  >
+                    All Courts
+                  </button>
+                  @for (courtId of availableCourts(); track courtId) {
+                    <button
+                      (click)="filterByCourt(courtId)"
+                      [class.active]="selectedCourt() === courtId"
+                      class="header-filter-btn"
+                    >
+                      {{ getCourtName(courtId) }}
+                    </button>
                   }
                 </div>
               </div>
             }
           </div>
-        } @else {
-          <div class="no-courts-message">
-            <p>ℹ️ No courts created yet. Click "Add Court" to create one.</p>
+        </div>
+
+        <div class="unified-grid">
+          <!-- LEFT: Court Management -->
+          <div class="management-section">
+            <div class="section-header">
+              <div class="section-title">
+                <h3>🎾 Courts</h3>
+                <span class="total-badge">{{ courts().length }}</span>
+              </div>
+              <button 
+                class="btn-add-small" 
+                (click)="openAddCourtModal()"
+                type="button"
+                title="Add a new court">
+                ➕ Add
+              </button>
+            </div>
+            
+            @if (courts().length > 0) {
+              <div class="compact-court-list">
+                @for (court of courts(); track court.id) {
+                  <div class="compact-court-item" [class.editing]="editingCourtId() === court.id">
+                    @if (editingCourtId() === court.id) {
+                      <!-- Edit mode -->
+                      <input 
+                        type="text" 
+                        class="court-edit-input"
+                        [value]="editingCourtName()"
+                        (input)="editingCourtName.set($any($event.target).value)"
+                        (keyup.enter)="updateCourt(court.id)"
+                        (keyup.escape)="cancelEditCourt()"
+                        autofocus />
+                      <div class="court-edit-actions">
+                        <button 
+                          class="action-btn save" 
+                          (click)="updateCourt(court.id)"
+                          type="button"
+                          title="Save">
+                          ✓
+                        </button>
+                        <button 
+                          class="action-btn cancel" 
+                          (click)="cancelEditCourt()"
+                          type="button"
+                          title="Cancel">
+                          ✕
+                        </button>
+                      </div>
+                    } @else {
+                      <!-- Display mode -->
+                      <div class="court-info-compact">
+                        <span class="court-surface-icon">
+                          @switch (court.surface) {
+                            @case ('HARD') { 🏟️ }
+                            @case ('CLAY') { 🟤 }
+                            @case ('GRASS') { 🟢 }
+                            @default { 🎾 }
+                          }
+                        </span>
+                        <span class="court-name-compact">{{ court.name }}</span>
+                        @if (!court.isAvailable) {
+                          <span class="unavailable-tag">Unavailable</span>
+                        }
+                      </div>
+                      <div class="court-edit-actions">
+                        <button 
+                          class="action-btn edit" 
+                          (click)="startEditCourt(court.id, court.name)"
+                          type="button"
+                          title="Edit">
+                          ✎
+                        </button>
+                        <button 
+                          class="action-btn delete" 
+                          (click)="deleteCourt(court.id, court.name)"
+                          type="button"
+                          title="Delete">
+                          🗑
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-courts">
+                <p>ℹ️ No courts yet. Click "Add" to create one.</p>
+              </div>
+            }
           </div>
-        }
+
+          <!-- RIGHT: Schedule Generation -->
+          <div class="management-section">
+            <div class="section-header">
+              <div class="section-title">
+                <h3>📅 Schedule Generator</h3>
+              </div>
+            </div>
+
+            <div class="schedule-form">
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Start Date</label>
+                  <input 
+                    type="date" 
+                    class="input-compact" 
+                    [value]="scheduleOptions().startDate"
+                    (input)="updateScheduleOption('startDate', $event)"
+                  />
+                </div>
+                <div class="form-field">
+                  <label>Start Time</label>
+                  <input 
+                    type="time" 
+                    class="input-compact" 
+                    [value]="scheduleOptions().startTime"
+                    (input)="updateScheduleOption('startTime', $event)"
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-field">
+                  <label>Match Duration (min)</label>
+                  <input 
+                    type="number" 
+                    class="input-compact" 
+                    [value]="scheduleOptions().matchDuration"
+                    (input)="updateScheduleOption('matchDuration', $event)"
+                  />
+                </div>
+                <div class="form-field">
+                  <label>Break Time (min)</label>
+                  <input 
+                    type="number" 
+                    class="input-compact" 
+                    [value]="scheduleOptions().breakTime"
+                    (input)="updateScheduleOption('breakTime', $event)"
+                  />
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button 
+                  class="btn btn-success btn-block"
+                  (click)="generateSchedule()"
+                  [disabled]="isGenerating()"
+                >
+                  {{ isGenerating() ? '⏳ Generating...' : '📅 Generate Schedule' }}
+                </button>
+                
+                <button 
+                  class="btn btn-warning btn-block"
+                  (click)="regenerateSchedule()"
+                  [disabled]="isGenerating() || !hasScheduledMatches()"
+                  [title]="!hasScheduledMatches() ? 'No scheduled matches to regenerate' : 'Clear and regenerate with new parameters'"
+                >
+                  {{ isGenerating() ? '⏳ Regenerating...' : '🔄 Regenerate' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Date Selector & Court Filter (Non-Admin Users) -->
+    @if (!isAdmin()) {
+      <div class="controls-card">
+        <div class="controls-grid">
+          <!-- Date Selector -->
+          <div class="control-group">
+            <label for="date">📅 Select Date:</label>
+            <input
+              type="date"
+              id="date"
+              [value]="selectedDate().toISOString().split('T')[0]"
+              (change)="onDateChange($event)"
+            />
+          </div>
+
+          <!-- Court Filter -->
+          @if (availableCourts().length > 0) {
+            <div class="control-group">
+              <label>🎾 Filter by Court:</label>
+              <div class="court-filters">
+                <button
+                  (click)="filterByCourt(null)"
+                  [class.active]="selectedCourt() === null"
+                  class="court-filter-btn"
+                >
+                  All Courts
+                </button>
+                @for (courtId of availableCourts(); track courtId) {
+                  <button
+                    (click)="filterByCourt(courtId)"
+                    [class.active]="selectedCourt() === courtId"
+                    class="court-filter-btn"
+                  >
+                    {{ getCourtName(courtId) }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
       </div>
     }
 
@@ -196,76 +308,6 @@
               [disabled]="!newCourtName().trim()"
               type="button">
               Create Court
-            </button>
-          </div>
-        </div>
-      </div>
-    }
-
-    <!-- ADMIN: Schedule Generation Controls -->
-    @if (isAdmin()) {
-      <div class="admin-controls-card">
-        <div class="admin-header">
-          <h3>🔧 Admin Controls</h3>
-        </div>
-        
-        <div class="admin-body">
-          <h4>Generate Automatic Schedule</h4>
-          <div class="admin-form-grid">
-            <div class="form-group">
-              <label>Start Date</label>
-              <input 
-                type="date" 
-                class="form-control" 
-                [value]="scheduleOptions().startDate"
-                (input)="updateScheduleOption('startDate', $event)"
-              />
-            </div>
-            <div class="form-group">
-              <label>Start Time</label>
-              <input 
-                type="time" 
-                class="form-control" 
-                [value]="scheduleOptions().startTime"
-                (input)="updateScheduleOption('startTime', $event)"
-              />
-            </div>
-            <div class="form-group">
-              <label>Match Duration (min)</label>
-              <input 
-                type="number" 
-                class="form-control" 
-                [value]="scheduleOptions().matchDuration"
-                (input)="updateScheduleOption('matchDuration', $event)"
-              />
-            </div>
-            <div class="form-group">
-              <label>Break Time (min)</label>
-              <input 
-                type="number" 
-                class="form-control" 
-                [value]="scheduleOptions().breakTime"
-                (input)="updateScheduleOption('breakTime', $event)"
-              />
-            </div>
-          </div>
-          
-          <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-            <button 
-              class="btn btn-success"
-              (click)="generateSchedule()"
-              [disabled]="isGenerating()"
-            >
-              {{ isGenerating() ? '⏳ Generating...' : '📅 Generate Schedule' }}
-            </button>
-            
-            <button 
-              class="btn btn-warning"
-              (click)="regenerateSchedule()"
-              [disabled]="isGenerating() || !hasScheduledMatches()"
-              [title]="!hasScheduledMatches() ? 'No scheduled matches to regenerate. Use Generate Schedule first.' : 'Clear and regenerate all schedules with new parameters'"
-            >
-              {{ isGenerating() ? '⏳ Regenerating...' : '🔄 Regenerate Schedule' }}
             </button>
           </div>
         </div>
@@ -358,16 +400,21 @@
                   [class.user-match]="match.isUserMatch"
                   class="match-item"
                 >
+                  <!-- Match Header with Time and Date -->
                   <div class="match-header">
-                    <!-- Time & Badge -->
-                    <div style="display: flex; align-items: center; gap: var(--spacing-md); flex-wrap: wrap;">
+                    <div class="match-time-info">
                       @if (match.hasScheduledTime) {
                         <span class="match-time">
                           🕐 {{ formatTime(match.time) }}
                         </span>
                       } @else {
-                        <span class="match-time" style="opacity: 0.6; font-style: italic;">
+                        <span class="match-time pending">
                           ⏳ Time pending
+                        </span>
+                      }
+                      @if (match.hasScheduledTime) {
+                        <span class="match-date">
+                          📅 {{ formatDate(match.time) }}
                         </span>
                       }
                       @if (match.isUserMatch) {
@@ -378,13 +425,12 @@
                     </div>
 
                     <!-- Match Actions -->
-                    <div style="display: flex; gap: 0.5rem;">
+                    <div class="match-actions">
                       <!-- ADMIN: Reschedule Button -->
                       @if (isAdmin()) {
                         <button
                           class="btn btn-warning"
                           (click)="openRescheduleModal(match)"
-                          style="font-size: var(--font-size-sm); padding: 0.4rem 0.8rem;"
                         >
                           🔄 Reschedule
                         </button>
@@ -394,23 +440,37 @@
                       <a
                         [routerLink]="['/matches', match.matchId]"
                         class="btn btn-primary"
-                        style="text-decoration: none; font-size: var(--font-size-sm);"
                       >
                         View Match →
                       </a>
                     </div>
                   </div>
 
-                  <!-- Participants -->
-                  <div class="match-participants">
-                    <div style="margin-bottom: var(--spacing-xs);">
-                      {{ match.participants[0] || 'TBD' }}
+                  <!-- Participants with Avatars -->
+                  <div class="match-participants-new">
+                    <!-- Player 1 -->
+                    <div class="player-card">
+                      <div class="player-avatar" [attr.data-initials]="getInitials(match.participants[0])">
+                        {{ getInitials(match.participants[0]) }}
+                      </div>
+                      <div class="player-info">
+                        <div class="player-name">{{ match.participants[0] || 'TBD' }}</div>
+                      </div>
                     </div>
-                    <div style="color: var(--color-gray-500); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
-                      vs
+
+                    <!-- VS Badge -->
+                    <div class="vs-badge">
+                      VS
                     </div>
-                    <div>
-                      {{ match.participants[1] || 'TBD' }}
+
+                    <!-- Player 2 -->
+                    <div class="player-card">
+                      <div class="player-avatar" [attr.data-initials]="getInitials(match.participants[1])">
+                        {{ getInitials(match.participants[1]) }}
+                      </div>
+                      <div class="player-info">
+                        <div class="player-name">{{ match.participants[1] || 'TBD' }}</div>
+                      </div>
                     </div>
                   </div>
                 </div>

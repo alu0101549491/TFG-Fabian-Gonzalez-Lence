@@ -356,6 +356,40 @@ export class OrderOfPlayViewComponent implements OnInit {
   }
 
   /**
+   * Formats date for display.
+   *
+   * @param timeStr - ISO time string or null
+   * @returns Formatted date (e.g., "April 4, 2026")
+   */
+  public formatDate(timeStr: string | null): string {
+    if (!timeStr) return '';
+    
+    const date = new Date(timeStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  /**
+   * Extracts initials from a full name.
+   *
+   * @param name - Full name (e.g., "Andy Murray")
+   * @returns Initials (e.g., "AM")
+   */
+  public getInitials(name: string): string {
+    if (!name || name === 'TBD') return 'TB';
+    
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) {
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+    
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  /**
    * Gets court name by ID.
    *
    * @param courtId - Court ID
