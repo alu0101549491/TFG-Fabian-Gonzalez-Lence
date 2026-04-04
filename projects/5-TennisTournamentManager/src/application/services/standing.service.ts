@@ -19,6 +19,8 @@ import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository
 import {BracketRepositoryImpl} from '@infrastructure/repositories/bracket.repository';
 import {TiebreakResolverService} from './tiebreak-resolver.service';
 import {UserService} from './user.service';
+import {Standing} from '@domain/entities/standing';
+import {Match} from '@domain/entities/match';
 
 /**
  * Standing service implementation.
@@ -150,26 +152,69 @@ export class StandingService implements IStandingService {
       })
     );
     
-    // Convert to standings array
-    const standings = Array.from(participantStats.values());
+    // Convert stats to Standing entities for tiebreaker resolution
+    const standingEntities = Array.from(participantStats.values()).map(stats =>
+      new Standing({
+        id: `standing_${bracketId}_${stats.participantId}`,
+        bracketId,
+        participantId: stats.participantId,
+        position: 0, // Will be assigned after tiebreaking
+        matchesPlayed: stats.matchesPlayed,
+        matchesWon: stats.matchesWon,
+        matchesLost: stats.matchesLost,
+        setsWon: stats.setsWon,
+        setsLost: stats.setsLost,
+        gamesWon: stats.gamesWon,
+        gamesLost: stats.gamesLost,
+        points: stats.points,
+      })
+    );
     
-    // Sort by points, then by set difference, then by game difference
-    standings.sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      const aSetDiff = a.setsWon - a.setsLost;
-      const bSetDiff = b.setsWon - b.setsLost;
-      if (bSetDiff !== aSetDiff) return bSetDiff - aSetDiff;
-      const aGameDiff = a.gamesWon - a.gamesLost;
-      const bGameDiff = b.gamesWon - b.gamesLost;
-      return bGameDiff - aGameDiff;
+    // Sort by points first (primary criterion)
+    standingEntities.sort((a, b) => b.points - a.points);
+    
+    // Group participants by points (identify ties)
+    const pointGroups: Standing[][] = [];
+    let currentGroup: Standing[] = [];
+    let currentPoints = -1;
+    
+    for (const standing of standingEntities) {
+      if (standing.points !== currentPoints) {
+        if (currentGroup.length > 0) {
+          pointGroups.push(currentGroup);
+        }
+        currentGroup = [standing];
+        currentPoints = standing.points;
+      } else {
+        currentGroup.push(standing);
+      }
+    }
+    if (currentGroup.length > 0) {
+      pointGroups.push(currentGroup);
+    }
+    
+    // Resolve ties within each group using the comprehensive tiebreaker service
+    const resolvedStandings: Standing[] = [];
+    for (const group of pointGroups) {
+      if (group.length === 1) {
+        // No tie, add as-is
+        resolvedStandings.push(group[0]);
+      } else {
+        // Tied participants - apply all 6 tiebreaker criteria
+        const resolvedGroup = this.tiebreakResolver.resolveTies(group, matches);
+        resolvedStandings.push(...resolvedGroup);
+      }
+    }
+    
+    // Assign final positions and convert to DTOs
+    return resolvedStandings.map((standing, index) => {
+      const stats = participantStats.get(standing.participantId)!;
+      return this.mapStandingToDto({
+        ...stats,
+        bracketId,
+        position: index + 1,
+      });
     });
-    
-    // Assign positions
-    return standings.map((s, index) => this.mapStandingToDto({
-      ...s,
-      bracketId,
-      position: index + 1,
-    }));
   }
 
   /**

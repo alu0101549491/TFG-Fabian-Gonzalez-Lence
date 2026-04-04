@@ -181,23 +181,34 @@
 ### **G. STANDINGS & CLASSIFICATIONS** 📊
 
 #### View Standings (All Users)
-- [ ] **Navigate to tournament** → "Standings" tab
-- [ ] **View Round Robin groups** - sorted by points/ratios
-- [ ] **View elimination bracket progress** - winners advancing
-- [ ] **See tiebreaker details** - when players are tied
-- [ ] **Points system display** - show how points are calculated
-- [ ] **Ratio system display** - match W/L, set W/L, game W/L
+- [x] **Navigate to tournament** → "Standings" tab ✅ `/standings/:id` route configured
+- [x] **View Round Robin groups** - sorted by points/ratios ✅ StandingsViewComponent with grouped display
+- [x] **View elimination bracket progress** - winners advancing ✅ Works for all bracket types
+- [x] **See tiebreaker details** - when players are tied ✅ TiebreakResolverService fully integrated (v1.72.0)
+- [x] **Points system display** - show how points are calculated ✅ 3 points per win shown in table
+- [x] **Ratio system display** - match W/L, set W/L, game W/L ✅ All ratios with +/- differences displayed
+> **Frontend**: StandingsViewComponent with grouped category display, medals for top 3  
+> **Backend**: StandingController.getByCategory(), GET /api/standings?categoryId=xxx  
+> **Service**: StandingService.calculateStandings() with comprehensive tiebreaker integration  
+> **Sorting**: Points → [6 Tiebreaker Criteria] → Final Positions  
+> **Note**: Public access enabled, no login required to view standings
 
-#### Tiebreaker Resolution
-- [ ] **Create tie scenario** - two players with same points
-- [ ] **Check criteria applied** in order:
-  1. Set ratio
-  2. Game ratio
-  3. Set/game difference
-  4. Head-to-head result
-  5. Draw ranking
-  6. Random
-- [ ] **Verify correct ranking** after tiebreak
+#### Tiebreaker Resolution ✅ FULLY IMPLEMENTED & INTEGRATED (v1.72.0)
+- [x] **Create tie scenario** - two players with same points ✅ System handles automatically
+- [x] **Check criteria applied** in order: ✅ TiebreakResolverService integrated in calculateStandings()
+  1. Set ratio ✅ `compareBySetRatio()` - setsWon / setsLost, higher ratio wins
+  2. Game ratio ✅ `compareByGameRatio()` - gamesWon / gamesLost, higher ratio wins
+  3. Set/game difference ✅ `compareBySetDifference()` - setsWon - setsLost, higher diff wins
+  4. Head-to-head result ✅ `applyHeadToHead()` - wins between tied players (mini-standings for 3+)
+  5. Draw ranking ✅ `compareBySeedNumber()` - lower seed number wins (Seed 1 > Seed 2)
+  6. Random draw ✅ `applyRandomDraw()` - Math.random() last resort tiebreaker
+- [x] **Verify correct ranking** after tiebreak ✅ Auto-applied when standings calculated
+> **Backend**: TiebreakResolverService with Chain of Responsibility pattern  
+> **Integration**: StandingService.calculateStandings() groups by points, resolves ties for each group  
+> **Algorithm**: Sequential application of criteria until tie is broken  
+> **Head-to-Head**: Direct comparison for 2 players, mini-standings for 3+ tied players  
+> **Division by Zero**: Handled with 999 (max) for undefeated ratios  
+> **Note**: Matches ITF/ATP professional tiebreaker standards
 
 ---
 

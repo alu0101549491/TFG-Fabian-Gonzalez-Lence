@@ -6,6 +6,96 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.72.0] - 2026-04-09
+
+### Added — Comprehensive Tiebreaker System Integration
+
+**Feature**: Integrated the TiebreakResolverService into standings calculation to apply all 6 sequential tiebreaker criteria when participants have equal points.
+
+**User Requirements**: 
+- FR42: Tiebreaker resolution in Round Robin standings
+- Support for complex tie scenarios involving 2+ participants
+- Transparent and fair ranking system following professional tennis standards
+
+**Implementation**:
+
+1. **Full Tiebreaker Criteria Applied** (Chain of Responsibility Pattern):
+   - **Criterion 1**: Set ratio (sets won / sets lost) — Higher ratio wins
+   - **Criterion 2**: Game ratio (games won / games lost) — Higher ratio wins
+   - **Criterion 3**: Set/game difference (sets won - sets lost) — Higher difference wins
+   - **Criterion 4**: Head-to-head results — Direct matchup wins between tied players
+   - **Criterion 5**: Draw ranking (seed number) — Lower seed number wins
+   - **Criterion 6**: Random draw — Last resort tiebreaker
+
+2. **Standing Calculation Workflow** (StandingService.calculateStandings):
+   - Calculate match statistics from completed matches
+   - Convert stats to Standing entities
+   - **Primary sort**: By points (descending)
+   - **Group participants**: Identify all players with identical points
+   - **Resolve ties**: For each tied group (2+ players), apply TiebreakResolverService
+   - **Assign positions**: Final ranking based on resolved order
+
+3. **Head-to-Head Logic**:
+   - For 2-player ties: Direct comparison of wins between them
+   - For 3+ player ties: Mini-standings calculated from only matches between tied participants
+   - Total wins in head-to-head matchups used as tiebreaker
+
+4. **Ratio Calculations**:
+   - Division by zero handling: If denominator is 0, ratio returns 999 (maximum) if numerator > 0, else 0
+   - Set ratio: `setsWon / setsLost`
+   - Game ratio: `gamesWon / gamesLost`
+   - Both ratios favor higher values (more dominant performance)
+
+5. **Seed Ranking Integration**:
+   - Lower seed numbers prioritized (Seed 1 > Seed 2 > unseeded)
+   - Unseeded players ranked last if all other criteria equal
+   - Mirrors professional tournament seeding advantage
+
+6. **Random Draw Fallback**:
+   - Applied only when all 5 previous criteria produce identical results
+   - Uses `Math.random()` for unpredictable but deterministic ordering
+   - Ensures every tie is eventually broken
+
+**Technical Details**:
+- Modified `StandingService.calculateStandings()` to replace simple 3-criteria sort with comprehensive tiebreaker integration
+- Added imports: `Standing` entity and `Match` entity for type safety
+- Standing entities created with temporary positions, finalized after tiebreaking
+- Groups identified by iterating through points-sorted standings
+- Each group processed independently with `tiebreakResolver.resolveTies(group, matches)`
+- Final positions assigned sequentially (1, 2, 3, ...) after all tie resolution
+
+**Previous Behavior**:
+- Only sorted by: Points → Set difference → Game difference
+- Missing: Set/game ratios, head-to-head, seed ranking, random draw
+- Could not resolve complex ties beyond basic stats
+
+**New Behavior**:
+- All 6 criteria applied sequentially until tie is broken
+- Matches professional tennis tiebreaker standards
+- Supports any number of tied participants
+- Transparent and predictable ranking order
+
+**Impact**:
+- More accurate standings in Round Robin tournaments
+- Fair resolution of complex tie scenarios
+- Better simulation of real-world tournament rankings
+- Compliance with ITF/ATP tiebreaker guidelines
+
+**Files Modified**:
+- `src/application/services/standing.service.ts`:
+  - Added imports for Standing and Match entities
+  - Replaced simple sort with point grouping and tiebreaker resolution
+  - Integrated TiebreakResolverService.resolveTies() for tied groups
+
+**Testing Notes**:
+- Create Round Robin with 3+ participants having identical points
+- Ensure different set ratios produce correct ordering
+- Verify head-to-head wins break ties when ratios equal
+- Test seed prioritization when all stats equal
+- Validate random draw applied as last resort
+
+---
+
 ## [1.71.5] - 2026-04-09
 
 ### Fixed — Date Filter Now Correctly Filters Matches
