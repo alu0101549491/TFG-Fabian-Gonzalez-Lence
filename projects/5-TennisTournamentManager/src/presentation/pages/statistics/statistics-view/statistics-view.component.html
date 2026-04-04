@@ -211,6 +211,54 @@
           </div>
         </div>
       }
+
+      <!-- Opponent Matchup History -->
+      @if (statistics()!.opponentMatchups && statistics()!.opponentMatchups!.length > 0) {
+        <div class="detail-section">
+          <div class="section-header">
+            <span class="section-icon">⚔️</span>
+            <h2 class="section-title">Matchup History</h2>
+          </div>
+          <div class="card-body">
+            <div class="matchup-table-container">
+              <table class="matchup-table">
+                <thead>
+                  <tr>
+                    <th class="opponent-col">Opponent</th>
+                    <th class="matches-col">Matches</th>
+                    <th class="record-col">W-L</th>
+                    <th class="winrate-col">Win %</th>
+                    <th class="lastmatch-col">Last Match</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (matchup of statistics()!.opponentMatchups!; track matchup.opponentId) {
+                    <tr class="matchup-row">
+                      <td class="opponent-name">{{ matchup.opponentName }}</td>
+                      <td class="matches-count">{{ matchup.totalMatches }}</td>
+                      <td class="record-display">
+                        <span class="wins-badge">{{ matchup.wins }}</span>
+                        <span class="record-separator">-</span>
+                        <span class="losses-badge">{{ matchup.losses }}</span>
+                      </td>
+                      <td class="winrate-display" [class.winning-record]="matchup.winPercentage >= 50" [class.losing-record]="matchup.winPercentage < 50">
+                        {{ matchup.winPercentage.toFixed(1) }}%
+                      </td>
+                      <td class="lastmatch-date">
+                        @if (matchup.lastMatch) {
+                          {{ matchup.lastMatch | date: 'MMM d, y' }}
+                        } @else {
+                          N/A
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
     }
 
     <!-- Empty State -->

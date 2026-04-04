@@ -147,6 +147,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - **Impact**: Most Active Participants now shows accurate set and game participation statistics for ALL players
   - **Modified**: `StatisticsService.getDetailedTournamentStatistics()` - updated score parsing logic (lines 357-403)
 
+- Updated personal statistics to match tournament statistics logic (consistency fix)
+  - **Before**: Only counted COMPLETED matches in personal statistics
+  - **After**: Counts COMPLETED, RETIRED, and WALKOVER matches (same as tournament stats)
+  - **Rationale**: Retirements and walkovers are finished matches with determined winners/losers
+  - **Impact**: Personal statistics now accurately reflect all finished matches, not just normally completed ones
+  - **Modified**: `StatisticsService.getParticipantStatistics()` - updated match status filter (line 107)
+
+- Added "My Statistics" button to player dashboard quick actions
+  - **Location**: Dashboard hero section, between "Browse Tournaments" and "My Profile" buttons
+  - **Icon**: 📊 chart emoji
+  - **Action**: Navigates to `/statistics` route showing personal statistics
+  - **Visibility**: Only shown for non-admin users (players)
+  - **Rationale**: Provides quick access to detailed performance statistics from main dashboard
+  - **Files Modified**:
+    - `dashboard.component.html` - Added conditional statistics button in quick-actions section
+    - `dashboard.component.ts` - Added `goToStatistics()` navigation method
+
+- Added opponent matchup history to personal statistics view
+  - **Feature**: Complete head-to-head record against all opponents the player has faced
+  - **Section**: "Matchup History" card with ⚔️ icon in statistics view
+  - **Display**: Professional table layout with columns:
+    - Opponent: Player name
+    - Matches: Total matches played against opponent
+    - W-L: Wins-Losses record with color-coded badges (green for wins, red for losses)
+    - Win %: Win percentage with color coding (green ≥50%, red <50%)
+    - Last Match: Date of most recent encounter
+  - **Sorting**: Opponents ordered by total matches played (most frequent opponents first)
+  - **Data Source**: Calculated from all finished matches (COMPLETED, RETIRED, WALKOVER)
+  - **Implementation**:
+    - Added `OpponentMatchupDto` interface to statistics DTOs
+    - Added `opponentMatchups` field to `StatisticsDto`
+    - Updated `StatisticsService.getParticipantStatistics()` to calculate opponent matchups:
+      - Track matches against each opponent
+      - Count wins/losses for each matchup
+      - Record most recent match date
+      - Fetch opponent names from UserService
+      - Sort by frequency (most matches first)
+    - Created responsive table component with hover effects
+    - Applied CSS variable styling for consistency
+  - **User Experience**:
+    - Hover effects on table rows
+    - Color-coded win/loss badges for quick visual reference
+    - Responsive design adapts to mobile/tablet/desktop
+    - Only shown when player has faced at least one opponent
+  - **Files Modified**:
+    - `src/application/dto/statistics.dto.ts` - Added `OpponentMatchupDto` interface
+    - `src/application/services/statistics.service.ts` - Added opponent matchup calculation logic (lines 248-292)
+    - `src/presentation/pages/statistics/statistics-view/statistics-view.component.html` - Added matchup history section
+    - `src/presentation/pages/statistics/statistics-view/statistics-view.component.css` - Added table styling (112 lines)
+  - **Requirements**: Fulfills FR45 checklist item "View matchup history - record against specific opponents"
+
 ---
 
 ## [VERIFIED] - 2026-04-09

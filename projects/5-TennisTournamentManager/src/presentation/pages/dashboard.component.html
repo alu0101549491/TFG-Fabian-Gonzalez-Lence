@@ -15,6 +15,12 @@
           <span class="btn-icon">🏆</span>
           <span>Browse Tournaments</span>
         </button>
+        @if (!isAdmin()) {
+          <button (click)="goToStatistics()" class="action-btn secondary">
+            <span class="btn-icon">📊</span>
+            <span>My Statistics</span>
+          </button>
+        }
         <button (click)="goToProfile()" class="action-btn secondary">
           <span class="btn-icon">👤</span>
           <span>My Profile</span>

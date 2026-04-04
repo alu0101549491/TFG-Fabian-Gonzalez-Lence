@@ -33,6 +33,18 @@ export interface StatisticsDto {
   currentLossStreak?: number;
   worstLossStreak?: number;
   performanceBySurface?: Record<string, SurfacePerformanceDto>;
+  opponentMatchups?: OpponentMatchupDto[];
+}
+
+/** DTO for opponent matchup history. */
+export interface OpponentMatchupDto {
+  opponentId: string;
+  opponentName: string;
+  totalMatches: number;
+  wins: number;
+  losses: number;
+  winPercentage: number;
+  lastMatch?: Date;
 }
 
 /** DTO for surface-specific performance statistics. */

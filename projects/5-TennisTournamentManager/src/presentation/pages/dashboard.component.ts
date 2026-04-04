@@ -225,6 +225,13 @@ export class DashboardComponent implements OnInit {
   }
 
   /**
+   * Navigate to statistics page.
+   */
+  protected goToStatistics(): void {
+    void this.router.navigate(['/statistics']);
+  }
+
+  /**
    * Navigate to specific tournament.
    * 
    * @param tournamentId - Tournament ID

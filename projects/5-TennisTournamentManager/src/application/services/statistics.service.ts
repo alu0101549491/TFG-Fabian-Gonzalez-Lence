@@ -22,6 +22,7 @@ import {
   ParticipantActivityDto,
   ParticipantPerformanceDto,
   HeadToHeadMatchDto,
+  OpponentMatchupDto,
 } from '../dto/statistics.dto';
 import {StatisticsRepositoryImpl} from '@infrastructure/repositories/statistics.repository';
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
@@ -105,8 +106,13 @@ export class StatisticsService implements IStatisticsService {
     
     // Process each match
     for (const match of matches) {
-      // Only count completed matches
-      if (!match.winnerId || match.status !== MatchStatus.COMPLETED) continue;
+      // Count matches with definitive results (completed, retired, or walkover)
+      if (!match.winnerId || 
+          (match.status !== MatchStatus.COMPLETED && 
+           match.status !== MatchStatus.RETIRED && 
+           match.status !== MatchStatus.WALKOVER)) {
+        continue;
+      }
       
       totalMatches++;
       const didWin = match.winnerId === participantId;
@@ -238,6 +244,75 @@ export class StatisticsService implements IStatisticsService {
       };
     }
     
+    // Calculate opponent matchups
+    const opponentMatchupsMap: Record<string, {matches: number, wins: number, losses: number, lastMatch?: Date}> = {};
+    
+    for (const match of matches) {
+      if (!match.winnerId || 
+          (match.status !== MatchStatus.COMPLETED && 
+           match.status !== MatchStatus.RETIRED && 
+           match.status !== MatchStatus.WALKOVER)) {
+        continue;
+      }
+      
+      // Determine opponent ID
+      const opponentId = match.player1Id === participantId ? match.player2Id : match.player1Id;
+      const didWin = match.winnerId === participantId;
+      const matchDate = match.completedAt || match.updatedAt;
+      
+      if (!opponentMatchupsMap[opponentId]) {
+        opponentMatchupsMap[opponentId] = {matches: 0, wins: 0, losses: 0};
+      }
+      
+      opponentMatchupsMap[opponentId].matches++;
+      if (didWin) {
+        opponentMatchupsMap[opponentId].wins++;
+      } else {
+        opponentMatchupsMap[opponentId].losses++;
+      }
+      
+      // Track most recent match
+      if (!opponentMatchupsMap[opponentId].lastMatch || matchDate > opponentMatchupsMap[opponentId].lastMatch!) {
+        opponentMatchupsMap[opponentId].lastMatch = matchDate;
+      }
+    }
+    
+    // Fetch opponent names and create DTOs
+    const opponentMatchups: OpponentMatchupDto[] = [];
+    
+    for (const [opponentId, stats] of Object.entries(opponentMatchupsMap)) {
+      try {
+        const opponentUser = await this.userService.getPublicUserInfo(opponentId);
+        const opponentName = opponentUser.firstName && opponentUser.lastName
+          ? `${opponentUser.firstName} ${opponentUser.lastName}`
+          : opponentUser.username || 'Unknown';
+        
+        opponentMatchups.push({
+          opponentId,
+          opponentName,
+          totalMatches: stats.matches,
+          wins: stats.wins,
+          losses: stats.losses,
+          winPercentage: stats.matches > 0 ? (stats.wins / stats.matches) * 100 : 0,
+          lastMatch: stats.lastMatch,
+        });
+      } catch (error) {
+        // If user fetch fails, use Unknown
+        opponentMatchups.push({
+          opponentId,
+          opponentName: 'Unknown',
+          totalMatches: stats.matches,
+          wins: stats.wins,
+          losses: stats.losses,
+          winPercentage: stats.matches > 0 ? (stats.wins / stats.matches) * 100 : 0,
+          lastMatch: stats.lastMatch,
+        });
+      }
+    }
+    
+    // Sort by total matches (most frequent opponents first)
+    opponentMatchups.sort((a, b) => b.totalMatches - a.totalMatches);
+    
     return {
       participantId,
       participantName: null,
@@ -257,6 +332,7 @@ export class StatisticsService implements IStatisticsService {
       currentLossStreak,
       worstLossStreak,
       performanceBySurface: Object.keys(performanceBySurface).length > 0 ? performanceBySurface : undefined,
+      opponentMatchups: opponentMatchups.length > 0 ? opponentMatchups : undefined,
     };
   }
 
