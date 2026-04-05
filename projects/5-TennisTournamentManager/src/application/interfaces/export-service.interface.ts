@@ -135,6 +135,30 @@ export interface IExportService {
   exportStatistics(request: StatisticsExportRequestDto): Promise<ExportResultDto>;
 
   /**
+   * Exports tournament statistics from TournamentStatisticsDto.
+   * Simplified method that accepts pre-computed statistics data.
+   * 
+   * @param tournamentStats - Pre-computed tournament statistics
+   * @param format - Export format (PDF or EXCEL)
+   * @returns Promise resolving to export result
+   * 
+   * @remarks
+   * This method is more efficient as it uses already-computed statistics
+   * rather than recalculating from raw data. Use this when you already
+   * have the TournamentStatisticsDto available (e.g., from the UI).
+   * 
+   * @example
+   * ```typescript
+   * const stats = await statisticsService.getDetailedTournamentStatistics(tournamentId);
+   * const result = await exportService.exportTournamentStatistics(stats, ExportFormat.PDF);
+   * if (result.success) {
+   *   exportService.downloadExportResult(result);
+   * }
+   * ```
+   */
+  exportTournamentStatistics(tournamentStats: any, format: ExportFormat): Promise<ExportResultDto>;
+
+  /**
    * Exports generic data to CSV format.
    * 
    * @param data - Array of objects to export
@@ -177,4 +201,32 @@ export interface IExportService {
    * ```
    */
   getSupportedFormats(tournamentId: string): Promise<ExportFormat[]>;
+
+  /**
+   * Downloads export result in the browser.
+   * Creates a temporary download link and triggers the download.
+   * 
+   * @param result - Export result to download
+   * @throws Error if export result is invalid
+   * 
+   * @remarks
+   * This method handles browser download triggering by:
+   * - Creating a Blob from the binary data
+   * - Generating a temporary URL
+   * - Creating and clicking a download link
+   * - Cleaning up resources
+   * 
+   * @example
+   * ```typescript
+   * const result = await exportService.exportStatistics({
+   *   tournamentId: 'tournament-123',
+   *   format: ExportFormat.PDF
+   * });
+   * 
+   * if (result.success) {
+   *   exportService.downloadExportResult(result);
+   * }
+   * ```
+   */
+  downloadExportResult(result: ExportResultDto): void;
 }

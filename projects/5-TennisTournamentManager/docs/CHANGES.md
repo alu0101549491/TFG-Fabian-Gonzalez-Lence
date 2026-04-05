@@ -8,6 +8,264 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed — CSV Export Multi-Section Formatting (v1.75.6)
+
+**Issue**: CSV export of tournament statistics showed empty values for most rows. All sections (Result Distribution, Top Performers, Most Active) had blank columns because the CSV export used the first row's column structure for all rows, while each section had different columns.
+
+**Fix**: 
+- Rewrote `exportTournamentStatsToExcel()` to manually build properly formatted multi-section CSV
+- Each section now has its own header row with appropriate columns
+- Sections are separated by blank lines for readability
+- Implemented CSV value escaping for special characters (commas, quotes, newlines)
+
+**CSV Structure**:
+```csv
+TOURNAMENT SUMMARY
+Tournament,Total Participants,Total Matches,Completed Matches,Pending Matches,Completion Rate
+[data]
+
+RESULT DISTRIBUTION
+Completed,Pending,In Progress,Cancelled,Walkovers,Retirements
+[data]
+
+TOP PERFORMERS
+Rank,Participant,Wins,Losses,Win Rate,Current Streak
+[data rows...]
+
+MOST ACTIVE PARTICIPANTS
+Rank,Participant,Matches Played,Sets Played,Games Played
+[data rows...]
+```
+
+**Result**: CSV exports now properly display all tournament statistics data with appropriate section headers and columns.
+
+**Files Modified**:
+- `src/application/services/export.service.ts`
+
+---
+
+### Fixed — Removed Emoji Rendering Issues in PDF Export (v1.75.5)
+
+**Issue**: Emojis in the PDF were displaying as garbled characters (e.g., "Ø<¦Æ", "Ø=ÜÊ") because jsPDF doesn't support emoji rendering without special fonts.
+
+**Fix**: 
+- Removed all emoji characters from section headers and table content
+- Simplified text to clean, professional format without decorative elements
+- Fixed division by zero error in percentage calculations for result distribution
+
+**Changes**:
+- Section headers now use plain text: "Tournament Overview", "Result Distribution", "Top Performers", "Most Active Participants"
+- Table rows use clean status names without emojis: "Completed", "Pending", "In Progress", etc.
+- Added safety check for total matches to prevent NaN percentages (uses 1 as minimum divisor)
+- Maintained all styling, colors, and professional table layouts
+
+**Result**: PDFs now display correctly on all PDF viewers without encoding issues.
+
+**Files Modified**:
+- `src/application/services/export.service.ts`
+
+### Enhanced — Professional PDF Design with Tables and Styling (v1.75.4)
+
+**Feature**: Completely redesigned PDF export with professional styling, tables, and visual hierarchy matching the application's design.
+
+**Visual Enhancements**:
+
+1. **Header Design**:
+   - Green banner with white text
+   - Tournament trophy emoji (🏆)
+   - Professional title layout
+
+2. **Tournament Overview Card**:
+   - Light gray background with rounded corners
+   - Two-column layout for efficient space usage
+   - Visual progress bar showing completion rate
+   - Chart emoji (📊) for section identification
+
+3. **Professional Tables** (using jspdf-autotable):
+   - **Result Distribution**: Green header with grid theme
+     - Status icons (✅ ⏳ 🎾 ❌ 🚶 🤕)
+     - Count and percentage columns
+     - Alternating row colors for readability
+   
+   - **Top Performers**: Blue header with striped theme
+     - Trophy emoji (🏆)
+     - Rank, Player, Wins, Losses, Win Rate, Streak columns
+     - Center-aligned numeric columns
+     - Limited to top 10 performers
+   
+   - **Most Active Participants**: Orange header
+     - Lightning emoji (⚡)
+     - Matches, Sets, and Games played
+     - Limited to top 10 most active
+
+4. **Footer Design**:
+   - Horizontal green line
+   - Export date on left
+   - Page numbers on right (Page X of Y)
+   - Consistent across all pages
+
+**Color Scheme** (matching application):
+- Primary: Green RGB(52, 168, 83)
+- Secondary: Blue RGB(26, 115, 232)
+- Accent: Orange RGB(255, 152, 0)
+- Dark Gray: RGB(60, 64, 67)
+- Light Gray: RGB(248, 249, 250)
+
+**Technical Features**:
+- Automatic page breaks when content exceeds page height
+- Responsive table column widths
+- Emoji support for visual appeal
+- Rounded rectangles for modern look
+- Consistent spacing and margins
+
+**Dependencies Added**:
+- `jspdf-autotable` (v3.x): Professional table generation plugin
+
+**Files Modified**:
+- `src/application/services/export.service.ts`
+- `package.json` (new dependency)
+
+**Result**: PDFs now have a professional, polished appearance with clear visual hierarchy, making statistical data easy to read and understand.
+
+### Fixed — Proper PDF Generation for Statistics Export (v1.75.3)
+
+**Issue**: Exported PDF files were corrupted and couldn't be opened. Error message: "Se ha producido un error al cargar el documento PDF" (An error occurred while loading the PDF document).
+
+**Root Cause**: The export service was generating plain text and mislabeling it as a PDF file, which created an invalid PDF that couldn't be opened by PDF viewers.
+
+**Fix**: Integrated jsPDF library for proper PDF generation:
+- **Installed jsPDF**: Professional-grade PDF generation library
+- **Proper PDF Structure**: Uses jsPDF API to create valid PDF documents
+- **Formatted Layout**: Professional appearance with proper headers, sections, and formatting
+- **Multi-page Support**: Automatically adds pages when content exceeds page height
+- **Footer**: Adds export date to all pages
+
+**PDF Content Structure**:
+1. **Title**: "TOURNAMENT STATISTICS REPORT" (centered, bold, 18pt)
+2. **Tournament Summary**: Name, participants, matches, completion rate
+3. **Result Distribution**: Breakdown by match status
+4. **Top Performers**: Ranked list with wins, losses, win rate, current streak
+5. **Most Active Participants**: Ranked list with matches/sets/games played
+6. **Footer**: Export date on all pages
+
+**Technical Implementation**:
+- Uses `jsPDF` constructor to create document
+- Proper font sizing and styling (bold/normal)
+- Dynamic page management (adds pages as needed)
+- Converts PDF to Blob then to Uint8Array for download
+- Correct MIME type: `application/pdf`
+
+**Dependencies Added**:
+- `jspdf` (v2.x): PDF generation library
+- `@types/jspdf`: TypeScript type definitions
+
+**Files Modified**:
+- `src/application/services/export.service.ts`
+- `package.json` (new dependencies)
+
+**Result**: PDFs now open correctly in all PDF viewers with professional formatting and layout.
+
+### Fixed — Statistics Export Using Pre-Computed Data (v1.75.2)
+
+**Issue**: Export functionality was failing with "Statistics export failed" error when trying to export tournament statistics.
+
+**Root Cause**: The `exportStatistics()` method was trying to:
+1. Fetch raw statistics from the database via repository
+2. Re-compute and aggregate the data
+3. This duplicated work already done by `StatisticsService.getDetailedTournamentStatistics()`
+
+**Fix**: Created new `exportTournamentStatistics()` method that:
+- Accepts pre-computed `TournamentStatisticsDto` directly from the UI
+- Avoids duplicate data fetching and computation
+- Formats the already-aggregated statistics for export
+- Is more efficient and avoids API dependency issues
+
+**Improvements**:
+- **Performance**: No duplicate computation or API calls
+- **Accuracy**: Exports exactly what's displayed on screen
+- **Reliability**: Doesn't depend on raw statistics repository
+- **Better Error Messages**: Logs detailed error information to console
+
+**Export Data Structure**:
+- Tournament summary (participants, matches, completion rate)
+- Result distribution (completed, pending, cancelled, etc.)
+- Top performers (wins, losses, win rate, current streak)
+- Most active participants (matches played, sets, games)
+
+**Files Modified**:
+- `src/application/services/export.service.ts`
+- `src/application/interfaces/export-service.interface.ts`
+- `src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.ts`
+
+### Fixed — Statistics API Tournament Query Support (v1.75.1)
+
+**Issue**: Export statistics functionality failed with "playerId required" error when fetching tournament-level statistics.
+
+**Root Cause**: Backend `/api/statistics` endpoint required `playerId` parameter and didn't support querying by `tournamentId` alone.
+
+**Fix**: Modified `StatisticsController.getByPlayer()` method to:
+- Make `playerId` parameter optional
+- Make `tournamentId` parameter optional
+- Require at least one parameter (playerId OR tournamentId)
+- Support all query combinations:
+  - `?playerId=xxx` - Get statistics for a specific player
+  - `?tournamentId=xxx` - Get all statistics for a tournament
+  - `?playerId=xxx&tournamentId=xxx` - Get player stats in specific tournament
+
+**Impact**:
+- Tournament statistics export now works correctly
+- API is more flexible for different use cases
+- Maintains backward compatibility with existing player queries
+
+**Files Modified**:
+- `backend/src/presentation/controllers/statistics.controller.ts`
+- `backend/src/presentation/routes/index.ts` (Swagger documentation)
+
+### Added — Tournament Statistics Export Functionality (v1.75.0)
+
+**Feature**: Export tournament statistics to PDF and Excel formats for reporting and analysis (FR63).
+
+**Implementation**:
+- **Service**: Enhanced `ExportService` with `exportStatistics()` method
+- **Component**: Connected `TournamentStatisticsComponent` to export service
+- **Download Helper**: Added `downloadExportResult()` method for browser file downloads
+- **Formats Supported**: PDF and Excel (currently exports as CSV compatible with Excel)
+
+**Usage**:
+- Navigate to tournament statistics page (`/tournaments/:id/statistics`)
+- Click "Export as PDF" or "Export as Excel" buttons
+- File automatically downloads with tournament name and date in filename
+- Format: `Statistics_[TournamentName]_[Date].[extension]`
+
+**Access Control**:
+- Export functionality restricted to administrators only
+- System admins and tournament admins can export
+- Regular participants see disabled export buttons
+
+**Technical Details**:
+- Creates Blob from binary data with appropriate MIME type
+- Generates temporary download URL using `URL.createObjectURL()`
+- Triggers browser download via hidden anchor element
+- Cleans up resources after download completes
+
+**Data Included**:
+- Participant statistics (matches played, won, lost, win rates)
+- Sets and games won/lost
+- Win rate percentages
+- Tournament metadata (name, location, dates)
+
+**Files Modified**:
+- `src/application/services/export.service.ts`
+- `src/application/interfaces/export-service.interface.ts`
+- `src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.ts`
+
+**Future Enhancements**:
+- Use proper PDF generation library (e.g., pdfmake, jsPDF)
+- Use Excel library for native .xlsx format (e.g., exceljs, xlsx)
+- Add charts and graphs to PDF exports
+- Include detailed match history
+- Add filtering options (by category, date range)
+
 ### Fixed — Tournament Statistics Display Bug (v1.74.0)
 
 **Issue**: Different tournaments were displaying identical statistics due to incorrect data fetching.

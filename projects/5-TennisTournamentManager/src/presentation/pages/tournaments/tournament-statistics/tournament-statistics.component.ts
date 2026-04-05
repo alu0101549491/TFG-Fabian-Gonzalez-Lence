@@ -14,8 +14,9 @@
 import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
-import {StatisticsService} from '@application/services';
+import {StatisticsService, ExportService} from '@application/services';
 import {type TournamentStatisticsDto} from '@application/dto';
+import {ExportFormat} from '@domain/enumerations/export-format';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import templateHtml from './tournament-statistics.component.html?raw';
 import stylesCss from './tournament-statistics.component.css?inline';
@@ -36,6 +37,7 @@ export class TournamentStatisticsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly statisticsService = inject(StatisticsService);
+  private readonly exportService = inject(ExportService);
   private readonly authStateService = inject(AuthStateService);
 
   /** Tournament statistics data */
@@ -112,16 +114,24 @@ export class TournamentStatisticsComponent implements OnInit {
       return;
     }
 
-    if (!this.tournamentId) return;
+    const stats = this.statistics();
+    if (!stats) {
+      alert('No statistics available to export');
+      return;
+    }
 
     try {
-      alert('PDF export functionality will be implemented with backend endpoint');
-      // TODO: Implement actual PDF export via ExportService
-      // await this.exportService.exportStatistics({
-      //   tournamentId: this.tournamentId,
-      //   format: ExportFormat.PDF,
-      //   includeIndividualStats: true
-      // });
+      const result = await this.exportService.exportTournamentStatistics(
+        stats,
+        ExportFormat.PDF
+      );
+
+      if (result.success) {
+        this.exportService.downloadExportResult(result);
+      } else {
+        alert(`Failed to export statistics: ${result.error || 'Unknown error'}`);
+        console.error('Export error details:', result.errorDetails);
+      }
     } catch (error) {
       alert('Failed to export statistics');
       console.error(error);
@@ -137,16 +147,24 @@ export class TournamentStatisticsComponent implements OnInit {
       return;
     }
 
-    if (!this.tournamentId) return;
+    const stats = this.statistics();
+    if (!stats) {
+      alert('No statistics available to export');
+      return;
+    }
 
     try {
-      alert('Excel export functionality will be implemented with backend endpoint');
-      // TODO: Implement actual Excel export via ExportService
-      // await this.exportService.exportStatistics({
-      //   tournamentId: this.tournamentId,
-      //   format: ExportFormat.EXCEL,
-      //   includeIndividualStats: true
-      // });
+      const result = await this.exportService.exportTournamentStatistics(
+        stats,
+        ExportFormat.EXCEL
+      );
+
+      if (result.success) {
+        this.exportService.downloadExportResult(result);
+      } else {
+        alert(`Failed to export statistics: ${result.error || 'Unknown error'}`);
+        console.error('Export error details:', result.errorDetails);
+      }
     } catch (error) {
       alert('Failed to export statistics');
       console.error(error);

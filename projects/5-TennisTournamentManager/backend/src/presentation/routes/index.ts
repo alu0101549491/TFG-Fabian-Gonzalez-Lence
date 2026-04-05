@@ -1899,23 +1899,27 @@ router.get('/announcements', apiCache(300), announcementController.getByTourname
  * /statistics:
  *   get:
  *     tags: [Statistics]
- *     summary: Get player statistics
- *     description: Get statistics for a player
+ *     summary: Get player or tournament statistics
+ *     description: Get statistics for a player, tournament, or both. At least one parameter required.
  *     security: []
  *     parameters:
  *       - in: query
  *         name: playerId
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
+ *         description: Player ID to filter statistics
  *       - in: query
  *         name: tournamentId
+ *         required: false
  *         schema:
  *           type: string
- *         description: Optional tournament filter
+ *         description: Tournament ID to filter statistics
  *     responses:
  *       200:
  *         description: Player statistics
+ *       400:
+ *         description: Bad request - at least one parameter required
  */
 // Statistics routes
 // Cache statistics for 5 minutes (expensive calculations)
