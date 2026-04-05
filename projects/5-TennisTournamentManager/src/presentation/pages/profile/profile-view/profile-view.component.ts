@@ -60,6 +60,8 @@ export class ProfileViewComponent implements OnInit {
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     phone: [''],
+    telegram: [''],
+    whatsapp: [''],
     idDocument: [''],
     ranking: [null],
   });
@@ -109,6 +111,8 @@ export class ProfileViewComponent implements OnInit {
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone || '',
+      telegram: user.telegram || '',
+      whatsapp: user.whatsapp || '',
       idDocument: user.idDocument || '',
       ranking: user.ranking || null,
     });
@@ -180,6 +184,8 @@ export class ProfileViewComponent implements OnInit {
         firstName: formValue.firstName?.trim(),
         lastName: formValue.lastName?.trim(),
         phone: formValue.phone?.trim() || null,
+        telegram: formValue.telegram?.trim() || null,
+        whatsapp: formValue.whatsapp?.trim() || null,
         idDocument: formValue.idDocument?.trim() || null,
         ranking: formValue.ranking ? Number(formValue.ranking) : null,
       };

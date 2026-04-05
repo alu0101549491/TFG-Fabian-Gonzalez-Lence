@@ -58,8 +58,14 @@
                 @if (match()!.participant1) {
                   <div class="avatar">{{ getInitials(match()!.participant1!.firstName, match()!.participant1!.lastName) }}</div>
                   <div class="participant-details">
-                    <h3 class="participant-name">{{ match()!.participant1!.firstName }} {{ match()!.participant1!.lastName }}</h3>
-                    <p class="participant-email">{{ match()!.participant1!.email }}</p>
+                    <a class="participant-name participant-link" 
+                       [routerLink]="['/users', match()!.participant1Id]"
+                       [title]="'View ' + match()!.participant1!.firstName + ' ' + match()!.participant1!.lastName + '\'s profile'">
+                      {{ match()!.participant1!.firstName }} {{ match()!.participant1!.lastName }}
+                    </a>
+                    @if (match()!.participant1!.email) {
+                      <p class="participant-email">{{ match()!.participant1!.email }}</p>
+                    }
                   </div>
                 } @else {
                   <div class="participant-tbd">
@@ -87,8 +93,14 @@
                 @if (match()!.participant2) {
                   <div class="avatar">{{ getInitials(match()!.participant2!.firstName, match()!.participant2!.lastName) }}</div>
                   <div class="participant-details">
-                    <h3 class="participant-name">{{ match()!.participant2!.firstName }} {{ match()!.participant2!.lastName }}</h3>
-                    <p class="participant-email">{{ match()!.participant2!.email }}</p>
+                    <a class="participant-name participant-link" 
+                       [routerLink]="['/users', match()!.participant2Id]"
+                       [title]="'View ' + match()!.participant2!.firstName + ' ' + match()!.participant2!.lastName + '\'s profile'">
+                      {{ match()!.participant2!.firstName }} {{ match()!.participant2!.lastName }}
+                    </a>
+                    @if (match()!.participant2!.email) {
+                      <p class="participant-email">{{ match()!.participant2!.email }}</p>
+                    }
                   </div>
                 } @else {
                   <div class="participant-tbd">

@@ -84,6 +84,22 @@
               </div>
               
               <div class="info-item">
+                <label class="info-label">Telegram</label>
+                <div class="info-value">
+                  @if (user()!.telegram) {
+                    &#64;{{ user()!.telegram }}
+                  } @else {
+                    Not provided
+                  }
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <label class="info-label">WhatsApp</label>
+                <div class="info-value">{{ user()!.whatsapp || 'Not provided' }}</div>
+              </div>
+              
+              <div class="info-item">
                 <label class="info-label">ID/NIE</label>
                 <div class="info-value">{{ user()!.idDocument || 'Not provided' }}</div>
               </div>
@@ -159,6 +175,32 @@
                     class="form-input"
                     formControlName="phone"
                     placeholder="(Optional) +1 234 567 8900" />
+                </div>
+
+                <div class="form-group">
+                  <label for="telegram" class="form-label">
+                    Telegram Username
+                  </label>
+                  <input
+                    id="telegram"
+                    type="text"
+                    class="form-input"
+                    formControlName="telegram"
+                    placeholder="(Optional) username without @" />
+                  <small class="form-hint">Enter your Telegram username without the &#64; symbol</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="whatsapp" class="form-label">
+                    WhatsApp Number
+                  </label>
+                  <input
+                    id="whatsapp"
+                    type="tel"
+                    class="form-input"
+                    formControlName="whatsapp"
+                    placeholder="(Optional) +1 234 567 8900" />
+                  <small class="form-hint">Include country code for international numbers</small>
                 </div>
 
                 <div class="form-group full-width">
@@ -255,6 +297,15 @@
                 <div class="action-arrow">→</div>
               </button>
             }
+
+            <button type="button" class="action-item" routerLink="/privacy">
+              <div class="action-icon">🔒</div>
+              <div class="action-content">
+                <div class="action-title">Privacy Settings</div>
+                <div class="action-description">Control who can view your information</div>
+              </div>
+              <div class="action-arrow">→</div>
+            </button>
 
             <button type="button" class="action-item danger" (click)="logout()">
               <div class="action-icon">🚪</div>

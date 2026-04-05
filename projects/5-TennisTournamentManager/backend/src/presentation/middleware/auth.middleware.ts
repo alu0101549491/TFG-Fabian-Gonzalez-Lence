@@ -75,3 +75,47 @@ export function authMiddleware(
     });
   }
 }
+
+/**
+ * Optional authentication middleware.
+ * Attempts to authenticate if a token is present, but allows the request to proceed even if no token is provided.
+ * This is useful for endpoints that are public but provide additional data for authenticated users.
+ *
+ * @param req - Express request object
+ * @param res - Express response object
+ * @param next - Express next function
+ */
+export function optionalAuthMiddleware(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    // If no auth header, proceed without user
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      next();
+      return;
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    
+    try {
+      const decoded = jwt.verify(token, config.jwt.secret) as {
+        id: string;
+        email: string;
+        role: string;
+      };
+      
+      req.user = decoded;
+      next();
+    } catch (jwtError) {
+      // Token is invalid, but we allow the request to proceed
+      next();
+    }
+  } catch (error) {
+    // Error in middleware, but we allow the request to proceed
+    next();
+  }
+}

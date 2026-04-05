@@ -14,32 +14,52 @@
 import {Response, NextFunction} from 'express';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {User} from '../../domain/entities/user.entity';
+import {Match} from '../../domain/entities/match.entity';
+import {Registration} from '../../domain/entities/registration.entity';
+import {Tournament} from '../../domain/entities/tournament.entity';
 import {UserRole} from '../../domain/enumerations/user-role';
+import {MatchStatus} from '../../domain/enumerations/match-status';
+import {TournamentStatus} from '../../domain/enumerations/tournament-status';
+import {PrivacyLevel} from '../../domain/enumerations/privacy-level';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
 import {ImageOptimizationService} from '../../application/services/image-optimization.service';
+import {PrivacyService} from '../../application/services/privacy.service';
 import {generateId} from '../../shared/utils/id-generator';
+import {In} from 'typeorm';
 
 /**
  * User controller.
  */
 export class UserController {
   private readonly imageService: ImageOptimizationService;
+  private readonly privacyService: PrivacyService;
 
   /**
    * Creates an instance of UserController.
    */
   public constructor() {
     this.imageService = new ImageOptimizationService();
+    this.privacyService = new PrivacyService();
   }
   /**
    * GET /api/users/:id
-   * Retrieves user by ID.
+   * Retrieves user by ID with privacy filtering applied (FR60).
+   * 
+   * Privacy enforcement:
+   * - Filters response based on viewer's role and relationship
+   * - Owner always sees all own fields
+   * - Admins always see all fields
+   * - Other users see fields based on privacy settings
+   * 
+   * Query params:
+   * - tournamentId: Tournament context for privacy checks (optional)
    */
   public async getById(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
+      const {tournamentId} = req.query;
       const userRepository = AppDataSource.getRepository(User);
       
       const user = await userRepository.findOne({where: {id}});
@@ -48,11 +68,220 @@ export class UserController {
         throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       
-      const {passwordHash, ...userWithoutPassword} = user;
+      // Get viewer from JWT token (null if not authenticated)
+      const viewer = req.user ? await userRepository.findOne({where: {id: req.user.id}}) : null;
       
-      res.status(HTTP_STATUS.OK).json(userWithoutPassword);
+      // Apply privacy filtering
+      const filteredUser = await this.privacyService.filterUserData(
+        user,
+        viewer || null,
+        tournamentId as string | undefined
+      );
+      
+      // Calculate statistics if viewer has permission
+      const canViewStats = await this.canViewStatistics(user, viewer, tournamentId as string | undefined);
+      if (canViewStats) {
+        const statistics = await this.calculateUserStatistics(user.id);
+        (filteredUser as any).statistics = statistics;
+      }
+      
+      // Fetch match history if viewer has permission
+      const canViewHistory = await this.canViewHistory(user, viewer, tournamentId as string | undefined);
+      if (canViewHistory) {
+        const matchHistory = await this.getMatchHistory(user.id);
+        (filteredUser as any).matchHistory = matchHistory;
+      }
+      
+      res.status(HTTP_STATUS.OK).json(filteredUser);
     } catch (error) {
       next(error);
+    }
+  }
+  
+  /**
+   * Fetches match history for a user.
+   * Returns recent matches ordered by date (newest first).
+   * 
+   * @param userId - User ID to fetch match history for
+   * @returns Array of match history items
+   */
+  private async getMatchHistory(userId: string): Promise<any[]> {
+    const matchRepository = AppDataSource.getRepository(Match);
+    
+    // Find all matches where user participated (limit to last 20)
+    const matches = await matchRepository
+      .createQueryBuilder('match')
+      .leftJoinAndSelect('match.bracket', 'bracket')
+      .leftJoinAndSelect('bracket.tournament', 'tournament')
+      .leftJoinAndSelect('match.participant1', 'participant1')
+      .leftJoinAndSelect('match.participant2', 'participant2')
+      .where('(match.participant1Id = :userId OR match.participant2Id = :userId)', {userId})
+      .andWhere('match.status = :status', {status: MatchStatus.COMPLETED})
+      .orderBy('match.endTime', 'DESC')
+      .take(20)
+      .getMany();
+    
+    // Transform to match history DTOs
+    return matches.map(match => {
+      const isParticipant1 = match.participant1Id === userId;
+      const opponent = isParticipant1 ? match.participant2 : match.participant1;
+      const result = match.winnerId === userId ? 'win' : 'loss';
+      
+      return {
+        id: match.id,
+        tournamentName: match.bracket?.tournament?.name || 'Unknown Tournament',
+        tournamentId: match.bracket?.tournament?.id || '',
+        opponentName: opponent ? `${opponent.firstName} ${opponent.lastName}` : 'Unknown Opponent',
+        opponentId: opponent?.id || '',
+        result,
+        score: match.score,
+        date: match.endTime || match.createdAt,
+        round: match.round
+      };
+    });
+  }
+  
+  /**
+   * Checks if viewer can see user match history based on privacy settings.
+   * 
+   * @param owner - User whose history is being viewed
+   * @param viewer - User viewing the history (null if not authenticated)
+   * @param tournamentId - Tournament context (optional)
+   * @returns True if viewer can see match history
+   */
+  private async canViewHistory(
+    owner: User,
+    viewer: User | null,
+    tournamentId?: string
+  ): Promise<boolean> {
+    // Owner can always see own history
+    if (viewer && viewer.id === owner.id) {
+      return true;
+    }
+    
+    // Get privacy settings
+    const settings = owner.privacySettings || {};
+    const historyPrivacy = settings.history || PrivacyLevel.TOURNAMENT_PARTICIPANTS;
+    
+    // Check privacy level
+    switch (historyPrivacy) {
+      case PrivacyLevel.PUBLIC:
+        return true;
+      
+      case PrivacyLevel.ALL_REGISTERED:
+        return viewer !== null;
+      
+      case PrivacyLevel.TOURNAMENT_PARTICIPANTS:
+        return await this.privacyService['shareTournament'](viewer, owner, tournamentId);
+      
+      case PrivacyLevel.ADMINS_ONLY:
+        return viewer !== null && (
+          viewer.role === UserRole.SYSTEM_ADMIN || 
+          viewer.role === UserRole.TOURNAMENT_ADMIN
+        );
+      
+      default:
+        return false;
+    }
+  }
+  
+  /**
+   * Calculates user statistics from their match history.
+   * 
+   * @param userId - User ID to calculate statistics for
+   * @returns Statistics object with wins, losses, tournaments, etc.
+   */
+  private async calculateUserStatistics(userId: string): Promise<any> {
+    const matchRepository = AppDataSource.getRepository(Match);
+    const registrationRepository = AppDataSource.getRepository(Registration);
+    const tournamentRepository = AppDataSource.getRepository(Tournament);
+    
+    // Find all completed matches where user participated
+    const completedMatches = await matchRepository.find({
+      where: [
+        {participant1Id: userId, status: MatchStatus.COMPLETED},
+        {participant2Id: userId, status: MatchStatus.COMPLETED}
+      ]
+    });
+    
+    // Calculate wins and losses
+    const wins = completedMatches.filter(match => match.winnerId === userId).length;
+    const losses = completedMatches.length - wins;
+    const winRate = completedMatches.length > 0 ? (wins / completedMatches.length) * 100 : 0;
+    
+    // Find user's registrations
+    const registrations = await registrationRepository.find({
+      where: {participantId: userId},
+      relations: ['tournament']
+    });
+    
+    // Count active and completed tournaments
+    const tournamentIds = registrations.map(r => r.tournamentId);
+    const tournaments = tournamentIds.length > 0 
+      ? await tournamentRepository.find({where: {id: In(tournamentIds)}})
+      : [];
+    
+    const activeTournaments = tournaments.filter(t => 
+      t.status === TournamentStatus.DRAFT || 
+      t.status === TournamentStatus.REGISTRATION_OPEN ||
+      t.status === TournamentStatus.IN_PROGRESS
+    ).length;
+    
+    const completedTournaments = tournaments.filter(t => 
+      t.status === TournamentStatus.COMPLETED
+    ).length;
+    
+    return {
+      totalMatches: completedMatches.length,
+      wins,
+      losses,
+      winRate: Math.round(winRate * 10) / 10, // Round to 1 decimal
+      activeTournaments,
+      completedTournaments
+    };
+  }
+  
+  /**
+   * Checks if viewer can see user statistics based on privacy settings.
+   * 
+   * @param owner - User whose statistics are being viewed
+   * @param viewer - User viewing the statistics (null if not authenticated)
+   * @param tournamentId - Tournament context (optional)
+   * @returns True if viewer can see statistics
+   */
+  private async canViewStatistics(
+    owner: User,
+    viewer: User | null,
+    tournamentId?: string
+  ): Promise<boolean> {
+    // Owner can always see own statistics
+    if (viewer && viewer.id === owner.id) {
+      return true;
+    }
+    
+    // Get privacy settings
+    const settings = owner.privacySettings || {};
+    const statsPrivacy = settings.statistics || PrivacyLevel.TOURNAMENT_PARTICIPANTS;
+    
+    // Check privacy level
+    switch (statsPrivacy) {
+      case PrivacyLevel.PUBLIC:
+        return true;
+      
+      case PrivacyLevel.ALL_REGISTERED:
+        return viewer !== null;
+      
+      case PrivacyLevel.TOURNAMENT_PARTICIPANTS:
+        return await this.privacyService['shareTournament'](viewer, owner, tournamentId);
+      
+      case PrivacyLevel.ADMINS_ONLY:
+        return viewer !== null && (
+          viewer.role === UserRole.SYSTEM_ADMIN || 
+          viewer.role === UserRole.TOURNAMENT_ADMIN
+        );
+      
+      default:
+        return false;
     }
   }
   
@@ -76,7 +305,7 @@ export class UserController {
         throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       
-      const {username, firstName, lastName, phone, idDocument, ranking} = req.body;
+      const {username, firstName, lastName, phone, telegram, whatsapp, idDocument, ranking} = req.body;
       
       // Validate username is not empty if provided (username is required field)
       if (username !== undefined) {
@@ -119,6 +348,8 @@ export class UserController {
       if (firstName) user.firstName = firstName;
       if (lastName) user.lastName = lastName;
       if (phone !== undefined) user.phone = phone;
+      if (telegram !== undefined) user.telegram = telegram;
+      if (whatsapp !== undefined) user.whatsapp = whatsapp;
       if (ranking !== undefined) user.ranking = ranking;
       
       await userRepository.save(user);
@@ -136,9 +367,22 @@ export class UserController {
    * Lists users eligible for tournament registration (tournament admin and system admin).
    * Returns only PLAYER role users with active status.
    */
+  /**
+   * GET /api/users/eligible-participants
+   * Retrieves eligible players for tournament registration with privacy filtering.
+   * 
+   * Privacy enforcement:
+   * - Each user in the list is filtered based on viewer's relationship
+   * - Only active PLAYER role users are returned
+   * - Supports optional search query
+   * 
+   * Query params:
+   * - searchQuery: Optional search filter
+   * - tournamentId: Tournament context for privacy checks (optional)
+   */
   public async getEligibleParticipants(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {searchQuery} = req.query;
+      const {searchQuery, tournamentId} = req.query;
       const userRepository = AppDataSource.getRepository(User);
       
       const queryBuilder = userRepository.createQueryBuilder('user');
@@ -155,26 +399,26 @@ export class UserController {
         );
       }
       
-      // Select only necessary fields (exclude sensitive data like passwordHash)
-      queryBuilder.select([
-        'user.id',
-        'user.username',
-        'user.email',
-        'user.firstName',
-        'user.lastName',
-        'user.role',
-        'user.isActive',
-        'user.phone',
-        'user.idDocument',
-        'user.ranking',
-      ]);
-      
       queryBuilder.orderBy('user.lastName', 'ASC');
       queryBuilder.addOrderBy('user.firstName', 'ASC');
       
       const users = await queryBuilder.getMany();
       
-      res.status(HTTP_STATUS.OK).json(users);
+      // Get viewer from JWT token (null if not authenticated)
+      const viewer = req.user ? await userRepository.findOne({where: {id: req.user.id}}) : null;
+      
+      // Apply privacy filtering to each user in the list
+      const filteredUsers = await Promise.all(
+        users.map(user => 
+          this.privacyService.filterUserData(
+            user,
+            viewer || null,
+            tournamentId as string | undefined
+          )
+        )
+      );
+      
+      res.status(HTTP_STATUS.OK).json(filteredUsers);
     } catch (error) {
       next(error);
     }
@@ -182,7 +426,17 @@ export class UserController {
   
   /**
    * GET /api/users
-   * Lists all users (admin only).
+   * Lists all users with privacy filtering applied (admin only).
+   * 
+   * Privacy enforcement:
+   * - Each user in the list is filtered based on viewer's relationship
+   * - This endpoint is typically admin-only, so admins see all fields
+   * - Non-admin access (if allowed) applies privacy filtering
+   * 
+   * Query params:
+   * - role: Filter by role (optional)
+   * - isActive: Filter by active status (optional)
+   * - searchQuery: Search filter (optional)
    */
   public async getAll(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -204,26 +458,21 @@ export class UserController {
         );
       }
       
-      queryBuilder.select([
-        'user.id',
-        'user.username',
-        'user.email',
-        'user.firstName',
-        'user.lastName',
-        'user.role',
-        'user.isActive',
-        'user.phone',
-        'user.idDocument',
-        'user.ranking',
-        'user.createdAt',
-        'user.lastLogin',
-      ]);
-      
       queryBuilder.orderBy('user.createdAt', 'DESC');
       
       const users = await queryBuilder.getMany();
       
-      res.status(HTTP_STATUS.OK).json(users);
+      // Get viewer from JWT token
+      const viewer = req.user ? await userRepository.findOne({where: {id: req.user.id}}) : null;
+      
+      // Apply privacy filtering to each user in the list
+      const filteredUsers = await Promise.all(
+        users.map(user => 
+          this.privacyService.filterUserData(user, viewer || null)
+        )
+      );
+      
+      res.status(HTTP_STATUS.OK).json(filteredUsers);
     } catch (error) {
       next(error);
     }
@@ -578,28 +827,75 @@ export class UserController {
    * Retrieves public user information (name, avatar) without authentication.
    * Used for displaying participant names in public views (standings, brackets, matches).
    */
+  /**
+   * GET /api/users/:id/public
+   * Retrieves public user information with privacy filtering.
+   * 
+   * Privacy enforcement:
+   * - This endpoint is now redundant with getById + privacy filtering
+   * - Kept for backwards compatibility
+   * - Filters user data based on viewer's relationship
+   * 
+   * Note: Consider using GET /api/users/:id directly with privacy filtering
+   */
   public async getPublicInfo(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
       const userRepository = AppDataSource.getRepository(User);
       
-      const user = await userRepository.findOne({
-        where: {id},
-        select: ['id', 'username', 'firstName', 'lastName', 'avatarUrl'],
-      });
+      const user = await userRepository.findOne({where: {id}});
       
       if (!user) {
         throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       
-      // Return only public fields
-      res.status(HTTP_STATUS.OK).json({
-        id: user.id,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        avatarUrl: user.avatarUrl,
-      });
+      // Get viewer from JWT token (null if not authenticated)
+      const viewer = req.user ? await userRepository.findOne({where: {id: req.user.id}}) : null;
+      
+      // Apply privacy filtering (will return only publicly accessible fields)
+      const filteredUser = await this.privacyService.filterUserData(user, viewer || null);
+      
+      res.status(HTTP_STATUS.OK).json(filteredUser);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PUT /api/users/:id/privacy
+   * Updates user's privacy settings (FR58).
+   * User can only update their own privacy settings, unless they are a system admin.
+   */
+  public async updatePrivacy(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const {privacySettings} = req.body;
+      
+      // Verify user owns this profile or is admin
+      if (req.user?.id !== id && req.user?.role !== UserRole.SYSTEM_ADMIN) {
+        throw new AppError('Cannot update other users privacy settings', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+      }
+      
+      if (!privacySettings) {
+        throw new AppError('Privacy settings are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+      }
+      
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository.findOne({where: {id}});
+      
+      if (!user) {
+        throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Validate and update privacy settings
+      // The User entity's privacySettings field is a JSON column
+      user.privacySettings = privacySettings;
+      
+      await userRepository.save(user);
+      
+      const {passwordHash, ...userWithoutPassword} = user;
+      
+      res.status(HTTP_STATUS.OK).json(userWithoutPassword);
     } catch (error) {
       next(error);
     }

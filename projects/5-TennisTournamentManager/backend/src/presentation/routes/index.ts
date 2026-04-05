@@ -30,7 +30,7 @@ import {StatisticsController} from '../controllers/statistics.controller';
 import {PaymentController} from '../controllers/payment.controller';
 import {SanctionController} from '../controllers/sanction.controller';
 import {AuditLogController} from '../controllers/audit-log.controller';
-import {authMiddleware} from '../middleware/auth.middleware';
+import {authMiddleware, optionalAuthMiddleware} from '../middleware/auth.middleware';
 import {adminMiddleware} from '../middleware/admin.middleware';
 import {roleMiddleware} from '../middleware/role.middleware';
 import {uploadImage} from '../middlewares/upload.middleware';
@@ -356,8 +356,9 @@ router.get('/users', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), ap
 // Public endpoint for participant names in standings, brackets, etc.
 router.get('/users/:id/public', apiCache(300), userController.getPublicInfo.bind(userController));
 
-// Cache user profiles for 5 minutes (requires authentication)
-router.get('/users/:id', authMiddleware, apiCache(300), userController.getById.bind(userController));
+// User profile endpoint - optionally authenticated for privacy filtering (FR60)
+// Unauthenticated users see public fields, authenticated users see more based on privacy settings
+router.get('/users/:id', optionalAuthMiddleware, apiCache(300), userController.getById.bind(userController));
 
 /**
  * @swagger
@@ -398,6 +399,69 @@ router.get('/users/:id', authMiddleware, apiCache(300), userController.getById.b
  *         $ref: '#/components/responses/NotFound'
  */
 router.put('/users/:id', authMiddleware, userController.update.bind(userController));
+
+/**
+ * @swagger
+ * /users/{id}/privacy:
+ *   put:
+ *     tags: [Users]
+ *     summary: Update user privacy settings
+ *     description: Update privacy settings for a user (FR58). Users can only update their own settings unless they are a system admin.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [privacySettings]
+ *             properties:
+ *               privacySettings:
+ *                 type: object
+ *                 properties:
+ *                   email:
+ *                     type: string
+ *                     enum: [PUBLIC, ALL_REGISTERED, TOURNAMENT_PARTICIPANTS, ADMINS_ONLY]
+ *                   phone:
+ *                     type: string
+ *                     enum: [PUBLIC, ALL_REGISTERED, TOURNAMENT_PARTICIPANTS, ADMINS_ONLY]
+ *                   telegram:
+ *                     type: string
+ *                     enum: [PUBLIC, ALL_REGISTERED, TOURNAMENT_PARTICIPANTS, ADMINS_ONLY]
+ *                   whatsapp:
+ *                     type: string
+ *                     enum: [PUBLIC, ALL_REGISTERED, TOURNAMENT_PARTICIPANTS, ADMINS_ONLY]
+ *                   avatar:
+ *                     type: string
+ *                     enum: [PUBLIC, ALL_REGISTERED, TOURNAMENT_PARTICIPANTS, ADMINS_ONLY]
+ *                   ranking:
+ *                     type: string
+ *                     enum: [PUBLIC, ALL_REGISTERED, TOURNAMENT_PARTICIPANTS, ADMINS_ONLY]
+ *                   history:
+ *                     type: string
+ *                     enum: [PUBLIC, ALL_REGISTERED, TOURNAMENT_PARTICIPANTS, ADMINS_ONLY]
+ *                   statistics:
+ *                     type: string
+ *                     enum: [PUBLIC, ALL_REGISTERED, TOURNAMENT_PARTICIPANTS, ADMINS_ONLY]
+ *                   allowContact:
+ *                     type: boolean
+ *     responses:
+ *       200:
+ *         description: Privacy settings updated successfully
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Cannot update other users' privacy settings
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.put('/users/:id/privacy', authMiddleware, userController.updatePrivacy.bind(userController));
 
 /**
  * @swagger
@@ -919,7 +983,7 @@ router.post('/registrations', authMiddleware, registrationController.create.bind
  *               items:
  *                 $ref: '#/components/schemas/Registration'
  */
-router.get('/registrations', registrationController.getByTournament.bind(registrationController));
+router.get('/registrations', optionalAuthMiddleware, registrationController.getByTournament.bind(registrationController));
 
 /**
  * @swagger
@@ -945,7 +1009,7 @@ router.get('/registrations', registrationController.getByTournament.bind(registr
  *       404:
  *         description: Registration not found
  */
-router.get('/registrations/:id', registrationController.getById.bind(registrationController));
+router.get('/registrations/:id', optionalAuthMiddleware, registrationController.getById.bind(registrationController));
 
 /**
  * @swagger
@@ -1197,7 +1261,7 @@ router.post('/brackets/:id/regenerate', authMiddleware, roleMiddleware([UserRole
  */
 // Match routes
 // Cache matches list for 2 minutes (updates during active play)
-router.get('/matches', apiCache(120), matchController.getByBracket.bind(matchController));
+router.get('/matches', optionalAuthMiddleware, apiCache(120), matchController.getByBracket.bind(matchController));
 
 /**
  * @swagger
@@ -1224,7 +1288,7 @@ router.get('/matches', apiCache(120), matchController.getByBracket.bind(matchCon
  *         $ref: '#/components/responses/NotFound'
  */
 // Cache match details for 2 minutes (updates during active play)
-router.get('/matches/:id', apiCache(120), matchController.getById.bind(matchController));
+router.get('/matches/:id', optionalAuthMiddleware, apiCache(120), matchController.getById.bind(matchController));
 
 /**
  * @swagger

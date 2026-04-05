@@ -65,6 +65,15 @@ export class User {
   @Column('boolean', {default: false})
   public gdprConsent!: boolean;
 
+  @Column('json', {nullable: true})
+  public privacySettings!: Record<string, string | boolean> | null;
+
+  @Column('varchar', {length: 50, nullable: true})
+  public telegram!: string | null;
+
+  @Column('varchar', {length: 20, nullable: true})
+  public whatsapp!: string | null;
+
   @CreateDateColumn()
   public createdAt!: Date;
 

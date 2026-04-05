@@ -23,16 +23,65 @@ import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
 import {NotificationService} from '../../application/services/notification.service';
+import {PrivacyService} from '../../application/services/privacy.service';
+import {User} from '../../domain/entities/user.entity';
+import {Bracket} from '../../domain/entities/bracket.entity';
 
 /**
  * Match controller.
  */
 export class MatchController {
   private readonly notificationService: NotificationService;
+  private readonly privacyService: PrivacyService;
 
   constructor() {
     this.notificationService = new NotificationService();
+    this.privacyService = new PrivacyService();
   }
+  /**
+   * Applies privacy filtering to participant user objects in matches.
+   * Filters participant1, participant2, and winner based on viewer permissions.
+   * 
+   * @param matches - Array of matches with unfiltered participant data
+   * @param viewer - Viewing user (null if unauthenticated)
+   * @param tournamentId - Tournament context for privacy checks (optional)
+   * @returns Matches with privacy-filtered participant data
+   */
+  private async applyPrivacyToMatches(matches: any[], viewer: User | null, tournamentId?: string): Promise<any[]> {
+    return Promise.all(matches.map(async (match) => {
+      const filteredMatch = {...match};
+      
+      // Filter participant1 if present
+      if (match.participant1) {
+        filteredMatch.participant1 = await this.privacyService.filterUserData(
+          match.participant1,
+          viewer,
+          tournamentId
+        );
+      }
+      
+      // Filter participant2 if present
+      if (match.participant2) {
+        filteredMatch.participant2 = await this.privacyService.filterUserData(
+          match.participant2,
+          viewer,
+          tournamentId
+        );
+      }
+      
+      // Filter winner if present
+      if (match.winner) {
+        filteredMatch.winner = await this.privacyService.filterUserData(
+          match.winner,
+          viewer,
+          tournamentId
+        );
+      }
+      
+      return filteredMatch;
+    }));
+  }
+
   /**
    * Enriches matches with seed information from registrations.
    * 
@@ -82,12 +131,15 @@ export class MatchController {
   /**
    * GET /api/matches
    * Lists matches for a bracket or all matches if bracketId is not provided.
+   * Privacy enforcement: Filters participant1, participant2, and winner based on viewer permissions.
    */
   public async getByBracket(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {bracketId, participantId} = req.query;
       const matchRepository = AppDataSource.getRepository(Match);
       const matchResultRepository = AppDataSource.getRepository(MatchResult);
+      const userRepository = AppDataSource.getRepository(User);
+      const bracketRepository = AppDataSource.getRepository(Bracket);
       
       // Build where clause dynamically based on query parameters
       let whereClause: any = {};
@@ -116,9 +168,22 @@ export class MatchController {
       // Enrich with seed information
       const enrichedMatches = await this.enrichMatchesWithSeeds(matches);
       
+      // Get viewer from JWT token (null if not authenticated)
+      const viewer = req.user ? await userRepository.findOne({where: {id: req.user.id}}) : null;
+      
+      // Get tournament context for privacy filtering
+      let tournamentId: string | undefined;
+      if (bracketId && matches.length > 0) {
+        const bracket = await bracketRepository.findOne({where: {id: bracketId as string}});
+        tournamentId = bracket?.tournamentId;
+      }
+      
+      // Apply privacy filtering to participant data
+      const privacyFilteredMatches = await this.applyPrivacyToMatches(enrichedMatches, viewer, tournamentId);
+      
       // If participantId is provided, include pending results for each match
       if (participantId) {
-        const matchesWithResults = await Promise.all(enrichedMatches.map(async (match: any) => {
+        const matchesWithResults = await Promise.all(privacyFilteredMatches.map(async (match: any) => {
           // Find pending result for this match
           const pendingResult = await matchResultRepository.findOne({
             where: {
@@ -136,7 +201,7 @@ export class MatchController {
         
         res.status(HTTP_STATUS.OK).json(matchesWithResults);
       } else {
-        res.status(HTTP_STATUS.OK).json(enrichedMatches);
+        res.status(HTTP_STATUS.OK).json(privacyFilteredMatches);
       }
     } catch (error) {
       next(error);
@@ -145,16 +210,19 @@ export class MatchController {
   
   /**
    * GET /api/matches/:id
-   * Retrieves match details.
+   * Retrieves match details with privacy filtering applied to participants.
+   * Privacy enforcement: Filters participant1, participant2, and winner based on viewer permissions.
    */
   public async getById(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
       const matchRepository = AppDataSource.getRepository(Match);
+      const userRepository = AppDataSource.getRepository(User);
+      const bracketRepository = AppDataSource.getRepository(Bracket);
       
       const match = await matchRepository.findOne({
         where: {id},
-        relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
+        relations: ['scores', 'court', 'participant1', 'participant2', 'winner', 'bracket'],
       });
       
       if (!match) {
@@ -164,7 +232,17 @@ export class MatchController {
       // Enrich with seed information
       const enrichedMatches = await this.enrichMatchesWithSeeds([match]);
       
-      res.status(HTTP_STATUS.OK).json(enrichedMatches[0]);
+      // Get viewer from JWT token (null if not authenticated)
+      const viewer = req.user ? await userRepository.findOne({where: {id: req.user.id}}) : null;
+      
+      // Get tournament context for privacy filtering
+      const bracket = await bracketRepository.findOne({where: {id: match.bracketId}});
+      const tournamentId = bracket?.tournamentId;
+      
+      // Apply privacy filtering to participant data
+      const privacyFilteredMatches = await this.applyPrivacyToMatches(enrichedMatches, viewer, tournamentId);
+      
+      res.status(HTTP_STATUS.OK).json(privacyFilteredMatches[0]);
     } catch (error) {
       next(error);
     }

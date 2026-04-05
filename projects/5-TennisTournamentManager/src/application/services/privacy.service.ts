@@ -278,7 +278,6 @@ export class PrivacyService {
       'ranking',
       'history',
       'statistics',
-      'ageCategory',
     ];
 
     for (const field of fieldsToCheck) {

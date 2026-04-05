@@ -88,12 +88,6 @@ export class PrivacySettings {
   public readonly statistics: PrivacyLevel;
 
   /**
-   * Age and category visibility level.
-   * Default: ALL_REGISTERED
-   */
-  public readonly ageCategory: PrivacyLevel;
-
-  /**
    * Whether other players can contact this user.
    * Default: true (allows contact from tournament participants)
    */
@@ -113,7 +107,6 @@ export class PrivacySettings {
     this.ranking = props?.ranking ?? PrivacyLevel.ALL_REGISTERED;
     this.history = props?.history ?? PrivacyLevel.TOURNAMENT_PARTICIPANTS;
     this.statistics = props?.statistics ?? PrivacyLevel.TOURNAMENT_PARTICIPANTS;
-    this.ageCategory = props?.ageCategory ?? PrivacyLevel.ALL_REGISTERED;
     this.allowContact = props?.allowContact ?? true;
   }
 
@@ -146,7 +139,6 @@ export class PrivacySettings {
       ranking: PrivacyLevel.PUBLIC,
       history: PrivacyLevel.PUBLIC,
       statistics: PrivacyLevel.PUBLIC,
-      ageCategory: PrivacyLevel.PUBLIC,
       allowContact: true,
     });
   }
@@ -167,7 +159,6 @@ export class PrivacySettings {
       ranking: PrivacyLevel.ADMINS_ONLY,
       history: PrivacyLevel.ADMINS_ONLY,
       statistics: PrivacyLevel.ADMINS_ONLY,
-      ageCategory: PrivacyLevel.ADMINS_ONLY,
       allowContact: false,
     });
   }
@@ -188,7 +179,6 @@ export class PrivacySettings {
       ranking: this.ranking,
       history: this.history,
       statistics: this.statistics,
-      ageCategory: this.ageCategory,
       allowContact: this.allowContact,
     };
   }
@@ -210,7 +200,6 @@ export class PrivacySettings {
       ranking: obj.ranking as PrivacyLevel,
       history: obj.history as PrivacyLevel,
       statistics: obj.statistics as PrivacyLevel,
-      ageCategory: obj.ageCategory as PrivacyLevel,
       allowContact: obj.allowContact as boolean,
     });
   }

@@ -158,6 +158,21 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'privacy',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/profile/privacy-settings/privacy-settings.component').then(
+        (m) => m.PrivacySettingsComponent,
+      ),
+  },
+  {
+    path: 'users/:id',
+    loadComponent: () =>
+      import('./pages/users/user-profile-view/user-profile-view.component').then(
+        (m) => m.UserProfileViewComponent,
+      ),
+  },
+  {
     path: 'my-registrations',
     canActivate: [authGuard],
     loadComponent: () =>

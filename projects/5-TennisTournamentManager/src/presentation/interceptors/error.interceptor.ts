@@ -40,7 +40,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         currentPath.includes('/brackets') ||
         currentPath.includes('/matches') ||
         currentPath.includes('/standings') ||
-        currentPath.includes('/order-of-play');
+        currentPath.includes('/order-of-play') ||
+        currentPath.includes('/users/'); // User profiles are public (privacy-filtered)
       
       console.log('[Error Interceptor]', {
         status: error.status,

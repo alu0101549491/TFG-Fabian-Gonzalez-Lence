@@ -37,6 +37,8 @@ export interface UpdateUserDto {
   firstName?: string;
   lastName?: string;
   phone?: string | null;
+  telegram?: string | null;
+  whatsapp?: string | null;
   idDocument?: string | null;
   ranking?: number | null;
 }
@@ -45,6 +47,29 @@ export interface UpdateUserDto {
 export interface AuthResponseDto {
   token: string;
   user: UserDto;
+}
+
+/** DTO for user statistics. */
+export interface UserStatisticsDto {
+  totalMatches: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  activeTournaments: number;
+  completedTournaments: number;
+}
+
+/** DTO for match history item. */
+export interface MatchHistoryDto {
+  id: string;
+  tournamentName: string;
+  tournamentId: string;
+  opponentName: string;
+  opponentId: string;
+  result: 'win' | 'loss';
+  score: string | null;
+  date: Date;
+  round: number;
 }
 
 /** DTO for user output representation. */
@@ -57,8 +82,24 @@ export interface UserDto {
   role: UserRole;
   isActive: boolean;
   phone: string | null;
+  telegram?: string | null;
+  whatsapp?: string | null;
   idDocument?: string | null;
   ranking?: number | null;
+  statistics?: UserStatisticsDto;
+  matchHistory?: MatchHistoryDto[];
+  privacySettings?: {
+    email?: string;
+    phone?: string;
+    telegram?: string;
+    whatsapp?: string;
+    avatar?: string;
+    ranking?: string;
+    history?: string;
+    statistics?: string;
+    idDocument?: string;
+    allowContact?: boolean;
+  };
   createdAt: Date;
   lastLogin: Date | null;
 }

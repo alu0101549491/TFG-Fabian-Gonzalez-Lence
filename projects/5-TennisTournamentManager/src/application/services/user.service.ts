@@ -82,4 +82,19 @@ export class UserService {
       this.http.get<Partial<UserDto>>(`${this.apiUrl}/${userId}/public`)
     );
   }
+
+  /**
+   * Updates user's privacy settings (FR58).
+   *
+   * @param userId - ID of user to update
+   * @param privacySettings - Privacy configuration
+   * @returns Promise resolving to updated user
+   */
+  public async updatePrivacySettings(userId: string, privacySettings: Record<string, unknown>): Promise<UserDto> {
+    return firstValueFrom(
+      this.http.put<UserDto>(`${this.apiUrl}/${userId}/privacy`, {privacySettings}, {
+        headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
+      })
+    );
+  }
 }

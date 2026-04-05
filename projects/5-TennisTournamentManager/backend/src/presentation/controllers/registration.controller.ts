@@ -22,11 +22,49 @@ import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
 import {RegistrationStatus} from '../../domain/enumerations/registration-status';
 import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
+import {PrivacyService} from '../../application/services/privacy.service';
+import {Tournament} from '../../domain/entities/tournament.entity';
 
 /**
  * Registration controller.
  */
 export class RegistrationController {
+  private readonly privacyService: PrivacyService;
+
+  constructor() {
+    this.privacyService = new PrivacyService();
+  }
+  
+  /**
+   * Applies privacy filtering to participant data in registrations.
+   * Filters participant field based on viewer permissions and tournament context.
+   * 
+   * @param registrations - Array of registrations with unfiltered participant data
+   * @param viewer - Viewing user (null if unauthenticated)
+   * @param tournamentId - Tournament context for privacy checks (optional)
+   * @returns Registrations with privacy-filtered participant data
+   */
+  private async applyPrivacyToRegistrations(
+    registrations: Registration[],
+    viewer: User | null,
+    tournamentId?: string
+  ): Promise<any[]> {
+    return Promise.all(registrations.map(async (registration) => {
+      const filteredRegistration = {...registration};
+      
+      // Filter participant if present
+      if (registration.participant) {
+        filteredRegistration.participant = await this.privacyService.filterUserData(
+          registration.participant,
+          viewer,
+          tournamentId
+        );
+      }
+      
+      return filteredRegistration;
+    }));
+  }
+  
   /**
    * POST /api/registrations
    * Creates a tournament registration with quota management (FR12).
@@ -152,7 +190,18 @@ export class RegistrationController {
         console.log(`✅ Fixed ${fixedCount} legacy registration(s) with missing acceptanceType`);
       }
       
-      res.status(HTTP_STATUS.OK).json(registrations);
+      // Get viewer from JWT token (null if not authenticated)
+      const userRepository = AppDataSource.getRepository(User);
+      const viewer = req.user ? await userRepository.findOne({where: {id: req.user.id}}) : null;
+      
+      // Apply privacy filtering to participant data
+      const privacyFilteredRegistrations = await this.applyPrivacyToRegistrations(
+        registrations,
+        viewer,
+        tournamentId as string | undefined
+      );
+      
+      res.status(HTTP_STATUS.OK).json(privacyFilteredRegistrations);
     } catch (error) {
       next(error);
     }
@@ -160,16 +209,18 @@ export class RegistrationController {
   
   /**
    * GET /api/registrations/:id
-   * Gets a single registration by ID.
+   * Gets a single registration by ID with privacy filtering applied.
+   * Privacy enforcement: Filters participant data based on viewer permissions.
    */
   public async getById(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
       const registrationRepository = AppDataSource.getRepository(Registration);
+      const userRepository = AppDataSource.getRepository(User);
       
       const registration = await registrationRepository.findOne({
         where: {id},
-        relations: ['participant', 'category'],
+        relations: ['participant', 'category', 'tournament'],
       });
       
       if (!registration) {
@@ -183,7 +234,17 @@ export class RegistrationController {
         console.log(`🔧 Auto-fixed legacy registration ${registration.id}: set acceptanceType to DIRECT_ACCEPTANCE`);
       }
       
-      res.status(HTTP_STATUS.OK).json(registration);
+      // Get viewer from JWT token (null if not authenticated)
+      const viewer = req.user ? await userRepository.findOne({where: {id: req.user.id}}) : null;
+      
+      // Apply privacy filtering to participant data
+      const privacyFilteredRegistrations = await this.applyPrivacyToRegistrations(
+        [registration],
+        viewer,
+        registration.tournamentId
+      );
+      
+      res.status(HTTP_STATUS.OK).json(privacyFilteredRegistrations[0]);
     } catch (error) {
       next(error);
     }
