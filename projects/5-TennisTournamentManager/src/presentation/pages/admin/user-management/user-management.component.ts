@@ -14,7 +14,7 @@
 import {Component, OnInit, signal, inject, computed} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {Router} from '@angular/router';
+import {Router, RouterModule} from '@angular/router';
 import {
   type UserSummaryDto,
   type CreateUserDto,
@@ -32,7 +32,7 @@ import {UserRole} from '@domain/enumerations/user-role';
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   template: `
     <div class="user-management-container">
       <!-- Hero Section -->
@@ -40,8 +40,8 @@ import {UserRole} from '@domain/enumerations/user-role';
         <div class="hero-overlay"></div>
         <div class="hero-content">
           <div class="hero-top">
-            <button class="back-button" (click)="navigateBack()" aria-label="Back to profile">
-              <span>← Back to Profile</span>
+            <button class="back-button" (click)="navigateBack()" aria-label="Go back">
+              <span>← Go Back</span>
             </button>
             <button
               class="create-user-btn"
@@ -170,7 +170,11 @@ import {UserRole} from '@domain/enumerations/user-role';
             <tbody>
               @for (user of filteredUsers(); track user.id) {
                 <tr>
-                  <td class="user-username">{{ user.username }}</td>
+                  <td class="user-username">
+                    <a [routerLink]="['/users', user.id]" class="user-link">
+                      {{ user.username }}
+                    </a>
+                  </td>
                   <td class="user-email">{{ user.email }}</td>
                   <td class="user-name">{{ user.firstName }} {{ user.lastName }}</td>
                   <td class="user-id">{{ user.idDocument || '—' }}</td>
@@ -729,6 +733,18 @@ import {UserRole} from '@domain/enumerations/user-role';
     .user-username {
       font-weight: var(--font-weight-semibold);
       color: var(--color-gray-900);
+    }
+
+    .user-link {
+      color: var(--color-primary);
+      text-decoration: none;
+      font-weight: var(--font-weight-semibold);
+      transition: color 0.2s ease;
+    }
+
+    .user-link:hover {
+      color: var(--color-primary-dark);
+      text-decoration: underline;
     }
 
     .user-email {
@@ -1448,10 +1464,10 @@ export class UserManagementComponent implements OnInit {
   }
 
   /**
-   * Navigate back to profile page.
+   * Navigate back to previous page.
    */
   public navigateBack(): void {
-    void this.router.navigate(['/profile']);
+    window.history.back();
   }
 
   /**

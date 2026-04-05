@@ -8,6 +8,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### **Enhanced** — User Management Navigation (v1.77.12)
+
+**Enhancement**: Improved navigation in user management dashboard for system administrators with clickable user profiles and smart back button.
+
+**Implementation**:
+
+1. **Clickable User Profiles** (`src/presentation/pages/admin/user-management/user-management.component.ts`):
+   - Made usernames in the users table clickable links
+   - Clicking a username navigates to that user's profile page (`/users/:id`)
+   - Added RouterModule import to enable routing
+   - Styled user links with primary color and hover effects
+
+2. **Smart Back Navigation**:
+   - Changed `navigateBack()` method from hardcoded `/profile` navigation to `window.history.back()`
+   - Back button now correctly returns to previous page:
+     * Dashboard → User Management → Back returns to Dashboard
+     * Profile → User Management → Back returns to Profile
+     * User Management → User Profile → Back returns to User Management
+   - Updated button text from "Back to Profile" to "Go Back" for clarity
+
+3. **CSS Styling**:
+   - Added `.user-link` class with primary color and hover effects
+   - Underline on hover for better UX feedback
+   - Smooth color transition animations
+
+**User Experience Benefits**:
+- Admins can now view full user profiles with privacy-filtered data
+- Quick access to user details without editing modal
+- Context-aware navigation preserves workflow
+- Browser back button also works correctly
+- Consistent with other navigation patterns in the app
+
+**Navigation Flow**:
+- User Management table shows all users with clickable usernames
+- Click username → Navigate to user profile view
+- User profile shows full details with statistics and match history
+- Back button returns to user management dashboard
+- User management back button returns to entry point (dashboard or profile)
+
+---
+
 ### **Removed** — Age/Category Privacy Setting (v1.77.11)
 
 **Change**: Removed the "Age / Category" field from privacy management system as it was not connected to any actual user data field.
