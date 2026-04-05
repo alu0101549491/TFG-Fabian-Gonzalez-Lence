@@ -6,6 +6,112 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+### Fixed — Tournament Statistics Display Bug (v1.74.0)
+
+**Issue**: Different tournaments were displaying identical statistics due to incorrect data fetching.
+
+**Root Cause**: The `getDetailedTournamentStatistics` method in the statistics service was using `matchRepository.findAll()`, which retrieved ALL matches from ALL tournaments instead of filtering by the specific tournament ID.
+
+**Fix**:
+- Injected `BracketRepositoryImpl` into the statistics service
+- Modified `getDetailedTournamentStatistics` to:
+  1. Fetch all brackets for the specific tournament using `bracketRepository.findByTournament(tournamentId)`
+  2. Get matches for each bracket using `matchRepository.findByBracket(bracketId)`
+  3. Aggregate matches from all brackets using `Promise.all()` and `flat()`
+
+**Impact**:
+- Each tournament now correctly displays only its own statistics
+- Tournament-specific metrics (participants, matches, result distribution) are now accurate
+- Top performers and activity leaderboards are tournament-scoped
+
+**Files Modified**:
+- `src/application/services/statistics.service.ts`
+
+### Added — Match Results Generator Script (v1.73.2)
+
+**Feature**: Development utility script to generate random realistic tennis match results for testing purposes.
+
+**Purpose**: Testing tournament progression, standings calculation, and statistics display with realistic data.
+
+**Implementation**:
+- **Script**: `backend/generate-match-results.ts`
+- **Usage**: `npx tsx generate-match-results.ts <tournamentId>`
+- **Authentication**: Uses tournament admin credentials
+- **Algorithm**:
+  - Fetches all matches for the specified tournament
+  - Filters matches that need results (have both participants, not completed)
+  - Generates realistic tennis scores (best of 3 sets)
+  - Randomly determines winner based on set scores
+  - Updates matches via PUT /api/matches/:id endpoint
+
+**Score Generation**:
+- Realistic set scores: 6-0, 6-1, 6-2, 6-3, 6-4, 7-5, 7-6 (tiebreak)
+- Best of 3 sets format (first to win 2 sets)
+- Automatic winner determination
+- Updates match status to COMPLETED
+
+**Use Cases**:
+- Testing Round Robin standings calculation
+- Validating statistics display (personal and tournament)
+- Testing tiebreaker resolution
+- Verifying matchup history features
+- Visual testing of completed tournaments
+
+**Output**:
+- Console log showing each match result
+- Summary of successfully generated results
+- Direct link to statistics page for verification
+
+### Changed — Enhanced Matchup History UI (v1.73.1)
+
+**Feature**: Redesigned opponent matchup history section with modern card-based layout for improved visual hierarchy and user experience.
+
+**UI Improvements**:
+
+1. **Card-Based Design** (Replaced Table Layout):
+   - Individual cards for each opponent matchup
+   - Circular avatar with opponent's initial
+   - Gradient backgrounds (green for winning records, red for losing records)
+   - Enhanced visual separation between matchups
+
+2. **Visual Enhancements**:
+   - Large opponent name with avatar badge
+   - Total matches badge with count
+   - Prominent win percentage display
+   - Color-coded win rate (green ≥50%, red <50%)
+
+3. **Record Breakdown Section**:
+   - Wins and losses displayed with emoji icons (✅ / ❌)
+   - Color-coded cards with gradients
+   - Enhanced typography for readability
+   - Hover effects on record items
+
+4. **Progress Bar Visualization**:
+   - Dual-color progress bar showing win/loss ratio
+   - Smooth transitions and gradient fills
+   - Visual representation complementing numerical data
+
+5. **Responsive Design**:
+   - Mobile-optimized stacked layout
+   - Adaptive font sizes and spacing
+   - Touch-friendly card interactions
+   - Full-width elements on small screens
+
+**Modified Files**:
+- `src/presentation/pages/statistics/statistics-view/statistics-view.component.html` - Replaced table with card layout
+- `src/presentation/pages/statistics/statistics-view/statistics-view.component.css` - Added 250+ lines of modern card styling
+- `docs/CHANGES.md` - Documented UI enhancement
+
+**Design Consistency**:
+- Matches existing app components (my-matches, tournament cards)
+- Uses CSS variable system throughout
+- Follows Google Material Design principles
+- Consistent hover effects and transitions
+
+---
+
 ## [1.73.0] - 2026-04-09
 
 ### Added — Tournament Statistics UI Integration

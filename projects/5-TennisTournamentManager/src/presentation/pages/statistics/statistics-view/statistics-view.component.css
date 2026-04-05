@@ -365,117 +365,244 @@
   font-size: var(--font-size-xs);
 }
 
-/* Matchup History Table */
-.matchup-table-container {
-  overflow-x: auto;
+/* Matchup History - Modern Card Layout */
+.matchup-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
 }
 
-.matchup-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size-sm);
+.matchup-card {
+  background: var(--color-white);
+  border-radius: var(--border-radius-lg);
+  border: 2px solid var(--color-gray-200);
+  padding: var(--spacing-xl);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.matchup-table thead {
+.matchup-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  border-color: var(--color-primary-light);
+}
+
+.matchup-card.winning-record {
+  border-left: 4px solid var(--color-success);
+  background: linear-gradient(135deg, #FFFFFF 0%, #F1F8F4 100%);
+}
+
+.matchup-card.losing-record {
+  border-left: 4px solid var(--color-error);
+  background: linear-gradient(135deg, #FFFFFF 0%, #FEF5F5 100%);
+}
+
+/* Matchup Header */
+.matchup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--color-gray-100);
+}
+
+.opponent-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.opponent-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-white);
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(46, 125, 50, 0.2);
+}
+
+.opponent-details {
+  flex: 1;
+}
+
+.opponent-name {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  margin-bottom: var(--spacing-xs);
+}
+
+.opponent-meta {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.total-matches-badge {
   background: var(--color-gray-100);
-  border-bottom: 2px solid var(--color-gray-300);
-}
-
-.matchup-table thead th {
-  padding: var(--spacing-md);
-  text-align: left;
-  font-weight: var(--font-weight-semibold);
   color: var(--color-gray-700);
+  padding: 4px 10px;
+  border-radius: var(--border-radius-md);
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.matchup-table tbody .matchup-row {
-  border-bottom: 1px solid var(--color-gray-200);
-  transition: background-color 0.2s ease;
+.matchup-winrate {
+  text-align: right;
 }
 
-.matchup-table tbody .matchup-row:hover {
-  background: var(--color-gray-50);
+.winrate-value {
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  margin-bottom: var(--spacing-xs);
 }
 
-.matchup-table tbody td {
-  padding: var(--spacing-md);
+.winrate-value.winning {
+  color: var(--color-success);
 }
 
-.opponent-name {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-900);
+.winrate-value.losing {
+  color: var(--color-error);
 }
 
-.matches-count {
-  color: var(--color-gray-700);
+.winrate-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Matchup Body */
+.matchup-body {
+  margin-bottom: var(--spacing-md);
+}
+
+.record-breakdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2xl);
+  margin-bottom: var(--spacing-lg);
+}
+
+.record-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  transition: all 0.2s ease;
+}
+
+.record-item.wins {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(46, 125, 50, 0.05) 100%);
+  border: 2px solid var(--color-success-light);
+}
+
+.record-item.losses {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.08) 0%, rgba(211, 47, 47, 0.05) 100%);
+  border: 2px solid var(--color-error-light);
+}
+
+.record-item:hover {
+  transform: scale(1.05);
+}
+
+.record-icon {
+  font-size: 1.5rem;
+}
+
+.record-details {
   text-align: center;
 }
 
-.record-display {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
+.record-value {
+  font-size: 1.75rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  line-height: 1;
+  margin-bottom: 4px;
 }
 
-.wins-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  padding: 2px var(--spacing-xs);
-  background: var(--color-success-light);
-  color: var(--color-success-dark);
-  border-radius: var(--border-radius-sm);
-  font-weight: var(--font-weight-semibold);
+.record-label {
   font-size: var(--font-size-xs);
-}
-
-.losses-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  padding: 2px var(--spacing-xs);
-  background: var(--color-error-light);
-  color: var(--color-error-dark);
-  border-radius: var(--border-radius-sm);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .record-separator {
-  color: var(--color-gray-500);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  color: var(--color-gray-400);
+  font-weight: var(--font-weight-semibold);
+  font-style: italic;
 }
 
-.winrate-display {
-  text-align: center;
+/* Progress Bar */
+.progress-bar-container {
+  margin-bottom: var(--spacing-md);
+}
+
+.progress-bar {
+  height: 12px;
+  border-radius: 20px;
+  background: var(--color-gray-200);
+  overflow: hidden;
+  display: flex;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.wins-fill {
+  background: linear-gradient(90deg, var(--color-success) 0%, var(--color-success-light) 100%);
+}
+
+.losses-fill {
+  background: linear-gradient(90deg, var(--color-error-light) 0%, var(--color-error) 100%);
+}
+
+/* Matchup Footer */
+.matchup-footer {
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-gray-100);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.last-match-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.last-match-label {
+  color: var(--color-gray-600);
+  font-weight: var(--font-weight-medium);
+}
+
+.last-match-date {
+  color: var(--color-gray-900);
   font-weight: var(--font-weight-semibold);
 }
-
-.winrate-display.winning-record {
-  color: var(--color-success-dark);
-}
-
-.winrate-display.losing-record {
-  color: var(--color-error-dark);
-}
-
-.lastmatch-date {
-  color: var(--color-gray-600);
-  text-align: center;
-  font-size: var(--font-size-xs);
-}
-
-/* Column widths */
-.opponent-col { width: 35%; }
-.matches-col { width: 12%; text-align: center; }
-.record-col { width: 25%; }
-.winrate-col { width: 15%; text-align: center; }
-.lastmatch-col { width: 13%; text-align: center; }
 
 /* Loading State */
 .loading-container {
@@ -584,19 +711,59 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .matchup-table thead th,
-  .matchup-table tbody td {
-    padding: var(--spacing-sm);
-    font-size: var(--font-size-xs);
+  /* Matchup Cards - Mobile Responsive */
+  .matchup-card {
+    padding: var(--spacing-md);
   }
 
-  .opponent-col { width: 30%; }
-  .matches-col { width: 15%; }
-  .record-col { width: 28%; }
-  .winrate-col { width: 15%; }
-  .lastmatch-col { width: 12%; }
+  .matchup-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
 
-  .lastmatch-date {
-    font-size: 0.65rem;
+  .opponent-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1.25rem;
+  }
+
+  .opponent-name {
+    font-size: var(--font-size-lg);
+  }
+
+  .matchup-winrate {
+    width: 100%;
+    text-align: left;
+    padding: var(--spacing-sm);
+    background: var(--color-gray-50);
+    border-radius: var(--border-radius-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .winrate-value {
+    font-size: 1.5rem;
+  }
+
+  .record-breakdown {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .record-item {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .record-separator {
+    font-size: var(--font-size-sm);
+  }
+
+  .last-match-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 }

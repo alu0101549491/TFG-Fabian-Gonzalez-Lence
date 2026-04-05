@@ -28,6 +28,7 @@ import {StatisticsRepositoryImpl} from '@infrastructure/repositories/statistics.
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
 import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registration.repository';
 import {TournamentRepositoryImpl} from '@infrastructure/repositories/tournament.repository';
+import {BracketRepositoryImpl} from '@infrastructure/repositories/bracket.repository';
 import {UserService} from './user.service';
 import {Surface} from '../../domain/enumerations/surface';
 import {MatchStatus} from '../../domain/enumerations/match-status';
@@ -62,6 +63,11 @@ export class StatisticsService implements IStatisticsService {
    * Tournament repository for tournament data access.
    */
   private readonly tournamentRepository = inject(TournamentRepositoryImpl);
+
+  /**
+   * Bracket repository for bracket data access.
+   */
+  private readonly bracketRepository = inject(BracketRepositoryImpl);
 
   /**
    * User service for fetching participant information.
@@ -393,8 +399,13 @@ export class StatisticsService implements IStatisticsService {
     // Get registrations
     const registrations = await this.registrationRepository.findByTournament(tournamentId);
     
-    // Get all matches (placeholder - ideally get by tournament)
-    const allMatches = await this.matchRepository.findAll();
+    // Get all brackets for this tournament
+    const brackets = await this.bracketRepository.findByTournament(tournamentId);
+    
+    // Get all matches for this tournament by fetching matches for each bracket
+    const matchPromises = brackets.map(bracket => this.matchRepository.findByBracket(bracket.id));
+    const matchArrays = await Promise.all(matchPromises);
+    const allMatches = matchArrays.flat();
     
     // Calculate result distribution
     const resultDistribution: ResultDistributionDto = {

@@ -220,41 +220,72 @@
             <h2 class="section-title">Matchup History</h2>
           </div>
           <div class="card-body">
-            <div class="matchup-table-container">
-              <table class="matchup-table">
-                <thead>
-                  <tr>
-                    <th class="opponent-col">Opponent</th>
-                    <th class="matches-col">Matches</th>
-                    <th class="record-col">W-L</th>
-                    <th class="winrate-col">Win %</th>
-                    <th class="lastmatch-col">Last Match</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (matchup of statistics()!.opponentMatchups!; track matchup.opponentId) {
-                    <tr class="matchup-row">
-                      <td class="opponent-name">{{ matchup.opponentName }}</td>
-                      <td class="matches-count">{{ matchup.totalMatches }}</td>
-                      <td class="record-display">
-                        <span class="wins-badge">{{ matchup.wins }}</span>
-                        <span class="record-separator">-</span>
-                        <span class="losses-badge">{{ matchup.losses }}</span>
-                      </td>
-                      <td class="winrate-display" [class.winning-record]="matchup.winPercentage >= 50" [class.losing-record]="matchup.winPercentage < 50">
+            <div class="matchup-list">
+              @for (matchup of statistics()!.opponentMatchups!; track matchup.opponentId) {
+                <div class="matchup-card" [class.winning-record]="matchup.winPercentage >= 50" [class.losing-record]="matchup.winPercentage < 50">
+                  <div class="matchup-header">
+                    <div class="opponent-info">
+                      <div class="opponent-avatar">
+                        {{ matchup.opponentName.charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="opponent-details">
+                        <div class="opponent-name">{{ matchup.opponentName }}</div>
+                        <div class="opponent-meta">
+                          <span class="total-matches-badge">{{ matchup.totalMatches }} {{ matchup.totalMatches === 1 ? 'match' : 'matches' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="matchup-winrate">
+                      <div class="winrate-value" [class.winning]="matchup.winPercentage >= 50" [class.losing]="matchup.winPercentage < 50">
                         {{ matchup.winPercentage.toFixed(1) }}%
-                      </td>
-                      <td class="lastmatch-date">
+                      </div>
+                      <div class="winrate-label">Win Rate</div>
+                    </div>
+                  </div>
+                  
+                  <div class="matchup-body">
+                    <div class="record-breakdown">
+                      <div class="record-item wins">
+                        <div class="record-icon">✅</div>
+                        <div class="record-details">
+                          <div class="record-value">{{ matchup.wins }}</div>
+                          <div class="record-label">Wins</div>
+                        </div>
+                      </div>
+                      
+                      <div class="record-separator">vs</div>
+                      
+                      <div class="record-item losses">
+                        <div class="record-icon">❌</div>
+                        <div class="record-details">
+                          <div class="record-value">{{ matchup.losses }}</div>
+                          <div class="record-label">Losses</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="progress-bar-container">
+                      <div class="progress-bar">
+                        <div class="progress-fill wins-fill" [style.width.%]="matchup.winPercentage"></div>
+                        <div class="progress-fill losses-fill" [style.width.%]="100 - matchup.winPercentage"></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="matchup-footer">
+                    <div class="last-match-info">
+                      <span class="last-match-label">Last Match:</span>
+                      <span class="last-match-date">
                         @if (matchup.lastMatch) {
-                          {{ matchup.lastMatch | date: 'MMM d, y' }}
+                          {{ matchup.lastMatch | date: 'MMM d, yyyy' }}
                         } @else {
                           N/A
                         }
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </div>
