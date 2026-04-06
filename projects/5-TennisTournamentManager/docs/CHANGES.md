@@ -150,6 +150,165 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+### **Fixed** — Statistics PDF Emoji Display (v1.77.18)
+
+**Fix**: Removed Unicode emojis from statistics PDF that displayed as garbled characters due to standard PDF font limitations.
+
+**Issue**:
+- jsPDF's standard fonts (Helvetica, Times, etc.) don't support Unicode emojis
+- Emojis displayed as weird symbols (🎾→Ã°Å¾Å½Â¾, 🏆→Ã°ÅºÂ†, etc.)
+- Affected tournament name prefix, section headers, medals, and footer note
+
+**Changes**:
+
+1. **Removed Decorative Emojis**:
+   - Tournament name: Removed 🎾 tennis ball prefix
+   - Top Performers: Removed 🏆 trophy from section header
+   - Most Active: Removed ⚡ lightning bolt from section header
+   - Footer note: Removed ℹ️ info icon
+
+2. **Enhanced Top 3 Visualization** (medals replacement):
+   - **Before**: Medal emojis (🥇🥈🥉) in rank column
+   - **Now**: 
+     * `#1` with **gold background** (#FFD700) and white text
+     * `#2` with **silver background** (#C0C0C0) and white text
+     * `#3` with **bronze background** (#CD7F32) and white text
+   - **Better Visual Impact**: Colored backgrounds are more prominent than emojis
+   - **PDF Compatible**: Standard colors work in all PDF viewers
+
+3. **Adjusted Underline Lengths**:
+   - Top Performers: 55pt (was 65pt)
+   - Most Active: 75pt (was 82pt)
+   - Matches new header text widths
+
+**Visual Improvements**:
+- **Gold/Silver/Bronze Badges**: More professional than emoji medals
+- **Clean Headers**: Text-only headers with decorative underlines
+- **Universal Compatibility**: Works correctly in all PDF viewers
+- **Consistent Styling**: All text uses supported Helvetica font
+
+**User Experience Benefits**:
+- No more garbled symbols in exported PDFs
+- Professional appearance on all devices and platforms
+- Medals replaced with more visible colored badges
+- Printable without encoding issues
+
+**Technical Details**:
+- jsPDF only supports fonts with embedded glyphs
+- Unicode emojis require special font files (not included by default)
+- Solution: Use standard colors and text instead of emoji characters
+- Gold/silver/bronze implemented via `fillColor` in `didParseCell` callback
+
+---
+
+### **Enhanced** — Statistics PDF Export Styling (v1.77.17)
+
+**Enhancement**: Redesigned tournament statistics PDF with professional layout, enhanced visual hierarchy, and modern design elements matching the application theme.
+
+**Visual Improvements**:
+
+1. **Header Section**:
+   - **Gradient Background**: Light blue background (#dbeafe) for header area
+   - **Title**: 24pt bold with prominent centered placement
+   - **Tournament Name**: 14pt primary blue centered display
+   - **Professional Visual**: Clean, modern header design
+
+2. **Overview Section (Card Layout)**:
+   - **Card Design**: Light gray background (#fafafa) with rounded corners and subtle border
+   - **Grid Layout**: Three-column metrics display for better information density
+   - **Large Numbers**: 16pt red accent numbers for key metrics
+   - **Visual Progress Bar**: Animated-style completion rate bar
+     * Background: Light gray
+     * Fill: Green (#22c55e) for completion percentage
+     * Rounded corners for modern look
+   - **Metrics Displayed**:
+     * Left: Total Participants, Total Matches
+     * Middle: Completed Matches (green), Pending Matches
+     * Right: Completion Rate with visual progress bar
+
+3. **Section Headers**:
+   - **Decorative Underlines**: Primary blue color with 0.5pt thickness
+   - **Consistent Styling**: 14pt bold primary blue across all sections
+   - **Clean Design**: Text-only headers for PDF compatibility
+
+4. **Match Status Distribution Table**:
+   - **Enhanced Columns**: Added percentage column for better insights
+   - **Grid Theme**: Professional bordered table layout
+   - **Alternating Rows**: Light gray (#f9fafb) for improved readability
+   - **Centered Data**: Count and percentage columns centered
+   - **Column Widths**: Optimized (70pt status, 50pt count, 52pt percentage)
+
+5. **Top Performers Table**:
+   - **Podium Badges**: Top 3 positions highlighted with colored backgrounds
+     * #1: Gold background (#FFD700) with white text
+     * #2: Silver background (#C0C0C0) with white text
+     * #3: Bronze background (#CD7F32) with white text
+   - **Ranking Column**: Bold numbered ranking for positions 4+
+   - **Color-Coded Win %**: Green bold text for win percentages
+   - **Streak Indicators**:
+     * Positive streaks: Green bold with + prefix
+     * Negative streaks: Red text
+     * Zero streaks: Gray text
+   - **Top 3 Emphasis**: Bold player names for podium positions
+   - **Compact Layout**: W/L columns optimized (18pt each)
+
+6. **Most Active Participants Table**:
+   - **Activity Ranking**: Numbered list (1., 2., 3., etc.)
+   - **Matches Column**: Bold primary blue to emphasize activity level
+   - **Consistent Width**: Player name column (80pt) for better readability
+   - **Progressive Data**: Matches → Sets → Games flow
+
+7. **Footer Enhancements**:
+   - **Info Box**: Light blue background with rounded border
+     * Statistics note: "Note: Statistics calculated based on completed matches only"
+     * Generation timestamp
+   - **Page Footer**:
+     * Decorative border line above footer
+     * "Tournament Statistics Report | Page X of Y" format
+     * Gray color for subtle appearance
+
+**Color Palette**:
+- **Primary Blue**: #1e40af (rgb 30, 64, 175) - Headers, emphasis
+- **Primary Light**: #dbeafe (rgb 219, 234, 254) - Backgrounds
+- **Accent Red**: #dc2626 (rgb 220, 38, 38) - Key metrics
+- **Accent Light**: #fee2e2 (rgb 254, 226, 226) - Light backgrounds
+- **Success Green**: #22c55e (rgb 34, 197, 94) - Completed/positive stats
+- **Text Gray**: #374151 (rgb 55, 65, 81) - Body text
+- **Border Gray**: #e5e7eb (rgb 229, 231, 235) - Borders
+
+**Layout Improvements**:
+- **Responsive Spacing**: 15pt between sections for breathing room
+- **Smart Pagination**: Auto-page breaks at 230pt to avoid content splitting
+- **Rounded Corners**: 2pt radius on cards, bars, and boxes
+- **Professional Margins**: 14pt left/right margins throughout
+- **Visual Hierarchy**: Clear distinction between headers, data, and notes
+
+**User Experience Benefits**:
+- **Scan-Friendly**: Quick visual scanning with colored metrics and badges
+- **Data Density**: More information in less space with grid layouts
+- **Professional**: Board-ready presentation quality
+- **Consistent Branding**: Matches web application visual identity
+- **Readable**: High contrast and proper typography sizing
+- **Informative**: Added percentages and visual indicators for context
+
+**Technical Details**:
+- Uses jsPDF's `roundedRect()` for modern card designs
+- `autoTable` with `didParseCell` callback for conditional styling
+- RGB color tuples for precise color matching
+- Decorative line drawing with `setLineWidth()` and `line()`
+- Multi-page footer generation with `getNumberOfPages()` loop
+- Gold/silver/bronze backgrounds for podium visualization
+
+**Comparison to Previous Version**:
+- **Before**: Plain text list → **Now**: Professional card layout
+- **Before**: Simple tables → **Now**: Grid tables with percentage insights
+- **Before**: No visual indicators → **Now**: Progress bars, colored badges, color coding
+- **Before**: Basic footer → **Now**: Decorative footer with page numbers
+- **Before**: Monochrome → **Now**: Strategic color usage
+- **Before**: Dense layout → **Now**: Breathing room with proper spacing
+
+---
+
 ### **Fixed** — Tournament Statistics Export (v1.77.16)
 
 **Fix**: Implemented missing `exportTournamentStatistics` method in frontend ExportService for client-side PDF and Excel generation.
