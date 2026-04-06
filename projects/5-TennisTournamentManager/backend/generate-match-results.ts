@@ -1,5 +1,6 @@
 /**
  * Script to generate random match results for a Round Robin tournament
+ * Also assigns courts and schedules to matches
  * Usage: npx tsx generate-match-results.ts <tournamentId>
  */
 
@@ -10,6 +11,20 @@ const RESULTS_ADMIN_CREDENTIALS = {
   email: 'tournament@tennistournament.com',
   password: 'tourney123',
 };
+
+interface Tournament {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+
+interface Court {
+  id: string;
+  name: string;
+  surface: string;
+  isAvailable: boolean;
+}
 
 interface Match {
   id: string;
@@ -22,6 +37,8 @@ interface Match {
   winnerId: string | null;
   status: string;
   score: string | null;
+  scheduledTime: string | null;
+  courtId: string | null;
 }
 
 /**
@@ -107,6 +124,80 @@ function generateMatchResult(participant1Id: string, participant2Id: string): { 
 }
 
 /**
+ * Generate match schedules distributed across tournament days
+ * @param totalMatches Total number of matches to schedule
+ * @param startDate Tournament start date
+ * @param endDate Tournament end date
+ * @param courts Available courts
+ * @returns Array of schedule assignments
+ */
+function generateSchedules(
+  totalMatches: number,
+  startDate: string,
+  endDate: string,
+  courts: Court[]
+): Array<{ scheduledTime: string; courtId: string }> {
+  const schedules: Array<{ scheduledTime: string; courtId: string }> = [];
+  
+  if (courts.length === 0) {
+    console.warn('⚠️  No courts available - matches will be unassigned');
+    // Return unscheduled matches
+    return Array(totalMatches).fill({ scheduledTime: null, courtId: null });
+  }
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+  // Time slots per day (9:00 AM to 8:00 PM, 1.5 hour slots)
+  const timeSlots = [
+    '09:00', '10:30', '12:00', '13:30', '15:00', '16:30', '18:00', '19:30'
+  ];
+
+  // Calculate matches per day
+  const matchesPerDay = Math.ceil(totalMatches / totalDays);
+  const matchesPerSlot = Math.ceil(matchesPerDay / timeSlots.length);
+
+  let matchIndex = 0;
+
+  // Distribute matches across days and time slots
+  for (let day = 0; day < totalDays && matchIndex < totalMatches; day++) {
+    const currentDate = new Date(start);
+    currentDate.setDate(currentDate.getDate() + day);
+
+    for (const timeSlot of timeSlots) {
+      if (matchIndex >= totalMatches) break;
+
+      // Assign matches to courts for this time slot
+      for (let courtIndex = 0; courtIndex < courts.length && matchIndex < totalMatches; courtIndex++) {
+        for (let i = 0; i < matchesPerSlot && matchIndex < totalMatches; i++) {
+          const scheduledTime = `${currentDate.toISOString().split('T')[0]}T${timeSlot}:00.000Z`;
+          const courtId = courts[courtIndex].id;
+
+          schedules.push({ scheduledTime, courtId });
+          matchIndex++;
+        }
+      }
+    }
+  }
+
+  // Fill remaining matches if needed
+  while (schedules.length < totalMatches) {
+    const randomCourt = courts[Math.floor(Math.random() * courts.length)];
+    const randomDay = Math.floor(Math.random() * totalDays);
+    const randomSlot = timeSlots[Math.floor(Math.random() * timeSlots.length)];
+    
+    const currentDate = new Date(start);
+    currentDate.setDate(currentDate.getDate() + randomDay);
+    const scheduledTime = `${currentDate.toISOString().split('T')[0]}T${randomSlot}:00.000Z`;
+
+    schedules.push({ scheduledTime, courtId: randomCourt.id });
+  }
+
+  return schedules;
+}
+
+/**
  * Main script
  */
 async function main(): Promise<void> {
@@ -127,8 +218,26 @@ async function main(): Promise<void> {
     const token = loginResponse.token;
     console.log('✅ Logged in successfully\n');
 
-    // Step 2: Fetch all matches for the tournament
-    console.log('📝 Step 2: Fetching matches for tournament...');
+    // Step 2: Fetch tournament details
+    console.log('📝 Step 2: Fetching tournament details...');
+    const tournament: Tournament = await apiRequest(`/tournaments/${tournamentId}`, 'GET', null, token);
+    console.log(`✅ Tournament: ${tournament.name}`);
+    console.log(`   Dates: ${tournament.startDate} to ${tournament.endDate}\n`);
+
+    // Step 3: Fetch courts for tournament
+    console.log('📝 Step 3: Fetching courts...');
+    const courts: Court[] = await apiRequest(`/courts?tournamentId=${tournamentId}`, 'GET', null, token);
+    console.log(`✅ Found ${courts.length} court(s)\n`);
+
+    if (courts.length > 0) {
+      courts.forEach(court => {
+        console.log(`   - ${court.name} (${court.surface})`);
+      });
+      console.log('');
+    }
+
+    // Step 4: Fetch all matches for the tournament
+    console.log('📝 Step 4: Fetching matches for tournament...');
     const matches: Match[] = await apiRequest(`/matches?tournamentId=${tournamentId}`, 'GET', null, token);
     
     if (!matches || matches.length === 0) {
@@ -138,7 +247,7 @@ async function main(): Promise<void> {
 
     console.log(`✅ Found ${matches.length} matches\n`);
 
-    // Step 3: Filter matches that need results
+    // Step 5: Filter matches that need results
     const matchesNeedingResults = matches.filter(
       (match) => 
         match.participant1Id && 
@@ -155,13 +264,26 @@ async function main(): Promise<void> {
       return;
     }
 
-    // Step 4: Generate and submit results for each match
-    console.log('📝 Step 3: Generating random results...\n');
+    // Step 6: Generate schedules for matches
+    console.log('📝 Step 5: Generating schedules and court assignments...');
+    const schedules = generateSchedules(
+      matchesNeedingResults.length,
+      tournament.startDate,
+      tournament.endDate,
+      courts
+    );
+    console.log('✅ Schedules generated\n');
+
+    // Step 7: Update matches with schedules and courts, then generate results
+    console.log('📝 Step 6: Assigning schedules and generating results...\n');
     
     let successCount = 0;
     let errorCount = 0;
 
-    for (const match of matchesNeedingResults) {
+    for (let i = 0; i < matchesNeedingResults.length; i++) {
+      const match = matchesNeedingResults[i];
+      const schedule = schedules[i];
+      
       try {
         const { winnerId, score } = generateMatchResult(match.participant1Id!, match.participant2Id!);
 
@@ -175,15 +297,29 @@ async function main(): Promise<void> {
 
         const winnerName = winnerId === match.participant1Id ? p1Name : p2Name;
 
+        // Get court name for display
+        const court = courts.find(c => c.id === schedule.courtId);
+        const courtName = court ? court.name : 'Unassigned';
+        const scheduleTime = schedule.scheduledTime 
+          ? new Date(schedule.scheduledTime).toLocaleString('en-US', { 
+              dateStyle: 'short', 
+              timeStyle: 'short' 
+            })
+          : 'Unscheduled';
+
         console.log(`  Match ${match.matchNumber} (Round ${match.round}): ${p1Name} vs ${p2Name}`);
+        console.log(`    Court: ${courtName}`);
+        console.log(`    Time: ${scheduleTime}`);
         console.log(`    Result: ${score}`);
         console.log(`    Winner: ${winnerName}`);
 
-        // Update the match
+        // Update the match with schedule, court, and result
         await apiRequest(
           `/matches/${match.id}`,
           'PUT',
           {
+            scheduledTime: schedule.scheduledTime,
+            courtId: schedule.courtId,
             winnerId,
             score,
             status: 'COMPLETED',
@@ -191,7 +327,7 @@ async function main(): Promise<void> {
           token
         );
 
-        console.log(`    ✅ Result saved\n`);
+        console.log(`    ✅ Match updated with schedule and result\n`);
         successCount++;
 
         // Small delay to avoid overwhelming the server
@@ -206,15 +342,19 @@ async function main(): Promise<void> {
     // Summary
     console.log('\n' + '='.repeat(60));
     console.log('📊 Summary:');
-    console.log(`  ✅ Successfully generated: ${successCount} results`);
+    console.log(`  ✅ Matches updated: ${successCount}`);
+    console.log(`     - Schedules assigned: ${successCount}`);
+    console.log(`     - Courts assigned: ${courts.length > 0 ? successCount : 0}`);
+    console.log(`     - Results generated: ${successCount}`);
     if (errorCount > 0) {
       console.log(`  ❌ Errors: ${errorCount}`);
     }
     console.log('='.repeat(60));
 
     if (successCount > 0) {
-      console.log('\n🎉 Done! You can now view the statistics at:');
-      console.log(`   http://localhost:4200/5-TennisTournamentManager/statistics`);
+      console.log('\n🎉 Done! Match schedules, courts, and results have been generated.');
+      console.log('   You can now export the ITF CSV to see complete match data:');
+      console.log(`   http://localhost:4200/5-TennisTournamentManager/tournaments/${tournamentId}`);
     }
 
   } catch (error: any) {

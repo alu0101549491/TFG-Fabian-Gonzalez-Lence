@@ -157,6 +157,51 @@
                   <p>View tournament stats</p>
                 </div>
               </button>
+
+              @if (canManageTournament()) {
+                <div class="export-dropdown-container">
+                  <button class="action-tile" (click)="toggleExportMenu($event)">
+                    <span class="tile-icon">📄</span>
+                    <div class="tile-content">
+                      <h4>Export</h4>
+                      <p>Download tournament data</p>
+                    </div>
+                  </button>
+                  
+                  @if (showExportMenu()) {
+                    <div class="export-menu">
+                      <button class="export-option" (click)="exportToITF()">
+                        <span class="export-icon">📋</span>
+                        <div class="export-info">
+                          <strong>ITF CSV</strong>
+                          <small>International Tennis Federation format</small>
+                        </div>
+                      </button>
+                      <button class="export-option" (click)="exportToTODS()">
+                        <span class="export-icon">🔄</span>
+                        <div class="export-info">
+                          <strong>TODS JSON</strong>
+                          <small>Tennis Open Data Standards</small>
+                        </div>
+                      </button>
+                      <button class="export-option" (click)="exportResultsToPDF()">
+                        <span class="export-icon">📑</span>
+                        <div class="export-info">
+                          <strong>PDF Report</strong>
+                          <small>Formatted results document</small>
+                        </div>
+                      </button>
+                      <button class="export-option" (click)="exportResultsToExcel()">
+                        <span class="export-icon">📊</span>
+                        <div class="export-info">
+                          <strong>Excel Spreadsheet</strong>
+                          <small>Multi-sheet workbook</small>
+                        </div>
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
             </div>
           </div>
 

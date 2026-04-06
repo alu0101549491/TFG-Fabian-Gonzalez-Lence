@@ -16,6 +16,7 @@ import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {BracketService, TournamentService, MatchService} from '@application/services';
+import {ExportService} from '@application/services/export.service';
 import {type BracketDto, type PhaseDto, type TournamentDto, type MatchDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {UserRole} from '@domain/enumerations/user-role';
@@ -42,6 +43,7 @@ export class BracketViewComponent implements OnInit {
   private readonly tournamentService = inject(TournamentService);
   private readonly matchService = inject(MatchService);
   private readonly authStateService = inject(AuthStateService);
+  private readonly exportService = inject(ExportService);
 
   /** Tournament ID */
   private tournamentId = '';
@@ -153,6 +155,21 @@ export class BracketViewComponent implements OnInit {
       user.role === UserRole.TOURNAMENT_ADMIN ||
       user.role === UserRole.SYSTEM_ADMIN
     );
+  }
+
+  /**
+   * Exports bracket as PDF document.
+   */
+  public async exportBracketToPDF(): Promise<void> {
+    const bracket = this.bracket();
+    if (!bracket) return;
+
+    try {
+      await this.exportService.exportBracketToPDF(bracket.id);
+    } catch (error) {
+      console.error('Bracket export failed:', error);
+      alert('Failed to export bracket as PDF');
+    }
   }
 
   /**

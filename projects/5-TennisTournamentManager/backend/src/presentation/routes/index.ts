@@ -30,6 +30,7 @@ import {StatisticsController} from '../controllers/statistics.controller';
 import {PaymentController} from '../controllers/payment.controller';
 import {SanctionController} from '../controllers/sanction.controller';
 import {AuditLogController} from '../controllers/audit-log.controller';
+import {ExportController} from '../controllers/export.controller';
 import {authMiddleware, optionalAuthMiddleware} from '../middleware/auth.middleware';
 import {adminMiddleware} from '../middleware/admin.middleware';
 import {roleMiddleware} from '../middleware/role.middleware';
@@ -58,6 +59,7 @@ const statisticsController = new StatisticsController();
 const paymentController = new PaymentController();
 const sanctionController = new SanctionController();
 const auditLogController = new AuditLogController();
+const exportController = new ExportController();
 
 /**
  * @swagger
@@ -2302,6 +2304,139 @@ router.get('/audit-logs/resource/:resourceType/:resourceId', authMiddleware, rol
  *         $ref: '#/components/responses/Forbidden'
  */
 router.get('/audit-logs/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN]), auditLogController.getById.bind(auditLogController));
+
+// ============================================================================
+// EXPORT ROUTES (FR61-FR63)
+// ============================================================================
+
+/**
+ * @swagger
+ * /export/tournament/{tournamentId}/itf:
+ *   get:
+ *     tags: [Export]
+ *     summary: Export tournament in ITF CSV format
+ *     description: Export tournament results in International Tennis Federation CSV format
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: tournamentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: ITF CSV file
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *       404:
+ *         description: Tournament not found
+ */
+router.get('/export/tournament/:tournamentId/itf', authMiddleware, roleMiddleware([UserRole.TOURNAMENT_ADMIN, UserRole.SYSTEM_ADMIN]), exportController.exportToITF.bind(exportController));
+
+/**
+ * @swagger
+ * /export/tournament/{tournamentId}/tods:
+ *   get:
+ *     tags: [Export]
+ *     summary: Export tournament in TODS JSON format
+ *     description: Export tournament data in Tennis Open Data Standards JSON format
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: tournamentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: TODS JSON file
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ */
+router.get('/export/tournament/:tournamentId/tods', authMiddleware, roleMiddleware([UserRole.TOURNAMENT_ADMIN, UserRole.SYSTEM_ADMIN]), exportController.exportToTODS.bind(exportController));
+
+/**
+ * @swagger
+ * /export/tournament/{tournamentId}/pdf:
+ *   get:
+ *     tags: [Export]
+ *     summary: Export tournament results as PDF
+ *     description: Export tournament results as a formatted PDF document
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: tournamentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: PDF document
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
+router.get('/export/tournament/:tournamentId/pdf', authMiddleware, roleMiddleware([UserRole.TOURNAMENT_ADMIN, UserRole.SYSTEM_ADMIN]), exportController.exportResultsToPDF.bind(exportController));
+
+/**
+ * @swagger
+ * /export/tournament/{tournamentId}/excel:
+ *   get:
+ *     tags: [Export]
+ *     summary: Export tournament results as Excel
+ *     description: Export tournament results as an Excel spreadsheet
+ *     security:
+ *       - bearerAuth: []\n *     parameters:
+ *       - in: path
+ *         name: tournamentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Excel file
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
+router.get('/export/tournament/:tournamentId/excel', authMiddleware, roleMiddleware([UserRole.TOURNAMENT_ADMIN, UserRole.SYSTEM_ADMIN]), exportController.exportResultsToExcel.bind(exportController));
+
+/**
+ * @swagger
+ * /export/bracket/{bracketId}/pdf:
+ *   get:
+ *     tags: [Export]
+ *     summary: Export bracket as PDF
+ *     description: Export bracket structure and matches as a PDF document
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bracketId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: PDF document
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
+router.get('/export/bracket/:bracketId/pdf', authMiddleware, exportController.exportBracketToPDF.bind(exportController));
 
 /**
  * @swagger

@@ -8,6 +8,390 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### **Added** — Tournament & Bracket Export System (v1.77.13)
+
+**Feature**: Comprehensive export system for tournament data and brackets in multiple industry-standard formats (FR61-FR63).
+
+**Implementation**:
+
+1. **Backend Export Service** (`backend/src/application/services/export.service.ts`):
+   - **ITF CSV Export**: International Tennis Federation formatted tournament results
+     * Tournament metadata, match details, participant names
+     * Score and status information, court assignments
+   - **TODS JSON Export**: Tennis Open Data Standards structured format
+     * Complete tournament structure with nested relationships
+     * Categories, players, matches, and court information
+     * Metadata for interoperability with other tennis systems
+   - **PDF Report Export**: Formatted tournament results document
+     * Tournament information header with dates and location
+     * Match results with participant names and scores
+     * Professional layout using PDFKit library
+   - **Excel Spreadsheet Export**: Multi-sheet workbook with tournament data
+     * Info sheet with tournament details
+     * Matches sheet with full match records
+     * Styled headers and formatted data using ExcelJS
+   - **Bracket PDF Export**: Printable bracket visualization
+     * Bracket structure organized by rounds
+     * Match details with participants and scores
+     * Landscape layout optimized for printing
+
+2. **Backend Export Controller** (`backend/src/presentation/controllers/export.controller.ts`):
+   - Five REST API endpoints for different export formats:
+     * `GET /api/export/tournament/:tournamentId/itf` → ITF CSV download
+     * `GET /api/export/tournament/:tournamentId/tods` → TODS JSON download
+     * `GET /api/export/tournament/:tournamentId/pdf` → PDF report download
+     * `GET /api/export/tournament/:tournamentId/excel` → Excel spreadsheet download
+     * `GET /api/export/bracket/:bracketId/pdf` → Bracket PDF download
+   - Proper Content-Type and Content-Disposition headers for downloads
+   - Error handling for missing tournaments/brackets (400/500 status codes)
+   - Admin-only access with role-based middleware
+
+3. **API Routes Registration** (`backend/src/presentation/routes/index.ts`):
+   - Registered all export endpoints with authentication middleware
+   - Role restrictions: TOURNAMENT_ADMIN and SYSTEM_ADMIN only
+   - Swagger documentation for all export endpoints
+   - Grouped under "Export" tag in API documentation
+
+4. **Dependencies** (`backend/package.json`):
+   - Installed export libraries:
+     * `pdfkit` for PDF generation
+     * `exceljs` for Excel spreadsheet creation
+     * `csv-stringify` for CSV formatting
+     * `@types/pdfkit` for TypeScript support
+
+5. **Frontend Export Service** (`src/application/services/export.service.ts`):
+   - Calls backend export APIs with `AxiosClient` and `{responseType: 'arraybuffer'}`
+   - Export methods for all five formats:
+     * `exportToITF(tournamentId)`: Downloads ITF CSV file
+     * `exportToTODS(tournamentId)`: Downloads TODS JSON file
+     * `exportResultsToPDF(tournamentId)`: Downloads PDF report
+     * `exportResultsToExcel(tournamentId)`: Downloads Excel workbook
+     * `exportBracketToPDF(bracketId)`: Downloads bracket PDF
+   - `downloadFile()` helper creates browser download via temporary anchor element
+   - `getDateString()` generates YYYY-MM-DD format for filenames
+
+6. **Tournament Detail Component** (`src/presentation/pages/tournaments/tournament-detail/`):
+   - Added export dropdown menu in Quick Actions section
+   - Signal-based state management: `showExportMenu = signal(false)`
+   - Export button with four dropdown options (ITF CSV, TODS JSON, PDF, Excel)
+   - Each export option shows icon, title, and description
+   - Methods call export service and close menu on success
+   - Error handling with user-friendly alerts
+   - Click-outside handler closes dropdown when clicking outside container
+   - Access control: Only visible when `canManageTournament()` returns true
+
+7. **Bracket View Component** (`src/presentation/pages/brackets/bracket-view/`):
+   - Added "Export PDF" button in management bar (after Publish/Regenerate buttons)
+   - Calls `exportService.exportBracketToPDF(bracket.id)`
+   - Icon 📄 with "Export PDF" text and tooltip
+
+8. **User Interface Styling** (`tournament-detail-new.component.css`):
+   - `.export-dropdown-container`: Relative positioning with flex layout for proper sizing
+   - `.export-menu`: Absolute positioning with slideDown animation, z-index 1000
+   - `.export-option`: Flex layout with icon, title, and description
+   - Hover effects with primary color background
+   - Border separation between options
+   - Overflow visibility fixes: `.action-grid` and `.actions-card` set to `overflow: visible`
+
+**Export Formats Specification**:
+
+- **ITF CSV**: Standard tennis federation format with columns:
+  * Tournament Name, Date, Match Round, Match Number
+  * Player names, Score, Winner, Status, Court, Scheduled Time
+
+- **TODS JSON**: Structured format including:
+  * Metadata: format version, export date, generator
+  * Tournament: complete tournament details
+  * Categories: all tournament categories with properties
+  * Players: registered participants with rankings and seeds
+  * Matches: complete match data with participants and results
+  * Courts: available courts with surface types
+
+- **PDF Report**: Professional document with:
+  * Title page with tournament name and dates
+  * Tournament information section
+  * Match results list with formatting
+  * Footer with generation timestamp
+
+- **Excel Spreadsheet**: Two-sheet workbook:
+  * Tournament Info sheet: key-value pairs
+  * Matches sheet: tabular match data with headers
+
+- **Bracket PDF**: Landscape visualization with:
+  * Tournament and category headers
+  * Matches grouped by rounds
+  * Participant names and match results
+
+**Entity Relationships**:
+- Tournament → Categories → Brackets → Matches
+- Match → Participant1, Participant2, Winner (User entities)
+- Match → Court (Court entity)
+- Registration → Participant (User entity)
+
+**Security & Access Control**:
+- All export endpoints require authentication (`authMiddleware`)
+- Tournament exports: TOURNAMENT_ADMIN or SYSTEM_ADMIN roles
+- Bracket exports: Any authenticated user (match admins can view their brackets)
+
+**User Experience Benefits**:
+- Multiple export formats for different use cases
+- ITF CSV for federation reporting and compliance
+- TODS JSON for data exchange with other systems
+- PDF reports for printing and archival
+- Excel for data analysis and manipulation
+- One-click download with proper file naming
+
+**Technical Highlights**:
+- Buffer-based streaming for efficient memory usage
+- TypeORM relationships for data aggregation
+- Proper MIME types and Content-Disposition headers
+- Error handling with meaningful status codes
+- Clean separation of concerns (Service → Controller → Routes)
+
+---
+
+### **Fixed** — Tournament Statistics Export (v1.77.16)
+
+**Fix**: Implemented missing `exportTournamentStatistics` method in frontend ExportService for client-side PDF and Excel generation.
+
+**Issue**:
+- Statistics component called `exportService.exportTournamentStatistics()` which didn't exist
+- Error: `TypeError: this.exportService.exportTournamentStatistics is not a function`
+- Export functionality was broken despite working in previous commits
+
+**Implementation**:
+
+1. **Added Export Dependencies** (`src/application/services/export.service.ts`):
+   - Imported `jsPDF` for client-side PDF generation
+   - Imported `jspdf-autotable` for table formatting in PDFs
+   - Imported required TypeScript types for statistics DTOs
+
+2. **Implemented `exportTournamentStatistics()` Method**:
+   - Accepts `TournamentStatisticsDto` and `ExportFormat` (PDF or EXCEL)
+   - Returns `Promise<ExportResultDto>` with generated document data
+   - Delegates to format-specific generation methods
+   - Includes error handling with detailed error information
+
+3. **PDF Generation** (`generateStatisticsPDF()` private method):
+   - **Styled Header**:
+     * Title: "Tournament Statistics" (20pt, bold, centered)
+     * Tournament name: 14pt, primary blue (#1e40af), centered
+   - **Overview Section**:
+     * Total participants, matches, completion statistics
+     * Calculated completion rate percentage
+   - **Match Status Distribution Table**:
+     * Styled table with primary blue header
+     * Shows completed, pending, in-progress, cancelled, walkovers, retirements
+     * Uses jspdf-autotable for professional formatting
+   - **Top Performers Table**:
+     * Player name, wins, losses, win percentage, current streak
+     * Streak displayed with +/- prefix for visual clarity
+     * Striped theme for readability
+   - **Most Active Participants Table**:
+     * Player name, matches played, sets played, games played
+     * Sorted by activity level
+   - **Footer**: Generated timestamp on all pages
+   - **Color Scheme**: Matches application theme (royal blue headers, gray text)
+   - **Auto-pagination**: Adds new page when content exceeds page height
+
+4. **Excel Generation** (`generateStatisticsExcel()` private method):
+   - **CSV Format**: Simple text-based format for maximum compatibility
+   - **File Structure**:
+     * Header with tournament name and generation date
+     * Overview section with key metrics
+     * Match status distribution table
+     * Top performers table with all statistics
+     * Most Active participants table
+   - **Output**: UTF-8 encoded CSV with .csv extension
+   - **Compatibility**: Opens in Excel, Google Sheets, Numbers
+
+5. **Added `downloadExportResult()` Helper Method**:
+   - Accepts `ExportResultDto` and triggers browser download
+   - Creates Blob from export data with appropriate MIME type
+   - Uses temporary anchor element for download
+   - Cleans up URL objects after download completes
+   - Validation to prevent downloading invalid results
+
+**User Experience Benefits**:
+- Statistics export now works correctly from tournament statistics page
+- Instant client-side generation (no backend round-trip)
+- Professional PDF layout matching application theme
+- Excel export compatible with all spreadsheet software
+- Proper error handling with user-friendly messages
+- Consistent file naming with tournament ID and date
+
+**Technical Details**:
+- Uses jsPDF 4.2.1 and jspdf-autotable 5.0.7 libraries
+- Client-side generation improves performance and reduces server load
+- ExportResultDto return type enables consistent error handling
+- Color scheme uses exact RGB values from application CSS
+- All tables use striped theme for better readability
+- Automatic page breaks prevent content overflow
+
+**File Naming Convention**:
+- PDF: `Tournament_Statistics_{tournamentId}_{YYYY-MM-DD}.pdf`
+- Excel: `Tournament_Statistics_{tournamentId}_{YYYY-MM-DD}.csv`
+
+---
+
+### **Enhanced** — PDF Export Styling (v1.77.15)
+
+**Enhancement**: Updated PDF export styling to match the application's visual theme with professional colors and improved formatting.
+
+**Implementation**:
+
+1. **Color Scheme** (`backend/src/application/services/export.service.ts`):
+   - **Primary Color**: `#1e40af` (Royal blue) - Used for headings, labels, and winner names
+   - **Accent Color**: `#dc2626` (Crimson red) - Used for values, scores, and status fields
+   - **Text Color**: `#374151` (Dark gray) - Used for regular text content
+   - **Footer Color**: `#6b7280` (Medium gray) - Used for generation timestamp
+
+2. **Tournament Results PDF** (`exportResultsToPDF` method):
+   - **Title Section**:
+     * Tournament name: 24pt, bold, black, centered
+     * Location: 12pt, primary blue color, centered
+     * Dates: 12pt, primary blue color, centered
+   - **Tournament Information Section**:
+     * Section header: 16pt, bold, black
+     * Labels: 11pt, regular, dark gray
+     * Values: 11pt, bold, crimson red (Surface, Type, Status)
+   - **Match Results Section**:
+     * Section header: 16pt, bold, black
+     * Match header: 11pt, bold, black (Match number and round)
+     * Players: 10pt, regular, dark gray
+     * Score label: regular, Score value: bold crimson red
+     * Winner label: regular, Winner name: bold primary blue
+     * Status label: regular, Status value: bold crimson red
+   - **Footer**: 8pt, medium gray, centered
+
+3. **Bracket PDF** (`exportBracketToPDF` method):
+   - **Title Section**:
+     * Tournament name: 22pt, bold, black, centered
+     * Category and bracket type: 14pt, primary blue, centered
+   - **Bracket Information**:
+     * Size label: regular dark gray, Value: bold crimson red
+     * Published label: regular dark gray, Value: bold crimson red
+   - **Matches Section**:
+     * Section header: 16pt, bold, black
+     * Round headers: 13pt, bold, primary blue
+     * Match details: 10pt with color-coded elements
+     * Score: bold crimson red
+     * Winner: bold primary blue
+   - **Layout**: Landscape orientation for better bracket visualization
+   - **Footer**: 8pt, medium gray, centered
+
+**Visual Improvements**:
+
+- **Professional Color Palette**: Matches application's branding with royal blue and crimson red accents
+- **Enhanced Readability**: Color-coded values make important information stand out
+- **Consistent Styling**: Same color scheme across tournament results and bracket PDFs
+- **Better Visual Hierarchy**: Larger font sizes for headers, strategic use of bold and color
+- **Improved Spacing**: Better margins and line spacing (moveDown adjustments)
+- **Status Highlighting**: Tournament status and match status in accent color for visibility
+
+**User Experience Benefits**:
+- PDFs now match the visual style users see in the web application
+- Color-coded elements make it easier to scan documents quickly
+- Professional appearance suitable for official tournament documentation
+- Consistent branding across digital and printed materials
+- Enhanced readability for both screen viewing and printing
+
+**Technical Details**:
+- Uses PDFKit's `fillColor()` method for text coloring
+- Combines font weight (`font('Helvetica-Bold')`) with colors for emphasis
+- Strategic use of `{continued: true}` for inline colored labels and values
+- Maintains automatic page breaks when content exceeds page height
+- Hex color codes ensure precise color matching with application theme
+
+---
+
+### **Fixed** — Match Display and Export Data Quality (v1.77.14)
+
+**Fix**: Resolved issues with match detail display showing court IDs instead of court names, and enriched match data with complete schedules and court assignments.
+
+**Implementation**:
+
+1. **Match Controller Court Name Extraction** (`backend/src/presentation/controllers/match.controller.ts`):
+   - **`getById()` method**: Extracts `courtName` from loaded `court` relation before sending response
+     * Prevents frontend from displaying court ID (e.g., `crt_38d788a0`) instead of court name
+     * Adds explicit `courtName` field: `match.court?.name || null`
+   - **`getByBracket()` method**: Maps all matches to include `courtName` extracted from court relation
+     * Ensures consistent court name display across match lists and detail views
+   - Both methods now return matches with populated `courtName` field for direct template usage
+
+2. **Court Creation Utility** (`backend/create-courts.ts`):
+   - Created script to add courts to existing tournaments
+   - Adds 4 predefined courts: Court 1-2 (HARD surface), Court 3-4 (CLAY surface)
+   - Uses authentication and posts to `/api/courts` endpoint
+   - Usage: `npx tsx create-courts.ts <tournamentId>`
+   - Execution result: Successfully created 4 courts for tournament `trn_089f4379`
+
+3. **Enhanced Match Results Generator** (`backend/generate-match-results.ts`):
+   - **Added Schedule Generation**: Distributes matches across tournament date range
+     * Fetches tournament start/end dates from `/api/tournaments/:id`
+     * 8 time slots per day: 09:00, 10:30, 12:00, 13:30, 15:00, 16:30, 18:00, 19:30
+     * Round-robin distribution across available courts
+   - **Added Court Fetching**: Retrieves available courts from `/api/courts?tournamentId=`
+   - **`generateSchedules()` function**: 
+     * Calculates total tournament days from start to end date
+     * Distributes matches evenly across days, time slots, and courts
+     * Returns array of `{scheduledTime: ISO string, courtId: string}` objects
+   - Updates matches with complete data: `scheduledTime`, `courtId`, `winnerId`, `score`, `status`
+   - Console output shows court names and scheduled times for verification
+
+4. **Retroactive Schedule Assignment Utility** (`backend/update-match-schedules.ts`):
+   - Created script to assign schedules/courts to existing completed matches
+   - Filters matches without `scheduledTime` or `courtId`
+   - Uses same `generateSchedules()` algorithm as match results generator
+   - Updates via PUT `/api/matches/:id` with schedule and court data
+   - Preserves existing match results (winnerId, score, status)
+   - Usage: `npx tsx update-match-schedules.ts <tournamentId>`
+   - Execution result: Successfully updated 51/51 matches for tournament `trn_089f4379`
+
+**Data Quality Improvements**:
+
+- **Complete Match Records**: All 56 matches now have:
+  * Scheduled time (ISO 8601 format timestamps)
+  * Court assignment (Court 1-4 with surface types)
+  * Match results (winner, score, status)
+  * Proper display values (court names instead of IDs)
+
+- **ITF CSV Export Compliance**: 
+  * Court column shows "Court 1", "Court 2", etc. instead of "Unassigned"
+  * Scheduled Time column shows formatted dates/times instead of "Unscheduled"
+  * All required fields populated for ITF federation reporting standards
+
+- **Scheduling Algorithm**:
+  * 8 time slots per day with 1.5-hour intervals
+  * Even distribution across available courts (4 courts total)
+  * Spans full tournament duration (6 days: 4/10/26 - 4/15/26)
+  * Realistic match scheduling mimicking professional tournament flow
+
+**Bug Fix Details**:
+
+- **Root Cause**: Backend loaded `court` relation but didn't extract `courtName` field
+  * Match entity has `court` relation (full Court object)
+  * Frontend template expected `courtName` string property
+  * Template fell back to displaying `courtId` when `courtName` was null
+
+- **Solution**: Extract `courtName` from relation before sending response
+  * `getById()`: `const matchWithCourtName = { ...match, courtName: match.court?.name || null }`
+  * `getByBracket()`: `matches.map(match => ({ ...match, courtName: match.court?.name || null }))`
+
+**User Experience Benefits**:
+- Match detail pages now show human-readable court names ("Court 1" instead of "crt_38d788a0")
+- Export files contain complete match data for proper tournament reporting
+- ITF CSV exports comply with federation standards with populated Court and Scheduled Time columns
+- Match lists display consistent court information across all views
+
+**Technical Notes**:
+- Scripts use authenticated API calls (login with ADMIN_CREDENTIALS)
+- Schedule generation is deterministic and reproducible
+- Court assignments balanced to prevent overloading single courts
+- Existing match results preserved during schedule updates
+
+---
+
 ### **Enhanced** — User Management Navigation (v1.77.12)
 
 **Enhancement**: Improved navigation in user management dashboard for system administrators with clickable user profiles and smart back button.

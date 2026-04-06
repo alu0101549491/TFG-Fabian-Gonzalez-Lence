@@ -331,17 +331,39 @@
 ### **L. EXPORT & DOCUMENTS** 📄
 
 #### Export Results (Tournament Admin)
-- [ ] **Navigate to tournament** → "Export"
-- [ ] **Export ITF CSV** - download and verify format
-- [ ] **Export TODS JSON** - download and verify structure
-- [ ] **Export results to PDF** - formatted report
-- [ ] **Export results to Excel** - spreadsheet
+- [x] **Navigate to tournament** → "Export" ✅ IMPLEMENTED (v1.77.13)
+- [x] **Export ITF CSV** - download and verify format ✅ Backend API + Frontend UI complete
+- [x] **Export TODS JSON** - download and verify structure ✅ Backend API + Frontend UI complete
+- [x] **Export results to PDF** - formatted report ✅ Backend API + Frontend UI complete
+- [x] **Export results to Excel** - spreadsheet ✅ Backend API + Frontend UI complete
 
 #### Export Bracket
-- [ ] **Navigate to bracket view**
-- [ ] **Click "Export Bracket"**
-- [ ] **Download as PDF** - printable format
+- [x] **Navigate to bracket view** ✅ IMPLEMENTED (v1.77.13)
+- [x] **Click "Export Bracket"** ✅ Export PDF button in bracket management bar
+- [x] **Download as PDF** - printable format ✅ Backend API + Frontend UI complete
 - [ ] **Print bracket** - verify layout
+
+> **Status**: Export system FULLY IMPLEMENTED (v1.77.13):
+> - ✅ Backend: 5 export endpoints with file generation (ITF CSV, TODS JSON, PDF, Excel, Bracket PDF)
+> - ✅ Frontend: Export service calling backend APIs with browser download
+> - ✅ UI: Export dropdown in tournament detail page (admin-only)
+> - ✅ UI: Export button in bracket view page (admin-only)
+> 
+> **Backend Routes**:
+> - GET /api/export/tournament/:id/itf → ITF CSV download
+> - GET /api/export/tournament/:id/tods → TODS JSON download
+> - GET /api/export/tournament/:id/pdf → PDF report download
+> - GET /api/export/tournament/:id/excel → Excel spreadsheet download
+> - GET /api/export/bracket/:id/pdf → Bracket PDF download
+> 
+> **Frontend Components**:
+> - TournamentDetailComponent: Export dropdown with 4 format options (Quick Actions section)
+> - BracketViewComponent: Export PDF button in management bar
+> - ExportService: API calls with automatic browser download triggers
+> 
+> **Access Control**: All export features require TOURNAMENT_ADMIN or SYSTEM_ADMIN role
+> 
+> **Documentation**: Updated in CHANGES.md (v1.77.13) with comprehensive feature details
 
 ---
 

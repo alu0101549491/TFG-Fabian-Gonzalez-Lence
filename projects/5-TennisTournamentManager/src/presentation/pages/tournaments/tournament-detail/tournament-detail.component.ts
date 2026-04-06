@@ -11,12 +11,13 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, inject, signal, computed} from '@angular/core';
+import {Component, OnInit, HostListener, inject, signal, computed} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {combineLatest} from 'rxjs';
 import {TournamentService, RegistrationService, CategoryService, BracketService} from '@application/services';
+import {ExportService} from '@application/services/export.service';
 import {UserManagementService} from '@application/services/user-management.service';
 import {type TournamentDto, type RegistrationDto, type CreateCategoryDto, type CategoryDto, type UpdateRegistrationStatusDto, type UserSummaryDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
@@ -55,6 +56,7 @@ export class TournamentDetailComponent implements OnInit {
   private readonly authStateService = inject(AuthStateService);
   private readonly userRepository = inject(UserRepositoryImpl);
   private readonly userManagementService = inject(UserManagementService);
+  private readonly exportService = inject(ExportService);
 
   /** Tournament data */
   public tournament = signal<TournamentDto | null>(null);
@@ -331,6 +333,92 @@ export class TournamentDetailComponent implements OnInit {
   public viewTournamentStatistics(): void {
     if (this.tournamentId) {
       void this.router.navigate(['/tournaments', this.tournamentId, 'statistics']);
+    }
+  }
+
+  /**
+   * Shows export menu for tournament data export.
+   */
+  public showExportMenu = signal(false);
+
+  /**
+   * Toggles export menu visibility.
+   */
+  public toggleExportMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.showExportMenu.update(v => !v);
+  }
+
+  /**
+   * Closes export menu when clicking outside.
+   */
+  @HostListener('document:click', ['$event'])
+  public onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    const exportContainer = target.closest('.export-dropdown-container');
+    
+    if (!exportContainer && this.showExportMenu()) {
+      this.showExportMenu.set(false);
+    }
+  }
+
+  /**
+   * Exports tournament data in ITF CSV format.
+   */
+  public async exportToITF(): Promise<void> {
+    if (!this.tournamentId) return;
+    
+    try {
+      await this.exportService.exportToITF(this.tournamentId);
+      this.showExportMenu.set(false);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export tournament in ITF format');
+    }
+  }
+
+  /**
+   * Exports tournament data in TODS JSON format.
+   */
+  public async exportToTODS(): Promise<void> {
+    if (!this.tournamentId) return;
+    
+    try {
+      await this.exportService.exportToTODS(this.tournamentId);
+      this.showExportMenu.set(false);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export tournament in TODS format');
+    }
+  }
+
+  /**
+   * Exports tournament results as PDF.
+   */
+  public async exportResultsToPDF(): Promise<void> {
+    if (!this.tournamentId) return;
+    
+    try {
+      await this.exportService.exportResultsToPDF(this.tournamentId);
+      this.showExportMenu.set(false);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export results as PDF');
+    }
+  }
+
+  /**
+   * Exports tournament results as Excel spreadsheet.
+   */
+  public async exportResultsToExcel(): Promise<void> {
+    if (!this.tournamentId) return;
+    
+    try {
+      await this.exportService.exportResultsToExcel(this.tournamentId);
+      this.showExportMenu.set(false);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export results as Excel');
     }
   }
 

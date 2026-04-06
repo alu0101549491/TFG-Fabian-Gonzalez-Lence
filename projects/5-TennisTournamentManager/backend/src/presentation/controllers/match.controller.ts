@@ -181,9 +181,15 @@ export class MatchController {
       // Apply privacy filtering to participant data
       const privacyFilteredMatches = await this.applyPrivacyToMatches(enrichedMatches, viewer, tournamentId);
       
+      // Extract courtName from court relation for each match
+      const matchesWithCourtNames = privacyFilteredMatches.map((match: any) => ({
+        ...match,
+        courtName: match.court?.name || null,
+      }));
+      
       // If participantId is provided, include pending results for each match
       if (participantId) {
-        const matchesWithResults = await Promise.all(privacyFilteredMatches.map(async (match: any) => {
+        const matchesWithResults = await Promise.all(matchesWithCourtNames.map(async (match: any) => {
           // Find pending result for this match
           const pendingResult = await matchResultRepository.findOne({
             where: {
@@ -201,7 +207,7 @@ export class MatchController {
         
         res.status(HTTP_STATUS.OK).json(matchesWithResults);
       } else {
-        res.status(HTTP_STATUS.OK).json(privacyFilteredMatches);
+        res.status(HTTP_STATUS.OK).json(matchesWithCourtNames);
       }
     } catch (error) {
       next(error);
@@ -242,7 +248,13 @@ export class MatchController {
       // Apply privacy filtering to participant data
       const privacyFilteredMatches = await this.applyPrivacyToMatches(enrichedMatches, viewer, tournamentId);
       
-      res.status(HTTP_STATUS.OK).json(privacyFilteredMatches[0]);
+      // Extract courtName from court relation
+      const matchWithCourtName = {
+        ...privacyFilteredMatches[0],
+        courtName: match.court?.name || null,
+      };
+      
+      res.status(HTTP_STATUS.OK).json(matchWithCourtName);
     } catch (error) {
       next(error);
     }
