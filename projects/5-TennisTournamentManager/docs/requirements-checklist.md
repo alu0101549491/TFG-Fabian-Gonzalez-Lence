@@ -341,7 +341,6 @@
 - [x] **Navigate to bracket view** ✅ IMPLEMENTED (v1.77.13)
 - [x] **Click "Export Bracket"** ✅ Export PDF button in bracket management bar
 - [x] **Download as PDF** - printable format ✅ Backend API + Frontend UI complete
-- [ ] **Print bracket** - verify layout
 
 > **Status**: Export system FULLY IMPLEMENTED (v1.77.13):
 > - ✅ Backend: 5 export endpoints with file generation (ITF CSV, TODS JSON, PDF, Excel, Bracket PDF)

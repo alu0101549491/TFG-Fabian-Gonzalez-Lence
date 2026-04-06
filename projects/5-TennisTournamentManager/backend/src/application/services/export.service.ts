@@ -16,6 +16,7 @@ import {Tournament} from '../../domain/entities/tournament.entity';
 import {Match} from '../../domain/entities/match.entity';
 import {Registration} from '../../domain/entities/registration.entity';
 import {Bracket} from '../../domain/entities/bracket.entity';
+import {MatchStatus} from '../../domain/enumerations/match-status';
 import {stringify} from 'csv-stringify/sync';
 import PDFDocument from 'pdfkit';
 import ExcelJS from 'exceljs';
@@ -284,6 +285,7 @@ export class ExportService {
       .leftJoinAndSelect('match.participant1', 'participant1')
       .leftJoinAndSelect('match.participant2', 'participant2')
       .leftJoinAndSelect('match.winner', 'winner')
+      .leftJoinAndSelect('match.court', 'court')
       .where('tournament.id = :tournamentId', {tournamentId})
       .orderBy('match.scheduledTime', 'ASC')
       .getMany();
@@ -297,83 +299,217 @@ export class ExportService {
       doc.on('error', reject);
 
       // Color scheme matching application theme
-      const primaryColor = '#1e40af'; // Royal blue for headings/labels
-      const accentColor = '#dc2626'; // Red for values/status
-      const textColor = '#374151'; // Dark gray for regular text
+      const primaryColor = '#1e40af'; // Royal blue
+      const primaryLight = '#dbeafe'; // Light blue background
+      const accentColor = '#dc2626'; // Crimson red
+      const successColor = '#059669'; // Green for completed
+      const textColor = '#374151'; // Dark gray
+      const lightGray = '#f5f5f5'; // Card background
+      const borderColor = '#e5e7eb'; // Light border
 
-      // Title - Bold, large, centered
-      doc.fontSize(24).font('Helvetica-Bold').fillColor('#000000').text(tournament.name, {align: 'center'});
-      doc.moveDown(0.5);
+      // Header background with light blue gradient effect
+      doc.save();
+      doc.rect(0, 0, 595.28, 120).fill(primaryLight);
+      doc.restore();
 
-      // Subtitle - Location and dates in primary color
+      // Title with shadow effect
+      const titleY = 60;
+      
+      // Shadow layer (offset slightly)
+      doc.fontSize(24).font('Helvetica-Bold').fillColor('#000000').opacity(0.1);
+      doc.text(tournament.name, 50, titleY + 1, {align: 'center', width: 495.28});
+      
+      // Main title
+      doc.opacity(1).fillColor('#000000');
+      doc.text(tournament.name, 50, titleY, {align: 'center', width: 495.28});
+
+      // Subtitle with tournament details
       doc.fontSize(12).font('Helvetica').fillColor(primaryColor);
-      doc.text(`Location: ${tournament.location}`, {align: 'center'});
+      doc.text(`${tournament.location}`, {align: 'center'});
+      doc.moveDown(0.3);
       doc.text(`${tournament.startDate.toDateString()} - ${tournament.endDate.toDateString()}`, {align: 'center'});
-      doc.moveDown(2);
 
-      // Tournament Information Section
-      doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Tournament Information');
-      doc.moveDown(0.5);
+      // Overview section with card-like styling
+      let yPos = 150;
       
-      doc.fontSize(11).font('Helvetica').fillColor(textColor);
+      // Section header with decorative underline
+      doc.fontSize(16).font('Helvetica-Bold').fillColor(primaryColor);
+      doc.text('Tournament Overview', 50, yPos);
       
-      // Surface with styled value
-      doc.text('Surface: ', {continued: true});
-      doc.fillColor(accentColor).font('Helvetica-Bold').text(tournament.surface);
+      // Decorative underline
+      doc.moveTo(50, yPos + 18).lineTo(170, yPos + 18)
+        .lineWidth(2).strokeColor(primaryColor).stroke();
+
+      // Card background for overview
+      yPos += 25;
+      doc.roundedRect(50, yPos, 495.28, 70, 3).fillAndStroke(lightGray, borderColor);
+
+      // Overview metrics in grid layout
+      yPos += 15;
+      const col1X = 70;
+      const col2X = 240;
+      const col3X = 410;
+
+      // Calculate statistics
+      const completedCount = matches.filter(m => m.status === MatchStatus.COMPLETED).length;
+      const pendingCount = matches.filter(m => m.status === MatchStatus.SCHEDULED || m.status === MatchStatus.NOT_SCHEDULED).length;
+      const completionRate = matches.length > 0 
+        ? ((completedCount / matches.length) * 100).toFixed(1) 
+        : '0';
+
+      // Column 1: Total Matches
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(textColor);
+      doc.text('Total Matches', col1X, yPos);
+      doc.fontSize(18).font('Helvetica-Bold').fillColor(accentColor);
+      doc.text(matches.length.toString(), col1X, yPos + 10);
+
+      // Column 2: Completed
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(textColor);
+      doc.text('Completed', col2X, yPos);
+      doc.fontSize(18).font('Helvetica-Bold').fillColor(successColor);
+      doc.text(completedCount.toString(), col2X, yPos + 10);
+
+      // Column 3: Pending
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(textColor);
+      doc.text('Pending', col3X, yPos);
+      doc.fontSize(18).font('Helvetica-Bold').fillColor(textColor);
+      doc.text(pendingCount.toString(), col3X, yPos + 10);
+
+      // Progress bar for completion rate
+      yPos += 35;
+      const barWidth = 150;
+      const barHeight = 8;
+      const barX = col2X;
+
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(textColor);
+      doc.text(`Completion: ${completionRate}%`, barX - 105, yPos + 1);
+
+      // Background bar with rounded corners
+      doc.roundedRect(barX, yPos, barWidth, barHeight, 3).fill(borderColor);
       
-      // Type with styled value
-      doc.fillColor(textColor).font('Helvetica').text('Type: ', {continued: true});
-      doc.fillColor(accentColor).font('Helvetica-Bold').text(tournament.tournamentType);
+      // Progress fill
+      const fillWidth = (barWidth * parseFloat(completionRate)) / 100;
+      if (fillWidth > 0) {
+        doc.roundedRect(barX, yPos, fillWidth, barHeight, 3).fill(successColor);
+      }
+
+      // Tournament details in two columns
+      yPos += 25;
+      doc.fontSize(10).font('Helvetica').fillColor(textColor);
+      doc.text('Surface:', col1X, yPos, {continued: true});
+      doc.font('Helvetica-Bold').fillColor(accentColor).text(` ${tournament.surface}`);
       
-      // Status with styled value
-      doc.fillColor(textColor).font('Helvetica').text('Status: ', {continued: true});
-      doc.fillColor(accentColor).font('Helvetica-Bold').text(tournament.status);
+      doc.font('Helvetica').fillColor(textColor);
+      doc.text('Type:', col2X, yPos, {continued: true});
+      doc.font('Helvetica-Bold').fillColor(accentColor).text(` ${tournament.tournamentType}`);
       
-      doc.moveDown(2);
+      doc.font('Helvetica').fillColor(textColor);
+      doc.text('Status:', col3X, yPos, {continued: true});
+      doc.font('Helvetica-Bold').fillColor(accentColor).text(` ${tournament.status}`);
 
       // Match Results Section
-      doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Match Results');
-      doc.moveDown(1);
+      yPos += 35;
+      
+      // Section header with decorative underline
+      doc.fontSize(16).font('Helvetica-Bold').fillColor(primaryColor);
+      doc.text('Match Results', 50, yPos);
+      
+      doc.moveTo(50, yPos + 18).lineTo(145, yPos + 18)
+        .lineWidth(2).strokeColor(primaryColor).stroke();
+
+      yPos += 30;
 
       matches.forEach((match, index) => {
         // Check if we need a new page
-        if (doc.y > 700) {
+        if (yPos > 700) {
           doc.addPage();
-          doc.moveDown();
+          yPos = 50;
+          
+          // Repeat section header on new page
+          doc.fontSize(16).font('Helvetica-Bold').fillColor(primaryColor);
+          doc.text('Match Results (continued)', 50, yPos);
+          doc.moveTo(50, yPos + 18).lineTo(190, yPos + 18)
+            .lineWidth(2).strokeColor(primaryColor).stroke();
+          yPos += 30;
         }
 
-        // Match header - round and number
-        doc.fontSize(11).font('Helvetica-Bold').fillColor('#000000');
-        doc.text(`Match ${match.matchNumber || index + 1} - Round ${match.round || 'N/A'}`);
-        doc.moveDown(0.2);
+        // Match card background
+        const cardHeight = 68;
+        doc.roundedRect(50, yPos, 495.28, cardHeight, 2)
+          .fillAndStroke(index % 2 === 0 ? '#ffffff' : lightGray, borderColor);
 
+        // Match header - Match number and round on left
+        const contentY = yPos + 10;
+        doc.fontSize(10).font('Helvetica-Bold').fillColor(primaryColor);
+        doc.text(`Match ${match.matchNumber || index + 1}`, 60, contentY, {continued: false});
+        
+        // Round next to match number
+        doc.fontSize(9).font('Helvetica').fillColor(textColor);
+        doc.text(`Round ${match.round || 'N/A'}`, 130, contentY + 1, {continued: false});
+
+        // Status badge on the right (separate positioning)
+        const statusColors: Record<string, string> = {
+          [MatchStatus.COMPLETED]: successColor,
+          [MatchStatus.SCHEDULED]: '#6b7280',
+          [MatchStatus.NOT_SCHEDULED]: '#9ca3af',
+          [MatchStatus.IN_PROGRESS]: '#f59e0b',
+          [MatchStatus.CANCELLED]: '#ef4444',
+          [MatchStatus.WALKOVER]: '#8b5cf6',
+          [MatchStatus.RETIRED]: '#fb923c',
+          [MatchStatus.SUSPENDED]: '#fbbf24',
+        };
+        const statusColor = statusColors[match.status] || textColor;
+        
+        doc.fontSize(8).font('Helvetica-Bold').fillColor(statusColor);
+        doc.text(match.status, 450, contentY + 1, {width: 90, align: 'right', continued: false});
+
+        // Players - larger and more prominent
+        const playersY = contentY + 17;
         const player1 = match.participant1;
         const player2 = match.participant2;
-
-        // Players
-        doc.fontSize(10).font('Helvetica').fillColor(textColor);
-        doc.text(`${player1?.firstName || 'TBD'} ${player1?.lastName || ''} vs ${player2?.firstName || 'TBD'} ${player2?.lastName || ''}`);
         
-        // Score with styled label
-        doc.text('Score: ', {continued: true});
-        doc.font('Helvetica-Bold').fillColor(accentColor).text(match.score || 'Not played');
+        doc.fontSize(11).font('Helvetica-Bold').fillColor('#000000');
+        const player1Name = `${player1?.firstName || 'TBD'} ${player1?.lastName || ''}`;
+        const player2Name = `${player2?.firstName || 'TBD'} ${player2?.lastName || ''}`;
+        doc.text(`${player1Name} vs ${player2Name}`, 60, playersY, {width: 480, continued: false});
+
+        // Score - prominent with larger font
+        const scoreY = playersY + 17;
+        doc.fontSize(9).font('Helvetica').fillColor(textColor);
+        doc.text('Score: ', 60, scoreY, {continued: true});
+        doc.font('Helvetica-Bold').fillColor(accentColor).fontSize(10).text(match.score || 'Not played', {continued: false});
+
+        // Winner and Court on same line
+        const detailsY = scoreY + 15;
         
         // Winner if available
         if (match.winner) {
-          doc.font('Helvetica').fillColor(textColor).text('Winner: ', {continued: true});
-          doc.font('Helvetica-Bold').fillColor(primaryColor).text(`${match.winner.firstName} ${match.winner.lastName}`);
+          doc.fontSize(9).font('Helvetica').fillColor(textColor);
+          doc.text('Winner: ', 60, detailsY, {continued: true});
+          doc.font('Helvetica-Bold').fillColor(primaryColor)
+            .text(`${match.winner.firstName} ${match.winner.lastName}`, {continued: false});
+        } else {
+          doc.fontSize(9).font('Helvetica-Oblique').fillColor('#9ca3af');
+          doc.text('Winner: TBD', 60, detailsY, {continued: false});
         }
-        
-        // Status
-        doc.font('Helvetica').fillColor(textColor).text('Status: ', {continued: true});
-        doc.font('Helvetica-Bold').fillColor(accentColor).text(match.status);
-        
-        doc.moveDown(0.8);
+
+        // Court information on the right
+        if (match.court) {
+          doc.fontSize(9).font('Helvetica').fillColor(textColor);
+          doc.text('Court: ', 340, detailsY, {continued: true});
+          doc.font('Helvetica-Bold').text(match.court.name, {continued: false});
+        }
+
+        yPos += cardHeight + 8;
       });
 
-      // Footer
-      doc.fontSize(8).font('Helvetica').fillColor('#6b7280')
-        .text(`Generated on ${new Date().toLocaleString()}`, {align: 'center'});
+      // Footer with info box
+      const footerY = 780;
+      doc.roundedRect(50, footerY, 495.28, 25, 2).fill(primaryLight);
+      
+      doc.fontSize(9).font('Helvetica').fillColor(primaryColor);
+      const timestamp = new Date().toLocaleString();
+      doc.text(`Generated on ${timestamp}`, 50, footerY + 9, {align: 'center', width: 495.28});
 
       doc.end();
     });

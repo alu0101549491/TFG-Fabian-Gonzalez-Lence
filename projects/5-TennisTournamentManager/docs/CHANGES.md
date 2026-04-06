@@ -150,6 +150,102 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+### **Enhanced** — Tournament Results PDF Export Styling (v1.77.19)
+
+**Enhancement**: Redesigned tournament results PDF to match the modern, professional styling of the statistics PDF export (v1.77.17).
+
+**Visual Improvements**:
+
+1. **Header Design**:
+   - Light blue gradient background (#dbeafe) spanning full page width
+   - Title with subtle shadow effect for depth
+   - Centered tournament name, location, and date range
+   - Royal blue (#1e40af) subtitle text for branded consistency
+
+2. **Overview Card**:
+   - Rounded corner card (3pt radius) with light gray background (#f5f5f5)
+   - Three-column grid layout displaying key metrics:
+     * **Total Matches**: Large red numbers (18pt bold, #dc2626)
+     * **Completed**: Green highlighted count (#059669)
+     * **Pending**: Gray regular text
+   - Visual progress bar showing completion percentage:
+     * Green fill (#059669) indicating completed matches
+     * Rounded corners (3pt) for modern appearance
+   - Tournament details (Surface, Type, Status) in organized two-column layout
+   - Color-coded values with crimson red emphasis (#dc2626)
+
+3. **Section Headers**:
+   - Bold 16pt royal blue text (#1e40af)
+   - Decorative underline (2pt stroke) in matching blue
+   - Professional hierarchy and visual separation
+
+4. **Match Results Cards**:
+   - Individual rounded cards (2pt radius) for each match
+   - Alternating white and light gray backgrounds (#f5f5f5)
+   - Light border (#e5e7eb) for subtle definition
+   - Structured layout with clear information hierarchy:
+     * Match number and round in bold primary color
+     * Status badge aligned to the right with color coding:
+       - Green (#059669) for COMPLETED
+       - Gray (#6b7280) for PENDING
+       - Orange (#f59e0b) for IN_PROGRESS
+       - Red (#ef4444) for CANCELLED
+     * Player names displayed clearly
+     * Score emphasized in crimson red (#dc2626)
+     * Winner highlighted in royal blue (#1e40af)
+     * Court information included when available
+   - Proper spacing (8pt) between cards for readability
+
+5. **Footer Design**:
+   - Light blue info box (#dbeafe) with rounded corners (2pt)
+   - Centered generation timestamp in primary color
+   - Professional closing to the document
+
+6. **Pagination**:
+   - Smart page breaks when content exceeds page height
+   - Section headers repeated on continuation pages
+   - Consistent formatting across all pages
+
+**Technical Implementation**:
+- **File**: `backend/src/application/services/export.service.ts`
+- **Method**: `exportResultsToPDF()` (lines ~268-500)
+- **Library**: PDFKit v0.15.0 (server-side PDF generation)
+- **Design Patterns**: Translated from jsPDF statistics implementation
+  * Rounded rectangles for cards and progress bars
+  * RGB color conversion helper function
+  * Shadow effect using opacity layering
+  * Status-based color mapping for visual coding
+
+**Color Palette**:
+- **Primary**: #1e40af (Royal blue) - Headers, labels, winners
+- **Primary Light**: #dbeafe (Light blue) - Backgrounds, info boxes
+- **Accent**: #dc2626 (Crimson red) - Scores, emphasis values
+- **Success**: #059669 (Green) - Completed matches, progress
+- **Text**: #374151 (Dark gray) - Regular content
+- **Light Gray**: #f5f5f5 - Card backgrounds
+- **Border**: #e5e7eb - Subtle outlines
+
+**Benefits**:
+- **Visual Consistency**: Matches statistics PDF design language
+- **Professional Appearance**: Modern cards, progress bars, color coding
+- **Improved Readability**: Clear hierarchy, generous spacing, organized layout
+- **Better Information Density**: Overview card summarizes key metrics at a glance
+- **Enhanced Scannability**: Color-coded status badges, emphasized scores/winners
+- **Brand Cohesion**: Consistent royal blue and crimson red theme throughout
+
+**User Experience**:
+- Exports maintain same professional quality as statistics reports
+- Easy to identify match outcomes and tournament progress
+- Print-friendly layout with proper pagination
+- Clear visual hierarchy guides attention to important information
+
+**Related Features**:
+- Statistics PDF styling (v1.77.17) served as design template
+- Emoji fix (v1.77.18) approach applied (text-only, no Unicode)
+- Original PDF export (v1.77.15) provided functional foundation
+
+---
+
 ### **Fixed** — Statistics PDF Emoji Display (v1.77.18)
 
 **Fix**: Removed Unicode emojis from statistics PDF that displayed as garbled characters due to standard PDF font limitations.
