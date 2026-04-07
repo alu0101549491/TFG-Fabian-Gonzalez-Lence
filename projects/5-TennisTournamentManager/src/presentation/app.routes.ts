@@ -141,6 +141,21 @@ export const routes: Routes = [
       import('./pages/announcements/announcement-list/announcement-list.component').then(
         (m) => m.AnnouncementListComponent,
       ),
+    runGuardsAndResolvers: 'always',  // Force component reload on query param changes
+  },
+  {
+    path: 'announcements/create',
+    loadComponent: () =>
+      import('./pages/announcements/announcement-create/announcement-create.component').then(
+        (m) => m.AnnouncementCreateComponent,
+      ),
+  },
+  {
+    path: 'announcements/edit/:id',
+    loadComponent: () =>
+      import('./pages/announcements/announcement-edit/announcement-edit.component').then(
+        (m) => m.AnnouncementEditComponent,
+      ),
   },
   {
     path: 'statistics',

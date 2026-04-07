@@ -98,6 +98,17 @@ export class TournamentDetailComponent implements OnInit {
   /** Show category management section */
   public showCategoryManagement = signal(false);
 
+  /**
+   * Navigate to tournament announcements page.
+   */
+  public viewAnnouncements(): void {
+    if (this.tournamentId) {
+      void this.router.navigate(['/announcements'], {
+        queryParams: {tournamentId: this.tournamentId},
+      });
+    }
+  }
+
   /** Available gender options */
   public readonly genders = Object.values(Gender);
 

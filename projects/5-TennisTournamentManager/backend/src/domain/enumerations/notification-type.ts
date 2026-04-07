@@ -23,4 +23,6 @@ export enum NotificationType {
   RESULT_ENTERED = 'RESULT_ENTERED',
   /** The order of play has been published. */
   ORDER_OF_PLAY_PUBLISHED = 'ORDER_OF_PLAY_PUBLISHED',
+  /** A new announcement has been published. */
+  ANNOUNCEMENT = 'ANNOUNCEMENT',
 }

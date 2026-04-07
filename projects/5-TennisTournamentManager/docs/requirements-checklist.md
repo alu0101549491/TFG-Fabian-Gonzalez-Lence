@@ -247,26 +247,50 @@
 ### **I. ANNOUNCEMENTS** 📢
 
 #### Create Announcement (Tournament Admin)
-- [ ] **Navigate to "Announcements"** → "Create"
-- [ ] **Fill title and content**
-- [ ] **Select type**: Public or Private (registered only)
-- [ ] **Add tags** - draw, order of play, results, general
-- [ ] **Set publication date** (schedule for future)
-- [ ] **Set expiration date** (optional)
-- [ ] **Add link to tournament** (optional)
-- [ ] **Publish announcement** - participants notified
+- [x] **Navigate to "Announcements"** → "Create" ✅ Route `/announcements/create` with form
+- [x] **Fill title and content** ✅ Title, summary, longText fields
+- [x] **Select type**: Public or Private (registered only) ✅ Type selector with proper privacy enforcement
+- [x] **Add tags** - draw, order of play, results, general ✅ Common tags + custom tag input
+- [x] **Set publication date** (schedule for future) ✅ scheduledPublishAt datetime picker
+- [x] **Set expiration date** (optional) ✅ expirationDate datetime picker
+- [x] **Add link to tournament** (optional) ✅ Tournament selector dropdown (required for tournament-specific)
+- [x] **Publish announcement** - participants notified ✅ Auto-publishes by default, notifications sent
 
 #### View Announcements (All Users)
-- [ ] **Navigate to "Announcements"**
-- [ ] **View public announcements** (all users)
-- [ ] **View private announcements** (registered users only)
-- [ ] **Filter by tag** - see only specific types
-- [ ] **Search announcements** by title/content
+- [x] **Navigate to "Announcements"** ✅ Accessible from tournament Quick Actions tile
+- [x] **View public announcements** (all users) ✅ PUBLIC type visible to everyone
+- [x] **View private announcements** (registered users only) ✅ PRIVATE visible to ACCEPTED participants + admins
+- [x] **Filter by tag** - see only specific types ✅ Multi-select tag filtering
+- [x] **Search announcements** by title/content ✅ Search box with computed filtering
 
 #### Edit/Delete Announcement (Tournament Admin)
-- [ ] **Click "Edit"** on own announcement
-- [ ] **Modify content** and save
-- [ ] **Click "Delete"** - confirm deletion
+- [x] **Click "Edit"** on own announcement ✅ Edit button in list + modal
+- [x] **Modify content** and save ✅ Full edit form with all fields, real-time updates
+- [x] **Click "Delete"** - confirm deletion ✅ Delete button with confirmation
+
+> **Status**: Announcements FULLY IMPLEMENTED (v1.78.0-v1.80.6):
+> - ✅ v1.78.0-v1.80.0: Full CRUD implementation (backend + frontend)
+> - ✅ v1.80.1-v1.80.3: UI refinements (gradients, horizontal layout, tournament selector)
+> - ✅ v1.80.4: Performance fix (removed caching, fixed select binding)
+> - ✅ v1.80.5: Added optionalAuthMiddleware for proper admin/participant detection
+> - ✅ v1.80.6: Fixed PRIVATE visibility to check ACCEPTED registration status only
+> 
+> **Features**:
+> - Tournament-specific announcements (no general board)
+> - Privacy filtering: PUBLIC (all users), PRIVATE (ACCEPTED participants + admins)
+> - Tag system with preset + custom tags
+> - Scheduled publication with expiration dates
+> - Click-to-view details modal with full content
+> - Real-time updates (no caching)
+> - Notification integration on publish
+> 
+> **Access Control**:
+> - Admins (SYSTEM_ADMIN, TOURNAMENT_ADMIN): See all announcements, can create/edit/delete
+> - ACCEPTED Participants: See PUBLIC + PRIVATE from their accepted tournaments
+> - PENDING/WAITING_LIST: See only PUBLIC announcements
+> - Anonymous Users: See only PUBLIC announcements
+> 
+> **Note**: Requires fresh JWT token (logout/login if token expired)
 
 ---
 

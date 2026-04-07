@@ -123,6 +123,27 @@ export class TournamentController {
   }
   
   /**
+   * GET /api/tournaments/active
+   * Retrieves all active tournaments (not cancelled or finalized).
+   */
+  public async getActive(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const tournamentRepository = AppDataSource.getRepository(Tournament);
+      
+      const tournaments = await tournamentRepository.createQueryBuilder('tournament')
+        .where('tournament.status NOT IN (:...excludedStatuses)', {
+          excludedStatuses: [TournamentStatus.CANCELLED, TournamentStatus.FINALIZED]
+        })
+        .orderBy('tournament.startDate', 'ASC')
+        .getMany();
+      
+      res.status(HTTP_STATUS.OK).json(tournaments);
+    } catch (error) {
+      next(error);
+    }
+  }
+  
+  /**
    * PUT /api/tournaments/:id
    * Updates tournament details.
    * If status is included, validates status transitions.

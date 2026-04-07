@@ -701,6 +701,27 @@ router.post('/tournaments', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMI
 
 /**
  * @swagger
+ * /tournaments/active:
+ *   get:
+ *     tags: [Tournaments]
+ *     summary: Get active tournaments
+ *     description: Retrieve all active tournaments (excludes cancelled and finalized tournaments)
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: List of active tournaments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Tournament'
+ */
+// Cache active tournaments list for 5 minutes
+router.get('/tournaments/active', apiCache(300), tournamentController.getActive.bind(tournamentController));
+
+/**
+ * @swagger
  * /tournaments/{id}:
  *   get:
  *     tags: [Tournaments]
@@ -1918,16 +1939,33 @@ router.put('/notifications/:id/read', authMiddleware, notificationController.mar
  *         application/json:
  *           schema:
  *             type: object
- *             required: [tournamentId, title, content]
+ *             required: [tournamentId, title]
  *             properties:
  *               tournamentId:
  *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [PUBLIC, PRIVATE]
  *               title:
+ *                 type: string
+ *               summary:
+ *                 type: string
+ *               longText:
  *                 type: string
  *               content:
  *                 type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *               isPinned:
  *                 type: boolean
+ *               scheduledPublishAt:
+ *                 type: string
+ *                 format: date-time
+ *               expirationDate:
+ *                 type: string
+ *                 format: date-time
  *     responses:
  *       201:
  *         description: Announcement created
@@ -1945,20 +1983,140 @@ router.post('/announcements', authMiddleware, roleMiddleware([UserRole.SYSTEM_AD
  *   get:
  *     tags: [Announcements]
  *     summary: List announcements
- *     description: Get announcements for a tournament
+ *     description: Get announcements with optional filters (public endpoint, privacy enforced)
  *     security: []
  *     parameters:
  *       - in: query
  *         name: tournamentId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: string
+ *         description: Comma-separated tags
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: isPinned
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: List of announcements
+ */
+router.get('/announcements', optionalAuthMiddleware, announcementController.getAll.bind(announcementController));
+
+/**
+ * @swagger
+ * /announcements/{id}:
+ *   get:
+ *     tags: [Announcements]
+ *     summary: Get announcement by ID
+ *     description: Get single announcement (privacy enforced)
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: List of announcements
+ *         description: Announcement details
+ *       404:
+ *         description: Not found
  */
-// Cache announcements for 5 minutes
-router.get('/announcements', apiCache(300), announcementController.getByTournament.bind(announcementController));
+router.get('/announcements/:id', optionalAuthMiddleware, announcementController.getById.bind(announcementController));
+
+/**
+ * @swagger
+ * /announcements/{id}:
+ *   put:
+ *     tags: [Announcements]
+ *     summary: Update announcement
+ *     description: Update announcement (TOURNAMENT_ADMIN or SYSTEM_ADMIN)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Announcement updated
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         description: Not found
+ */
+router.put('/announcements/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), announcementController.update.bind(announcementController));
+
+/**
+ * @swagger
+ * /announcements/{id}:
+ *   delete:
+ *     tags: [Announcements]
+ *     summary: Delete announcement
+ *     description: Delete announcement (TOURNAMENT_ADMIN or SYSTEM_ADMIN)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Announcement deleted
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         description: Not found
+ */
+router.delete('/announcements/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), announcementController.delete.bind(announcementController));
+
+/**
+ * @swagger
+ * /announcements/{id}/publish:
+ *   post:
+ *     tags: [Announcements]
+ *     summary: Publish announcement
+ *     description: Publish announcement and send notifications
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Announcement published
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         description: Not found
+ */
+router.post('/announcements/:id/publish', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), announcementController.publish.bind(announcementController));
 
 /**
  * @swagger

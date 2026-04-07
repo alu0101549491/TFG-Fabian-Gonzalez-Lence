@@ -1,42 +1,313 @@
-<div class="container p-lg">
-  <h1 class="mb-lg">Announcements</h1>
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-top">
+      <button
+        class="back-button"
+        (click)="goBack()"
+        type="button"
+        title="Go back">
+        ← Back
+      </button>
+    </div>
+    <h1 class="hero-title">📢 Announcements</h1>
+    <p class="hero-subtitle">Important updates and tournament information</p>
+  </div>
+</section>
 
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Admin Actions -->
+  @if (isAdmin()) {
+    <div class="admin-actions">
+      <button class="btn btn-primary" (click)="createAnnouncement()">
+        <span>➕</span>
+        <span>Create Announcement</span>
+      </button>
+    </div>
+  }
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <!-- Search -->
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search announcements..."
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)"
+      />
+    </div>
+
+    <!-- Tag Filters -->
+    @if (availableTags().length > 0) {
+      <div class="tag-filters">
+        <span class="filter-label">Filter by tag:</span>
+        <div class="tag-buttons">
+          @for (tag of availableTags(); track tag) {
+            <button
+              class="tag-filter-btn"
+              [class.active]="selectedTags().includes(tag)"
+              (click)="toggleTag(tag)"
+            >
+              {{ tag }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Clear Filters -->
+    @if (searchQuery() || selectedTags().length > 0) {
+      <button class="clear-filters-btn" (click)="clearFilters()">
+        Clear Filters
+      </button>
+    }
+  </div>
+
+  <!-- Loading State -->
   @if (isLoading()) {
-    <div class="text-center p-lg">
+    <div class="loading-container">
+      <div class="spinner"></div>
       <p>Loading announcements...</p>
     </div>
   }
 
+  <!-- Error State -->
   @if (errorMessage()) {
-    <div class="alert alert-error">{{ errorMessage() }}</div>
+    <div class="error-container">
+      <div class="error-icon">⚠️</div>
+      <p class="error-message">{{ errorMessage() }}</p>
+    </div>
   }
 
-  @if (!isLoading() && announcements().length > 0) {
-    <div class="flex flex-col gap-md">
+  <!-- Announcements List -->
+  @if (!isLoading() && !errorMessage() && announcements().length > 0) {
+     <div class="announcements-grid">
       @for (announcement of announcements(); track announcement.id) {
-        <div class="card">
-          <div class="card-header">
-            <div class="flex justify-between items-center">
-              <h3 class="card-title">{{ announcement.title }}</h3>
-              @if (announcement.isPinned) {
-                <span class="badge badge-warning">Pinned</span>
+        <article 
+          class="announcement-card" 
+          [class.pinned]="announcement.isPinned"
+          (click)="openAnnouncementDetails(announcement)"
+          role="button"
+          tabindex="0"
+        >
+          <!-- Pinned Badge -->
+          @if (announcement.isPinned) {
+            <div class="pinned-badge">
+              <span>📌</span>
+              <span>Pinned</span>
+            </div>
+          }
+
+          <!-- Header -->
+          <div class="announcement-header">
+            <div class="title-section">
+              <h3 class="announcement-title">{{ announcement.title }}</h3>
+              <div class="meta-info">
+                <span class="badge" [class]="getTypeBadge(announcement.type)">
+                  {{ getTypeLabel(announcement.type) }}
+                </span>
+                <span class="author">by {{ announcement.authorName }}</span>
+                <span class="date">{{ formatDate(announcement.publishedAt) }}</span>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            @if (isAdmin()) {
+              <div class="announcement-actions">
+                <button
+                  class="action-btn edit"
+                  (click)="editAnnouncement(announcement.id); $event.stopPropagation()"
+                  title="Edit"
+                >
+                  ✏️
+                </button>
+                <button
+                  class="action-btn delete"
+                  (click)="deleteAnnouncement(announcement.id); $event.stopPropagation()"
+                  title="Delete"
+                >
+                  🗑️
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Summary/Content -->
+          @if (announcement.summary) {
+            <p class="announcement-summary">{{ announcement.summary }}</p>
+          } @else if (announcement.content) {
+            <p class="announcement-summary">{{ announcement.content }}</p>
+          } @else if (announcement.longText) {
+            <p class="announcement-summary">{{ announcement.longText.substring(0, 250) }}...</p>
+          }
+
+          <!-- Tags -->
+          @if (announcement.tags && announcement.tags.length > 0) {
+            <div class="announcement-tags">
+              @for (tag of announcement.tags; track tag) {
+                <span class="tag">{{ tag }}</span>
               }
             </div>
-            <p class="text-sm text-muted mt-xs">
-              by {{ announcement.authorName }} • {{ formatDate(announcement.publishedAt) }}
-            </p>
+          }
+
+          <!-- External Link -->
+          @if (announcement.externalLink) {
+            <a
+              class="external-link"
+              [href]="announcement.externalLink"
+              target="_blank"
+              rel="noopener noreferrer"
+              (click)="$event.stopPropagation()"
+            >
+              🔗 View Link
+            </a>
+          }
+          
+          <!-- View Details Hint -->
+          <div class="view-details-hint">
+            <span>👁️</span>
+            <span>Click to view details</span>
           </div>
-          <div class="card-body">
-            <p>{{ announcement.content }}</p>
-          </div>
-        </div>
+        </article>
       }
     </div>
   }
 
+  <!-- Empty State -->
   @if (!isLoading() && !errorMessage() && announcements().length === 0) {
-    <div class="text-center p-lg">
-      <p class="text-muted">No announcements yet.</p>
+    <div class="empty-state">
+      @if (searchQuery() || selectedTags().length > 0) {
+        <div class="empty-icon">🔍</div>
+        <h3 class="empty-title">No announcements found</h3>
+        <p class="empty-message">Try adjusting your filters or search query</p>
+        <button class="btn btn-secondary" (click)="clearFilters()">
+          Clear Filters
+        </button>
+      } @else {
+        <div class="empty-icon">📭</div>
+        <h3 class="empty-title">No announcements yet</h3>
+        <p class="empty-message">Check back later for tournament updates</p>
+        @if (isAdmin()) {
+          <button class="btn btn-primary" (click)="createAnnouncement()">
+            Create First Announcement
+          </button>
+        }
+      }
     </div>
   }
 </div>
+
+<!-- Announcement Details Modal -->
+@if (showDetailsModal() && selectedAnnouncement()) {
+  <div class="modal-overlay" (click)="closeDetailsModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          @if (selectedAnnouncement()!.isPinned) {
+            <span>📌</span>
+          }
+          {{ selectedAnnouncement()!.title }}
+        </h2>
+        <button class="close-btn" (click)="closeDetailsModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Meta Information -->
+        <div class="modal-meta">
+          <span class="badge" [class]="getTypeBadge(selectedAnnouncement()!.type)">
+            {{ getTypeLabel(selectedAnnouncement()!.type) }}
+          </span>
+          <span class="modal-author">by {{ selectedAnnouncement()!.authorName }}</span>
+          <span class="modal-date">{{ formatDate(selectedAnnouncement()!.publishedAt) }}</span>
+        </div>
+
+        <!-- Summary -->
+        @if (selectedAnnouncement()!.summary && selectedAnnouncement()!.summary.trim()) {
+          <div class="modal-summary">
+            <p>{{ selectedAnnouncement()!.summary }}</p>
+          </div>
+        }
+
+        <!-- Full Content -->
+        @if ((selectedAnnouncement()!.longText && selectedAnnouncement()!.longText.trim()) || 
+             (selectedAnnouncement()!.content && selectedAnnouncement()!.content.trim())) {
+          <div class="modal-content">
+            <h3 class="content-heading">Full Content</h3>
+            <p class="content-text">
+              {{ selectedAnnouncement()!.longText || selectedAnnouncement()!.content }}
+            </p>
+          </div>
+        }
+
+        <!-- Tags -->
+        @if (selectedAnnouncement()!.tags && selectedAnnouncement()!.tags!.length > 0) {
+          <div class="modal-tags">
+            <span class="tags-label">Tags:</span>
+            <div class="tag-list">
+              @for (tag of selectedAnnouncement()!.tags; track tag) {
+                <span class="tag">{{ tag }}</span>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- External Link -->
+        @if (selectedAnnouncement()!.externalLink) {
+          <div class="modal-link">
+            <a
+              class="external-link-full"
+              [href]="selectedAnnouncement()!.externalLink"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              🔗 {{ selectedAnnouncement()!.externalLink }}
+            </a>
+          </div>
+        }
+
+        <!-- Schedule Information -->
+        @if (selectedAnnouncement()!.scheduledPublishAt || selectedAnnouncement()!.expirationDate) {
+          <div class="modal-schedule">
+            @if (selectedAnnouncement()!.scheduledPublishAt) {
+              <div class="schedule-item">
+                <span class="schedule-label">📅 Scheduled:</span>
+                <span>{{ formatDate(selectedAnnouncement()!.scheduledPublishAt) }}</span>
+              </div>
+            }
+            @if (selectedAnnouncement()!.expirationDate) {
+              <div class="schedule-item">
+                <span class="schedule-label">⏰ Expires:</span>
+                <span>{{ formatDate(selectedAnnouncement()!.expirationDate) }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Modal Footer with Admin Actions -->
+      @if (isAdmin()) {
+        <div class="modal-footer">
+          <button 
+            class="btn-secondary" 
+            (click)="editAnnouncementFromModal(selectedAnnouncement()!.id, $event)"
+          >
+            <span>✏️</span>
+            <span>Edit</span>
+          </button>
+          <button 
+            class="btn-danger" 
+            (click)="deleteAnnouncementFromModal(selectedAnnouncement()!.id, $event)"
+          >
+            <span>🗑️</span>
+            <span>Delete</span>
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

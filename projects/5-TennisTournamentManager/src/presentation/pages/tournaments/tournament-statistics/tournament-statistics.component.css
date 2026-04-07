@@ -409,12 +409,12 @@
   background: linear-gradient(135deg, var(--color-error-dark), var(--color-error));
 }
 
-.export-btn.excel {
+.export-btn.csv {
   background: linear-gradient(135deg, var(--color-success), var(--color-success-light));
   color: var(--color-white);
 }
 
-.export-btn.excel:hover {
+.export-btn.csv:hover {
   background: linear-gradient(135deg, var(--color-success-dark), var(--color-success));
 }
 

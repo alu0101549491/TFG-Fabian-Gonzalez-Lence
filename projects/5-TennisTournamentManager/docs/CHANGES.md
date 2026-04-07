@@ -8,6 +8,616 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### **Fixed** — PRIVATE Announcements Not Visible to Tournament Participants (v1.80.6) 🔐
+
+**Issue**: PRIVATE announcements were not visible to **accepted tournament participants** (players). Only admins could see them.
+
+**Root Cause**: The backend privacy filtering was checking for **any registration** (`status` field ignored), but it should only check for **ACCEPTED** registrations (confirmed participants).
+
+**Registration Statuses**:
+- ✅ **ACCEPTED** — Confirmed participant in the tournament draw
+- ❌ **PENDING** — Registration submitted, awaiting approval/payment
+- ❌ **WAITING_LIST** — Participant on waiting list
+- ❌ **REJECTED/CANCELLED/WITHDRAWN** — Not active participants
+
+**Privacy Rules** (corrected):
+- **Admins** (SYSTEM_ADMIN, TOURNAMENT_ADMIN) → See ALL announcements
+- **ACCEPTED Participants** → See PUBLIC announcements + PRIVATE from their accepted tournaments
+- **Non-participants / Pending registrations** → See only PUBLIC announcements
+- **Anonymous users** → See only PUBLIC announcements
+
+**Backend Changes** (3 locations):
+
+1. **Import RegistrationStatus enum**:
+```typescript
+import {RegistrationStatus} from '../../domain/enumerations/registration-status';
+```
+
+2. **Fix findAll() privacy filtering** (announcement list):
+```typescript
+// Before (broken - any registration status)
+const registrations = await this.registrationRepository.find({
+  where: {participantId: userId},
+});
+
+// After (fixed - only ACCEPTED participants)
+const registrations = await this.registrationRepository.find({
+  where: {
+    participantId: userId,
+    status: RegistrationStatus.ACCEPTED,
+  },
+});
+```
+
+3. **Fix findById() privacy check** (single announcement):
+```typescript
+// Before (broken)
+const registration = await this.registrationRepository.findOne({
+  where: {
+    participantId: userId,
+    tournamentId: announcement.tournamentId,
+  },
+});
+
+// After (fixed)
+const registration = await this.registrationRepository.findOne({
+  where: {
+    participantId: userId,
+    tournamentId: announcement.tournamentId,
+    status: RegistrationStatus.ACCEPTED,  // Only ACCEPTED
+  },
+});
+```
+
+4. **Fix notification delivery** (also updated for consistency):
+```typescript
+// Before (notified all registrations)
+const registrations = await this.registrationRepository.find({
+  where: {tournamentId: announcement.tournamentId},
+});
+
+// After (only notify ACCEPTED participants)
+const registrations = await this.registrationRepository.find({
+  where: {
+    tournamentId: announcement.tournamentId,
+    status: RegistrationStatus.ACCEPTED,
+  },
+});
+```
+
+**Impact**:
+- ✅ Players with ACCEPTED registrations now see PRIVATE announcements from their tournaments
+- ✅ PENDING/WAITING_LIST registrations correctly blocked from PRIVATE content
+- ✅ Notifications only sent to confirmed participants (not pending registrations)
+- ✅ Consistent privacy enforcement across viewing and notifications
+
+**Files Modified**:
+- `backend/src/application/services/announcement.service.ts` — Added status filtering to 3 registration queries
+
+**Testing**: Register for a tournament and get ACCEPTED → PRIVATE announcements visible. PENDING status → only PUBLIC visible.
+
+---
+
+### **Fixed** — PRIVATE Announcements Not Visible to Admins (v1.80.5) 🔐
+
+**Issue**: When changing an announcement from PUBLIC to PRIVATE, it immediately disappeared from the list even for tournament administrators.
+
+**Root Cause**: The GET /announcements and GET /announcements/:id routes didn't have authentication middleware. This meant:
+- `req.user` was always `undefined`
+- Backend treated all requests as anonymous (no userId)
+- Privacy filtering applied anonymous rules: only PUBLIC announcements visible
+- Admins were not recognized, so PRIVATE announcements were filtered out
+
+**Backend Privacy Logic** (working correctly):
+```typescript
+if (userId) {
+  const user = await userRepository.findOne({where: {id: userId}});
+  const isAdmin = user && (user.role === SYSTEM_ADMIN || user.role === TOURNAMENT_ADMIN);
+  
+  if (isAdmin) {
+    // Admins see ALL announcements (no filtering) ✓
+  } else {
+    // Regular users see PUBLIC + PRIVATE from registered tournaments
+  }
+} else {
+  // Anonymous see only PUBLIC announcements (THIS was always happening!)
+}
+```
+
+**Solution**: Added `optionalAuthMiddleware` to announcement GET routes
+- Routes remain publicly accessible (no required authentication)
+- If Authorization header present, sets `req.user` from JWT token
+- Admins are now properly detected and see ALL announcements
+- Regular users see PUBLIC + PRIVATE from their tournaments
+- Anonymous users still see only PUBLIC announcements
+
+**Changed Routes**:
+```typescript
+// Before (broken - admins treated as anonymous)
+router.get('/announcements', announcementController.getAll.bind(...));
+router.get('/announcements/:id', announcementController.getById.bind(...));
+
+// After (fixed - authentication optional but respected when present)
+router.get('/announcements', optionalAuthMiddleware, announcementController.getAll.bind(...));
+router.get('/announcements/:id', optionalAuthMiddleware, announcementController.getById.bind(...));
+```
+
+**Impact**:
+- ✅ **Admins** (SYSTEM_ADMIN, TOURNAMENT_ADMIN): See all PUBLIC and PRIVATE announcements
+- ✅ **Registered Players**: See PUBLIC announcements + PRIVATE from tournaments they're in
+- ✅ **Anonymous Users**: See only PUBLIC announcements
+- ✅ **Privacy filtering**: Now working as designed for all user types
+
+**Files Modified**:
+- `backend/src/presentation/routes/index.ts` — Added optionalAuthMiddleware to 2 routes
+
+**Testing**: Change announcement visibility PUBLIC→PRIVATE as admin, announcement remains visible. View as anonymous user, PRIVATE announcements hidden.
+
+---
+
+### **Fixed** — Announcement Caching & Visibility Dropdown Issues (v1.80.4) 🐛
+
+**Issues**: 
+1. Changes to "Pin to top" option took up to 5 minutes to appear in announcement list
+2. Visibility dropdown appeared empty when editing announcements
+
+**Root Causes**:
+1. **Caching Problem**: GET /announcements endpoint had 5-minute cache (`apiCache(300)`)
+   - Updates to isPinned, title, or any field wouldn't show until cache expired
+   - Poor user experience with delayed feedback
+
+2. **Select Binding Problem**: Using `[value]` binding on select element
+   - Angular's `[value]` binding sets initial value but doesn't update on signal changes
+   - Select appeared empty because the option's `selected` state wasn't reactive
+   - Same issue affected both create and edit forms
+
+**Solutions**:
+1. **Removed Caching**: Removed `apiCache(300)` from GET /announcements route
+   - Changes now appear **immediately** after save
+   - Better UX for admin content management
+   - Announcements are dynamic content that shouldn't be cached
+
+2. **Fixed Select Binding**: Changed from `[value]` to `[selected]` on options
+   - Before: `[value]="formData().type"` on select + static options
+   - After: `[selected]="formData().type === announcementTypes[0]"` on each option
+   - Select now properly displays current value when editing
+   - Works correctly with Angular signals
+
+**Technical Details**:
+```typescript
+// Before (broken)
+<select [value]="formData().type" (change)="...">
+  <option [value]="announcementTypes[0]">Public</option>
+  <option [value]="announcementTypes[1]">Private</option>
+</select>
+
+// After (fixed)
+<select (change)="...">
+  <option [value]="announcementTypes[0]" 
+          [selected]="formData().type === announcementTypes[0]">Public</option>
+  <option [value]="announcementTypes[1]" 
+          [selected]="formData().type === announcementTypes[1]">Private</option>
+</select>
+```
+
+**User Impact**:
+- ✅ Instant feedback when pinning/unpinning announcements
+- ✅ Instant visibility of all announcement updates
+- ✅ Visibility dropdown properly displays current selection when editing
+- ✅ No more confusion about whether changes were saved
+- ✅ Professional, responsive content management experience
+
+**Files Modified**:
+- `backend/src/presentation/routes/index.ts`: Removed announcement list caching
+- `announcement-edit.component.html`: Fixed visibility select binding
+- `announcement-create.component.html`: Fixed visibility select binding
+
+---
+
+### **Improved** — Modal Typography & Button Styling (v1.80.3) 🎨
+
+**Enhancement**: Improved visual hierarchy in announcement details modal.
+
+**Changes**:
+1. **Bold Summary Text**: Made summary text semibold for better emphasis
+   - Font weight: `var(--font-weight-semibold)`
+   - Helps distinguish summary from full content
+
+2. **Styled Edit Button**: Enhanced Edit button in modal footer
+   - Primary blue border with white background
+   - Blue text color matching design system
+   - Hover effect: Fills with blue background, white text
+   - Transform on hover with lift effect and shadow
+   - Matches visual style of other action buttons
+
+**Visual Impact**:
+- ✅ Clear visual hierarchy between summary and content
+- ✅ More prominent Edit button for better discoverability
+- ✅ Consistent with overall design language
+- ✅ Professional hover states with smooth transitions
+
+**Files Modified**:
+- `announcement-list.component.css`: Modal summary and footer button styles
+
+---
+
+### **Improved** — Modal Header Readability Enhancement (v1.80.2) 🎨
+
+**Enhancement**: Improved announcement details modal header for better text readability.
+
+**Changes**:
+1. **Background Gradient**: Updated to full green-to-blue gradient matching hero sections
+   - Changed from: `linear-gradient(135deg, var(--color-primary-light), var(--color-white))`
+   - Changed to: `linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-secondary) 100%)`
+
+2. **Title Text**: Changed to white with multi-layer text shadow for excellent readability
+   - Color: `var(--color-white)` (was `var(--color-primary-dark)`)
+   - Added 3-layer text shadow for depth and clarity
+
+3. **Close Button**: Updated to match gradient background
+   - White color with text shadow
+   - Improved hover state with semi-transparent background and scale effect
+
+**Visual Impact**:
+- ✅ Much better text contrast against gradient background
+- ✅ Consistent design language with hero sections
+- ✅ Professional, polished appearance
+- ✅ Improved accessibility for users
+
+**Files Modified**:
+- `announcement-list.component.css`: Modal header styles
+
+---
+
+### **Fixed** — Announcement Edit Updates Not Persisting (v1.80.1) 🐛
+
+**Issue**: When editing an announcement, changes would not appear after saving.
+
+**Root Causes**:
+1. Missing refresh token in navigation query params after update
+2. Date fields not properly converted from string to Date objects when loading
+
+**Solution**:
+1. Added `refresh: Date.now()` to navigation after update (forces list reload)
+2. Convert `scheduledPublishAt` and `expirationDate` to Date objects when loading announcement
+3. Added console logging for debugging update payload
+
+**Files Modified**:
+- `announcement-edit.component.ts`: Added refresh token, fixed date conversion, added debug logs
+
+**User Impact**:
+- ✅ Announcement edits now immediately reflect in the list after saving
+- ✅ Schedule dates properly persist and display in edit form
+- ✅ No more confusion about whether changes were saved
+
+---
+
+### **Added** — Announcement Details Modal & Public Access (v1.80.0) ✨
+
+**Feature**: Enhanced announcements with full-content modal view and public/player access.
+
+**Changes**:
+1. **Announcement Details Modal**:
+   - Clickable announcement cards open detailed modal view
+   - Full announcement content with formatted display
+   - Shows all metadata (author, date, type, tags, schedule)
+   - External links displayed prominently
+   - Admin actions (edit/delete) available in modal footer
+   - Smooth animations and responsive design
+   - Click-to-close overlay with escape handling
+
+2. **Public & Player Access**:
+   - Added "Announcements" tile in tournament detail Quick Actions (visible to all users)
+   - Admin management bar button renamed to "Manage Announcements" for clarity
+   - Public users can view PUBLIC announcements
+   - Registered players can view both PUBLIC and PRIVATE announcements
+   - Backend privacy filtering ensures proper access control
+
+**User Experience**:
+- **All Users**: Click "Announcements" in Quick Actions → View announcement list → Click card → Read full details
+- **Tournament Admins**: Additional "Manage Announcements" button in management bar for quick access to create/edit
+- **Modal Features**: Full content view, tags, external links, schedule info, admin actions
+
+**Technical Implementation**:
+- `announcement-list.component`: Added `showDetailsModal`, `selectedAnnouncement` signals
+- Methods: `openAnnouncementDetails()`, `closeDetailsModal()`, `editAnnouncementFromModal()`, `deleteAnnouncementFromModal()`
+- HTML: Clickable cards with `(click)` handler, modal overlay with container
+- CSS: Modal styles with backdrop blur, slide-in animation, responsive design
+- Tournament detail: Announcements tile added to Quick Actions section
+
+**Files Modified**:
+- `announcement-list.component.ts/html/css`: Modal functionality and styles
+- `tournament-detail-new.component.html`: Added public announcements tile
+
+---
+
+### **Changed** — Tournament-Specific Announcements Architecture (v1.79.0) 🏗️
+
+**Refactoring**: Converted announcements from general + tournament-specific to **tournament-specific only**.
+
+**Changes**:
+- **Removed**: General announcements board access from dashboard
+- **Added**: "Announcements" button to tournament detail page management bar
+- **Required Context**: All announcement routes now require `tournamentId` parameter
+- **Navigation**: Tournament administrators access announcements directly from tournament detail page
+- **Entry Point**: Only accessible via tournament detail → Announcements button
+- **Enforcement**: Components redirect to tournaments list if accessed without valid tournamentId
+
+**Modified Files**:
+1. `dashboard.component.ts/html`: Removed general announcements button and navigation method
+2. `tournament-detail.component.ts/html`: Added viewAnnouncements() method and button
+3. `announcement-list.component.ts`: Added tournamentId validation with redirect
+4. `announcement-create.component.ts`: Added tournamentId requirement validation
+5. `announcement-edit.component.ts`: Added id parameter validation
+
+**User Flow**:
+1. Navigate to tournament detail page
+2. Click "Announcements" button (visible to tournament admins only)
+3. View tournament-specific announcements
+4. Create/edit announcements within tournament context
+
+---
+
+### **Added** — Complete Announcements System (v1.78.0) ✨
+
+**Feature**: Full implementation of tournament announcement system with privacy controls, tag filtering, search, and admin management (FR47-FR49).
+
+**Overview**:
+Enables tournament administrators to create, manage, and publish announcements to participants with advanced features including:
+- Public/Private visibility controls
+- Tag-based organization and filtering
+- Scheduled publication
+- Expiration dates
+- Real-time notifications
+- Rich content support (markdown)
+- Search functionality
+
+**Backend Implementation** (`backend/src/`):
+
+1. **Enhanced Entity** (`domain/entities/announcement.entity.ts`):
+   - Added `type`: `AnnouncementType` enum (PUBLIC/PRIVATE)
+   - Added `summary`: Brief preview text (max 250 chars)
+   - Added `longText`: Full content with markdown support
+   - Added `tags`: Array of categorization tags
+   - Added `imageUrl`: Optional visual content
+   - Added `externalLink`: Optional resource links
+   - Added `isPinned`: Sticky announcement flag
+   - Added `scheduledPublishAt`: Automatic future publication
+   - Added `expirationDate`: Automatic hiding after date
+   - Added `publishedAt`: Publication timestamp
+   - Added relations: `tournament` (ManyToOne), `author` (ManyToOne)
+
+2. **Service Layer** (`application/services/announcement.service.ts`):
+   - `create()`: Creates announcement with auto-ID generation
+   - `publish()`: Publishes and sends notifications to participants
+   - `update()`: Updates announcement with audit logging
+   - `delete()`: Removes announcement with audit logging
+   - `findAll()`: Retrieves with filters and privacy enforcement
+   - `findById()`: Single announcement with privacy check
+   - `processScheduledPublications()`: Cron-ready auto-publishing
+   - **Privacy Filtering**: Enforces PUBLIC/PRIVATE visibility based on user registration status
+   - **Tag Filtering**: Supports multiple tag filtering
+   - **Search**: Full-text search in title, summary, and content
+   - **Notification Integration**: Automatic participant notification on publication
+   - **Audit Logging**: Tracks all CREATE/UPDATE/DELETE/PUBLISH operations
+
+3. **Controller** (`presentation/controllers/announcement.controller.ts`):
+   - `POST /api/announcements` — Create announcement (ADMIN only)
+   - `GET /api/announcements` — List with filters (public endpoint, privacy enforced)
+   - `GET /api/announcements/:id` — Get single announcement (privacy enforced)
+   - `PUT /api/announcements/:id` — Update announcement (ADMIN only)
+   - `DELETE /api/announcements/:id` — Delete announcement (ADMIN only)
+   - `POST /api/announcements/:id/publish` — Publish with notifications (ADMIN only)
+   - Query parameters: `tournamentId`, `tags`, `search`, `isPinned`
+   - Caching: 5-minute cache on GET endpoints
+
+**Frontend Implementation** (`src/`):
+
+1. **Service** (`application/services/announcement.service.ts`):
+   - Injectable Angular service
+   - HTTP client wrapper for all API calls
+   - Methods: `create()`, `getAll()`, `getById()`, `update()`, `delete()`, `publish()`
+   - Filter support: tournamentId, tags, search, isPinned
+
+2. **List Component** (`presentation/pages/announcements/announcement-list/`):
+   - **Features**:
+     * Modern card-based layout with hero section
+     * Real-time search across title/summary/content
+     * Multi-tag filtering with toggle buttons
+     * Privacy enforcement (shows only accessible announcements)
+     * Pinned announcements highlighted (gold badge, gradient background)
+     * Admin actions: Edit and Delete buttons (role-based visibility)
+     * Empty states with contextual messaging
+     * Loading states with spinner
+   - **UI Elements**:
+     * Search bar with icon
+     * Tag filter chips (active state highlighting)
+     * Clear filters button
+     * Announcement cards with metadata (author, date, type badge)
+     * External link support
+     * Tag display on each card
+   - **Styling**: Modern gradient hero, card hover effects, responsive design
+
+3. **Create Component** (`presentation/pages/announcements/announcement-create/`):
+   - **Form Sections**:
+     * Basic Information: Title, summary, full content (textarea with markdown support)
+     * Settings: Visibility dropdown (PUBLIC/PRIVATE), Pin to top checkbox
+     * Tags: Common tag buttons, custom tag input, selected tags display
+     * Scheduling: Publication date/time, expiration date/time (optional)
+   - **Features**:
+     * Form validation (title required)
+     * Tag management (toggle, add custom, remove)
+     * Submit/Cancel actions
+     * Loading states during creation
+     * Error handling with user-friendly messages
+   - **Styling**: Gradient hero, sectioned form layout, modern inputs, responsive
+
+4. **Edit Component** (`presentation/pages/announcements/announcement-edit/`):
+   - Similar UI to Create component
+   - Preloads existing announcement data
+   - Updates via PUT endpoint
+   - Preserves unchanged fields
+   - Same validation and UX patterns
+
+**Routes** (`presentation/app.routes.ts`):
+- `/announcements` → AnnouncementListComponent (public)
+- `/announcements/create` → AnnouncementCreateComponent (ADMIN only, lazy-loaded)
+- `/announcements/edit/:id` → AnnouncementEditComponent (ADMIN only, lazy-loaded)
+
+**Navigation** (`presentation/pages/dashboard`):
+- Added "Announcements" button to dashboard quick actions
+- Icon: 📢 (megaphone)
+- Positioned between "Browse Tournaments" and "My Statistics"
+- Accessible to all authenticated users
+- Navigates to `/announcements` page
+
+**Security & Privacy**:
+- **PUBLIC** announcements: Visible toall users (authenticated and public)
+- **PRIVATE** announcements: Only visible to:
+  * Registered tournament participants
+  * Tournament administrators
+  * System administrators
+- Privacy enforced at both backend (service layer) and frontend (UI visibility)
+- Admin-only operations: Create, Edit, Delete, Publish
+- Role-based middleware on backend routes
+
+**Notification Integration**:
+- Automatic notification creation on publication
+- Notifies all registered tournament participants
+- Notification type: `ANNOUNCEMENT`
+- Notification title: "New Announcement: {title}"
+- Notification message: Summary or content excerpt
+- Linked to announcement entity for navigation
+
+**Styling Patterns**:
+- Hero sections with gradient backgrounds (primary → secondary → purple)
+- Card-based layouts with box shadows and hover effects
+- Modern form inputs with focus states
+- Tag chips with rounded borders and active states
+- Responsive design (mobile, tablet, desktop)
+- Loading spinners and empty states
+- Error banners with gradient backgrounds
+- Consistent spacing using CSS variables
+
+**Scheduled Publication** (Ready for Cron):
+- Service method: `processScheduledPublications()`
+- Checks announcements with `scheduledPublishAt <= now` and `isPublished = false`
+- Auto-publishes and sends notifications
+- Can be called by cron job or scheduled task
+- Console logging for monitoring
+
+**User Experience**:
+- Pinned announcements appear first (visual emphasis)
+- Expired announcements automatically hidden
+- Search highlights matching content
+- Tag filtering for quick category navigation
+- Admins see management buttons inline
+- Non-admin users see clean, read-only cards
+- Contextual empty states (no results, no announcements, filtered)
+
+**Files Created/Modified**:
+- **Backend**:
+  * `backend/src/domain/entities/announcement.entity.ts` (enhanced)
+  * `backend/src/application/services/announcement.service.ts` (new)
+  * `backend/src/presentation/controllers/announcement.controller.ts` (updated)
+  * `backend/src/presentation/routes/index.ts` (updated routes)
+- **Frontend**:
+  * `src/application/services/announcement.service.ts` (new)
+  * `src/presentation/pages/announcements/announcement-list/` (updated)
+  * `src/presentation/pages/announcements/announcement-create/` (new)
+  * `src/presentation/pages/announcements/announcement-edit/` (new)
+  * `src/presentation/app.routes.ts` (updated)
+  * `src/presentation/pages/dashboard.component.ts` (navigation button added)
+  * `src/presentation/pages/dashboard.component.html` (navigation button added)
+
+**Requirements Fulfilled**:
+- ✅ FR47: Public/Private announcement creation with rich content
+- ✅ FR48: Tag system for categorization and filtering
+- ✅ FR49: Scheduled publication and automatic expiration
+- ✅ Navigation access from dashboard
+
+**UI Optimization** (April 2026):
+- **Reduced Vertical Scrolling**: Optimized form layout for better horizontal space usage
+  * Increased max-width from 800px to 1000px for better use of screen space
+  * Changed form grid from `auto-fit minmax(300px, 1fr)` to fixed `repeat(2, 1fr)` for consistent 2-column layout
+  * Removed `.full-width` class from title and summary fields, allowing them to appear side-by-side
+  * Kept longText (content) as full-width for optimal text editing experience
+- **Reduced Spacing**: Improved visual density while maintaining readability
+  * Form container padding: 3xl → 2xl
+  * Form section margins: 3xl → 2xl
+  * Section header margins: 2xl → lg
+  * Form grid gaps: xl → lg
+  * Form group gaps: md → sm
+  * Form input padding: md/lg → sm/md
+  * Tags container gaps: md → sm
+  * Tag container bottom margin: lg → md
+  * Content area min-height: 150px → 120px
+- **Typography Adjustments**: More compact headings
+  * Section icon size: 2xl → xl
+  * Section title size: 2xl → xl
+- **Maintained Responsiveness**: Mobile-first design preserved
+  * Grid collapses to single column on screens < 768px
+  * All spacing adjustments respect CSS variable system
+  * Back button and hero sections remain fully responsive
+
+**Bug Fixes** (April 2026):
+- **Announcement List Not Reloading**: Fixed announcements not appearing after creation
+  * Added `runGuardsAndResolvers: 'always'` to announcements route to force reload on query param changes
+  * Enabled `withComponentInputBinding()` in router config for better query parameter handling
+  * Added refresh token to query params on navigation to force component update
+  * Added comprehensive console logging for debugging (create and list components)
+  * Issue: Angular was reusing component instance when navigating from /announcements/create back to /announcements
+- **Announcement Publishing**: Fixed announcements not appearing after creation
+  * Changed default `isPublished` from false to true in create() method
+  * Announcements are now automatically published when created (no draft mode)
+  * Added automatic notification sending when announcement is created
+  * Set `publishedAt` timestamp automatically on creation
+  * Resolves issue where created announcements were hidden from list (findAll filters to published only)
+- **Tournament Selector**: Added tournament dropdown to announcement create/edit forms
+  * Loads active tournaments using TournamentService.getActiveTournaments()
+  * Create form: Users can select from available active tournaments
+  * Edit form: Tournament field displayed but disabled (tournaments cannot be changed for existing announcements)
+  * Fixes "Tournament is required" validation error when tournamentId query param not provided
+  * Improved user experience by making tournament selection explicit and visible
+- **Backend Active Tournaments Endpoint**: Added missing `/api/tournaments/active` endpoint
+  * Created TournamentController.getActive() method that retrieves tournaments excluding CANCELLED and FINALIZED statuses
+  * Added GET `/tournaments/active` route with 5-minute caching
+  * Route positioned before `/tournaments/:id` to prevent path collision
+  * Includes Swagger documentation for API reference
+  * Fixes 404 error when frontend calls getActiveTournaments()
+- **DateTime Format**: Fixed datetime-local input format errors
+  * Added formatDateForInput() helper method to convert Date objects to "yyyy-MM-ddThh:mm" format
+  * Added getScheduledPublishAt() and getExpirationDate() methods for proper date binding
+  * Resolves browser validation error: "The specified value does not conform to the required format"
+- **Settings Section Styling**: Improved checkbox layout and alignment
+  * Added "Options" label above pin checkbox for consistency with visibility dropdown
+  * Styled checkbox as interactive card with border, padding, and hover effects
+  * Added visual feedback for checked state with primary color and gradient background
+
+**Next Steps**:
+- Implement cron job for scheduled publication processing
+- Consider rich text editor (e.g., Quill, TinyMCE) for content formatting
+- Add image upload capability for announcement images
+
+---
+
+### **Fixed** — Statistics Export Button Label (v1.77.20)
+
+**Fix**: Updated button label to accurately reflect export format.
+
+**Changes**:
+- Changed button text from "Export as Excel" to "Export as CSV"
+- Updated CSS class from `.excel` to `.csv` for consistency
+- Export functionality remains unchanged (already exported as CSV format)
+
+**Files Modified**:
+- `src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.html`
+- `src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.css`
+
+**Reason**: The button was labeled "Export as Excel" but the actual export format was CSV (.csv file with comma-separated values), causing user confusion.
+
+---
+
 ### **Added** — Tournament & Bracket Export System (v1.77.13)
 
 **Feature**: Comprehensive export system for tournament data and brackets in multiple industry-standard formats (FR61-FR63).

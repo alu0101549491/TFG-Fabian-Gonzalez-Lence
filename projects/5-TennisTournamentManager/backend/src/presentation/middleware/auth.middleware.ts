@@ -92,14 +92,17 @@ export function optionalAuthMiddleware(
 ): void {
   try {
     const authHeader = req.headers.authorization;
+    console.log('[OptionalAuth] Authorization header:', authHeader ? 'Present' : 'Missing');
     
     // If no auth header, proceed without user
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('[OptionalAuth] No valid auth header, proceeding as anonymous');
       next();
       return;
     }
     
     const token = authHeader.replace('Bearer ', '');
+    console.log('[OptionalAuth] Token found, length:', token.length);
     
     try {
       const decoded = jwt.verify(token, config.jwt.secret) as {
@@ -108,14 +111,17 @@ export function optionalAuthMiddleware(
         role: string;
       };
       
+      console.log('[OptionalAuth] Token decoded successfully:', {id: decoded.id, role: decoded.role});
       req.user = decoded;
       next();
     } catch (jwtError) {
       // Token is invalid, but we allow the request to proceed
+      console.log('[OptionalAuth] Token verification failed:', jwtError instanceof Error ? jwtError.message : jwtError);
       next();
     }
   } catch (error) {
     // Error in middleware, but we allow the request to proceed
+    console.log('[OptionalAuth] Middleware error:', error);
     next();
   }
 }
