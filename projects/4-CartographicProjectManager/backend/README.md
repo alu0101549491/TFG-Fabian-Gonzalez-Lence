@@ -181,7 +181,46 @@ Uses JWT (JSON Web Tokens) for authentication:
 
 Note: Cookie-based (httpOnly) auth is not implemented in the current backend.
 
-## 📝 Author
+## � Deployment
+
+This backend can be deployed to cloud platforms with PostgreSQL support:
+
+### Render (Recommended - Free Tier Available)
+
+**Quick Deploy:**
+1. Create account at [render.com](https://render.com)
+2. New → Blueprint
+3. Connect GitHub repository
+4. Set manual environment variables (Dropbox, CORS)
+5. Deploy automatically
+
+See **[RENDER.md](./RENDER.md)** for complete deployment guide.
+
+**Files:**
+- `render.yaml` - Infrastructure as Code blueprint
+- `.env.render.example` - Environment variables template
+- `RENDER.md` - Complete deployment guide
+
+### Railway (Alternative)
+
+See **[RAILWAY.md](./RAILWAY.md)** for Railway deployment instructions.
+
+**Files:**
+- `railway.json` - Railway deployment configuration
+- `nixpacks.toml` - Build configuration
+- `.env.railway.example` - Environment variables template
+
+### Environment Variables
+
+Both platforms require these environment variables:
+- `DATABASE_URL` - PostgreSQL connection (auto-provided)
+- `JWT_SECRET` / `JWT_REFRESH_SECRET` - Authentication secrets
+- `DROPBOX_APP_KEY` / `DROPBOX_APP_SECRET` / `DROPBOX_REFRESH_TOKEN` - File storage
+- `CORS_ORIGIN` / `SOCKET_CORS_ORIGIN` - Frontend URLs
+
+Run `npm run get-dropbox-token` locally to generate Dropbox refresh token before deployment.
+
+## �📝 Author
 
 **Fabián González Lence**
 - Email: alu0101549491@ull.edu.es

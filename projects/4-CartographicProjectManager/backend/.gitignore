@@ -12,6 +12,8 @@ pnpm-debug.log*
 .env.test
 .env.railway
 .env.railway.local
+.env.render
+.env.render.local
 
 # Build output
 dist/
