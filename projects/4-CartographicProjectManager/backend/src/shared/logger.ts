@@ -95,8 +95,8 @@ export const logger = winston.createLogger({
 });
 
 /**
- * Add console transport for Railway logs visibility
- * Railway captures stdout/stderr, not file logs
+ * Add console transport for production logs visibility
+ * Cloud platforms (Render, etc.) capture stdout/stderr, not file logs
  */
 logger.add(
   new winston.transports.Console({
