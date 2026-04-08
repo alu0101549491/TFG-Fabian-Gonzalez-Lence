@@ -12,7 +12,6 @@ Se han creado los siguientes archivos:
 ### Configuración Principal
 - **`/render.yaml`** - Master Blueprint en la raíz (gestiona CARTO + TENNIS)
 - **`/RENDER-MONOREPO.md`** - Guía del setup multi-proyecto
-- **`backend/render.yaml`** - Deprecated (referencia el de la raíz)
 - **`backend/.env.render.example`** - Template de variables de entorno
 - **`.gitignore`** - Actualizado para incluir `.env.render`
 

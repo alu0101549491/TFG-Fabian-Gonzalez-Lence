@@ -12,7 +12,6 @@ Este backend está configurado para desplegarse en **Render** (alternativa gratu
 
 **Archivos de configuración:**
 - **`/render.yaml`** - Master Blueprint en la raíz del repo (define todos los servicios)
-- **`backend/render.yaml`** - Deprecated (usar el de la raíz)
 - **`.env.render.example`** - Template de variables de entorno
 - **`package.json`** - Scripts de build y start
 

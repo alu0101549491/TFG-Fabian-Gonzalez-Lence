@@ -51,15 +51,9 @@ echo "2️⃣  Checking configuration files..."
 if [ -f "../../../render.yaml" ]; then
     check_pass "Root render.yaml found (monorepo setup)"
 else
-    check_warn "Root render.yaml not found at repository root"
-    check_warn "Expected location: /render.yaml"
-fi
-
-# Local render.yaml is deprecated but check anyway
-if [ -f "render.yaml" ]; then
-    check_warn "Local render.yaml found (deprecated - use root render.yaml)"
-else
-    check_pass "Local render.yaml not present (correct - using root)"
+    check_fail "Root render.yaml not found at repository root"
+    echo "   Expected location: /render.yaml"
+    exit 1
 fi
 
 if [ -f ".env.render.example" ]; then
