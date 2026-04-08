@@ -10,8 +10,6 @@ pnpm-debug.log*
 .env.local
 .env.production
 .env.test
-.env.railway
-.env.railway.local
 .env.render
 .env.render.local
 
@@ -44,4 +42,4 @@ coverage/
 .nyc_output/
 
 # Prisma
-# Note: migrations must be committed for Railway deployment
+# Note: migrations must be committed for deployment

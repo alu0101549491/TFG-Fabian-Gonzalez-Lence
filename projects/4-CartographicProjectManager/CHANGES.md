@@ -99,7 +99,7 @@ Implemented comprehensive task permission system allowing task assignees (specia
 #### Change 1: Task Permission System - Backend Validation
 
 **Commit:** `0ec21cb`  
-**Status:** ✅ Deployed to Production (Railway)
+**Status:** ✅ Deployed to Production (Render)
 
 **Problem:**
 - Any authenticated user could modify or delete any task (security vulnerability)
@@ -238,7 +238,7 @@ canChangeStatus: authStore.isAdmin ||
 #### Change 3: Fix Dropbox Folder Creation
 
 **Commit:** `9e4219f`  
-**Status:** ✅ Deployed to Production (Railway)
+**Status:** ✅ Deployed to Production (Render)
 
 **Problem:**
 - New projects had empty `dropboxFolderId` field in database

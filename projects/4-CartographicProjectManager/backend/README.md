@@ -197,26 +197,19 @@ This backend can be deployed to cloud platforms with PostgreSQL support:
 See **[RENDER.md](./RENDER.md)** for complete deployment guide.
 
 **Files:**
-- `render.yaml` - Infrastructure as Code blueprint
+- `render.yaml` - Infrastructure as Code blueprint (root of repo)
 - `.env.render.example` - Environment variables template
 - `RENDER.md` - Complete deployment guide
-
-### Railway (Alternative)
-
-See **[RAILWAY.md](./RAILWAY.md)** for Railway deployment instructions.
-
-**Files:**
-- `railway.json` - Railway deployment configuration
-- `nixpacks.toml` - Build configuration
-- `.env.railway.example` - Environment variables template
+- `SETUP-ADMIN.md` - Admin user configuration
 
 ### Environment Variables
 
-Both platforms require these environment variables:
+The platform requires these environment variables:
 - `DATABASE_URL` - PostgreSQL connection (auto-provided)
 - `JWT_SECRET` / `JWT_REFRESH_SECRET` - Authentication secrets
 - `DROPBOX_APP_KEY` / `DROPBOX_APP_SECRET` / `DROPBOX_REFRESH_TOKEN` - File storage
 - `CORS_ORIGIN` / `SOCKET_CORS_ORIGIN` - Frontend URLs
+- `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` - Initial admin user
 
 Run `npm run get-dropbox-token` locally to generate Dropbox refresh token before deployment.
 

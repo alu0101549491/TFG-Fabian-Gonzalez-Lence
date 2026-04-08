@@ -1,11 +1,11 @@
-# 🚀 Migración a Render - Resumen
+# 🚀 Deployment en Render - Resumen
 
 > **ℹ️ MONOREPO SETUP**  
 > Este repo contiene múltiples backends (CARTO + TENNIS).  
 > Blueprint principal: **`/render.yaml`** (raíz del repo)  
 > Guía completa del monorepo: **`/RENDER-MONOREPO.md`**
 
-## ✅ Archivos Creados
+## ✅ Archivos de Configuración
 
 Se han creado los siguientes archivos:
 
@@ -17,8 +17,7 @@ Se han creado los siguientes archivos:
 
 ### Documentación
 - **`RENDER.md`** - Guía completa de deployment en Render
-- **`MIGRATION-CHECKLIST.md`** - Checklist paso a paso para migrar
-- **`RAILWAY-VS-RENDER.md`** - Comparación detallada entre plataformas
+- **`SETUP-ADMIN.md`** - Configuración del usuario administrador inicial
 - **`README.md`** - Actualizado con sección de deployment
 
 ### Scripts
@@ -43,11 +42,8 @@ Guarda el token que aparece en la consola - lo necesitarás en Render.
 # Desde la raíz del repositorio
 git add render.yaml RENDER-MONOREPO.md \
         projects/4-CartographicProjectManager/backend/RENDER.md \
+        projects/4-CartographicProjectManager/backend/SETUP-ADMIN.md \
         projects/4-CartographicProjectManager/backend/.env.render.example \
-        projects/4-CartographicProjectManager/backend/MIGRATION-CHECKLIST.md \
-        projects/4-CartographicProjectManager/backend/RAILWAY-VS-RENDER.md \
-        projects/4-CartographicProjectManager/backend/README.md \
-        projects/4-CartographicProjectManager/backend/.gitignore \
         projects/4-CartographicProjectManager/backend/verify-render-setup.sh \
         projects/4-CartographicProjectManager/vite.config.ts \
         projects/4-CartographicProjectManager/docs/deployment/UPDATE-FRONTEND-FOR-RENDER.md
@@ -111,8 +107,7 @@ Luego redeploy del frontend con un push a main.
 
 - **Setup Monorepo**: [/RENDER-MONOREPO.md](../../../RENDER-MONOREPO.md) - Gestión multi-proyecto
 - **Guía completa CARTO**: [RENDER.md](./RENDER.md)
-- **Checklist detallado**: [MIGRATION-CHECKLIST.md](./MIGRATION-CHECKLIST.md)
-- **Comparación Railway vs Render**: [RAILWAY-VS-RENDER.md](./RAILWAY-VS-RENDER.md)
+- **Setup Admin**: [SETUP-ADMIN.md](./SETUP-ADMIN.md) - Configuración inicial del administrador
 
 ## 🆘 Ayuda
 

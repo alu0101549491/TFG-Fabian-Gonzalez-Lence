@@ -8,7 +8,7 @@
 
 ## 📋 Información General
 
-Este backend está configurado para desplegarse en **Render** (alternativa gratuita a Railway).
+Este backend está configurado para desplegarse en **Render**.
 
 **Archivos de configuración:**
 - **`/render.yaml`** - Master Blueprint en la raíz del repo (define todos los servicios)
@@ -209,44 +209,12 @@ curl https://carto-backend.onrender.com/api/v1/health
 render logs -s carto-backend --tail
 ```
 
-## 🔄 Migración desde Railway
-
-Si ya tienes datos en Railway:
-
-1. **Exportar datos de Railway PostgreSQL**
-   ```bash
-   # Conectar a Railway DB y exportar
-   pg_dump $RAILWAY_DATABASE_URL > backup.sql
-   ```
-
-2. **Importar a Render**
-   ```bash
-   # Usar External Database URL (solo para mantenimiento)
-   psql $RENDER_EXTERNAL_DATABASE_URL < backup.sql
-   ```
-
-3. **Actualizar frontend**
-   - Cambiar secrets en GitHub Actions
-   - Redeploy
-
-## 📚 Recursos
+## � Recursos
 
 - [Render Docs](https://render.com/docs)
 - [Render Node.js Guide](https://render.com/docs/deploy-node-express-app)
 - [Render PostgreSQL](https://render.com/docs/databases)
 - [Blueprint Spec](https://render.com/docs/blueprint-spec)
-
-## ⚡ Diferencias Railway vs Render
-
-| Característica | Railway | Render |
-|----------------|---------|--------|
-| Free tier      | $5 crédito inicial | 750h/mes ilimitado |
-| Sleep timeout  | Configurable | 15 min (plan free) |
-| Build command  | nixpacks/docker | Native builders |
-| DB limit       | 500 MB | 1 GB |
-| Cold start     | ~10-20s | ~30s |
-| Logs retention | 7 días | 7 días |
-| Custom domains | ✅ | ✅ |
 
 ## 🎉 Completado
 
