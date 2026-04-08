@@ -55,6 +55,49 @@ export class TournamentController {
     try {
       const tournamentRepository = AppDataSource.getRepository(Tournament);
       
+      // Validate start date is not in the past
+      if (req.body.startDate) {
+        const startDate = new Date(req.body.startDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to midnight for comparison
+        
+        if (startDate < today) {
+          throw new AppError(
+            'Tournament start date cannot be in the past',
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.INVALID_INPUT
+          );
+        }
+      }
+      
+      // Validate end date is after start date
+      if (req.body.startDate && req.body.endDate) {
+        const startDate = new Date(req.body.startDate);
+        const endDate = new Date(req.body.endDate);
+        
+        if (endDate < startDate) {
+          throw new AppError(
+            'Tournament end date must be after start date',
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.INVALID_INPUT
+          );
+        }
+      }
+      
+      // Validate registration close date is before start date
+      if (req.body.registrationCloseDate && req.body.startDate) {
+        const registrationCloseDate = new Date(req.body.registrationCloseDate);
+        const startDate = new Date(req.body.startDate);
+        
+        if (registrationCloseDate > startDate) {
+          throw new AppError(
+            'Registration close date must be before tournament start date',
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.INVALID_INPUT
+          );
+        }
+      }
+      
       const tournament = tournamentRepository.create({
         ...req.body,
         id: generateId('trn'),

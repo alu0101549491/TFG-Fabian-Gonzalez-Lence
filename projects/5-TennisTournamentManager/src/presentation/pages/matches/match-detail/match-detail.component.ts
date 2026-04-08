@@ -21,6 +21,7 @@ import {MatchStatus} from '@domain/enumerations/match-status';
 import {UserRole} from '@domain/enumerations/user-role';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {EnumFormatPipe} from '@shared/pipes';
+import {TennisScoreValidator, type TennisSetScore} from '@shared/utils/tennis-score-validator';
 import templateHtml from './match-detail.component.html?raw';
 import styles from './match-detail.component.css?raw';
 
@@ -105,6 +106,12 @@ export class MatchDetailComponent implements OnInit {
 
   /** Submitting state */
   public isSubmitting = signal(false);
+
+  /** Tennis score validator */
+  private readonly scoreValidator = new TennisScoreValidator();
+
+  /** Validation errors for score form */
+  public scoreValidationErrors = signal<string[]>([]);
 
   /**
    * Initializes component and loads match data.
@@ -370,6 +377,7 @@ export class MatchDetailComponent implements OnInit {
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
+    this.scoreValidationErrors.set([]);
 
     try {
       const user = this.authStateService.getCurrentUser();
@@ -392,6 +400,14 @@ export class MatchDetailComponent implements OnInit {
 
       if (!this.scoresForm.winnerId) {
         throw new Error('Please select a winner');
+      }
+
+      // Validate tennis scoring rules
+      const validation = this.scoreValidator.validateMatch(validSets);
+      if (!validation.isValid) {
+        this.scoreValidationErrors.set(validation.errors);
+        this.errorMessage.set('Invalid tennis score. Please check the errors below and correct the scores.');
+        return;
       }
 
       await this.matchService.recordResult(

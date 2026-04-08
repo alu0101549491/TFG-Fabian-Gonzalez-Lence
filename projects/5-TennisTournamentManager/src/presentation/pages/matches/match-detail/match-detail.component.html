@@ -360,6 +360,20 @@
                   <span>{{ errorMessage() }}</span>
                 </div>
               }
+
+              @if (scoreValidationErrors().length > 0) {
+                <div class="validation-errors">
+                  <h4>⚠️ Tennis Scoring Violations</h4>
+                  <ul>
+                    @for (error of scoreValidationErrors(); track error) {
+                      <li>{{ error }}</li>
+                    }
+                  </ul>
+                  <p class="hint">
+                    <strong>Valid tennis scores:</strong> 6-0, 6-1, 6-2, 6-3, 6-4, 7-5, 7-6 (with tiebreak)
+                  </p>
+                </div>
+              }
               
               <div class="form-group">
                 <label>Winner</label>

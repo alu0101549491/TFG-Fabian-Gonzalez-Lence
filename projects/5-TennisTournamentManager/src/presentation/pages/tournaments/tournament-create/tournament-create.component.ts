@@ -164,12 +164,21 @@ export class TournamentCreateComponent {
     } catch (error: unknown) {
       console.error('Error creating tournament:', error);
       
-      if (error instanceof Error) {
-        this.errorMessage.set(error.message);
-      } else {
-        this.errorMessage.set('Failed to create tournament. Please try again.');
+      // Extract error message from Axios error response or use generic message
+      let message = 'Failed to create tournament. Please try again.';
+      
+      if (error && typeof error === 'object') {
+        const axiosError = error as {response?: {data?: {message?: string; error?: string}}};
+        if (axiosError.response?.data?.message) {
+          message = axiosError.response.data.message;
+        } else if (axiosError.response?.data?.error) {
+          message = axiosError.response.data.error;
+        } else if (error instanceof Error) {
+          message = error.message;
+        }
       }
       
+      this.errorMessage.set(message);
       this.isSubmitting.set(false);
     }
   }

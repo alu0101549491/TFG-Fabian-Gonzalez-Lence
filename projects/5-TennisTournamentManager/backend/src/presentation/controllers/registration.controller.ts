@@ -22,6 +22,7 @@ import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
 import {RegistrationStatus} from '../../domain/enumerations/registration-status';
 import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
+import {TournamentStatus} from '../../domain/enumerations/tournament-status';
 import {PrivacyService} from '../../application/services/privacy.service';
 import {Tournament} from '../../domain/entities/tournament.entity';
 
@@ -75,14 +76,49 @@ export class RegistrationController {
       const registrationRepository = AppDataSource.getRepository(Registration);
       const categoryRepository = AppDataSource.getRepository(Category);
       const userRepository = AppDataSource.getRepository(User);
+      const tournamentRepository = AppDataSource.getRepository(Tournament);
       
       const {categoryId, participantId} = req.body;
       const actualParticipantId = participantId || req.user!.id;
       
       // Validate category exists
-      const category = await categoryRepository.findOne({where: {id: categoryId}});
+      const category = await categoryRepository.findOne({
+        where: {id: categoryId},
+        relations: ['tournament'],
+      });
       if (!category) {
         throw new AppError('Category not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Get tournament to check registration deadline and status
+      const tournament = await tournamentRepository.findOne({
+        where: {id: category.tournamentId},
+      });
+      if (!tournament) {
+        throw new AppError('Tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Check tournament status
+      if (tournament.status !== TournamentStatus.REGISTRATION_OPEN) {
+        throw new AppError(
+          'Tournament registration is not currently open',
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_OPERATION
+        );
+      }
+      
+      // Check registration deadline
+      if (tournament.registrationCloseDate) {
+        const now = new Date();
+        const deadline = new Date(tournament.registrationCloseDate);
+        
+        if (now > deadline) {
+          throw new AppError(
+            `Registration deadline was ${deadline.toLocaleDateString()}. Registrations are now closed.`,
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.INVALID_OPERATION
+          );
+        }
       }
       
       // Get participant for ranking information

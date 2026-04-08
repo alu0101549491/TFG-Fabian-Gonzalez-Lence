@@ -26,6 +26,7 @@ import {NotificationService} from '../../application/services/notification.servi
 import {PrivacyService} from '../../application/services/privacy.service';
 import {User} from '../../domain/entities/user.entity';
 import {Bracket} from '../../domain/entities/bracket.entity';
+import {TennisScoreValidator, TennisSetScore} from '../../shared/utils/tennis-score-validator';
 
 /**
  * Match controller.
@@ -33,10 +34,16 @@ import {Bracket} from '../../domain/entities/bracket.entity';
 export class MatchController {
   private readonly notificationService: NotificationService;
   private readonly privacyService: PrivacyService;
+  private readonly scoreValidator: TennisScoreValidator;
 
   constructor() {
     this.notificationService = new NotificationService();
     this.privacyService = new PrivacyService();
+    // Initialize with standard best-of-3 format
+    this.scoreValidator = new TennisScoreValidator({
+      bestOfFive: false,
+      requireTiebreakAt6All: true,
+    });
   }
   /**
    * Applies privacy filtering to participant user objects in matches.
@@ -355,21 +362,59 @@ export class MatchController {
   /**
    * POST /api/matches/:id/score
    * Submits score for a match.
+   * Validates tennis scoring rules before saving.
    */
   public async submitScore(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
+      const {winnerId, scores} = req.body;
+
+      if (!winnerId || !scores || !Array.isArray(scores) || scores.length === 0) {
+        throw new AppError('winnerId and scores array are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Convert scores to TennisSetScore format for validation
+      const tennisScores: TennisSetScore[] = scores.map((score: any) => ({
+        setNumber: score.setNumber,
+        player1Games: score.player1Games,
+        player2Games: score.player2Games,
+        player1TiebreakPoints: score.player1TiebreakPoints,
+        player2TiebreakPoints: score.player2TiebreakPoints,
+      }));
+
+      // Validate tennis scoring rules
+      const validation = this.scoreValidator.validateMatch(tennisScores, winnerId);
+      if (!validation.isValid) {
+        throw new AppError(
+          `Invalid tennis score: ${validation.errors.join('; ')}`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
+
       const scoreRepository = AppDataSource.getRepository(Score);
       
-      const score = scoreRepository.create({
-        ...req.body,
-        id: generateId('scr'),
-        matchId: id,
+      // Save each set score
+      const savedScores: Score[] = [];
+      for (const score of tennisScores) {
+        const scoreEntity = scoreRepository.create({
+          id: generateId('scr'),
+          matchId: id,
+          setNumber: score.setNumber,
+          player1Games: score.player1Games,
+          player2Games: score.player2Games,
+          player1TiebreakPoints: score.player1TiebreakPoints ?? null,
+          player2TiebreakPoints: score.player2TiebreakPoints ?? null,
+        });
+        
+        const saved = await scoreRepository.save(scoreEntity);
+        savedScores.push(saved);
+      }
+      
+      res.status(HTTP_STATUS.CREATED).json({
+        scores: savedScores,
+        message: 'Score validated and saved successfully',
       });
-      
-      await scoreRepository.save(score);
-      
-      res.status(HTTP_STATUS.CREATED).json(score);
     } catch (error) {
       next(error);
     }
@@ -418,6 +463,39 @@ export class MatchController {
       // Validate required fields
       if (!winnerId || !setScores || setScores.length === 0) {
         throw new AppError('winnerId and setScores are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Parse setScores (array of strings like ["6-4", "3-6", "7-6"]) into structured format
+      const tennisScores: TennisSetScore[] = setScores.map((scoreStr: string, index: number) => {
+        const parts = scoreStr.split('-');
+        if (parts.length !== 2) {
+          throw new AppError(`Invalid score format: ${scoreStr}. Expected format: "6-4"`, HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+        }
+
+        const player1Games = parseInt(parts[0], 10);
+        const player2Games = parseInt(parts[1], 10);
+
+        if (isNaN(player1Games) || isNaN(player2Games)) {
+          throw new AppError(`Invalid score format: ${scoreStr}. Games must be numbers`, HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+        }
+
+        return {
+          setNumber: index + 1,
+          player1Games,
+          player2Games,
+          player1TiebreakPoints: null,
+          player2TiebreakPoints: null,
+        };
+      });
+
+      // Validate tennis scoring rules
+      const validation = this.scoreValidator.validateMatch(tennisScores, winnerId);
+      if (!validation.isValid) {
+        throw new AppError(
+          `Invalid tennis score: ${validation.errors.join('; ')}`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_INPUT
+        );
       }
 
       // Create result entity
@@ -674,6 +752,39 @@ export class MatchController {
 
       if (!winnerId || !setScores || setScores.length === 0) {
         throw new AppError('winnerId and setScores are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Parse setScores (array of strings like ["6-4", "3-6", "7-6"]) into structured format
+      const tennisScores: TennisSetScore[] = setScores.map((scoreStr: string, index: number) => {
+        const parts = scoreStr.split('-');
+        if (parts.length !== 2) {
+          throw new AppError(`Invalid score format: ${scoreStr}. Expected format: "6-4"`, HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+        }
+
+        const player1Games = parseInt(parts[0], 10);
+        const player2Games = parseInt(parts[1], 10);
+
+        if (isNaN(player1Games) || isNaN(player2Games)) {
+          throw new AppError(`Invalid score format: ${scoreStr}. Games must be numbers`, HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+        }
+
+        return {
+          setNumber: index + 1,
+          player1Games,
+          player2Games,
+          player1TiebreakPoints: null,
+          player2TiebreakPoints: null,
+        };
+      });
+
+      // Validate tennis scoring rules
+      const validation = this.scoreValidator.validateMatch(tennisScores, winnerId);
+      if (!validation.isValid) {
+        throw new AppError(
+          `Invalid tennis score: ${validation.errors.join('; ')}`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_INPUT
+        );
       }
 
       const matchRepository = AppDataSource.getRepository(Match);
