@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && tsc-alias",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
     "build:seed": "tsc prisma/seed-production.ts --outDir dist/prisma --module esnext --moduleResolution node --esModuleInterop --resolveJsonModule --skipLibCheck",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
