@@ -1,3 +1,14 @@
+# Render Blueprint Configuration - CartographicProjectManager Backend
+# 
+# ⚠️ IMPORTANT: This file is DEPRECATED
+# Use the root-level render.yaml instead: /render.yaml
+#
+# The monorepo-level Blueprint manages both CartographicProjectManager 
+# and TennisTournamentManager backends in a single configuration.
+#
+# This file is kept for reference only.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 # Render Blueprint Configuration
 # Infrastructure as Code for Cartographic Project Manager Backend
 # 

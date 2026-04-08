@@ -1,5 +1,9 @@
 # 📋 Checklist de Migración: Railway → Render
 
+> **ℹ️ MONOREPO**: Este repo contiene múltiples proyectos (CARTO + TENNIS).  
+> El Blueprint principal está en `/render.yaml` y gestiona ambos backends.  
+> Ver: `/RENDER-MONOREPO.md` para detalles del setup completo.
+
 ## ✅ Pre-Deploy (En tu máquina local)
 
 - [ ] **1. Generar Dropbox Refresh Token**
@@ -20,7 +24,10 @@
 
 - [ ] **3. Commit de archivos de configuración**
   ```bash
-  git add backend/render.yaml backend/RENDER.md backend/.env.render.example
+  # Desde la raíz del repositorio
+  git add render.yaml RENDER-MONOREPO.md
+  git add projects/4-CartographicProjectManager/backend/RENDER.md
+  git add projects/4-CartographicProjectManager/backend/.env.render.example
   git commit -m "Add Render deployment configuration"
   git push origin main
   ```
@@ -34,7 +41,8 @@
 - [ ] **5. Crear Blueprint**
   - Dashboard → **New** → **Blueprint**
   - Selecciona el repositorio: `TFG-Fabian-Gonzalez-Lence`
-  - Render detectará automáticamente `render.yaml`
+  - Render detectará automáticamente `/render.yaml` (en la raíz del repo)
+  - **Nota**: El Blueprint gestiona múltiples proyectos (CARTO está activo, TENNIS comentado)
   - Haz clic en **Apply**
 
 - [ ] **6. Configurar variables secretas**

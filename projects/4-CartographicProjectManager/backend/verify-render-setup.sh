@@ -46,11 +46,20 @@ echo ""
 
 # 2. Check if render.yaml exists
 echo "2️⃣  Checking configuration files..."
-if [ -f "render.yaml" ]; then
-    check_pass "render.yaml found"
+
+# Check root render.yaml (monorepo setup)
+if [ -f "../../../render.yaml" ]; then
+    check_pass "Root render.yaml found (monorepo setup)"
 else
-    check_fail "render.yaml not found"
-    exit 1
+    check_warn "Root render.yaml not found at repository root"
+    check_warn "Expected location: /render.yaml"
+fi
+
+# Local render.yaml is deprecated but check anyway
+if [ -f "render.yaml" ]; then
+    check_warn "Local render.yaml found (deprecated - use root render.yaml)"
+else
+    check_pass "Local render.yaml not present (correct - using root)"
 fi
 
 if [ -f ".env.render.example" ]; then
@@ -165,7 +174,10 @@ echo ""
 echo "📚 Next steps:"
 echo ""
 echo "   1. Commit configuration files:"
-echo "      git add render.yaml .env.render.example RENDER.md"
+echo "      cd ../../../"
+echo "      git add render.yaml RENDER-MONOREPO.md"
+echo "      git add projects/4-CartographicProjectManager/backend/RENDER.md"
+echo "      git add projects/4-CartographicProjectManager/backend/.env.render.example"
 echo "      git commit -m 'Add Render deployment configuration'"
 echo "      git push origin main"
 echo ""
@@ -176,9 +188,11 @@ echo "   3. Deploy to Render:"
 echo "      • Go to https://render.com"
 echo "      • New → Blueprint"
 echo "      • Select your repository"
+echo "      • Render will detect /render.yaml (root)"
 echo "      • Set manual environment variables"
 echo "      • Deploy!"
 echo ""
 echo "   📖 Full guide: RENDER.md"
 echo "   📋 Checklist: MIGRATION-CHECKLIST.md"
+echo "   🏗️  Monorepo setup: /RENDER-MONOREPO.md"
 echo ""

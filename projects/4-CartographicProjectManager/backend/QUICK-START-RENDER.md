@@ -1,12 +1,19 @@
 # 🚀 Migración a Render - Resumen
 
+> **ℹ️ MONOREPO SETUP**  
+> Este repo contiene múltiples backends (CARTO + TENNIS).  
+> Blueprint principal: **`/render.yaml`** (raíz del repo)  
+> Guía completa del monorepo: **`/RENDER-MONOREPO.md`**
+
 ## ✅ Archivos Creados
 
-Se han creado los siguientes archivos en `projects/4-CartographicProjectManager/backend/`:
+Se han creado los siguientes archivos:
 
 ### Configuración Principal
-- **`render.yaml`** - Blueprint de infraestructura (crea DB + web service automáticamente)
-- **`.env.render.example`** - Template de variables de entorno
+- **`/render.yaml`** - Master Blueprint en la raíz (gestiona CARTO + TENNIS)
+- **`/RENDER-MONOREPO.md`** - Guía del setup multi-proyecto
+- **`backend/render.yaml`** - Deprecated (referencia el de la raíz)
+- **`backend/.env.render.example`** - Template de variables de entorno
 - **`.gitignore`** - Actualizado para incluir `.env.render`
 
 ### Documentación
@@ -34,9 +41,17 @@ Guarda el token que aparece en la consola - lo necesitarás en Render.
 
 ### 3. Commit de archivos
 ```bash
-git add backend/render.yaml backend/RENDER.md backend/.env.render.example \
-        backend/MIGRATION-CHECKLIST.md backend/RAILWAY-VS-RENDER.md \
-        backend/README.md backend/.gitignore backend/verify-render-setup.sh
+# Desde la raíz del repositorio
+git add render.yaml RENDER-MONOREPO.md \
+        projects/4-CartographicProjectManager/backend/RENDER.md \
+        projects/4-CartographicProjectManager/backend/.env.render.example \
+        projects/4-CartographicProjectManager/backend/MIGRATION-CHECKLIST.md \
+        projects/4-CartographicProjectManager/backend/RAILWAY-VS-RENDER.md \
+        projects/4-CartographicProjectManager/backend/README.md \
+        projects/4-CartographicProjectManager/backend/.gitignore \
+        projects/4-CartographicProjectManager/backend/verify-render-setup.sh \
+        projects/4-CartographicProjectManager/vite.config.ts \
+        projects/4-CartographicProjectManager/docs/deployment/UPDATE-FRONTEND-FOR-RENDER.md
 
 git commit -m "Add Render deployment configuration"
 git push origin main
@@ -48,8 +63,10 @@ git push origin main
 1. Ve a https://render.com y crea cuenta (usa GitHub)
 2. Dashboard → **New** → **Blueprint**
 3. Selecciona el repositorio `TFG-Fabian-Gonzalez-Lence`
-4. Render detectará `render.yaml` automáticamente
+4. Render detectará `/render.yaml` en la raíz del repo
 5. Click **Apply**
+
+**Nota**: El Blueprint gestiona múltiples proyectos. Solo CARTO se desplegará (TENNIS está comentado).
 
 #### Opción B: Manual
 Sigue las instrucciones en `RENDER.md` para configuración manual.
@@ -93,7 +110,8 @@ Luego redeploy del frontend con un push a main.
 
 ## 📚 Documentación
 
-- **Guía completa**: [RENDER.md](./RENDER.md)
+- **Setup Monorepo**: [/RENDER-MONOREPO.md](../../../RENDER-MONOREPO.md) - Gestión multi-proyecto
+- **Guía completa CARTO**: [RENDER.md](./RENDER.md)
 - **Checklist detallado**: [MIGRATION-CHECKLIST.md](./MIGRATION-CHECKLIST.md)
 - **Comparación Railway vs Render**: [RAILWAY-VS-RENDER.md](./RAILWAY-VS-RENDER.md)
 

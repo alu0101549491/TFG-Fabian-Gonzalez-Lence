@@ -1,11 +1,18 @@
 # Render Deployment - Guía Completa
 
+> **ℹ️ MONOREPO SETUP**  
+> Este backend es parte de un monorepo con múltiples proyectos.  
+> El Blueprint principal está en: **`/render.yaml`** (raíz del repositorio)  
+>   
+> Ver: `/RENDER-MONOREPO.md` para el setup completo del monorepo.
+
 ## 📋 Información General
 
 Este backend está configurado para desplegarse en **Render** (alternativa gratuita a Railway).
 
 **Archivos de configuración:**
-- **`render.yaml`** - Blueprint de infraestructura (base de datos + web service)
+- **`/render.yaml`** - Master Blueprint en la raíz del repo (define todos los servicios)
+- **`backend/render.yaml`** - Deprecated (usar el de la raíz)
 - **`.env.render.example`** - Template de variables de entorno
 - **`package.json`** - Scripts de build y start
 
@@ -23,7 +30,7 @@ El plan gratuito incluye:
 
 ### Método 1: Usando Blueprint (RECOMENDADO)
 
-El archivo `render.yaml` configura todo automáticamente:
+El archivo **`/render.yaml`** en la raíz del repo configura todo automáticamente:
 
 1. **Crear cuenta en Render**
    - Ve a https://render.com
@@ -31,8 +38,9 @@ El archivo `render.yaml` configura todo automáticamente:
 
 2. **Nuevo Blueprint**
    - Dashboard → **New** → **Blueprint**
-   - Selecciona tu repositorio GitHub
-   - Render detectará automáticamente `render.yaml`
+   - Selecciona tu repositorio GitHub: `TFG-Fabian-Gonzalez-Lence`
+   - Render detectará automáticamente `/render.yaml` (en la raíz)
+   - **Importante**: El Blueprint gestiona múltiples proyectos del monorepo
 
 3. **Configurar variables secretas**
    
