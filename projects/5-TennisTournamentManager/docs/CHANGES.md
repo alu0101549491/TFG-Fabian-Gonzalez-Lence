@@ -8,6 +8,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### **IMPROVED** — User Menu Dropdown Interaction (v1.88.6) 🖱️
+
+**Update Date**: April 9, 2026
+
+Enhanced user menu dropdown to use click-based interaction instead of hover, with automatic closing when clicking outside the menu.
+
+#### Changes
+**Frontend**: `src/presentation/components/header/header.component.ts`
+
+1. **Dropdown Behavior**:
+   - Changed from hover-based to click-based interaction
+   - Added `isDropdownOpen` state property to track dropdown visibility
+   - Added `toggleDropdown()` method to handle menu toggle on click
+   - Added `@HostListener` for document clicks to close dropdown when clicking outside
+   - Updated logout method to close dropdown before navigation
+
+2. **Template**:
+   - Added `(click)="toggleDropdown($event)"` to user menu button
+   - Changed dropdown menu rendering to conditional `@if (isDropdownOpen)`
+   - Added event.stopPropagation() to prevent immediate closing
+
+3. **CSS**:
+   - Removed `:hover` pseudo-class selector
+   - Removed `display: none` from `.dropdown-menu` (now controlled by `@if`)
+
+#### Result
+- More intuitive mobile and desktop experience
+- Dropdown stays open until explicitly closed
+- Clicking outside the dropdown closes it automatically
+- Clicking menu button toggles dropdown on/off
+- Better accessibility and touch-screen support
+
+---
+
 ### **IMPROVED** — Header Design Update (v1.88.5) 🎨
 
 **Update Date**: April 9, 2026
@@ -15,28 +49,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Changed header design from translucent frosted glass to solid white background with dark text for better readability and professional appearance.
 
 #### Changes
-**Frontend**: `src/presentation/components/header/header.component.ts`
+**Frontend**: Header and hero section styling
 
-1. **Background**: Changed from translucent `rgba(255, 255, 255, 0.08)` with backdrop-filter to solid white
-2. **Text Color**: Updated from white to dark gray (`var(--color-gray-900)`)
-3. **Border**: Changed to visible gray border with subtle shadow
-4. **Interactive Elements**:
-   - Brand link: Dark text with hover opacity
-   - User menu: Gray background with dark text
-   - Auth buttons: Dark text with gray borders
-   - Navigation links: Dark text with gray hover states
+1. **header.component.ts**:
+   - Background: Changed from translucent `rgba(255, 255, 255, 0.08)` with backdrop-filter to solid white
+   - Text Color: Updated from white to dark gray (`var(--color-gray-900)`)
+   - Border: Changed to visible gray border with subtle shadow
+   - Interactive Elements: Brand link, user menu, auth buttons all use dark text
+
+2. **app.component.ts**:
+   - Added `padding-top: 72px` to `.app-container` to prevent sticky header from overlapping page content
+   - Ensures all page content starts below the header
+
+3. **All Hero Sections** (8 pages):
+   - Removed negative margin pattern (`margin-top: -72px`)
+   - Removed compensating padding (`calc(original + 72px)`)
+   - Hero sections now start below the header instead of behind it
+   - **Pages updated**:
+     * Home, Dashboard
+     * Tournament List, Tournament Detail
+     * Match Detail, Bracket View
+     * Announcement List, Edit
 
 #### Result
-- Cleaner, more professional appearance
+- Cleaner, more professional appearance with solid white header
 - Better text readability on all pages
-- Consistent contrast throughout the interface
-- More traditional header design that works well with page content
+- Hero section content fully visible (header no longer overlaps content)
+- Consistent spacing between header and page content
+- More traditional header design that doesn't obscure page content
 
 ---
 
 ### **IMPROVED** — Header Transparency & Hero Integration (v1.88.4) ✨
 
-**Update Date**: April 9, 2026
+**Update Date**: April 9, 2026  
+**Note**: This approach was superseded by v1.88.5, which uses a solid white header without hero overlap.
 
 Enhanced header visual design with translucent frosted glass effect that seamlessly integrates with page hero sections.
 

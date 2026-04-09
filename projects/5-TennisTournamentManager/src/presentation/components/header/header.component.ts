@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, inject} from '@angular/core';
+import {Component, inject, HostListener} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {RouterModule, Router} from '@angular/router';
 import {AuthStateService} from '@presentation/services/auth-state.service';
@@ -44,12 +44,13 @@ import {UserRole} from '@domain/enumerations/user-role';
 
         <!-- User Menu Dropdown -->
         <div class="dropdown">
-          <button class="user-menu-toggle dropdown-toggle" type="button">
+          <button class="user-menu-toggle dropdown-toggle" type="button" (click)="toggleDropdown($event)">
             <span class="user-avatar">
               {{ userInitials }}
             </span>
             <span class="user-name">{{ username }}</span>
           </button>
+          @if (isDropdownOpen) {
           <ul class="dropdown-menu">
             <li>
               <a routerLink="/profile" class="dropdown-item">
@@ -73,6 +74,7 @@ import {UserRole} from '@domain/enumerations/user-role';
               </button>
             </li>
           </ul>
+          }
         </div>
       } @else {
         <!-- Guest Actions -->
@@ -218,7 +220,6 @@ import {UserRole} from '@domain/enumerations/user-role';
 }
 
 .dropdown-menu {
-  display: none;
   position: absolute;
   top: calc(100% + var(--spacing-xs));
   right: 0;
@@ -230,10 +231,6 @@ import {UserRole} from '@domain/enumerations/user-role';
   padding: var(--spacing-xs) 0;
   list-style: none;
   z-index: var(--z-index-dropdown);
-}
-
-.dropdown:hover .dropdown-menu {
-  display: block;
 }
 
 .dropdown-item {
@@ -279,6 +276,9 @@ export class HeaderComponent {
   private readonly authStateService = inject(AuthStateService);
   private readonly router = inject(Router);
 
+  /** Dropdown state */
+  public isDropdownOpen = false;
+
   /**
    * Checks if user is authenticated.
    *
@@ -318,9 +318,30 @@ export class HeaderComponent {
   }
 
   /**
+   * Toggles the user menu dropdown.
+   *
+   * @param event - Click event
+   */
+  public toggleDropdown(event: Event): void {
+    event.stopPropagation();
+    this.isDropdownOpen = !this.isDropdownOpen;
+  }
+
+  /**
+   * Closes dropdown when clicking outside.
+   *
+   * @param event - Document click event
+   */
+  @HostListener('document:click', ['$event'])
+  public onDocumentClick(event: Event): void {
+    this.isDropdownOpen = false;
+  }
+
+  /**
    * Logs out the current user.
    */
   public logout(): void {
+    this.isDropdownOpen = false;
     this.authStateService.clearAuth();
     void this.router.navigate(['/login']);
   }

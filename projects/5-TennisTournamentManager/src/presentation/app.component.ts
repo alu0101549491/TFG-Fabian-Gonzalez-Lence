@@ -32,6 +32,7 @@ import {HeaderComponent} from './components/header/header.component';
   styles: [`
     .app-container {
       min-height: calc(100vh - 64px);
+      padding-top: 72px;
       display: flex;
       flex-direction: column;
     }
