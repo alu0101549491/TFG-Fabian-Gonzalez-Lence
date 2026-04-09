@@ -23,6 +23,8 @@
   color: var(--color-white);
   padding: 3rem 0;
   overflow: hidden;
+  margin-top: -72px;
+  padding-top: calc(3rem + 72px);
 }
 
 .hero-overlay {
@@ -114,7 +116,6 @@
   margin: -2rem auto 0;
   padding: 0 var(--spacing-lg) var(--spacing-2xl);
   position: relative;
-  z-index: 2;
 }
 
 /* Stats Grid */

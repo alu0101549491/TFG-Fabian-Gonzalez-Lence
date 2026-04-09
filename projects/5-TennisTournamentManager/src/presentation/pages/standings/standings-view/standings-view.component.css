@@ -18,6 +18,8 @@
   color: var(--color-white);
   padding: var(--spacing-3xl) var(--spacing-xl) var(--spacing-2xl);
   overflow: hidden;
+  
+  padding-top: var(--spacing-3xl);
 }
 
 .hero-overlay {
@@ -31,8 +33,9 @@
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 1200px;
+  max-width: var(--max-content-width);
   margin: 0 auto;
+  padding: 0 var(--spacing-lg);
 }
 
 /* Back Button */

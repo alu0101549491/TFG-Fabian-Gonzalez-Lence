@@ -74,6 +74,9 @@ export class User {
   @Column('varchar', {length: 20, nullable: true})
   public whatsapp!: string | null;
 
+  @Column('varchar', {length: 100, nullable: true})
+  public telegramChatId!: string | null;
+
   @CreateDateColumn()
   public createdAt!: Date;
 

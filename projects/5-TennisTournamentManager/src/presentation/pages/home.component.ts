@@ -258,6 +258,8 @@ import {DashboardComponent} from './dashboard.component';
       justify-content: center;
       background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-secondary) 100%);
       overflow: hidden;
+      
+      padding-top: 72px;
     }
 
     .hero-overlay {

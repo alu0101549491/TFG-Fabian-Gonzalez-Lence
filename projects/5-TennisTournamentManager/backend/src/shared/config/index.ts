@@ -83,10 +83,17 @@ export const config = {
     port: parseInt(process.env.EMAIL_PORT || '587', 10),
     user: process.env.EMAIL_USER,
     password: process.env.EMAIL_PASSWORD,
+    fromName: process.env.EMAIL_FROM_NAME || 'Tennis Tournament Manager',
+    appUrl: process.env.APP_URL || 'http://localhost:4200',
   },
   
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN,
+  },
+  
+  webPush: {
+    publicKey: process.env.WEB_PUSH_PUBLIC_KEY,
+    privateKey: process.env.WEB_PUSH_PRIVATE_KEY,
   },
   
   payment: {

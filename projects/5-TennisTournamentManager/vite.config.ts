@@ -24,10 +24,7 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [
       // Angular plugin disabled - causes empty file serving issue
-      // angular({
-      //   tsconfig: resolve(__dirname, 'tsconfig.app.json'),
-      //   inlineStylesExtension: 'css',
-      // }),
+      // Use inline templates/styles instead
     ],
     esbuild: {
       tsconfigRaw: {

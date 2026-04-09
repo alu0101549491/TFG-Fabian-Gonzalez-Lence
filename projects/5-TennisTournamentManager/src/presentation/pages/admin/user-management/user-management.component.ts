@@ -492,6 +492,8 @@ import {UserRole} from '@domain/enumerations/user-role';
       color: var(--color-white);
       padding: 3rem 0 4rem;
       overflow: hidden;
+      
+      padding-top: 3rem;
     }
 
     .hero-overlay {

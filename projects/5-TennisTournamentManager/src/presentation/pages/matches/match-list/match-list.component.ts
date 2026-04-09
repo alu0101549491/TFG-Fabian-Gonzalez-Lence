@@ -307,7 +307,9 @@ export class MatchListComponent implements OnInit {
    * @param matchId - ID of the match
    */
   public viewMatch(matchId: string): void {
-    void this.router.navigate(['/matches', matchId]);
+    // Preserve tournamentId query param if present
+    const queryParams = this.tournamentId ? {tournamentId: this.tournamentId} : {};
+    void this.router.navigate(['/matches', matchId], {queryParams});
   }
 
   /**

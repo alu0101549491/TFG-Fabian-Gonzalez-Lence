@@ -22,8 +22,8 @@
   background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-secondary) 100%);
   color: var(--color-white);
   padding: 3rem 0 4rem;
-  overflow: hidden;
-}
+  overflow: hidden;  
+  padding-top: 3rem;}
 
 .hero-overlay {
   position: absolute;
@@ -97,11 +97,10 @@
 
 /* Main Content */
 .main-content {
-  max-width: 900px;
+  max-width: var(--max-content-width);
   margin: -2rem auto 0;
   padding: 0 var(--spacing-lg) var(--spacing-2xl);
   position: relative;
-  z-index: 2;
 }
 
 /* Success Banner */

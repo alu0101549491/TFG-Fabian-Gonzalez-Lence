@@ -305,7 +305,7 @@
 
 #### Configure Notification Preferences (Registered User) ✅ PHASE 2 COMPLETE (v1.86.0)
 - [x] **Navigate to `/notification-preferences`** ✅ Route with auth guard
-- [x] **Enable/disable channels**: In-app, Email, Telegram, Web Push ✅ Toggle switches with Coming Soon badges
+- [x] **Enable/disable channels**: In-app, Email, Telegram, Web Push ✅ All channels fully functional
 - [x] **Select event types**: ✅ All 5 event types with toggle switches
   - [x] Match schedule ✅
   - [x] Result entered ✅
@@ -321,7 +321,7 @@
 - [x] **Order of play changed** → notification sent ✅ OrderOfPlayController.publishOrderOfPlay()
 - [x] **New announcement published** → notification sent ✅ AnnouncementService.sendPublicationNotifications()
 
-> **Status**: Phase 1 & 2 COMPLETE (v1.85.0 - v1.86.0) ✅
+> **Status**: Phase 1 & 2 & 3 COMPLETE (v1.85.0 - v1.88.0) ✅
 > 
 > **Phase 1 (v1.85.0)** ✅:
 > - ✅ Backend: NotificationService with 8 notification methods (notifyResultEntered, notifyResultConfirmed, notifyResultDisputed, notifyMatchScheduled, notifyRegistrationConfirmed, notifyOrderOfPlayPublished, notifyAnnouncementPublished)
@@ -339,14 +339,32 @@
 > - ✅ Integration: NotificationService checks user preferences before creating notifications
 > - ✅ Defaults: All in-app notifications enabled, email/telegram/webpush disabled (Coming Soon badges)
 > 
+> **Phase 3 - Email Channel (v1.87.0)** ✅:
+> - ✅ Backend: EmailService with nodemailer SMTP integration (304 lines)
+> - ✅ Email Templates: Professional HTML design with responsive layout, emoji icons, action buttons
+> - ✅ Configuration: EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD, EMAIL_FROM_NAME, APP_URL
+> - ✅ Integration: NotificationService.createNotification() sends emails when emailEnabled is true
+> - ✅ User Lookup: Loads email, firstName, lastName from User entity
+> - ✅ Channel Tracking: Notification.channels array includes EMAIL when sent
+> - ✅ Error Handling: Non-blocking email failures (app continues if SMTP fails)
+> - ✅ Frontend: Email toggle enabled in NotificationPreferencesComponent (removed "Coming Soon" badge)
+> - ✅ Action Links: Context-aware deep links to tournaments, matches, announcements
+> - ✅ Dependencies: nodemailer + @types/nodemailer installed
+> 
 > **Implementation Files**:
 > - Backend Entities: `backend/src/domain/entities/notification-preferences.entity.ts` (195 lines)
+> - Backend Entities: `backend/src/domain/entities/push-subscription.entity.ts` (75 lines) - Phase 3 Web Push
 > - Backend Service: `backend/src/application/services/notification-preferences.service.ts` (150 lines)
 > - Backend Controller: `backend/src/presentation/controllers/notification-preferences.controller.ts` (78 lines)
+> - Backend Email: `backend/src/infrastructure/email/email.service.ts` (304 lines) - Phase 3
+> - Backend Telegram: `backend/src/infrastructure/telegram/telegram.service.ts` (210 lines) - Phase 3
+> - Backend Web Push: `backend/src/infrastructure/push/web-push.service.ts` (220 lines) - Phase 3
 > - Frontend Service: `src/application/services/notification-preferences.service.ts` (95 lines)
 > - Frontend Component: `src/presentation/pages/notification-preferences/` (3 files, ~670 lines)
-> - Modified: `backend/src/application/services/notification.service.ts` (+15 lines - preference checking)
+> - Modified: `backend/src/application/services/notification.service.ts` (+120 lines - all channel integrations)
 > - Modified: `backend/src/presentation/routes/index.ts` (+75 lines - 2 new routes)
+> - Modified: `backend/src/shared/config/index.ts` (+6 config fields: email.fromName, email.appUrl, webPush.publicKey, webPush.privateKey)
+> - Modified: `backend/src/domain/entities/user.entity.ts` (+1 field: telegramChatId)
 > 
 > **API Endpoints**:
 > - GET `/api/users/:userId/notification-preferences` - Get user preferences (creates defaults if none exist)
@@ -366,9 +384,47 @@
 > - NotificationService.createNotification() checks user preferences before creating notification
 > - If event type is disabled → notification blocked (logged)
 > - If in-app channel is disabled → notification blocked (logged)
+> - If email channel enabled → sends email to user's email address (non-blocking)
 > - Default behavior: If no preferences exist, all notifications are sent
 > 
-> **Next Phase**: Phase 3 - Multi-Channel Delivery (Email integration, Telegram bot, Web Push service worker)
+> **Email Configuration** (Phase 3):
+> - SMTP Providers: Supports Gmail, SendGrid, and any SMTP server
+> - Security: Port 465 (secure) or 587 (TLS) with authentication
+> - Templates: Responsive HTML with 600px max-width, mobile-friendly
+> - Emojis: ✅ REGISTRATION_CONFIRMED, 📅 MATCH_SCHEDULED, 🎾 RESULT_ENTERED, 📋 ORDER_OF_PLAY_PUBLISHED, 📢 ANNOUNCEMENT
+> - Action Links: Deep links to /tournaments/{id}, /matches/{id}, /announcements?id={id}
+> 
+> **Phase 3 - Telegram Channel (v1.88.0)** ✅:
+> - ✅ Backend: TelegramService with Telegram Bot API integration (210 lines)
+> - ✅ Message Templates: Markdown formatting with emoji icons and inline buttons
+> - ✅ Configuration: TELEGRAM_BOT_TOKEN from @BotFather
+> - ✅ Integration: NotificationService.createNotification() sends Telegram messages when telegramEnabled is true
+> - ✅ User Field: Added telegramChatId to User entity (varchar 100, nullable)
+> - ✅ Inline Buttons: Context-aware action buttons linking to app content
+> - ✅ Error Handling: Non-blocking Telegram failures (app continues if bot fails)
+> - ✅ Frontend: Telegram toggle enabled in NotificationPreferencesComponent (removed "Coming Soon" badge)
+> - ✅ Dependencies: node-telegram-bot-api + @types/node-telegram-bot-api installed
+> 
+> **Phase 3 - Web Push Channel (v1.88.0)** ✅:
+> - ✅ Backend: WebPushService with web-push library integration (220 lines)
+> - ✅ Push Notifications: Browser notifications with icon, badge, and action buttons
+> - ✅ Configuration: WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY (VAPID authentication)
+> - ✅ Integration: NotificationService.createNotification() sends push notifications when webPushEnabled is true
+> - ✅ PushSubscription Entity: Stores user device subscriptions (endpoint, p256dh, auth keys)
+> - ✅ Multi-Device Support: Sends to all user subscriptions (multiple browsers/devices)
+> - ✅ Subscription Management: Auto-removes expired/invalid subscriptions
+> - ✅ Error Handling: Non-blocking push failures (app continues if service worker fails)
+> - ✅ Frontend: Web Push toggle enabled in NotificationPreferencesComponent (removed "Coming Soon" badge)
+> - ✅ Dependencies: web-push + @types/web-push installed
+> 
+> **Phase 3 Summary - All Channels Complete** ✅:
+> - ✅ Email: SMTP with HTML templates, emoji icons, action buttons (v1.87.0)
+> - ✅ Telegram: Bot API with Markdown messages, inline buttons (v1.88.0)
+> - ✅ Web Push: Browser notifications with VAPID authentication, multi-device (v1.88.0)
+> - ✅ Channel Tracking: Notification.channels array includes all sent channels
+> - ✅ Non-Blocking: All channel failures are logged but don't prevent notification creation
+> - ✅ User Preferences: All 4 channels (IN_APP, EMAIL, TELEGRAM, WEB_PUSH) fully functional
+> - ✅ Frontend: All "Coming Soon" badges removed, all toggles enabled
 
 ---
 

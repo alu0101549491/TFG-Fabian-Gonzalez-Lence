@@ -159,6 +159,8 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
       color: var(--color-white);
       padding: 3rem 0;
       overflow: hidden;
+      
+      padding-top: 3rem;
     }
 
     .hero-overlay {

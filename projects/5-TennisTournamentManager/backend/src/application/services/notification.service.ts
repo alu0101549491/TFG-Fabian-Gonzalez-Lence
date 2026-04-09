@@ -14,17 +14,45 @@
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Notification} from '../../domain/entities/notification.entity';
 import {NotificationPreferences} from '../../domain/entities/notification-preferences.entity';
+import {User} from '../../domain/entities/user.entity';
+import {PushSubscription} from '../../domain/entities/push-subscription.entity';
 import {NotificationType} from '../../domain/enumerations/notification-type';
 import {NotificationChannel} from '../../domain/enumerations/notification-channel';
 import {generateId} from '../../shared/utils/id-generator';
 import {ID_PREFIXES} from '../../shared/constants';
 import {emitNotification} from '../../websocket-server';
+import {EmailService} from '../../infrastructure/email/email.service';
+import {TelegramService} from '../../infrastructure/telegram/telegram.service';
+import {WebPushService} from '../../infrastructure/push/web-push.service';
 
 /**
  * Notification service for creating and sending notifications to users.
- * Handles in-app notifications and WebSocket real-time delivery.
+ * Handles in-app notifications, WebSocket real-time delivery, and multi-channel distribution.
  */
 export class NotificationService {
+  /**
+   * Email service for sending notification emails.
+   */
+  private readonly emailService: EmailService;
+
+  /**
+   * Telegram service for sending Telegram notifications.
+   */
+  private readonly telegramService: TelegramService;
+
+  /**
+   * Web Push service for sending browser push notifications.
+   */
+  private readonly webPushService: WebPushService;
+
+  /**
+   * Initializes the notification service with multi-channel capabilities.
+   */
+  public constructor() {
+    this.emailService = new EmailService();
+    this.telegramService = new TelegramService();
+    this.webPushService = new WebPushService();
+  }
   /**
    * Creates and saves a notification to the database.
    * Checks user preferences before creating the notification.
@@ -62,11 +90,29 @@ export class NotificationService {
       return null;
     }
 
+    // Determine which channels will be used
+    const channels: NotificationChannel[] = [NotificationChannel.IN_APP];
+    const emailEnabled = preferences?.isChannelEnabled(NotificationChannel.EMAIL) || false;
+    const telegramEnabled = preferences?.isChannelEnabled(NotificationChannel.TELEGRAM) || false;
+    const webPushEnabled = preferences?.isChannelEnabled(NotificationChannel.WEB_PUSH) || false;
+
+    if (emailEnabled) {
+      channels.push(NotificationChannel.EMAIL);
+    }
+
+    if (telegramEnabled) {
+      channels.push(NotificationChannel.TELEGRAM);
+    }
+
+    if (webPushEnabled) {
+      channels.push(NotificationChannel.WEB_PUSH);
+    }
+
     const notification = notificationRepository.create({
       id: generateId(ID_PREFIXES.NOTIFICATION),
       userId,
       type,
-      channels: [NotificationChannel.IN_APP], // Start with in-app only
+      channels,
       title,
       message,
       isRead: false,
@@ -85,6 +131,105 @@ export class NotificationService {
       isRead: saved.isRead,
       metadata: saved.metadata,
     });
+
+    // Send email if enabled in user preferences (Phase 3 - Multi-Channel Delivery)
+    if (emailEnabled) {
+      try {
+        const userRepository = AppDataSource.getRepository(User);
+        const user = await userRepository.findOne({
+          where: {id: userId},
+          select: ['email', 'firstName', 'lastName'],
+        });
+
+        if (user?.email) {
+          const fullName = `${user.firstName} ${user.lastName}`.trim();
+          await this.emailService.sendNotificationEmail(
+            user.email,
+            fullName,
+            type,
+            title,
+            message,
+            metadata,
+          );
+          console.log(`📧 Email notification sent to ${user.email} - ${type}`);
+        } else {
+          console.log(`⚠️ User ${userId} has no email address - skipping email notification`);
+        }
+      } catch (error) {
+        // Email failures should not block notification creation
+        console.error(`❌ Failed to send email notification to ${userId}:`, error);
+      }
+    }
+
+    // Send Telegram message if enabled in user preferences (Phase 3 - Multi-Channel Delivery)
+    if (telegramEnabled) {
+      try {
+        const userRepository = AppDataSource.getRepository(User);
+        const user = await userRepository.findOne({
+          where: {id: userId},
+          select: ['telegramChatId', 'firstName', 'lastName'],
+        });
+
+        if (user?.telegramChatId) {
+          await this.telegramService.sendNotificationMessage(
+            user.telegramChatId,
+            type,
+            title,
+            message,
+            metadata,
+          );
+          console.log(`✈️ Telegram notification sent to chatId: ${user.telegramChatId} - ${type}`);
+        } else {
+          console.log(`⚠️ User ${userId} has no Telegram chat ID - skipping Telegram notification`);
+        }
+      } catch (error) {
+        // Telegram failures should not block notification creation
+        console.error(`❌ Failed to send Telegram notification to ${userId}:`, error);
+      }
+    }
+
+    // Send Web Push notification if enabled in user preferences (Phase 3 - Multi-Channel Delivery)
+    if (webPushEnabled) {
+      try {
+        const pushSubscriptionRepository = AppDataSource.getRepository(PushSubscription);
+        const subscriptions = await pushSubscriptionRepository.find({
+          where: {userId},
+        });
+
+        if (subscriptions.length > 0) {
+          // Send to all subscriptions (user may have multiple devices/browsers)
+          for (const sub of subscriptions) {
+            try {
+              await this.webPushService.sendPushNotification(
+                {
+                  endpoint: sub.endpoint,
+                  keys: {
+                    p256dh: sub.p256dhKey,
+                    auth: sub.authKey,
+                  },
+                },
+                type,
+                title,
+                message,
+                metadata,
+              );
+            } catch (error) {
+              // If subscription is expired/invalid, delete it
+              if ((error as Error).message.includes('expired')) {
+                await pushSubscriptionRepository.remove(sub);
+                console.log(`🗑️ Removed expired push subscription: ${sub.id}`);
+              }
+            }
+          }
+          console.log(`📱 Web Push notifications sent to ${subscriptions.length} device(s) - ${type}`);
+        } else {
+          console.log(`⚠️ User ${userId} has no push subscriptions - skipping Web Push notification`);
+        }
+      } catch (error) {
+        // Web Push failures should not block notification creation
+        console.error(`❌ Failed to send Web Push notification to ${userId}:`, error);
+      }
+    }
 
     return saved;
   }

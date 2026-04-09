@@ -207,7 +207,7 @@ export class MatchGeneratorService {
       phase.bracketId = bracketId;
       phase.order = round;
       phase.name = `Round ${round}`;
-      phase.matchCount = matchesPerRound;
+      phase.matchCount = 0; // Will be updated after generating matches
       phase.isCompleted = false;
       phases.push(phase);
     }
@@ -240,6 +240,8 @@ export class MatchGeneratorService {
         match.endTime = null;
         
         matches.push(match);
+        // Increment the actual match count for this phase
+        phases[round].matchCount++;
       }
     }
     

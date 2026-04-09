@@ -23,6 +23,8 @@
   color: var(--color-white);
   padding: var(--spacing-3xl) var(--spacing-xl) var(--spacing-2xl);
   overflow: hidden;
+  
+  padding-top: var(--spacing-3xl);
 }
 
 .hero-overlay {

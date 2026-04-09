@@ -59,6 +59,9 @@ export class MatchDetailComponent implements OnInit {
   /** Success message */
   public successMessage = signal<string | null>(null);
 
+  /** Tournament ID (from query params for back navigation) */
+  private tournamentId: string | null = null;
+
   /** Tournament admin check */
   public canManageMatch = signal(false);
 
@@ -117,6 +120,11 @@ export class MatchDetailComponent implements OnInit {
    * Initializes component and loads match data.
    */
   public ngOnInit(): void {
+    // Get tournamentId from query params for back navigation
+    this.route.queryParamMap.subscribe(params => {
+      this.tournamentId = params.get('tournamentId');
+    });
+
     this.route.paramMap.subscribe(params => {
       const matchId = params.get('id');
       if (matchId) {
@@ -605,6 +613,8 @@ await this.loadMatch(this.match()!.id);
    * Navigates back to matches list.
    */
   public goBack(): void {
-    void this.router.navigate(['/matches']);
+    // Preserve tournamentId query param if present
+    const queryParams = this.tournamentId ? {tournamentId: this.tournamentId} : {};
+    void this.router.navigate(['/matches'], {queryParams});
   }
 }

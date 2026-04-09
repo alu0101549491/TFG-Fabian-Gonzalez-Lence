@@ -22,8 +22,8 @@
   background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-secondary) 100%);
   color: var(--color-white);
   padding: 4rem 0 3rem;
-  overflow: hidden;
-}
+  overflow: hidden;  margin-top: -72px;
+  padding-top: calc(3rem + 72px);}
 
 .hero-overlay {
   position: absolute;

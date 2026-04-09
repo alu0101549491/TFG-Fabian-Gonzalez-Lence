@@ -80,7 +80,8 @@
   position: relative;
   background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-secondary) 100%);
   color: var(--color-white);
-  padding: var(--spacing-3xl) var(--spacing-xl) var(--spacing-2xl);
+  padding: calc(var(--spacing-3xl) + 72px) var(--spacing-xl) var(--spacing-2xl);
+  margin-top: -72px;
   overflow: hidden;
 }
 
@@ -95,7 +96,9 @@
 .hero-content {
   position: relative;
   z-index: 1;
-  width: 100%;
+  max-width: var(--max-content-width);
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
 }
 
 /* Back Button */
@@ -322,8 +325,10 @@
 
 /* Main Content */
 .main-content {
-  width: 100%;
-  padding: var(--spacing-2xl) var(--spacing-xl);
+  max-width: var(--max-content-width);
+  margin: -2rem auto 0;
+  padding: 0 var(--spacing-lg) var(--spacing-2xl);
+  position: relative;
 }
 
 /* Status Section */
@@ -363,9 +368,11 @@
 
 /* Status Card */
 .status-card {
-  background: linear-gradient(135deg, rgba(46, 125, 50, 0.05) 0%, rgba(25, 118, 210, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(46, 125, 50, 0.08) 0%, rgba(25, 118, 210, 0.08) 100%), var(--color-white);
   border: 2px solid var(--color-primary-light);
+  border-radius: var(--border-radius-lg);
   padding: var(--spacing-xl);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .card-icon-header {
@@ -851,8 +858,8 @@
 .action-grid {
   padding: var(--spacing-lg);
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
   overflow: visible;
 }
 

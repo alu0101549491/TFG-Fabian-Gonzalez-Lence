@@ -8,31 +8,6 @@
       </a>
     </div>
 
-    <!-- Navigation Links -->
-    <nav class="header-nav">
-      <ul class="nav">
-        <li class="nav-item">
-          <a routerLink="/tournaments" routerLinkActive="nav-link-active" class="nav-link">
-            Tournaments
-          </a>
-        </li>
-        @if (isAuthenticated) {
-          <li class="nav-item">
-            <a routerLink="/my-matches" routerLinkActive="nav-link-active" class="nav-link">
-              My Matches
-            </a>
-          </li>
-        }
-        @if (isAdmin) {
-          <li class="nav-item">
-            <a routerLink="/admin/users" routerLinkActive="nav-link-active" class="nav-link">
-              Admin
-            </a>
-          </li>
-        }
-      </ul>
-    </nav>
-
     <!-- User Actions -->
     <div class="header-actions">
       @if (isAuthenticated) {
