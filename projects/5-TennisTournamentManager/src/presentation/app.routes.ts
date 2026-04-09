@@ -181,6 +181,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'notification-preferences',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/notification-preferences/notification-preferences.component').then(
+        (m) => m.NotificationPreferencesComponent,
+      ),
+  },
+  {
     path: 'users/:id',
     loadComponent: () =>
       import('./pages/users/user-profile-view/user-profile-view.component').then(

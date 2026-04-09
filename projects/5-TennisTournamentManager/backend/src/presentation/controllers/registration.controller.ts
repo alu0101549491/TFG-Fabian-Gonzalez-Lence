@@ -24,6 +24,7 @@ import {RegistrationStatus} from '../../domain/enumerations/registration-status'
 import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
 import {TournamentStatus} from '../../domain/enumerations/tournament-status';
 import {PrivacyService} from '../../application/services/privacy.service';
+import {NotificationService} from '../../application/services/notification.service';
 import {Tournament} from '../../domain/entities/tournament.entity';
 
 /**
@@ -31,9 +32,11 @@ import {Tournament} from '../../domain/entities/tournament.entity';
  */
 export class RegistrationController {
   private readonly privacyService: PrivacyService;
+  private readonly notificationService: NotificationService;
 
   constructor() {
     this.privacyService = new PrivacyService();
+    this.notificationService = new NotificationService();
   }
   
   /**
@@ -417,6 +420,31 @@ export class RegistrationController {
       console.log(`✅ Registration ${id} updated successfully`);
       console.log(`  - Final status: ${saved.status}`);
       console.log(`  - Final acceptance type: ${saved.acceptanceType}`);
+      
+      // Send notification when registration is accepted
+      if (status === RegistrationStatus.ACCEPTED) {
+        try {
+          // Load tournament name for notification
+          const tournamentRepository = AppDataSource.getRepository(Tournament);
+          const tournament = await tournamentRepository.findOne({
+            where: {id: saved.tournamentId},
+            select: ['name', 'id'],
+          });
+          
+          if (tournament) {
+            await this.notificationService.notifyRegistrationConfirmed(
+              saved.participantId,
+              tournament.name,
+              tournament.id,
+              saved.acceptanceType || 'DIRECT_ACCEPTANCE',
+            );
+            console.log(`📧 Sent registration confirmation notification to participant ${saved.participantId}`);
+          }
+        } catch (notifError) {
+          // Don't fail the request if notification fails
+          console.error('⚠️ Failed to send registration confirmation notification:', notifError);
+        }
+      }
       
       res.status(HTTP_STATUS.OK).json(saved);
     } catch (error) {

@@ -25,6 +25,7 @@ import {StandingController} from '../controllers/standing.controller';
 import {RankingController} from '../controllers/ranking.controller';
 import {OrderOfPlayController} from '../controllers/order-of-play.controller';
 import {NotificationController} from '../controllers/notification.controller';
+import {NotificationPreferencesController} from '../controllers/notification-preferences.controller';
 import {AnnouncementController} from '../controllers/announcement.controller';
 import {StatisticsController} from '../controllers/statistics.controller';
 import {PaymentController} from '../controllers/payment.controller';
@@ -54,6 +55,7 @@ const standingController = new StandingController();
 const rankingController = new RankingController();
 const orderOfPlayController = new OrderOfPlayController();
 const notificationController = new NotificationController();
+const notificationPreferencesController = new NotificationPreferencesController();
 const announcementController = new AnnouncementController();
 const statisticsController = new StatisticsController();
 const paymentController = new PaymentController();
@@ -1925,6 +1927,87 @@ router.get('/notifications', authMiddleware, notificationController.getByUser.bi
  *         $ref: '#/components/responses/NotFound'
  */
 router.put('/notifications/:id/read', authMiddleware, notificationController.markAsRead.bind(notificationController));
+
+/**
+ * @swagger
+ * /users/{userId}/notification-preferences:
+ *   get:
+ *     tags: [Notification Preferences]
+ *     summary: Get notification preferences
+ *     description: Get notification preferences for a user (user can only view their own)
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Notification preferences
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Forbidden (can only view own preferences)
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.get(
+  '/users/:userId/notification-preferences',
+  authMiddleware,
+  notificationPreferencesController.getByUserId.bind(notificationPreferencesController)
+);
+
+/**
+ * @swagger
+ * /users/{userId}/notification-preferences:
+ *   put:
+ *     tags: [Notification Preferences]
+ *     summary: Update notification preferences
+ *     description: Update notification preferences for a user (user can only update their own)
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               inAppEnabled:
+ *                 type: boolean
+ *               emailEnabled:
+ *                 type: boolean
+ *               telegramEnabled:
+ *                 type: boolean
+ *               webPushEnabled:
+ *                 type: boolean
+ *               matchScheduledEnabled:
+ *                 type: boolean
+ *               resultEnteredEnabled:
+ *                 type: boolean
+ *               orderOfPlayPublishedEnabled:
+ *                 type: boolean
+ *               announcementEnabled:
+ *                 type: boolean
+ *               registrationConfirmedEnabled:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Preferences updated
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Forbidden (can only update own preferences)
+ */
+router.put(
+  '/users/:userId/notification-preferences',
+  authMiddleware,
+  notificationPreferencesController.update.bind(notificationPreferencesController)
+);
 
 /**
  * @swagger

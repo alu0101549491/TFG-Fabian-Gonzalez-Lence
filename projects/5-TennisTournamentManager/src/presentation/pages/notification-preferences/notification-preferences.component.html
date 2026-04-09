@@ -1,0 +1,245 @@
+<!--
+University of La Laguna
+School of Engineering and Technology
+Degree in Computer Engineering
+Final Degree Project (TFG)
+
+@author Fabián González Lence <alu0101549491@ull.edu.es>
+@since April 8, 2026
+@file presentation/pages/notification-preferences/notification-preferences.component.html
+@desc Template for notification preferences page.
+@see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+-->
+
+<div class="preferences-container">
+  <div class="preferences-header">
+    <button class="back-button" (click)="goBack()" aria-label="Go back">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+    <h1>Notification Preferences</h1>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading preferences...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-message">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="success-message">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (!isLoading() && preferences()) {
+    <form class="preferences-form">
+      <!-- Notification Channels Section -->
+      <section class="preferences-section">
+        <h2>Notification Channels</h2>
+        <p class="section-description">Choose how you want to receive notifications</p>
+        
+        <div class="preference-group">
+          <div class="preference-item">
+            <div class="preference-info">
+              <label for="inApp">In-App Notifications</label>
+              <span class="preference-description">Receive notifications in the application</span>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="inApp"
+                [(ngModel)]="preferences()!.inAppEnabled"
+                name="inAppEnabled"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-info">
+              <label for="email">Email Notifications</label>
+              <span class="preference-description">Receive notifications via email</span>
+              <span class="badge badge-disabled">Coming Soon</span>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="email"
+                [(ngModel)]="preferences()!.emailEnabled"
+                name="emailEnabled"
+                disabled
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-info">
+              <label for="telegram">Telegram Notifications</label>
+              <span class="preference-description">Receive notifications via Telegram bot</span>
+              <span class="badge badge-disabled">Coming Soon</span>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="telegram"
+                [(ngModel)]="preferences()!.telegramEnabled"
+                name="telegramEnabled"
+                disabled
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-info">
+              <label for="webPush">Web Push Notifications</label>
+              <span class="preference-description">Receive browser push notifications</span>
+              <span class="badge badge-disabled">Coming Soon</span>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="webPush"
+                [(ngModel)]="preferences()!.webPushEnabled"
+                name="webPushEnabled"
+                disabled
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Notification Types Section -->
+      <section class="preferences-section">
+        <h2>Notification Types</h2>
+        <p class="section-description">Choose which events trigger notifications</p>
+        
+        <div class="preference-group">
+          <div class="preference-item">
+            <div class="preference-info">
+              <label for="registrationConfirmed">Registration Confirmations</label>
+              <span class="preference-description">When your tournament registration is accepted</span>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="registrationConfirmed"
+                [(ngModel)]="preferences()!.registrationConfirmedEnabled"
+                name="registrationConfirmedEnabled"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-info">
+              <label for="matchScheduled">Match Schedules</label>
+              <span class="preference-description">When your matches are scheduled</span>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="matchScheduled"
+                [(ngModel)]="preferences()!.matchScheduledEnabled"
+                name="matchScheduledEnabled"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-info">
+              <label for="resultEntered">Match Results</label>
+              <span class="preference-description">When match results are entered</span>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="resultEntered"
+                [(ngModel)]="preferences()!.resultEnteredEnabled"
+                name="resultEnteredEnabled"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-info">
+              <label for="orderOfPlayPublished">Order of Play</label>
+              <span class="preference-description">When tournament schedules are published</span>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="orderOfPlayPublished"
+                [(ngModel)]="preferences()!.orderOfPlayPublishedEnabled"
+                name="orderOfPlayPublishedEnabled"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-info">
+              <label for="announcement">Announcements</label>
+              <span class="preference-description">Tournament announcements and updates</span>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="announcement"
+                [(ngModel)]="preferences()!.announcementEnabled"
+                name="announcementEnabled"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Action Buttons -->
+      <div class="form-actions">
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="goBack()"
+          [disabled]="isSaving()"
+        >
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          (click)="savePreferences()"
+          [disabled]="isSaving()"
+        >
+          @if (isSaving()) {
+            <span class="spinner-small"></span>
+            Saving...
+          } @else {
+            Save Preferences
+          }
+        </button>
+      </div>
+    </form>
+  }
+</div>

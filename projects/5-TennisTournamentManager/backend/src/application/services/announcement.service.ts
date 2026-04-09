@@ -418,19 +418,15 @@ export class AnnouncementService {
         return;
       }
 
-      // Create notifications for each participant
-      for (const participantId of participantIds) {
-        await this.notificationService.createNotification(
-          participantId,
-          NotificationType.ANNOUNCEMENT,
-          `New Announcement: ${announcement.title}`,
-          announcement.summary || announcement.content || announcement.title,
-          {
-            announcementId: announcement.id,
-            tournamentId: announcement.tournamentId,
-          },
-        );
-      }
+      // Send notifications using NotificationService
+      await this.notificationService.notifyAnnouncementPublished(
+        announcement.tournamentId,
+        participantIds,
+        announcement.title,
+        announcement.id,
+      );
+      
+      console.log(`📧 Sent announcement notifications to ${participantIds.length} participants`);
     } catch (error) {
       console.error('Error sending announcement notifications:', error);
       // Don't throw - notification failure shouldn't break announcement publication

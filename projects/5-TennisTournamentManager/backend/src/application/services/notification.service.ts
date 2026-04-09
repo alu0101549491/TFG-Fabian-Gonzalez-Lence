@@ -13,6 +13,7 @@
 
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Notification} from '../../domain/entities/notification.entity';
+import {NotificationPreferences} from '../../domain/entities/notification-preferences.entity';
 import {NotificationType} from '../../domain/enumerations/notification-type';
 import {NotificationChannel} from '../../domain/enumerations/notification-channel';
 import {generateId} from '../../shared/utils/id-generator';
@@ -26,13 +27,14 @@ import {emitNotification} from '../../websocket-server';
 export class NotificationService {
   /**
    * Creates and saves a notification to the database.
+   * Checks user preferences before creating the notification.
    *
    * @param userId - ID of the user to notify
    * @param type - Type of notification
    * @param title - Notification title
    * @param message - Notification message
    * @param metadata - Optional metadata (matchId, tournamentId, etc.)
-   * @returns Created notification
+   * @returns Created notification or null if user preferences block it
    */
   public async createNotification(
     userId: string,
@@ -40,8 +42,25 @@ export class NotificationService {
     title: string,
     message: string,
     metadata?: Record<string, unknown>,
-  ): Promise<Notification> {
+  ): Promise<Notification | null> {
     const notificationRepository = AppDataSource.getRepository(Notification);
+    const preferencesRepository = AppDataSource.getRepository(NotificationPreferences);
+
+    // Check user preferences
+    const preferences = await preferencesRepository.findOne({where: {userId}});
+    
+    // If no preferences exist, create notification (default: all notifications enabled)
+    // If preferences exist, check if this type is enabled
+    if (preferences && !preferences.isTypeEnabled(type)) {
+      console.log(`⚠️ Notification blocked by user preferences: ${userId} - ${type}`);
+      return null;
+    }
+
+    // Check if in-app channel is enabled
+    if (preferences && !preferences.isChannelEnabled(NotificationChannel.IN_APP)) {
+      console.log(`⚠️ In-app notification blocked by user preferences: ${userId}`);
+      return null;
+    }
 
     const notification = notificationRepository.create({
       id: generateId(ID_PREFIXES.NOTIFICATION),
@@ -191,5 +210,91 @@ export class NotificationService {
     });
 
     return admins.map(admin => admin.id);
+  }
+
+  /**
+   * Notifies a participant when their registration is accepted.
+   *
+   * @param participantId - ID of the participant
+   * @param tournamentName - Name of the tournament
+   * @param tournamentId - ID of the tournament
+   * @param acceptanceType - Type of acceptance (DA, WC, ALT, etc.)
+   */
+  public async notifyRegistrationConfirmed(
+    participantId: string,
+    tournamentName: string,
+    tournamentId: string,
+    acceptanceType: string,
+  ): Promise<void> {
+    const acceptanceMessage =
+      acceptanceType === 'DIRECT_ACCEPTANCE'
+        ? 'Your registration has been accepted!'
+        : acceptanceType === 'WILD_CARD'
+        ? 'You have been granted a Wild Card entry!'
+        : acceptanceType === 'ALTERNATE'
+        ? 'You have been accepted as an Alternate.'
+        : 'Your registration has been accepted!';
+
+    await this.createNotification(
+      participantId,
+      NotificationType.REGISTRATION_CONFIRMED,
+      '✅ Registration Accepted',
+      `${acceptanceMessage} ${tournamentName}`,
+      {tournamentId, acceptanceType},
+    );
+  }
+
+  /**
+   * Notifies participants when order of play is published.
+   *
+   * @param tournamentId - ID of the tournament
+   * @param participantIds - Array of participant IDs to notify
+   * @param publishDate - Date of the order of play
+   */
+  public async notifyOrderOfPlayPublished(
+    tournamentId: string,
+    participantIds: string[],
+    publishDate: Date,
+  ): Promise<void> {
+    const dateStr = publishDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    for (const participantId of participantIds) {
+      await this.createNotification(
+        participantId,
+        NotificationType.ORDER_OF_PLAY_PUBLISHED,
+        '📅 Order of Play Published',
+        `The order of play for ${dateStr} has been published. Check your match schedule.`,
+        {tournamentId, date: publishDate.toISOString()},
+      );
+    }
+  }
+
+  /**
+   * Notifies participants when a new announcement is published.
+   *
+   * @param tournamentId - ID of the tournament
+   * @param participantIds - Array of participant IDs to notify
+   * @param announcementTitle - Title of the announcement
+   * @param announcementId - ID of the announcement
+   */
+  public async notifyAnnouncementPublished(
+    tournamentId: string,
+    participantIds: string[],
+    announcementTitle: string,
+    announcementId: string,
+  ): Promise<void> {
+    for (const participantId of participantIds) {
+      await this.createNotification(
+        participantId,
+        NotificationType.ANNOUNCEMENT,
+        '📢 New Announcement',
+        `New announcement: ${announcementTitle}`,
+        {tournamentId, announcementId},
+      );
+    }
   }
 }

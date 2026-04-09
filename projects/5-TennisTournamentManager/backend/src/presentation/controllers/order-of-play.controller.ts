@@ -402,22 +402,13 @@ export class OrderOfPlayController {
       }
 
       // Send notifications (batch them for efficiency)
-      for (const participantId of participantIds) {
-        try {
-          await this.notificationService.createNotification(
-            participantId,
-            'ORDER_OF_PLAY_PUBLISHED' as any,
-            '📅 Order of Play Published',
-            `The match schedule for ${orderOfPlay.date.toLocaleDateString()} has been published. Check your upcoming matches!`,
-            {
-              tournamentId: orderOfPlay.tournamentId,
-              date: orderOfPlay.date.toISOString(),
-            }
-          );
-        } catch (error) {
-          console.error(`Failed to notify participant ${participantId}:`, error);
-        }
-      }
+      const participantIdArray = Array.from(participantIds);
+      await this.notificationService.notifyOrderOfPlayPublished(
+        orderOfPlay.tournamentId,
+        participantIdArray,
+        orderOfPlay.date,
+      );
+      console.log(`📧 Sent order of play notifications to ${participantIdArray.length} participants`);
 
       // Emit WebSocket event
       emitOrderOfPlayChange(orderOfPlay.tournamentId, orderOfPlay);
@@ -514,19 +505,14 @@ export class OrderOfPlayController {
       }
 
       // Send notifications to all participants
-      for (const participantId of participantIds) {
-        try {
-          await this.notificationService.createNotification(
-            participantId,
-            'ORDER_OF_PLAY_PUBLISHED' as any,
-            '📅 Order of Play Published',
-            'The match schedule has been published. Check your upcoming matches!',
-            {tournamentId}
-          );
-        } catch (error) {
-          console.error(`Failed to notify participant ${participantId}:`, error);
-        }
-      }
+      const participantIdArray = Array.from(participantIds);
+      // Use current date for notification (multi-date publish)
+      await this.notificationService.notifyOrderOfPlayPublished(
+        tournamentId,
+        participantIdArray,
+        new Date(),
+      );
+      console.log(`📧 Sent order of play notifications to ${participantIdArray.length} participants (${matchesByDate.size} dates)`);
 
       res.status(HTTP_STATUS.OK).json({
         message: 'Order of play published',

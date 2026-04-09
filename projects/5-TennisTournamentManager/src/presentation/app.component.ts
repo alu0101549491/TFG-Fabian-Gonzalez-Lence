@@ -13,6 +13,7 @@
 
 import {Component} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
+import {HeaderComponent} from './components/header/header.component';
 
 /**
  * Root component of the Tennis Tournament Manager application.
@@ -21,15 +22,16 @@ import {RouterOutlet} from '@angular/router';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, HeaderComponent],
   template: `
+    <app-header></app-header>
     <main class="app-container">
       <router-outlet></router-outlet>
     </main>
   `,
   styles: [`
     .app-container {
-      min-height: 100vh;
+      min-height: calc(100vh - 64px);
       display: flex;
       flex-direction: column;
     }

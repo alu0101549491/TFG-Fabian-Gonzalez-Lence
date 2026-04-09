@@ -25,6 +25,7 @@ export {Standing} from './standing.entity';
 export {GlobalRanking} from './global-ranking.entity';
 export {OrderOfPlay} from './order-of-play.entity';
 export {Notification} from './notification.entity';
+export {NotificationPreferences} from './notification-preferences.entity';
 export {Announcement} from './announcement.entity';
 export {Payment} from './payment.entity';
 export {Sanction} from './sanction.entity';

@@ -296,30 +296,79 @@
 
 ### **J. NOTIFICATIONS** 🔔
 
-#### View Notifications (Registered User)
-- [ ] **Check notification bell** - shows unread count
-- [ ] **Click notification icon**
-- [ ] **View notification list** - sorted by date
-- [ ] **Mark as read** - click notification
-- [ ] **Navigate to related content** - click takes you to match/tournament
+#### View Notifications (Registered User) ✅ PHASE 1 COMPLETE (v1.85.0)
+- [x] **Check notification bell** - shows unread count ✅ Animated badge with pulse effect
+- [x] **Click notification icon** ✅ Toggles dropdown with last 5 notifications
+- [x] **View notification list** - sorted by date ✅ Recent notifications in dropdown, full list at /notifications
+- [x] **Mark as read** - click notification ✅ Marks as read and navigates to related content
+- [x] **Navigate to related content** - click takes you to match/tournament ✅ Metadata-based routing by NotificationType
 
-#### Configure Notification Preferences (Registered User)
-- [ ] **Navigate to "Settings"** → "Notifications"
-- [ ] **Enable/disable channels**: In-app, Email, Telegram, Web Push
-- [ ] **Select event types**:
-  - [ ] Match schedule
-  - [ ] Result entered
-  - [ ] Order of play change
-  - [ ] New announcement
-  - [ ] Registration confirmation
-- [ ] **Save preferences** - future notifications follow settings
+#### Configure Notification Preferences (Registered User) ✅ PHASE 2 COMPLETE (v1.86.0)
+- [x] **Navigate to `/notification-preferences`** ✅ Route with auth guard
+- [x] **Enable/disable channels**: In-app, Email, Telegram, Web Push ✅ Toggle switches with Coming Soon badges
+- [x] **Select event types**: ✅ All 5 event types with toggle switches
+  - [x] Match schedule ✅
+  - [x] Result entered ✅
+  - [x] Order of play change ✅
+  - [x] New announcement ✅
+  - [x] Registration confirmation ✅
+- [x] **Save preferences** - future notifications follow settings ✅ Backend integration with NotificationService
 
-#### Notification Triggers (Test These Events)
-- [ ] **Registration accepted** → notification sent
-- [ ] **Match scheduled** → notification sent
-- [ ] **Result entered by opponent** → notification sent
-- [ ] **Order of play changed** → notification sent
-- [ ] **New announcement published** → notification sent
+#### Notification Triggers (Test These Events) ✅ PHASE 1 COMPLETE (v1.85.0)
+- [x] **Registration accepted** → notification sent ✅ RegistrationController.updateStatus()
+- [x] **Match scheduled** → notification sent ✅ OrderOfPlayController (already implemented)
+- [x] **Result entered by opponent** → notification sent ✅ MatchController.submitResultAsParticipant()
+- [x] **Order of play changed** → notification sent ✅ OrderOfPlayController.publishOrderOfPlay()
+- [x] **New announcement published** → notification sent ✅ AnnouncementService.sendPublicationNotifications()
+
+> **Status**: Phase 1 & 2 COMPLETE (v1.85.0 - v1.86.0) ✅
+> 
+> **Phase 1 (v1.85.0)** ✅:
+> - ✅ Backend: NotificationService with 8 notification methods (notifyResultEntered, notifyResultConfirmed, notifyResultDisputed, notifyMatchScheduled, notifyRegistrationConfirmed, notifyOrderOfPlayPublished, notifyAnnouncementPublished)
+> - ✅ Frontend: NotificationBellComponent with real-time WebSocket updates
+> - ✅ Navigation: Metadata-based routing to related content
+> - ✅ Integration: All 5 notification triggers wired to backend controllers
+> 
+> **Phase 2 (v1.86.0)** ✅:
+> - ✅ Backend: NotificationPreferences entity with one-to-one User relationship
+> - ✅ Backend: NotificationPreferencesService with shouldNotify() preference checking
+> - ✅ Backend: NotificationPreferencesController with GET/PUT endpoints (auth guards)
+> - ✅ Frontend: NotificationPreferencesComponent at `/notification-preferences` route
+> - ✅ Frontend: NotificationPreferencesService with signal-based state management
+> - ✅ UI: Toggle switches for 4 channels and 5 event types
+> - ✅ Integration: NotificationService checks user preferences before creating notifications
+> - ✅ Defaults: All in-app notifications enabled, email/telegram/webpush disabled (Coming Soon badges)
+> 
+> **Implementation Files**:
+> - Backend Entities: `backend/src/domain/entities/notification-preferences.entity.ts` (195 lines)
+> - Backend Service: `backend/src/application/services/notification-preferences.service.ts` (150 lines)
+> - Backend Controller: `backend/src/presentation/controllers/notification-preferences.controller.ts` (78 lines)
+> - Frontend Service: `src/application/services/notification-preferences.service.ts` (95 lines)
+> - Frontend Component: `src/presentation/pages/notification-preferences/` (3 files, ~670 lines)
+> - Modified: `backend/src/application/services/notification.service.ts` (+15 lines - preference checking)
+> - Modified: `backend/src/presentation/routes/index.ts` (+75 lines - 2 new routes)
+> 
+> **API Endpoints**:
+> - GET `/api/users/:userId/notification-preferences` - Get user preferences (creates defaults if none exist)
+> - PUT `/api/users/:userId/notification-preferences` - Update user preferences (auth required)
+> 
+> **Database Tables**:
+> - `notification_preferences`: userId (PK), 4 channel toggles, 5 event type toggles, enabledChannels[], enabledTypes[]
+> 
+> **Notification Triggers**:
+> 1. **Registration Accepted**: `RegistrationController.updateStatus()` → calls `notifyRegistrationConfirmed()`
+> 2. **Match Scheduled**: `OrderOfPlayController.generateSchedule()` → calls `notifyMatchScheduled()`
+> 3. **Result Entered**: `MatchController.submitResultAsParticipant()` → calls `notifyResultEntered()`
+> 4. **Order of Play Published**: `OrderOfPlayController.publishOrderOfPlay()` → calls `notifyOrderOfPlayPublished()`
+> 5. **Announcement Published**: `AnnouncementService.create()` → calls `notifyAnnouncementPublished()`
+> 
+> **Preference Enforcement**:
+> - NotificationService.createNotification() checks user preferences before creating notification
+> - If event type is disabled → notification blocked (logged)
+> - If in-app channel is disabled → notification blocked (logged)
+> - Default behavior: If no preferences exist, all notifications are sent
+> 
+> **Next Phase**: Phase 3 - Multi-Channel Delivery (Email integration, Telegram bot, Web Push service worker)
 
 ---
 

@@ -8,6 +8,675 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### **ENHANCED** — Notification Triggers & Backend Integration (Phase 1 Complete) 🔔
+
+**Feature Date**: April 8, 2026
+
+Completed Phase 1 notification system by implementing all 5 notification triggers and integrating them into backend controllers.
+
+#### Added Notification Methods
+
+**Backend**: `backend/src/application/services/notification.service.ts`
+
+1. **`notifyRegistrationConfirmed()`** (New):
+   - Parameters: participantId, tournamentName, tournamentId, acceptanceType
+   - Message: Dynamic based on acceptance type (DA, WC, ALT)
+   - Metadata: tournamentId, acceptanceType
+   - Trigger: When registration status changes to ACCEPTED
+
+2. **`notifyOrderOfPlayPublished()`** (New):
+   - Parameters: tournamentId, participantIds[], publishDate
+   - Message: "The order of play for {date} has been published"
+   - Metadata: tournamentId, date
+   - Trigger: When order of play is published
+
+3. **`notifyAnnouncementPublished()`** (New):
+   - Parameters: tournamentId, participantIds[], announcementTitle, announcementId
+   - Message: "New announcement: {title}"
+   - Metadata: tournamentId, announcementId
+   - Trigger: When announcement is created/published
+
+**Existing Methods** (Already Implemented):
+- `notifyResultEntered()` - Opponent notified when result is submitted
+- `notifyResultConfirmed()` - Submitter notified when result is confirmed
+- `notifyResultDisputed()` - Admins notified when result is disputed
+- `notifyMatchScheduled()` - Participant notified when match is scheduled
+- `createNotification()` - Core notification creation with WebSocket emit
+
+---
+
+#### Backend Integration
+
+**1. Registration Controller** (`registration.controller.ts`):
+```typescript
+// Added NotificationService to constructor
+private readonly notificationService: NotificationService;
+
+// In updateStatus() method (line 414-442):
+if (status === RegistrationStatus.ACCEPTED) {
+  const tournament = await tournamentRepository.findOne({
+    where: {id: saved.tournamentId},
+    select: ['name', 'id'],
+  });
+  
+  await this.notificationService.notifyRegistrationConfirmed(
+    saved.participantId,
+    tournament.name,
+    tournament.id,
+    saved.acceptanceType || 'DIRECT_ACCEPTANCE',
+  );
+  console.log(`📧 Sent registration confirmation notification`);
+}
+```
+- **Trigger**: Registration status changes to ACCEPTED
+- **Recipients**: Participant whose registration was accepted
+- **Message**: Dynamic based on acceptanceType (DA/WC/ALT)
+
+**2. Order of Play Controller** (`order-of-play.controller.ts`):
+```typescript
+// Refactored publishOrderOfPlay() method (line 403):
+const participantIdArray = Array.from(participantIds);
+await this.notificationService.notifyOrderOfPlayPublished(
+  orderOfPlay.tournamentId,
+  participantIdArray,
+  orderOfPlay.date,
+);
+console.log(`📧 Sent order of play notifications to ${participantIdArray.length} participants`);
+```
+- **Trigger**: Admin publishes order of play
+- **Recipients**: All participants with scheduled matches on that date
+- **Message**: "The order of play for {date} has been published"
+
+**3. Announcement Service** (`announcement.service.ts`):
+```typescript
+// Refactored sendPublicationNotifications() method (line 407):
+await this.notificationService.notifyAnnouncementPublished(
+  announcement.tournamentId,
+  participantIds,
+  announcement.title,
+  announcement.id,
+);
+console.log(`📧 Sent announcement notifications to ${participantIds.length} participants`);
+```
+- **Trigger**: Announcement is created with `isPublished: true` or manually published
+- **Recipients**: ACCEPTED participants in tournament
+- **Privacy**: PRIVATE announcements only notify registered participants
+
+**4. Match Controller** (Already Implemented):
+- `notifyResultEntered()` - Called when participant submits result
+- `notifyResultConfirmed()` - Called when opponent confirms result
+- `notifyResultDisputed()` - Called when result is disputed
+- `notifyMatchScheduled()` - Called when match is scheduled
+
+---
+
+#### All 5 Notification Triggers Implemented ✅
+
+| Trigger | Controller/Service | Method | Recipients | Status |
+|---------|-------------------|--------|------------|--------|
+| **Registration Accepted** | RegistrationController | `notifyRegistrationConfirmed()` | Participant | ✅ Complete |
+| **Match Scheduled** | OrderOfPlayController | `notifyMatchScheduled()` | Both participants | ✅ Complete |
+| **Result Entered** | MatchController | `notifyResultEntered()` | Opponent | ✅ Complete |
+| **Order of Play Published** | OrderOfPlayController | `notifyOrderOfPlayPublished()` | All scheduled participants | ✅ Complete |
+| **Announcement Published** | AnnouncementService | `notifyAnnouncementPublished()` | ACCEPTED participants | ✅ Complete |
+
+---
+
+#### Testing Scenarios
+
+**Registration Notification**:
+1. Admin approves registration (status → ACCEPTED)
+2. Participant receives notification: "✅ Registration Accepted"
+3. Message varies by acceptance type:
+   - DIRECT_ACCEPTANCE: "Your registration has been accepted!"
+   - WILD_CARD: "You have been granted a Wild Card entry!"
+   - ALTERNATE: "You have been accepted as an Alternate."
+4. Click notification → Navigate to `/tournaments/{id}`
+
+**Order of Play Notification**:
+1. Admin publishes order of play for specific date
+2. All participants with matches on that date receive notification
+3. Message: "📅 Order of Play Published - The order of play for {date} has been published"
+4. Click notification → Navigate to `/tournaments/{id}`
+
+**Announcement Notification**:
+1. Admin creates announcement with `isPublished: true`
+2. ACCEPTED participants receive notification
+3. Message: "📢 New Announcement: {title}"
+4. Click notification → Navigate to `/announcements?id={announcementId}`
+
+**Existing Notifications** (Already Working):
+- Match scheduled → Both participants notified with date/time/court
+- Result entered → Opponent notified to confirm/dispute
+- Result confirmed → Original submitter notified
+- Result disputed → All admins notified
+
+---
+
+#### Phase 1 Summary
+
+**Completed Features**:
+- ✅ Notification bell component with real-time updates
+- ✅ WebSocket integration for instant delivery
+- ✅ Metadata-based navigation to related content
+- ✅ All 5 notification triggers implemented
+- ✅ Backend notification service with 8 methods
+- ✅ Frontend UI components (header + bell + dropdown)
+- ✅ Time ago formatting and unread count
+- ✅ Mark as read functionality
+
+**Files Modified/Created**:
+- Modified: `backend/src/application/services/notification.service.ts` (+88 lines)
+- Modified: `backend/src/presentation/controllers/registration.controller.ts` (+32 lines)
+- Modified: `backend/src/presentation/controllers/order-of-play.controller.ts` (refactored)
+- Modified: `backend/src/application/services/announcement.service.ts` (refactored)
+- Modified: `src/domain/enumerations/notification-type.ts` (+2 lines - ANNOUNCEMENT)
+- Modified: `docs/requirements-checklist.md` (marked Phase 1 complete)
+
+**Next Phase**: Phase 2 - Notification Preferences (user settings UI, backend entity, API endpoints)
+
+---
+
+### **ENHANCED** — Notification Preferences System (Phase 2 Complete) ⚙️
+
+**Feature Date**: April 8, 2026
+
+Completed Phase 2 notification system by implementing user notification preferences, allowing users to control which notification channels and event types they want to receive.
+
+#### Backend Implementation
+
+**1. NotificationPreferences Entity** (`backend/src/domain/entities/notification-preferences.entity.ts`):
+```typescript
+@Entity('notification_preferences')
+export class NotificationPreferences {
+  @PrimaryColumn('varchar')
+  public userId!: string;
+  
+  // Channel toggles (boolean columns)
+  public inAppEnabled!: boolean;       // Default: true
+  public emailEnabled!: boolean;       // Default: false
+  public telegramEnabled!: boolean;    // Default: false
+  public webPushEnabled!: boolean;     // Default: false
+  
+  // Event type toggles (boolean columns)
+  public matchScheduledEnabled!: boolean;            // Default: true
+  public resultEnteredEnabled!: boolean;             // Default: true
+  public orderOfPlayPublishedEnabled!: boolean;      // Default: true
+  public announcementEnabled!: boolean;              // Default: true
+  public registrationConfirmedEnabled!: boolean;     // Default: true
+  
+  // Arrays for quick filtering
+  @Column('simple-array')
+  public enabledChannels!: NotificationChannel[];
+  
+  @Column('simple-array')
+  public enabledTypes!: NotificationType[];
+}
+```
+- **One-to-one relationship** with User entity (userId as primary key)
+- **Default preferences**: All in-app notifications enabled, email/telegram/webpush disabled
+- **Helper methods**: `isChannelEnabled()`, `isTypeEnabled()`, `updateEnabledChannels()`, `updateEnabledTypes()`
+- **Static factory**: `createDefault(userId)` for new users
+
+**2. NotificationPreferencesService** (`backend/src/application/services/notification-preferences.service.ts`):
+- **`getByUserId(userId)`**: Gets preferences, creates defaults if none exist
+- **`update(userId, updates)`**: Updates preference toggles, recalculates enabled arrays
+- **`shouldNotify(userId, channel, type)`**: Checks if user should receive specific notification
+
+**3. NotificationPreferencesController** (`backend/src/presentation/controllers/notification-preferences.controller.ts`):
+- **GET `/api/users/:userId/notification-preferences`**: Get user preferences (auth required, users can only view their own)
+- **PUT `/api/users/:userId/notification-preferences`**: Update preferences (auth required, users can only update their own)
+
+**4. Integration with NotificationService** (`notification.service.ts`):
+```typescript
+// Modified createNotification() to check preferences before creating
+const preferences = await preferencesRepository.findOne({where: {userId}});
+
+// Block notification if type is disabled
+if (preferences && !preferences.isTypeEnabled(type)) {
+  console.log(`⚠️ Notification blocked by user preferences: ${userId} - ${type}`);
+  return null;
+}
+
+// Block notification if in-app channel is disabled
+if (preferences && !preferences.isChannelEnabled(NotificationChannel.IN_APP)) {
+  console.log(`⚠️ In-app notification blocked by user preferences: ${userId}`);
+  return null;
+}
+```
+- **Non-blocking**: Notification failures don't affect main operations
+- **Default behavior**: If no preferences exist, all notifications are sent
+- **Logging**: Blocked notifications are logged for debugging
+
+---
+
+#### Frontend Implementation
+
+**1. NotificationPreferencesService** (`src/application/services/notification-preferences.service.ts`):
+```typescript
+@Injectable({providedIn: 'root'})
+export class NotificationPreferencesService {
+  public readonly preferences = signal<NotificationPreferences | null>(null);
+  
+  public getByUserId(userId: string): Observable<NotificationPreferences>;
+  public update(userId: string, updates: UpdateNotificationPreferences): Observable<NotificationPreferences>;
+}
+```
+- **Signal-based state**: Reactive preferences updates across components
+- **HTTP integration**: Communicates with backend API
+- **Auto-update**: Preferences signal automatically updates on successful API calls
+
+**2. NotificationPreferencesComponent** (`src/presentation/pages/notification-preferences/notification-preferences.component.ts`):
+- **Route**: `/notification-preferences` (auth required)
+- **Features**:
+  - Loading state with spinner
+  - Error and success message display
+  - Two sections: Notification Channels & Notification Types
+  - Toggle switches for all 4 channels and 5 event types
+  - Save/Cancel buttons with saving indicator
+  - Responsive design (mobile-first)
+
+**3. Notification Channels Section**:
+| Channel | Description | Status |
+|---------|-------------|--------|
+| **In-App** | Receive notifications in the application | ✅ Enabled |
+| **Email** | Receive notifications via email | 🔜 Coming Soon (Phase 3) |
+| **Telegram** | Receive notifications via Telegram bot | 🔜 Coming Soon (Phase 3) |
+| **Web Push** | Receive browser push notifications | 🔜 Coming Soon (Phase 3) |
+
+**4. Notification Types Section**:
+| Event Type | Description | Default |
+|------------|-------------|---------|
+| **Registration Confirmations** | When tournament registration is accepted | ✅ Enabled |
+| **Match Schedules** | When matches are scheduled | ✅ Enabled |
+| **Match Results** | When match results are entered | ✅ Enabled |
+| **Order of Play** | When tournament schedules are published | ✅ Enabled |
+| **Announcements** | Tournament announcements and updates | ✅ Enabled |
+
+---
+
+#### User Experience Flow
+
+**Accessing Preferences**:
+1. Click user menu/settings in application header
+2. Navigate to `/notification-preferences`
+3. View current preference settings (loads with spinner)
+
+**Modifying Preferences**:
+1. Toggle any channel or event type switch
+2. Changes are reflected immediately in UI (optimistic updates)
+3. Click "Save Preferences" button
+4. Success message displayed: "Preferences saved successfully!"
+5. Message auto-dismisses after 3 seconds
+
+**Preference Enforcement**:
+1. User disables "Match Schedules" event type
+2. Backend receives match scheduled event
+3. NotificationService checks user preferences
+4. Notification creation is blocked for that user
+5. Log entry: "⚠️ Notification blocked by user preferences: {userId} - MATCH_SCHEDULED"
+6. Other users with enabled preferences still receive notification
+
+---
+
+#### Testing Scenarios
+
+**Scenario 1: Disable In-App Notifications**:
+1. Navigate to `/notification-preferences`
+2. Toggle "In-App Notifications" OFF
+3. Save preferences
+4. Trigger any notification event (match scheduled, result entered, etc.)
+5. **Expected**: No notification appears in bell dropdown
+6. Toggle back ON and save
+7. Trigger notification event
+8. **Expected**: Notification appears in bell dropdown
+
+**Scenario 2: Disable Specific Event Type**:
+1. Toggle "Announcements" OFF
+2. Save preferences
+3. Admin publishes new announcement
+4. **Expected**: No announcement notification received
+5. Other participants with enabled preferences receive notification
+
+**Scenario 3: Default Preferences for New User**:
+1. Register new user account
+2. Trigger notification event
+3. **Expected**: Notification is received (defaults: all enabled)
+4. Navigate to `/notification-preferences`
+5. **Expected**: All toggles are enabled except email/telegram/webpush
+
+**Scenario 4: Selective Event Types**:
+1. Disable "Match Results" and "Order of Play"
+2. Keep "Match Schedules" and "Announcements" enabled
+3. Trigger all 4 event types
+4. **Expected**: Only match scheduled and announcement notifications received
+
+---
+
+#### Phase 2 Summary
+
+**Completed Features**:
+- ✅ NotificationPreferences entity with one-to-one User relationship
+- ✅ Preference API endpoints (GET/PUT with auth guards)
+- ✅ Notification preferences UI component with toggle switches
+- ✅ Integration of preference checking in NotificationService
+- ✅ Default preferences creation for new users
+- ✅ Responsive preferences page design
+- ✅ Non-blocking notification preference enforcement
+- ✅ "Coming Soon" badges for Phase 3 channels (email, telegram, webpush)
+
+**Files Created**:
+- Created: `backend/src/domain/entities/notification-preferences.entity.ts` (195 lines)
+- Created: `backend/src/application/dto/notification-preferences.dto.ts` (48 lines)
+- Created: `backend/src/application/services/notification-preferences.service.ts` (150 lines)
+- Created: `backend/src/presentation/controllers/notification-preferences.controller.ts` (78 lines)
+- Created: `src/application/services/notification-preferences.service.ts` (95 lines)
+- Created: `src/presentation/pages/notification-preferences/notification-preferences.component.ts` (174 lines)
+- Created: `src/presentation/pages/notification-preferences/notification-preferences.component.html` (215 lines)
+- Created: `src/presentation/pages/notification-preferences/notification-preferences.component.css` (280 lines)
+
+**Files Modified**:
+- Modified: `backend/src/presentation/routes/index.ts` (+75 lines - 2 new routes with Swagger docs)
+- Modified: `backend/src/domain/entities/index.ts` (+1 export)
+- Modified: `backend/src/application/services/notification.service.ts` (+15 lines - preference checking)
+- Modified: `src/presentation/app.routes.ts` (+8 lines - new route)
+
+**Database Changes**:
+- New table: `notification_preferences`
+  - Columns: userId (PK), inAppEnabled, emailEnabled, telegramEnabled, webPushEnabled,
+    matchScheduledEnabled, resultEnteredEnabled, orderOfPlayPublishedEnabled,
+    announcementEnabled, registrationConfirmedEnabled, enabledChannels, enabledTypes,
+    createdAt, updatedAt
+  - Foreign key: userId → users.id (CASCADE delete)
+
+**Next Phase**: Phase 3 - Multi-Channel Delivery (Email integration, Telegram bot, Web Push service worker)
+
+---
+
+### **NEW** — Real-Time Notification System with Bell Component (Phase 1) 🔔
+
+**Feature Date**: April 8, 2026
+
+Implemented comprehensive notification system with real-time WebSocket updates, notification bell UI component, and intelligent navigation to related content.
+
+#### Problem Statement
+
+The application lacked user-facing notification infrastructure:
+- ❌ No notification bell icon in application header
+- ❌ No visible unread notification count indicator
+- ❌ No quick preview of recent notifications
+- ❌ No real-time notification delivery to users
+- ❌ No navigation from notifications to related content (matches, tournaments)
+- ❌ Users had to manually check full notifications page for updates
+
+#### Solution
+
+Built complete Phase 1 notification UI infrastructure with real-time WebSocket integration, notification bell dropdown, and metadata-based navigation system.
+
+---
+
+#### Features Implemented
+
+**1. Application Header Component**
+- ✅ Created reusable `HeaderComponent` with authentication-aware navigation
+- ✅ Integrated notification bell in header for all authenticated users
+- ✅ Role-based navigation (Admin menu for SYSTEM_ADMIN and TOURNAMENT_ADMIN)
+- ✅ User dropdown menu with profile, privacy, notifications, and logout
+- ✅ Responsive design (tablet at 968px, mobile at 480px)
+- ✅ Sticky header with gradient background (primary → secondary)
+
+**2. Notification Bell Component**
+- ✅ Circular bell icon with real-time unread count badge
+- ✅ Animated pulse effect on unread badge (2s infinite)
+- ✅ Dropdown preview showing last 5 notifications
+- ✅ Click notification to mark as read and navigate to related content
+- ✅ "View all" link to full notifications page
+- ✅ Empty state ("🔕 No notifications yet") and loading state
+- ✅ Time ago formatting (just now, 5m ago, 3h ago, 2d ago)
+
+**3. Real-Time WebSocket Integration**
+- ✅ Created `WebSocketService` as singleton wrapper around `SocketClient`
+- ✅ Automatic connection with JWT authentication on initialization
+- ✅ Listen for `ServerEvent.NOTIFICATION_NEW` to receive real-time notifications
+- ✅ Notifications automatically appear in bell dropdown without page refresh
+- ✅ Unread count updates in real-time
+
+**4. Intelligent Navigation**
+- ✅ Click notification navigates based on `NotificationType`:
+  - `MATCH_SCHEDULED`, `RESULT_ENTERED` → `/matches/{referenceId}`
+  - `REGISTRATION_CONFIRMED`, `ORDER_OF_PLAY_PUBLISHED` → `/tournaments/{referenceId}`
+  - `ANNOUNCEMENT` → `/announcements?id={referenceId}`
+- ✅ Mark notification as read on click
+- ✅ Close dropdown after navigation
+
+**5. Frontend Enhancements**
+- ✅ Added `ANNOUNCEMENT` to frontend `NotificationType` enum
+- ✅ Added WebSocket event constants (`ServerEvent`, `ClientEvent`) to `constants.ts`
+- ✅ Fixed notification service method calls (`getByRecipient`, `markAsRead` with userId)
+
+---
+
+#### Implementation Details
+
+**New Files Created**:
+
+1. **`src/presentation/components/header/header.component.ts`** (68 lines)
+   - Angular standalone component with AuthStateService integration
+   - Getters: `isAuthenticated`, `isAdmin`, `username`, `userInitials`
+   - Method: `logout()` calls `authStateService.clearAuth()` and navigates to login
+
+2. **`src/presentation/components/header/header.component.html`** (84 lines)
+   - Conditional brand logo, navigation (Tournaments, My Matches, Admin)
+   - Notification bell integration with `<app-notification-bell>`
+   - User dropdown with avatar initials and menu items
+   - Guest actions (Login, Sign Up buttons)
+
+3. **`src/presentation/components/header/header.component.css`** (242 lines)
+   - Sticky header with gradient background and z-index layering
+   - Circular user avatar (32px) with gradient background
+   - Hover-triggered dropdown menu (200px min-width, shadow-lg)
+   - Responsive breakpoints: 968px (tablet), 480px (mobile)
+
+4. **`src/presentation/components/notification-bell/notification-bell.component.ts`** (195 lines)
+   - Signals: `notifications`, `isDropdownOpen`, `isLoading`
+   - Computed: `recentNotifications()` (last 5), `unreadCount()`
+   - Methods:
+     - `loadNotifications()`: Fetches notifications via `NotificationService.getByRecipient()`
+     - `setupWebSocketListener()`: Listens for `ServerEvent.NOTIFICATION_NEW` and prepends to list
+     - `handleNotificationClick()`: Marks as read, navigates based on type, closes dropdown
+     - `formatTimeAgo()`: Returns relative time (just now, Xm/h/d ago)
+   - Lifecycle: `ngOnInit` loads notifications and sets up WebSocket, `ngOnDestroy` cleanup
+
+5. **`src/presentation/components/notification-bell/notification-bell.component.html`** (64 lines)
+   - Bell button with conditional unread badge showing count
+   - Dropdown menu: header (title + unread count text), scrollable list (max 5), footer link
+   - Notification items: title (bold), message (2-line clamp), time ago, unread dot
+   - States: Loading ("Loading..."), empty (🔕 icon + message), populated list
+
+6. **`src/presentation/components/notification-bell/notification-bell.component.css`** (296 lines)
+   - Bell button: 40x40px circle, white semi-transparent background, hover scale effect
+   - Unread badge: gradient (error→warning), positioned top-right, animated pulse
+   - Dropdown: 380px wide, 500px max-height, shadow-xl, z-index layering
+   - Notification items: hover effects, unread highlighting (primary-alpha background)
+   - Responsive: 480px breakpoint adjusts dropdown width and positioning
+
+7. **`src/infrastructure/websocket/websocket.service.ts`** (105 lines)
+   - Injectable Angular service wrapping `SocketClient`
+   - Method: `connect()` uses `AuthStateService.getToken()` for authentication
+   - Methods: `on<T>()`, `emit<T>()`, `isConnected()`, `disconnect()`
+   - Singleton service with automatic dependency injection
+
+**Modified Files**:
+
+1. **`src/presentation/app.component.ts`**
+   - Added `HeaderComponent` import and to imports array
+   - Updated template to include `<app-header>` before `<router-outlet>`
+   - Adjusted `.app-container` height to `calc(100vh - 64px)` to account for header
+
+2. **`src/domain/enumerations/notification-type.ts`**
+   - Added `ANNOUNCEMENT = 'ANNOUNCEMENT'` to enum
+
+3. **`src/shared/constants.ts`**
+   - Added `ServerEvent` enum with all WebSocket server-to-client events
+   - Added `ClientEvent` enum with all client-to-server events
+   - Includes notification events: `NOTIFICATION_NEW`, `NOTIFICATION_COUNT`
+
+4. **`src/infrastructure/websocket/index.ts`**
+   - Exported `WebSocketService` from barrel export
+
+---
+
+#### API Integration
+
+**NotificationService Methods Used**:
+
+1. **`getByRecipient(recipientId: string): Promise<NotificationDto[]>`**
+   - Fetches all notifications for current user
+   - Called on component initialization and after marking as read
+
+2. **`markAsRead(notificationId: string, userId: string): Promise<void>`**
+   - Marks notification as read with userId authorization check
+   - Called when user clicks notification item
+
+**WebSocket Events**:
+
+1. **`ServerEvent.NOTIFICATION_NEW`** (Receive)
+   - Payload: `NotificationDto`
+   - Handler: Prepends notification to bell dropdown list
+   - Updates unread count automatically via computed signal
+
+2. **`ServerEvent.NOTIFICATION_COUNT`** (Receive)
+   - Payload: `number`
+   - Handler: Logs unread count update (used for debugging)
+
+---
+
+#### Navigation Logic
+
+**NotificationType Routing Table**:
+
+| Notification Type            | Navigation Route                            | Example                         |
+|------------------------------|---------------------------------------------|---------------------------------|
+| `MATCH_SCHEDULED`            | `/matches/{referenceId}`                    | `/matches/abc123`               |
+| `RESULT_ENTERED`             | `/matches/{referenceId}`                    | `/matches/def456`               |
+| `REGISTRATION_CONFIRMED`     | `/tournaments/{referenceId}`                | `/tournaments/xyz789`           |
+| `ORDER_OF_PLAY_PUBLISHED`    | `/tournaments/{referenceId}`                | `/tournaments/uvw101`           |
+| `ANNOUNCEMENT`               | `/announcements?id={referenceId}`           | `/announcements?id=pqr202`      |
+| No `referenceId`             | `/notifications` (fallback)                 | `/notifications`                |
+
+**Navigation Flow**:
+1. User clicks notification in dropdown
+2. Component calls `handleNotificationClick(notification)`
+3. If unread, calls `markAsRead(notification.id)`
+4. Closes dropdown with `closeDropdown()`
+5. Navigates using `router.navigate()` based on notification type
+6. Refreshes notification list to reflect read status
+
+---
+
+#### Styling & UX
+
+**Bell Button**:
+- Circular 40x40px button with white semi-transparent background
+- Hover effect: `scale(1.05)` transformation
+- Icon: 🔔 emoji (font-size: 1.25rem)
+
+**Unread Badge**:
+- Gradient background: `linear-gradient(135deg, error, warning)`
+- Positioned absolute top-right (-4px, -4px)
+- 20px min-width/height, 0.75rem font, 700 weight
+- Animated pulse: Scale 1 → 1.1 → 1 over 2s (infinite)
+
+**Dropdown Menu**:
+- Width: 380px (calc(100vw - 32px) on mobile)
+- Max-height: 500px with scrollable content area (max 400px)
+- Shadow: `shadow-xl` for depth
+- Positioned absolute top+8px, right aligned to bell button
+
+**Notification Item**:
+- Hover: `background-color: var(--color-gray-50)`
+- Unread items: `background-color: rgba(primary, 0.08)`
+- 2-line message clamp with ellipsis
+- Unread dot: 8px circle, primary color
+
+**Responsive Breakpoints**:
+- **968px (Tablet)**: Wrap navigation, hide user name in dropdown
+- **480px (Mobile)**: Smaller fonts/padding, full-width dropdown
+
+---
+
+#### Testing Scenarios
+
+1. **Bell Icon Display**:
+   - ✅ Bell icon appears in header for authenticated users
+   - ✅ Bell icon hidden for guest users (show Login/Sign Up buttons instead)
+   - ✅ Unread badge shows correct count
+
+2. **Dropdown Interaction**:
+   - ✅ Click bell toggles dropdown visibility
+   - ✅ Click outside dropdown closes it (overlay click handler)
+   - ✅ Dropdown shows last 5 notifications
+   - ✅ Empty state displays when no notifications
+   - ✅ Loading state displays while fetching
+
+3. **Real-Time Updates**:
+   - ✅ New notification appears in dropdown without page refresh
+   - ✅ Unread count increments when new notification arrives
+   - ✅ WebSocket connection established on component init
+
+4. **Navigation**:
+   - ✅ Click match notification navigates to `/matches/{id}`
+   - ✅ Click tournament notification navigates to `/tournaments/{id}`
+   - ✅ Click announcement notification navigates to `/announcements?id={id}`
+   - ✅ Notification marked as read on click
+   - ✅ Dropdown closes after navigation
+
+5. **Time Formatting**:
+   - ✅ Just now (< 1 minute)
+   - ✅ "5m ago" (< 60 minutes)
+   - ✅ "3h ago" (< 24 hours)
+   - ✅ "2d ago" (< 7 days)
+   - ✅ Formatted date (>= 7 days)
+
+---
+
+#### Technical Notes
+
+**Authorization**:
+- WebSocket connection uses JWT from `AuthStateService.getToken()`
+- `markAsRead()` requires userId parameter for backend authorization check
+- Component only loads notifications for `authStateService.getCurrentUser()`
+
+**Performance**:
+- Dropdown shows max 5 recent notifications to limit rendering
+- Full notification list available at `/notifications` route
+- WebSocket listener tied to component lifecycle (cleanup in `ngOnDestroy`)
+
+**Error Handling**:
+- Catches and logs errors from `loadNotifications()`
+- Catches and logs errors from `markAsRead()`
+- WebSocket service logs connection errors to console
+
+---
+
+#### Future Enhancements (Phase 2 & 3)
+
+**Phase 2 - Notification Preferences**:
+- Create `NotificationPreferences` entity (backend database model)
+- Implement preferences API endpoints (GET/PUT `/users/:id/notification-preferences`)
+- Build notification preferences UI component (`/settings/notifications`)
+- Add channel toggles (IN_APP, EMAIL, TELEGRAM, WEB_PUSH)
+- Add event type checkboxes (per NotificationType)
+- Integrate preferences into NotificationService send logic
+
+**Phase 3 - Multi-Channel Delivery**:
+- Setup email integration (SMTP/SendGrid)
+- Implement Telegram Bot API integration
+- Configure Web Push notifications via service worker
+- Test all notification channels end-to-end
+
+---
+
 ### **Enhanced** — Tournament Date Validation & Registration Deadline Enforcement (v1.84.0) 📅
 
 **Feature Date**: April 9, 2026
