@@ -34,6 +34,7 @@ export interface NotificationDto {
   message: string;
   isRead: boolean;
   referenceId: string | null;
+  metadata: Record<string, unknown> | null;
   createdAt: Date;
   readAt: Date | null;
 }

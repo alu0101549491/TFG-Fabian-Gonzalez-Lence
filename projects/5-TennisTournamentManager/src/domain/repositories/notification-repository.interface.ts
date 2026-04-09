@@ -72,4 +72,16 @@ export interface INotificationRepository {
    * @returns Promise resolving when the notification is marked as read
    */
   markAsRead(id: string): Promise<void>;
+
+  /**
+   * Marks all notifications as read for the authenticated user.
+   * @returns Promise resolving when all notifications are marked as read
+   */
+  markAllAsRead(): Promise<void>;
+
+  /**
+   * Deletes all read notifications for the authenticated user.
+   * @returns Promise resolving when all read notifications are deleted
+   */
+  deleteAllRead(): Promise<void>;
 }

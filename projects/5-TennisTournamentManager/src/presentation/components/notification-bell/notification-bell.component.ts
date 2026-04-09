@@ -407,6 +407,12 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
       this.notifications.update(current => [notification, ...current]);
     });
 
+    // Listen for notification refresh events (after delete/bulk operations)
+    this.wsService.on<{userId: string}>(ServerEvent.NOTIFICATIONS_REFRESH, () => {
+      console.log('[NotificationBell] Refreshing notifications...');
+      void this.loadNotifications();
+    });
+
     // Optional: Listen for unread count updates
     this.wsService.on<number>(ServerEvent.NOTIFICATION_COUNT, (count) => {
       console.log('[NotificationBell] Unread count updated:', count);

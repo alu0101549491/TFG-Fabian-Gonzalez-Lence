@@ -108,4 +108,20 @@ export class NotificationRepositoryImpl implements INotificationRepository {
   public async markAsRead(id: string): Promise<void> {
     await this.httpClient.put(`/notifications/${id}/read`, {});
   }
+
+  /**
+   * Marks all notifications as read for the authenticated user.
+   * @returns Promise resolving when all notifications are marked as read
+   */
+  public async markAllAsRead(): Promise<void> {
+    await this.httpClient.put('/notifications/mark-all-read', {});
+  }
+
+  /**
+   * Deletes all read notifications for the authenticated user.
+   * @returns Promise resolving when all read notifications are deleted
+   */
+  public async deleteAllRead(): Promise<void> {
+    await this.httpClient.delete('/notifications/delete-all-read');
+  }
 }

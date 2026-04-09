@@ -82,7 +82,18 @@ export class RegistrationController {
       const tournamentRepository = AppDataSource.getRepository(Tournament);
       
       const {categoryId, participantId} = req.body;
+      
+      console.log('[Registration Controller] Received request body:', req.body);
+      console.log('[Registration Controller] categoryId:', categoryId, 'participantId:', participantId);
+      
+      // Validate required fields
+      if (!categoryId) {
+        console.error('[Registration Controller] Missing categoryId');
+        throw new AppError('Category ID is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+      
       const actualParticipantId = participantId || req.user!.id;
+      console.log('[Registration Controller] actualParticipantId:', actualParticipantId);
       
       // Validate category exists
       const category = await categoryRepository.findOne({
@@ -90,21 +101,26 @@ export class RegistrationController {
         relations: ['tournament'],
       });
       if (!category) {
+        console.error('[Registration Controller] Category not found:', categoryId);
         throw new AppError('Category not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
+      console.log('[Registration Controller] Category found:', category.name, 'Tournament:', category.tournamentId);
       
       // Get tournament to check registration deadline and status
       const tournament = await tournamentRepository.findOne({
         where: {id: category.tournamentId},
       });
       if (!tournament) {
+        console.error('[Registration Controller] Tournament not found:', category.tournamentId);
         throw new AppError('Tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
+      console.log('[Registration Controller] Tournament found:', tournament.name, 'Status:', tournament.status);
       
       // Check tournament status
       if (tournament.status !== TournamentStatus.REGISTRATION_OPEN) {
+        console.error('[Registration Controller] Tournament not open. Current status:', tournament.status, 'Expected:', TournamentStatus.REGISTRATION_OPEN);
         throw new AppError(
-          'Tournament registration is not currently open',
+          `Tournament registration is not currently open (status: ${tournament.status})`,
           HTTP_STATUS.BAD_REQUEST,
           ERROR_CODES.INVALID_OPERATION
         );
@@ -116,6 +132,7 @@ export class RegistrationController {
         const deadline = new Date(tournament.registrationCloseDate);
         
         if (now > deadline) {
+          console.error('[Registration Controller] Registration deadline passed. Deadline:', deadline, 'Now:', now);
           throw new AppError(
             `Registration deadline was ${deadline.toLocaleDateString()}. Registrations are now closed.`,
             HTTP_STATUS.BAD_REQUEST,
@@ -123,12 +140,15 @@ export class RegistrationController {
           );
         }
       }
+      console.log('[Registration Controller] Registration deadline check passed');
       
       // Get participant for ranking information
       const participant = await userRepository.findOne({where: {id: actualParticipantId}});
       if (!participant) {
+        console.error('[Registration Controller] Participant not found:', actualParticipantId);
         throw new AppError('Participant not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
+      console.log('[Registration Controller] Participant found:', participant.username);
       
       // FR12: Count current active registrations for this category
       // Only ACCEPTED registrations with DA or LL count toward the quota
@@ -169,8 +189,9 @@ export class RegistrationController {
       }
       
       const registration = registrationRepository.create({
-        ...req.body,
         id: generateId('reg'),
+        tournamentId: category.tournamentId,
+        categoryId,
         participantId: actualParticipantId,
         acceptanceType,
         status: RegistrationStatus.PENDING,

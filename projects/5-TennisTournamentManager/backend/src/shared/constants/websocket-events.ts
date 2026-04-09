@@ -53,6 +53,9 @@ export enum ServerEvent {
   // Notification Events
   NOTIFICATION_NEW = 'notification:new',
   NOTIFICATION_COUNT = 'notification:count',
+  NOTIFICATION_READ = 'notification:read',
+  NOTIFICATION_DELETED = 'notification:deleted',
+  NOTIFICATIONS_REFRESH = 'notifications:refresh',
   
   // Connection Events
   CONNECTED = 'connected',

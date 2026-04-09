@@ -182,13 +182,54 @@ export class NotificationService implements INotificationService {
       throw new Error('User ID is required');
     }
     
-    // Get all unread notifications
-    const unreadNotifications = await this.notificationRepository.findUnread(userId);
-    
-    // Mark each as read
-    for (const notification of unreadNotifications) {
-      await this.markAsRead(notification.id, userId);
+    // Use the backend endpoint to mark all as read in a single operation
+    await this.notificationRepository.markAllAsRead();
+  }
+
+  /**
+   * Deletes a notification.
+   *
+   * @param notificationId - ID of the notification
+   * @param userId - ID of the user
+   */
+  public async deleteNotification(notificationId: string, userId: string): Promise<void> {
+    // Validate input
+    if (!notificationId || notificationId.trim().length === 0) {
+      throw new Error('Notification ID is required');
     }
+    
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+    
+    // Check if notification exists
+    const notification = await this.notificationRepository.findById(notificationId);
+    if (!notification) {
+      throw new Error('Notification not found');
+    }
+    
+    // Check authorization
+    if (notification.userId !== userId) {
+      throw new Error('User is not authorized to delete this notification');
+    }
+    
+    // Delete notification
+    await this.notificationRepository.delete(notificationId);
+  }
+
+  /**
+   * Deletes all read notifications for a user.
+   *
+   * @param userId - ID of the user
+   */
+  public async deleteAllRead(userId: string): Promise<void> {
+    // Validate input
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+    
+    // Use the backend endpoint to delete all read notifications in a single operation
+    await this.notificationRepository.deleteAllRead();
   }
 
   /**

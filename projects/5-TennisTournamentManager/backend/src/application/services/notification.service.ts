@@ -309,6 +309,8 @@ export class NotificationService {
    * @param opponentName - Name of the opponent
    * @param scheduledTime - Scheduled date/time
    * @param courtName - Court name (optional)
+   * @param tournamentId - ID of the tournament (optional)
+   * @param tournamentName - Name of the tournament (optional)
    */
   public async notifyMatchScheduled(
     matchId: string,
@@ -316,6 +318,8 @@ export class NotificationService {
     opponentName: string,
     scheduledTime: Date,
     courtName?: string,
+    tournamentId?: string,
+    tournamentName?: string,
   ): Promise<void> {
     const dateStr = scheduledTime.toLocaleString('en-US', {
       month: 'short',
@@ -331,7 +335,12 @@ export class NotificationService {
       NotificationType.MATCH_SCHEDULED,
       '📅 Match Scheduled',
       `Your match against ${opponentName} is scheduled for ${dateStr}${courtInfo}.`,
-      {matchId, scheduledTime: scheduledTime.toISOString()},
+      {
+        matchId, 
+        scheduledTime: scheduledTime.toISOString(),
+        tournamentId,
+        tournamentName,
+      },
     );
   }
 

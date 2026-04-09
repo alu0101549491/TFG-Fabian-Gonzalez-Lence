@@ -8,6 +8,944 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### **BUG FIX** — Notification Bell Not Updating (v1.88.18) 🔔
+
+**Update Date**: April 9, 2026
+
+Fixed notification bell dropdown showing stale notifications after deletions or status changes made from the main notifications page.
+
+#### Problem
+
+The notification bell component only listened for `NOTIFICATION_NEW` events via WebSocket. When users deleted notifications or marked them as read from the full notifications page, the bell dropdown continued showing the old state until a full page refresh.
+
+**User Impact**: Deleted notifications still appeared in the bell dropdown, causing confusion.
+
+#### Solution
+
+**1. Added WebSocket Events** ([websocket-events.ts](../backend/src/shared/constants/websocket-events.ts))
+
+Added new server events:
+- `NOTIFICATIONS_REFRESH` - signals the bell to reload all notifications
+- `NOTIFICATION_READ` - when a notification is marked as read
+- `NOTIFICATION_DELETED` - when a notification is deleted
+
+**2. Backend Emits Refresh Events** ([notification.controller.ts](../backend/src/presentation/controllers/notification.controller.ts))
+
+Updated endpoints to emit WebSocket events after state changes:
+
+```typescript
+// After marking as read
+const io = req.app.get('io');
+if (io) {
+  io.to(`user:${userId}`).emit('notifications:refresh', {userId});
+}
+```
+
+Affected endpoints:
+- `PUT /api/notifications/:id/read` - Mark single as read
+- `PUT /api/notifications/mark-all-read` - Mark all as read
+- `DELETE /api/notifications/:id` - Delete single
+- `DELETE /api/notifications/delete-all-read` - Delete all read
+
+**3. Frontend Listens for Refresh** ([notification-bell.component.ts](../src/presentation/components/notification-bell/notification-bell.component.ts))
+
+Added WebSocket listener in bell component:
+
+```typescript
+this.wsService.on<{userId: string}>(ServerEvent.NOTIFICATIONS_REFRESH, () => {
+  console.log('[NotificationBell] Refreshing notifications...');
+  void this.loadNotifications();
+});
+```
+
+**Result**: The bell dropdown now updates instantly when notifications are modified from any page.
+
+---
+
+### **BUG FIX** — Delete All Read Route Order (v1.88.17) 🐛
+
+**Update Date**: April 9, 2026
+
+Fixed critical bug where "Delete All Read" functionality was not working due to Express route ordering issue.
+
+#### Problem
+
+The DELETE `/notifications/delete-all-read` route was defined **after** the DELETE `/notifications/:id` route in the Express router. This caused Express to match "delete-all-read" as the `:id` parameter, attempting to delete a notification with ID "delete-all-read" (which doesn't exist) instead of executing the bulk delete operation.
+
+**User Impact**: Clicking "Delete All Read" button appeared to work, but all notifications would reappear after refresh because they were never actually deleted.
+
+#### Solution
+
+Reordered routes in [routes/index.ts](../backend/src/presentation/routes/index.ts) to ensure specific paths are matched before parameterized paths:
+
+```typescript
+// Specific route MUST come first
+router.delete('/notifications/delete-all-read', authMiddleware, notificationController.deleteAllRead.bind(notificationController));
+
+// Parameterized route comes after
+router.delete('/notifications/:id', authMiddleware, notificationController.delete.bind(notificationController));
+```
+
+**Note**: This is a classic Express routing mistake. Routes are matched in order, so more specific paths must be defined before generic parameterized paths.
+
+---
+
+### **POLISH** — Delete Button UI Improvements (v1.88.16.1) 💅
+
+**Update Date**: April 9, 2026
+
+Improved delete button styling and layout for better visual integration.
+
+#### Changes
+- Moved "Delete All Read" button inside the white card container (integrated with section title)
+- Changed individual delete button text color from red to white for better readability on red background
+- Created `.section-title-with-action` wrapper for unified card appearance
+
+---
+
+### **NEW** — Delete Read Notifications (v1.88.16) 🗑️
+
+**Update Date**: April 9, 2026
+
+Added ability to delete read notifications individually or all at once for better notification management.
+
+#### Features Added
+
+**1. Individual Delete Button**
+- Added 🗑️ "Delete" button to each read notification
+- Red-themed button in notification footer
+- Stops event propagation (doesn't trigger navigation)
+- Graceful error handling for missing notifications
+
+**2. Delete All Read Notifications**
+- Added "🗑️ Delete All Read" button in Read Notifications section header
+- Positioned next to section title (similar to "Mark All as Read")
+- Deletes all read notifications in a single operation
+- Confirmation happens instantly with backend bulk operation
+
+#### Implementation
+
+**Backend** ([notification.controller.ts](../backend/src/presentation/controllers/notification.controller.ts))
+
+```typescript
+/**
+ * Deletes a single notification.
+ */
+public async delete(req: AuthRequest, res: Response): Promise<void> {
+  const {id} = req.params;
+  const userId = req.user!.id;
+  const notificationRepository = AppDataSource.getRepository(Notification);
+  
+  // Delete only if the notification belongs to the user
+  await notificationRepository.delete({id, userId});
+  
+  res.status(HTTP_STATUS.NO_CONTENT).send();
+}
+
+/**
+ * Deletes all read notifications for the authenticated user.
+ */
+public async deleteAllRead(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.id;
+  const notificationRepository = AppDataSource.getRepository(Notification);
+  
+  // Delete all read notifications for this user
+  await notificationRepository.delete({userId, isRead: true});
+  
+  res.status(HTTP_STATUS.NO_CONTENT).send();
+}
+```
+
+**API Endpoints**:
+- `DELETE /api/notifications/:id` - Delete single notification
+- `DELETE /api/notifications/delete-all-read` - Delete all read notifications
+
+**Frontend Service** ([notification.service.ts](../src/application/services/notification.service.ts))
+
+```typescript
+/**
+ * Deletes a notification.
+ */
+public async deleteNotification(notificationId: string, userId: string): Promise<void> {
+  const notification = await this.notificationRepository.findById(notificationId);
+  if (!notification) {
+    throw new Error('Notification not found');
+  }
+  
+  if (notification.userId !== userId) {
+    throw new Error('User is not authorized to delete this notification');
+  }
+  
+  await this.notificationRepository.delete(notificationId);
+}
+
+/**
+ * Deletes all read notifications for a user.
+ */
+public async deleteAllRead(userId: string): Promise<void> {
+  await this.notificationRepository.deleteAllRead();
+}
+```
+
+**Component** ([notification-list.component.ts](../src/presentation/pages/notifications/notification-list/notification-list.component.ts))
+
+```typescript
+/**
+ * Deletes a notification.
+ */
+public async deleteNotification(notificationId: string, event?: Event): Promise<void> {
+  if (event) {
+    event.stopPropagation(); // Don't trigger navigation
+  }
+  
+  try {
+    await this.notificationService.deleteNotification(notificationId, user.id);
+    await this.loadNotifications();
+  } catch (error) {
+    if (errorMessage.includes('not found')) {
+      // Remove from local state
+      const updatedNotifications = this.notifications().filter(n => n.id !== notificationId);
+      this.notifications.set(updatedNotifications);
+    }
+  }
+}
+```
+
+**Template** ([notification-list.component.html](../src/presentation/pages/notifications/notification-list/notification-list.component.html))
+
+```html
+<!-- Read Notifications Section Header -->
+<div class="section-header">
+  <h2 class="section-title">📭 Read Notifications</h2>
+  <button class="delete-all-button" (click)="deleteAllRead()">
+    🗑️ Delete All Read
+  </button>
+</div>
+
+<!-- Individual Delete Button in Footer -->
+<button class="delete-button" (click)="deleteNotification(notification.id, $event)">
+  🗑️ Delete
+</button>
+```
+
+**Styling**:
+- Delete button: Light red background (#fee2e2), red text, hover turns solid red
+- Delete All button: Solid red background, white text, hover darkens
+- Both buttons scale on hover/active for feedback
+- Event propagation stopped to prevent card navigation
+
+#### User Experience
+
+**Before**:
+- ❌ No way to remove old read notifications
+- ❌ Notification list grows indefinitely
+- ❌ Clutter from old notifications
+
+**After**:
+- ✅ Delete individual notifications you don't need
+- ✅ Bulk delete all read notifications in one click
+- ✅ Clean, manageable notification inbox
+- ✅ Only unread notifications remain persistent
+
+#### Behavior
+
+**Delete Individual Notification**:
+1. Click 🗑️ "Delete" button on a read notification
+2. Notification immediately removed from list
+3. Backend deletes from database
+4. No navigation triggered (event.stopPropagation)
+
+**Delete All Read**:
+1. Click 🗑️ "Delete All Read" button
+2. All read notifications removed in single operation
+3. Only unread notifications remain
+4. Much faster than deleting individually
+
+#### Security
+
+- ✅ Authorization check: Users can only delete their own notifications
+- ✅ Validation: Notification must exist and belong to user
+- ✅ Atomic operations: Single DELETE query for bulk operations
+- ✅ Error handling: Missing notifications handled gracefully
+
+#### Performance
+
+**Single Delete**:
+```sql
+DELETE FROM notifications WHERE id = 'ntf_123' AND "userId" = 'usr_456';
+```
+
+**Bulk Delete**:
+```sql
+-- Single query for all read notifications
+DELETE FROM notifications WHERE "userId" = 'usr_456' AND "isRead" = true;
+```
+
+#### Future Enhancements
+- **Confirmation Dialog**: Add "Are you sure?" before deleting all
+- **Undo Delete**: Temporary soft delete with restore option
+- **Archive Instead of Delete**: Move to archive section
+- **Filter by Type**: Delete all read notifications of specific type
+
+#### Result
+- ✅ Complete notification lifecycle management
+- ✅ Clean inbox maintenance
+- ✅ Professional delete functionality
+- ✅ Consistent with modern UX patterns
+
+### **IMPROVED** — Notification Sections Organization (v1.88.15) ✨
+
+**Update Date**: April 9, 2026
+
+Reorganized notifications into separate "Unread" and "Read" sections for better clarity and user experience.
+
+#### Changes
+
+**Before**:
+- All notifications displayed in a single mixed list
+- Read notifications shown with reduced opacity (0.7)
+- Harder to distinguish between read and unread at a glance
+- No clear separation of notification states
+
+**After**:
+- **Unread Notifications**: Displayed at the top with green border-left indicator
+- **Read Notifications**: Displayed in a separate section below with gray border-left
+- Clear section headers: "📬 Unread Notifications" and "📭 Read Notifications"
+- No opacity reduction - all notifications fully visible
+- When marking as read, notification automatically moves from unread to read section
+
+#### Implementation
+
+**Component** ([notification-list.component.ts](../src/presentation/pages/notifications/notification-list/notification-list.component.ts))
+
+Added computed properties to separate notifications:
+
+```typescript
+/**
+ * Gets the list of unread notifications.
+ */
+public get unreadNotifications(): NotificationDto[] {
+  return this.notifications().filter(n => !n.isRead);
+}
+
+/**
+ * Gets the list of read notifications.
+ */
+public get readNotifications(): NotificationDto[] {
+  return this.notifications().filter(n => n.isRead);
+}
+```
+
+**Template** ([notification-list.component.html](../src/presentation/pages/notifications/notification-list/notification-list.component.html))
+
+```html
+<!-- Unread Notifications Section -->
+@if (unreadNotifications.length > 0) {
+  <div class="notifications-section">
+    <h2 class="section-title">📬 Unread Notifications</h2>
+    <div class="notifications-list">
+      @for (notification of unreadNotifications; track notification.id) {
+        <!-- Unread notification card with "Mark as Read" button -->
+      }
+    </div>
+  </div>
+}
+
+<!-- Read Notifications Section -->
+@if (readNotifications.length > 0) {
+  <div class="notifications-section">
+    <h2 class="section-title">📭 Read Notifications</h2>
+    <div class="notifications-list">
+      @for (notification of readNotifications; track notification.id) {
+        <!-- Read notification card (no "Mark as Read" button) -->
+      }
+    </div>
+  </div>
+}
+```
+
+**Styling** ([notification-list.component.css](../src/presentation/pages/notifications/notification-list/notification-list.component.css))
+
+```css
+.section-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+  border-bottom: 2px solid var(--color-gray-200);
+}
+
+.notification-card.unread {
+  border-left-color: #10b981; /* Green indicator */
+}
+
+.notification-card.read {
+  border-left-color: var(--color-gray-300); /* Gray indicator */
+  /* No opacity reduction - fully visible */
+}
+```
+
+#### User Experience Improvements
+
+1. **Visual Hierarchy**: Clear separation between unread and read makes scanning faster
+2. **Animation**: Notification moves smoothly from unread to read section when marked
+3. **Accessibility**: Section headers help screen readers announce notification state
+4. **No Information Loss**: Read notifications remain fully visible (no opacity)
+5. **Context Preservation**: Color indicators (green/gray) provide quick state recognition
+
+#### Behavior
+
+- **Mark as Read (Button)**: Notification moves from "Unread" to "Read" section
+- **Mark as Read (Click)**: Notification marked as read and user navigates to origin
+- **Mark All as Read**: All unread notifications move to "Read" section in one operation
+- **Empty States**: Sections only appear when they have notifications
+
+#### Result
+- ✅ Better visual organization
+- ✅ Clearer notification state indication
+- ✅ Improved scannability
+- ✅ Professional sectioned layout
+- ✅ Maintains full readability for all notifications
+
+### **FIXED** — Mark All As Read State Synchronization (v1.88.14) 🐛
+
+**Update Date**: April 9, 2026
+
+Fixed issue where previously read notifications would reappear as unread when clicking "Mark All as Read" button.
+
+#### Problem
+1. User marks some notifications as read individually
+2. Some notifications don't exist in backend (404 errors) and are removed from local state
+3. User clicks "Mark All as Read"
+4. Backend operation tried to mark each notification individually, failing on missing ones
+5. Frontend reloaded all notifications, bringing back notifications that should be read
+
+#### Root Cause
+The "Mark All as Read" operation was:
+- Fetching all unread notifications from backend
+- Iterating through each one and calling individual `markAsRead` API calls
+- If ANY notification failed (404), the whole operation stopped
+- Frontend caught the error and reloaded, causing state desynchronization
+
+#### Solution
+
+**Backend**: Added dedicated bulk endpoint ([notification.controller.ts](../backend/src/presentation/controllers/notification.controller.ts))
+
+```typescript
+/**
+ * Marks all notifications as read for the authenticated user.
+ */
+public async markAllAsRead(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.id;
+  const notificationRepository = AppDataSource.getRepository(Notification);
+  
+  // Single UPDATE query for all unread notifications
+  await notificationRepository.update(
+    {userId, isRead: false},
+    {isRead: true, readAt: new Date()}
+  );
+  
+  res.status(HTTP_STATUS.NO_CONTENT).send();
+}
+```
+
+**API**: New endpoint `PUT /notifications/mark-all-read`
+- Marks ALL unread notifications in a single database operation
+- No iteration, no individual failures
+- Atomic operation - either all succeed or all fail
+
+**Frontend**: Updated service to use new endpoint ([notification.service.ts](../src/application/services/notification.service.ts))
+
+```typescript
+public async markAllAsRead(userId: string): Promise<void> {
+  // Single API call instead of N individual calls
+  await this.notificationRepository.markAllAsRead();
+}
+```
+
+**Frontend**: Enhanced error handling for individual notifications ([notification-list.component.ts](../src/presentation/pages/notifications/notification-list/notification-list.component.ts))
+
+- If clicking "Mark as Read" on a notification that doesn't exist:
+  - Removes it from local state automatically
+  - Continues with normal operation
+- If clicking the notification card:
+  - Attempts to mark as read
+  - Continues with navigation even if marking fails
+
+#### Improvements
+
+**Before**:
+- ❌ N API calls for N notifications (inefficient)
+- ❌ Fails entirely if one notification is missing
+- ❌ State desynchronization after errors
+- ❌ Previously read notifications reappear
+
+**After**:
+- ✅ Single atomic operation for all notifications
+- ✅ No individual failure points
+- ✅ Consistent state between frontend and backend
+- ✅ Missing notifications handled gracefully
+- ✅ Much faster (1 query instead of N queries)
+
+#### Database Performance
+
+**Old approach**:
+```sql
+-- For 10 notifications, 10 separate queries:
+UPDATE notifications SET "isRead" = true WHERE id = 'ntf_1' AND "userId" = 'usr_123';
+UPDATE notifications SET "isRead" = true WHERE id = 'ntf_2' AND "userId" = 'usr_123';
+... (8 more queries)
+```
+
+**New approach**:
+```sql
+-- Single query for all notifications:
+UPDATE notifications 
+SET "isRead" = true, "readAt" = NOW() 
+WHERE "userId" = 'usr_123' AND "isRead" = false;
+```
+
+#### Result
+- Mark All as Read now works reliably
+- No more state desynchronization
+- Significantly better performance
+- Graceful handling of edge cases
+
+### **FIXED** — Notification 404 Error Handling (v1.88.13) 🐛
+
+**Update Date**: April 9, 2026
+
+Added graceful error handling when marking notifications as read fails due to missing notifications (404 Not Found).
+
+#### Problem
+- Clicking "Mark as Read" on a notification resulted in a 404 error: `GET /api/notifications/ntf_9097fec8 404 (Not Found)`
+- Error message: "Notification not found"
+- This occurs when notifications exist in the frontend state but not in the backend database
+- Common causes:
+  - Database reset during development/testing
+  - Notification was deleted from backend
+  - State mismatch between frontend and backend
+
+#### Solution
+
+**Frontend Error Handling** ([notification-list.component.ts](../src/presentation/pages/notifications/notification-list/notification-list.component.ts))
+
+1. **Mark as Read** - Gracefully removes missing notifications from local state:
+   ```typescript
+   public async markAsRead(notificationId: string, event?: Event): Promise<void> {
+     try {
+       await this.notificationService.markAsRead(notificationId, user.id);
+       await this.loadNotifications();
+     } catch (error) {
+       // If notification doesn't exist (404), remove it from local state
+       if (errorMessage.includes('not found')) {
+         console.warn(`Notification ${notificationId} not found, removing from local state`);
+         const updatedNotifications = this.notifications().filter(n => n.id !== notificationId);
+         this.notifications.set(updatedNotifications);
+       }
+     }
+   }
+   ```
+
+2. **Navigate to Origin** - Continues navigation even if mark-as-read fails:
+   ```typescript
+   try {
+     await this.notificationService.markAsRead(notification.id, user.id);
+   } catch (error) {
+     // If notification doesn't exist, just continue with navigation
+     if (errorMessage.includes('not found')) {
+       console.warn(`Notification ${notification.id} not found, continuing with navigation`);
+     }
+   }
+   ```
+
+3. **Mark All as Read** - Reloads notifications after error to sync state:
+   ```typescript
+   try {
+     await this.notificationService.markAllAsRead(user.id);
+   } catch (error) {
+     // Reload notifications anyway to sync with backend state
+     await this.loadNotifications();
+   }
+   ```
+
+#### Behavior Changes
+
+**Before**:
+- 404 error appears in console
+- Notification remains in list (can't be removed)
+- User experience broken (red error messages)
+
+**After**:
+- Missing notifications automatically removed from local state
+- Warning logged to console (not error)
+- User can continue using the app normally
+- Navigation still works even if notification doesn't exist
+
+#### Result
+- Robust error handling for edge cases
+- Better user experience during development and testing
+- No broken UI state when database is reset
+- Graceful degradation for missing data
+
+### **NEW** — Notification Navigation and Mark as Read Button (v1.88.12) ✨
+
+**Update Date**: April 9, 2026
+
+Enhanced notification cards with clickable navigation to notification origins and dedicated "Mark as Read" button.
+
+#### Features Added
+
+**1. Click Navigation to Origin**
+- Clicking a notification navigates to the relevant page based on notification type:
+  - **MATCH_SCHEDULED / RESULT_ENTERED**: Navigates to match details page (`/matches/:matchId`)
+  - **REGISTRATION_CONFIRMED / ORDER_OF_PLAY_PUBLISHED**: Navigates to tournament page (`/tournaments/:tournamentId`)
+  - **ANNOUNCEMENT**: Navigates to announcements page (`/announcements`)
+  - Fallback: If primary entity isn't available, navigates to related tournament
+- Automatically marks notification as read when navigating
+- Smooth navigation using Angular Router with async/await
+
+**2. Mark as Read Button**
+- Added dedicated "✓ Mark as Read" button to unread notifications
+- Button only appears on unread notifications
+- Positioned in notification footer for easy access
+- Click event doesn't propagate to card click (prevents navigation)
+- Styled with:
+  - Light gray background (#10b981 for unread indicator)
+  - Small, compact design (doesn't clutter UI)
+  - Hover effects (scale 1.05)
+  - Active state feedback (scale 0.95)
+
+**3. Improved Card Styling**
+- Added `.clickable` class for cursor: pointer
+- Better hover effects on entire card
+- Visual feedback when hovering (transform and shadow)
+- Flex-wrap on footer for responsive layout
+
+#### Implementation Details
+
+**Component Logic** ([notification-list.component.ts](../src/presentation/pages/notifications/notification-list/notification-list.component.ts))
+
+```typescript
+/**
+ * Navigates to the origin of the notification based on its type and metadata.
+ *
+ * @param notification - Notification to navigate from
+ */
+public async navigateToOrigin(notification: NotificationDto): Promise<void> {
+  // Auto-mark as read when navigating
+  const user = this.authStateService.getCurrentUser();
+  if (user && !notification.isRead) {
+    await this.notificationService.markAsRead(notification.id, user.id);
+  }
+
+  // Route based on notification type and metadata
+  const metadata = notification.metadata as Record<string, string> | null;
+  
+  switch (notification.type) {
+    case 'MATCH_SCHEDULED':
+    case 'RESULT_ENTERED':
+      if (metadata?.matchId) {
+        await this.router.navigate(['/matches', metadata.matchId]);
+      }
+      break;
+    
+    case 'REGISTRATION_CONFIRMED':
+    case 'ORDER_OF_PLAY_PUBLISHED':
+      if (metadata?.tournamentId) {
+        await this.router.navigate(['/tournaments', metadata.tournamentId]);
+      }
+      break;
+    
+    case 'ANNOUNCEMENT':
+      await this.router.navigate(['/announcements']);
+      break;
+  }
+}
+
+/**
+ * Marks a notification as read.
+ * Event parameter prevents propagation to parent card click.
+ *
+ * @param notificationId - ID of the notification
+ * @param event - Click event (stops propagation)
+ */
+public async markAsRead(notificationId: string, event?: Event): Promise<void> {
+  if (event) {
+    event.stopPropagation(); // Don't trigger card navigation
+  }
+  
+  await this.notificationService.markAsRead(notificationId, user.id);
+  await this.loadNotifications();
+}
+```
+
+**Template** ([notification-list.component.html](../src/presentation/pages/notifications/notification-list/notification-list.component.html))
+
+```html
+<div class="notification-card clickable"
+     (click)="navigateToOrigin(notification)">
+  <!-- Header, message, etc. -->
+  
+  <div class="notification-footer">
+    <span class="notification-date">🕒 {{ formatDate(notification.createdAt) }}</span>
+    <span class="notification-type">{{ formatNotificationType(notification.type) }}</span>
+    
+    @if (!notification.isRead) {
+      <button class="mark-read-button"
+              (click)="markAsRead(notification.id, $event)"
+              type="button"
+              title="Mark as read">
+        ✓ Mark as Read
+      </button>
+    }
+  </div>
+</div>
+```
+
+#### User Experience
+
+**Before**:
+- Clicking notification only marked it as read
+- No way to navigate to related content
+- Had to manually find tournament/match after reading notification
+
+**After**:
+- Click notification → automatically navigate to relevant page
+- Dedicated button to mark as read without leaving notifications page
+- Intuitive: notification about match? Click → go to match details
+- Flexible: can mark as read without navigating if desired
+
+#### Navigation Mapping
+
+| Notification Type            | Primary Target          | Metadata Required        | Fallback Target      |
+|------------------------------|-------------------------|--------------------------|----------------------|
+| MATCH_SCHEDULED              | /matches/:matchId       | matchId                  | /tournaments/:id     |
+| RESULT_ENTERED               | /matches/:matchId       | matchId                  | /tournaments/:id     |
+| REGISTRATION_CONFIRMED       | /tournaments/:id        | tournamentId             | -                    |
+| ORDER_OF_PLAY_PUBLISHED      | /tournaments/:id        | tournamentId             | -                    |
+| ANNOUNCEMENT                 | /announcements          | announcementId (future)  | /tournaments/:id     |
+
+#### Future Enhancements
+- **Announcement Detail Pages**: Navigate directly to specific announcement (requires announcement detail view)
+- **Deep Linking**: Navigate to specific tab in tournament page (e.g., registrations tab for registration notifications)
+- **Match Context**: Show match bracket position or round information in notification
+- **Keyboard Navigation**: Add keyboard shortcuts (Enter to navigate, Space to mark as read)
+- **Undo Mark as Read**: Add ability to mark as unread
+
+#### Testing Checklist
+- ✅ Click match notification → navigate to match details
+- ✅ Click tournament notification → navigate to tournament page
+- ✅ Click announcement → navigate to announcements page
+- ✅ Mark as read button → marks as read without navigation
+- ✅ Mark as read button → stops event propagation
+- ✅ Auto-mark as read when navigating
+- ✅ Button only shows on unread notifications
+- ✅ Hover states work correctly
+- ✅ Responsive layout (flex-wrap on footer)
+
+### **FIXED** — Tournament Registration 400 Error (v1.88.11) 🐛
+
+**Update Date**: April 9, 2026
+
+Fixed tournament registration failing with 400 Bad Request error due to missing `tournamentId` in registration record.
+
+#### Problem
+- Registration failed with error: "null value in column "tournamentId" of relation "registrations" violates not-null constraint"
+- Backend was using `...req.body` spread which only included `categoryId` and `participantId`
+- The `tournamentId` field (required in database) was not being set, causing INSERT to fail with DEFAULT value
+
+#### Root Cause
+The registration entity requires `tournamentId`, but the frontend only sends `categoryId`. The backend must derive `tournamentId` from the category.
+
+#### Solution
+**Backend**: `registration.controller.ts`
+
+- Removed `...req.body` spread operator
+- Explicitly set all required fields when creating registration:
+  - `id`: Generated with `generateId('reg')`
+  - `tournamentId`: Retrieved from `category.tournamentId`
+  - `categoryId`: From request body
+  - `participantId`: From request body or authenticated user
+  - `acceptanceType`: Determined by quota management logic
+  - `status`: Set to `PENDING`
+
+**Frontend**: `registration.service.ts`
+
+- Send minimal payload: `{ categoryId, participantId }`
+- Backend handles all business logic and data enrichment
+
+#### Result
+- Tournament registration now works correctly
+- All required database fields are properly populated
+- Clean separation: frontend sends minimal data, backend enriches it
+- Quota management (FR12) works as expected
+
+---
+
+### **IMPROVED** — Notification Card Design Enhancement (v1.88.10) 🎨
+
+**Update Date**: April 9, 2026
+
+Enhanced notification card design with tournament information display and improved unread indicator styling.
+
+#### Changes
+**Frontend**: `notification-list.component.*`
+
+1. **Tournament Information Display**:
+   - Added `metadata` field to `NotificationDto` to receive tournament/match context
+   - Created `getTournamentName()` method to extract tournament information from metadata
+   - Display tournament badge on the right side of notification cards
+   - Fallback to formatted tournament ID if full name not available
+
+2. **Unread Indicator Styling**:
+   - Changed from fading gradient to solid green tab (6px width, #10b981 color)
+   - Removed gradient background for cleaner, more professional appearance
+   - Maintained smooth hover animations and visual hierarchy
+
+3. **Badge Styling**:
+   - Added `badge-tournament` style with gray background
+   - Tournament badges use normal case (not uppercase) for better readability
+   - Responsive badge layout in notification header
+
+**Backend**: `notification.service.ts`, `order-of-play.controller.ts`
+
+1. **Match Scheduled Notifications**:
+   - Updated `notifyMatchScheduled()` to accept `tournamentId` and `tournamentName` parameters
+   - Include tournament information in notification metadata for context
+   - Load `bracket.tournament` relation when scheduling matches
+   - Pass correct opponent names to each participant (not court names)
+
+2. **Metadata Enhancement**:
+   - All match notifications now include `tournamentId` and `tournamentName` in metadata
+   - Frontend can display tournament context from notification metadata
+   - Better traceability for notification origins
+
+#### Result
+- Notifications clearly show their tournament context at a glance
+- Solid green tab provides clear, professional unread indicator
+- Improved visual hierarchy and information density
+- Better user experience with contextual information display
+- New notifications automatically include tournament information
+
+---
+
+### **FIXED** — Notification Template Compilation Errors (v1.88.9) 🐛
+
+**Update Date**: April 9, 2026
+
+Fixed Angular template compilation errors in notification list component by moving arrow function logic from template to component class.
+
+#### Problem
+- Template contained arrow functions: `notifications().filter(n => !n.isRead)`
+- Angular JIT compiler error: "Bindings cannot contain assignments"
+- Arrow functions and complex expressions not allowed in Angular templates
+
+#### Solution
+**Frontend**: `notification-list.component.ts` and `notification-list.component.html`
+
+1. **Component Class**:
+   - Added `unreadCount` getter property to calculate unread notifications
+   - Added `hasUnread` getter property to check if unread notifications exist
+   - Added `formatNotificationType()` method to format notification type strings
+   - Removed inline arrow functions from template
+
+2. **Template**:
+   - Changed `{{ notifications().filter(n => !n.isRead).length }}` to `{{ unreadCount }}`
+   - Changed `notifications().some(n => !n.isRead)` to `hasUnread`
+   - Changed `!errorMessage()` to `errorMessage() === null`
+   - Changed `notification.type.replace('_', ' ')` to `formatNotificationType(notification.type)`
+
+#### Result
+- Template compiles successfully without errors
+- All functionality preserved with cleaner, more maintainable code
+- Better performance with computed getters instead of inline computations
+- Follows Angular best practices for template expressions
+
+---
+
+### **IMPROVED** — Notifications Page Design Enhancement (v1.88.8) 🎨
+
+**Update Date**: April 9, 2026
+
+Complete redesign of the notifications page to match the modern design system used throughout the application.
+
+#### Changes
+**Frontend**: Notifications page redesign
+
+1. **notification-list.component.html**:
+   - Added hero section with gradient background and decorative overlay
+   - Added back button for navigation
+   - Added notification statistics (total and unread count)
+   - Redesigned notification cards with icons and better visual hierarchy
+   - Added "Mark All as Read" action button
+   - Enhanced empty state with descriptive messaging
+   - Improved loading and error state displays
+
+2. **notification-list.component.ts**:
+   - Added `goBack()` method using Location service
+   - Added `markAllAsRead()` method for bulk action
+   - Added `getNotificationIcon()` method for type-specific icons
+   - Imported Router and Location services
+   - Changed to external CSS file
+
+3. **notification-list.component.css** (NEW):
+   - Hero section with gradient background matching app design
+   - Notification cards with hover effects and transitions
+   - Unread notifications highlighted with colored left border
+   - Responsive design for mobile devices
+   - Loading spinner animation
+   - Empty, error, and loading state styling
+
+#### Features
+- **Hero Section**: Gradient background with title, subtitle, and statistics
+- **Back Button**: Translucent button with hover animation
+- **Notification Icons**: Type-specific emoji icons (🎾, 🏆, 📅, 📊, ✅, 📢, ⚙️)
+- **Mark All as Read**: Bulk action button for unread notifications
+- **Visual Feedback**: Cards transform and highlight on hover
+- **Unread Badge**: "New" badge for unread notifications
+- **Read Status**: Visual distinction between read and unread notifications
+- **Empty State**: Friendly message when no notifications exist
+- **Responsive**: Mobile-optimized layout
+
+#### Result
+- Professional, modern design consistent with other pages
+- Better user experience with clear visual hierarchy
+- Easier navigation with back button
+- Quick actions for managing notifications
+- Improved readability with centered, card-based layout
+- Enhanced mobile experience
+
+---
+
+### **FIXED** — Notification List Service Method Calls (v1.88.7) 🐛
+
+**Update Date**: April 9, 2026
+
+Fixed notification list component to use correct NotificationService method names and parameters.
+
+#### Problem
+- Component was calling `getNotificationsByRecipient()` which doesn't exist in the service
+- Component was calling `markAsRead()` with only one parameter instead of two
+- Resulted in runtime error: "this.notificationService.getNotificationsByRecipient is not a function"
+
+#### Solution
+**Frontend**: `src/presentation/pages/notifications/notification-list/notification-list.component.ts`
+
+1. **loadNotifications()**:
+   - Changed from `getNotificationsByRecipient(user.id)` to `getByRecipient(user.id)`
+   - Matches actual NotificationService method name
+
+2. **markAsRead()**:
+   - Added `user.id` as second parameter: `markAsRead(notificationId, user.id)`
+   - Matches NotificationService signature which requires both notificationId and userId
+
+#### Result
+- Notifications page now loads correctly
+- Users can view their notifications without errors
+- Mark as read functionality works properly with proper authorization
+
+---
+
 ### **IMPROVED** — User Menu Dropdown Interaction (v1.88.6) 🖱️
 
 **Update Date**: April 9, 2026

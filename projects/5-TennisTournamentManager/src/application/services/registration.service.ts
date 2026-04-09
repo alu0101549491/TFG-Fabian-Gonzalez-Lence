@@ -97,17 +97,19 @@ export class RegistrationService implements IRegistrationService {
       throw new Error('Participant is already registered for this category');
     }
     
-    // Create registration entity
-    const registration = new Registration({
-      id: generateId(),
-      participantId,
-      tournamentId: data.tournamentId,
+    // Send registration request to backend
+    // Backend expects: { categoryId, participantId (optional) }
+    const requestPayload = {
       categoryId: data.categoryId,
-      status: RegistrationStatus.PENDING,
-    });
+      participantId: participantId,
+    };
     
-    // Save registration
-    const savedRegistration = await this.registrationRepository.save(registration);
+    console.log('[Registration Service] Sending registration request:', requestPayload);
+    
+    // Save registration via repository (makes POST /api/registrations)
+    const savedRegistration = await this.registrationRepository.save(requestPayload as any);
+    
+    console.log('[Registration Service] Registration successful:', savedRegistration);
     
     // Send notification
     // await this.notificationService.sendNotification(...)

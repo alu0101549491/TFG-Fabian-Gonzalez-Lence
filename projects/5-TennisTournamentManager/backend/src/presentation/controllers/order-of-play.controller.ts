@@ -235,7 +235,7 @@ export class OrderOfPlayController {
       // Find match
       const match = await matchRepository.findOne({
         where: {id},
-        relations: ['bracket', 'participant1', 'participant2'],
+        relations: ['bracket', 'bracket.tournament', 'participant1', 'participant2'],
       });
 
       if (!match) {
@@ -344,18 +344,37 @@ export class OrderOfPlayController {
 
       // Notify participants about schedule change
       if (match.participant1Id && match.participant2Id) {
-        const participantIds = [match.participant1Id, match.participant2Id];
-        for (const participantId of participantIds) {
-          try {
-            await this.notificationService.notifyMatchScheduled(
-              id,
-              participantId,
-              court.name,
-              new Date(scheduledTime)
-            );
-          } catch (error) {
-            console.error(`Failed to notify participant ${participantId}:`, error);
-          }
+        const participant1Name = match.participant1 ? `${match.participant1.firstName} ${match.participant1.lastName}` : 'Opponent';
+        const participant2Name = match.participant2 ? `${match.participant2.firstName} ${match.participant2.lastName}` : 'Opponent';
+        const tournamentName = match.bracket?.tournament?.name;
+        const tournamentId = match.bracket?.tournamentId;
+
+        try {
+          await this.notificationService.notifyMatchScheduled(
+            id,
+            match.participant1Id,
+            participant2Name,
+            new Date(scheduledTime),
+            court.name,
+            tournamentId,
+            tournamentName
+          );
+        } catch (error) {
+          console.error(`Failed to notify participant ${match.participant1Id}:`, error);
+        }
+
+        try {
+          await this.notificationService.notifyMatchScheduled(
+            id,
+            match.participant2Id,
+            participant1Name,
+            new Date(scheduledTime),
+            court.name,
+            tournamentId,
+            tournamentName
+          );
+        } catch (error) {
+          console.error(`Failed to notify participant ${match.participant2Id}:`, error);
         }
       }
 

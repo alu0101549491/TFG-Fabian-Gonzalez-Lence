@@ -1930,6 +1930,59 @@ router.put('/notifications/:id/read', authMiddleware, notificationController.mar
 
 /**
  * @swagger
+ * /notifications/mark-all-read:
+ *   put:
+ *     tags: [Notifications]
+ *     summary: Mark all notifications as read
+ *     description: Mark all unread notifications as read for the authenticated user
+ *     responses:
+ *       204:
+ *         description: All notifications marked as read
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.put('/notifications/mark-all-read', authMiddleware, notificationController.markAllAsRead.bind(notificationController));
+
+/**
+ * @swagger
+ * /notifications/delete-all-read:
+ *   delete:
+ *     tags: [Notifications]
+ *     summary: Delete all read notifications
+ *     description: Delete all read notifications for the authenticated user
+ *     responses:
+ *       204:
+ *         description: All read notifications deleted
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.delete('/notifications/delete-all-read', authMiddleware, notificationController.deleteAllRead.bind(notificationController));
+
+/**
+ * @swagger
+ * /notifications/{id}:
+ *   delete:
+ *     tags: [Notifications]
+ *     summary: Delete a notification
+ *     description: Delete a notification for the authenticated user
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Notification deleted
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/notifications/:id', authMiddleware, notificationController.delete.bind(notificationController));
+
+/**
+ * @swagger
  * /users/{userId}/notification-preferences:
  *   get:
  *     tags: [Notification Preferences]
