@@ -138,7 +138,7 @@ export class NotificationService implements INotificationService {
    * Marks a notification as read.
    *
    * @param notificationId - ID of the notification
-   * @param userId - ID of the user marking as read
+   * @param userId - ID of the user marking as read (validated by backend)
    */
   public async markAsRead(notificationId: string, userId: string): Promise<void> {
     // Validate input
@@ -150,25 +150,9 @@ export class NotificationService implements INotificationService {
       throw new Error('User ID is required');
     }
     
-    // Check if notification exists
-    const notification = await this.notificationRepository.findById(notificationId);
-    if (!notification) {
-      throw new Error('Notification not found');
-    }
-    
-    // Check authorization
-    if (notification.userId !== userId) {
-      throw new Error('User is not authorized to mark this notification as read');
-    }
-    
-    // Mark as read
-    const readNotification = new Notification({
-      ...notification,
-      isRead: true,
-      readAt: new Date(),
-    });
-    
-    await this.notificationRepository.update(readNotification);
+    // Delegate to repository which calls the backend endpoint
+    // Backend handles authorization and validation
+    await this.notificationRepository.markAsRead(notificationId);
   }
 
   /**
@@ -190,7 +174,7 @@ export class NotificationService implements INotificationService {
    * Deletes a notification.
    *
    * @param notificationId - ID of the notification
-   * @param userId - ID of the user
+   * @param userId - ID of the user (validated by backend)
    */
   public async deleteNotification(notificationId: string, userId: string): Promise<void> {
     // Validate input
@@ -202,18 +186,8 @@ export class NotificationService implements INotificationService {
       throw new Error('User ID is required');
     }
     
-    // Check if notification exists
-    const notification = await this.notificationRepository.findById(notificationId);
-    if (!notification) {
-      throw new Error('Notification not found');
-    }
-    
-    // Check authorization
-    if (notification.userId !== userId) {
-      throw new Error('User is not authorized to delete this notification');
-    }
-    
-    // Delete notification
+    // Delegate to repository which calls the backend endpoint
+    // Backend handles authorization and validation
     await this.notificationRepository.delete(notificationId);
   }
 
@@ -264,6 +238,7 @@ export class NotificationService implements INotificationService {
       message: notification.message,
       isRead: notification.isRead,
       referenceId: notification.referenceId,
+      metadata: notification.metadata,
       createdAt: notification.createdAt,
       readAt: notification.readAt,
     };

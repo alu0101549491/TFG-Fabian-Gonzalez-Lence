@@ -128,10 +128,10 @@ async function main(): Promise<void> {
     const tournamentData = {
       name: 'Visual Bracket Test Tournament 2026',
       location: 'La Laguna Sports Complex, Tenerife',
-      startDate: '2026-04-10',
-      endDate: '2026-04-15',
-      registrationOpenDate: '2026-03-01',
-      registrationCloseDate: '2026-04-08',
+      startDate: '2026-05-10',
+      endDate: '2026-05-15',
+      registrationOpenDate: '2026-04-01',
+      registrationCloseDate: '2026-05-08',
       category: {
         gender: 'OPEN',
         age: 'OPEN',
@@ -165,6 +165,13 @@ async function main(): Promise<void> {
     
     const categoryId = categoryResponse.id;
     console.log(`✅ Category created (ID: ${categoryId})\n`);
+
+    // Step 5b: Update tournament status to REGISTRATION_OPEN
+    console.log('📝 Step 5b: Opening tournament for registration...');
+    await apiRequest(`/tournaments/${tournamentId}/status`, 'PUT', {
+      status: 'REGISTRATION_OPEN',
+    }, tournamentAdminToken);
+    console.log('✅ Tournament status updated to REGISTRATION_OPEN\n');
 
     // Step 6: Register all players
     console.log('📝 Step 6: Registering players in tournament...');
@@ -217,6 +224,13 @@ async function main(): Promise<void> {
       }
     }
     console.log(`\n✅ All seed numbers assigned\n`);
+
+    // Step 6d: Close registration and prepare tournament for bracket generation
+    console.log('📝 Step 6d: Closing registration and preparing tournament...');
+    await apiRequest(`/tournaments/${tournamentId}/status`, 'PUT', {
+      status: 'DRAW_PENDING',
+    }, tournamentAdminToken);
+    console.log('✅ Tournament status updated to DRAW_PENDING\n');
 
     // Step 7: Generate bracket
     console.log('📝 Step 7: Generating single elimination bracket...');

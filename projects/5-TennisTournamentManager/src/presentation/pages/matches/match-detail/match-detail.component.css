@@ -775,6 +775,20 @@
   gap: var(--spacing-md);
 }
 
+/* Court Select */
+.court-select {
+  cursor: pointer;
+}
+
+.no-courts-message {
+  padding: var(--spacing-md);
+  background: rgba(255, 152, 0, 0.1);
+  border: 2px dashed var(--color-gray-400);
+  border-radius: var(--border-radius-md);
+  color: var(--color-gray-700);
+  text-align: center;
+}
+
 /* Radio Group */
 .radio-group {
   display: flex;

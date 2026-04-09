@@ -22,6 +22,8 @@ import {UserRole} from '@domain/enumerations/user-role';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {EnumFormatPipe} from '@shared/pipes';
 import {TennisScoreValidator, type TennisSetScore} from '@shared/utils/tennis-score-validator';
+import {Court} from '@domain/entities/court';
+import {CourtRepositoryImpl} from '@infrastructure/repositories/court.repository';
 import templateHtml from './match-detail.component.html?raw';
 import styles from './match-detail.component.css?raw';
 
@@ -43,12 +45,16 @@ export class MatchDetailComponent implements OnInit {
   private readonly bracketService = inject(BracketService);
   private readonly tournamentService = inject(TournamentService);
   private readonly authStateService = inject(AuthStateService);
+  private readonly courtRepository = inject(CourtRepositoryImpl);
 
   /** Match data */
   public match = signal<MatchDto | null>(null);
 
   /** Tournament data */
   public tournament = signal<any | null>(null);
+
+  /** Available courts for the tournament */
+  public availableCourts = signal<Court[]>([]);
 
   /** Loading state */
   public isLoading = signal(false);
@@ -214,12 +220,37 @@ export class MatchDetailComponent implements OnInit {
   // Modal management methods
 
   /**
-   * Opens the schedule match modal.
+   * Opens the schedule match modal and loads available courts.
    */
-  public openScheduleModal(): void {
+  public async openScheduleModal(): Promise<void> {
     this.showScheduleModal.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
+    
+    // Fetch available courts for the tournament
+    const tournament = this.tournament();
+    if (tournament?.id) {
+      try {
+        const courts = await this.courtRepository.findByTournamentId(tournament.id);
+        this.availableCourts.set(courts);
+      } catch (error) {
+        console.error('Failed to load courts:', error);
+        this.availableCourts.set([]);
+      }
+    } else {
+      // Fallback: try to load tournament from bracket if not already loaded
+      const match = this.match();
+      if (match?.bracketId) {
+        try {
+          const bracket = await this.bracketService.getBracketById(match.bracketId);
+          const courts = await this.courtRepository.findByTournamentId(bracket.tournamentId);
+          this.availableCourts.set(courts);
+        } catch (error) {
+          console.error('Failed to load courts:', error);
+          this.availableCourts.set([]);
+        }
+      }
+    }
   }
 
   /**
@@ -322,15 +353,14 @@ export class MatchDetailComponent implements OnInit {
     try {
       const dateTime = new Date(`${this.scheduleForm.scheduledDate}T${this.scheduleForm.scheduledTime}`);
       
-      // Extract court input - separate courtId (FK) from courtName (free text)
-      const courtIdInput = this.scheduleForm.courtId.trim();
-      const courtId = courtIdInput && courtIdInput.startsWith('crt_') ? courtIdInput : null;
-      const courtName = courtIdInput && !courtIdInput.startsWith('crt_') ? courtIdInput : null;
+      // Get selected court details
+      const selectedCourtId = this.scheduleForm.courtId.trim();
+      const selectedCourt = this.availableCourts().find(c => c.id === selectedCourtId);
       
       await this.matchService.scheduleMatch(
         this.match()!.id,
-        courtId,
-        courtName,
+        selectedCourtId || null,
+        selectedCourt?.name || null,
         dateTime
       );
 

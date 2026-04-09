@@ -34,6 +34,8 @@ export interface NotificationProps {
   isRead?: boolean;
   /** Optional related entity ID (match, tournament, etc.). */
   referenceId?: string | null;
+  /** Optional metadata for navigation and context. */
+  metadata?: Record<string, unknown> | null;
   /** Creation timestamp. */
   createdAt?: Date;
   /** Timestamp when the notification was read. */
@@ -55,6 +57,7 @@ export class Notification {
   public readonly message: string;
   public readonly isRead: boolean;
   public readonly referenceId: string | null;
+  public readonly metadata: Record<string, unknown> | null;
   public readonly createdAt: Date;
   public readonly readAt: Date | null;
 
@@ -67,6 +70,7 @@ export class Notification {
     this.message = props.message;
     this.isRead = props.isRead ?? false;
     this.referenceId = props.referenceId ?? null;
+    this.metadata = props.metadata ?? null;
     this.createdAt = props.createdAt ?? new Date();
     this.readAt = props.readAt ?? null;
   }

@@ -190,6 +190,53 @@
   gap: var(--spacing-md);
 }
 
+/* Section Headers (for new layout) */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.section-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: var(--color-white);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  min-width: 2rem;
+}
+
+.uncompleted-section {
+  background: linear-gradient(to bottom, rgba(var(--color-primary-rgb), 0.02), transparent);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.1);
+}
+
+.completed-section {
+  background: linear-gradient(to bottom, rgba(var(--color-success-rgb), 0.02), transparent);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid rgba(var(--color-success-rgb), 0.1);
+}
+
 /* Status Badges */
 .status-badge {
   display: inline-flex;
@@ -539,6 +586,23 @@
 .btn-secondary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-disabled {
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--border-radius-md);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  background: var(--color-gray-300);
+  color: var(--color-gray-600);
+  border: 2px dashed var(--color-gray-400);
+  cursor: not-allowed;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+
+.btn-disabled:hover {
+  opacity: 0.8;
 }
 
 /* Modal Overlay */
@@ -945,13 +1009,20 @@ textarea:focus {
   border-radius: var(--border-radius-md);
   color: #dc2626;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-lg);
 }
 
 .error-alert span:first-child {
   font-size: var(--font-size-xl);
+  flex-shrink: 0;
+}
+
+.error-alert span:last-child {
+  flex: 1;
+  line-height: 1.6;
+  text-align: left;
 }
 
 .info-note {

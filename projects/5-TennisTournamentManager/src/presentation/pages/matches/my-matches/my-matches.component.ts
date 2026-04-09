@@ -67,14 +67,48 @@ export class MyMatchesComponent implements OnInit {
   /** List of enhanced matches */
   public matches = signal<EnhancedMatch[]>([]);
 
-  /** Matches grouped by status */
+  /**
+   * Matches grouped by status into three categories.
+   * 
+   * - **toBePlayed**: Active/pending matches (NOT_SCHEDULED, SCHEDULED, IN_PROGRESS, SUSPENDED)
+   *   These are matches that haven't reached a final state yet.
+   * 
+   * - **completed**: Final matches with confirmed results (COMPLETED, WALKOVER, RETIRED, etc.)
+   *   These are matches that have reached a terminal state and won't change.
+   * 
+   * - **other**: Edge cases or unknown statuses (should be empty in normal operation)
+   */
   public groupedMatches = computed(() => {
     const matches = this.matches();
-    const tbpMatches = matches.filter(m => m.status === MatchStatus.SCHEDULED);
-    const completedMatches = matches.filter(m => m.status === MatchStatus.COMPLETED);
+    
+    // Uncompleted matches: active, pending, or in-progress states
+    // These matches can still transition to other states
+    const uncompletedStatuses = [
+      MatchStatus.NOT_SCHEDULED,
+      MatchStatus.SCHEDULED,
+      MatchStatus.IN_PROGRESS,
+      MatchStatus.SUSPENDED,
+    ];
+    
+    // Completed matches: final states with confirmed results
+    // These matches have reached a terminal state (won't change)
+    const completedStatuses = [
+      MatchStatus.COMPLETED,
+      MatchStatus.WALKOVER,
+      MatchStatus.RETIRED,
+      MatchStatus.ABANDONED,
+      MatchStatus.BYE,
+      MatchStatus.NOT_PLAYED,
+      MatchStatus.CANCELLED,
+      MatchStatus.DEFAULT,
+      MatchStatus.DEAD_RUBBER,
+    ];
+    
+    const tbpMatches = matches.filter(m => uncompletedStatuses.includes(m.status));
+    const completedMatches = matches.filter(m => completedStatuses.includes(m.status));
     const otherMatches = matches.filter(m => 
-      m.status !== MatchStatus.SCHEDULED && 
-      m.status !== MatchStatus.COMPLETED
+      !uncompletedStatuses.includes(m.status) && 
+      !completedStatuses.includes(m.status)
     );
 
     return {
@@ -95,6 +129,16 @@ export class MyMatchesComponent implements OnInit {
   public toBePlayedWithoutPending = computed(() => {
     const toBePlayed = this.groupedMatches().toBePlayed;
     return toBePlayed.filter(m => !m.pendingResult);
+  });
+
+  /** Uncompleted matches (to be played + pending) for new section layout */
+  public uncompletedMatches = computed(() => {
+    return [...this.toBePlayedWithoutPending(), ...this.pendingMatches()];
+  });
+
+  /** Completed matches (matches with final confirmed results) */
+  public completedMatches = computed(() => {
+    return this.groupedMatches().completed;
   });
 
   /** Loading state */
@@ -258,7 +302,78 @@ export class MyMatchesComponent implements OnInit {
       alert('Result submitted successfully! Waiting for opponent confirmation.');
     } catch (error) {
       console.error('Error submitting result:', error);
-      this.errorMessage.set('Failed to submit result. Please try again.');
+      
+      // Don't reload matches on error - keep them visible
+      // Parse error message from backend
+      let errorMsg = 'Failed to submit result. Please try again.';
+      
+      // Check if error has response data (AxiosError structure)
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as any;
+        const responseData = axiosError.response?.data;
+        
+        // Check for backend error messages
+        if (responseData?.error && typeof responseData.error === 'string') {
+          const backendError = responseData.error;
+          
+          // Match status not scheduled
+          if (backendError.includes('NOT_SCHEDULED')) {
+            errorMsg = 'Cannot submit results: this match has not been scheduled yet. Please wait for the tournament administrator to schedule it.';
+          }
+          // Match already completed
+          else if (backendError.includes('COMPLETED') || backendError.includes('already has a confirmed result')) {
+            errorMsg = 'Cannot submit results: this match already has a confirmed result.';
+          }
+          // Match in progress
+          else if (backendError.includes('IN_PROGRESS')) {
+            errorMsg = 'Cannot submit results: this match is currently in progress.';
+          }
+          // Tennis score validation errors - format as list with helpful guidance
+          else if (backendError.includes('Invalid tennis score') || backendError.includes('Set is incomplete') || backendError.includes('Match is incomplete')) {
+            // Split multiple validation errors (separated by semicolons) and format
+            const errors = backendError
+              .replace('Invalid tennis score: ', '')
+              .split('; ')
+              .map(err => err.trim())
+              .filter(err => err.length > 0);
+            
+            // Build user-friendly error message with tennis rules explanation
+            let errorLines = ['❌ Invalid Tennis Score\n'];
+            
+            errors.forEach(err => {
+              errorLines.push('• ' + err);
+            });
+            
+            // Add helpful guidance about tennis scoring rules
+            errorLines.push('\n📖 Tennis Scoring Rules:');
+            
+            if (backendError.includes('Set is incomplete') || backendError.includes('at least 6 games')) {
+              errorLines.push('• A set is won by the first player to win 6 games with a margin of 2 (e.g., 6-4, 6-3, 6-0)');
+              errorLines.push('• If tied 6-6, a tiebreak is played (7-6)');
+              errorLines.push('• If one player has 6 or 7, the other must have at least 4 games');
+            }
+            
+            if (backendError.includes('Match is incomplete') || backendError.includes('2 sets')) {
+              errorLines.push('• A match is won when a player wins 2 sets (best of 3)');
+              errorLines.push('• Valid match scores: 2-0 or 2-1');
+            }
+            
+            errorLines.push('\n✅ Example valid scores: 6-4, 6-3 | 3-6, 6-2, 6-1 | 7-6, 6-4');
+            
+            errorMsg = errorLines.join('\n');
+          }
+          // Generic status error
+          else if (backendError.includes('Cannot submit results for match in status')) {
+            errorMsg = `Cannot submit results: ${backendError}`;
+          }
+          // Fallback: show any backend error message
+          else {
+            errorMsg = backendError;
+          }
+        }
+      }
+      
+      this.errorMessage.set(errorMsg);
     } finally {
       this.isLoading.set(false);
     }
@@ -484,5 +599,38 @@ export class MyMatchesComponent implements OnInit {
 
     // User is waiting if they submitted the result
     return match.pendingResult.submittedBy === userId;
+  }
+
+  /**
+   * Checks if a result can be submitted for this match.
+   * Results can only be submitted for SCHEDULED matches.
+   *
+   * @param match - The match to check
+   * @returns True if results can be submitted
+   */
+  public canSubmitResult(match: EnhancedMatch): boolean {
+    // Only SCHEDULED matches can have results submitted
+    return match.status === MatchStatus.SCHEDULED;
+  }
+
+  /**
+   * Gets a user-friendly message explaining why results can't be submitted.
+   *
+   * @param match - The match to check
+   * @returns Message explaining the restriction
+   */
+  public getCannotSubmitReason(match: EnhancedMatch): string {
+    switch (match.status) {
+      case MatchStatus.NOT_SCHEDULED:
+        return 'This match has not been scheduled yet';
+      case MatchStatus.IN_PROGRESS:
+        return 'This match is currently in progress';
+      case MatchStatus.SUSPENDED:
+        return 'This match is suspended';
+      case MatchStatus.COMPLETED:
+        return 'This match is already completed';
+      default:
+        return 'Results cannot be submitted for this match';
+    }
   }
 }

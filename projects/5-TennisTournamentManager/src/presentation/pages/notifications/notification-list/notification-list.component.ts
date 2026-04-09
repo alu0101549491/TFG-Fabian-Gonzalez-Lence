@@ -148,51 +148,66 @@ export class NotificationListComponent implements OnInit {
    * @param notification - Notification to navigate from
    */
   public async navigateToOrigin(notification: NotificationDto): Promise<void> {
-    // Mark as read when navigating
+    // Mark as read when navigating (non-blocking)
     const user = this.authStateService.getCurrentUser();
     if (user && !notification.isRead) {
-      try {
-        await this.notificationService.markAsRead(notification.id, user.id);
-      } catch (error) {
-        // If notification doesn't exist, just continue with navigation
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes('not found')) {
-          console.warn(`Notification ${notification.id} not found, continuing with navigation`);
-        } else {
-          console.error('Failed to mark notification as read:', error);
-        }
-      }
+      // Don't await - mark as read in background
+      this.notificationService.markAsRead(notification.id, user.id).catch(error => {
+        // Silently log errors - don't block navigation
+        console.warn(`Failed to mark notification ${notification.id} as read:`, error);
+      });
     }
 
     // Determine navigation route based on notification type and metadata
     const metadata = notification.metadata as Record<string, string> | null;
     
+    // For dispute notifications, navigate admins to disputed matches page
+    if (notification.title === '⚠️ Match Result Disputed') {
+      console.log('Navigating to disputed matches for admin notification');
+      await this.router.navigate(['/admin/disputed-matches']);
+      return;
+    }
+    
+    // For player notifications about results/schedules, navigate to My Matches
+    if (notification.type === 'RESULT_ENTERED' || notification.type === 'MATCH_SCHEDULED') {
+      console.log('Navigating to My Matches for player notification');
+      await this.router.navigate(['/my-matches']);
+      return;
+    }
+    
+    // Handle missing metadata - fallback based on notification type
+    if (!metadata || !metadata.tournamentId) {
+      console.warn('No metadata or tournamentId found for notification', { type: notification.type, metadata });
+      
+      // Type-specific fallback navigation
+      if (notification.type === 'RESULT_ENTERED' || notification.type === 'MATCH_SCHEDULED') {
+        await this.router.navigate(['/my-matches']);
+      } else {
+        this.errorMessage.set('This notification is missing tournament information. Please check the Tournaments page.');
+        setTimeout(() => this.errorMessage.set(null), 5000);
+        await this.router.navigate(['/tournaments']);
+      }
+      return;
+    }
+    
     switch (notification.type) {
       case 'MATCH_SCHEDULED':
       case 'RESULT_ENTERED':
-        // Navigate to match details if matchId exists
-        if (metadata?.matchId) {
-          await this.router.navigate(['/matches', metadata.matchId]);
-        } else if (metadata?.tournamentId) {
-          // Fallback to tournament if match ID not available
-          await this.router.navigate(['/tournaments', metadata.tournamentId]);
-        }
+        // Navigate to My Matches page for player notifications
+        await this.router.navigate(['/my-matches']);
         break;
       
       case 'REGISTRATION_CONFIRMED':
       case 'ORDER_OF_PLAY_PUBLISHED':
         // Navigate to tournament details
-        if (metadata?.tournamentId) {
-          await this.router.navigate(['/tournaments', metadata.tournamentId]);
-        }
+        console.log('Navigating to tournament:', metadata.tournamentId);
+        await this.router.navigate(['/tournaments', metadata.tournamentId]);
         break;
       
       case 'ANNOUNCEMENT':
         // Navigate to announcements page
-        // Could be enhanced to navigate to specific announcement if we add announcement detail pages
         if (metadata?.announcementId) {
           await this.router.navigate(['/announcements']);
-          // TODO: Could scroll to specific announcement or show announcement detail page
         } else if (metadata?.tournamentId) {
           // Fallback to tournament announcements
           await this.router.navigate(['/tournaments', metadata.tournamentId]);
@@ -202,10 +217,8 @@ export class NotificationListComponent implements OnInit {
         break;
       
       default:
-        // For unknown types, try to navigate to tournament if available
-        if (metadata?.tournamentId) {
-          await this.router.navigate(['/tournaments', metadata.tournamentId]);
-        }
+        // For unknown types, navigate to tournament
+        await this.router.navigate(['/tournaments', metadata.tournamentId]);
         break;
     }
   }

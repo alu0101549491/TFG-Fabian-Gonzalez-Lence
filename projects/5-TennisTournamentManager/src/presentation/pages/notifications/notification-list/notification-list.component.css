@@ -141,18 +141,24 @@
   border: none;
   padding: var(--spacing-sm) var(--spacing-lg);
   border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
+  white-space: nowrap;
 }
 
 .mark-all-read-button:hover {
   background: var(--color-primary-dark);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+
+.mark-all-read-button:active {
+  transform: translateY(0);
 }
 
 .mark-all-read-button:disabled {
@@ -299,7 +305,7 @@
 }
 
 .notification-card.read {
-  border-left-color: var(--color-gray-300);
+  border-left-color: #dc2626;
   background: var(--color-white);
 }
 

@@ -31,131 +31,36 @@
         <button class="btn-primary" (click)="loadMyMatches()">Retry</button>
       </div>
     } @else {
-    <!-- To Be Played Matches -->
-    @if (toBePlayedWithoutPending().length > 0) {
-      <section class="match-section">
-        <h2>
-          <span class="status-badge status-tbp">To Be Played</span>
-          ({{ toBePlayedWithoutPending().length }})
-        </h2>
-        <div class="matches-list">
-          @for (match of toBePlayedWithoutPending(); track match.id) {
-            <div class="match-card">
-              <div class="match-header">
-                <span class="match-number">Match #{{ match.matchNumber }}</span>
-                <span class="round-badge">Round {{ match.round }}</span>
-              </div>
-              
-              <div class="match-body">
-                <div class="participants-grid">
-                  <!-- Participant 1 -->
-                  <div class="participant-box">
-                    @if (match.participant1) {
-                      <div class="participant-content">
-                        <div class="avatar">{{ getInitials(match.participant1.firstName, match.participant1.lastName) }}</div>
-                        <div class="participant-details">
-                          <h3 class="participant-name">{{ match.participant1Name }}</h3>
-                          @if (match.participant1.email) {
-                            <p class="participant-email">{{ match.participant1.email }}</p>
-                          }
-                          @if (match.participant1.seed) {
-                            <span class="seed-badge">Seed #{{ match.participant1.seed }}</span>
-                          }
-                        </div>
-                      </div>
-                    } @else {
-                      <div class="participant-tbd">
-                        <span class="tbd-icon">❓</span>
-                        <span class="tbd-text">TBD</span>
-                      </div>
-                    }
-                  </div>
-
-                  <!-- VS Divider -->
-                  <div class="vs-divider">
-                    <span class="vs-text">VS</span>
-                  </div>
-
-                  <!-- Participant 2 -->
-                  <div class="participant-box">
-                    @if (match.participant2) {
-                      <div class="participant-content">
-                        <div class="avatar">{{ getInitials(match.participant2.firstName, match.participant2.lastName) }}</div>
-                        <div class="participant-details">
-                          <h3 class="participant-name">{{ match.participant2Name }}</h3>
-                          @if (match.participant2.email) {
-                            <p class="participant-email">{{ match.participant2.email }}</p>
-                          }
-                          @if (match.participant2.seed) {
-                            <span class="seed-badge">Seed #{{ match.participant2.seed }}</span>
-                          }
-                        </div>
-                      </div>
-                    } @else {
-                      <div class="participant-tbd">
-                        <span class="tbd-icon">❓</span>
-                        <span class="tbd-text">TBD</span>
-                      </div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Match Information -->
-                <div class="match-info-grid">
-                  <div class="info-item">
-                    <span class="info-icon">📅</span>
-                    <div class="info-content">
-                      <span class="info-label">Scheduled</span>
-                      <span class="info-value">{{ match.scheduledTime ? (match.scheduledTime | date: 'short') : 'Not scheduled' }}</span>
-                    </div>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-icon">🏟️</span>
-                    <div class="info-content">
-                      <span class="info-label">Court</span>
-                      <span class="info-value">{{ match.courtName || 'Not assigned' }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="match-actions">
-                <button class="btn-primary" (click)="openResultModal(match)">
-                  ✏️ Enter Result
-                </button>
-                <button class="btn-secondary" (click)="viewMatchDetail(match.id)">
-                  👁️ View Details
-                </button>
-              </div>
-            </div>
-          }
+    
+    <!-- UNCOMPLETED MATCHES SECTION -->
+    @if (uncompletedMatches().length > 0) {
+      <section class="match-section uncompleted-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            🎾 Uncompleted Matches
+            <span class="count-badge">({{ uncompletedMatches().length }})</span>
+          </h2>
         </div>
-      </section>
-    }
 
-    <!-- Pending Confirmations Section -->
-    @if (pendingMatches().length > 0) {
-      <section class="match-section pending-section">
-        <h2>
-          <span class="status-badge status-pending">⏳ Pending Confirmation</span>
-          ({{ pendingMatches().length }})
-        </h2>
         <div class="matches-list">
-          @for (match of pendingMatches(); track match.id) {
-            <div class="match-card pending-card">
-              <div class="match-header">
-                <span class="match-number">Match #{{ match.matchNumber }}</span>
-                <span class="round-badge">Round {{ match.round }}</span>
-                @if (needsConfirmation(match)) {
-                  <span class="action-required-badge">⚠️ Action Required</span>
-                }
-              </div>
-              
-              <div class="match-body">
-                <!-- Submitted Result Display -->
-                <div class="result-banner">
-                  <h4>📋 Submitted Result</h4>
-                  @if (match.pendingResult) {
+          @for (match of uncompletedMatches(); track match.id) {
+            <!-- PENDING CONFIRMATION CARDS -->
+            @if (match.pendingResult) {
+              <div class="match-card pending-card">
+                <div class="match-header">
+                  <span class="match-number">Match #{{ match.matchNumber }}</span>
+                  <span class="round-badge">Round {{ match.round }}</span>
+                  @if (needsConfirmation(match)) {
+                    <span class="action-required-badge">⚠️ Action Required</span>
+                  } @else {
+                    <span class="status-badge status-pending">⏳ Pending Confirmation</span>
+                  }
+                </div>
+                
+                <div class="match-body">
+                  <!-- Submitted Result Display -->
+                  <div class="result-banner">
+                    <h4>📋 Submitted Result</h4>
                     <div class="result-details">
                       <div class="result-scores">
                         <strong>Scores:</strong> {{ match.pendingResult.setScores.join(', ') }}
@@ -170,79 +75,183 @@
                         </div>
                       }
                     </div>
-                  }
+                  </div>
+
+                  <!-- Participants with Winner Indication -->
+                  <div class="participants-grid">
+                    <div class="participant-box" [class.potential-winner]="match.pendingResult.winnerId === match.participant1Id">
+                      @if (match.participant1) {
+                        <div class="participant-content">
+                          <div class="avatar">{{ getInitials(match.participant1.firstName, match.participant1.lastName) }}</div>
+                          <div class="participant-details">
+                            <h3 class="participant-name">
+                              {{ match.participant1Name }}
+                              @if (match.pendingResult.winnerId === match.participant1Id) {
+                                <span class="potential-crown">🏆</span>
+                              }
+                            </h3>
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                    <div class="vs-divider">
+                      <span class="vs-text">VS</span>
+                    </div>
+
+                    <div class="participant-box" [class.potential-winner]="match.pendingResult.winnerId === match.participant2Id">
+                      @if (match.participant2) {
+                        <div class="participant-content">
+                          <div class="avatar">{{ getInitials(match.participant2.firstName, match.participant2.lastName) }}</div>
+                          <div class="participant-details">
+                            <h3 class="participant-name">
+                              {{ match.participant2Name }}
+                              @if (match.pendingResult.winnerId === match.participant2Id) {
+                                <span class="potential-crown">🏆</span>
+                              }
+                            </h3>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Participants with Winner Indication -->
-                <div class="participants-grid">
-                  <div class="participant-box" [class.potential-winner]="match.pendingResult?.winnerId === match.participant1Id">
-                    @if (match.participant1) {
-                      <div class="participant-content">
-                        <div class="avatar">{{ getInitials(match.participant1.firstName, match.participant1.lastName) }}</div>
-                        <div class="participant-details">
-                          <h3 class="participant-name">
-                            {{ match.participant1Name }}
-                            @if (match.pendingResult?.winnerId === match.participant1Id) {
-                              <span class="potential-crown">🏆</span>
+                <!-- Action Buttons for Confirmation/Dispute -->
+                @if (needsConfirmation(match)) {
+                  <div class="match-actions confirmation-actions">
+                    <button class="btn-confirm" (click)="confirmResult(match)">
+                      ✅ Confirm Result
+                    </button>
+                    <button class="btn-dispute" (click)="openDisputeModal(match)">
+                      ⚠️ Dispute Result
+                    </button>
+                  </div>
+                }
+              </div>
+            } @else {
+              <!-- TO BE PLAYED CARDS -->
+              <div class="match-card">
+                <div class="match-header">
+                  <span class="match-number">Match #{{ match.matchNumber }}</span>
+                  <span class="round-badge">Round {{ match.round }}</span>
+                  <span class="status-badge status-tbp">To Be Played</span>
+                </div>
+                
+                <div class="match-body">
+                  <div class="participants-grid">
+                    <!-- Participant 1 -->
+                    <div class="participant-box">
+                      @if (match.participant1) {
+                        <div class="participant-content">
+                          <div class="avatar">{{ getInitials(match.participant1.firstName, match.participant1.lastName) }}</div>
+                          <div class="participant-details">
+                            <h3 class="participant-name">{{ match.participant1Name }}</h3>
+                            @if (match.participant1.email) {
+                              <p class="participant-email">{{ match.participant1.email }}</p>
                             }
-                          </h3>
+                            @if (match.participant1.seed) {
+                              <span class="seed-badge">Seed #{{ match.participant1.seed }}</span>
+                            }
+                          </div>
                         </div>
-                      </div>
-                    }
+                      } @else {
+                        <div class="participant-tbd">
+                          <span class="tbd-icon">❓</span>
+                          <span class="tbd-text">TBD</span>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- VS Divider -->
+                    <div class="vs-divider">
+                      <span class="vs-text">VS</span>
+                    </div>
+
+                    <!-- Participant 2 -->
+                    <div class="participant-box">
+                      @if (match.participant2) {
+                        <div class="participant-content">
+                          <div class="avatar">{{ getInitials(match.participant2.firstName, match.participant2.lastName) }}</div>
+                          <div class="participant-details">
+                            <h3 class="participant-name">{{ match.participant2Name }}</h3>
+                            @if (match.participant2.email) {
+                              <p class="participant-email">{{ match.participant2.email }}</p>
+                            }
+                            @if (match.participant2.seed) {
+                              <span class="seed-badge">Seed #{{ match.participant2.seed }}</span>
+                            }
+                          </div>
+                        </div>
+                      } @else {
+                        <div class="participant-tbd">
+                          <span class="tbd-icon">❓</span>
+                          <span class="tbd-text">TBD</span>
+                        </div>
+                      }
+                    </div>
                   </div>
 
-                  <div class="vs-divider">
-                    <span class="vs-text">VS</span>
-                  </div>
-
-                  <div class="participant-box" [class.potential-winner]="match.pendingResult?.winnerId === match.participant2Id">
-                    @if (match.participant2) {
-                      <div class="participant-content">
-                        <div class="avatar">{{ getInitials(match.participant2.firstName, match.participant2.lastName) }}</div>
-                        <div class="participant-details">
-                          <h3 class="participant-name">
-                            {{ match.participant2Name }}
-                            @if (match.pendingResult?.winnerId === match.participant2Id) {
-                              <span class="potential-crown">🏆</span>
-                            }
-                          </h3>
-                        </div>
+                  <!-- Match Information -->
+                  <div class="match-info-grid">
+                    <div class="info-item">
+                      <span class="info-icon">📅</span>
+                      <div class="info-content">
+                        <span class="info-label">Scheduled</span>
+                        <span class="info-value">{{ match.scheduledTime ? (match.scheduledTime | date: 'short') : 'Not scheduled' }}</span>
                       </div>
-                    }
+                    </div>
+                    <div class="info-item">
+                      <span class="info-icon">🏟️</span>
+                      <div class="info-content">
+                        <span class="info-label">Court</span>
+                        <span class="info-value">{{ match.courtName || 'Not assigned' }}</span>
+                      </div>
+                    </div>
                   </div>
+                </div>
+
+                <div class="match-actions">
+                  @if (canSubmitResult(match)) {
+                    <button class="btn-primary" (click)="openResultModal(match)">
+                      ✏️ Enter Result
+                    </button>
+                  } @else {
+                    <button class="btn-disabled" disabled title="{{ getCannotSubmitReason(match) }}">
+                      🔒 {{ getCannotSubmitReason(match) }}
+                    </button>
+                  }
+                  <button class="btn-secondary" (click)="viewMatchDetail(match.id)">
+                    👁️ View Details
+                  </button>
                 </div>
               </div>
-
-              <!-- Action Buttons for Confirmation/Dispute -->
-              @if (needsConfirmation(match)) {
-                <div class="match-actions confirmation-actions">
-                  <button class="btn-confirm" (click)="confirmResult(match)">
-                    ✅ Confirm Result
-                  </button>
-                  <button class="btn-dispute" (click)="openDisputeModal(match)">
-                    ⚠️ Dispute Result
-                  </button>
-                </div>
-              }
-            </div>
+            }
           }
         </div>
       </section>
     }
 
-    <!-- Completed Matches -->
-    @if (groupedMatches().completed.length > 0) {
-      <section class="match-section">
-        <h2>
-          <span class="status-badge status-completed">Completed</span>
-          ({{ groupedMatches().completed.length }})
-        </h2>
+    <!-- COMPLETED MATCHES SECTION -->
+    @if (completedMatches().length > 0) {
+      <section class="match-section completed-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            ✅ Completed Matches
+            <span class="count-badge">({{ completedMatches().length }})</span>
+          </h2>
+        </div>
+
         <div class="matches-list">
-          @for (match of groupedMatches().completed; track match.id) {
-            <div class="match-card completed">
+          @for (match of completedMatches(); track match.id) {
+            <!-- COMPLETED/OTHER MATCH CARDS -->
+            <div class="match-card completed" [class.other-status]="match.status !== 'COMPLETED'">
               <div class="match-header">
                 <span class="match-number">Match #{{ match.matchNumber }}</span>
                 <span class="round-badge">Round {{ match.round }}</span>
+                <span class="status-badge" [class.status-completed]="match.status === 'COMPLETED'">
+                  {{ match.status | enumFormat }}
+                </span>
               </div>
               
               <div class="match-body">
@@ -315,37 +324,6 @@
               <div class="match-actions">
                 <button class="btn-secondary" (click)="viewMatchDetail(match.id)">
                   👁️ View Details
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-    }
-
-    <!-- Other Matches (Retired, Walkover, etc.) -->
-    @if (groupedMatches().other.length > 0) {
-      <section class="match-section">
-        <h2>Other Matches ({{ groupedMatches().other.length }})</h2>
-        <div class="matches-list">
-          @for (match of groupedMatches().other; track match.id) {
-            <div class="match-card">
-              <div class="match-header">
-                <span class="match-number">Match #{{ match.matchNumber }}</span>
-                <span class="status-badge">{{ match.status | enumFormat }}</span>
-              </div>
-              
-              <div class="match-body">
-                <div class="participants">
-                  <span class="player-name">{{ match.participant1Name }}</span>
-                  <span class="vs">vs</span>
-                  <span class="player-name">{{ match.participant2Name }}</span>
-                </div>
-              </div>
-
-              <div class="match-actions">
-                <button class="btn-secondary" (click)="viewMatchDetail(match.id)">
-                  View Details
                 </button>
               </div>
             </div>
@@ -438,12 +416,23 @@
               @if (resultForm().sets.length < 5) {
                 <button type="button" class="add-set-btn" (click)="addSet()">+ Add Set</button>
               }
+              
+              <!-- Tennis Scoring Help -->
+              <div class="help-note" style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(74, 144, 226, 0.1); border-left: 3px solid var(--color-primary); border-radius: 0.25rem; font-size: 0.875rem;">
+                <strong>📖 Tennis Scoring Rules:</strong>
+                <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0;">
+                  <li>A set is won with at least 6 games and a 2-game margin (e.g., 6-4, 6-3, 7-5)</li>
+                  <li>If tied 6-6, a tiebreak is played (winner gets 7-6)</li>
+                  <li>A match is won when a player wins 2 sets (best of 3)</li>
+                  <li><strong>Examples:</strong> 6-4, 6-2 | 3-6, 6-3, 6-1 | 7-6, 6-4</li>
+                </ul>
+              </div>
             </div>
 
             @if (errorMessage()) {
               <div class="error-alert">
                 <span>⚠️</span>
-                <span>{{ errorMessage() }}</span>
+                <span style="white-space: pre-line;">{{ errorMessage() }}</span>
               </div>
             }
 
@@ -503,7 +492,7 @@
             @if (errorMessage()) {
               <div class="error-alert">
                 <span>⚠️</span>
-                <span>{{ errorMessage() }}</span>
+                <span style="white-space: pre-line;">{{ errorMessage() }}</span>
               </div>
             }
 

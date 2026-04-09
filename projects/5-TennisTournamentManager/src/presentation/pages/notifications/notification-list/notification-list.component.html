@@ -48,28 +48,19 @@
   }
 
   @if (!isLoading() && errorMessage() === null) {
-    <!-- Actions Bar -->
-    @if (notifications().length > 0 && hasUnread) {
-      <div class="actions-bar">
-        <p style="margin: 0; color: var(--color-gray-700);">
-          <strong>{{ unreadCount }}</strong> unread notification{{ unreadCount !== 1 ? 's' : '' }}
-        </p>
-        <button 
-          class="mark-all-read-button"
-          (click)="markAllAsRead()"
-          type="button">
-          ✓ Mark All as Read
-        </button>
-      </div>
-    }
-
     <!-- Notifications List -->
     @if (notifications().length > 0) {
       <!-- Unread Notifications Section -->
       @if (unreadNotifications.length > 0) {
         <div class="notifications-section">
-          <div class="section-header">
+          <div class="section-title-with-action">
             <h2 class="section-title">📬 Unread Notifications</h2>
+            <button 
+              class="mark-all-read-button"
+              (click)="markAllAsRead()"
+              type="button">
+              ✓ Mark All as Read
+            </button>
           </div>
           <div class="notifications-list">
             @for (notification of unreadNotifications; track notification.id) {

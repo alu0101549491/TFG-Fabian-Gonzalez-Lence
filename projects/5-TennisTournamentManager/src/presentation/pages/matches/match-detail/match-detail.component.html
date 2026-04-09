@@ -238,17 +238,30 @@
               }
               
               <div class="form-group">
-                <label for="courtId">Court (Optional)</label>
-                <input 
-                  type="text" 
-                  id="courtId" 
-                  [(ngModel)]="scheduleForm.courtId" 
-                  name="courtId"
-                  placeholder="e.g., Court 1, Center Court"
-                />
-                <small style="display: block; margin-top: 0.25rem; color: var(--color-gray-600); font-size: 0.875rem;">
-                  Note: Court name for reference only (Court management coming soon)
-                </small>
+                <label for="courtId">Court</label>
+                @if (availableCourts().length > 0) {
+                  <select 
+                    id="courtId" 
+                    [(ngModel)]="scheduleForm.courtId" 
+                    name="courtId"
+                    class="court-select"
+                  >
+                    <option value="">-- No court assigned --</option>
+                    @for (court of availableCourts(); track court.id) {
+                      <option [value]="court.id">{{ court.name }} ({{ court.surface | enumFormat }})</option>
+                    }
+                  </select>
+                  <small style="display: block; margin-top: 0.25rem; color: var(--color-gray-600); font-size: 0.875rem;">
+                    Select from courts configured in the Order of Play tab
+                  </small>
+                } @else {
+                  <div class="no-courts-message">
+                    <span>⚠️ No courts configured for this tournament</span>
+                    <small style="display: block; margin-top: 0.25rem; color: var(--color-gray-600); font-size: 0.875rem;">
+                      Add courts in the Order of Play tab first
+                    </small>
+                  </div>
+                }
               </div>
 
               <div class="form-row">
