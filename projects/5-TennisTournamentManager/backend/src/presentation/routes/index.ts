@@ -1241,7 +1241,7 @@ router.put('/brackets/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMI
  *     summary: Regenerate bracket with updated seeds
  *     description: Completely regenerates bracket by deleting all matches/scores/phases and creating new ones using updated registration seed numbers. Cannot be used on published brackets. (SYSTEM_ADMIN or TOURNAMENT_ADMIN)
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id

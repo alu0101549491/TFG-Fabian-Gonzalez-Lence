@@ -103,7 +103,7 @@
 > **Note**: Opponent confirmation/dispute workflow is NOT yet implemented (next feature)
 
 #### Confirm Result (Opponent)
-- [ ] **Receive notification** about pending result ⚠️ BACKEND IN PROGRESS - UI pending
+- [x] **Receive notification** about pending result ⚠️ BACKEND IN PROGRESS - UI pending
 - [x] **Navigate to pending match** ✅ IMPLEMENTED - Pending Confirmation section in /my-matches
 - [x] **Review entered result** ✅ IMPLEMENTED - Shows submitted scores and winner
 - [x] **Click "Confirm"** - result becomes official ✅ IMPLEMENTED - Backend + Frontend complete
@@ -305,7 +305,7 @@
 
 #### Configure Notification Preferences (Registered User) ✅ PHASE 2 COMPLETE (v1.86.0)
 - [x] **Navigate to `/notification-preferences`** ✅ Route with auth guard
-- [x] **Enable/disable channels**: In-app, Email, Telegram, Web Push ✅ All channels fully functional
+- [x] **Enable/disable channels**: In-app (**required**), Email (**optional**), Telegram (**optional**), Web Push (**optional**) ✅ All channels fully functional
 - [x] **Select event types**: ✅ All 5 event types with toggle switches
   - [x] Match schedule ✅
   - [x] Result entered ✅
@@ -418,13 +418,14 @@
 > - ✅ Dependencies: web-push + @types/web-push installed
 > 
 > **Phase 3 Summary - All Channels Complete** ✅:
-> - ✅ Email: SMTP with HTML templates, emoji icons, action buttons (v1.87.0)
-> - ✅ Telegram: Bot API with Markdown messages, inline buttons (v1.88.0)
-> - ✅ Web Push: Browser notifications with VAPID authentication, multi-device (v1.88.0)
+> - ✅ Email: SMTP with HTML templates, emoji icons, action buttons (v1.87.0) - **OPTIONAL** (requires SMTP config)
+> - ✅ Telegram: Bot API with Markdown messages, inline buttons (v1.88.0) - **OPTIONAL** (requires bot token)
+> - ✅ Web Push: Browser notifications with VAPID authentication, multi-device (v1.88.0) - **OPTIONAL** (requires VAPID keys)
 > - ✅ Channel Tracking: Notification.channels array includes all sent channels
 > - ✅ Non-Blocking: All channel failures are logged but don't prevent notification creation
 > - ✅ User Preferences: All 4 channels (IN_APP, EMAIL, TELEGRAM, WEB_PUSH) fully functional
 > - ✅ Frontend: All "Coming Soon" badges removed, all toggles enabled
+> - 📝 **Note**: In-app notifications work without any external configuration. Email, Telegram, and Web Push are optional features requiring environment variable setup.
 
 ---
 

@@ -167,7 +167,7 @@ Does not include:
 | --- | --- | --- |
 | **FR52** | **Automatic participant notifications.** | System notifies: new result, result pending confirmation, order of play publication, order changes, new announcements, updated standings, match reminders. |
 | **FR53** | **Automatic administrator notifications.** | Administrators receive notifications of: registrations, enrollments, modifications, withdrawals, new results, disputes, relevant activity. |
-| **FR54** | **Multichannel notifications.** | Notifications are sent via: web app (in-app), email, Telegram, web push (according to user preferences). |
+| **FR54** | **Multichannel notifications.** | Notifications are sent via: web app (in-app - **required**), email (**optional**), Telegram (**optional**), web push (**optional**) - according to user preferences. |
 | **FR55** | **Notification preference configuration.** | Each participant configures: active channels, event types to notify, frequency. |
 | **FR56** | **Visual notification indicators.** | Application displays unread notification counter and pending alerts in interface. |
 | **FR57** | **Notification history.** | Users can consult complete list of received notifications with timestamps. |
@@ -212,7 +212,7 @@ Does not include:
 | **NFR16** | **Automatic backup system.** | Daily database backups with point-in-time restoration capability. |
 | **NFR17** | **System availability.** | Minimum 99% uptime (maximum 7 hours downtime per month). |
 | **NFR18** | **Visual customization.** | Administrators can configure: corporate color schemes, logos, menus. |
-| **NFR19** | **Notification service integration.** | Stable connection with APIs: transactional email, Telegram Bot API, web push service. |
+| **NFR19** | **Notification service integration (optional).** | Optional stable connection with APIs: transactional email (SMTP), Telegram Bot API, web push service (VAPID). In-app notifications work without external services. |
 | **NFR20** | **Image compression and optimization.** | Uploaded images are automatically compressed without significant quality loss. |
 | **NFR21** | **CDN for static resources.** | Static assets (CSS, JS, images) served from CDN for fast loading. |
 | **NFR22** | **Automated testing.** | Unit and integration test suite with minimum 70% coverage on critical functions. |
@@ -746,24 +746,27 @@ COURT 3
 - Delete old notifications
 - Filter by event type
 
-**Email Notifications:**
+**Email Notifications (Optional - requires SMTP configuration):**
 - Personalized subject according to event
 - Body with complete information
 - Direct link to relevant app section
 - Direct reply option (optional)
 - Configurable frequency: immediate, daily digest, weekly digest
+- **Setup**: Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` in environment variables
 
-**Telegram Notifications:**
+**Telegram Notifications (Optional - requires bot token):**
 - Requires prior bot linkage
 - Instant messages with quick action buttons
 - Action examples: “Confirm result”, “View order of play”
 - Limitation: maximum 1 notification every 5 min per tournament
+- **Setup**: Configure `TELEGRAM_BOT_TOKEN` from @BotFather, users link accounts via /start command
 
-**Web Push Notifications:**
+**Web Push Notifications (Optional - requires VAPID keys):**
 - Works with browser closed
 - Requires browser permission
 - Native OS notifications
 - Click opens app directly in relevant section
+- **Setup**: Generate VAPID keys and configure `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` in environment variables
 
 ### 15.3 Notification Configuration Panel
 

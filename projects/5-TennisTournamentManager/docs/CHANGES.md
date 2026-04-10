@@ -8,6 +8,106 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### **DOCUMENTED** — External Notification Channels Marked as Optional (v1.88.32) 📝
+
+**Update Date**: April 10, 2026
+
+Updated technical specification and requirements documentation to clearly mark email, Telegram, and Web Push notification channels as **optional features** that require additional environment configuration. In-app notifications remain the core required feature.
+
+#### Why This Matters
+
+Developers can now run the application in development mode without configuring external services (SMTP, Telegram Bot API, VAPID keys). The system will show configuration warnings but will continue to function normally for all in-app notification features.
+
+#### Documentation Updates
+
+**1. specification.md**:
+- **FR54**: Updated to mark channels as **required** (in-app) vs **optional** (email, Telegram, web push)
+- **NFR19**: Renamed to "Notification service integration (optional)" with clarification that in-app works standalone
+- **Section 15.2**: Added setup instructions for each optional channel:
+  - Email: Requires `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`
+  - Telegram: Requires `TELEGRAM_BOT_TOKEN` from @BotFather
+  - Web Push: Requires `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`
+
+**2. requirements-checklist.md**:
+- Channel toggles now marked with **required** vs **optional** labels
+- Phase 3 summary includes note: "In-app notifications work without any external configuration"
+- Each channel entry notes the configuration requirement
+
+#### Development vs Production
+
+```typescript
+// Development mode (minimal config)
+// ✅ In-app notifications work fully
+// ⚠️  Email shows warning (optional - not configured)
+// ⚠️  Telegram works if token provided (optional)
+// ⚠️  Web Push shows warning (optional - needs VAPID)
+
+// Production mode (full config)
+// ✅ All 4 channels operational
+// ✅ SMTP configured for transactional emails
+// ✅ Telegram bot linked for instant messages
+// ✅ VAPID keys enable browser push notifications
+```
+
+#### Configuration Examples
+
+```bash
+# Minimal (development) - only in-app notifications
+NODE_ENV=development
+JWT_SECRET=your-secret
+DB_HOST=localhost
+# No external services configured
+
+# Full (production) - all channels enabled
+NODE_ENV=production
+
+# Email (optional)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=noreply@tennistournament.com
+SMTP_PASSWORD=your-app-password
+
+# Telegram (optional)
+TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
+
+# Web Push (optional)
+VAPID_PUBLIC_KEY=BL8... (generate with web-push generate-vapid-keys)
+VAPID_PRIVATE_KEY=xyz...
+```
+
+#### Files Modified
+- [specification.md](specification.md#L170) (FR54, NFR19, Section 15.2)
+- [requirements-checklist.md](requirements-checklist.md#L308) (channel toggles, Phase 3 summary)
+- [CHANGES.md](CHANGES.md) (this entry)
+
+#### Impact
+- ✅ Clearer documentation for developers
+- ✅ No functional changes to code
+- ✅ Configuration warnings are now explained as expected behavior
+- ✅ Development setup simplified (no mandatory external services)
+- ✅ Production deployments can enable channels as needed
+
+#### Testing Scenarios
+
+**Development without external services**:
+1. Start backend → See warnings about missing SMTP/VAPID (expected)
+2. Create notification → Successfully saved to database
+3. Check notification list → Appears in UI (in-app channel)
+4. Mark as read → Persists correctly
+5. Console shows: Email/WebPush channels skipped (not configured)
+
+**Production with all channels**:
+1. Configure all environment variables
+2. Create notification → Sent via 4 channels simultaneously
+3. User receives: in-app + email + Telegram + browser push
+4. All channels tracked in `notification.channels` array
+
+#### Developer Experience
+- **Before**: Confusion about missing configuration errors
+- **After**: Clear understanding that external channels are optional enhancements
+
+---
+
 ### **BUG FIX** — Notification Delete Throwing 404 Errors (v1.88.31) 🎾
 
 **Update Date**: April 10, 2026
