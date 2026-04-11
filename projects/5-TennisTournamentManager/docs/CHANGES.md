@@ -8,6 +8,217 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Issue 24: Legacy Consolation Data Migration
+
+**Issue Date:** 2026-04-11
+
+**Problem:**
+After fixing phase-scoped rendering, older consolation matches (created before `phaseId` tagging) did not appear in the new per-phase UI because they had no owning phase.
+
+**Solution:**
+- Added migration utility script `repair-consolation-matches.ts`.
+- Script removes legacy consolation matches for the tournament (`round >= 100`) and rebuilds each consolation phase from its linked source phase losers.
+- Rebuilt matches are created with correct `phaseId`, enabling separate mini-brackets per consolation draw.
+
+**Execution Result (trn_3b7247a7):**
+- Removed 10 legacy consolation matches.
+- Rebuilt `Round of 16 - Consolation`: 7 matches from 8 losers.
+- Rebuilt `Quarterfinals - Consolation`: 3 matches from 4 losers.
+
+**Files Added:**
+- `backend/repair-consolation-matches.ts`
+
+---
+
+### Issue 23: Multiple Consolation Draws Merged Incorrectly
+
+**Issue Date:** 2026-04-11
+
+**Problem:**
+When creating multiple consolation draws (for example one from Round of 16 and another from Quarterfinals), both sets of matches appeared merged in a single consolation bracket.
+
+**Root Cause:**
+- Consolation matches were created without `phaseId`, so there was no stable way to identify which consolation phase owned each match.
+- Frontend grouped consolation matches only by `round >= 100`, which merged distinct consolation draws.
+
+**Solution:**
+1. **Backend (`phase.controller.ts`)**
+- `populateConsolationDraw()` now assigns `phaseId: consolationPhaseId` to every created consolation match.
+- Added cleanup of previous matches for that same phase (`delete({phaseId: consolationPhaseId})`) before re-generation to keep operation idempotent.
+
+2. **Frontend (`bracket-view.component.ts`)**
+- Added helper `getConsolationMatchesByPhase(phaseId)` to fetch matches strictly by owning phase.
+
+3. **Frontend (`bracket-view.component.html`)**
+- Replaced the single merged consolation bracket view with one bracket section per consolation phase.
+- Each section now renders only matches returned by `getConsolationMatchesByPhase(phase.id)`.
+
+**Impact:**
+- Each consolation draw is now shown as an independent mini-bracket.
+- No cross-contamination between Round-of-16 consolation and Quarterfinals consolation.
+- Re-populating a consolation phase does not duplicate its matches.
+
+---
+
+### Issue 22: Consolation Draw Breaking Bracket View Layout
+
+**Issue Date:** 2026-04-11
+
+**Problem:**
+After populating consolation draw with matches, the bracket view displayed consolation phases (Round 101, 102, 103) mixed with main draw phases (Round of 16, Quarterfinals, etc.), causing:
+- Confusing "Round 101" labels instead of meaningful names
+- Main bracket and consolation bracket rendered together in single view
+- Broken visual layout with overlapping rounds
+- Poor UX - difficult to distinguish main draw from consolation
+
+**Root Cause:**
+The bracket view component treated all phases and matches uniformly, without separating main draw (order < 100) from consolation draw (order >= 100). The visual bracket component attempted to render both in a single view, breaking the layout.
+
+**Solution:**
+Implemented separate bracket views for main draw and consolation draw:
+
+1. **Component Logic** (`bracket-view.component.ts`):
+   - Added `computed` signals to filter phases and matches:
+     * `mainPhases()`: Phases with `order < 100`
+     * `mainMatches()`: Matches with `round < 100`
+     * `consolationPhases()`: Phases with `order >= 100`
+     * `consolationMatches()`: Matches with `round >= 100`
+
+2. **Template** (`bracket-view.component.html`):
+   - Separate "Main Draw Phases" and "Main Draw Bracket" sections
+   - Visual divider with "🎖️ CONSOLATION DRAW 🎖️" label
+   - Separate "Consolation Draw" section with its own phases and bracket view
+   - Each visual bracket receives only relevant matches (main or consolation)
+
+3. **Styling** (`bracket-view.component.css`):
+   - `.consolation-divider`: Gradient line with centered badge
+   - `.consolation-title`: Amber color scheme for consolation sections
+   - `.consolation-phase-card`: Amber gradient header (vs blue for main)
+   - Consistent spacing and visual hierarchy
+
+**User Experience:**
+- **Before**: Round of 16, Quarterfinals, Round 101, Round 102 all mixed together
+- **After**: 
+  * Main Draw section: Round of 16 → Quarterfinals → Semifinals → Final
+  * Visual divider
+  * Consolation Draw section: Round of 16 - Consolation phases and bracket
+
+**Files Modified:**
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts`
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.html`
+- `src/presentation/pages/brackets/bracket-view/bracket-view.component.css`
+
+**Impact:**
+- Clear visual separation between main and consolation brackets
+- Proper bracket rendering (no more layout breaks)
+- Improved UX with color-coded sections
+- Scalable for multiple consolation draws
+
+---
+
+### Feature: Consolation Draw Auto-Population
+
+**Implementation Date:** 2026-04-11
+
+**Problem:**
+Consolation draw phase creation (Issue 22) only created the phase structure but didn't actually populate it with losers or generate matches. After completing Round of 16, the consolation bracket still showed "0 Matches" because auto-population logic was missing.
+
+**Solution:**
+Implemented complete auto-population workflow:
+
+1. **Backend Controller** (`phase.controller.ts`):
+   - New endpoint `/api/phases/populate-consolation` 
+   - Finds consolation phase and linked main phase via `nextPhaseId`
+   - Queries all completed matches from main phase round
+   - Extracts losers (8 participants who lost in Round of 16)
+   - Creates/updates registrations for losers
+   - Generates consolation bracket (8-player single elimination: Quarterfinals → Semifinals → Final)
+   - Updates phase `matchCount` with created matches
+
+2. **Frontend Service** (`phase.service.ts`):
+   - Added `PopulateConsolationDrawDto` interface
+   - Implemented `populateConsolationDraw()` method calling new API endpoint
+   - Returns: `{message, losersCount, matchesCreated, consolationPhase, losers}`
+
+3. **Frontend Component** (`phase-management.component.ts`):
+   - Track `consolationPhaseId` in form after creation
+   - New `populateConsolationDraw()` method
+   - Preserve phase ID after creation (don't reset form immediately)
+   - Show success message with loser count and match count
+
+4. **UI Enhancement** (`phase-management.component.html`):
+   - Added "Populate with Losers" button (shown after consolation phase created)
+   - Button disabled during processing
+   - Success confirmation: "✅ Consolation phase created! Now populate it with losers from completed matches"
+   - Green success button styling for second step
+
+**Workflow:**
+1. Admin creates consolation phase structure → Response contains `consolationPhaseId`
+2. Complete Round of 16 matches (use `complete-next-round.ts` script)
+3. Click "Populate with Losers" button
+4. Backend identifies 8 losers, creates registrations, generates 7 matches
+5. Refresh bracket view to see consolation draw with all matches
+
+**Testing Support:**
+- `complete-next-round.ts`: Progressive round completion with realistic scores
+- `test-consolation-workflow.ts`: Demonstrates full consolation workflow (identify losers → create registrations → generate matches)
+
+**Files Modified:**
+- `backend/src/presentation/controllers/phase.controller.ts` - populateConsolationDraw endpoint
+- `backend/src/presentation/routes/index.ts` - POST /api/phases/populate-consolation route
+- `src/application/services/phase.service.ts` - populateConsolationDraw method + DTO
+- `src/presentation/pages/phases/phase-management.component.ts` - UI logic
+- `src/presentation/pages/phases/phase-management.component.html` - Populate button
+- `src/presentation/pages/phases/phase-management.component.css` - btn-success, form-separator styles
+
+**Files Created:**
+- `backend/test-consolation-workflow.ts` - Complete workflow demonstration script
+
+**Impact:**
+- Consolation draws now fully functional end-to-end
+- 8 first-round losers automatically registered and bracketed
+- Single-click operation after main phase completion
+- No manual match creation needed
+
+---
+
+### Testing Utility: Progressive Round Completion Script
+
+**Creation Date:** 2026-04-11
+
+**Purpose:**
+Created `complete-next-round.ts` - an automated testing script that progressively completes tournament rounds with realistic match results.
+
+**Features:**
+- Automatically detects the next incomplete round in a tournament
+- Generates realistic tennis scores (6-4, 7-5, 6-3, etc. with 2-3 sets)
+- Completes all matches in that round
+- Advances winners to the next round's matches
+- Can be run multiple times to simulate full tournament progression
+- Provides detailed output showing match results and next steps
+
+**Usage:**
+```bash
+npx tsx complete-next-round.ts <tournamentId>
+```
+
+**Testing Workflow:**
+1. First execution: Completes Round of 16, advances 8 winners to Quarterfinals
+2. Second execution: Completes Quarterfinals, advances 4 winners to Semifinals
+3. Third execution: Completes Semifinals, advances 2 winners to Final
+4. Fourth execution: Completes Final, tournament finished
+
+**Value:**
+- Essential for testing consolation draws (need completed Round of 16 to identify 8 losers)
+- Simulates realistic tournament progression without manual result entry
+- Saves significant time during E2E testing of phase-based features
+- Generates varied, realistic tennis scores for authentic testing data
+
+**Files Added:**
+- `backend/complete-next-round.ts`
+
+---
+
 ### **IMPLEMENTED** — Multi-Phase Tournament Management (v1.89.0) 🔗
 
 **Implementation Date**: April 10, 2026
@@ -380,11 +591,73 @@ Created `backend/setup-phase-linking-test.ts` to automatically set up test envir
 - **Fix**:
   - Changed from fractional units to fixed percentage-based layout with `minmax()` constraints
   - Before: `grid-template-columns: 3fr 2fr;`
-  - After: `grid-template-columns: minmax(0, 60%) minmax(0, 40%);`
+  - After: `grid-template-columns: minmax(0, 45%) minmax(0, 55%);` (adjusted to 45/55 split per user preference)
   - The `minmax(0, ...)` prevents content overflow while maintaining stable column proportions regardless of content loading state
-  - Percentages provide consistent 60/40 split that doesn't recalculate when player data loads
+  - Percentages provide consistent split that doesn't recalculate when player data loads
 - Modified:
   - `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.css` - updated `.content-grid` layout
+
+**Issue 19**: Lucky Loser tab required manual participant ID entry instead of dropdown
+- **Issue**: Lucky Loser promotion form had a text input field requiring users to manually type participant IDs (e.g., "usr_abc123xyz"), forcing admins to look up IDs from registration tables
+- **Impact**: Poor UX requiring context switching between Phase Management and Registered Participants sections to copy/paste IDs
+- **Root Cause**: Form initially designed without dynamic data loading - assumed admins would have participant IDs readily available
+- **Fix**:
+  - Added `RegistrationService` and `UserRepositoryImpl` to component dependencies
+  - Created `ParticipantOption` interface with fields: participantId, participantName, registrationId, seedNumber, acceptanceType, displayLabel
+  - Added `withdrawableParticipants` signal to store ACCEPTED players (DIRECT_ACCEPTANCE, QUALIFIER, LUCKY_LOSER)
+  - Implemented `loadWithdrawableParticipants()` method:
+    * Fetches all registrations for current tournament/category
+    * Filters to ACCEPTED status (excludes WITHDRAWN and ALTERNATE)
+    * Loads user details via `userRepository.findPublicById()`
+    * Sorts by seed number (seeded players first), then alphabetically
+    * Creates display labels like "Novak Djokovic (Seed #1)" or "John Doe (QUALIFIER)"
+  - Updated `onLuckyLoserPhaseChange()` to call `loadWithdrawableParticipants()` when phase selected
+  - Replaced text input with `<select>` dropdown showing participant names with seed/status info
+  - Added contextual hints: "Select a phase first", "No accepted players found", "X player(s) available"
+  - Dropdown disabled until phase is selected
+  - Phase selection order changed: Phase first → Withdrawn Player second → Category auto-fills
+- Modified:
+  - `src/presentation/pages/phases/phase-management.component.ts` - added RegistrationService, ParticipantOption interface, withdrawableParticipants signal, loadWithdrawableParticipants() method
+  - `src/presentation/pages/phases/phase-management.component.html` - replaced text input with dropdown, reordered form fields, updated help text
+
+**Issue 20**: Lucky Loser promotion only updated acceptanceType, not status
+- **Issue**: When promoting a Lucky Loser, the withdrawn participant's `acceptanceType` was changed to `WITHDRAWN` but their `status` remained `ACCEPTED` instead of changing to `WITHDRAWN`
+- **Impact**: Withdrawn players still appeared as "ACCEPTED" in the UI (Registered Participants table), causing confusion about who was actively participating in the tournament
+- **Root Cause**: Backend `promoteLuckyLoser()` endpoint only updated the `acceptanceType` field but forgot to update the `status` field
+  - The Registration entity has two separate fields:
+    * `status`: PENDING, ACCEPTED, REJECTED, WAITING_LIST, CANCELLED, **WITHDRAWN** (approval/participation status)
+    * `acceptanceType`: DIRECT_ACCEPTANCE, QUALIFIER, ALTERNATE, LUCKY_LOSER, **WITHDRAWN** (entry type)
+  - Both should be set to WITHDRAWN for proper participant tracking
+- **Fix**:
+  - Added `withdrawnRegistration.status = RegistrationStatus.WITHDRAWN;` before saving
+  - Now both status and acceptanceType are set to WITHDRAWN
+  - Withdrawn participants correctly filtered out from active participant lists
+- **Testing**: Using test tournament trn_3b7247a7, withdrew rafa_nadal (Seed #2), verified:
+  - rafa_nadal: `status: WITHDRAWN`, `acceptanceType: WITHDRAWN` ✅
+  - qual_player1: Promoted from ALTERNATE to `acceptanceType: LUCKY_LOSER` ✅
+- Modified:
+  - `backend/src/presentation/controllers/phase.controller.ts` - updated `promoteLuckyLoser()` to set both status and acceptanceType
+
+**Issue 21**: Withdrawn player still appeared in withdrawable participants dropdown after Lucky Loser promotion
+- **Issue**: After promoting a Lucky Loser, the withdrawn player (e.g., rafa_nadal) still appeared in the "Withdrawn Player" dropdown, allowing admins to withdraw the same player multiple times
+- **Impact**: Confusing UX showing stale data; risk of attempting to withdraw already-withdrawn players
+- **Root Cause**: After successful Lucky Loser promotion, the frontend didn't refresh the `withdrawableParticipants` list
+  - The `promoteLuckyLoser()` method called `resetLuckyLoserForm()` which cleared phaseId/categoryId
+  - Then couldn't reload participants because the form data was cleared
+  - The dropdown continued showing the cached participant list from before the withdrawal
+- **Fix**:
+  - Removed `resetLuckyLoserForm()` call (keep phase selection persistent like other tabs)
+  - After successful promotion, call `loadWithdrawableParticipants(tournamentId, categoryId)` to refresh the list
+  - Only clear the `withdrawnParticipantId` field (not the entire form)
+  - The existing filter `status === 'ACCEPTED'` automatically excludes WITHDRAWN players
+  - Added reminder message: "Refresh the tournament details page to see updated participant list"
+- **Testing**: After withdrawing rafa_nadal:
+  - Dropdown immediately updates: rafa_nadal removed from list ✅
+  - Phase selection persists (no need to reselect) ✅
+  - 15 players now available to withdraw (down from 16) ✅
+  - Tournament details page shows changes after manual browser refresh ✅
+- Modified:
+  - `src/presentation/pages/phases/phase-management.component.ts` - updated `promoteLuckyLoser()` to reload withdrawableParticipants and preserve form state
 
 ---
 

@@ -57,6 +57,18 @@ export interface CreateConsolationDrawDto {
 }
 
 /**
+ * DTO for populating consolation draws with losers.
+ */
+export interface PopulateConsolationDrawDto {
+  /** ID of the consolation phase. */
+  consolationPhaseId: string;
+  /** Tournament ID. */
+  tournamentId: string;
+  /** Category ID. */
+  categoryId: string;
+}
+
+/**
  * DTO for Lucky Loser promotion.
  */
 export interface PromoteLuckyLoserDto {
@@ -219,6 +231,51 @@ export class PhaseService {
       return result;
     } catch (error: any) {
       const errorMessage = error?.error?.message || 'Failed to create consolation draw';
+      this.error.set(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /**
+   * Populate consolation draw with losers from main phase.
+   *
+   * Identifies losers from completed matches in the main phase,
+   * creates registrations for them, and generates consolation bracket matches.
+   *
+   * @param data - Populate consolation draw parameters
+   * @returns Promise resolving to populated consolation phase details
+   * @throws Error if consolation phase not found or no completed matches
+   */
+  public async populateConsolationDraw(data: PopulateConsolationDrawDto): Promise<{
+    message: string;
+    losersCount: number;
+    matchesCreated: number;
+    consolationPhase: PhaseDto;
+    losers: string[];
+  }> {
+    this.loading.set(true);
+    this.error.set(null);
+
+    try {
+      const result = await this.http
+        .post<{
+          message: string;
+          losersCount: number;
+          matchesCreated: number;
+          consolationPhase: PhaseDto;
+          losers: string[];
+        }>(`${this.apiUrl}/populate-consolation`, data)
+        .toPromise();
+
+      if (!result) {
+        throw new Error('Failed to populate consolation draw');
+      }
+
+      return result;
+    } catch (error: any) {
+      const errorMessage = error?.error?.message || 'Failed to populate consolation draw';
       this.error.set(errorMessage);
       throw new Error(errorMessage);
     } finally {

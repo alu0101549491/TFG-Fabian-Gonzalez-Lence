@@ -128,15 +128,15 @@
           </div>
         </div>
 
-        <!-- Bracket Phases -->
-        @if (phases().length > 0) {
+        <!-- Main Draw Phases -->
+        @if (mainPhases().length > 0) {
           <h2 class="section-title">
             <span class="section-icon">📊</span>
-            <span>Bracket Phases</span>
+            <span>Main Draw Phases</span>
           </h2>
 
           <div class="phases-grid">
-            @for (phase of phases(); track phase.id) {
+            @for (phase of mainPhases(); track phase.id) {
               <div class="phase-card">
                 <div class="phase-header">
                   <h3 class="phase-name">{{ phase.name }}</h3>
@@ -162,19 +162,71 @@
           </div>
         }
 
-        <!-- Visual Bracket Display -->
-        @if (matches().length > 0) {
+        <!-- Main Draw Visual Bracket -->
+        @if (mainMatches().length > 0) {
           <h2 class="section-title">
             <span class="section-icon">🏆</span>
-            <span>Bracket View</span>
+            <span>Main Draw Bracket</span>
           </h2>
 
           <div class="visual-bracket-section">
             <app-visual-bracket 
               [bracket]="bracket()!" 
-              [matches]="matches()"
+              [matches]="mainMatches()"
             ></app-visual-bracket>
           </div>
+        }
+
+        <!-- Consolation Draw Section -->
+        @if (consolationPhases().length > 0) {
+          <div class="consolation-divider"></div>
+
+          <h2 class="section-title consolation-title">
+            <span class="section-icon">🎖️</span>
+            <span>Consolation Draw</span>
+          </h2>
+
+          <div class="phases-grid">
+            @for (phase of consolationPhases(); track phase.id) {
+              <div class="phase-card consolation-phase-card">
+                <div class="phase-header">
+                  <h3 class="phase-name">{{ phase.name }}</h3>
+                </div>
+                <div class="phase-body">
+                  <div class="phase-detail">
+                    <span class="phase-label">Order</span>
+                    <span class="phase-value">Round {{ phase.order }}</span>
+                  </div>
+                  <div class="phase-detail">
+                    <span class="phase-label">Matches</span>
+                    <span class="phase-value">{{ phase.matchCount }}</span>
+                  </div>
+                  <div class="phase-detail">
+                    <span class="phase-label">Status</span>
+                    <span class="phase-value">
+                      {{ phase.isCompleted ? '✅ Completed' : '🎾 In Progress' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          @for (phase of consolationPhases(); track phase.id) {
+            @if (getConsolationMatchesByPhase(phase.id).length > 0) {
+              <h2 class="section-title">
+                <span class="section-icon">🏆</span>
+                <span>{{ phase.name }} Bracket</span>
+              </h2>
+
+              <div class="visual-bracket-section">
+                <app-visual-bracket
+                  [bracket]="bracket()!"
+                  [matches]="getConsolationMatchesByPhase(phase.id)"
+                ></app-visual-bracket>
+              </div>
+            }
+          }
         }
       } @else {
         <!-- No Bracket State -->

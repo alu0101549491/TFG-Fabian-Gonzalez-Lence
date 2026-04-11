@@ -448,6 +448,183 @@ export class PhaseController {
   }
 
   /**
+   * Populate consolation draw with losers from main phase and generate matches.
+   *
+   * @route POST /api/phases/populate-consolation
+   * @access TOURNAMENT_ADMIN, SYSTEM_ADMIN
+   */
+  public async populateConsolationDraw(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {consolationPhaseId, tournamentId, categoryId} = req.body;
+
+      // Validate input
+      if (!consolationPhaseId || !tournamentId || !categoryId) {
+        throw new AppError('consolationPhaseId, tournamentId, and categoryId are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      const phaseRepository = AppDataSource.getRepository(Phase);
+      const matchRepository = AppDataSource.getRepository(Match);
+      const registrationRepository = AppDataSource.getRepository(Registration);
+
+      // Remove previously generated matches for this consolation phase to keep the operation idempotent.
+      await matchRepository.delete({phaseId: consolationPhaseId});
+
+      // Fetch consolation phase
+      const consolationPhase = await phaseRepository.findOne({where: {id: consolationPhaseId}});
+      if (!consolationPhase) {
+        throw new AppError(`Consolation phase not found: ${consolationPhaseId}`, HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Find the main phase that links to this consolation phase
+      const mainPhase = await phaseRepository.findOne({where: {nextPhaseId: consolationPhaseId}});
+      if (!mainPhase) {
+        throw new AppError('No main phase linked to this consolation phase', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Get all completed matches from the main phase's round
+      const mainPhaseMatches = await matchRepository.find({
+        where: {
+          bracketId: mainPhase.bracketId,
+          round: mainPhase.order,
+        },
+      });
+
+      // Filter to completed matches only
+      const completedMatches = mainPhaseMatches.filter(m => m.status === MatchStatus.COMPLETED && m.winnerId);
+
+      if (completedMatches.length === 0) {
+        throw new AppError('No completed matches found in main phase. Complete matches before populating consolation draw.', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Extract losers (participants who didn't win)
+      const losers: string[] = [];
+      for (const match of completedMatches) {
+        const loser = match.participant1Id === match.winnerId ? match.participant2Id : match.participant1Id;
+        if (loser) {
+          losers.push(loser);
+        }
+      }
+
+      if (losers.length === 0) {
+        throw new AppError('No losers found in completed matches', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Create registrations for losers in consolation draw
+      const createdRegistrations: Registration[] = [];
+      for (const loserId of losers) {
+        // Check if registration already exists
+        const existing = await registrationRepository.findOne({
+          where: {
+            participantId: loserId,
+            tournamentId,
+            categoryId,
+          },
+        });
+
+        if (existing) {
+          // Update existing registration to mark as consolation participant
+          existing.acceptanceType = AcceptanceType.DIRECT_ACCEPTANCE; // They're directly entered into consolation
+          existing.status = RegistrationStatus.ACCEPTED;
+          await registrationRepository.save(existing);
+          createdRegistrations.push(existing);
+        } else {
+          // This shouldn't happen (they were already registered) but handle it
+          const newReg = registrationRepository.create({
+            id: generateId('reg'),
+            tournamentId,
+            categoryId,
+            participantId: loserId,
+            seedNumber: null,
+            acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE,
+            status: RegistrationStatus.ACCEPTED,
+            registrationDate: new Date(),
+          });
+          await registrationRepository.save(newReg);
+          createdRegistrations.push(newReg);
+        }
+      }
+
+      // Generate consolation bracket matches
+      const bracketSize = losers.length;
+      const rounds = Math.ceil(Math.log2(bracketSize));
+      let totalMatches = 0;
+      const createdMatches: Match[] = [];
+
+      // Calculate total matches for single elimination
+      for (let r = 1; r <= rounds; r++) {
+        totalMatches += Math.pow(2, rounds - r);
+      }
+
+      // Create first round matches with losers
+      const firstRoundMatchCount = Math.pow(2, rounds - 1);
+      let matchNumber = 1;
+      
+      for (let i = 0; i < firstRoundMatchCount; i++) {
+        const participant1 = losers[i * 2];
+        const participant2 = losers[i * 2 + 1];
+
+        const match = matchRepository.create({
+          bracketId: consolationPhase.bracketId,
+          phaseId: consolationPhaseId,
+          round: consolationPhase.order,
+          matchNumber,
+          participant1Id: participant1 || null,
+          participant2Id: participant2 || null,
+          winnerId: null,
+          status: (participant1 && participant2) ? MatchStatus.SCHEDULED : MatchStatus.BYE,
+          score: null,
+          scheduledTime: null,
+          endTime: null,
+        });
+
+        match.id = generateId('mtc');
+        await matchRepository.save(match);
+        createdMatches.push(match);
+        matchNumber++;
+      }
+
+      // Create subsequent round placeholders
+      for (let r = 2; r <= rounds; r++) {
+        const roundMatchCount = Math.pow(2, rounds - r);
+        for (let i = 0; i < roundMatchCount; i++) {
+          const match = matchRepository.create({
+            bracketId: consolationPhase.bracketId,
+            phaseId: consolationPhaseId,
+            round: consolationPhase.order + r - 1,
+            matchNumber,
+            participant1Id: null,
+            participant2Id: null,
+            winnerId: null,
+            status: MatchStatus.NOT_SCHEDULED,
+            score: null,
+            scheduledTime: null,
+            endTime: null,
+          });
+
+          match.id = generateId('mtc');
+          await matchRepository.save(match);
+          createdMatches.push(match);
+          matchNumber++;
+        }
+      }
+
+      // Update consolation phase match count
+      consolationPhase.matchCount = createdMatches.length;
+      await phaseRepository.save(consolationPhase);
+
+      res.status(HTTP_STATUS.OK).json({
+        message: 'Consolation draw populated successfully',
+        losersCount: losers.length,
+        matchesCreated: createdMatches.length,
+        consolationPhase,
+        losers,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Promote alternate to Lucky Loser when participant withdraws.
    *
    * @route POST /api/phases/promote-lucky-loser
@@ -477,7 +654,8 @@ export class PhaseController {
         throw new AppError(`Registration not found for participant: ${withdrawnParticipantId}`, HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
 
-      // Update withdrawn participant's acceptance type
+      // Update withdrawn participant's status and acceptance type
+      withdrawnRegistration.status = RegistrationStatus.WITHDRAWN;
       withdrawnRegistration.acceptanceType = AcceptanceType.WITHDRAWN;
       await registrationRepository.save(withdrawnRegistration);
 

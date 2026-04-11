@@ -18,8 +18,10 @@ import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {PhaseService} from '../../../application/services/phase.service';
 import {TournamentService} from '../../../application/services/tournament.service';
 import {BracketService} from '../../../application/services/bracket.service';
-import {type PhaseDto, type TournamentDto, type BracketDto} from '../../../application/dto';
+import {RegistrationService} from '../../../application/services/registration.service';
+import {type PhaseDto, type TournamentDto, type BracketDto, type RegistrationDto} from '../../../application/dto';
 import {AuthStateService} from '../../services/auth-state.service';
+import {UserRepositoryImpl} from '../../../infrastructure/repositories/user.repository';
 import templateHtml from './phase-management.component.html?raw';
 import styles from './phase-management.component.css?raw';
 
@@ -35,6 +37,18 @@ interface PhaseOption {
   tournamentName: string;
   displayLabel: string;
   categoryId?: string;
+}
+
+/**
+ * Interface for participant selection options in Lucky Loser dropdown.
+ */
+interface ParticipantOption {
+  participantId: string;
+  participantName: string;
+  registrationId: string;
+  seedNumber: number | null;
+  acceptanceType: string;
+  displayLabel: string;
 }
 
 /**
@@ -62,6 +76,8 @@ export class PhaseManagementComponent implements OnInit {
   private readonly phaseService = inject(PhaseService);
   private readonly tournamentService = inject(TournamentService);
   private readonly bracketService = inject(BracketService);
+  private readonly registrationService = inject(RegistrationService);
+  private readonly userRepository = inject(UserRepositoryImpl);
   private readonly authState = inject(AuthStateService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -83,6 +99,9 @@ export class PhaseManagementComponent implements OnInit {
 
   /** Filtered target phase options (only from tournaments with admin access) */
   protected targetPhaseOptions = signal<PhaseOption[]>([]);
+
+  /** Withdrawable participants (ACCEPTED players who can be withdrawn for Lucky Loser) */
+  protected withdrawableParticipants = signal<ParticipantOption[]>([]);
 
   /** Loading state */
   protected isLoading = signal<boolean>(true);
@@ -116,6 +135,7 @@ export class PhaseManagementComponent implements OnInit {
     mainPhaseId: '',
     categoryId: '',
     eliminationRound: 1,
+    consolationPhaseId: '', // Track created consolation phase for population
   });
 
   protected luckyLoserForm = signal({
@@ -348,16 +368,81 @@ export class PhaseManagementComponent implements OnInit {
 
   /**
    * Auto-populate lucky loser form when phase changes.
+   * Also loads withdrawable participants for the selected phase/category.
    *
    * @param phaseId - Selected phase ID
    */
-  protected onLuckyLoserPhaseChange(phaseId: string): void {
+  protected async onLuckyLoserPhaseChange(phaseId: string): Promise<void> {
     const selectedPhase = this.allPhaseOptions().find(p => p.phaseId === phaseId);
     this.luckyLoserForm.update(form => ({
       ...form,
       phaseId: phaseId,
       categoryId: selectedPhase?.categoryId || '',
+      withdrawnParticipantId: '', // Reset selection
     }));
+
+    // Load accepted participants who can be withdrawn
+    if (selectedPhase?.categoryId) {
+      await this.loadWithdrawableParticipants(this.tournamentId()!, selectedPhase.categoryId);
+    }
+  }
+
+  /**
+   * Load ACCEPTED participants who can be withdrawn for Lucky Loser promotion.
+   *
+   * @param tournamentId - Tournament ID
+   * @param categoryId - Category ID
+   */
+  private async loadWithdrawableParticipants(tournamentId: string, categoryId: string): Promise<void> {
+    try {
+      // Fetch all registrations for this tournament
+      const allRegistrations = await this.registrationService.getRegistrationsByTournament(tournamentId);
+
+      // Filter to ACCEPTED registrations in this category (exclude WITHDRAWN and ALTERNATES)
+      const acceptedRegs = allRegistrations.filter(r =>
+        r.categoryId === categoryId &&
+        r.status === 'ACCEPTED' &&
+        (r.acceptanceType === 'DIRECT_ACCEPTANCE' || r.acceptanceType === 'QUALIFIER' || r.acceptanceType === 'LUCKY_LOSER')
+      );
+
+      // Fetch user details for each registration
+      const participantOptions: ParticipantOption[] = [];
+
+      for (const reg of acceptedRegs) {
+        try {
+          const user = await this.userRepository.findPublicById(reg.participantId);
+          if (user) {
+            const displayName = user.username || `${user.firstName} ${user.lastName}` || user.email;
+            const seedInfo = reg.seedNumber ? `Seed #${reg.seedNumber}` : reg.acceptanceType;
+
+            participantOptions.push({
+              participantId: reg.participantId,
+              participantName: displayName,
+              registrationId: reg.id,
+              seedNumber: reg.seedNumber,
+              acceptanceType: reg.acceptanceType,
+              displayLabel: `${displayName} (${seedInfo})`,
+            });
+          }
+        } catch (error) {
+          console.warn(`Failed to load user ${reg.participantId}:`, error);
+        }
+      }
+
+      // Sort by seed number (seeded players first), then by name
+      participantOptions.sort((a, b) => {
+        if (a.seedNumber && b.seedNumber) return a.seedNumber - b.seedNumber;
+        if (a.seedNumber) return -1;
+        if (b.seedNumber) return 1;
+        return a.participantName.localeCompare(b.participantName);
+      });
+
+      this.withdrawableParticipants.set(participantOptions);
+      console.log(`Loaded ${participantOptions.length} withdrawable participants`);
+    } catch (error) {
+      console.error('Failed to load withdrawable participants:', error);
+      this.withdrawableParticipants.set([]);
+    }
   }
 
   /**
@@ -461,11 +546,47 @@ export class PhaseManagementComponent implements OnInit {
         eliminationRound: formData.eliminationRound || undefined,
       });
 
-      this.success.set(`${result.message}. ${result.note}`);
-      this.resetConsolationForm();
+      // Store consolation phase ID for population
+      this.consolationForm.update(form => ({
+        ...form,
+        consolationPhaseId: result.consolationPhase.id,
+      }));
+
+      this.success.set(`${result.message}. Now populate it with losers from the main phase.`);
       await this.loadTournamentData();
     } catch (err: any) {
       this.error.set(err.message || 'Failed to create consolation draw');
+    } finally {
+      this.isProcessing.set(false);
+    }
+  }
+
+  /**
+   * Populate consolation draw with losers from completed main phase matches.
+   */
+  protected async populateConsolationDraw(): Promise<void> {
+    this.isProcessing.set(true);
+    this.clearMessages();
+
+    try {
+      const formData = this.consolationForm();
+      const tournamentId = this.tournamentId();
+
+      if (!formData.consolationPhaseId || !tournamentId || !formData.categoryId) {
+        throw new Error('Consolation phase ID, tournament ID, and category ID are required');
+      }
+
+      const result = await this.phaseService.populateConsolationDraw({
+        consolationPhaseId: formData.consolationPhaseId,
+        tournamentId,
+        categoryId: formData.categoryId,
+      });
+
+      this.success.set(`${result.message}. ${result.losersCount} losers added, ${result.matchesCreated} matches created. Refresh bracket to see consolation matches.`);
+      this.resetConsolationForm();
+      await this.loadTournamentData();
+    } catch (err: any) {
+      this.error.set(err.message || 'Failed to populate consolation draw');
     } finally {
       this.isProcessing.set(false);
     }
@@ -498,12 +619,22 @@ export class PhaseManagementComponent implements OnInit {
       });
 
       if (result.promotedParticipantId) {
-        this.success.set(`${result.message}. Promoted participant: ${result.promotedParticipantId}`);
+        this.success.set(`${result.message}. Promoted participant: ${result.promotedParticipantId}. Refresh the tournament details page to see updated participant list.`);
       } else {
-        this.success.set(result.message);
+        this.success.set(`${result.message}. Refresh the tournament details page to see updated participant list.`);
       }
 
-      this.resetLuckyLoserForm();
+      // Reload withdrawable participants to reflect the withdrawn player being removed
+      if (formData.phaseId && formData.categoryId) {
+        await this.loadWithdrawableParticipants(tournamentId, formData.categoryId);
+      }
+
+      // Clear only the withdrawn player selection, keep phase selected
+      this.luckyLoserForm.update(form => ({
+        ...form,
+        withdrawnParticipantId: '',
+      }));
+
       await this.loadTournamentData();
     } catch (err: any) {
       this.error.set(err.message || 'Failed to promote Lucky Loser');
@@ -550,6 +681,7 @@ export class PhaseManagementComponent implements OnInit {
       ...form,
       mainPhaseId: '',
       eliminationRound: 1,
+      consolationPhaseId: '',
     }));
   }
 

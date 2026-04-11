@@ -391,7 +391,7 @@
                   <button
                     type="submit"
                     class="btn btn-primary"
-                    [disabled]="isProcessing() || !consolationForm().mainPhaseId || !consolationForm().categoryId"
+                    [disabled]="isProcessing() || !consolationForm().mainPhaseId || !consolationForm().categoryId || consolationForm().consolationPhaseId"
                   >
                     @if (isProcessing()) {
                       <span>⏳ Creating...</span>
@@ -400,6 +400,28 @@
                     }
                   </button>
                 </form>
+
+                <!-- Populate Consolation Draw Form (shown after creation) -->
+                @if (consolationForm().consolationPhaseId) {
+                  <div class="form-separator"></div>
+                  <div class="help-text">
+                    <p><strong>✅ Consolation phase created!</strong></p>
+                    <p>Now populate it with losers from completed matches in the main phase.</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn btn-success"
+                    [disabled]="isProcessing()"
+                    (click)="populateConsolationDraw()"
+                  >
+                    @if (isProcessing()) {
+                      <span>⏳ Populating...</span>
+                    } @else {
+                      <span>👥 Populate with Losers</span>
+                    }
+                  </button>
+                }
               </div>
             </div>
           }
@@ -415,28 +437,10 @@
                   <p><strong>What this does:</strong> When a player withdraws before their match, promotes the first alternate ("Lucky Loser") to take their place.</p>
                   <p><strong>When to use:</strong> After a registered player withdraws due to injury, illness, or personal reasons.</p>
                   <p><strong>Example:</strong> Roger Federer withdraws from "Main Draw - Men's Singles" → Promote first alternate to Lucky Loser status</p>
-                  <p><strong>Note:</strong> You need the withdrawn player's ID (found in registration lists)</p>
                 </div>
 
                 <form (ngSubmit)="promoteLuckyLoser()" class="operation-form">
                   <div class="form-row">
-                    <div class="form-group">
-                      <label for="withdrawnParticipant" class="form-label">
-                        <span class="label-icon">❌</span>
-                        Withdrawn Participant ID
-                      </label>
-                      <input
-                        type="text"
-                        id="withdrawnParticipant"
-                        [(ngModel)]="luckyLoserForm().withdrawnParticipantId"
-                        name="withdrawnParticipant"
-                        placeholder="e.g., usr_abc123xyz"
-                        class="form-input"
-                        required
-                      />
-                      <small class="form-hint">Find this in the registration/participant list for the tournament</small>
-                    </div>
-
                     <div class="form-group">
                       <label for="luckyLoserPhase" class="form-label">
                         <span class="label-icon">🎯</span>
@@ -458,6 +462,37 @@
                         }
                       </select>
                       <small class="form-hint">The phase where the withdrawal occurred</small>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="withdrawnParticipant" class="form-label">
+                        <span class="label-icon">❌</span>
+                        Withdrawn Player
+                      </label>
+                      <select
+                        id="withdrawnParticipant"
+                        [(ngModel)]="luckyLoserForm().withdrawnParticipantId"
+                        name="withdrawnParticipant"
+                        class="form-input"
+                        [disabled]="!luckyLoserForm().phaseId || withdrawableParticipants().length === 0"
+                        required
+                      >
+                        <option value="">-- Select player --</option>
+                        @for (participant of withdrawableParticipants(); track participant.participantId) {
+                          <option [value]="participant.participantId">
+                            {{ participant.displayLabel }}
+                          </option>
+                        }
+                      </select>
+                      <small class="form-hint">
+                        @if (!luckyLoserForm().phaseId) {
+                          Select a phase first to load available players
+                        } @else if (withdrawableParticipants().length === 0) {
+                          No accepted players found in this category
+                        } @else {
+                          {{ withdrawableParticipants().length }} player(s) available to withdraw
+                        }
+                      </small>
                     </div>
                   </div>
 

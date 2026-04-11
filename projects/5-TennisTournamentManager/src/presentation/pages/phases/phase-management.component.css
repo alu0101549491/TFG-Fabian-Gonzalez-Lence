@@ -379,6 +379,11 @@
   font-style: italic;
 }
 
+.form-separator {
+  margin: 2rem 0;
+  border-top: 2px solid var(--color-gray-300);
+}
+
 /* Buttons */
 .btn {
   padding: 0.875rem 2rem;
@@ -403,6 +408,17 @@
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 12px var(--color-primary-shadow);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: var(--color-white);
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4);
 }
 
 .btn:disabled {

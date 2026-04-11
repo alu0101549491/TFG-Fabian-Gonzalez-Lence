@@ -1942,6 +1942,45 @@ router.post('/phases/consolation', authMiddleware, roleMiddleware([UserRole.SYST
 
 /**
  * @swagger
+ * /phases/populate-consolation:
+ *   post:
+ *     tags: [Phases]
+ *     summary: Populate consolation draw
+ *     description: Populate consolation draw with losers from main phase and generate matches. Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - consolationPhaseId
+ *               - tournamentId
+ *               - categoryId
+ *             properties:
+ *               consolationPhaseId:
+ *                 type: string
+ *                 description: ID of the consolation phase
+ *               tournamentId:
+ *                 type: string
+ *                 description: Tournament ID
+ *               categoryId:
+ *                 type: string
+ *                 description: Category ID
+ *     responses:
+ *       200:
+ *         description: Consolation draw populated successfully
+ *       400:
+ *         description: Invalid input or no completed matches found
+ *       404:
+ *         description: Consolation phase not found
+ */
+router.post('/phases/populate-consolation', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), phaseController.populateConsolationDraw.bind(phaseController));
+
+/**
+ * @swagger
  * /phases/promote-lucky-loser:
  *   post:
  *     tags: [Phases]

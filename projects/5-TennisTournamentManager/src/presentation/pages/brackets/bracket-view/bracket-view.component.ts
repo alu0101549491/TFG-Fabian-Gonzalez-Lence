@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal, inject} from '@angular/core';
+import {Component, OnInit, signal, computed, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
@@ -59,6 +59,36 @@ export class BracketViewComponent implements OnInit {
 
   /** Bracket matches */
   public matches = signal<MatchDto[]>([]);
+
+  /** Main draw phases (order < 100) */
+  public mainPhases = computed(() => 
+    this.phases().filter(p => p.order < 100)
+  );
+
+  /** Main draw matches (round < 100) */
+  public mainMatches = computed(() => 
+    this.matches().filter(m => m.round < 100)
+  );
+
+  /** Consolation phases (order >= 100) */
+  public consolationPhases = computed(() => 
+    this.phases().filter(p => p.order >= 100)
+  );
+
+  /** Consolation matches (round >= 100) */
+  public consolationMatches = computed(() => 
+    this.matches().filter(m => m.round >= 100)
+  );
+
+  /**
+   * Returns the matches that belong to a specific consolation phase.
+   *
+   * @param phaseId - Consolation phase identifier
+   * @returns Matches scoped to the provided phase
+   */
+  public getConsolationMatchesByPhase(phaseId: string): MatchDto[] {
+    return this.consolationMatches().filter(m => m.phaseId === phaseId);
+  }
 
   /** Loading state */
   public isLoading = signal(false);
