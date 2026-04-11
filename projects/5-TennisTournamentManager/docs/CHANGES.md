@@ -370,6 +370,22 @@ Created `backend/setup-phase-linking-test.ts` to automatically set up test envir
 - Modified:
   - `src/presentation/components/visual-bracket/visual-bracket.component.css` - updated `.participant.bye` styling
 
+**Issue 18**: Tournament detail page column layout shifts after async data loads
+- **Issue**: When entering tournament details page, the two-column grid layout initially renders correctly, but after ~2 seconds the right column widens/shifts to the left as player data loads
+- **Impact**: Poor UX with visible layout shift (CLS - Cumulative Layout Shift), making the page feel unstable during initial load
+- **Root Cause**: CSS Grid using fractional units (`grid-template-columns: 3fr 2fr`) recalculates column widths when async content (registered players table) populates the right column
+  - Initial render: Minimal content in right column (status card, registration form, categories)
+  - After `loadPlayers()` completes: Large participant management table with full player list appears
+  - Grid re-evaluates fractional distribution based on new content size, causing visible reflow
+- **Fix**:
+  - Changed from fractional units to fixed percentage-based layout with `minmax()` constraints
+  - Before: `grid-template-columns: 3fr 2fr;`
+  - After: `grid-template-columns: minmax(0, 60%) minmax(0, 40%);`
+  - The `minmax(0, ...)` prevents content overflow while maintaining stable column proportions regardless of content loading state
+  - Percentages provide consistent 60/40 split that doesn't recalculate when player data loads
+- Modified:
+  - `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.css` - updated `.content-grid` layout
+
 ---
 
 ### **DOCUMENTED** — External Notification Channels Marked as Optional (v1.88.32) 📝

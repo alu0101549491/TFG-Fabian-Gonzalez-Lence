@@ -498,11 +498,11 @@
                   <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                       <tr style="border-bottom: 2px solid #ddd; background-color: #f5f5f5;">
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Player</th>
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Category</th>
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Player</th>
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Category</th>
                         <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Seed</th>
                         <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Status</th>
-                        <th style="padding: 0.75rem; text-align: right; font-weight: 600;">Actions</th>
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -586,8 +586,8 @@
                               </span>
                             }
                           </td>
-                          <td style="padding: 0.75rem; text-align: right;">
-                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                          <td style="padding: 0.75rem; text-align: center;">
+                            <div style="display: flex; gap: 0.5rem; justify-content: center;">
                               @if (player.registration.status === 'PENDING') {
                                 @if (isCategoryFull(player.registration.categoryId)) {
                                   <!-- Category is FULL - show Set as Alternate button -->
@@ -775,28 +775,30 @@
                   <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                       <tr style="border-bottom: 2px solid #ddd;">
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Category</th>
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Gender</th>
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Age Group</th>
-                        <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Max</th>
-                        <th style="padding: 0.75rem; text-align: right; font-weight: 600;">Actions</th>
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Category</th>
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Gender</th>
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Age Group</th>
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Max</th>
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       @for (category of categories(); track category.id) {
                         <tr style="border-bottom: 1px solid #eee;">
-                          <td style="padding: 0.75rem;">{{ category.name }}</td>
-                          <td style="padding: 0.75rem;">{{ category.gender | enumFormat }}</td>
-                          <td style="padding: 0.75rem;">{{ category.ageGroup | enumFormat }}</td>
-                          <td style="padding: 0.75rem;">{{ category.maxParticipants }}</td>
-                          <td style="padding: 0.75rem; text-align: right;">
-                            <button
-                              class="action-btn delete"
-                              (click)="deleteCategory(category.id, category.name)"
-                              style="padding: 0.25rem 0.75rem; font-size: 0.875rem;"
-                            >
-                              🗑️ Delete
-                            </button>
+                          <td style="padding: 0.75rem; text-align: center;">{{ category.name }}</td>
+                          <td style="padding: 0.75rem; text-align: center;">{{ category.gender | enumFormat }}</td>
+                          <td style="padding: 0.75rem; text-align: center;">{{ category.ageGroup | enumFormat }}</td>
+                          <td style="padding: 0.75rem; text-align: center;">{{ category.maxParticipants }}</td>
+                          <td style="padding: 0.75rem;">
+                            <div style="display: flex; justify-content: center;">
+                              <button
+                                class="action-btn delete"
+                                (click)="deleteCategory(category.id, category.name)"
+                                style="padding: 0.25rem 0.75rem; font-size: 0.875rem;"
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       }
