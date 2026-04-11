@@ -84,6 +84,7 @@ export class MatchDetailComponent implements OnInit {
     courtId: '',
     scheduledDate: '',
     scheduledTime: '',
+    ballProvider: '',
   };
 
   public statusForm = {
@@ -168,6 +169,7 @@ export class MatchDetailComponent implements OnInit {
         this.scheduleForm.scheduledDate = date.toISOString().split('T')[0];
         this.scheduleForm.scheduledTime = date.toTimeString().slice(0, 5);
       }
+      this.scheduleForm.ballProvider = (match as any).ballProvider ?? '';
       if (match.courtId) {
         this.scheduleForm.courtId = match.courtId;
       }
@@ -361,7 +363,8 @@ export class MatchDetailComponent implements OnInit {
         this.match()!.id,
         selectedCourtId || null,
         selectedCourt?.name || null,
-        dateTime
+        dateTime,
+        this.scheduleForm.ballProvider.trim() || null
       );
 
       this.successMessage.set('Match scheduled successfully');

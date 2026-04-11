@@ -17,14 +17,14 @@ Use this block as the source of truth for work that is still partial or missing 
 - [ ] **FR20** - Implement/verify started-draw modification with result migration behavior.
 - [ ] **FR22** - Validate and complete multi-level consolation/Compass behavior end-to-end.
 - [ ] **FR25** - Finish and unify result confirmation flow across backend/frontend layers (remove TODO/inconsistent paths).
-- [ ] **FR31** - Add ball provider field to data model, APIs, and UI forms.
-- [ ] **FR39/FR40/FR43** - Move standings recomputation to backend service pipeline and trigger automatically after official result confirmation.
-- [ ] **FR41** - Implement ELO scoring algorithm and integrate with tournament ranking system selection.
+- [x] **FR31** - Add ball provider field to data model, APIs, and UI forms.
+- [x] **FR39/FR40/FR43** - Move standings recomputation to backend service pipeline and trigger automatically after official result confirmation.
+- [x] **FR41** - Implement ELO scoring algorithm and integrate with tournament ranking system selection.
 - [ ] **FR42** - Ensure seed-based tiebreak criterion uses real seed data in resolution step.
-- [ ] **FR44** - Implement global ranking update workflow (not only read endpoint).
+- [x] **FR44** - Implement global ranking update workflow (not only read endpoint).
 - [ ] **FR45/FR46** - Expand statistics to fully cover history/streak/opponent analytics per specification.
-- [ ] **FR49** - Wire scheduled announcement publication processor to an actual scheduler/cron execution path.
-- [ ] **FR52/FR53** - Complete all missing notification triggers (suspension/resumption/delay/default and other pending TODOs).
+- [x] **FR49** - Wire scheduled announcement publication processor to an actual scheduler/cron execution path.
+- [x] **FR52/FR53** - Complete all missing notification triggers (suspension/resumption/delay/default and other pending TODOs).
 
 ### Non-Functional Gaps (NFR)
 
@@ -34,7 +34,7 @@ Use this block as the source of truth for work that is still partial or missing 
 - [ ] **NFR6/NFR7** - Measure page-load/performance on realistic 4G/3G conditions and document results.
 - [ ] **NFR8** - Complete PWA: add manifest, service worker generation strategy, offline cache verification.
 - [ ] **NFR9** - Run concurrency/load tests for 100+ users and 20 active tournaments.
-- [ ] **NFR12** - Implement session inactivity auto-logout (30 minutes) and brute-force protection policy if incomplete.
+- [x] **NFR12** - Implement session inactivity auto-logout (30 minutes) and brute-force protection policy if incomplete.
 - [ ] **NFR14** - Close GDPR gaps: explicit consent tracking, complete access/rectification/deletion/portability flows.
 - [ ] **NFR16** - Implement and document automatic daily backups and point-in-time restoration.
 - [ ] **NFR17** - Add uptime monitoring/alerting and operational evidence for availability target.

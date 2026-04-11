@@ -2041,6 +2041,8 @@ router.post('/phases/promote-lucky-loser', authMiddleware, roleMiddleware([UserR
 // Standing routes
 // Cache standings for 2 minutes (updates after each match)
 router.get('/standings', apiCache(120), standingController.getByCategory.bind(standingController));
+// FR43: Admin endpoint to manually trigger standings recalculation for a bracket
+router.post('/standings/recalculate', authMiddleware, standingController.recalculate.bind(standingController));
 
 /**
  * @swagger
@@ -2057,6 +2059,8 @@ router.get('/standings', apiCache(120), standingController.getByCategory.bind(st
 // Ranking routes
 // Cache rankings for 10 minutes (computed data, updated periodically)
 router.get('/rankings', apiCache(600), rankingController.getAll.bind(rankingController));
+// FR44: Admin endpoint to trigger a full ELO ranking recalculation
+router.post('/rankings/recalculate', authMiddleware, rankingController.recalculate.bind(rankingController));
 
 /**
  * @swagger

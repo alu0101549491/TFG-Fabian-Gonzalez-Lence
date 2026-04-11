@@ -8,6 +8,157 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Standings Quick-Link Intent Navigation
+
+**Date:** 2026-04-11
+
+Updated dashboard standings navigation to use tournament selection with intent-based redirect:
+
+- Changed the dashboard Standings quick-link to navigate to `/tournaments` with query param `intent=standings`.
+- Reused existing `TournamentListComponent` intent flow (`viewTournament()`), which already routes to `/standings/:id` when `intent === 'standings'`.
+- Result: users now select a tournament first, then are taken directly to that tournament's standings page.
+
+**Files Modified:**
+- `src/presentation/pages/dashboard.component.html` - updated standings quick-link route and query params.
+
+### Ranking System Display Names
+
+**Date:** 2026-04-11
+
+Improved ranking system selector to display user-friendly names instead of technical enum values:
+
+**User Experience Enhancement:**
+- Dropdown now shows "ELO Rating", "Points Based", "Ratio Based" instead of raw enum values
+- Added `getRankingSystemDisplayName()` helper function following project's enum display pattern
+- Maintains internal enum values for type safety while improving readability
+
+**Display Mapping:**
+- `ELO` → "ELO Rating"
+- `POINTS_BASED` → "Points Based"
+- `RATIO_BASED` → "Ratio Based"
+
+**Files Modified:**
+- [ranking-system.ts](src/domain/enumerations/ranking-system.ts) - Added getRankingSystemDisplayName() utility function
+- [ranking-view.component.ts](src/presentation/pages/ranking/ranking-view/ranking-view.component.ts) - Added getSystemDisplayName() method
+- [ranking-view.component.html](src/presentation/pages/ranking/ranking-view/ranking-view.component.html) - Updated select options to use display names
+
+**Design Pattern:** Follows existing pattern used for hand types, boss types, and other enums in the codebase.
+
+### Global Rankings Player Names and Navigation
+
+**Date:** 2026-04-11
+
+Fixed rankings page to display actual player names and added back navigation:
+
+**Player Name Display Fix:**
+- Backend: Updated `RankingController.getAll()` to join with `User` table and enrich response with `playerName` field (`firstName + lastName`)
+- Frontend: Updated `RankingService.getRankingsBySystem()` to consume new `playerName` field from backend
+- Result: Rankings now display "John Doe" instead of "usr_c89fbba2"
+
+**Navigation Enhancement:**
+- Added back button to hero section (consistent with other pages like Order of Play)
+- Integrated Angular `Location` service for browser history navigation
+- Styled with glassmorphic button matching application design system
+
+**Files Modified:**
+- Backend: `ranking.controller.ts` - added User repository join and name enrichment
+- Frontend: `ranking.service.ts` - updated response type and mapping
+- Frontend: `ranking-view.component.ts` - added Location service and goBack() method
+- Frontend: `ranking-view.component.html` - added back button with hero-top wrapper
+- Frontend: `ranking-view.component.css` - styled back button with hover effects
+
+**Performance:** Backend query optimized with Promise.all() for parallel user lookups (up to 100 players).
+
+### Global Rankings UI Redesign
+
+**Date:** 2026-04-11
+
+Enhanced the Global Rankings page to match the application's design system with hero section and polished card styling:
+
+**UI Components:**
+- Added gradient hero section (green-to-blue) with decorative SVG overlay
+- Repositioned ranking system selector to hero area with glassmorphic styling
+- Wrapped rankings table in elevated white card with hover effects
+- Styled table with gradient header (primary-dark to primary)
+- Added special rank badges for top 3 positions (gold/silver/bronze gradients with box shadows)
+- Enhanced change indicators with color-coded icons (green ↑ / red ↓)
+- Styled points and ELO values with accent colors for better readability
+
+**Responsive Design:**
+- Mobile-optimized layout with adaptive column hiding (tournaments/change hidden on small screens)
+- Hero section stacks vertically on mobile devices
+- Touch-friendly selector and table interactions
+
+**Files Modified:**
+- Created `ranking-view.component.css` (330+ lines) with comprehensive styling
+- Updated `ranking-view.component.html` with semantic structure and CSS classes
+- Updated `ranking-view.component.ts` to import CSS file
+
+**Design Consistency:**
+- Matches dashboard hero gradient pattern
+- Uses application card component standards (shadow-sm/md, border-radius-lg)
+- Follows color palette (primary-dark → primary → secondary gradient)
+- Implements hover effects consistent with other pages (translateY, shadow transitions)
+
+### Rankings Navigation and Data Wiring Fix
+
+**Date:** 2026-04-11
+
+- Fixed dashboard quick-link navigation mismatch: card linked to `/rankings` while route existed as `/ranking` only.
+- Added canonical route `/rankings` and backward-compatible redirect from `/ranking`.
+- Implemented frontend rankings loader `getRankingsBySystem()` in `RankingService` using backend `GET /api/rankings`.
+- Set rankings page default system to `ELO` to align with currently available backend ranking dataset.
+
+### Missing Requirements Implementation Batch
+
+**Date:** 2026-04-11
+
+Implemented 7 missing requirements from the audit checklist to reduce technical debt and bring the implementation closer to full specification compliance.
+
+**FR31 - Ball Provider Field:**
+- Added `ballProvider` column (varchar 100, nullable) to `Match` entity
+- Created migration `005-add-ball-provider-to-matches.ts`
+
+**FR39/FR40/FR43 - Backend Standings Pipeline:**
+- Created `StandingService` with automatic calculation from completed matches
+- Computes: points (3/win), wins/losses, set/game ratios, head-to-head, seed tiebreakers
+- Triggers automatically after `confirmResult()`, `resolveDispute()`, and `update()` in match controller
+- Added manual recalculation endpoint: `POST /api/standings/recalculate?bracketId=xxx` (admin only)
+
+**FR41 - ELO Scoring Algorithm:**
+- Created `RankingService` with standard ELO implementation (K=32, default rating 1200)
+- Processes all historical COMPLETED matches in chronological order
+- Updates `global_rankings` table with new ratings and ranks
+
+**FR44 - Global Ranking Update Workflow:**
+- Added `POST /api/rankings/recalculate` endpoint (admin only)
+- Full rebuild of global ELO rankings from all match history
+
+**FR49 - Scheduled Announcement Publication:**
+- Wired `AnnouncementService.processScheduledPublications()` to server startup
+- Scheduler runs every 5 minutes via `setInterval` in `server.ts`
+
+**FR52/FR53 - Missing Notification Triggers:**
+- Added 6 new notification types: `RESULT_CONFIRMED`, `RESULT_DISPUTED`, `DISPUTE_RESOLVED`, `MATCH_SUSPENDED`, `MATCH_RESUMED`, `MATCH_DEFAULT`
+- Implemented 5 new notification methods in `NotificationService`: `notifyMatchSuspended()`, `notifyMatchResumed()`, `notifyDisputeResolved()`, `notifyMatchDefault()`
+- Wired all 4 incomplete notification TODOs in `match.controller.ts` (suspend/resume/resolveDispute/annulResult)
+- Updated `email.service.ts` emoji map to include all new notification types
+
+**NFR12 - Session Inactivity Auto-Logout:**
+- Created `SessionInactivityService` with 30-minute timeout
+- Tracks DOM events: mousemove, keydown, click, touchstart, scroll
+- Checks inactivity every 60 seconds
+- Auto-logout redirects to `/auth/login?reason=session_expired`
+- Updated `LoginComponent` to show session-expired banner when user is logged out due to inactivity
+- Wired service startup in `AppComponent.ngOnInit()`
+
+**Technical Fixes:**
+- Fixed all pre-existing TypeScript compilation errors across backend controllers
+- Fixed `VALIDATION_ERROR` → `VALIDATION_FAILED` error code inconsistencies
+- Fixed JWT type errors in `auth.controller.ts`
+- Fixed `TournamentStatus.COMPLETED` → `TournamentStatus.FINALIZED` enum reference
+- Both backend and frontend now compile cleanly with `tsc --noEmit`
+
 ### Frontend Root Reorganization
 
 **Date:** 2026-04-11

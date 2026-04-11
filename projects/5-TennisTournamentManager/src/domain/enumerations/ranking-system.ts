@@ -34,5 +34,24 @@ export function isValidRankingSystem(value: unknown): value is RankingSystem {
   return Object.values(RankingSystem).includes(value as RankingSystem);
 }
 
+/**
+ * Converts a RankingSystem enum to a user-friendly display name.
+ *
+ * @param system - The ranking system enum value
+ * @returns Human-readable name
+ */
+export function getRankingSystemDisplayName(system: RankingSystem): string {
+  switch (system) {
+    case RankingSystem.POINTS_BASED:
+      return 'Points Based';
+    case RankingSystem.RATIO_BASED:
+      return 'Ratio Based';
+    case RankingSystem.ELO:
+      return 'ELO Rating';
+    default:
+      return system;
+  }
+}
+
 /** Array of all ranking systems for iteration. */
 export const ALL_RANKING_SYSTEMS = Object.values(RankingSystem);

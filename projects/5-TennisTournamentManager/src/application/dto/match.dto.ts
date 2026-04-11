@@ -39,6 +39,7 @@ export interface MatchDto {
   phaseId: string;
   courtId: string | null;
   courtName: string | null;
+  ballProvider?: string | null;
   round: number;
   matchNumber: number;
   participant1Id: string | null;

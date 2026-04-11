@@ -17,6 +17,7 @@ import {initializeDatabase} from './infrastructure/database/data-source';
 import {setupWebSocketServer} from './websocket-server';
 import {createApp} from './app';
 import {ImageOptimizationService} from './application/services/image-optimization.service';
+import {AnnouncementService} from './application/services/announcement.service';
 
 /**
  * Starts the HTTP and WebSocket servers.
@@ -53,6 +54,21 @@ async function startServer(): Promise<void> {
       console.log(`🔌 WebSocket: ws://localhost:${PORT}`);
       console.log('════════════════════════════════════════════════════════════');
     });
+
+    // FR49: Start announcement scheduler — checks for scheduled publications every 5 minutes
+    const announcementService = new AnnouncementService();
+    const ANNOUNCEMENT_POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+    const runAnnouncementScheduler = async (): Promise<void> => {
+      try {
+        await announcementService.processScheduledPublications();
+      } catch (error) {
+        console.error('❌ Announcement scheduler error:', error);
+      }
+    };
+    // Run immediately at startup, then every 5 minutes
+    runAnnouncementScheduler();
+    setInterval(runAnnouncementScheduler, ANNOUNCEMENT_POLL_INTERVAL_MS);
+    console.log(`⏰ Announcement scheduler started (every ${ANNOUNCEMENT_POLL_INTERVAL_MS / 60000} minutes)`);
     
     // Graceful shutdown
     process.on('SIGTERM', () => {

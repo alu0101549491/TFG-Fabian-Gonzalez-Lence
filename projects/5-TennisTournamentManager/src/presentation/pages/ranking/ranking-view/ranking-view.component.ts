@@ -12,13 +12,14 @@
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';
-import {CommonModule} from '@angular/common';
+import {CommonModule, Location} from '@angular/common';
 import {RouterModule} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {RankingService} from '@application/services';
 import {type RankingDto} from '@application/dto';
-import {RankingSystem} from '@domain/enumerations/ranking-system';
+import {RankingSystem, getRankingSystemDisplayName} from '@domain/enumerations/ranking-system';
 import templateHtml from './ranking-view.component.html?raw';
+import componentStyles from './ranking-view.component.css?inline';
 
 /**
  * RankingViewComponent displays global player rankings.
@@ -28,11 +29,12 @@ import templateHtml from './ranking-view.component.html?raw';
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   template: templateHtml,
-  styles: [],
+  styles: [componentStyles],
 })
 export class RankingViewComponent implements OnInit {
   /** Services */
   private readonly rankingService = inject(RankingService);
+  private readonly location = inject(Location);
 
   /** Rankings data */
   public rankings = signal<RankingDto[]>([]);
@@ -44,10 +46,20 @@ export class RankingViewComponent implements OnInit {
   public errorMessage = signal<string | null>(null);
 
   /** Selected ranking system */
-  public selectedSystem: RankingSystem = RankingSystem.POINTS;
+  public selectedSystem: RankingSystem = RankingSystem.ELO;
 
   /** Available ranking systems */
   public readonly systems = Object.values(RankingSystem);
+
+  /**
+   * Gets the display name for a ranking system.
+   *
+   * @param system - Ranking system enum value
+   * @returns User-friendly display name
+   */
+  public getSystemDisplayName(system: RankingSystem): string {
+    return getRankingSystemDisplayName(system);
+  }
 
   /**
    * Initializes component and loads rankings.
@@ -79,5 +91,12 @@ export class RankingViewComponent implements OnInit {
    */
   public changeSystem(): void {
     void this.loadRankings();
+  }
+
+  /**
+   * Navigates back to previous page.
+   */
+  public goBack(): void {
+    this.location.back();
   }
 }

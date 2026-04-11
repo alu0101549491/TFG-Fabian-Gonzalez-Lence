@@ -1,0 +1,365 @@
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since 2026-04-11
+ * @file projects/5-TennisTournamentManager/src/presentation/pages/ranking/ranking-view/ranking-view.component.css
+ * @desc Styling for global rankings page with hero section and ranking table
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ */
+
+.rankings-container {
+  min-height: 100vh;
+  background: var(--color-gray-50);
+}
+
+/* Hero Section */
+.hero-section {
+  position: relative;
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-secondary) 100%);
+  color: var(--color-white);
+  padding: 3rem 0;
+  overflow: hidden;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><circle cx="100" cy="100" r="80" fill="rgba(255,255,255,0.05)"/><circle cx="900" cy="400" r="120" fill="rgba(255,255,255,0.03)"/><circle cx="600" cy="300" r="100" fill="rgba(255,255,255,0.04)"/></svg>');
+  background-size: cover;
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: var(--max-content-width);
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+.hero-top {
+  margin-bottom: var(--spacing-md);
+}
+
+.back-button {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  color: var(--color-white);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateX(-2px);
+}
+
+.hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.hero-title-section {
+  flex: 1;
+  min-width: 250px;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-white);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 
+               0 4px 8px rgba(0, 0, 0, 0.3),
+               0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.hero-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-white);
+  margin: 0;
+  opacity: 0.95;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 
+               0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.system-selector {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  min-width: 250px;
+}
+
+.system-selector label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-white);
+  margin-bottom: var(--spacing-sm);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.system-selector select {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: var(--color-white);
+  color: var(--color-gray-900);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.system-selector select:hover {
+  border-color: var(--color-primary);
+}
+
+.system-selector select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
+/* Main Content */
+.main-content {
+  max-width: var(--max-content-width);
+  margin: -2rem auto 0;
+  padding: 0 var(--spacing-lg) var(--spacing-2xl);
+  position: relative;
+}
+
+/* Rankings Card */
+.rankings-card {
+  background: var(--color-white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.rankings-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading & Messages */
+.loading-section,
+.empty-section {
+  text-align: center;
+  padding: var(--spacing-2xl);
+}
+
+.loading-section p {
+  font-size: var(--font-size-lg);
+  color: var(--color-gray-600);
+  margin: var(--spacing-lg) 0;
+}
+
+.empty-section p {
+  font-size: var(--font-size-lg);
+  color: var(--color-gray-500);
+}
+
+/* Table */
+.rankings-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rankings-table thead {
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+  color: var(--color-white);
+}
+
+.rankings-table thead th {
+  padding: var(--spacing-lg) var(--spacing-md);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border-bottom: 2px solid var(--color-primary-dark);
+}
+
+.rankings-table thead th:first-child {
+  padding-left: var(--spacing-xl);
+  text-align: center;
+  width: 80px;
+}
+
+.rankings-table tbody tr {
+  border-bottom: 1px solid var(--color-gray-200);
+  transition: background-color 0.2s ease;
+}
+
+.rankings-table tbody tr:hover {
+  background-color: var(--color-gray-50);
+}
+
+.rankings-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.rankings-table tbody td {
+  padding: var(--spacing-lg) var(--spacing-md);
+  color: var(--color-gray-900);
+  font-size: var(--font-size-base);
+}
+
+.rankings-table tbody td:first-child {
+  padding-left: var(--spacing-xl);
+  text-align: center;
+}
+
+/* Rank Badge */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+}
+
+.rank-badge.top-1 {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #856404;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+}
+
+.rank-badge.top-2 {
+  background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+  color: #383838;
+  box-shadow: 0 2px 8px rgba(192, 192, 192, 0.4);
+}
+
+.rank-badge.top-3 {
+  background: linear-gradient(135deg, #cd7f32, #e9a775);
+  color: #4e2f1a;
+  box-shadow: 0 2px 8px rgba(205, 127, 50, 0.4);
+}
+
+.rank-badge.normal {
+  background: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+/* Player Name */
+.player-name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+}
+
+/* Points & Stats */
+.points-value {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-lg);
+}
+
+.elo-value {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-secondary-dark);
+  font-size: var(--font-size-lg);
+}
+
+/* Change Indicators */
+.change-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+}
+
+.change-indicator.positive {
+  color: var(--color-success);
+}
+
+.change-indicator.negative {
+  color: var(--color-error);
+}
+
+.change-indicator.neutral {
+  color: var(--color-gray-500);
+}
+
+.change-icon {
+  font-size: var(--font-size-lg);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .system-selector {
+    min-width: 100%;
+  }
+
+  .main-content {
+    padding: 0 var(--spacing-md) var(--spacing-xl);
+  }
+
+  .rankings-table thead th,
+  .rankings-table tbody td {
+    padding: var(--spacing-md) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+
+  .rankings-table thead th:first-child,
+  .rankings-table tbody td:first-child {
+    padding-left: var(--spacing-md);
+  }
+
+  .rank-badge {
+    min-width: 32px;
+    height: 32px;
+    font-size: var(--font-size-base);
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.75rem;
+  }
+
+  .hero-subtitle {
+    font-size: var(--font-size-base);
+  }
+
+  /* Hide less important columns on mobile */
+  .rankings-table th:nth-child(4),
+  .rankings-table td:nth-child(4) {
+    display: none;
+  }
+
+  .rankings-table th:nth-child(6),
+  .rankings-table td:nth-child(6) {
+    display: none;
+  }
+}

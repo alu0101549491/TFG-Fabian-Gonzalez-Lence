@@ -11,10 +11,10 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, signal, inject} from '@angular/core';
+import {Component, signal, inject, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {Router, RouterModule} from '@angular/router';
+import {Router, RouterModule, ActivatedRoute} from '@angular/router';
 import {AuthenticationService} from '@application/services';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 
@@ -50,6 +50,13 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
             </div>
 
             <div class="card-body-custom">
+              @if (sessionExpired()) {
+                <div class="alert alert-warning mb-md">
+                  <span class="alert-icon">⏰</span>
+                  <span>Your session expired due to inactivity. Please log in again.</span>
+                </div>
+              }
+
               @if (errorMessage()) {
                 <div class="alert alert-error mb-md">
                   <span class="alert-icon">⚠️</span>
@@ -569,7 +576,7 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
     }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   /** FormBuilder injected using inject() function */
   private readonly fb = inject(FormBuilder);
   
@@ -582,6 +589,9 @@ export class LoginComponent {
   /** Router for navigation after successful login */
   private readonly router = inject(Router);
 
+  /** ActivatedRoute for reading query parameters (e.g. session_expired) */
+  private readonly route = inject(ActivatedRoute);
+
   /** Login form group with email and password controls */
   public loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -593,6 +603,18 @@ export class LoginComponent {
 
   /** Error message signal */
   public errorMessage = signal<string | null>(null);
+
+  /** True when the user was redirected here due to session inactivity (NFR12). */
+  public sessionExpired = signal(false);
+
+  /** @inheritdoc */
+  public ngOnInit(): void {
+    // Show session-expired banner when redirected by SessionInactivityService
+    const reason = this.route.snapshot.queryParamMap.get('reason');
+    if (reason === 'session_expired') {
+      this.sessionExpired.set(true);
+    }
+  }
 
   /**
    * Handles form submission and user authentication.

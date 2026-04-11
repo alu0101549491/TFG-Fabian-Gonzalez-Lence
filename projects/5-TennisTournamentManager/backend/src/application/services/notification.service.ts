@@ -451,4 +451,117 @@ export class NotificationService {
       );
     }
   }
+
+  /**
+   * Notifies both participants when a match is suspended.
+   *
+   * @param matchId - ID of the match
+   * @param participant1Id - ID of participant 1
+   * @param participant2Id - ID of participant 2
+   * @param reason - Reason for suspension
+   */
+  public async notifyMatchSuspended(
+    matchId: string,
+    participant1Id: string | null,
+    participant2Id: string | null,
+    reason: string,
+  ): Promise<void> {
+    const participantIds = [participant1Id, participant2Id].filter(Boolean) as string[];
+    for (const participantId of participantIds) {
+      await this.createNotification(
+        participantId,
+        NotificationType.MATCH_SUSPENDED,
+        '⏸ Match Suspended',
+        `Your match has been suspended. Reason: ${reason}`,
+        {matchId, reason},
+      );
+    }
+  }
+
+  /**
+   * Notifies both participants when a suspended match is resumed.
+   *
+   * @param matchId - ID of the match
+   * @param participant1Id - ID of participant 1
+   * @param participant2Id - ID of participant 2
+   * @param scheduledTime - Optional new scheduled time
+   */
+  public async notifyMatchResumed(
+    matchId: string,
+    participant1Id: string | null,
+    participant2Id: string | null,
+    scheduledTime?: Date,
+  ): Promise<void> {
+    const message = scheduledTime
+      ? `Your suspended match has been resumed and rescheduled for ${scheduledTime.toLocaleString()}.`
+      : 'Your suspended match has been resumed. Please check the schedule.';
+    const participantIds = [participant1Id, participant2Id].filter(Boolean) as string[];
+    for (const participantId of participantIds) {
+      await this.createNotification(
+        participantId,
+        NotificationType.MATCH_RESUMED,
+        '▶️ Match Resumed',
+        message,
+        {matchId, scheduledTime: scheduledTime?.toISOString()},
+      );
+    }
+  }
+
+  /**
+   * Notifies both participants after an admin resolves a disputed result.
+   *
+   * @param matchId - ID of the match
+   * @param participant1Id - ID of participant 1
+   * @param participant2Id - ID of participant 2
+   * @param winnerName - Name of the match winner as determined by admin
+   * @param resolutionNotes - Optional admin resolution notes
+   */
+  public async notifyDisputeResolved(
+    matchId: string,
+    participant1Id: string | null,
+    participant2Id: string | null,
+    winnerName: string,
+    resolutionNotes?: string,
+  ): Promise<void> {
+    const message = resolutionNotes
+      ? `Your match dispute has been resolved by an admin. Winner: ${winnerName}. Notes: ${resolutionNotes}`
+      : `Your match dispute has been resolved by an admin. Winner: ${winnerName}.`;
+    const participantIds = [participant1Id, participant2Id].filter(Boolean) as string[];
+    for (const participantId of participantIds) {
+      await this.createNotification(
+        participantId,
+        NotificationType.DISPUTE_RESOLVED,
+        '⚖️ Dispute Resolved',
+        message,
+        {matchId, winnerName},
+      );
+    }
+  }
+
+  /**
+   * Notifies a participant when their match ends by default or walkover.
+   *
+   * @param matchId - ID of the match
+   * @param participantId - ID of the affected participant
+   * @param matchStatus - NEW match status (DEFAULT or WALKOVER)
+   * @param reason - Optional reason for the default/walkover
+   */
+  public async notifyMatchDefault(
+    matchId: string,
+    participantId: string,
+    matchStatus: string,
+    reason?: string,
+  ): Promise<void> {
+    const label = matchStatus === 'WALKOVER' ? 'Walkover (WO)' : 'Default (DEF)';
+    const message = reason
+      ? `A match has ended by ${label}. Reason: ${reason}`
+      : `A match has ended by ${label}. Please check your match schedule.`;
+    await this.createNotification(
+      participantId,
+      NotificationType.MATCH_DEFAULT,
+      `🎾 Match Ended: ${label}`,
+      message,
+      {matchId, matchStatus, reason},
+    );
+  }
 }

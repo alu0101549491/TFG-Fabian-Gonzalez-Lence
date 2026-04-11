@@ -131,6 +131,11 @@ export const routes: Routes = [
   },
   {
     path: 'ranking',
+    redirectTo: 'rankings',
+    pathMatch: 'full',
+  },
+  {
+    path: 'rankings',
     loadComponent: () =>
       import('./pages/ranking/ranking-view/ranking-view.component').then(
         (m) => m.RankingViewComponent,

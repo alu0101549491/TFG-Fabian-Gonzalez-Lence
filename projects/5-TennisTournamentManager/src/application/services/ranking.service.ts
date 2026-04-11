@@ -17,6 +17,8 @@ import {RankingDto} from '../dto';
 import {PaginatedResponseDto, PaginationDto} from '../dto';
 import {GlobalRankingRepositoryImpl} from '@infrastructure/repositories/global-ranking.repository';
 import {StandingRepositoryImpl} from '@infrastructure/repositories/standing.repository';
+import {AxiosClient} from '@infrastructure/http/axios-client';
+import {RankingSystem} from '@domain/enumerations/ranking-system';
 
 /**
  * Ranking service implementation.
@@ -26,7 +28,43 @@ import {StandingRepositoryImpl} from '@infrastructure/repositories/standing.repo
 export class RankingService implements IRankingService {
   private readonly globalRankingRepository = inject(GlobalRankingRepositoryImpl);
   private readonly _standingRepository = inject(StandingRepositoryImpl);
+  private readonly httpClient = inject(AxiosClient);
   // TODO: inject RankingCalculator
+
+  /**
+   * Retrieves rankings for a selected ranking system.
+   *
+   * @remarks
+   * Backend currently exposes ELO global rankings at `/api/rankings`.
+   * For non-ELO systems we return the same dataset for now to keep the page usable.
+   *
+   * @param system - Requested ranking system
+   * @returns Ranking DTO list for the view
+   */
+  public async getRankingsBySystem(system: RankingSystem): Promise<RankingDto[]> {
+    const response = await this.httpClient.get<Array<{
+      id: string;
+      playerId: string;
+      playerName: string;
+      rank: number;
+      points: number;
+      tournamentsPlayed?: number;
+      wins?: number;
+      losses?: number;
+    }>>('/rankings');
+
+    return response.map((item) => ({
+      id: item.id,
+      participantId: item.playerId,
+      participantName: item.playerName,
+      position: item.rank,
+      totalPoints: item.points,
+      rankingSystem: system,
+      tournamentsPlayed: item.tournamentsPlayed ?? 0,
+      eloRating: system === RankingSystem.ELO ? item.points : null,
+      positionChange: 0,
+    }));
+  }
 
   /**
    * Retrieves the global ranking with pagination.

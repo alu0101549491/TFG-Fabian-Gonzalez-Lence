@@ -21,6 +21,18 @@ export enum NotificationType {
   MATCH_SCHEDULED = 'MATCH_SCHEDULED',
   /** A result has been entered for a match. */
   RESULT_ENTERED = 'RESULT_ENTERED',
+  /** A match result has been confirmed by the opponent. */
+  RESULT_CONFIRMED = 'RESULT_CONFIRMED',
+  /** A match result has been disputed by the opponent. */
+  RESULT_DISPUTED = 'RESULT_DISPUTED',
+  /** A dispute has been resolved by an admin. */
+  DISPUTE_RESOLVED = 'DISPUTE_RESOLVED',
+  /** A match has been suspended. */
+  MATCH_SUSPENDED = 'MATCH_SUSPENDED',
+  /** A suspended match has been resumed. */
+  MATCH_RESUMED = 'MATCH_RESUMED',
+  /** A match has ended by walkover (WO) or default (DEF). */
+  MATCH_DEFAULT = 'MATCH_DEFAULT',
   /** The order of play has been published. */
   ORDER_OF_PLAY_PUBLISHED = 'ORDER_OF_PLAY_PUBLISHED',
   /** A new announcement has been published. */

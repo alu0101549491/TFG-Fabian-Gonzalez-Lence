@@ -162,6 +162,14 @@
                 <span class="info-value">#{{ match()!.matchNumber }}</span>
               </div>
             </div>
+
+            <div class="info-item">
+              <span class="info-icon">🎾</span>
+              <div class="info-content">
+                <span class="info-label">Ball Provider</span>
+                <span class="info-value">{{ match()!.ballProvider || 'Not specified' }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -294,7 +302,17 @@
                   />
                 </div>
               </div>
-            </div>
+              <div class="form-group">
+                <label for="ballProvider">Ball Provider</label>
+                <input
+                  type="text"
+                  id="ballProvider"
+                  [(ngModel)]="scheduleForm.ballProvider"
+                  name="ballProvider"
+                  placeholder="e.g. Wilson, Penn, Dunlop"
+                  maxlength="100"
+                />
+              </div>            </div>
             <div class="modal-footer">
               <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSubmitting()">
                 Cancel

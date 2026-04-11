@@ -371,7 +371,8 @@ export class MatchService implements IMatchService {
     matchId: string,
     courtId: string | null,
     courtName: string | null,
-    time: Date
+    time: Date,
+    ballProvider?: string | null
   ): Promise<MatchDto> {
     // Validate input
     if (!matchId || matchId.trim().length === 0) {
@@ -403,6 +404,11 @@ export class MatchService implements IMatchService {
     // Attach courtName if provided (free text reference)
     if (courtName) {
       (scheduledMatch as any).courtName = courtName;
+    }
+
+    // Attach ballProvider if provided
+    if (ballProvider !== undefined) {
+      (scheduledMatch as any).ballProvider = ballProvider;
     }
     
     const savedMatch = await this.matchRepository.update(scheduledMatch);
@@ -1016,6 +1022,7 @@ export class MatchService implements IMatchService {
       phaseId: match.phaseId,
       courtId: match.courtId,
       courtName: (match as any).courtName ?? null,  // From backend response (free text reference)
+      ballProvider: match.ballProvider ?? null,
       round: (match as any).round ?? 1,  // From backend response
       matchNumber: (match as any).matchNumber ?? match.matchOrder ?? 0,  // Backend uses matchNumber
       participant1Id: match.player1Id,  // Domain: player1Id → DTO: participant1Id

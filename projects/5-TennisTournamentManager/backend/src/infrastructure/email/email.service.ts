@@ -248,6 +248,12 @@ export class EmailService {
       [NotificationType.RESULT_ENTERED]: '🎾',
       [NotificationType.ORDER_OF_PLAY_PUBLISHED]: '📋',
       [NotificationType.ANNOUNCEMENT]: '📢',
+      [NotificationType.RESULT_CONFIRMED]: '✅',
+      [NotificationType.RESULT_DISPUTED]: '⚠️',
+      [NotificationType.DISPUTE_RESOLVED]: '⚖️',
+      [NotificationType.MATCH_SUSPENDED]: '⏸️',
+      [NotificationType.MATCH_RESUMED]: '▶️',
+      [NotificationType.MATCH_DEFAULT]: '🚫',
     };
 
     return emojiMap[type] || '🔔';

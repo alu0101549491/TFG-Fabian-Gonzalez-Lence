@@ -54,7 +54,7 @@ export class AuthController {
       const token = jwt.sign(
         {id: user.id, email: user.email, role: user.role},
         config.jwt.secret,
-        {expiresIn: config.jwt.expiresIn}
+        {expiresIn: config.jwt.expiresIn as unknown as number}
       );
       
       // Update last login
@@ -137,7 +137,7 @@ export class AuthController {
       const token = jwt.sign(
         {id: user.id, email: user.email, role: user.role},
         config.jwt.secret,
-        {expiresIn: config.jwt.expiresIn}
+        {expiresIn: config.jwt.expiresIn as unknown as number}
       );
       
       // Return token and user data
@@ -177,7 +177,7 @@ export class AuthController {
       const token = jwt.sign(
         {id: decoded.id, email: decoded.email, role: decoded.role},
         config.jwt.secret,
-        {expiresIn: config.jwt.expiresIn}
+        {expiresIn: config.jwt.expiresIn as unknown as number}
       );
       
       res.status(HTTP_STATUS.OK).json({

@@ -31,7 +31,7 @@ async function populatePhaseTournamentIds(): Promise<void> {
 
     console.log('📊 Fetching all phases without tournamentId...');
     const phasesWithoutTournamentId = await phaseRepository.find({
-      where: {tournamentId: null},
+      where: {tournamentId: null as any},
     });
 
     console.log(`Found ${phasesWithoutTournamentId.length} phases to update.`);

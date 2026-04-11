@@ -62,6 +62,8 @@ export interface MatchProps {
   score?: string | null;
   /** Reason for suspension (if match status is SUSPENDED). */
   suspensionReason?: string | null;
+  /** Ball provider/brand for this match (e.g., "Wilson", "Penn", "Dunlop"). */
+  ballProvider?: string | null;
 }
 
 /**
@@ -103,6 +105,8 @@ export class Match {
   public readonly score?: string | null;
   /** Suspension reason (populated if match status is SUSPENDED). */
   public readonly suspensionReason?: string | null;
+  /** Ball provider/brand for this match. */
+  public readonly ballProvider?: string | null;
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -122,6 +126,7 @@ export class Match {
     this.scores = props.scores;
     this.score = props.score ?? null;
     this.suspensionReason = props.suspensionReason ?? null;
+    this.ballProvider = props.ballProvider ?? null;
   }
 
   /**

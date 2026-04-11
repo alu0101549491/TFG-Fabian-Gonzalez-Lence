@@ -76,6 +76,9 @@ export class Match {
   @Column('text', {nullable: true})
   public suspensionReason!: string | null;
 
+  @Column('varchar', {length: 100, nullable: true})
+  public ballProvider!: string | null;
+
   @CreateDateColumn()
   public createdAt!: Date;
 

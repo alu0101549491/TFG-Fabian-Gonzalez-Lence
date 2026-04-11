@@ -24,6 +24,7 @@ import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
 import {NotificationService} from '../../application/services/notification.service';
 import {PrivacyService} from '../../application/services/privacy.service';
+import {StandingService} from '../../application/services/standing.service';
 import {User} from '../../domain/entities/user.entity';
 import {Bracket} from '../../domain/entities/bracket.entity';
 import {TennisScoreValidator, TennisSetScore} from '../../shared/utils/tennis-score-validator';
@@ -35,10 +36,12 @@ export class MatchController {
   private readonly notificationService: NotificationService;
   private readonly privacyService: PrivacyService;
   private readonly scoreValidator: TennisScoreValidator;
+  private readonly standingService: StandingService;
 
   constructor() {
     this.notificationService = new NotificationService();
     this.privacyService = new PrivacyService();
+    this.standingService = new StandingService();
     // Initialize with standard best-of-3 format
     this.scoreValidator = new TennisScoreValidator({
       bestOfFive: false,
@@ -294,6 +297,8 @@ export class MatchController {
       // If match is completed and has a winner, advance to next round
       if (updatedMatch.winnerId && updatedMatch.winnerId !== previousWinnerId) {
         await this.advanceWinnerToNextRound(updatedMatch, matchRepository);
+        // FR39/FR40/FR43: Recalculate standings after admin match update sets a winner
+        await this.standingService.recalculateForMatch(updatedMatch.id);
       }
       
       res.status(HTTP_STATUS.OK).json(updatedMatch);
@@ -603,6 +608,9 @@ export class MatchController {
       // Advance winner to next round if single elimination
       await this.advanceWinnerToNextRound(match, matchRepository);
 
+      // FR39/FR40/FR43: Recalculate standings after official result confirmation
+      await this.standingService.recalculateForMatch(id);
+
       res.status(HTTP_STATUS.OK).json(result);
     } catch (error) {
       next(error);
@@ -834,8 +842,19 @@ export class MatchController {
       // Advance winner to next round if single elimination
       await this.advanceWinnerToNextRound(match, matchRepository);
 
-      // TODO: Notify both participants
-      // await notificationService.notifyDisputeResolved(matchId, result);
+      // Notify both participants that the dispute has been resolved
+      const winnerUser = await AppDataSource.getRepository(User).findOne({where: {id: winnerId}});
+      const winnerName = winnerUser ? `${winnerUser.firstName} ${winnerUser.lastName}` : 'Unknown';
+      await this.notificationService.notifyDisputeResolved(
+        id,
+        match.participant1Id,
+        match.participant2Id,
+        winnerName,
+        resolutionNotes,
+      );
+
+      // FR39/FR40/FR43: Recalculate standings after admin dispute resolution
+      await this.standingService.recalculateForMatch(id);
 
       res.status(HTTP_STATUS.OK).json({
         result,
@@ -899,8 +918,14 @@ export class MatchController {
 
       await matchRepository.save(match);
 
-      // TODO: Notify both participants
-      // await notificationService.notifyResultAnnulled(matchId, annulReason);
+      // Notify both participants that the result was annulled and match is reset
+      await this.notificationService.notifyDisputeResolved(
+        id,
+        match.participant1Id,
+        match.participant2Id,
+        'N/A (match annulled)',
+        `Result annulled: ${annulReason}`,
+      );
 
       res.status(HTTP_STATUS.OK).json({
         result,
@@ -925,7 +950,7 @@ export class MatchController {
       const {suspensionReason} = req.body;
 
       if (!suspensionReason || suspensionReason.trim().length === 0) {
-        throw new AppError('Suspension reason is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+        throw new AppError('Suspension reason is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_FAILED);
       }
 
       const matchRepository = AppDataSource.getRepository(Match);
@@ -943,7 +968,7 @@ export class MatchController {
         throw new AppError(
           `Cannot suspend match in status ${match.status}. Match must be IN_PROGRESS.`,
           HTTP_STATUS.BAD_REQUEST,
-          ERROR_CODES.VALIDATION_ERROR
+          ERROR_CODES.VALIDATION_FAILED
         );
       }
 
@@ -954,8 +979,13 @@ export class MatchController {
 
       await matchRepository.save(match);
 
-      // TODO: Notify participants about suspension
-      // await notificationService.notifyMatchSuspended(matchId, suspensionReason);
+      // Notify both participants about the suspension
+      await this.notificationService.notifyMatchSuspended(
+        id,
+        match.participant1Id,
+        match.participant2Id,
+        suspensionReason.trim(),
+      );
 
       res.status(HTTP_STATUS.OK).json(match);
     } catch (error) {
@@ -992,7 +1022,7 @@ export class MatchController {
         throw new AppError(
           `Cannot resume match in status ${match.status}. Match must be SUSPENDED.`,
           HTTP_STATUS.BAD_REQUEST,
-          ERROR_CODES.VALIDATION_ERROR
+          ERROR_CODES.VALIDATION_FAILED
         );
       }
 
@@ -1009,8 +1039,13 @@ export class MatchController {
 
       await matchRepository.save(match);
 
-      // TODO: Notify participants about resumption
-      // await notificationService.notifyMatchResumed(matchId);
+      // Notify both participants about the resumption
+      await this.notificationService.notifyMatchResumed(
+        id,
+        match.participant1Id,
+        match.participant2Id,
+        scheduledTime ? new Date(scheduledTime) : undefined,
+      );
 
       res.status(HTTP_STATUS.OK).json(match);
     } catch (error) {

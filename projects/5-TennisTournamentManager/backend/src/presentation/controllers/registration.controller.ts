@@ -62,7 +62,7 @@ export class RegistrationController {
           registration.participant,
           viewer,
           tournamentId
-        );
+        ) as typeof registration.participant;
       }
       
       return filteredRegistration;
@@ -423,7 +423,7 @@ export class RegistrationController {
               throw new AppError(
                 `Cannot approve registration: Category is full (${acceptedCount}/${category.maxParticipants} spots taken). Set as ALTERNATE instead.`,
                 HTTP_STATUS.BAD_REQUEST,
-                ERROR_CODES.VALIDATION_ERROR
+                ERROR_CODES.VALIDATION_FAILED
               );
             }
             
@@ -531,7 +531,7 @@ export class RegistrationController {
           throw new AppError(
             `Seed number ${seedNumber} is already assigned to another player in this category`,
             HTTP_STATUS.BAD_REQUEST,
-            ERROR_CODES.VALIDATION_ERROR
+            ERROR_CODES.VALIDATION_FAILED
           );
         }
         

@@ -112,7 +112,7 @@ export class BracketController {
       });
       
       console.log(`💾 Saving new bracket...`);
-      const savedBracket = await bracketRepository.save(bracket);
+      const savedBracket = await bracketRepository.save(bracket) as unknown as Bracket;
       console.log(`✅ Bracket ${savedBracket.id} saved successfully`);
       
       // Get accepted participants for the category (excluding ALTERNATE and WITHDRAWN)
@@ -206,7 +206,7 @@ export class BracketController {
       // Fetch bracket
       const bracket = await bracketRepository.findOne({where: {id}});
       if (!bracket) {
-        throw new AppError('Bracket not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.RESOURCE_NOT_FOUND);
+        throw new AppError('Bracket not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       
       // Validate: cannot regenerate published bracket

@@ -66,6 +66,7 @@ export class MatchRepositoryImpl implements IMatchRepository {
       scores: response.scores ?? [],  // Include scores from backend
       score: response.score ?? null,  // Include score string (from dispute resolution)
       suspensionReason: response.suspensionReason ?? null,  // Include suspension reason
+      ballProvider: response.ballProvider ?? null,  // Include ball provider (FR31)
     });
     
     // Preserve participant objects from backend for display
@@ -194,6 +195,12 @@ export class MatchRepositoryImpl implements IMatchRepository {
     const backendCourtName = (match as any).courtName;
     if (backendCourtName) {
       matchData.courtName = backendCourtName;
+    }
+    
+    // Include ballProvider if it exists (FR31)
+    const backendBallProvider = (match as any).ballProvider;
+    if (backendBallProvider !== undefined) {
+      matchData.ballProvider = backendBallProvider;
     }
     
     const response = await this.httpClient.put<Match>(`/matches/${match.id}`, matchData);

@@ -228,7 +228,7 @@ export class UserController {
     ).length;
     
     const completedTournaments = tournaments.filter(t => 
-      t.status === TournamentStatus.COMPLETED
+      t.status === TournamentStatus.FINALIZED
     ).length;
     
     return {
@@ -310,16 +310,16 @@ export class UserController {
       // Validate username is not empty if provided (username is required field)
       if (username !== undefined) {
         if (!username || username.trim() === '') {
-          throw new AppError('Username cannot be empty', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+          throw new AppError('Username cannot be empty', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_FAILED);
         }
       }
       
       // Validate firstName and lastName are not empty if provided (required fields)
       if (firstName !== undefined && (!firstName || firstName.trim() === '')) {
-        throw new AppError('First name cannot be empty', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+        throw new AppError('First name cannot be empty', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_FAILED);
       }
       if (lastName !== undefined && (!lastName || lastName.trim() === '')) {
-        throw new AppError('Last name cannot be empty', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+        throw new AppError('Last name cannot be empty', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_FAILED);
       }
       
       // Check username uniqueness if changing
@@ -877,7 +877,7 @@ export class UserController {
       }
       
       if (!privacySettings) {
-        throw new AppError('Privacy settings are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR);
+        throw new AppError('Privacy settings are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_FAILED);
       }
       
       const userRepository = AppDataSource.getRepository(User);
