@@ -40,6 +40,7 @@ export class MatchGeneratorService {
    * Generates matches and phases for a bracket based on type.
    *
    * @param bracketId - Bracket identifier
+   * @param tournamentId - Tournament identifier
    * @param bracketType - Type of bracket (SINGLE_ELIMINATION, ROUND_ROBIN, MATCH_PLAY)
    * @param participantIds - Array of participant IDs
    * @param totalRounds - Total number of rounds in bracket
@@ -47,17 +48,18 @@ export class MatchGeneratorService {
    */
   public generateMatches(
     bracketId: string,
+    tournamentId: string,
     bracketType: BracketType,
     participantIds: string[],
     totalRounds: number,
   ): MatchGenerationResult {
     switch (bracketType) {
       case BracketType.SINGLE_ELIMINATION:
-        return this.generateSingleElimination(bracketId, participantIds, totalRounds);
+        return this.generateSingleElimination(bracketId, tournamentId, participantIds, totalRounds);
       case BracketType.ROUND_ROBIN:
-        return this.generateRoundRobin(bracketId, participantIds, totalRounds);
+        return this.generateRoundRobin(bracketId, tournamentId, participantIds, totalRounds);
       case BracketType.MATCH_PLAY:
-        return this.generateMatchPlay(bracketId, participantIds);
+        return this.generateMatchPlay(bracketId, tournamentId, participantIds);
       default:
         throw new Error(`Unsupported bracket type: ${bracketType}`);
     }
@@ -73,12 +75,14 @@ export class MatchGeneratorService {
    * 4. Create placeholder matches for subsequent rounds
    *
    * @param bracketId - Bracket identifier
+   * @param tournamentId - Tournament identifier
    * @param participantIds - Participant IDs (seeded order)
    * @param totalRounds - Number of rounds
    * @returns Matches and phases
    */
   private generateSingleElimination(
     bracketId: string,
+    tournamentId: string,
     participantIds: string[],
     totalRounds: number,
   ): MatchGenerationResult {
@@ -96,6 +100,8 @@ export class MatchGeneratorService {
       const phase = new Phase();
       phase.id = generateId('phs');
       phase.bracketId = bracketId;
+      phase.tournamentId = tournamentId;
+      phase.sequenceOrder = round;
       phase.order = round;
       phase.name = phaseNames[round - 1];
       phase.matchCount = Math.pow(2, totalRounds - round);
@@ -184,6 +190,7 @@ export class MatchGeneratorService {
    */
   private generateRoundRobin(
     bracketId: string,
+    tournamentId: string,
     participantIds: string[],
     totalRounds: number,
   ): MatchGenerationResult {
@@ -205,6 +212,8 @@ export class MatchGeneratorService {
       const phase = new Phase();
       phase.id = generateId('phs');
       phase.bracketId = bracketId;
+      phase.tournamentId = tournamentId;
+      phase.sequenceOrder = round;
       phase.order = round;
       phase.name = `Round ${round}`;
       phase.matchCount = 0; // Will be updated after generating matches
@@ -256,11 +265,13 @@ export class MatchGeneratorService {
    * If odd number of participants, last one will be matched later.
    *
    * @param bracketId - Bracket identifier
+   * @param tournamentId - Tournament identifier
    * @param participantIds - Participant IDs (should be sorted by seed/ranking)
    * @returns Matches and single phase
    */
   private generateMatchPlay(
     bracketId: string,
+    tournamentId: string,
     participantIds: string[],
   ): MatchGenerationResult {
     const matches: Match[] = [];
@@ -270,6 +281,8 @@ export class MatchGeneratorService {
     const phase = new Phase();
     phase.id = generateId('phs');
     phase.bracketId = bracketId;
+    phase.tournamentId = tournamentId;
+    phase.sequenceOrder = 1;
     phase.order = 1;
     phase.name = 'Open Play';
     phase.isCompleted = false;

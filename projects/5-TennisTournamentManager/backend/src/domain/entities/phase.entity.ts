@@ -26,14 +26,23 @@ export class Phase {
   @Column('varchar', {length: 50})
   public bracketId!: string;
 
+  @Column('varchar', {length: 50, nullable: true})
+  public tournamentId!: string | null;
+
   @Column('varchar', {length: 100})
   public name!: string;
 
   @Column('int')
   public order!: number;
 
+  @Column('int', {default: 0})
+  public sequenceOrder!: number;
+
   @Column('int')
   public matchCount!: number;
+
+  @Column('varchar', {length: 50, nullable: true})
+  public nextPhaseId!: string | null;
 
   @Column('boolean', {default: false})
   public isCompleted!: boolean;

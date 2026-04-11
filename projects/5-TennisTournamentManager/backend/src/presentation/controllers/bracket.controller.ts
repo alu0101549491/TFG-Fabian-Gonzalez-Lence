@@ -156,6 +156,7 @@ export class BracketController {
         // Generate matches with seeded participant order
         const {matches, phases} = this.matchGenerator.generateMatches(
           savedBracket.id,
+          savedBracket.tournamentId,
           savedBracket.bracketType,
           participantIds,
           savedBracket.totalRounds,
@@ -293,6 +294,7 @@ export class BracketController {
       // Generate new matches with updated seeding
       const {matches, phases} = this.matchGenerator.generateMatches(
         bracket.id,
+        bracket.tournamentId,
         bracket.bracketType,
         participantIds,
         bracket.totalRounds,

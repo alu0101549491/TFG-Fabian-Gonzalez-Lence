@@ -78,6 +78,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'tournaments/:tournamentId/phases',
+    canActivate: [authGuard, roleGuard],
+    data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},
+    loadComponent: () =>
+      import('./pages/phases/phase-management.component').then(
+        (m) => m.PhaseManagementComponent,
+      ),
+  },
+  {
     path: 'brackets/:id',
     loadComponent: () =>
       import('./pages/brackets/bracket-view/bracket-view.component').then(

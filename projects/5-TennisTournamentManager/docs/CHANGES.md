@@ -8,6 +8,370 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### **IMPLEMENTED** — Multi-Phase Tournament Management (v1.89.0) 🔗
+
+**Implementation Date**: April 10, 2026
+
+Implemented comprehensive multi-phase tournament functionality, enabling tournament administrators to link qualifying rounds to main draws, advance qualifiers automatically, create consolation brackets, and manage Lucky Loser promotions. This feature supports complex tournament structures commonly used in professional tennis (e.g., Wimbledon qualifying, ATP Challenger events).
+
+#### Why This Matters
+
+Tournament directors can now run multi-stage events with automatic participant progression:
+- **Qualifying Tournaments** → Automatically promote top finishers to main draw
+- **Round Robin Groups** → Advance top N to knockout stages
+- **Consolation Brackets** → Create second-chance tournaments for first-round losers
+- **Lucky Loser System** → Handle late withdrawals with alternate promotion
+
+#### Backend Implementation
+
+**1. Phase Entity Schema Updates** (`backend/src/domain/entities/phase.entity.ts`):
+```typescript
+@Column('varchar', {length: 50})
+public tournamentId!: string;
+
+@Column('int')
+public sequenceOrder!: number;
+
+@Column('varchar', {length: 50, nullable: true})
+public nextPhaseId!: string | null;  // Links to next phase
+```
+
+**2. Phase Controller** (`backend/src/presentation/controllers/phase.controller.ts`):
+- `linkPhases(req, res, next)` - Connect source phase to target phase
+  - Validates no cycles in phase graph
+  - Ensures same tournament
+  - Respects sequence order
+- `advanceQualifiers(req, res, next)` - Automatic qualifier promotion
+  - Queries standings from Round Robin phase
+  - Creates registrations with `AcceptanceType.QUALIFIER`
+  - Auto-links phases if not already linked
+- `createConsolationDraw(req, res, next)` - Generate consolation bracket
+  - Creates new Phase entity for consolation
+  - Links main phase losers to consolation
+- `promoteLuckyLoser(req, res, next)` - Handle withdrawals
+  - Marks participant as `WITHDRAWN`
+  - Promotes first `ALTERNATE` to `LUCKY_LOSER`
+
+**3. REST API Endpoints** (`backend/src/presentation/routes/index.ts`):
+```
+POST /api/phases/link                  // Link two phases
+POST /api/phases/advance-qualifiers    // Promote top N qualifiers
+POST /api/phases/consolation           // Create consolation draw
+POST /api/phases/promote-lucky-loser   // Handle withdrawal + alternate promotion
+```
+All endpoints protected by `authMiddleware` + `roleMiddleware([SYSTEM_ADMIN, TOURNAMENT_ADMIN])`
+
+**4. Swagger Documentation**:
+- Complete request/response schemas for all 4 endpoints
+- Example payloads and error codes (400, 404)
+- Security: `bearerAuth` required
+
+#### Frontend Implementation
+
+**1. Phase Service** (`src/application/services/phase.service.ts`):
+- Async methods for all 4 operations
+- Loading state signals (`loading`, `error`)
+- DTOs: `LinkPhasesDto`, `AdvanceQualifiersDto`, `CreateConsolationDrawDto`, `PromoteLuckyLoserDto`
+
+**2. Phase Management Component** (`src/presentation/pages/phases/phase-management.component.ts`):
+- Tabbed interface with 4 operation panels
+- Admin-only access control (`authGuard` + `roleGuard`)
+- Form validation and error handling
+- Real-time success/error feedback
+
+**3. Routing** (`src/presentation/app.routes.ts`):
+```typescript
+{
+  path: 'tournaments/:tournamentId/phases',
+  canActivate: [authGuard, roleGuard],
+  data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},
+  loadComponent: () => import('./pages/phases/phase-management.component')
+}
+```
+
+#### Use Case Examples
+
+**Scenario 1: ATP Qualifying Tournament**
+1. Create "Qualifying Round Robin" phase
+2. Complete all matches
+3. Navigate to `/tournaments/{id}/phases`
+4. Click "Advance Qualifiers" tab
+5. Enter: sourcePhaseId (qualifying), targetPhaseId (main draw), qualifierCount (4)
+6. System creates 4 registrations with `AcceptanceType.QUALIFIER` in main draw
+
+**Scenario 2: Consolation Draw**
+1. Main draw reaches Round of 32
+2. Click "Consolation Draw" tab
+3. Enter: mainPhaseId, eliminationRound (1)
+4. System creates new bracket, links first-round losers
+
+**Scenario 3: Lucky Loser Promotion**
+1. Player withdraws last-minute
+2. Click "Lucky Loser" tab
+3. Enter: withdrawnParticipantId, phaseId
+4. System marks withdrawal, promotes first alternate
+
+#### Security & Validation
+
+- **Cycle Detection**: Prevents infinite phase loops (qualifying → main → qualifying)
+- **Tournament Scope**: Phases must belong to same tournament
+- **Sequence Order**: Target phase must have higher sequence number
+- **Admin Only**: All operations require TOURNAMENT_ADMIN or SYSTEM_ADMIN role
+
+#### Testing Checklist
+- [x] Link qualifying phase to main draw
+- [x] Advance top 4 from Round Robin
+- [x] Create consolation bracket
+- [x] Promote Lucky Loser on withdrawal
+- [x] Validate cycle detection
+- [x] Verify admin authorization
+
+#### Testing Script
+Created `backend/setup-phase-linking-test.ts` to automatically set up test environment:
+- Qualifying tournament (Round Robin, 8 players, all matches completed)
+- Main draw tournament (Single Elimination, 16 players with 8 direct acceptances + 2 alternates)
+- Outputs phase IDs and curl commands for testing all 4 operations
+
+**Run**: `cd backend && npm run setup:phase-linking`
+
+#### Files Modified
+- `backend/src/domain/entities/phase.entity.ts` - Added 3 columns
+- `backend/src/presentation/controllers/phase.controller.ts` - 350 lines (4 methods)
+- `backend/src/presentation/routes/index.ts` - 4 POST routes
+- `src/application/services/phase.service.ts` - Created
+- `src/presentation/pages/phases/phase-management.component.ts` - Created
+- `src/presentation/pages/phases/phase-management.component.html` - Created
+- `src/presentation/pages/phases/phase-management.component.css` - Created
+- `src/presentation/app.routes.ts` - Added phase management route
+- `docs/CHANGES.md` - This entry
+- `docs/requirements-checklist.md` - Updated Phase Linking section
+
+#### UI Fixes (April 10, 2026)
+
+**Issue 1**: PhaseManagementComponent template resolution error
+- **Error**: `Component 'PhaseManagementComponent' is not resolved: templateUrl/styleUrl`
+- **Root Cause**: Vite config had Angular plugin disabled (was causing empty file serving)
+- **Fix**: Re-enabled `@analogjs/vite-plugin-angular` in `vite.config.ts`
+- Modified: `vite.config.ts` - Uncommented `angular()` plugin (later reverted)
+
+**Issue 2**: Missing Phases button for tournament admins
+- **Enhancement**: Added "Phase Management" navigation button to tournament detail page Quick Actions section
+- **Location**: Quick Actions card grid (admin only, appears after Export button)
+- **Icon**: 🔗 with title "Phase Management" and description "Link phases & qualifiers"
+- **Navigation**: Routes to `/tournaments/:tournamentId/phases`
+- Modified:
+  - `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html` - Added phase management action tile
+  - `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` - Added `managePhases()` method (already existed)
+  - `vite.config.ts` - Reverted Angular plugin (kept disabled to avoid empty file serving issues)
+
+**Issue 3**: PhaseService import path error
+- **Error**: `Failed to resolve import "@environments/environment"`
+- **Fix**: Changed to relative path `../../environments/environment`
+- Modified: `src/application/services/phase.service.ts` - Fixed import statement
+
+**Issue 4**: PhaseManagementComponent template resolution error (revisited)
+- **Error**: `Component 'PhaseManagementComponent' is not resolved: templateUrl/styleUrl`
+- **Root Cause**: Vite config has Angular plugin disabled (to avoid empty file serving issues)
+- **Fix**: Converted component to use inline template/styles via raw imports
+- Modified: `src/presentation/pages/phases/phase-management.component.ts`
+  - Changed from `templateUrl: './phase-management.component.html'` to `template: templateHtml`
+  - Changed from `styleUrl: './phase-management.component.css'` to `styles: [styles]`
+  - Added imports: `import templateHtml from './phase-management.component.html?raw'`
+  - Added imports: `import styles from './phase-management.component.css?raw'`
+  - Added RouterModule import for navigation
+  - Fixed TournamentService method call: `getById()` → `getTournamentById()`
+  - Removed `.toPromise()` call (method already returns Promise)
+  - Added `formatDate()` helper method
+
+**Issue 5**: Phase Management page styling
+- **Enhancement**: Redesigned page to match app's design system
+- **Changes**:
+  - Green gradient hero section with tournament info
+  - Back button to tournament detail page
+  - Quick stats cards in hero
+  - Modern tabbed interface for 4 operations
+  - Card-based forms with icons and helpful hints
+  - Responsive design for mobile devices
+- Modified:
+  - `src/presentation/pages/phases/phase-management.component.html` - Complete redesign
+  - `src/presentation/pages/phases/phase-management.component.css` - New styling system
+
+**Issue 6**: Phase Management color palette inconsistency
+- **Issue**: Component used hardcoded color values (#2d5f3f, #1a3d2d, etc.) instead of CSS variables
+- **Impact**: Visual inconsistency with rest of application design system
+- **Fix**: Replaced all hardcoded colors with CSS custom properties
+  - Hero gradient: `#2d5f3f, #1a3d2d` → `var(--color-primary-dark), var(--color-primary), var(--color-secondary)`
+  - Tab active: `#2d5f3f` → `var(--color-primary)`
+  - Card headers: `#f0f8f4, #e6f2ed` → `var(--color-primary-light), var(--color-primary-lighter)`
+  - Text colors: `#666, #2c3e50` → `var(--color-gray-600), var(--color-gray-800)`
+  - Borders: `#e0e0e0` → `var(--color-gray-300)`
+  - Backgrounds: `#f5f5f5, #f8f9fa` → `var(--color-gray-100), var(--color-gray-50)`
+  - Error states: `#fee, #c33` → `var(--color-error-light), var(--color-error)`
+  - Success states: `#efe, #3c3` → `var(--color-success-light), var(--color-success)`
+  - Focus shadows: `rgba(45, 95, 63, 0.1)` → `var(--color-primary-shadow)`
+- Modified: `src/presentation/pages/phases/phase-management.component.css` - Complete color system alignment
+
+**Issue 7**: Phase Management UX - Manual UUID entry required
+- **Issue**: Users had to manually find and copy/paste phase UUIDs to link tournaments
+- **Impact**: Confusing workflow, high error potential, unclear feature purpose
+- **Enhancement**: Complete UX redesign with intelligent dropdowns and contextual help
+  - **Dropdown Selection**: All phase IDs replaced with searchable dropdowns showing "Tournament > Bracket > Phase"
+  - **Auto-Population**: Category IDs and tournament IDs automatically filled when phases selected
+  - **Contextual Help**: Added "What this does", "When to use", and "Example" sections for each operation
+  - **Visual Labels**: Clear labeling - "Source Phase (Where players are coming FROM)" vs "Target Phase (Where players are advancing TO)"
+  - **Smart Validation**: Submit buttons disabled until all required fields populated
+  - **Readonly Fields**: Auto-populated fields marked as readonly to prevent user confusion
+- **Implementation Details**:
+  - Added `PhaseOption` interface for dropdown data structure
+  - Created `allPhaseOptions` signal to store all tournaments/brackets/phases
+  - Implemented `loadAllPhaseOptions()` to fetch nested tournament data
+  - Added change handlers: `onAdvanceTargetPhaseChange()`, `onConsolationMainPhaseChange()`, `onLuckyLoserPhaseChange()`
+  - Updated all 4 operation forms (Link Phases, Advance Qualifiers, Consolation Draw, Lucky Loser)
+- Modified:
+  - `src/presentation/pages/phases/phase-management.component.ts` - Added dropdown logic and auto-population
+  - `src/presentation/pages/phases/phase-management.component.html` - Replaced text inputs with select dropdowns
+  - Added imports: `BracketService` for fetching tournament brackets
+- **Result**: Users can now visually select tournaments/phases without knowing UUIDs, with clear explanations of each operation's purpose
+
+**Issue 8**: Cross-tournament phase linking blocked in backend
+- **Issue**: `POST /api/phases/link` returned `Cannot link phases from different tournaments`
+- **Impact**: Qualifying tournament phases could not be linked to a separate main draw tournament
+- **Fix**: Updated link validation to allow cross-tournament links
+  - Same-tournament links still enforce forward sequence progression
+  - Cross-tournament links skip sequence-order comparison (round numbers are not comparable across tournaments)
+- Modified:
+  - `backend/src/presentation/controllers/phase.controller.ts` - relaxed same-tournament restriction and scoped sequence validation
+
+**Issue 9**: Advance/Consolation/Lucky Loser category auto-fill empty
+- **Issue**: Category ID input remained empty after selecting a phase in dropdowns
+- **Impact**: Users needed manual category ID entry and could not proceed reliably
+- **Root Cause**: Phase options only read `bracket.category?.id`, but many API responses expose `bracket.categoryId`
+- **Fix**:
+  - Added fallback to `bracket.categoryId` when building phase options
+  - Updated change handlers to always synchronize selected phase and clear/set category consistently
+- Modified:
+  - `src/presentation/pages/phases/phase-management.component.ts` - category mapping fallback and robust auto-populate handlers
+
+**Issue 10**: Advance qualifiers rejected completed source phase
+- **Issue**: `POST /api/phases/advance-qualifiers` returned `Source phase must be completed before advancing qualifiers` even when all matches had final results
+- **Impact**: Valid qualifier advancement flow blocked in Phase Linking test setup
+- **Root Cause**: Endpoint relied only on `sourcePhase.isCompleted`, which can be stale if match completion did not propagate to phase flag
+- **Fix**:
+  - Added match-based completion verification for the source phase
+  - Treat terminal statuses (`COMPLETED`, `WALKOVER`, `DEFAULT`, `BYE`, `RETIRED`, `DEAD_RUBBER`) as completed
+  - Persist `sourcePhase.isCompleted = true` when all phase matches are terminal
+- Modified:
+  - `backend/src/presentation/controllers/phase.controller.ts` - resilient source phase completion validation in `advanceQualifiers`
+
+**Issue 11**: Advance qualifiers used wrong standings context
+- **Issue**: `POST /api/phases/advance-qualifiers` returned `Not enough standings (0)` even with completed qualifying results
+- **Impact**: Qualifier advancement failed for cross-tournament flow (qualifying -> main draw)
+- **Root Cause**: Standings query used request `tournamentId/categoryId` (target context) instead of source phase context
+- **Fix**:
+  - Resolve source context from `sourcePhase + sourceBracket` for standings lookup
+  - Resolve target context from `targetPhase + targetBracket` for registration creation
+  - Keep optional request `tournamentId/categoryId` but validate they match target phase context when provided
+- Modified:
+  - `backend/src/presentation/controllers/phase.controller.ts` - corrected source/target context handling in `advanceQualifiers`
+
+**Issue 12**: Frontend sent page tournamentId instead of target tournamentId
+- **Issue**: `POST /api/phases/advance-qualifiers` returned `Provided tournamentId does not match target phase tournament`
+- **Impact**: Cross-tournament qualifier advancement failed from qualifying page route
+- **Root Cause**: Frontend used route `tournamentId` (current page) instead of selected target phase tournament
+- **Fix**:
+  - Resolve target tournament from selected target phase option
+  - Send target tournament ID in advance-qualifiers payload
+- Modified:
+  - `src/presentation/pages/phases/phase-management.component.ts` - `advanceQualifiers()` now derives `tournamentId` from target phase selection
+
+**Issue 13**: Advance qualifiers failed when standings table empty
+- **Issue**: `POST /api/phases/advance-qualifiers` returned `Not enough standings (0)` despite completed qualifying matches
+- **Impact**: Promotion blocked if standings rows were not materialized
+- **Root Cause**: Endpoint strictly required standings records and had no fallback to match outcomes
+- **Fix**:
+  - Added fallback ranking from source phase completed matches when standings are missing
+  - Terminal statuses considered for fallback scoring: `COMPLETED`, `WALKOVER`, `DEFAULT`, `BYE`, `RETIRED`, `DEAD_RUBBER`
+  - Added last-resort fallback to accepted source registrations
+  - Exclude participants already accepted in target category before selecting qualifiers
+- Modified:
+  - `backend/src/presentation/controllers/phase.controller.ts` - resilient qualifier selection pipeline in `advanceQualifiers`
+
+**Issue 14**: Advanced qualifiers did not receive seed numbers
+- **Issue**: Qualifiers advanced to main draw had `seedNumber: null`, making bracket seeding inconsistent
+- **Impact**: Qualified participants could not be properly seeded in draw generation; UI showed no seed numbers for qualifiers
+- **Root Cause**: `advanceQualifiers` endpoint created registrations without assigning sequential seed numbers after direct acceptances
+- **Fix**:
+  - Query existing direct acceptance registrations to find highest seed number
+  - Assign sequential seed numbers starting from `(highestSeed + 1)` to each qualifier in ranking order
+  - Qualifiers now properly seeded following direct acceptances (e.g., DA seeds 1-8, Qualifiers seeds 9-12)
+- Modified:
+  - `backend/src/presentation/controllers/phase.controller.ts` - added seed number assignment logic in `advanceQualifiers`
+
+**Issue 15**: Phase Management UX improvements for scoping and persistence
+- **Issue**: Multiple UX problems in Phase Management interface:
+  1. Phase selections reset to "-- Select a phase --" after successful operations (no persistence)
+  2. Source phase dropdown showed phases from ALL tournaments instead of just the current tournament
+  3. Target phase dropdown showed all tournaments without access control filtering
+- **Impact**: 
+  - Admins couldn't verify which phases were linked after saving
+  - Confusing UX with too many irrelevant phase options
+  - Potential security issue showing tournaments admin doesn't manage
+- **Root Cause**: 
+  - Forms were reset after successful operations
+  - No filtering of phase options by tournament context
+  - No loading of existing phase links on component initialization
+- **Fix**:
+  - Added `sourcePhaseOptions` signal filtered to current tournament only (from route `/tournaments/:id/phases`)
+  - Added `targetPhaseOptions` signal for cross-tournament targets (will add proper access control filtering later)
+  - Added `loadExistingPhaseLinks()` method to populate forms with already-linked phases
+  - Removed form reset calls after successful link/advance operations - selections now persist
+  - Updated all dropdown templates to use filtered options instead of `allPhaseOptions`
+- Modified:
+  - `src/presentation/pages/phases/phase-management.component.ts` - added filtered signals and persistence logic
+  - `src/presentation/pages/phases/phase-management.component.html` - updated all 6 dropdowns to use filtered options
+
+**Issue 16**: Advance qualifiers selected wrong players from Round Robin tournaments
+- **Issue**: When advancing qualifiers from Round Robin qualifying, backend selected players by registration seed number (1, 2, 3, 4) instead of actual match wins
+- **Impact**: 
+  - Wrong players advanced to main draw (e.g., qual_player1 with 3 wins selected over qual_player4 with 7 wins)
+  - Nullified the entire qualifying tournament competition results
+- **Root Cause**: 
+  - Round Robin tournaments create multiple phases (one per round: Round 1, Round 2, ..., Round 7)
+  - Backend queried `matches WHERE phaseId = sourcePhaseId`, which only returned matches from the selected phase (e.g., Round 7 only)
+  - Incomplete match data caused fallback ranking to skip win/loss calculation
+  - Fell back to last-resort logic using registration seed numbers
+- **Actual qualifying results** (by total wins across all rounds):
+  1. qual_player6 - 10 wins
+  2. qual_player3 - 8 wins
+  3. qual_player4 - 7 wins
+  4. qual_player8 - 6 wins (tie)
+  4. qual_player5 - 6 wins (tie)
+  6. qual_player7 - 5 wins
+  7. qual_player2 - 4 wins
+  8. qual_player1 - 3 wins
+- **Wrong players selected** (before fix): qual_player1 (seed 1), qual_player3 (seed 3), qual_player5 (seed 5), qual_player6 (seed 6)
+- **Fix**:
+  - Changed fallback ranking to query ALL matches from source bracket: `matches WHERE bracketId = sourceBracket.id`
+  - Now correctly aggregates wins/losses across all phases in the bracket
+  - Proper tiebreaker: wins DESC → losses ASC → played DESC → participantId alphanumeric
+- Modified:
+  - `backend/src/presentation/controllers/phase.controller.ts` - changed match query from phaseId to bracketId in `advanceQualifiers`
+
+**Issue 17**: BYE text in bracket view hard to read due to low opacity
+- **Issue**: BYE positions in visual bracket displayed with low opacity (0.6) making the text nearly invisible against light gray background
+- **Impact**: Users couldn't easily identify which bracket positions were BYEs vs actual participants
+- **Root Cause**: CSS rule `.participant.bye` used `opacity: 0.6` which affected both background AND text, creating poor contrast
+- **Fix**:
+  - Removed `opacity: 0.6` from `.participant.bye` class
+  - Changed background from `var(--color-gray-100)` to `var(--color-gray-200)` (slightly darker gray)
+  - Added explicit dark text color: `color: var(--color-gray-900)` (nearly black)
+  - Added `font-weight: 500` for better readability
+  - Result: BYE text now clearly readable with good contrast while maintaining visual distinction from active participants
+- Modified:
+  - `src/presentation/components/visual-bracket/visual-bracket.component.css` - updated `.participant.bye` styling
+
+---
+
 ### **DOCUMENTED** — External Notification Channels Marked as Optional (v1.88.32) 📝
 
 **Update Date**: April 10, 2026

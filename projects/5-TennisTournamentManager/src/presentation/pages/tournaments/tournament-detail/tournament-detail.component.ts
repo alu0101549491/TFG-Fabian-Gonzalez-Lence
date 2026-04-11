@@ -443,6 +443,15 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   /**
+   * Navigates to phase management for multi-phase tournament operations (admin only).
+   */
+  public managePhases(): void {
+    if (this.tournamentId) {
+      void this.router.navigate(['/tournaments', this.tournamentId, 'phases']);
+    }
+  }
+
+  /**
    * Handles tournament registration.
    */
   public async registerForTournament(): Promise<void> {

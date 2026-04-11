@@ -145,8 +145,9 @@
 }
 
 .participant.bye {
-  background: var(--color-gray-100);
-  opacity: 0.6;
+  background: var(--color-gray-200);
+  color: var(--color-gray-900);
+  font-weight: 500;
 }
 
 .participant-content {

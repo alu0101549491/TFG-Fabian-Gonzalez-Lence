@@ -1818,6 +1818,171 @@ router.get('/phases', apiCache(300), phaseController.getByBracket.bind(phaseCont
 
 /**
  * @swagger
+ * /phases/link:
+ *   post:
+ *     tags: [Phases]
+ *     summary: Link two phases
+ *     description: Link source phase to target phase in sequence (qualifying → main → consolation). Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sourcePhaseId
+ *               - targetPhaseId
+ *             properties:
+ *               sourcePhaseId:
+ *                 type: string
+ *                 description: ID of the source phase
+ *               targetPhaseId:
+ *                 type: string
+ *                 description: ID of the target phase
+ *     responses:
+ *       200:
+ *         description: Phases linked successfully
+ *       400:
+ *         description: Invalid input or cycle detected
+ *       404:
+ *         description: Phase not found
+ */
+router.post('/phases/link', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), phaseController.linkPhases.bind(phaseController));
+
+/**
+ * @swagger
+ * /phases/advance-qualifiers:
+ *   post:
+ *     tags: [Phases]
+ *     summary: Advance qualifiers
+ *     description: Promote top N finishers from Round Robin to next phase. Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sourcePhaseId
+ *               - targetPhaseId
+ *               - qualifierCount
+ *               - tournamentId
+ *               - categoryId
+ *             properties:
+ *               sourcePhaseId:
+ *                 type: string
+ *                 description: ID of the source phase (Round Robin)
+ *               targetPhaseId:
+ *                 type: string
+ *                 description: ID of the target phase (knockout)
+ *               qualifierCount:
+ *                 type: number
+ *                 description: Number of top qualifiers to advance
+ *               tournamentId:
+ *                 type: string
+ *                 description: Tournament ID
+ *               categoryId:
+ *                 type: string
+ *                 description: Category ID
+ *     responses:
+ *       201:
+ *         description: Qualifiers advanced successfully
+ *       400:
+ *         description: Invalid input or source phase not completed
+ *       404:
+ *         description: Phase not found
+ */
+router.post('/phases/advance-qualifiers', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), phaseController.advanceQualifiers.bind(phaseController));
+
+/**
+ * @swagger
+ * /phases/consolation:
+ *   post:
+ *     tags: [Phases]
+ *     summary: Create consolation draw
+ *     description: Create consolation draw for eliminated participants. Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - mainPhaseId
+ *               - tournamentId
+ *               - categoryId
+ *             properties:
+ *               mainPhaseId:
+ *                 type: string
+ *                 description: ID of the main phase
+ *               tournamentId:
+ *                 type: string
+ *                 description: Tournament ID
+ *               categoryId:
+ *                 type: string
+ *                 description: Category ID
+ *               eliminationRound:
+ *                 type: number
+ *                 description: Round from which losers enter consolation (optional)
+ *     responses:
+ *       201:
+ *         description: Consolation draw created successfully
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: Main phase not found
+ */
+router.post('/phases/consolation', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), phaseController.createConsolationDraw.bind(phaseController));
+
+/**
+ * @swagger
+ * /phases/promote-lucky-loser:
+ *   post:
+ *     tags: [Phases]
+ *     summary: Promote Lucky Loser
+ *     description: Promote first alternate to Lucky Loser when participant withdraws. Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - withdrawnParticipantId
+ *               - phaseId
+ *               - tournamentId
+ *               - categoryId
+ *             properties:
+ *               withdrawnParticipantId:
+ *                 type: string
+ *                 description: ID of the withdrawn participant
+ *               phaseId:
+ *                 type: string
+ *                 description: ID of the phase
+ *               tournamentId:
+ *                 type: string
+ *                 description: Tournament ID
+ *               categoryId:
+ *                 type: string
+ *                 description: Category ID
+ *     responses:
+ *       200:
+ *         description: Lucky Loser promoted successfully
+ *       404:
+ *         description: Registration not found
+ */
+router.post('/phases/promote-lucky-loser', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), phaseController.promoteLuckyLoser.bind(phaseController));
+
+/**
+ * @swagger
  * /standings:
  *   get:
  *     tags: [Standings]

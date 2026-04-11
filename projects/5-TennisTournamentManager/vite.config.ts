@@ -24,7 +24,7 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [
       // Angular plugin disabled - causes empty file serving issue
-      // Use inline templates/styles instead
+      // PhaseManagementComponent uses inline template instead
     ],
     esbuild: {
       tsconfigRaw: {
