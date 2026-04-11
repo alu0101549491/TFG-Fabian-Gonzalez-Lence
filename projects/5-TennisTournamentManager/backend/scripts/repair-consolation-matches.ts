@@ -6,7 +6,7 @@
  *
  * @author Fabian Gonzalez Lence <alu0101549491@ull.edu.es>
  * @since April 11, 2026
- * @file backend/repair-consolation-matches.ts
+ * @file backend/scripts/repair-consolation-matches.ts
  * @desc Rebuilds consolation brackets for a tournament with proper phaseId ownership.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
@@ -170,7 +170,7 @@ async function rebuildConsolationMatches(tournamentId: string): Promise<void> {
 const tournamentId = process.argv[2];
 
 if (!tournamentId) {
-  console.error('Usage: npx tsx repair-consolation-matches.ts <tournamentId>');
+  console.error('Usage: npx tsx scripts/repair-consolation-matches.ts <tournamentId>');
   process.exit(1);
 }
 

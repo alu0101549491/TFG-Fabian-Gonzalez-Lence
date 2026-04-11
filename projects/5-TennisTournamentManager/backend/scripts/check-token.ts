@@ -1,12 +1,12 @@
 /**
  * Quick script to decode a JWT token and check the user role
- * Usage: npx tsx check-token.ts <your-jwt-token>
+ * Usage: npx tsx scripts/check-token.ts <your-jwt-token>
  */
 
 const args = process.argv.slice(2);
 
 if (args.length === 0) {
-  console.log('Usage: npx tsx check-token.ts <jwt-token>');
+  console.log('Usage: npx tsx scripts/check-token.ts <jwt-token>');
   console.log('\nOr paste your token from localStorage:');
   console.log('1. Open browser DevTools (F12)');
   console.log('2. Go to Console tab');

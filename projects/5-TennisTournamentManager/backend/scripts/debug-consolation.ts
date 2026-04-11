@@ -1,7 +1,7 @@
 /**
  * Debug script to check consolation draw status
  * 
- * Usage: npx tsx debug-consolation.ts <tournamentId>
+ * Usage: npx tsx scripts/debug-consolation.ts <tournamentId>
  */
 
 import {AppDataSource} from './src/infrastructure/database/data-source';
@@ -113,7 +113,7 @@ async function debugConsolation(tournamentId: string): Promise<void> {
 const tournamentId = process.argv[2];
 
 if (!tournamentId) {
-  console.error('\n❌ Usage: npx tsx debug-consolation.ts <tournamentId>\n');
+  console.error('\n❌ Usage: npx tsx scripts/debug-consolation.ts <tournamentId>\n');
   process.exit(1);
 }
 

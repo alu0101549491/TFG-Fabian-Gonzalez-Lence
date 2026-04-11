@@ -51,7 +51,7 @@ This project follows a **Layered Architecture with Clean Architecture** principl
 
 Dependencies flow **inward** (Presentation → Application → Domain ← Infrastructure), following the Dependency Inversion Principle.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architectural documentation.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architectural documentation.
 
 ## Tech Stack
 
@@ -182,12 +182,12 @@ e2e/                           # Playwright E2E tests
 | NFR7  | Accessibility                     | WCAG 2.1 AA                    |
 | NFR8  | Browser support                   | Chrome, Firefox, Safari, Edge  |
 | NFR9  | Test coverage                     | ≥ 70%                          |
-| NFR10 | Documentation                     | TypeDoc + ARCHITECTURE.md      |
+| NFR10 | Documentation                     | TypeDoc + docs/ARCHITECTURE.md |
 | NFR11 | Code style                        | Google Style Guide (ESLint)    |
 | NFR12 | Session timeout                   | 30 minutes (JWT)               |
 | NFR13 | Role-based access control         | System Admin, Tournament Admin, Referee, Player, Spectator |
 
 ## Documentation
 
-- [Architecture Guide](ARCHITECTURE.md)
+- [Architecture Guide](docs/ARCHITECTURE.md)
 - API docs: Run `npm run doc` → `docs/` directory

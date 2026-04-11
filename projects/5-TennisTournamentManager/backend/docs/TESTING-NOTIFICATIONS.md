@@ -38,7 +38,7 @@ Run the test script to send notifications to a user:
 
 ```bash
 cd backend
-npx tsx test-notifications.ts
+npx tsx scripts/test-notifications.ts
 ```
 
 This script will:

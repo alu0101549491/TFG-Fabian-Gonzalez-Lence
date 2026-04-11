@@ -237,7 +237,7 @@ kill -9 <PID>
 
 ## 📚 Documentation
 
-- **Backend Summary**: [backend/BACKEND_SUMMARY.md](./BACKEND_SUMMARY.md)
+- **Backend Summary**: [backend/docs/BACKEND_SUMMARY.md](./BACKEND_SUMMARY.md)
 - **API Specification**: [docs/API.md](../docs/API.md)
 - **Architecture Guide**: [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
 - **Complete Changelog**: [docs/CHANGES.md](../docs/CHANGES.md)

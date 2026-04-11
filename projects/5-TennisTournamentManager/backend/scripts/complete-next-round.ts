@@ -8,8 +8,8 @@
  * - 3rd run: Completes Semifinals
  * - 4th run: Completes Final
  * 
- * Usage: npx tsx complete-next-round.ts <tournamentId>
- * Example: npx tsx complete-next-round.ts trn_3b7247a7
+ * Usage: npx tsx scripts/complete-next-round.ts <tournamentId>
+ * Example: npx tsx scripts/complete-next-round.ts trn_3b7247a7
  */
 
 import {AppDataSource} from './src/infrastructure/database/data-source';
@@ -240,8 +240,8 @@ const tournamentId = process.argv[2];
 
 if (!tournamentId) {
   console.error('\n❌ Error: Tournament ID is required');
-  console.log('\nUsage: npx tsx complete-next-round.ts <tournamentId>');
-  console.log('Example: npx tsx complete-next-round.ts trn_3b7247a7\n');
+  console.log('\nUsage: npx tsx scripts/complete-next-round.ts <tournamentId>');
+  console.log('Example: npx tsx scripts/complete-next-round.ts trn_3b7247a7\n');
   process.exit(1);
 }
 

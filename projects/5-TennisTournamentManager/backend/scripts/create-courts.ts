@@ -1,6 +1,6 @@
 /**
  * Script to create courts for a tournament
- * Usage: npx tsx create-courts.ts <tournamentId>
+ * Usage: npx tsx scripts/create-courts.ts <tournamentId>
  */
 
 const API_URL = 'http://localhost:3000/api';
@@ -38,7 +38,7 @@ async function main(): Promise<void> {
 
   if (!tournamentId) {
     console.error('❌ Please provide a tournament ID');
-    console.error('Usage: npx tsx create-courts.ts <tournamentId>');
+    console.error('Usage: npx tsx scripts/create-courts.ts <tournamentId>');
     process.exit(1);
   }
 
@@ -88,7 +88,7 @@ async function main(): Promise<void> {
 
     if (successCount > 0) {
       console.log('\n🎉 Courts created! Now you can run:');
-      console.log(`   npx tsx generate-match-results.ts ${tournamentId}`);
+      console.log(`   npx tsx scripts/generate-match-results.ts ${tournamentId}`);
     }
 
   } catch (error: any) {

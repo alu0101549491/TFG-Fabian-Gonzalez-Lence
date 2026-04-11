@@ -6,7 +6,7 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 11, 2026
- * @file backend/test-consolation-workflow.ts
+ * @file backend/scripts/test-consolation-workflow.ts
  * @desc Complete consolation draw workflow test script.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
@@ -26,10 +26,10 @@
  * - Run complete-next-round.ts first to complete Round of 16
  * 
  * Usage:
- * npx tsx test-consolation-workflow.ts <tournamentId> <consolationPhaseId> <categoryId>
+ * npx tsx scripts/test-consolation-workflow.ts <tournamentId> <consolationPhaseId> <categoryId>
  * 
  * Example:
- * npx tsx test-consolation-workflow.ts trn_3b7247a7 phs_xxxxx cat_2a6a3f82
+ * npx tsx scripts/test-consolation-workflow.ts trn_3b7247a7 phs_xxxxx cat_2a6a3f82
  */
 
 import {AppDataSource} from './src/infrastructure/database/data-source';
@@ -266,9 +266,9 @@ const categoryId = process.argv[4];
 if (!tournamentId || !consolationPhaseId || !categoryId) {
   console.error('\n❌ Error: Missing required arguments');
   console.log('\nUsage:');
-  console.log('  npx tsx test-consolation-workflow.ts <tournamentId> <consolationPhaseId> <categoryId>');
+  console.log('  npx tsx scripts/test-consolation-workflow.ts <tournamentId> <consolationPhaseId> <categoryId>');
   console.log('\nExample:');
-  console.log('  npx tsx test-consolation-workflow.ts trn_3b7247a7 phs_xxxxx cat_2a6a3f82');
+  console.log('  npx tsx scripts/test-consolation-workflow.ts trn_3b7247a7 phs_xxxxx cat_2a6a3f82');
   console.log('\nPrerequisites:');
   console.log('  1. Run complete-next-round.ts first to complete Round of 16');
   console.log('  2. Create consolation phase via Phase Management UI');

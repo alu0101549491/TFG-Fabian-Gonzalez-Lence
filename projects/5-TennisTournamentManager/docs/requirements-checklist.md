@@ -2,6 +2,55 @@
 
 ---
 
+## 🚧 Missing Implementation Remediation Checklist (Audit 2026-04-11)
+
+Use this block as the source of truth for work that is still partial or missing versus the specification. Mark items only when code is implemented and manually verified.
+
+### Core Functional Gaps (FR)
+
+- [ ] **FR1/FR8** - Extend tournament model and create/edit flow to include full regulations and missing configuration fields from specification.
+- [ ] **FR5** - Add explicit court opening/closing schedules and enforce them in order-of-play generation.
+- [ ] **FR10** - Implement true admin enrollment for non-registered participants (without requiring existing `User` record).
+- [ ] **FR12** - Implement full quota orchestration for OA/DA/SE/JE/WC/ALT/LL transitions (not only DA/ALT-centric behavior).
+- [ ] **FR13** - Complete withdrawal timing workflows: pre-draw ALT replacement, post-draw LL promotion, in-tournament WO propagation.
+- [ ] **FR15** - Implement doubles pair registration model and flows (partner linking, validation, admin edits).
+- [ ] **FR20** - Implement/verify started-draw modification with result migration behavior.
+- [ ] **FR22** - Validate and complete multi-level consolation/Compass behavior end-to-end.
+- [ ] **FR25** - Finish and unify result confirmation flow across backend/frontend layers (remove TODO/inconsistent paths).
+- [ ] **FR31** - Add ball provider field to data model, APIs, and UI forms.
+- [ ] **FR39/FR40/FR43** - Move standings recomputation to backend service pipeline and trigger automatically after official result confirmation.
+- [ ] **FR41** - Implement ELO scoring algorithm and integrate with tournament ranking system selection.
+- [ ] **FR42** - Ensure seed-based tiebreak criterion uses real seed data in resolution step.
+- [ ] **FR44** - Implement global ranking update workflow (not only read endpoint).
+- [ ] **FR45/FR46** - Expand statistics to fully cover history/streak/opponent analytics per specification.
+- [ ] **FR49** - Wire scheduled announcement publication processor to an actual scheduler/cron execution path.
+- [ ] **FR52/FR53** - Complete all missing notification triggers (suspension/resumption/delay/default and other pending TODOs).
+
+### Non-Functional Gaps (NFR)
+
+- [ ] **NFR1** - Re-validate responsive behavior across desktop/tablet/mobile and fix failing screens.
+- [ ] **NFR2** - Execute and document cross-browser validation (Chrome/Firefox/Safari/Edge).
+- [ ] **NFR5** - Verify real-time SLA (<5 seconds) with reproducible benchmark evidence.
+- [ ] **NFR6/NFR7** - Measure page-load/performance on realistic 4G/3G conditions and document results.
+- [ ] **NFR8** - Complete PWA: add manifest, service worker generation strategy, offline cache verification.
+- [ ] **NFR9** - Run concurrency/load tests for 100+ users and 20 active tournaments.
+- [ ] **NFR12** - Implement session inactivity auto-logout (30 minutes) and brute-force protection policy if incomplete.
+- [ ] **NFR14** - Close GDPR gaps: explicit consent tracking, complete access/rectification/deletion/portability flows.
+- [ ] **NFR16** - Implement and document automatic daily backups and point-in-time restoration.
+- [ ] **NFR17** - Add uptime monitoring/alerting and operational evidence for availability target.
+- [ ] **NFR18** - Complete admin-facing visual customization (colors/logo/menu) if not fully implemented.
+- [ ] **NFR22** - Expand automated test coverage to include critical integration + E2E scenarios, not only smoke tests.
+
+### Quality and Verification Backlog
+
+- [ ] Add E2E coverage for critical journey: tournament creation -> registration -> draw generation -> result confirmation -> standings update.
+- [ ] Add E2E coverage for phase linking: qualifying -> main -> consolation + lucky loser promotion.
+- [ ] Add tests for export validity (ITF CSV, TODS JSON, PDF, Excel) with schema/format assertions.
+- [ ] Add tests for privacy enforcement matrix by role and tournament relationship.
+- [ ] Add tests for notification preference enforcement across all enabled channels.
+
+---
+
 ### **A. AUTHENTICATION & USER MANAGEMENT** 🔐
 
 #### Login & Registration Flow

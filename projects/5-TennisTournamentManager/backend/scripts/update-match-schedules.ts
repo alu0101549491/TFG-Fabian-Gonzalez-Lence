@@ -1,6 +1,6 @@
 /**
  * Script to update ALL matches (including completed ones) with schedules and courts
- * Usage: npx tsx update-match-schedules.ts <tournamentId>
+ * Usage: npx tsx scripts/update-match-schedules.ts <tournamentId>
  */
 
 const API_URL = 'http://localhost:3000/api';
@@ -120,7 +120,7 @@ async function main(): Promise<void> {
 
   if (!tournamentId) {
     console.error('❌ Please provide a tournament ID');
-    console.error('Usage: npx tsx update-match-schedules.ts <tournamentId>');
+    console.error('Usage: npx tsx scripts/update-match-schedules.ts <tournamentId>');
     process.exit(1);
   }
 
@@ -141,7 +141,7 @@ async function main(): Promise<void> {
     console.log(`✅ Found ${courts.length} court(s)\n`);
 
     if (courts.length === 0) {
-      console.error('❌ No courts available. Create courts first with: npx tsx create-courts.ts');
+      console.error('❌ No courts available. Create courts first with: npx tsx scripts/create-courts.ts');
       process.exit(1);
     }
 

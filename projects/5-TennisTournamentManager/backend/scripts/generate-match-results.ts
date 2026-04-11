@@ -1,7 +1,7 @@
 /**
  * Script to generate random match results for a Round Robin tournament
  * Also assigns courts and schedules to matches
- * Usage: npx tsx generate-match-results.ts <tournamentId>
+ * Usage: npx tsx scripts/generate-match-results.ts <tournamentId>
  */
 
 const RESULTS_API_URL = 'http://localhost:3000/api';
@@ -205,7 +205,7 @@ async function main(): Promise<void> {
 
   if (!tournamentId) {
     console.error('❌ Please provide a tournament ID');
-    console.error('Usage: npx tsx generate-match-results.ts <tournamentId>');
+    console.error('Usage: npx tsx scripts/generate-match-results.ts <tournamentId>');
     process.exit(1);
   }
 

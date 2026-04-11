@@ -8,6 +8,133 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Frontend Root Reorganization
+
+**Date:** 2026-04-11
+
+Applied the same cleanup pattern used for backend to the project frontend/root files.
+
+**Moved documentation files into `docs/`:**
+- `API.md` -> `docs/API.md`
+- `ARCHITECTURE.md` -> `docs/ARCHITECTURE.md`
+- `PHASE_LINKING_TEST_GUIDE.md` -> `docs/PHASE_LINKING_TEST_GUIDE.md`
+- `UI_PHASE_LINKING_GUIDE.md` -> `docs/UI_PHASE_LINKING_GUIDE.md`
+
+**Moved utility scripts into `scripts/`:**
+- `test-standings.sh` -> `scripts/test-standings.sh`
+- `test-tiebreaker.ts` -> `scripts/test-tiebreaker.ts`
+- `verify-tiebreaker.sh` -> `scripts/verify-tiebreaker.sh`
+
+**Reference updates:**
+- Updated architecture links in `README.md` to point to `docs/ARCHITECTURE.md`
+
+### Backend Documentation Reorganization
+
+**Date:** 2026-04-11
+
+Moved backend root documentation markdown files into `backend/docs/` for consistency with the scripts reorganization.
+
+**Moved files:**
+- `backend/BACKEND_SUMMARY.md` -> `backend/docs/BACKEND_SUMMARY.md`
+- `backend/QUICKSTART.md` -> `backend/docs/QUICKSTART.md`
+- `backend/TESTING-NOTIFICATIONS.md` -> `backend/docs/TESTING-NOTIFICATIONS.md`
+- `backend/test-consolation-lucky-loser.md` -> `backend/docs/test-consolation-lucky-loser.md`
+
+**Reference updates:**
+- Updated backend summary link in `backend/docs/QUICKSTART.md`
+
+### Backend Script Reorganization
+
+**Date:** 2026-04-11
+
+Moved root-level backend utility scripts into a dedicated `backend/scripts/` directory to keep the backend root cleaner and improve script discoverability.
+
+**Updated as part of this change:**
+- Moved root-level `*.ts`, `*.sh`, and `*.sql` utility scripts into `backend/scripts/`
+- Updated backend npm aliases in `backend/package.json`:
+  - `setup:test-tournament` -> `tsx scripts/setup-test-tournament.ts`
+  - `setup:phase-linking` -> `tsx scripts/setup-phase-linking-test.ts`
+- Updated script usage/header references inside moved TypeScript scripts
+- Updated docs command reference in `backend/docs/TESTING-NOTIFICATIONS.md`
+
+### Documentation: Requirements Checklist Remediation Update
+
+**Date:** 2026-04-11
+
+Updated the manual requirements checklist to explicitly track implementation gaps still pending against the project specification.
+
+**What was added:**
+- New section in `docs/requirements-checklist.md`:
+  - `Missing Implementation Remediation Checklist (Audit 2026-04-11)`
+- Actionable unchecked tasks grouped by:
+  - Functional requirements gaps (FR)
+  - Non-functional requirements gaps (NFR)
+  - Quality/verification backlog
+
+**Purpose:**
+- Align documented checklist status with actual code implementation reality.
+- Provide a prioritized and traceable implementation backlog directly in the checklist.
+- Prevent false-positive completion by requiring code implementation + manual verification before checking items.
+
+### Manual Verification: Fresh Tournament End-to-End (No E2E)
+
+**Verification Date:** 2026-04-11
+
+Executed a complete manual validation on a freshly created tournament dataset to verify behavior independent from legacy test data.
+
+**Fresh dataset created:**
+- Tournament: `trn_4871797d`
+- Category: `cat_6108c70a`
+
+**Workflow executed:**
+1. Created fresh tournament + category + seeded players (8-player single elimination).
+2. Completed main round 1 and populated consolation for round 1.
+3. Completed main round 2 and populated consolation for round 2.
+4. Verified consolation separation integrity by `phaseId` ownership.
+5. Executed Lucky Loser promotion flow (including alternate creation if missing).
+6. Verified post-operation registration integrity.
+
+**Results:**
+- Multi-consolation separation on fresh data: **PASS**
+- Main bracket progression after consolation operations: **PASS**
+- Lucky Loser promotion flow on fresh data: **PASS**
+- Registration consistency after Lucky Loser (`status`/`acceptanceType`): **PASS**
+
+**Files Added (validation utilities):**
+- `backend/finalize-test-tournament-setup.ts`
+- `backend/manage-consolation-by-round.ts`
+- `backend/verify-lucky-loser-flow.ts`
+
+---
+
+### Manual Integration Verification: Consolation + Registration Integrity
+
+**Verification Date:** 2026-04-11
+
+Performed a manual backend integration verification pass (non-E2E) for tournament `trn_3b7247a7` covering bracket progression, multi-consolation separation, and registration consistency.
+
+**What was validated:**
+- Main draw progression still works after consolation fixes (`complete-next-round.ts`).
+- Consolation matches are properly separated by owning `phaseId`.
+- No orphan consolation matches (`round >= 100` with `phaseId = null`).
+- Registration consistency between `status` and `acceptanceType` for withdrawn participants.
+
+**Findings:**
+- Consolation phase separation: **PASS**
+- Main draw progression: **PASS**
+- Registration integrity: initially **FAIL** due to one legacy inconsistent record (`acceptanceType = WITHDRAWN` but `status = ACCEPTED`)
+
+**Action taken:**
+- Added and executed a repair utility to normalize withdrawn records.
+- Re-ran integrity verification after repair: **PASS**
+
+**Files Added:**
+- `backend/verify-consolation-separation.ts`
+- `backend/verify-registration-integrity.ts`
+- `backend/repair-registration-integrity.ts`
+
+---
+
 ### Issue 24: Legacy Consolation Data Migration
 
 **Issue Date:** 2026-04-11
