@@ -218,6 +218,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'my-invitations',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/my-invitations/my-invitations.component').then(
+        (m) => m.MyInvitationsComponent,
+      ),
+  },
+  {
     path: 'admin',
     canActivate: [authGuard, roleGuard],
     data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},

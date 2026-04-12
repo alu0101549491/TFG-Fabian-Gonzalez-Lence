@@ -564,4 +564,129 @@ export class NotificationService {
       {matchId, matchStatus, reason},
     );
   }
+
+  /**
+   * Notifies a player that they have received a partner invitation for doubles.
+   *
+   * @param inviteeId - Player receiving the invitation
+   * @param inviterId - Player sending the invitation
+   * @param tournamentName - Tournament name
+   * @param categoryName - Category name
+   * @param invitationId - Invitation ID
+   */
+  public async notifyPartnerInvitation(
+    inviteeId: string,
+    inviterId: string,
+    tournamentName: string,
+    categoryName: string,
+    invitationId: string,
+  ): Promise<void> {
+    const message = `You've been invited to be a doubles partner for ${tournamentName} (${categoryName}). Please review your invitations.`;
+    await this.createNotification(
+      inviteeId,
+      NotificationType.REGISTRATION_CONFIRMED,
+      '✉️ Partner Invitation Received',
+      message,
+      {invitationId, inviterId, tournamentName, categoryName},
+    );
+  }
+
+  /**
+   * Notifies inviter that their partner accepted the invitation.
+   *
+   * @param inviterId - Player who sent the invitation
+   * @param inviteeId - Player who accepted
+   * @param tournamentName - Tournament name
+   * @param categoryName - Category name
+   */
+  public async notifyPartnerInvitationAccepted(
+    inviterId: string,
+    inviteeId: string,
+    tournamentName: string,
+    categoryName: string,
+  ): Promise<void> {
+    const message = `Your partner invitation has been accepted! Both of you are now registered for ${tournamentName} (${categoryName}), pending admin approval.`;
+    await this.createNotification(
+      inviterId,
+      NotificationType.REGISTRATION_CONFIRMED,
+      '✅ Partner Invitation Accepted',
+      message,
+      {inviteeId, tournamentName, categoryName},
+    );
+  }
+
+  /**
+   * Notifies inviter that their partner declined the invitation.
+   *
+   * @param inviterId - Player who sent the invitation
+   * @param inviteeId - Player who declined
+   * @param tournamentName - Tournament name
+   * @param categoryName - Category name
+   */
+  public async notifyPartnerInvitationDeclined(
+    inviterId: string,
+    inviteeId: string,
+    tournamentName: string,
+    categoryName: string,
+  ): Promise<void> {
+    const message = `Your partner invitation for ${tournamentName} (${categoryName}) has been declined.`;
+    await this.createNotification(
+      inviterId,
+      NotificationType.REGISTRATION_CONFIRMED,
+      '❌ Partner Invitation Declined',
+      message,
+      {inviteeId, tournamentName, categoryName},
+    );
+  }
+
+  /**
+   * Notifies partner about mutual withdrawal from a doubles registration.
+   *
+   * @param partnerId - Partner's user ID
+   * @param withdrawingParticipantId - User ID of player withdrawing
+   * @param tournamentName - Tournament name
+   */
+  public async notifyPartnerMutualWithdrawal(
+    partnerId: string,
+    withdrawingParticipantId: string,
+    tournamentName: string,
+  ): Promise<void> {
+    const message = `Your doubles partner has withdrawn from ${tournamentName}. Your registration has been automatically withdrawn as well.`;
+    await this.createNotification(
+      partnerId,
+      NotificationType.REGISTRATION_CONFIRMED,
+      '🤝 Partner Withdrawal - Mutual Withdrawal',
+      message,
+      {withdrawingParticipantId, tournamentName},
+    );
+  }
+
+  /**
+   * Notifies admins that a pending doubles registration (pair) needs approval.
+   *
+   * @param tournamentId - Tournament ID
+   * @param registrationId - Registration ID of the pair
+   */
+  public async notifyAdminPendingRegistration(
+    tournamentId: string,
+    registrationId: string,
+  ): Promise<void> {
+    // Get all tournament admins
+    const userRepository = AppDataSource.getRepository(User);
+    const admins = await userRepository.find({
+      where: [{role: 'SYSTEM_ADMIN' as any}, {role: 'TOURNAMENT_ADMIN' as any}],
+    });
+
+    const message = 'A new doubles pair registration is pending your approval.';
+    
+    for (const admin of admins) {
+      await this.createNotification(
+        admin.id,
+        NotificationType.REGISTRATION_CONFIRMED,
+        '📋 New Registration for Approval',
+        message,
+        {tournamentId, registrationId},
+      );
+    }
+  }
 }

@@ -399,6 +399,9 @@ export class MatchController {
 
       const scoreRepository = AppDataSource.getRepository(Score);
       
+      // Delete existing scores for this match to prevent duplicates (allow score updates)
+      await scoreRepository.delete({matchId: id});
+      
       // Save each set score
       const savedScores: Score[] = [];
       for (const score of tennisScores) {

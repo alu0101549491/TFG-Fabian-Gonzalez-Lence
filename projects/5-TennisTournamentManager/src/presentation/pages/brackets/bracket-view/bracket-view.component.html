@@ -279,7 +279,20 @@
         @if (hasCompletedMatches()) {
           <div class="info-message">
             <span class="info-icon">📊</span>
-            <span><strong>Note:</strong> This bracket has completed matches. All match results will be permanently deleted.</span>
+            <div class="info-content">
+              <span><strong>Started draw detected:</strong> This bracket has completed matches.</span>
+              <label class="migration-option">
+                <input
+                  type="checkbox"
+                  [checked]="regenerateKeepResults()"
+                  (change)="regenerateKeepResults.set($any($event.target).checked)"
+                />
+                <span>Preserve compatible completed results during regeneration</span>
+              </label>
+              @if (!regenerateKeepResults()) {
+                <span><strong>Warning:</strong> Completed match results will be permanently deleted.</span>
+              }
+            </div>
           </div>
         }
       </div>

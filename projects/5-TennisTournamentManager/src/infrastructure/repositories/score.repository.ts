@@ -94,27 +94,26 @@ export class ScoreRepositoryImpl implements IScoreRepository {
    * Saves multiple scores for a match (one per set).
    * Backend endpoint: POST /api/matches/:matchId/score
    * @param matchId - The match identifier
+   * @param winnerId - The winner participant ID
    * @param setScores - Array of set scores to save
    * @returns Promise resolving to the saved scores
    */
-  public async saveMatchScores(matchId: string, setScores: SetScore[]): Promise<Score[]> {
-    const savedScores: Score[] = [];
+  public async saveMatchScores(matchId: string, winnerId: string, setScores: SetScore[]): Promise<Score[]> {
+    // Map frontend SetScore array to backend Score entity format
+    const scores = setScores.map(setScore => ({
+      setNumber: setScore.setNumber,
+      player1Games: setScore.participant1Games,  // Frontend: participant1Games → Backend: player1Games
+      player2Games: setScore.participant2Games,  // Frontend: participant2Games → Backend: player2Games
+      player1TiebreakPoints: setScore.tiebreakParticipant1 ?? null,  // Frontend: tiebreakParticipant1 → Backend: player1TiebreakPoints
+      player2TiebreakPoints: setScore.tiebreakParticipant2 ?? null,  // Frontend: tiebreakParticipant2 → Backend: player2TiebreakPoints
+    }));
     
-    // Save each set score individually to /api/matches/:matchId/score
-    for (const setScore of setScores) {
-      // Map frontend SetScore to backend Score entity format
-      const scoreData = {
-        setNumber: setScore.setNumber,
-        player1Games: setScore.participant1Games,  // Frontend: participant1Games → Backend: player1Games
-        player2Games: setScore.participant2Games,  // Frontend: participant2Games → Backend: player2Games
-        player1TiebreakPoints: setScore.tiebreakParticipant1 ?? null,  // Frontend: tiebreakParticipant1 → Backend: player1TiebreakPoints
-        player2TiebreakPoints: setScore.tiebreakParticipant2 ?? null,  // Frontend: tiebreakParticipant2 → Backend: player2TiebreakPoints
-      };
-      
-      const savedScore = await this.httpClient.post<any>(`/matches/${matchId}/score`, scoreData);
-      savedScores.push(savedScore);
-    }
+    // Send all scores in a single request with winnerId (backend expects this format)
+    const response = await this.httpClient.post<{scores: Score[]}>(`/matches/${matchId}/score`, {
+      winnerId,
+      scores
+    });
     
-    return savedScores;
+    return response.scores;
   }
 }

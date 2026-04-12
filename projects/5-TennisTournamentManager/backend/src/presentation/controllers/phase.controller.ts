@@ -675,8 +675,9 @@ export class PhaseController {
 
       const firstAlternate = alternates[0];
 
-      // Promote alternate to Lucky Loser
+      // Promote alternate to Lucky Loser — set both acceptanceType AND status
       firstAlternate.acceptanceType = AcceptanceType.LUCKY_LOSER;
+      firstAlternate.status = RegistrationStatus.ACCEPTED;
       await registrationRepository.save(firstAlternate);
 
       res.status(HTTP_STATUS.OK).json({

@@ -15,11 +15,14 @@ import {RegistrationStatus} from '@domain/enumerations/registration-status';
 import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {TournamentDto} from './tournament.dto';
 import {CategoryDto} from './category.dto';
+import {UserDto} from './user.dto';
 
 /** DTO for creating a registration. */
 export interface CreateRegistrationDto {
   tournamentId: string;
   categoryId: string;
+  /** FR15: Optional doubles partner user ID. */
+  partnerId?: string | null;
 }
 
 /** DTO for registration output representation. */
@@ -31,6 +34,12 @@ export interface RegistrationDto {
   status: RegistrationStatus;
   acceptanceType: AcceptanceType;
   seedNumber: number | null;
+  /** FR13: Timestamp of formal withdrawal. Null if not withdrawn. */
+  withdrawalDate?: Date | null;
+  /** FR15: ID of the doubles partner. Null for singles registrations. */
+  partnerId?: string | null;
+  /** FR15: Resolved partner user object (loaded via relation). Null for singles or unset. */
+  partner?: UserDto | null;
   registeredAt: Date;
   tournament?: TournamentDto;
   category?: CategoryDto;

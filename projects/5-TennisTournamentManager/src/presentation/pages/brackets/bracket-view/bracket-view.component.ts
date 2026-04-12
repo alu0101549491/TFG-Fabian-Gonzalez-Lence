@@ -105,6 +105,9 @@ export class BracketViewComponent implements OnInit {
   /** Show regenerate confirmation modal */
   public showRegenerateModal = signal(false);
 
+  /** Preserve completed results when regenerating the bracket */
+  public regenerateKeepResults = signal(false);
+
   /**
    * Initializes component and loads bracket data.
    */
@@ -250,6 +253,7 @@ export class BracketViewComponent implements OnInit {
    * Shows the regenerate bracket confirmation modal.
    */
   public showRegenerateConfirmation(): void {
+    this.regenerateKeepResults.set(this.hasCompletedMatches());
     this.showRegenerateModal.set(true);
   }
 
@@ -258,6 +262,7 @@ export class BracketViewComponent implements OnInit {
    */
   public hideRegenerateModal(): void {
     this.showRegenerateModal.set(false);
+    this.regenerateKeepResults.set(false);
   }
 
   /**
@@ -273,16 +278,17 @@ export class BracketViewComponent implements OnInit {
       return;
     }
 
+    const keepResults = this.regenerateKeepResults();
+
     // Hide modal and start regeneration
     this.hideRegenerateModal();
     this.isRegenerating.set(true);
 
     try {
-      // Always regenerate without keeping results (full reset)
       const updatedBracket = await this.bracketService.regenerateBracket(
         bracket.id,
         currentUser.id,
-        false // keepResults = false (always reset)
+        keepResults
       );
       // Update the bracket signal with the fresh data from the server
       this.bracket.set(updatedBracket);

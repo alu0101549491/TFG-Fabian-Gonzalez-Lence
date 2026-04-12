@@ -652,7 +652,7 @@
 
 .info-message {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   background: var(--color-info-light);
@@ -665,6 +665,25 @@
 .info-icon {
   font-size: var(--font-size-xl);
   flex-shrink: 0;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.migration-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.migration-option input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
 }
 
 .modal-footer {

@@ -16,6 +16,7 @@ import {AuthController} from '../controllers/auth.controller';
 import {UserController} from '../controllers/user.controller';
 import {TournamentController} from '../controllers/tournament.controller';
 import {RegistrationController} from '../controllers/registration.controller';
+import {PartnerInvitationController} from '../controllers/partner-invitation.controller';
 import {BracketController} from '../controllers/bracket.controller';
 import {MatchController} from '../controllers/match.controller';
 import {CategoryController} from '../controllers/category.controller';
@@ -46,6 +47,7 @@ const authController = new AuthController();
 const userController = new UserController();
 const tournamentController = new TournamentController();
 const registrationController = new RegistrationController();
+const partnerInvitationController = new PartnerInvitationController();
 const bracketController = new BracketController();
 const matchController = new MatchController();
 const categoryController = new CategoryController();
@@ -249,7 +251,7 @@ router.get('/users/stats', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN
  *   get:
  *     tags: [Users]
  *     summary: Get eligible participants for tournaments
- *     description: Get active PLAYER role users eligible for tournament registration (TOURNAMENT_ADMIN and SYSTEM_ADMIN only)
+ *     description: Get active PLAYER role users eligible for tournament registration (accessible to all authenticated users for partner search)
  *     parameters:
  *       - in: query
  *         name: searchQuery
@@ -267,10 +269,8 @@ router.get('/users/stats', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN
  *                 $ref: '#/components/schemas/User'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         $ref: '#/components/responses/Forbidden'
  */
-router.get('/users/eligible-participants', authMiddleware, roleMiddleware([UserRole.TOURNAMENT_ADMIN, UserRole.SYSTEM_ADMIN]), apiCache(30), userController.getEligibleParticipants.bind(userController));
+router.get('/users/eligible-participants', authMiddleware, apiCache(30), userController.getEligibleParticipants.bind(userController));
 
 /**
  * @swagger
@@ -466,6 +466,33 @@ router.put('/users/:id', authMiddleware, userController.update.bind(userControll
  *         $ref: '#/components/responses/NotFound'
  */
 router.put('/users/:id/privacy', authMiddleware, userController.updatePrivacy.bind(userController));
+
+/**
+ * @swagger
+ * /users/{id}/export:
+ *   get:
+ *     tags: [Users]
+ *     summary: Export user data (GDPR compliance NFR14)
+ *     description: Export all user data in JSON format for data portability
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User data exported successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.get('/users/:id/export', authMiddleware, userController.exportUserData.bind(userController));
 
 /**
  * @swagger
@@ -1073,6 +1100,74 @@ router.put('/registrations/:id/status', authMiddleware, roleMiddleware([UserRole
 
 /**
  * @swagger
+ * /registrations/{id}/withdraw:
+ *   post:
+ *     tags: [Registrations]
+ *     summary: Withdraw a registration (FR13)
+ *     description: >
+ *       Timing-aware withdrawal. Pre-draw promotes first ALT to DA.
+ *       In-tournament promotes first ALT to LL and sets SCHEDULED matches to WALKOVER.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Withdrawal successful with promotion details
+ *       400:
+ *         description: Already withdrawn or cancelled
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         description: Registration not found
+ */
+router.post('/registrations/:id/withdraw', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN, UserRole.PLAYER]), registrationController.withdraw.bind(registrationController));
+
+/**
+ * @swagger
+ * /registrations/{id}/partner:
+ *   put:
+ *     tags: [Registrations]
+ *     summary: Update doubles partner (FR15)
+ *     description: Sets or clears the doubles partner for a registration.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               partnerId:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       200:
+ *         description: Partner updated
+ *       400:
+ *         description: Self-pairing or invalid input
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Registration or partner not found
+ */
+router.put('/registrations/:id/partner', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), registrationController.updatePartner.bind(registrationController));
+
+/**
+ * @swagger
  * /registrations/{id}:
  *   put:
  *     tags: [Registrations]
@@ -1144,6 +1239,183 @@ router.delete('/registrations/:id', authMiddleware, roleMiddleware([UserRole.SYS
  *         description: Migration successful
  */
 router.post('/registrations/migrate-acceptance-types', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), registrationController.migrateAcceptanceTypes.bind(registrationController));
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Partner Invitation Routes (FR15 - Doubles Partner Invitation System)
+// ────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /partner-invitations/send:
+ *   post:
+ *     tags: [Partner Invitations]
+ *     summary: Send partner invitation (FR15)
+ *     description: Send an invitation to another player to be doubles partners
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [inviteeId, tournamentId, categoryId]
+ *             properties:
+ *               inviteeId:
+ *                 type: string
+ *               tournamentId:
+ *                 type: string
+ *               categoryId:
+ *                 type: string
+ *               message:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Invitation sent successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.post('/partner-invitations/send', authMiddleware, partnerInvitationController.sendInvitation.bind(partnerInvitationController));
+
+/**
+ * @swagger
+ * /partner-invitations/my-invitations:
+ *   get:
+ *     tags: [Partner Invitations]
+ *     summary: Get all invitations for current user
+ *     description: Get both sent and received invitations
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of invitations
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.get('/partner-invitations/my-invitations', authMiddleware, partnerInvitationController.getMyInvitations.bind(partnerInvitationController));
+
+/**
+ * @swagger
+ * /partner-invitations/pending:
+ *   get:
+ *     tags: [Partner Invitations]
+ *     summary: Get pending invitations for current user
+ *     description: Get invitations where current user is invitee and status is PENDING
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of pending invitations
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.get('/partner-invitations/pending', authMiddleware, partnerInvitationController.getPendingInvitations.bind(partnerInvitationController));
+
+/**
+ * @swagger
+ * /partner-invitations/{id}:
+ *   get:
+ *     tags: [Partner Invitations]
+ *     summary: Get invitation by ID
+ *     description: Get single invitation with full details
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Invitation details
+ *       404:
+ *         description: Invitation not found
+ */
+router.get('/partner-invitations/:id', authMiddleware, partnerInvitationController.getInvitationById.bind(partnerInvitationController));
+
+/**
+ * @swagger
+ * /partner-invitations/{id}/accept:
+ *   post:
+ *     tags: [Partner Invitations]
+ *     summary: Accept partner invitation
+ *     description: Accept invitation and create registrations for both players (PENDING admin approval)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Invitation accepted, registrations created
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Invitation not found
+ */
+router.post('/partner-invitations/:id/accept', authMiddleware, partnerInvitationController.acceptInvitation.bind(partnerInvitationController));
+
+/**
+ * @swagger
+ * /partner-invitations/{id}/decline:
+ *   post:
+ *     tags: [Partner Invitations]
+ *     summary: Decline partner invitation
+ *     description: Decline invitation (invitee only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Invitation declined
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Invitation not found
+ */
+router.post('/partner-invitations/:id/decline', authMiddleware, partnerInvitationController.declineInvitation.bind(partnerInvitationController));
+
+/**
+ * @swagger
+ * /partner-invitations/{id}/cancel:
+ *   post:
+ *     tags: [Partner Invitations]
+ *     summary: Cancel partner invitation
+ *     description: Cancel invitation (inviter only, before acceptance)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Invitation cancelled
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Invitation not found
+ */
+router.post('/partner-invitations/:id/cancel', authMiddleware, partnerInvitationController.cancelInvitation.bind(partnerInvitationController));
 
 /**
  * @swagger
@@ -1263,7 +1535,7 @@ router.put('/brackets/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMI
  *   post:
  *     tags: [Brackets]
  *     summary: Regenerate bracket with updated seeds
- *     description: Completely regenerates bracket by deleting all matches/scores/phases and creating new ones using updated registration seed numbers. Cannot be used on published brackets. (SYSTEM_ADMIN or TOURNAMENT_ADMIN)
+ *     description: Regenerates bracket structure using latest registration seeds. When keepResults=true, completed matches with compatible participant pairings are migrated to the regenerated bracket. (SYSTEM_ADMIN or TOURNAMENT_ADMIN)
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -1272,6 +1544,16 @@ router.put('/brackets/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMI
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               keepResults:
+ *                 type: boolean
+ *                 description: Preserve compatible completed results during regeneration (default false)
  *     responses:
  *       200:
  *         description: Bracket regenerated successfully

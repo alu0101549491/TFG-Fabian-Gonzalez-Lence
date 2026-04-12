@@ -22,6 +22,7 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.env.backup
 .env.*.local
 
 # Logs

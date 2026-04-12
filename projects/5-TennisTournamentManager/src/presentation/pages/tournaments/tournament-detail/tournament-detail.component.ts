@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, HostListener, inject, signal, computed} from '@angular/core';
+import {Component, OnInit, HostListener, inject, signal, computed, effect} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
@@ -19,12 +19,14 @@ import {combineLatest} from 'rxjs';
 import {TournamentService, RegistrationService, CategoryService, BracketService} from '@application/services';
 import {ExportService} from '@application/services/export.service';
 import {UserManagementService} from '@application/services/user-management.service';
+import {PartnerInvitationService} from '@infrastructure/services/partner-invitation.service';
 import {type TournamentDto, type RegistrationDto, type CreateCategoryDto, type CategoryDto, type UpdateRegistrationStatusDto, type UserSummaryDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
 import {type User} from '@domain/entities/user';
 import {UserRole} from '@domain/enumerations/user-role';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
+import {TournamentType} from '@domain/enumerations/tournament-type';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
 import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {Gender} from '@domain/enumerations/gender';
@@ -51,6 +53,7 @@ export class TournamentDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly tournamentService = inject(TournamentService);
   private readonly registrationService = inject(RegistrationService);
+  private readonly partnerInvitationService = inject(PartnerInvitationService);
   private readonly categoryService = inject(CategoryService);
   private readonly bracketService = inject(BracketService);
   private readonly authStateService = inject(AuthStateService);
@@ -97,6 +100,63 @@ export class TournamentDetailComponent implements OnInit {
 
   /** Show category management section */
   public showCategoryManagement = signal(false);
+
+  /** FR15: Partner search query for doubles registration */
+  public partnerSearchQuery = signal<string>('');
+  
+  /** FR15: Selected partner for doubles registration */
+  public selectedPartner = signal<UserSummaryDto | null>(null);
+  
+  /** FR15: Filtered partners based on search query (excludes self and already registered) */
+  public filteredPartners = computed(() => {
+    const query = this.partnerSearchQuery().toLowerCase().trim();
+    if (!query) return [];
+    
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) return [];
+    
+    // Get list of already registered participant IDs (excluding WITHDRAWN)
+    const registeredPlayerIds = new Set(
+      this.registeredPlayers()
+        .filter(p => p.registration.status !== RegistrationStatus.WITHDRAWN)
+        .map(p => p.registration.participantId)
+    );
+    
+    return this.allUsers().filter(user => {
+      // Exclude current user (can't partner with yourself)
+      if (user.id === currentUser.id) return false;
+      
+      // Exclude users who are already registered (except WITHDRAWN)
+      if (registeredPlayerIds.has(user.id)) return false;
+      
+      // Filter by search query
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
+      const username = (user.username || '').toLowerCase();
+      const email = (user.email || '').toLowerCase();
+      
+      return fullName.includes(query) || username.includes(query) || email.includes(query);
+    }).slice(0, 10); // Limit to 10 results
+  });
+
+  /** FR15: Legacy - kept for backward compatibility */
+  public doublesPartnerId = signal<string>('');
+
+  /**
+   * Constructor - sets up auto-loading of eligible participants for partner search
+   */
+  constructor() {
+    // FR15: Auto-load eligible participants when user starts searching for partner
+    effect(() => {
+      const query = this.partnerSearchQuery();
+      // Load users on first search attempt if not already loaded
+      if (query.length >= 1 && this.allUsers().length === 0) {
+        this.loadEligibleParticipantsForPartnerSearch();
+      }
+    });
+  }
+
+  /** FR15: True when the current tournament is a DOUBLES type. */
+  public isDoublesTournament = computed(() => this.tournament()?.tournamentType === TournamentType.DOUBLES);
 
   /**
    * Navigate to tournament announcements page.
@@ -463,6 +523,8 @@ export class TournamentDetailComponent implements OnInit {
 
   /**
    * Handles tournament registration.
+   * For doubles tournaments: Sends partner invitation (FR15 partner invitation system).
+   * For singles tournaments: Direct registration.
    */
   public async registerForTournament(): Promise<void> {
     if (!this.tournamentId) return;
@@ -487,27 +549,55 @@ export class TournamentDetailComponent implements OnInit {
       return;
     }
 
+    // FR15: Partner required for doubles tournaments
+    const partner = this.selectedPartner();
+    if (this.isDoublesTournament() && !partner) {
+      alert('Please select your doubles partner to register for a doubles tournament.');
+      return;
+    }
+
     try {
-      const newRegistration = await this.registrationService.registerParticipant(
-        {
+      // FR15: Doubles tournaments use invitation workflow
+      if (this.isDoublesTournament() && partner) {
+        await this.partnerInvitationService.sendInvitation({
+          inviteeId: partner.id,
           tournamentId: this.tournamentId,
           categoryId: categoryId,
-        },
-        user.id
-      );
-      this.userRegistration.set(newRegistration);
-      
-      // FR12: Show different messages based on acceptance type (quota management)
-      if (newRegistration.acceptanceType === AcceptanceType.DIRECT_ACCEPTANCE) {
-        alert('✅ Successfully registered! (Direct Acceptance)\n\nYour registration has been confirmed.');
-      } else if (newRegistration.acceptanceType === AcceptanceType.ALTERNATE) {
-        alert('⏳ Registered as Alternate\n\nThe category is currently full, so you\'ve been added to the waiting list. You\'ll be notified if a spot becomes available.');
+          message: undefined,
+        });
+
+        alert(
+          `✉️ Partner invitation sent to ${partner.firstName} ${partner.lastName}!\n\n` +
+          `Once they accept, both registrations will be created and pending admin approval.`
+        );
+
+        // Clear partner selection after sending invitation
+        this.selectedPartner.set(null);
+        this.partnerSearchQuery.set('');
       } else {
-        // Fallback for other acceptance types
-        alert('Successfully registered for tournament!');
+        // Singles tournament: Direct registration
+        const newRegistration = await this.registrationService.registerParticipant(
+          {
+            tournamentId: this.tournamentId,
+            categoryId: categoryId,
+            partnerId: null,
+          },
+          user.id
+        );
+        this.userRegistration.set(newRegistration);
+        
+        // FR12: Show different messages based on acceptance type (quota management)
+        if (newRegistration.acceptanceType === AcceptanceType.DIRECT_ACCEPTANCE) {
+          alert('✅ Successfully registered! (Direct Acceptance)\n\nYour registration has been confirmed.');
+        } else if (newRegistration.acceptanceType === AcceptanceType.ALTERNATE) {
+          alert('⏳ Registered as Alternate\n\nThe category is currently full, so you\'ve been added to the waiting list. You\'ll be notified if a spot becomes available.');
+        } else {
+          // Fallback for other acceptance types
+          alert('Successfully registered for tournament!');
+        }
+        
+        await this.loadPlayers();
       }
-      
-      await this.loadPlayers();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';
       alert(message);
@@ -1071,13 +1161,8 @@ export class TournamentDetailComponent implements OnInit {
     }
 
     try {
-      // Tournament admins use updateStatus instead of withdrawRegistration
-      const updateData: UpdateRegistrationStatusDto = {
-        registrationId,
-        status: RegistrationStatus.WITHDRAWN,
-      };
-
-      await this.registrationService.updateStatus(updateData, currentUser.id);
+      // FR13: Use the dedicated withdraw endpoint (timing-aware: promotes ALT, assigns WOs)
+      await this.registrationService.withdrawRegistration(registrationId, new Date().toISOString(), currentUser.id);
       await this.loadPlayers();
       alert(`${playerName} has been removed from the tournament.`);
     } catch (error) {
@@ -1417,17 +1502,24 @@ export class TournamentDetailComponent implements OnInit {
   public async showAddParticipantModal(): Promise<void> {
     // Load eligible participants (PLAYER role, active users) if not already loaded
     if (this.allUsers().length === 0) {
-      try {
-        const users = await this.userManagementService.getEligibleParticipants();
-        this.allUsers.set(users);
-      } catch (error) {
-        console.error('❌ Failed to load users:', error);
-        alert('Failed to load users. Please try again.');
-        return;
-      }
+      await this.loadEligibleParticipantsForPartnerSearch();
     }
     
     this.showAddParticipantDialog.set(true);
+  }
+
+  /**
+   * Loads eligible participants (active PLAYER role users) for partner search or admin enrollment.
+   * Shared by both Add Participant modal and doubles partner search.
+   */
+  private async loadEligibleParticipantsForPartnerSearch(): Promise<void> {
+    try {
+      const users = await this.userManagementService.getEligibleParticipants();
+      this.allUsers.set(users);
+    } catch (error) {
+      console.error('❌ Failed to load users:', error);
+      // Silent fail for partner search, don't block user
+    }
   }
 
   /**
@@ -1471,6 +1563,26 @@ export class TournamentDetailComponent implements OnInit {
   public clearUserSelection(): void {
     this.addParticipantFormData.selectedUserId = null;
     this.addParticipantFormData.selectedUserName = null;
+  }
+
+  /**
+   * FR15: Selects a partner for doubles registration.
+   * 
+   * @param user - The selected partner user
+   */
+  public selectPartner(user: UserSummaryDto): void {
+    this.selectedPartner.set(user);
+    this.doublesPartnerId.set(user.id); // Update legacy signal
+    this.partnerSearchQuery.set(''); // Clear search to hide dropdown
+  }
+
+  /**
+   * FR15: Clears the selected partner for doubles registration.
+   */
+  public clearPartnerSelection(): void {
+    this.selectedPartner.set(null);
+    this.doublesPartnerId.set('');
+    this.partnerSearchQuery.set('');
   }
 
   /**

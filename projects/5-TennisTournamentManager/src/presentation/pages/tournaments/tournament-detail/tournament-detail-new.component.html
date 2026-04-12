@@ -379,10 +379,78 @@
                         </div>
                       }
                       
+                      <!-- FR15: Doubles Partner Search -->
+                      @if (isDoublesTournament()) {
+                        <div class="doubles-partner-field">
+                          <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151;">
+                            🤝 Doubles Partner <span style="color: red;">*</span>
+                          </label>
+                          <div style="position: relative;">
+                            <input
+                              type="text"
+                              [ngModel]="partnerSearchQuery()"
+                              (ngModelChange)="partnerSearchQuery.set($event)"
+                              placeholder="Search by name or email..."
+                              autocomplete="off"
+                              style="width: 100%; padding: 0.625rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem;"
+                            />
+                            
+                            <!-- Partner Search Results Dropdown -->
+                            @if (partnerSearchQuery() && filteredPartners().length > 0) {
+                              <div style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.25rem; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10;">
+                                @for (user of filteredPartners(); track user.id) {
+                                  <div
+                                    (click)="selectPartner(user)"
+                                    style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid #f3f4f6; transition: background-color 0.2s;"
+                                    [style.background-color]="selectedPartner()?.id === user.id ? '#eff6ff' : 'white'"
+                                    (mouseenter)="$any($event.target).style.backgroundColor='#f9fafb'"
+                                    (mouseleave)="$any($event.target).style.backgroundColor=selectedPartner()?.id===user.id?'#eff6ff':'white'"
+                                  >
+                                    <div style="font-weight: 500; color: #1f2937;">{{ user.username || (user.firstName + ' ' + user.lastName) }}</div>
+                                    <div style="font-size: 0.875rem; color: #6b7280;">{{ user.email }}</div>
+                                  </div>
+                                }
+                              </div>
+                            }
+                            
+                            <!-- No Results Message -->
+                            @if (partnerSearchQuery() && partnerSearchQuery().length >= 2 && filteredPartners().length === 0) {
+                              <div style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.25rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; padding: 1rem; text-align: center;">
+                                <div style="color: #6b7280; font-size: 0.875rem;">
+                                  <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+                                  <div style="font-weight: 500; margin-bottom: 0.25rem;">No partners found</div>
+                                  <div style="font-size: 0.75rem; line-height: 1.4;">
+                                    Only <strong>active PLAYER role</strong> users appear here.<br/>
+                                    Already registered players are excluded from search.<br/>
+                                    <span style="color: #059669;">✓ Withdrawn players can be selected again.</span>
+                                  </div>
+                                </div>
+                              </div>
+                            }
+                            
+                            <!-- Selected Partner Display -->
+                            @if (selectedPartner()) {
+                              <div style="margin-top: 0.5rem; padding: 0.5rem; background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #1e40af; font-weight: 500;">✓ {{ selectedPartner()!.username || (selectedPartner()!.firstName + ' ' + selectedPartner()!.lastName) }}</span>
+                                <button
+                                  type="button"
+                                  (click)="clearPartnerSelection()"
+                                  style="background: none; border: none; color: #6b7280; cursor: pointer; padding: 0.25rem;"
+                                  title="Clear selection"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            }
+                          </div>
+                          <small style="display: block; margin-top: 0.25rem; color: #6b7280; font-size: 0.8rem;">Search and select your doubles partner from registered users</small>
+                        </div>
+                      }
+
                       <button 
                         class="register-btn"
                         (click)="registerForTournament()"
-                        [disabled]="!selectedCategoryId() || !isProfileComplete()"
+                        [disabled]="!selectedCategoryId() || !isProfileComplete() || (isDoublesTournament() && !selectedPartner())"
                       >
                         <span class="btn-icon">
                           @if (!isProfileComplete()) {
@@ -525,6 +593,14 @@
                             <div style="display: flex; flex-direction: column;">
                               <strong>{{ player.user.username || player.user.firstName + ' ' + player.user.lastName || player.user.email }}</strong>
                               <span style="font-size: 0.875rem; color: #666;">{{ player.user.email }}</span>
+                              @if (player.registration.partner) {
+                                <span style="font-size: 0.85rem; color: #1976d2; margin-top: 2px;">
+                                  🤝 / <strong>{{ player.registration.partner.username || player.registration.partner.firstName + ' ' + player.registration.partner.lastName }}</strong>
+                                  <span style="color: #888; font-size: 0.8rem;">({{ player.registration.partner.email }})</span>
+                                </span>
+                              } @else if (player.registration.partnerId) {
+                                <span style="font-size: 0.8rem; color: #1976d2;">🤝 Partner ID: {{ player.registration.partnerId }}</span>
+                              }
                             </div>
                           </td>
                           <td style="padding: 0.75rem;">

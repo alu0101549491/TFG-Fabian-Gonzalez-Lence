@@ -15,6 +15,7 @@ import {RegistrationStatus} from '../enumerations/registration-status';
 import {AcceptanceType} from '../enumerations/acceptance-type';
 import {Tournament} from './tournament';
 import {Category} from './category';
+import {User} from './user';
 
 /**
  * Properties for creating a Registration entity.
@@ -36,6 +37,12 @@ export interface RegistrationProps {
   ranking?: number;
   /** Seed number assigned (null if unseeded). */
   seedNumber?: number | null;
+  /** FR13: Timestamp of formal withdrawal (null if not withdrawn). */
+  withdrawalDate?: Date | null;
+  /** FR15: ID of the doubles partner user (null for singles). */
+  partnerId?: string | null;
+  /** FR15: Resolved partner user object (null for singles or unset). */
+  partner?: User | null;
   /** Registration date. */
   registeredAt?: Date;
   /** Date the status was last updated. */
@@ -63,6 +70,12 @@ export class Registration {
   public readonly acceptanceType: AcceptanceType;
   public readonly ranking: number;
   public readonly seedNumber: number | null;
+  /** FR13: Timestamp of formal withdrawal (null if not withdrawn). */
+  public readonly withdrawalDate: Date | null;
+  /** FR15: ID of the doubles partner user (null for singles). */
+  public readonly partnerId: string | null;
+  /** FR15: Resolved partner user object (null for singles or unset). */
+  public readonly partner: User | null;
   public readonly registeredAt: Date;
   public readonly updatedAt: Date;
   public readonly tournament?: Tournament;
@@ -77,6 +90,9 @@ export class Registration {
     this.acceptanceType = props.acceptanceType ?? AcceptanceType.DIRECT_ACCEPTANCE;
     this.ranking = props.ranking ?? 0;
     this.seedNumber = props.seedNumber ?? null;
+    this.withdrawalDate = props.withdrawalDate ?? null;
+    this.partnerId = props.partnerId ?? null;
+    this.partner = props.partner ?? null;
     this.registeredAt = props.registeredAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
     this.tournament = props.tournament;

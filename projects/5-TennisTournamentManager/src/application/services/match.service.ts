@@ -227,8 +227,8 @@ export class MatchService implements IMatchService {
     // Validate business rule
     match.recordResult({winnerId: data.winnerId});
     
-    // Persist scores to backend (one score record per set)
-    await this.scoreRepository.saveMatchScores(data.matchId, data.sets);
+    // Persist scores to backend (all scores in single request with winnerId)
+    await this.scoreRepository.saveMatchScores(data.matchId, data.winnerId, data.sets);
     
     // Update match with result
     const updatedMatch = this.preserveBackendFields(

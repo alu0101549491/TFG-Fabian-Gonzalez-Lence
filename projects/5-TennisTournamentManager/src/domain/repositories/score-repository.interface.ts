@@ -62,8 +62,9 @@ export interface IScoreRepository {
   /**
    * Saves multiple scores for a match (one per set).
    * @param matchId - The match identifier
+   * @param winnerId - The winner participant ID
    * @param setScores - Array of set scores to save
    * @returns Promise resolving to the saved score records
    */
-  saveMatchScores(matchId: string, setScores: SetScore[]): Promise<Score[]>;
+  saveMatchScores(matchId: string, winnerId: string, setScores: SetScore[]): Promise<Score[]>;
 }

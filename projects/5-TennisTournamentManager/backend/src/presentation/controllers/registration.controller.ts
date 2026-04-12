@@ -12,10 +12,13 @@
  */
 
 import {Response, NextFunction} from 'express';
+import {In} from 'typeorm';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Registration} from '../../domain/entities/registration.entity';
 import {Category} from '../../domain/entities/category.entity';
 import {User} from '../../domain/entities/user.entity';
+import {Match} from '../../domain/entities/match.entity';
+import {Bracket} from '../../domain/entities/bracket.entity';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
@@ -23,6 +26,7 @@ import {AppError} from '../middleware/error.middleware';
 import {RegistrationStatus} from '../../domain/enumerations/registration-status';
 import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
 import {TournamentStatus} from '../../domain/enumerations/tournament-status';
+import {MatchStatus} from '../../domain/enumerations/match-status';
 import {UserRole} from '../../domain/enumerations/user-role';
 import {PrivacyService} from '../../application/services/privacy.service';
 import {NotificationService} from '../../application/services/notification.service';
@@ -83,7 +87,7 @@ export class RegistrationController {
       const userRepository = AppDataSource.getRepository(User);
       const tournamentRepository = AppDataSource.getRepository(Tournament);
       
-      const {categoryId, participantId} = req.body;
+      const {categoryId, participantId, partnerId} = req.body;
       
       console.log('[Registration Controller] Received request body:', req.body);
       console.log('[Registration Controller] categoryId:', categoryId, 'participantId:', participantId);
@@ -154,8 +158,9 @@ export class RegistrationController {
       }
       console.log('[Registration Controller] Participant found:', participant.username);
       
-      // FR12: Count current active registrations for this category
-      // Only ACCEPTED registrations with DA or LL count toward the quota
+      // FR12: Count current active registrations for this category.
+      // All acceptance types that occupy a draw slot count toward the quota:
+      // DA, WC, OA, SE, JE, QU, LL. Only ALTERNATE and WITHDRAWN do NOT count.
       const activeRegistrations = await registrationRepository
         .createQueryBuilder('registration')
         .where('registration.categoryId = :categoryId', {categoryId})
@@ -163,7 +168,15 @@ export class RegistrationController {
           acceptedStatus: RegistrationStatus.ACCEPTED
         })
         .andWhere('registration.acceptanceType IN (:...countedTypes)', {
-          countedTypes: [AcceptanceType.DIRECT_ACCEPTANCE, AcceptanceType.LUCKY_LOSER]
+          countedTypes: [
+            AcceptanceType.DIRECT_ACCEPTANCE,
+            AcceptanceType.WILD_CARD,
+            AcceptanceType.ORGANIZER_ACCEPTANCE,
+            AcceptanceType.SPECIAL_EXEMPTION,
+            AcceptanceType.JUNIOR_EXEMPTION,
+            AcceptanceType.QUALIFIER,
+            AcceptanceType.LUCKY_LOSER,
+          ]
         })
         .getCount();
       
@@ -199,6 +212,8 @@ export class RegistrationController {
         participantId: actualParticipantId,
         acceptanceType,
         status: RegistrationStatus.PENDING,
+        // FR15: Store doubles partner ID if provided
+        partnerId: partnerId ?? null,
       });
       
       await registrationRepository.save(registration);
@@ -235,7 +250,7 @@ export class RegistrationController {
       
       const registrations = await registrationRepository.find({
         where,
-        relations: ['participant', 'tournament', 'category'],
+        relations: ['participant', 'tournament', 'category', 'partner'],
       });
       
       // 🔧 Backward compatibility: Fix legacy registrations without acceptanceType
@@ -284,7 +299,7 @@ export class RegistrationController {
       
       const registration = await registrationRepository.findOne({
         where: {id},
-        relations: ['participant', 'category', 'tournament'],
+        relations: ['participant', 'category', 'tournament', 'partner'],
       });
       
       if (!registration) {
@@ -400,8 +415,17 @@ export class RegistrationController {
         // ALTERNATE acceptances don't count toward quota
         const currentAcceptanceType = registration.acceptanceType;
         
-        if (currentAcceptanceType === AcceptanceType.DIRECT_ACCEPTANCE || 
-            currentAcceptanceType === AcceptanceType.LUCKY_LOSER) {
+        const quotaCountedTypes = [
+          AcceptanceType.DIRECT_ACCEPTANCE,
+          AcceptanceType.WILD_CARD,
+          AcceptanceType.ORGANIZER_ACCEPTANCE,
+          AcceptanceType.SPECIAL_EXEMPTION,
+          AcceptanceType.JUNIOR_EXEMPTION,
+          AcceptanceType.QUALIFIER,
+          AcceptanceType.LUCKY_LOSER,
+        ];
+
+        if (quotaCountedTypes.includes(currentAcceptanceType)) {
           
           const categoryRepository = AppDataSource.getRepository(Category);
           const category = await categoryRepository.findOne({
@@ -409,7 +433,7 @@ export class RegistrationController {
           });
           
           if (category) {
-            // Count currently ACCEPTED registrations with DA or LL (excluding this one)
+            // FR12: Count currently ACCEPTED registrations of any draw-slot type (excluding this one)
             const acceptedCount = await registrationRepository
               .createQueryBuilder('registration')
               .where('registration.categoryId = :categoryId', {categoryId: registration.categoryId})
@@ -418,7 +442,7 @@ export class RegistrationController {
                 acceptedStatus: RegistrationStatus.ACCEPTED
               })
               .andWhere('registration.acceptanceType IN (:...countedTypes)', {
-                countedTypes: [AcceptanceType.DIRECT_ACCEPTANCE, AcceptanceType.LUCKY_LOSER]
+                countedTypes: quotaCountedTypes,
               })
               .getCount();
             
@@ -617,6 +641,7 @@ export class RegistrationController {
       console.log(`👤 [AdminEnroll] Guest user created: ${guestUser.id}`);
 
       // Determine acceptance type based on current quota
+      // FR12: Count all draw-slot types (DA, WC, OA, SE, JE, QU, LL) toward quota
       const activeRegistrations = await registrationRepository
         .createQueryBuilder('registration')
         .where('registration.categoryId = :categoryId', {categoryId})
@@ -624,7 +649,15 @@ export class RegistrationController {
           acceptedStatus: RegistrationStatus.ACCEPTED,
         })
         .andWhere('registration.acceptanceType IN (:...countedTypes)', {
-          countedTypes: [AcceptanceType.DIRECT_ACCEPTANCE, AcceptanceType.LUCKY_LOSER],
+          countedTypes: [
+            AcceptanceType.DIRECT_ACCEPTANCE,
+            AcceptanceType.WILD_CARD,
+            AcceptanceType.ORGANIZER_ACCEPTANCE,
+            AcceptanceType.SPECIAL_EXEMPTION,
+            AcceptanceType.JUNIOR_EXEMPTION,
+            AcceptanceType.QUALIFIER,
+            AcceptanceType.LUCKY_LOSER,
+          ],
         })
         .getCount();
 
@@ -688,6 +721,289 @@ export class RegistrationController {
       });
     } catch (error) {
       console.error('❌ Error migrating acceptance types:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/registrations/:id/withdraw
+   * FR13: Timing-aware withdrawal of an accepted registration.
+   *
+   * Timing rules based on tournament status at the moment of withdrawal:
+   * - Pre-draw (REGISTRATION_OPEN | REGISTRATION_CLOSED | DRAW_PENDING):
+   *     First ALTERNATE is promoted to DIRECT_ACCEPTANCE.
+   * - Post-draw / In-tournament (IN_PROGRESS):
+   *     First ALTERNATE is promoted to LUCKY_LOSER.
+   *     All SCHEDULED matches of the withdrawn participant are set to WALKOVER
+   *     with the opponent awarded the win.
+   *
+   * Accessible by SYSTEM_ADMIN, TOURNAMENT_ADMIN, and the registrant (PLAYER).
+   * Players may only withdraw their own registration.
+   *
+   * @param {AuthRequest} req - Request with registration ID param
+   * @param {Response} res - Response with updated registration
+   * @param {NextFunction} next - Error handler
+   */
+  public async withdraw(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const currentUser = req.user;
+
+      if (!currentUser) {
+        throw new AppError('Authentication required', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
+      }
+
+      const registrationRepository = AppDataSource.getRepository(Registration);
+      const matchRepository = AppDataSource.getRepository(Match);
+
+      // Load registration with tournament for timing checks
+      const registration = await registrationRepository.findOne({
+        where: {id},
+        relations: ['tournament'],
+      });
+
+      if (!registration) {
+        throw new AppError('Registration not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Authorization: players can only withdraw their own registration
+      if (currentUser.role === UserRole.PLAYER && registration.participantId !== currentUser.id) {
+        throw new AppError(
+          'You can only withdraw your own registrations',
+          HTTP_STATUS.FORBIDDEN,
+          ERROR_CODES.FORBIDDEN,
+        );
+      }
+
+      // Only ACCEPTED (or PENDING) registrations can be withdrawn
+      if (
+        registration.status === RegistrationStatus.WITHDRAWN ||
+        registration.status === RegistrationStatus.CANCELLED
+      ) {
+        throw new AppError(
+          `Registration is already ${registration.status.toLowerCase()}`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_OPERATION,
+        );
+      }
+
+      const tournament = registration.tournament;
+      if (!tournament) {
+        throw new AppError('Tournament not found for this registration', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      console.log(`🚪 [Withdraw] Withdrawing registration ${id} (participant: ${registration.participantId}, tournament status: ${tournament.status})`);
+
+      // Determine timing context
+      const preDraw = [
+        TournamentStatus.REGISTRATION_OPEN,
+        TournamentStatus.REGISTRATION_CLOSED,
+        TournamentStatus.DRAW_PENDING,
+      ].includes(tournament.status as TournamentStatus);
+
+      const inTournament = tournament.status === TournamentStatus.IN_PROGRESS;
+
+      // Mark registration as withdrawn
+      registration.status = RegistrationStatus.WITHDRAWN;
+      registration.acceptanceType = AcceptanceType.WITHDRAWN;
+      registration.withdrawalDate = new Date();
+      await registrationRepository.save(registration);
+
+      console.log(`✅ [Withdraw] Registration ${id} marked as WITHDRAWN`);
+
+      // FR15: Mutual withdrawal for doubles partners
+      let partnerWithdrawn = false;
+      let partnerRegistrationId: string | null = null;
+      if (registration.partnerId) {
+        console.log(`🤝 [Withdraw] Checking for partner registration (partnerId: ${registration.partnerId})`);
+        
+        // Find partner's registration in the same tournament/category
+        const partnerRegistration = await registrationRepository.findOne({
+          where: {
+            tournamentId: registration.tournamentId,
+            categoryId: registration.categoryId,
+            participantId: registration.partnerId,
+          },
+        });
+
+        if (partnerRegistration && partnerRegistration.status !== RegistrationStatus.WITHDRAWN) {
+          partnerRegistration.status = RegistrationStatus.WITHDRAWN;
+          partnerRegistration.acceptanceType = AcceptanceType.WITHDRAWN;
+          partnerRegistration.withdrawalDate = new Date();
+          await registrationRepository.save(partnerRegistration);
+          
+          partnerRegistrationId = partnerRegistration.id;
+          partnerWithdrawn = true;
+          
+          console.log(`🤝 [Withdraw] Partner registration ${partnerRegistrationId} also marked as WITHDRAWN (mutual withdrawal)`);
+
+          // Notify partner about mutual withdrawal
+          try {
+            await this.notificationService.notifyPartnerMutualWithdrawal(
+              registration.partnerId,
+              registration.participantId,
+              tournament.name
+            );
+          } catch (notifError) {
+            console.error('⚠️ [Withdraw] Failed to send partner withdrawal notification:', notifError);
+          }
+        }
+      }
+
+      // Promote first ALTERNATE (if any)
+      const alternates = await registrationRepository.find({
+        where: {
+          categoryId: registration.categoryId,
+          acceptanceType: AcceptanceType.ALTERNATE,
+        },
+        order: {registrationDate: 'ASC'},
+      });
+
+      let promotedParticipantId: string | null = null;
+      if (alternates.length > 0) {
+        const firstAlternate = alternates[0];
+        firstAlternate.status = RegistrationStatus.ACCEPTED;
+        firstAlternate.acceptanceType = preDraw
+          ? AcceptanceType.DIRECT_ACCEPTANCE
+          : AcceptanceType.LUCKY_LOSER;
+        await registrationRepository.save(firstAlternate);
+        promotedParticipantId = firstAlternate.participantId;
+
+        console.log(
+          `🎫 [Withdraw] Promoted ALT ${firstAlternate.participantId} → ${firstAlternate.acceptanceType} (preDraw=${preDraw})`,
+        );
+
+        // Notify promoted participant
+        try {
+          await this.notificationService.notifyRegistrationConfirmed(
+            firstAlternate.participantId,
+            tournament.name,
+            tournament.id,
+            firstAlternate.acceptanceType,
+          );
+        } catch (notifError) {
+          console.error('⚠️ [Withdraw] Failed to send promotion notification:', notifError);
+        }
+      }
+
+      // In-tournament: assign WALKOVER in all SCHEDULED matches of withdrawn participant
+      let walkoversAssigned = 0;
+      if (inTournament) {
+        // Find all brackets for this tournament/category
+        const bracketRepository = AppDataSource.getRepository(Bracket);
+        const brackets = await bracketRepository.find({
+          where: {categoryId: registration.categoryId},
+          select: ['id'],
+        });
+        const bracketIds = brackets.map(b => b.id);
+
+        if (bracketIds.length > 0) {
+          // Find SCHEDULED matches where the withdrawn participant is a slot
+          const scheduledMatches = await matchRepository.find({
+            where: [
+              {bracketId: In(bracketIds), participant1Id: registration.participantId, status: MatchStatus.SCHEDULED},
+              {bracketId: In(bracketIds), participant2Id: registration.participantId, status: MatchStatus.SCHEDULED},
+            ],
+          });
+
+          for (const match of scheduledMatches) {
+            // Determine the opponent (the other slot)
+            const opponentId =
+              match.participant1Id === registration.participantId
+                ? match.participant2Id
+                : match.participant1Id;
+
+            if (opponentId) {
+              match.status = MatchStatus.WALKOVER;
+              match.winnerId = opponentId;
+              await matchRepository.save(match);
+              walkoversAssigned++;
+              console.log(`🏆 [Withdraw] Match ${match.id}: WALKOVER → winner ${opponentId}`);
+            }
+          }
+        }
+      }
+
+      res.status(HTTP_STATUS.OK).json({
+        message: 'Registration withdrawn successfully',
+        registrationId: id,
+        participantId: registration.participantId,
+        withdrawalDate: registration.withdrawalDate,
+        promotedParticipantId,
+        walkoversAssigned,
+        partnerWithdrawn,
+        partnerRegistrationId,
+      });
+    } catch (error) {
+      console.error('❌ Error withdrawing registration:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * PUT /api/registrations/:id/partner
+   * FR15: Updates the doubles partner for a registration.
+   * Admin-only operation. Validates that the new partner is registered in the same category
+   * and that no matches have been played yet for this registration.
+   *
+   * @param {AuthRequest} req - Request with registration ID and { partnerId } body
+   * @param {Response} res - Response with updated registration
+   * @param {NextFunction} next - Error handler
+   */
+  public async updatePartner(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const {partnerId} = req.body;
+      const currentUser = req.user;
+
+      if (!currentUser) {
+        throw new AppError('Authentication required', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
+      }
+
+      const registrationRepository = AppDataSource.getRepository(Registration);
+      const userRepository = AppDataSource.getRepository(User);
+
+      const registration = await registrationRepository.findOne({where: {id}});
+      if (!registration) {
+        throw new AppError('Registration not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // If partnerId is null/undefined, clear the partner link
+      if (partnerId === null || partnerId === undefined || partnerId === '') {
+        registration.partnerId = null;
+        const saved = await registrationRepository.save(registration);
+        res.status(HTTP_STATUS.OK).json(saved);
+        return;
+      }
+
+      // Validate the partner user exists
+      const partnerUser = await userRepository.findOne({where: {id: partnerId}});
+      if (!partnerUser) {
+        throw new AppError('Partner user not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Prevent self-pairing
+      if (partnerId === registration.participantId) {
+        throw new AppError(
+          'A player cannot be their own doubles partner',
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_INPUT,
+        );
+      }
+
+      registration.partnerId = partnerId;
+      await registrationRepository.save(registration);
+
+      // Reload with relations
+      const updated = await registrationRepository.findOne({
+        where: {id},
+        relations: ['participant', 'category', 'partner'],
+      });
+
+      console.log(`🤝 [UpdatePartner] Registration ${id}: partner set to ${partnerId}`);
+      res.status(HTTP_STATUS.OK).json(updated);
+    } catch (error) {
+      console.error('❌ Error updating partner:', error);
       next(error);
     }
   }

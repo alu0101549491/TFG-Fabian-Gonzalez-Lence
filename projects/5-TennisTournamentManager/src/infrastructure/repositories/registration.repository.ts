@@ -161,4 +161,27 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
     });
     return response;
   }
+
+  /**
+   * Withdraws a registration via the timing-aware withdraw endpoint (FR13).
+   * Backend handles ALT promotion and WALKOVER assignment depending on tournament phase.
+   *
+   * @param id - The registration identifier to withdraw
+   * @returns Promise resolving when withdrawal is complete
+   */
+  public async withdraw(id: string): Promise<void> {
+    await this.httpClient.post(`/registrations/${id}/withdraw`, {});
+  }
+
+  /**
+   * Updates the doubles partner for a registration (FR15).
+   *
+   * @param id - The registration identifier
+   * @param partnerId - ID of the partner user, or null to clear the partner
+   * @returns Promise resolving to the updated registration
+   */
+  public async updatePartner(id: string, partnerId: string | null): Promise<Registration> {
+    const response = await this.httpClient.put<Registration>(`/registrations/${id}/partner`, {partnerId});
+    return response;
+  }
 }

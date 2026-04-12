@@ -92,13 +92,17 @@ export class UserManagementService {
    *
    * @param searchQuery - Optional search query to filter users
    * @param bypassCache - If true, forces fresh data fetch (bypasses HTTP cache)
+   * @param tournamentId - Optional tournament context for privacy filtering
    * @returns Promise resolving to array of eligible participant summaries
    */
-  public async getEligibleParticipants(searchQuery?: string, bypassCache = false): Promise<UserSummaryDto[]> {
+  public async getEligibleParticipants(searchQuery?: string, bypassCache = false, tournamentId?: string): Promise<UserSummaryDto[]> {
     let params = new HttpParams();
 
     if (searchQuery) {
       params = params.set('searchQuery', searchQuery);
+    }
+    if (tournamentId) {
+      params = params.set('tournamentId', tournamentId);
     }
 
     // Add cache-buster timestamp if bypassing cache

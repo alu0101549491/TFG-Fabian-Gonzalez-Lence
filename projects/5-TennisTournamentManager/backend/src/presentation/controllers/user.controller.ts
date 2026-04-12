@@ -900,4 +900,157 @@ export class UserController {
       next(error);
     }
   }
+
+  /**
+   * GET /api/users/:id/export
+   * Exports all user data in JSON format for GDPR compliance (NFR14).
+   * 
+   * Exports:
+   * - Profile information
+   * - Tournament registrations
+   * - Match history
+   * - Notifications
+   * - Privacy settings
+   * - Notification preferences
+   * - Audit logs (actions performed by user)
+   * 
+   * @remarks
+   * User can only export their own data, unless they are a system admin.
+   * Returns JSON file for download.
+   */
+  public async exportUserData(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      
+      // Verify user owns this data or is admin
+      if (req.user?.id !== id && req.user?.role !== UserRole.SYSTEM_ADMIN) {
+        throw new AppError('Cannot export other users data', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+      }
+      
+      const userRepository = AppDataSource.getRepository(User);
+      const matchRepository = AppDataSource.getRepository(Match);
+      const registrationRepository = AppDataSource.getRepository(Registration);
+      
+      const user = await userRepository.findOne({where: {id}});
+      
+      if (!user) {
+        throw new AppError('User not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Collect all user data
+      const {passwordHash, ...userProfile} = user;
+      
+      // Get registrations
+      const registrations = await registrationRepository.find({
+        where: {participantId: id},
+        relations: ['tournament', 'category'],
+      });
+      
+      // Get matches
+      const matches = await matchRepository.find({
+        where: [
+          {participant1Id: id},
+          {participant2Id: id},
+        ],
+        relations: ['scores'],
+      });
+      
+      // Get notifications (if Notification entity exists)
+      let notifications: any[] = [];
+      try {
+        const Notification = AppDataSource.getRepository('Notification');
+        notifications = await Notification.find({
+          where: {userId: id},
+          order: {createdAt: 'DESC'},
+        });
+      } catch {
+        // Notification entity might not exist
+      }
+      
+      // Get notification preferences (if exists)
+      let notificationPreferences = null;
+      try {
+        const NotificationPreferences = AppDataSource.getRepository('NotificationPreferences');
+        notificationPreferences = await NotificationPreferences.findOne({
+          where: {userId: id},
+        });
+      } catch {
+        // NotificationPreferences entity might not exist
+      }
+      
+      // Get audit logs (if AuditLog entity exists)
+      let auditLogs: any[] = [];
+      try {
+        const AuditLog = AppDataSource.getRepository('AuditLog');
+        auditLogs = await AuditLog.find({
+          where: {userId: id},
+          order: {timestamp: 'DESC'},
+          take: 1000, // Limit to last 1000 actions
+        });
+      } catch {
+        // AuditLog entity might not exist
+      }
+      
+      // Compile export data
+      const exportData = {
+        exportDate: new Date().toISOString(),
+        exportVersion: '1.0',
+        user: userProfile,
+        registrations: registrations.map(reg => ({
+          id: reg.id,
+          tournamentId: reg.tournamentId,
+          tournamentName: reg.tournament?.name,
+          categoryId: reg.categoryId,
+          categoryName: reg.category?.name,
+          status: reg.status,
+          entryType: reg.entryType,
+          seedNumber: reg.seedNumber,
+          registrationDate: reg.createdAt,
+        })),
+        matches: matches.map(match => ({
+          id: match.id,
+          bracketId: match.bracketId,
+          opponent1Id: match.participant1Id,
+          opponent2Id: match.participant2Id,
+          winnerId: match.winnerId,
+          status: match.status,
+          score: match.score,
+          scores: match.scores,
+          scheduledTime: match.scheduledTime,
+          completedAt: match.completedAt,
+        })),
+        notifications: notifications.map((notif: any) => ({
+          id: notif.id,
+          type: notif.type,
+          title: notif.title,
+          message: notif.message,
+          isRead: notif.isRead,
+          createdAt: notif.createdAt,
+        })),
+        notificationPreferences,
+        privacySettings: user.privacySettings,
+        auditLogs: auditLogs.map((log: any) => ({
+          action: log.action,
+          resourceType: log.resourceType,
+          resourceId: log.resourceId,
+          timestamp: log.timestamp,
+          metadata: log.metadata,
+        })),
+        statistics: {
+          totalRegistrations: registrations.length,
+          totalMatches: matches.length,
+          totalNotifications: notifications.length,
+          totalAuditActions: auditLogs.length,
+        },
+      };
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="user-data-${id}-${Date.now()}.json"`);
+      
+      res.status(HTTP_STATUS.OK).json(exportData);
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -27,6 +27,7 @@ import {MatchGeneratorService} from '../../application/services/match-generator.
 import {SeedingService} from '../../application/services/seeding.service';
 import {RegistrationStatus} from '../../domain/enumerations/registration-status';
 import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
+import {MatchStatus} from '../../domain/enumerations/match-status';
 
 /**
  * Bracket controller.
@@ -189,56 +190,61 @@ export class BracketController {
   /**
    * POST /api/brackets/:id/regenerate
    * Regenerates bracket matches/phases with updated registration seeds.
-   * Deletes all existing matches, scores, and phases, then creates new ones.
+   * Can migrate completed results to the regenerated draw when keepResults=true.
    */
   public async regenerate(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
-      
-      console.log(`🔄 Regenerating bracket ${id}...`);
-      
+      const keepResults = Boolean(req.body?.keepResults);
+      console.log(`�🔄 Regenerating bracket ${id} (keepResults=${keepResults})...`);
+
       const bracketRepository = AppDataSource.getRepository(Bracket);
       const matchRepository = AppDataSource.getRepository(Match);
       const phaseRepository = AppDataSource.getRepository(Phase);
       const registrationRepository = AppDataSource.getRepository(Registration);
       const scoreRepository = AppDataSource.getRepository(Score);
-      
+
       // Fetch bracket
       const bracket = await bracketRepository.findOne({where: {id}});
       if (!bracket) {
         throw new AppError('Bracket not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
-      
-      // Validate: cannot regenerate published bracket
-      if (bracket.isPublished) {
+
+      // Published brackets can only be regenerated when explicitly preserving results.
+      if (bracket.isPublished && !keepResults) {
         throw new AppError(
-          'Cannot regenerate a published bracket. Unpublish it first to make changes.',
+          'Cannot regenerate a published bracket without preserving results. Use keepResults=true.',
           HTTP_STATUS.BAD_REQUEST,
           ERROR_CODES.INVALID_OPERATION
         );
       }
-      
-      // Check if there are completed matches (for logging/warning)
+
       const existingMatches = await matchRepository.find({where: {bracketId: id}});
       const matchIds = existingMatches.map(m => m.id);
-      let scoreCount = 0;
-      
+
+      let existingScores: Score[] = [];
       if (matchIds.length > 0) {
-        scoreCount = await scoreRepository
+        existingScores = await scoreRepository
           .createQueryBuilder('score')
           .where('score.matchId IN (:...matchIds)', {matchIds})
-          .getCount();
+          .orderBy('score.matchId', 'ASC')
+          .addOrderBy('score.setNumber', 'ASC')
+          .getMany();
       }
-      
-      if (scoreCount > 0) {
-        console.warn(`⚠️ Regenerating bracket ${id} with ${scoreCount} completed match(es). All scores will be deleted.`);
+
+      const completedMatches = existingMatches.filter(
+        match => match.winnerId && this.isTerminalMatchStatus(match.status)
+      );
+
+      if (completedMatches.length > 0 && !keepResults) {
+        console.warn(
+          `⚠️ Regenerating bracket ${id} with ${completedMatches.length} completed match(es). Results will be deleted.`
+        );
       }
-      
-      // Delete existing scores, matches, and phases (always regenerate from scratch)
-      console.log(`🗑️ Deleting existing scores, matches, and phases...`);
-      
-      // Step 1: Delete scores first (foreign key references matches)
-      // Note: existingMatches and matchIds already fetched above for validation
+
+      // Delete existing scores, matches, and phases (regenerate structure from scratch)
+      console.log('🗑️ Deleting existing scores, matches, and phases...');
+
       if (matchIds.length > 0) {
         const scoreDeleteResult = await scoreRepository
           .createQueryBuilder()
@@ -247,16 +253,14 @@ export class BracketController {
           .execute();
         console.log(`  Deleted ${scoreDeleteResult.affected || 0} scores`);
       }
-      
-      // Step 2: Delete matches
+
       const matchDeleteResult = await matchRepository.delete({bracketId: id});
       console.log(`  Deleted ${matchDeleteResult.affected || 0} matches`);
-      
-      // Step 3: Delete phases
+
       const phaseDeleteResult = await phaseRepository.delete({bracketId: id});
       console.log(`  Deleted ${phaseDeleteResult.affected || 0} phases`);
-      
-      // Fetch UPDATED accepted registrations (with new seed numbers!)
+
+      // Fetch UPDATED accepted registrations (with latest seed numbers)
       const registrations = await registrationRepository.find({
         where: {
           categoryId: bracket.categoryId,
@@ -265,9 +269,9 @@ export class BracketController {
         },
         relations: ['participant'],
       });
-      
+
       console.log(`📊 Found ${registrations.length} ACCEPTED registrations for category ${bracket.categoryId}`);
-      
+
       if (registrations.length < 2) {
         throw new AppError(
           'At least 2 accepted participants are required to regenerate bracket',
@@ -275,23 +279,24 @@ export class BracketController {
           ERROR_CODES.INVALID_OPERATION
         );
       }
-      
-      // Calculate bracket size
+
       const participantCount = registrations.length;
       const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantCount)));
-      
-      // Apply UPDATED seeding (uses current seedNumber from registrations)
+
       const {participantIds, seededParticipants} = SeedingService.seedBracket(
         registrations,
         bracketSize,
       );
-      
-      console.log(`🎾 Regenerating bracket with updated seeds:`);
-      console.log(`🏆 Seeding:`, seededParticipants.map(p => 
-        `Seed #${p.seedNumber} - ${p.registration.participant?.firstName} ${p.registration.participant?.lastName}`
-      ));
-      
-      // Generate new matches with updated seeding
+
+      console.log('🎾 Regenerating bracket with updated seeds:');
+      console.log(
+        '🏆 Seeding:',
+        seededParticipants.map(
+          participant =>
+            `Seed #${participant.seedNumber} - ${participant.registration.participant?.firstName} ${participant.registration.participant?.lastName}`
+        )
+      );
+
       const {matches, phases} = this.matchGenerator.generateMatches(
         bracket.id,
         bracket.tournamentId,
@@ -299,18 +304,167 @@ export class BracketController {
         participantIds,
         bracket.totalRounds,
       );
-      
+
+      let migratedMatchCount = 0;
+      let migratedScoreCount = 0;
+      // Always start with no scores to persist — only re-populate when migrating results
+      let scoresToSave: Score[] = [];
+
+      if (keepResults && completedMatches.length > 0) {
+        const migration = this.migrateCompletedMatches(completedMatches, existingScores, matches);
+        migratedMatchCount = migration.migratedMatchCount;
+        migratedScoreCount = migration.migratedScores.length;
+
+        if (migration.skippedMatchCount > 0) {
+          console.warn(
+            `⚠️ Skipped ${migration.skippedMatchCount} completed match(es) during migration due to participant pairing changes.`
+          );
+        }
+
+        scoresToSave = migration.migratedScores;
+      }
+
       console.log(`💾 Saving ${phases.length} phases and ${matches.length} matches...`);
       await phaseRepository.save(phases);
-      await matchRepository.save(matches);
-      
-      console.log(`✅ Bracket ${id} regenerated successfully with ${matches.length} matches`);
-      
-      res.status(HTTP_STATUS.OK).json(bracket);
+      await matchRepository.save(matches); // Saves matches WITH migrated data (winnerId, status, score, etc.)
+
+      if (scoresToSave.length > 0) {
+        console.log(`💾 Saving ${scoresToSave.length} migrated score rows...`);
+        await scoreRepository.save(scoresToSave);
+      }
+
+      console.log(
+        `✅ Bracket ${id} regenerated successfully with ${matches.length} matches` +
+          (keepResults ? ` (migrated ${migratedMatchCount} matches, ${migratedScoreCount} score rows)` : '')
+      );
+
+      res.status(HTTP_STATUS.OK).json({
+        ...bracket,
+        migration: {
+          keepResults,
+          migratedMatches: migratedMatchCount,
+          migratedScores: migratedScoreCount,
+        },
+      });
     } catch (error) {
       console.error('❌ Error regenerating bracket:', error);
       next(error);
     }
+  }
+
+  /**
+   * Returns whether a match status is considered terminal for migration.
+   *
+   * @param status - Match status to evaluate
+   * @returns True when the match has an official outcome
+   */
+  private isTerminalMatchStatus(status: MatchStatus): boolean {
+    const terminalStatuses = new Set<MatchStatus>([
+      MatchStatus.COMPLETED,
+      MatchStatus.WALKOVER,
+      MatchStatus.DEFAULT,
+      MatchStatus.RETIRED,
+      MatchStatus.BYE,
+      MatchStatus.DEAD_RUBBER,
+    ]);
+
+    return terminalStatuses.has(status);
+  }
+
+  /**
+   * Migrates completed match outcomes from old matches to regenerated matches.
+   *
+   * Matches are only migrated when round/match number and participant pairing remain compatible.
+   * This avoids applying stale outcomes to newly seeded pairings.
+   *
+   * @param oldCompletedMatches - Completed matches from previous bracket structure
+   * @param oldScores - Score rows belonging to old matches
+   * @param regeneratedMatches - Newly generated matches to receive migrated data
+   * @returns Migration result details
+   */
+  private migrateCompletedMatches(
+    oldCompletedMatches: Match[],
+    oldScores: Score[],
+    regeneratedMatches: Match[]
+  ): {migratedMatchCount: number; skippedMatchCount: number; migratedScores: Score[]} {
+    const migratedScores: Score[] = [];
+    const newMatchByRoundAndNumber = new Map<string, Match>();
+    const scoresByMatchId = new Map<string, Score[]>();
+
+    for (const regeneratedMatch of regeneratedMatches) {
+      newMatchByRoundAndNumber.set(`${regeneratedMatch.round}-${regeneratedMatch.matchNumber}`, regeneratedMatch);
+    }
+
+    for (const score of oldScores) {
+      if (!scoresByMatchId.has(score.matchId)) {
+        scoresByMatchId.set(score.matchId, []);
+      }
+      scoresByMatchId.get(score.matchId)!.push(score);
+    }
+
+    let migratedMatchCount = 0;
+    let skippedMatchCount = 0;
+
+    for (const oldMatch of oldCompletedMatches) {
+      if (!oldMatch.winnerId) {
+        continue;
+      }
+
+      const targetMatch = newMatchByRoundAndNumber.get(`${oldMatch.round}-${oldMatch.matchNumber}`);
+      if (!targetMatch) {
+        skippedMatchCount += 1;
+        continue;
+      }
+
+      const oldParticipants = [oldMatch.participant1Id, oldMatch.participant2Id]
+        .filter((participantId): participantId is string => Boolean(participantId))
+        .sort();
+      const targetParticipants = [targetMatch.participant1Id, targetMatch.participant2Id]
+        .filter((participantId): participantId is string => Boolean(participantId))
+        .sort();
+
+      // Do not migrate if participant pairing changed due to reseeding or withdrawals.
+      if (
+        oldParticipants.length !== targetParticipants.length ||
+        oldParticipants.some((participantId, index) => participantId !== targetParticipants[index])
+      ) {
+        skippedMatchCount += 1;
+        continue;
+      }
+
+      if (!targetParticipants.includes(oldMatch.winnerId)) {
+        skippedMatchCount += 1;
+        continue;
+      }
+
+      targetMatch.winnerId = oldMatch.winnerId;
+      targetMatch.status = oldMatch.status;
+      targetMatch.score = oldMatch.score;
+      targetMatch.courtId = oldMatch.courtId;
+      targetMatch.courtName = oldMatch.courtName;
+      targetMatch.scheduledTime = oldMatch.scheduledTime;
+      targetMatch.startTime = oldMatch.startTime;
+      targetMatch.endTime = oldMatch.endTime;
+      targetMatch.suspensionReason = oldMatch.suspensionReason;
+      targetMatch.ballProvider = oldMatch.ballProvider;
+
+      const scoresForMatch = scoresByMatchId.get(oldMatch.id) || [];
+      for (const score of scoresForMatch) {
+        const migratedScore = new Score();
+        migratedScore.id = generateId('scr');
+        migratedScore.matchId = targetMatch.id;
+        migratedScore.setNumber = score.setNumber;
+        migratedScore.player1Games = score.player1Games;
+        migratedScore.player2Games = score.player2Games;
+        migratedScore.player1TiebreakPoints = score.player1TiebreakPoints;
+        migratedScore.player2TiebreakPoints = score.player2TiebreakPoints;
+        migratedScores.push(migratedScore);
+      }
+
+      migratedMatchCount += 1;
+    }
+
+    return {migratedMatchCount, skippedMatchCount, migratedScores};
   }
 
   /**

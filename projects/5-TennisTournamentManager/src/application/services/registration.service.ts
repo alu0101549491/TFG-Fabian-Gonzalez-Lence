@@ -103,11 +103,16 @@ export class RegistrationService implements IRegistrationService {
     }
     
     // Send registration request to backend
-    // Backend expects: { categoryId, participantId (optional) }
-    const requestPayload = {
+    // Backend expects: { categoryId, participantId (optional), partnerId (optional for doubles) }
+    const requestPayload: Record<string, unknown> = {
       categoryId: data.categoryId,
       participantId: participantId,
     };
+
+    // FR15: Include partnerId for doubles registrations when provided
+    if (data.partnerId) {
+      requestPayload['partnerId'] = data.partnerId;
+    }
     
     console.log('[Registration Service] Sending registration request:', requestPayload);
     
@@ -165,51 +170,33 @@ export class RegistrationService implements IRegistrationService {
   }
 
   /**
-   * Withdraws a registration.
+   * Withdraws a registration via the timing-aware withdraw endpoint (FR13).
+   * Backend handles ALT promotion and WALKOVER assignment depending on tournament phase.
    *
    * @param registrationId - ID of the registration to withdraw
-   * @param time - Withdrawal time
-   * @param userId - ID of the user performing the withdrawal
+   * @param _time - Unused; kept for interface compatibility
+   * @param _userId - Unused; backend enforces authorization via JWT
    */
-  public async withdrawRegistration(registrationId: string, time: string, userId: string): Promise<void> {
-    // Validate input
+  public async withdrawRegistration(registrationId: string, _time: string, _userId: string): Promise<void> {
     if (!registrationId || registrationId.trim().length === 0) {
       throw new Error('Registration ID is required');
     }
-    
-    if (!time || time.trim().length === 0) {
-      throw new Error('Withdrawal time is required');
-    }
-    
-    if (!userId || userId.trim().length === 0) {
-      throw new Error('User ID is required');
-    }
-    
-    // Check if registration exists
-    const registration = await this.registrationRepository.findById(registrationId);
-    if (!registration) {
-      throw new Error('Registration not found');
-    }
-    
-    // Check authorization
-    if (registration.participantId !== userId) {
-      throw new Error('User is not authorized to withdraw this registration');
-    }
-    
-    // Validate business rule
-    registration.withdraw(time);
-    
-    // Update registration status
-    const withdrawnRegistration = new Registration({
-      ...registration,
-      status: RegistrationStatus.WITHDRAWN,
-      updatedAt: new Date(),
-    });
-    
-    await this.registrationRepository.update(withdrawnRegistration);
-    
-    // Send notification
-    // await this.notificationService.sendNotification(...)
+
+    await this.registrationRepository.withdraw(registrationId);
+  }
+
+  /**
+   * Updates the doubles partner for a registration (FR15).
+   *
+   * @param registrationId - ID of the registration to update
+   * @param partnerId - ID of the partner user, or null to clear the partner
+   * @returns Updated registration DTO
+   */
+  public async updatePartner(registrationId: string, partnerId: string | null): Promise<RegistrationDto> {
+    if (!registrationId?.trim()) throw new Error('Registration ID is required');
+
+    const savedRegistration = await this.registrationRepository.updatePartner(registrationId, partnerId);
+    return this.mapRegistrationToDto(savedRegistration);
   }
 
   /**
@@ -370,6 +357,9 @@ export class RegistrationService implements IRegistrationService {
       status: registration.status,
       acceptanceType: registration.acceptanceType,
       seedNumber: registration.seedNumber,
+      withdrawalDate: registration.withdrawalDate,
+      partnerId: registration.partnerId,
+      partner: registration.partner ?? null,
       registeredAt: registration.registeredAt,
       tournament: registration.tournament,
       category: registration.category,

@@ -53,6 +53,17 @@ import {UserRole} from '@domain/enumerations/user-role';
           @if (isDropdownOpen) {
           <ul class="dropdown-menu">
             <li>
+              <a routerLink="/my-registrations" class="dropdown-item">
+                📋 My Registrations
+              </a>
+            </li>
+            <li>
+              <a routerLink="/my-invitations" class="dropdown-item">
+                ✉️ Partner Invitations
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
               <a routerLink="/profile" class="dropdown-item">
                 👤 My Profile
               </a>

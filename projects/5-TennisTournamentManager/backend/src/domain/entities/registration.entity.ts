@@ -52,6 +52,14 @@ export class Registration {
   @Column('int', {nullable: true})
   public seedNumber!: number | null;
 
+  /** FR13: Timestamp of when the participant formally withdrew. Null if not withdrawn. */
+  @Column('timestamp', {nullable: true})
+  public withdrawalDate!: Date | null;
+
+  /** FR15: ID of the doubles partner user. Null for singles registrations. */
+  @Column('varchar', {length: 50, nullable: true})
+  public partnerId!: string | null;
+
   @CreateDateColumn()
   public registrationDate!: Date;
 
@@ -70,4 +78,9 @@ export class Registration {
   @ManyToOne(() => Category, (category) => category.registrations)
   @JoinColumn({name: 'categoryId'})
   public category!: Category;
+
+  /** FR15: Doubles partner user (eager-loaded when partnerId is set). */
+  @ManyToOne(() => User, {nullable: true, eager: false})
+  @JoinColumn({name: 'partnerId'})
+  public partner!: User | null;
 }
