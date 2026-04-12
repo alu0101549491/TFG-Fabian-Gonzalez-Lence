@@ -23,9 +23,11 @@ import {AppError} from '../middleware/error.middleware';
 import {RegistrationStatus} from '../../domain/enumerations/registration-status';
 import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
 import {TournamentStatus} from '../../domain/enumerations/tournament-status';
+import {UserRole} from '../../domain/enumerations/user-role';
 import {PrivacyService} from '../../application/services/privacy.service';
 import {NotificationService} from '../../application/services/notification.service';
 import {Tournament} from '../../domain/entities/tournament.entity';
+import {randomUUID} from 'crypto';
 
 /**
  * Registration controller.
@@ -93,6 +95,8 @@ export class RegistrationController {
       }
       
       const actualParticipantId = participantId || req.user!.id;
+      const isAdminEnrollment =
+        req.user?.role === UserRole.SYSTEM_ADMIN || req.user?.role === UserRole.TOURNAMENT_ADMIN;
       console.log('[Registration Controller] actualParticipantId:', actualParticipantId);
       
       // Validate category exists
@@ -116,8 +120,8 @@ export class RegistrationController {
       }
       console.log('[Registration Controller] Tournament found:', tournament.name, 'Status:', tournament.status);
       
-      // Check tournament status
-      if (tournament.status !== TournamentStatus.REGISTRATION_OPEN) {
+      // Check tournament status (admins can manually enroll regardless of status)
+      if (!isAdminEnrollment && tournament.status !== TournamentStatus.REGISTRATION_OPEN) {
         console.error('[Registration Controller] Tournament not open. Current status:', tournament.status, 'Expected:', TournamentStatus.REGISTRATION_OPEN);
         throw new AppError(
           `Tournament registration is not currently open (status: ${tournament.status})`,
@@ -126,8 +130,8 @@ export class RegistrationController {
         );
       }
       
-      // Check registration deadline
-      if (tournament.registrationCloseDate) {
+      // Check registration deadline (admins can manually enroll after deadline)
+      if (!isAdminEnrollment && tournament.registrationCloseDate) {
         const now = new Date();
         const deadline = new Date(tournament.registrationCloseDate);
         
@@ -559,6 +563,101 @@ export class RegistrationController {
   }
 
   /**
+   * POST /api/registrations/admin-enroll
+   * Enrolls a guest (non-system) participant into a tournament category.
+   * Creates a guest User record and a Registration in one operation.
+    * Registration is created as PENDING and must be approved like manual user enrollment.
+   * Bypasses REGISTRATION_OPEN status and registration deadline checks.
+   * Only accessible by TOURNAMENT_ADMIN and SYSTEM_ADMIN.
+   *
+   * @param {AuthRequest} req - Request with categoryId, guestFirstName, guestLastName
+   * @param {Response} res - Response with created registration
+   * @param {NextFunction} next - Error handler
+   */
+  public async adminEnroll(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {categoryId, guestFirstName, guestLastName} = req.body;
+
+      if (!categoryId || !guestFirstName || !guestLastName) {
+        throw new AppError(
+          'categoryId, guestFirstName, and guestLastName are required',
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_INPUT,
+        );
+      }
+
+      const categoryRepository = AppDataSource.getRepository(Category);
+      const userRepository = AppDataSource.getRepository(User);
+      const registrationRepository = AppDataSource.getRepository(Registration);
+
+      // Validate category exists
+      const category = await categoryRepository.findOne({
+        where: {id: categoryId},
+        relations: ['tournament'],
+      });
+      if (!category) {
+        throw new AppError('Category not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Create guest user — unique auto-generated email, placeholder password hash
+      const uuid = randomUUID();
+      const guestUser = userRepository.create({
+        id: generateId('usr'),
+        email: `guest-${uuid}@guest.ttm`,
+        passwordHash: 'GUEST_NO_AUTH',
+        firstName: guestFirstName.trim(),
+        lastName: guestLastName.trim(),
+        username: `guest-${guestFirstName.toLowerCase().replace(/\s+/g, '')}-${Date.now()}`,
+        role: UserRole.PLAYER,
+        isGuest: true,
+        isActive: true,
+        gdprConsent: false,
+      });
+      await userRepository.save(guestUser);
+      console.log(`👤 [AdminEnroll] Guest user created: ${guestUser.id}`);
+
+      // Determine acceptance type based on current quota
+      const activeRegistrations = await registrationRepository
+        .createQueryBuilder('registration')
+        .where('registration.categoryId = :categoryId', {categoryId})
+        .andWhere('registration.status = :acceptedStatus', {
+          acceptedStatus: RegistrationStatus.ACCEPTED,
+        })
+        .andWhere('registration.acceptanceType IN (:...countedTypes)', {
+          countedTypes: [AcceptanceType.DIRECT_ACCEPTANCE, AcceptanceType.LUCKY_LOSER],
+        })
+        .getCount();
+
+      const acceptanceType =
+        activeRegistrations < category.maxParticipants
+          ? AcceptanceType.DIRECT_ACCEPTANCE
+          : AcceptanceType.ALTERNATE;
+
+      const registration = registrationRepository.create({
+        id: generateId('reg'),
+        tournamentId: category.tournamentId,
+        categoryId,
+        participantId: guestUser.id,
+        acceptanceType,
+        status: RegistrationStatus.PENDING,
+      });
+      await registrationRepository.save(registration);
+      console.log(`✅ [AdminEnroll] Registration created as PENDING: ${registration.id} (${acceptanceType})`);
+
+      // Reload with relations for consistent response
+      const savedRegistration = await registrationRepository.findOne({
+        where: {id: registration.id},
+        relations: ['participant', 'category'],
+      });
+
+      res.status(HTTP_STATUS.CREATED).json(savedRegistration);
+    } catch (error) {
+      console.error('❌ Error in adminEnroll:', error);
+      next(error);
+    }
+  }
+
+  /**
    * POST /api/registrations/migrate-acceptance-types
    * Migration endpoint to fix existing registrations without acceptanceType.
    * Sets all null/undefined acceptanceType to DIRECT_ACCEPTANCE.
@@ -589,6 +688,42 @@ export class RegistrationController {
       });
     } catch (error) {
       console.error('❌ Error migrating acceptance types:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * DELETE /api/registrations/:id
+   * Permanently deletes a registration record from the database.
+   * Intended for cleaning up rejected or withdrawn registrations.
+   * Only accessible by TOURNAMENT_ADMIN and SYSTEM_ADMIN.
+   *
+   * @param {AuthRequest} req - Request with registration ID param
+   * @param {Response} res - 204 No Content on success
+   * @param {NextFunction} next - Error handler
+   */
+  public async deleteRegistration(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {id} = req.params;
+      const currentUser = req.user;
+
+      if (!currentUser) {
+        throw new AppError('Authentication required', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
+      }
+
+      const registrationRepository = AppDataSource.getRepository(Registration);
+      const registration = await registrationRepository.findOne({where: {id}});
+
+      if (!registration) {
+        throw new AppError('Registration not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      await registrationRepository.remove(registration);
+      console.log(`🗑️ [DeleteRegistration] Registration ${id} permanently deleted by ${currentUser.id}`);
+
+      res.status(HTTP_STATUS.NO_CONTENT).send();
+    } catch (error) {
+      console.error('❌ Error deleting registration:', error);
       next(error);
     }
   }

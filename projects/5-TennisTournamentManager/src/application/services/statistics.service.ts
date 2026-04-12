@@ -23,12 +23,14 @@ import {
   ParticipantPerformanceDto,
   HeadToHeadMatchDto,
   OpponentMatchupDto,
+  CategoryStatsDto,
 } from '../dto/statistics.dto';
 import {StatisticsRepositoryImpl} from '@infrastructure/repositories/statistics.repository';
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
 import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registration.repository';
 import {TournamentRepositoryImpl} from '@infrastructure/repositories/tournament.repository';
 import {BracketRepositoryImpl} from '@infrastructure/repositories/bracket.repository';
+import {CategoryRepositoryImpl} from '@infrastructure/repositories/category.repository';
 import {UserService} from './user.service';
 import {Surface} from '../../domain/enumerations/surface';
 import {MatchStatus} from '../../domain/enumerations/match-status';
@@ -70,9 +72,65 @@ export class StatisticsService implements IStatisticsService {
   private readonly bracketRepository = inject(BracketRepositoryImpl);
 
   /**
+   * Category repository for category data access.
+   */
+  private readonly categoryRepository = inject(CategoryRepositoryImpl);
+
+  /**
    * User service for fetching participant information.
    */
   private readonly userService = inject(UserService);
+
+  /**
+   * Parses a score string (e.g., "6-4, 3-6, 7-6(3)") and returns set results.
+   * 
+   * @param scoreString - Score string from match
+   * @param isPlayer1 - Whether the participant is player1 (affects score interpretation)
+   * @returns Object with sets won/lost and games won/lost for the participant
+   */
+  private parseScoreString(
+    scoreString: string | null | undefined,
+    isPlayer1: boolean
+  ): {setsWon: number, setsLost: number, gamesWon: number, gamesLost: number, tiebreaksWon: number} {
+    const result = {setsWon: 0, setsLost: 0, gamesWon: 0, gamesLost: 0, tiebreaksWon: 0};
+    
+    if (!scoreString || scoreString.trim() === '' || scoreString === 'N/A') {
+      return result;
+    }
+
+    // Split by comma or semicolon to get individual sets
+    const sets = scoreString.split(/[,;]/).map(s => s.trim());
+    
+    for (const setScore of sets) {
+      // Match patterns like "6-4", "7-6(3)", "6-7(5)"
+      const match = setScore.match(/(\d+)-(\d+)(?:\((\d+)\))?/);
+      if (!match) continue;
+      
+      const player1Games = parseInt(match[1], 10);
+      const player2Games = parseInt(match[2], 10);
+      const tiebreakPoints = match[3] ? parseInt(match[3], 10) : null;
+      
+      // Determine participant's games and opponent's games
+      const participantGames = isPlayer1 ? player1Games : player2Games;
+      const opponentGames = isPlayer1 ? player2Games : player1Games;
+      
+      result.gamesWon += participantGames;
+      result.gamesLost += opponentGames;
+      
+      // Determine set winner
+      if (participantGames > opponentGames) {
+        result.setsWon++;
+        // If there was a tiebreak and participant won, they won the tiebreak
+        if (tiebreakPoints !== null) {
+          result.tiebreaksWon++;
+        }
+      } else if (opponentGames > participantGames) {
+        result.setsLost++;
+      }
+    }
+    
+    return result;
+  }
 
   /**
    * Retrieves enhanced statistics for a participant (FR45).
@@ -149,36 +207,12 @@ export class StatisticsService implements IStatisticsService {
         currentWinStreak = 0;
       }
       
-      // Process scores to calculate set/game statistics
-      if (match.scores && match.scores.length > 0) {
-        for (const score of match.scores) {
-          const participantGames = isPlayer1 ? score.player1Games : score.player2Games;
-          const opponentGames = isPlayer1 ? score.player2Games : score.player1Games;
-          const participantTiebreakPoints = isPlayer1 ? score.player1TiebreakPoints : score.player2TiebreakPoints;
-          const opponentTiebreakPoints = isPlayer1 ? score.player2TiebreakPoints : score.player1TiebreakPoints;
-          
-          // Count games won and lost
-          totalGamesWon += participantGames;
-          totalGamesLost += opponentGames;
-          
-          // Determine set winner
-          if (participantGames > opponentGames) {
-            totalSetsWon++;
-          } else if (opponentGames > participantGames) {
-            totalSetsLost++;
-          }
-          
-          // Check for tiebreak win (tiebreak exists and participant won the set)
-          if (participantTiebreakPoints !== null && participantTiebreakPoints !== undefined &&
-              opponentTiebreakPoints !== null && opponentTiebreakPoints !== undefined) {
-            // This was a tiebreak - participant won if they won this set
-            if (participantGames > opponentGames) {
-              // Participant won the tiebreak
-              // Note: We increment tiebreaksWon counter below after loop
-            }
-          }
-        }
-      }
+      // Parse score string to calculate set/game statistics
+      const scoreData = this.parseScoreString(match.score, isPlayer1);
+      totalSetsWon += scoreData.setsWon;
+      totalSetsLost += scoreData.setsLost;
+      totalGamesWon += scoreData.gamesWon;
+      totalGamesLost += scoreData.gamesLost;
       
       // Track performance by surface (if available)
       const surface = (match as any).surface as Surface;
@@ -193,19 +227,9 @@ export class StatisticsService implements IStatisticsService {
           surfaceStats[surface].losses++;
         }
         
-        // Add sets won/lost for this surface
-        if (match.scores && match.scores.length > 0) {
-          for (const score of match.scores) {
-            const participantGames = isPlayer1 ? score.player1Games : score.player2Games;
-            const opponentGames = isPlayer1 ? score.player2Games : score.player1Games;
-            
-            if (participantGames > opponentGames) {
-              surfaceStats[surface].setsWon++;
-            } else if (opponentGames > participantGames) {
-              surfaceStats[surface].setsLost++;
-            }
-          }
-        }
+        // Add sets won/lost for this surface from parsed score
+        surfaceStats[surface].setsWon += scoreData.setsWon;
+        surfaceStats[surface].setsLost += scoreData.setsLost;
       }
     }
     
@@ -213,23 +237,10 @@ export class StatisticsService implements IStatisticsService {
     let tiebreaksWon = 0;
     for (const match of matches) {
       if (!match.winnerId || match.status !== MatchStatus.COMPLETED) continue;
-      if (!match.scores || match.scores.length === 0) continue;
       
       const isPlayer1 = match.player1Id === participantId;
-      
-      for (const score of match.scores) {
-        const participantGames = isPlayer1 ? score.player1Games : score.player2Games;
-        const opponentGames = isPlayer1 ? score.player2Games : score.player1Games;
-        const participantTiebreakPoints = isPlayer1 ? score.player1TiebreakPoints : score.player2TiebreakPoints;
-        const opponentTiebreakPoints = isPlayer1 ? score.player2TiebreakPoints : score.player1TiebreakPoints;
-        
-        // If tiebreak points exist and participant won the set, they won the tiebreak
-        if (participantTiebreakPoints !== null && participantTiebreakPoints !== undefined &&
-            opponentTiebreakPoints !== null && opponentTiebreakPoints !== undefined &&
-            participantGames > opponentGames) {
-          tiebreaksWon++;
-        }
-      }
+      const scoreData = this.parseScoreString(match.score, isPlayer1);
+      tiebreaksWon += scoreData.tiebreaksWon;
     }
     
     // Calculate percentages and ratios
@@ -398,6 +409,9 @@ export class StatisticsService implements IStatisticsService {
     
     // Get registrations
     const registrations = await this.registrationRepository.findByTournament(tournamentId);
+    
+    // Get categories for breakdown (FR46: rankings by category)
+    const categories = await this.categoryRepository.findByTournamentId(tournamentId);
     
     // Get all brackets for this tournament
     const brackets = await this.bracketRepository.findByTournament(tournamentId);
@@ -612,7 +626,46 @@ export class StatisticsService implements IStatisticsService {
     
     // Calculate total finished matches (completed, retired, walkover all count as finished)
     const totalFinishedMatches = resultDistribution.completed + resultDistribution.retirements + resultDistribution.walkovers;
-    
+
+    // Build category breakdown (FR46: rankings by category)
+    const categoryBreakdown: CategoryStatsDto[] = categories.map(cat => {
+      // Participants registered in this category
+      const catRegistrations = registrations.filter(r => r.categoryId === cat.id);
+      // Matches in this category (via brackets whose phaseId maps to this category's brackets)
+      // We approximate by counting matches where both players are registered in this category
+      const catParticipantIds = new Set(catRegistrations.map(r => r.participantId));
+      const catMatches = allMatches.filter(
+        m => (m.player1Id && catParticipantIds.has(m.player1Id)) ||
+             (m.player2Id && catParticipantIds.has(m.player2Id))
+      );
+      const catCompleted = catMatches.filter(
+        m => m.status === MatchStatus.COMPLETED || m.status === MatchStatus.RETIRED || m.status === MatchStatus.WALKOVER
+      );
+
+      // Find top performer in this category
+      let topPerformer: string | undefined;
+      let bestWinRate = -1;
+      for (const [pid, perf] of participantPerformance.entries()) {
+        if (!catParticipantIds.has(pid)) continue;
+        const total = perf.wins + perf.losses;
+        if (total === 0) continue;
+        const rate = perf.wins / total;
+        if (rate > bestWinRate) {
+          bestWinRate = rate;
+          topPerformer = participantNames.get(pid);
+        }
+      }
+
+      return {
+        categoryId: cat.id,
+        categoryName: cat.name,
+        totalParticipants: catRegistrations.length,
+        totalMatches: catMatches.length,
+        completedMatches: catCompleted.length,
+        topPerformer,
+      };
+    });
+
     return {
       tournamentId,
       tournamentName: tournament.name,
@@ -623,6 +676,7 @@ export class StatisticsService implements IStatisticsService {
       resultDistribution,
       mostActiveParticipants,
       topPerformers,
+      categoryBreakdown,
     };
   }
 
@@ -644,7 +698,7 @@ export class StatisticsService implements IStatisticsService {
 
   /**
    * Retrieves enhanced head-to-head statistics between two players (FR45).
-   * Includes match history, surface performance, and detailed statistics.
+   * Includes match history with scores, surface performance, and tournament context.
    *
    * @param player1Id - ID of the first player
    * @param player2Id - ID of the second player
@@ -655,11 +709,22 @@ export class StatisticsService implements IStatisticsService {
     if (!player1Id || player1Id.trim().length === 0) {
       throw new Error('Player 1 ID is required');
     }
-    
+
     if (!player2Id || player2Id.trim().length === 0) {
       throw new Error('Player 2 ID is required');
     }
-    
+
+    // Load player labels (non-blocking if user lookup fails)
+    const [player1, player2] = await Promise.all([
+      this.userService.getUserById(player1Id).catch(() => null),
+      this.userService.getUserById(player2Id).catch(() => null),
+    ]);
+
+    // Caches to avoid repeated API lookups for the same bracket/tournament
+    const bracketToTournamentId = new Map<string, string | null>();
+    const tournamentNameCache = new Map<string, string>();
+    const tournamentSurfaceCache = new Map<string, string | undefined>();
+
     // Get all matches between the two players
     const matches = await this.matchRepository.findAll();
     const h2hMatches = matches.filter(
@@ -667,46 +732,72 @@ export class StatisticsService implements IStatisticsService {
         (m.player1Id === player1Id && m.player2Id === player2Id) ||
         (m.player1Id === player2Id && m.player2Id === player1Id)
     );
-    
+
     // Calculate head-to-head stats
     let player1Wins = 0;
     let player2Wins = 0;
     let player1SetsWon = 0;
     let player2SetsWon = 0;
     const matchHistory: HeadToHeadMatchDto[] = [];
-    
+
     for (const match of h2hMatches) {
-      // Count wins
-      if (match.winnerId === player1Id) {
-        player1Wins++;
-      } else if (match.winnerId === player2Id) {
-        player2Wins++;
-      }
-      
-      // Track sets (would need match score parsing)
-      // Placeholder: player1SetsWon += ...
-      
-      // Add to match history
-      if (match.status === MatchStatus.COMPLETED) {
+      // Only process completed matches for stats
+      if (match.status === MatchStatus.COMPLETED || match.status === MatchStatus.RETIRED || match.status === MatchStatus.WALKOVER) {
+        // Count wins
+        if (match.winnerId === player1Id) {
+          player1Wins++;
+        } else if (match.winnerId === player2Id) {
+          player2Wins++;
+        }
+
+        // Track set totals from score string
+        const isPlayer1 = match.player1Id === player1Id;
+        const scoreData = this.parseScoreString(match.score, isPlayer1);
+        player1SetsWon += scoreData.setsWon;
+        player2SetsWon += scoreData.setsLost;  // Player2's sets won = Player1's sets lost
+
+        // Resolve tournament info from bracketId (safe for public users)
+        let tournamentName = 'Unknown Tournament';
+        let surface = (match as Record<string, unknown>)['surface'] as string | undefined;
+
+        let tournamentId = bracketToTournamentId.get(match.bracketId);
+        if (tournamentId === undefined) {
+          const bracket = await this.bracketRepository.findById(match.bracketId).catch(() => null);
+          tournamentId = bracket?.tournamentId ?? null;
+          bracketToTournamentId.set(match.bracketId, tournamentId);
+        }
+
+        if (tournamentId) {
+          if (!tournamentNameCache.has(tournamentId)) {
+            const tournament = await this.tournamentRepository.findById(tournamentId).catch(() => null);
+            tournamentNameCache.set(tournamentId, tournament?.name ?? 'Unknown Tournament');
+            tournamentSurfaceCache.set(tournamentId, tournament?.surface as string | undefined);
+          }
+
+          tournamentName = tournamentNameCache.get(tournamentId) ?? 'Unknown Tournament';
+          surface = tournamentSurfaceCache.get(tournamentId) ?? surface;
+        }
+
+        // Add to match history
         matchHistory.push({
           matchId: match.id,
           date: match.createdAt,
-          tournamentName: undefined, // Would fetch tournament name
-          surface: undefined, // Would fetch from tournament/match
+          tournamentName,
+          surface,
           score: match.score || 'N/A',
           winnerId: match.winnerId || 'Unknown',
         });
       }
     }
-    
+
     // Sort match history by date (most recent first)
-    matchHistory.sort((a, b) => b.date.getTime() - a.date.getTime());
-    
+    matchHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
     const h2hDto: HeadToHeadDto = {
       player1Id,
-      player1Name: undefined, // Would fetch from user service
+      player1Name: player1 ? `${player1.firstName} ${player1.lastName}` : 'Unknown Player',
       player2Id,
-      player2Name: undefined, // Would fetch from user service
+      player2Name: player2 ? `${player2.firstName} ${player2.lastName}` : 'Unknown Player',
       totalMatches: h2hMatches.length,
       player1Wins,
       player2Wins,
@@ -715,7 +806,7 @@ export class StatisticsService implements IStatisticsService {
       lastMatch: matchHistory.length > 0 ? matchHistory[0].date : undefined,
       matchHistory,
     };
-    
+
     return h2hDto as unknown as Record<string, unknown>;
   }
 }

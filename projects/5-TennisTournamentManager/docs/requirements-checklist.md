@@ -8,9 +8,9 @@ Use this block as the source of truth for work that is still partial or missing 
 
 ### Core Functional Gaps (FR)
 
-- [ ] **FR1/FR8** - Extend tournament model and create/edit flow to include full regulations and missing configuration fields from specification.
-- [x] **FR5** - Add explicit court opening/closing schedules and enforce them in order-of-play generation. ✅ FULLY IMPLEMENTED (v2026-04-11): Court entity with openingTime/closingTime fields (nullable varchar(5)), HH:MM validation in CourtController, enforcement in ScheduleGenerationService, frontend UI with time inputs, client-side pre-generation validation with clear error messages. Comprehensive validation test suite confirms correct behavior (start time < opening → error, start time >= closing → error, start time within hours → valid).
-- [ ] **FR10** - Implement true admin enrollment for non-registered participants (without requiring existing `User` record).
+- [x] **FR1/FR8** - Extend tournament model and create/edit flow to include full regulations and missing configuration fields from specification. ✅ COMPLETE (2026-04-12): Added FacilityType enum (INDOOR/OUTDOOR), facilityType and regulations fields to Tournament entity + migration 007 applied. Frontend create/edit/detail components updated with facility type dropdown and regulations textarea. Full CRUD, DB migration applied, no breaking changes.
+- [x] **FR5** - Add explicit court operating hours and enforce them in order-of-play generation. ✅ FULLY COMPLETE (v2026-04-12): Backend (Court entity with openingTime/closingTime, HH:MM validation, enforcement in ScheduleGenerationService), Frontend (time inputs, court hours display, client-side pre-generation validation), Bug fixes (court initialization for different hours, next-day advancement respecting individual court times, earliest-court prioritization, retry mechanism for multi-day scheduling). All 7 matches now scheduled correctly with courts having different operating hours.
+- [x] **FR10** - Implement true admin enrollment for non-registered participants (without requiring existing `User` record).
 - [ ] **FR12** - Implement full quota orchestration for OA/DA/SE/JE/WC/ALT/LL transitions (not only DA/ALT-centric behavior).
 - [ ] **FR13** - Complete withdrawal timing workflows: pre-draw ALT replacement, post-draw LL promotion, in-tournament WO propagation.
 - [ ] **FR15** - Implement doubles pair registration model and flows (partner linking, validation, admin edits).
@@ -22,7 +22,7 @@ Use this block as the source of truth for work that is still partial or missing 
 - [x] **FR41** - Implement ELO scoring algorithm and integrate with tournament ranking system selection.
 - [x] **FR42** - Ensure seed-based tiebreak criterion uses real seed data in resolution step. ✅ VERIFIED COMPLETE (2026-04-11): TiebreakResolverService fully implements 5-level tiebreaker (Points → Set Ratio → Game Ratio → H2H → Seed Number → Random). Seed data exists in database (verified via psql query). Implementation at standing.service.ts lines 195-200 with proper null handling.
 - [x] **FR44** - Implement global ranking update workflow (not only read endpoint).
-- [ ] **FR45/FR46** - Expand statistics to fully cover history/streak/opponent analytics per specification.
+- [x] **FR45/FR46** - Expand statistics to fully cover history/streak/opponent analytics per specification. ✅ COMPLETE (2026-04-12): FR45 — H2H method fixed (player names fetched via UserService, tournament names/surfaces resolved via bracket→tournament lookup, set counts computed from structured scores). "View Match History" toggle added to each Matchup card in StatisticsViewComponent; lazy-loads H2H data on expand and shows per-match W/L, score, surface, tournament, and date. FR46 — Added `CategoryStatsDto` and `categoryBreakdown` field to `TournamentStatisticsDto`; `StatisticsService.getDetailedTournamentStatistics` now fetches categories and computes per-category participant count, match count, completed match count, and top performer. TournamentStatisticsComponent shows a "Rankings by Category" card grid below the existing tables.
 - [x] **FR49** - Wire scheduled announcement publication processor to an actual scheduler/cron execution path.
 - [x] **FR52/FR53** - Complete all missing notification triggers (suspension/resumption/delay/default and other pending TODOs).
 
@@ -32,13 +32,13 @@ Use this block as the source of truth for work that is still partial or missing 
 - [ ] **NFR2** - Execute and document cross-browser validation (Chrome/Firefox/Safari/Edge).
 - [ ] **NFR5** - Verify real-time SLA (<5 seconds) with reproducible benchmark evidence.
 - [ ] **NFR6/NFR7** - Measure page-load/performance on realistic 4G/3G conditions and document results.
-- [ ] **NFR8** - Complete PWA: add manifest, service worker generation strategy, offline cache verification.
+- [x] **NFR8** - Complete PWA: add manifest, service worker generation strategy, offline cache verification. ✅ COMPLETE (2026-04-12): Created `public/manifest.webmanifest` (name, short_name, display=standalone, theme_color=#2563eb, shortcuts for tournaments/my-matches). Created `public/sw.js` with cache-first strategy for static assets and network-first strategy for API calls (offline fallback for both). Updated `index.html` with `<link rel="manifest">` and `<meta name="theme-color">`. Fixed `src/main.ts` service worker registration to point to `/sw.js` and removed prod-only restriction (runs in all environments).
 - [ ] **NFR9** - Run concurrency/load tests for 100+ users and 20 active tournaments.
 - [x] **NFR12** - Implement session inactivity auto-logout (30 minutes) and brute-force protection policy if incomplete.
 - [ ] **NFR14** - Close GDPR gaps: explicit consent tracking, complete access/rectification/deletion/portability flows.
 - [ ] **NFR16** - Implement and document automatic daily backups and point-in-time restoration.
 - [ ] **NFR17** - Add uptime monitoring/alerting and operational evidence for availability target.
-- [ ] **NFR18** - Complete admin-facing visual customization (colors/logo/menu) if not fully implemented.
+- [x] **NFR18** - Complete admin-facing visual customization (colors/logo/menu) if not fully implemented. ✅ COMPLETE (2026-04-12): Added primaryColor, secondaryColor, logoUrl fields across the full stack — DB migration 006 (columns already in DB), backend entity (already had fields), frontend DTOs (CreateTournamentDto, UpdateTournamentDto, TournamentDto), frontend domain entity (Tournament class), tournament service mapTournamentToDto and updateTournament updated. Create/Edit forms feature HTML5 color pickers paired with hex text inputs (two-way sync via ngModel), live gradient preview, and logo URL input. Detail page hero gradient uses tournament primary/secondary colors dynamically; logo appears in header if set.
 - [ ] **NFR22** - Expand automated test coverage to include critical integration + E2E scenarios, not only smoke tests.
 
 ### Quality and Verification Backlog

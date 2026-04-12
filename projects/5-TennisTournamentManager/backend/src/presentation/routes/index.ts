@@ -982,6 +982,7 @@ router.delete('/tournaments/:id/logo', authMiddleware, tournamentController.dele
  *         $ref: '#/components/responses/Unauthorized'
  */
 // Registration routes
+router.post('/registrations/admin-enroll', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), registrationController.adminEnroll.bind(registrationController));
 router.post('/registrations', authMiddleware, registrationController.create.bind(registrationController));
 
 /**
@@ -1107,6 +1108,29 @@ router.put('/registrations/:id/status', authMiddleware, roleMiddleware([UserRole
  *         description: Registration not found
  */
 router.put('/registrations/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), registrationController.update.bind(registrationController));
+
+/**
+ * @swagger
+ * /registrations/{id}:
+ *   delete:
+ *     tags: [Registrations]
+ *     summary: Delete a registration
+ *     description: Permanently deletes a registration record. Only for rejected or withdrawn entries.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Registration deleted
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Registration not found
+ */
+router.delete('/registrations/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), registrationController.deleteRegistration.bind(registrationController));
 
 /**
  * @swagger

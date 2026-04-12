@@ -42,9 +42,14 @@ export class RegistrationService implements IRegistrationService {
    *
    * @param data - Registration data
    * @param participantId - ID of the participant registering
+   * @param allowAdminOverride - If true, allows manual admin registration regardless of tournament status
    * @returns Created registration information
    */
-  public async registerParticipant(data: CreateRegistrationDto, participantId: string): Promise<RegistrationDto> {
+  public async registerParticipant(
+    data: CreateRegistrationDto,
+    participantId: string,
+    allowAdminOverride = false,
+  ): Promise<RegistrationDto> {
     // Validate input
     if (!data.tournamentId || data.tournamentId.trim().length === 0) {
       throw new Error('Tournament ID is required');
@@ -75,7 +80,7 @@ export class RegistrationService implements IRegistrationService {
     }
     
     // Check if tournament is open for registration
-    if (tournament.status !== TournamentStatus.REGISTRATION_OPEN) {
+    if (!allowAdminOverride && tournament.status !== TournamentStatus.REGISTRATION_OPEN) {
       throw new Error('Tournament is not accepting registrations');
     }
     
@@ -262,6 +267,44 @@ export class RegistrationService implements IRegistrationService {
     const savedRegistration = await this.registrationRepository.update(updatedRegistration);
 
     return this.mapRegistrationToDto(savedRegistration);
+  }
+
+  /**
+   * Enrolls a guest (non-system) participant into a tournament category.
+   * Admin-only operation that bypasses registration deadline and status checks.
+   * Creates a guest user record and registration in one backend call.
+   *
+   * @param categoryId - ID of the target category
+   * @param guestFirstName - First name of the guest participant
+   * @param guestLastName - Last name of the guest participant
+   * @returns Created registration DTO
+   */
+  public async adminEnrollGuest(
+    categoryId: string,
+    guestFirstName: string,
+    guestLastName: string,
+  ): Promise<RegistrationDto> {
+    if (!categoryId?.trim()) throw new Error('Category ID is required');
+    if (!guestFirstName?.trim()) throw new Error('First name is required');
+    if (!guestLastName?.trim()) throw new Error('Last name is required');
+
+    const savedRegistration = await this.registrationRepository.adminEnroll(
+      categoryId,
+      guestFirstName.trim(),
+      guestLastName.trim(),
+    );
+    return this.mapRegistrationToDto(savedRegistration);
+  }
+
+  /**
+   * Permanently deletes a registration record from the database.
+   * Intended for cleaning up rejected or withdrawn registrations.
+   *
+   * @param registrationId - ID of the registration to delete
+   */
+  public async deleteRegistration(registrationId: string): Promise<void> {
+    if (!registrationId?.trim()) throw new Error('Registration ID is required');
+    await this.registrationRepository.delete(registrationId);
   }
 
   /**

@@ -23,9 +23,10 @@ export interface IRegistrationService {
    *
    * @param data - Registration data
    * @param participantId - ID of the participant registering
+    * @param allowAdminOverride - If true, skips tournament open-status check for admin/manual enrollment flows
    * @returns Created registration information
    */
-  registerParticipant(data: CreateRegistrationDto, participantId: string): Promise<RegistrationDto>;
+    registerParticipant(data: CreateRegistrationDto, participantId: string, allowAdminOverride?: boolean): Promise<RegistrationDto>;
 
   /**
    * Updates the status of a registration.
@@ -44,6 +45,14 @@ export interface IRegistrationService {
    * @param userId - ID of the user performing the withdrawal
    */
   withdrawRegistration(registrationId: string, time: string, userId: string): Promise<void>;
+
+  /**
+   * Permanently deletes a registration record from the database.
+   * Intended for cleaning up rejected or withdrawn registrations.
+   *
+   * @param registrationId - ID of the registration to delete
+   */
+  deleteRegistration(registrationId: string): Promise<void>;
 
   /**
    * Updates the seed number for a registration.

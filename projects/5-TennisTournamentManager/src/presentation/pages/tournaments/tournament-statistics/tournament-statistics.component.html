@@ -249,6 +249,44 @@
           </div>
         </div>
       }
+
+      <!-- Category Breakdown (FR46: rankings by category) -->
+      @if (statistics()!.categoryBreakdown && statistics()!.categoryBreakdown.length > 0) {
+        <div class="detail-section full-width">
+          <div class="section-header">
+            <span class="section-icon">🗂️</span>
+            <h2 class="section-title">Rankings by Category</h2>
+          </div>
+          <div class="card-body">
+            <div class="category-grid">
+              @for (cat of statistics()!.categoryBreakdown; track cat.categoryId) {
+                <div class="category-breakdown-card">
+                  <div class="category-breakdown-name">{{ cat.categoryName }}</div>
+                  <div class="category-breakdown-stats">
+                    <div class="cat-stat">
+                      <span class="cat-stat-value">{{ cat.totalParticipants }}</span>
+                      <span class="cat-stat-label">Participants</span>
+                    </div>
+                    <div class="cat-stat">
+                      <span class="cat-stat-value">{{ cat.totalMatches }}</span>
+                      <span class="cat-stat-label">Matches</span>
+                    </div>
+                    <div class="cat-stat">
+                      <span class="cat-stat-value">{{ cat.completedMatches }}</span>
+                      <span class="cat-stat-label">Completed</span>
+                    </div>
+                  </div>
+                  @if (cat.topPerformer) {
+                    <div class="cat-top-performer">
+                      🏆 <span>{{ cat.topPerformer }}</span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
     }
   </main>
 </div>

@@ -1,0 +1,136 @@
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since 2026-04-12
+ * @file public/sw.js
+ * @desc Service worker for Tennis Tournament Manager PWA (NFR8).
+ *       Implements a cache-first strategy for static assets and a
+ *       network-first strategy for API calls, enabling offline usage
+ *       of previously visited pages.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ */
+
+const CACHE_VERSION = 'ttm-v1';
+
+/** Static assets cache — stores app shell (HTML, JS, CSS, fonts). */
+const STATIC_CACHE = `${CACHE_VERSION}-static`;
+
+/** API responses cache — stores recently fetched API data for offline fallback. */
+const API_CACHE = `${CACHE_VERSION}-api`;
+
+/** All known cache names for cleanup during activation. */
+const ALL_CACHES = [STATIC_CACHE, API_CACHE];
+
+/** App shell URLs to pre-cache on install. */
+const APP_SHELL_URLS = [
+  '/',
+  '/manifest.webmanifest',
+];
+
+// ─── Install ────────────────────────────────────────────────────────────────
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches
+      .open(STATIC_CACHE)
+      .then((cache) => cache.addAll(APP_SHELL_URLS))
+      .then(() => self.skipWaiting())
+  );
+});
+
+// ─── Activate ───────────────────────────────────────────────────────────────
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => !ALL_CACHES.includes(key))
+            .map((key) => caches.delete(key))
+        )
+      )
+      .then(() => self.clients.claim())
+  );
+});
+
+// ─── Fetch ──────────────────────────────────────────────────────────────────
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip non-GET requests and cross-origin requests
+  if (request.method !== 'GET' || url.origin !== self.location.origin) {
+    return;
+  }
+
+  // API routes: network-first, fall back to cache
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(networkFirstWithCache(request, API_CACHE));
+    return;
+  }
+
+  // Static assets: cache-first, fall back to network then update cache
+  event.respondWith(cacheFirstWithNetwork(request, STATIC_CACHE));
+});
+
+// ─── Strategies ─────────────────────────────────────────────────────────────
+
+/**
+ * Cache-first strategy: serve from cache if available, otherwise fetch from
+ * network and store in cache for future use.
+ *
+ * @param {Request} request - The incoming request
+ * @param {string} cacheName - Name of the cache to use
+ * @returns {Promise<Response>}
+ */
+async function cacheFirstWithNetwork(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    // Offline and no cache — return a minimal offline page
+    return new Response('<h1>You are offline</h1><p>Please reconnect to access Tennis Tournament Manager.</p>', {
+      headers: { 'Content-Type': 'text/html' },
+    });
+  }
+}
+
+/**
+ * Network-first strategy: try the network, store in cache on success; fall
+ * back to cache on network failure.
+ *
+ * @param {Request} request - The incoming request
+ * @param {string} cacheName - Name of the cache to use
+ * @returns {Promise<Response>}
+ */
+async function networkFirstWithCache(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    return new Response(JSON.stringify({ error: 'Offline — cached data unavailable' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}

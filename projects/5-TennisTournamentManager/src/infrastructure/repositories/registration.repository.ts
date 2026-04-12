@@ -142,4 +142,23 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
     const response = await this.httpClient.put<Registration>(`/registrations/${id}/status`, body);
     return response;
   }
+
+  /**
+   * Enrolls a guest (non-system) participant into a tournament category.
+   * Calls POST /api/registrations/admin-enroll which creates a guest user
+   * and registration in one operation without requiring REGISTRATION_OPEN status.
+   *
+   * @param categoryId - The category identifier
+   * @param guestFirstName - First name of the guest participant
+   * @param guestLastName - Last name of the guest participant
+   * @returns Promise resolving to the created registration
+   */
+  public async adminEnroll(categoryId: string, guestFirstName: string, guestLastName: string): Promise<Registration> {
+    const response = await this.httpClient.post<Registration>('/registrations/admin-enroll', {
+      categoryId,
+      guestFirstName,
+      guestLastName,
+    });
+    return response;
+  }
 }

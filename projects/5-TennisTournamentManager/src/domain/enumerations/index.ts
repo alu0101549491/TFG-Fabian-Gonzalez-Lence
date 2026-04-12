@@ -15,6 +15,7 @@ export * from './user-role';
 export * from './tournament-status';
 export * from './tournament-type';
 export * from './surface';
+export * from './facility-type';
 export * from './registration-status';
 export * from './acceptance-type';
 export * from './bracket-type';

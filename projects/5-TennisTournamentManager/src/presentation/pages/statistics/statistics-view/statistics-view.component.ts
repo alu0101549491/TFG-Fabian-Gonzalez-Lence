@@ -15,7 +15,7 @@ import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {StatisticsService} from '@application/services';
-import {type StatisticsDto} from '@application/dto';
+import {type StatisticsDto, type HeadToHeadDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import templateHtml from './statistics-view.component.html?raw';
 import stylesCss from './statistics-view.component.css?inline';
@@ -49,6 +49,18 @@ export class StatisticsViewComponent implements OnInit {
   /** Expose Object.keys to template for surface performance iteration */
   public readonly Object = Object;
 
+  /** Currently expanded opponent ID for H2H panel */
+  public expandedH2hOpponentId = signal<string | null>(null);
+
+  /** H2H data map: opponentId → HeadToHeadDto */
+  public h2hData = signal<Map<string, HeadToHeadDto>>(new Map());
+
+  /** H2H loading state per opponent */
+  public h2hLoading = signal<Set<string>>(new Set());
+
+  /** Current player ID (resolved after login check) */
+  private currentParticipantId: string | null = null;
+
   /**
    * Initializes component and loads statistics.
    */
@@ -60,6 +72,7 @@ export class StatisticsViewComponent implements OnInit {
         participantId = user?.id || null;
       }
       if (participantId) {
+        this.currentParticipantId = participantId;
         void this.loadStatistics(participantId);
       }
     });
@@ -90,5 +103,70 @@ export class StatisticsViewComponent implements OnInit {
    */
   public goBack(): void {
     void this.router.navigate(['/dashboard']);
+  }
+
+  /**
+   * Toggles the H2H details panel for a given opponent.
+   * Lazily loads H2H data the first time the panel is expanded.
+   *
+   * @param opponentId - ID of the opponent to show H2H for
+   */
+  public async toggleH2H(opponentId: string): Promise<void> {
+    const current = this.expandedH2hOpponentId();
+    if (current === opponentId) {
+      // Collapse
+      this.expandedH2hOpponentId.set(null);
+      return;
+    }
+
+    // Expand and load if not already loaded
+    this.expandedH2hOpponentId.set(opponentId);
+    if (!this.h2hData().has(opponentId) && this.currentParticipantId) {
+      const loading = new Set(this.h2hLoading());
+      loading.add(opponentId);
+      this.h2hLoading.set(loading);
+
+      try {
+        const h2h = await this.statisticsService.getHeadToHead(this.currentParticipantId, opponentId) as HeadToHeadDto;
+        const map = new Map(this.h2hData());
+        map.set(opponentId, h2h);
+        this.h2hData.set(map);
+      } catch {
+        // Silently ignore — panel will show empty state
+      } finally {
+        const done = new Set(this.h2hLoading());
+        done.delete(opponentId);
+        this.h2hLoading.set(done);
+      }
+    }
+  }
+
+  /**
+   * Returns whether an H2H panel is currently loading for a given opponent.
+   *
+   * @param opponentId - Opponent ID to check
+   * @returns True if the H2H for this opponent is loading
+   */
+  public isH2HLoading(opponentId: string): boolean {
+    return this.h2hLoading().has(opponentId);
+  }
+
+  /**
+   * Returns H2H data for a given opponent, or null if not yet loaded.
+   *
+   * @param opponentId - Opponent ID
+   * @returns HeadToHeadDto or null
+   */
+  public getH2H(opponentId: string): HeadToHeadDto | null {
+    return this.h2hData().get(opponentId) ?? null;
+  }
+
+  /**
+   * Navigates to the match details page.
+   *
+   * @param matchId - ID of the match to view
+   */
+  public goToMatchDetails(matchId: string): void {
+    void this.router.navigate(['/matches', matchId]);
   }
 }

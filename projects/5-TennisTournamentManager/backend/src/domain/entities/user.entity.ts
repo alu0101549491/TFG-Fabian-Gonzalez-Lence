@@ -65,6 +65,9 @@ export class User {
   @Column('boolean', {default: false})
   public gdprConsent!: boolean;
 
+  @Column('boolean', {default: false})
+  public isGuest!: boolean;
+
   @Column('json', {nullable: true})
   public privacySettings!: Record<string, string | boolean> | null;
 

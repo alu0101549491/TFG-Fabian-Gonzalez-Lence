@@ -18,6 +18,7 @@ import {FormsModule} from '@angular/forms';
 import {TournamentService} from '@application/services';
 import {type CreateTournamentDto} from '@application/dto';
 import {Surface} from '@domain/enumerations/surface';
+import {FacilityType} from '@domain/enumerations/facility-type';
 import {TournamentType} from '@domain/enumerations/tournament-type';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
 import {AuthStateService} from '@presentation/services/auth-state.service';
@@ -55,6 +56,11 @@ export class TournamentCreateComponent {
     endDate: '',
     location: '',
     surface: Surface.HARD,
+    facilityType: FacilityType.OUTDOOR,
+    regulations: '',
+    primaryColor: '#2563eb',
+    secondaryColor: '#10b981',
+    logoUrl: '',
     tournamentType: TournamentType.SINGLES,
     maxParticipants: 32,
     registrationFee: 0,
@@ -72,6 +78,9 @@ export class TournamentCreateComponent {
 
   /** Available surfaces */
   public readonly surfaces = Object.values(Surface);
+
+  /** Available facility types */
+  public readonly facilityTypes = Object.values(FacilityType);
 
   /** Available tournament types */
   public readonly tournamentTypes = Object.values(TournamentType);
@@ -145,6 +154,10 @@ export class TournamentCreateComponent {
         registrationFee: this.formData.registrationFee ? Number(this.formData.registrationFee) : 0,
         currency: this.formData.currency || 'EUR',
         rankingSystem: this.formData.rankingSystem,
+        regulations: this.formData.regulations?.trim() || undefined,
+        primaryColor: this.formData.primaryColor,
+        secondaryColor: this.formData.secondaryColor,
+        logoUrl: this.formData.logoUrl?.trim() || undefined,
         registrationOpenDate: this.formData.registrationOpenDate
           ? new Date(this.formData.registrationOpenDate)
           : undefined,

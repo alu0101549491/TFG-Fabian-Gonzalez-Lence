@@ -162,6 +162,16 @@ export class TournamentDetailComponent implements OnInit {
 
   /** Add Participant Modal State */
   public showAddParticipantDialog = signal(false);
+
+  /** Enrollment mode: 'system' for existing users, 'guest' for non-system participants */
+  public enrollmentMode = signal<'system' | 'guest'>('system');
+
+  /** Guest enrollment form data */
+  public guestEnrollFormData = {
+    firstName: '',
+    lastName: '',
+    categoryId: null as string | null,
+  };
   
   /** All users in the system (for adding participants) */
   public allUsers = signal<UserSummaryDto[]>([]);
@@ -548,7 +558,7 @@ export class TournamentDetailComponent implements OnInit {
     const user = this.authStateService.getCurrentUser();
     const tournament = this.tournament();
     
-    if (!user || !tournament) return false;
+    if (!this.authStateService.isAuthenticated() || !user || !tournament) return false;
 
     // Tournament organizer can manage
     if (tournament.organizerId === user.id) return true;
@@ -1077,6 +1087,33 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   /**
+   * Permanently deletes a registration record from the list.
+   * Intended for rejected or withdrawn registrations that should be fully removed.
+   *
+   * @param registrationId - ID of the registration to delete
+   * @param playerName - Display name of the player (for confirmation dialog)
+   */
+  public async deleteParticipant(registrationId: string, playerName: string): Promise<void> {
+    const confirmed = confirm(`Permanently delete ${playerName}'s registration? This cannot be undone.`);
+    if (!confirmed) return;
+
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to perform this action');
+      return;
+    }
+
+    try {
+      await this.registrationService.deleteRegistration(registrationId);
+      await this.loadPlayers();
+      alert(`${playerName}'s registration has been permanently deleted.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete registration';
+      alert(`Error: ${message}`);
+    }
+  }
+
+  /**
    * Approves all pending registrations.
    */
   public async approveAllRegistrations(): Promise<void> {
@@ -1402,6 +1439,10 @@ export class TournamentDetailComponent implements OnInit {
     this.addParticipantFormData.selectedUserId = null;
     this.addParticipantFormData.selectedUserName = null;
     this.addParticipantFormData.categoryId = null;
+    this.enrollmentMode.set('system');
+    this.guestEnrollFormData.firstName = '';
+    this.guestEnrollFormData.lastName = '';
+    this.guestEnrollFormData.categoryId = null;
   }
 
   /**
@@ -1536,7 +1577,8 @@ export class TournamentDetailComponent implements OnInit {
           tournamentId: this.tournamentId,
           categoryId: this.addParticipantFormData.categoryId,
         },
-        this.addParticipantFormData.selectedUserId
+        this.addParticipantFormData.selectedUserId,
+        true,
       );
 
       alert(`✅ Participant added successfully!\n\nThe registration is pending approval. You can now approve it from the participants list.`);
@@ -1561,6 +1603,58 @@ export class TournamentDetailComponent implements OnInit {
       }
       
       console.error('Add participant error:', error);
+      alert(`Error: ${message}`);
+    } finally {
+      this.isAddingParticipant.set(false);
+    }
+  }
+
+  /**
+   * Submits the guest enrollment form, creating a guest user and registering
+   * them into the selected category without requiring REGISTRATION_OPEN status.
+   * Admin-only action (FR10).
+   */
+  public async addGuestParticipant(): Promise<void> {
+    if (!this.guestEnrollFormData.firstName.trim() || !this.guestEnrollFormData.lastName.trim()) {
+      alert('Please enter first and last name.');
+      return;
+    }
+
+    if (!this.guestEnrollFormData.categoryId) {
+      alert('Please select a category.');
+      return;
+    }
+
+    this.isAddingParticipant.set(true);
+    try {
+      await this.registrationService.adminEnrollGuest(
+        this.guestEnrollFormData.categoryId,
+        this.guestEnrollFormData.firstName.trim(),
+        this.guestEnrollFormData.lastName.trim(),
+      );
+
+      alert(
+        `✅ Guest participant added!\n\n` +
+        `${this.guestEnrollFormData.firstName} ${this.guestEnrollFormData.lastName} ` +
+        `has been registered in the selected category with PENDING status.\n\n` +
+        `Please approve the registration from the participants list.`,
+      );
+
+      await this.loadPlayers();
+      this.hideAddParticipantModal();
+    } catch (error) {
+      let message = 'Failed to enroll guest participant.';
+      if (error && typeof error === 'object') {
+        const axiosError = error as {response?: {data?: {message?: string; error?: string}}};
+        if (axiosError.response?.data?.message) {
+          message = axiosError.response.data.message;
+        } else if (axiosError.response?.data?.error) {
+          message = axiosError.response.data.error;
+        } else if (error instanceof Error) {
+          message = error.message;
+        }
+      }
+      console.error('Guest enrollment error:', error);
       alert(`Error: ${message}`);
     } finally {
       this.isAddingParticipant.set(false);

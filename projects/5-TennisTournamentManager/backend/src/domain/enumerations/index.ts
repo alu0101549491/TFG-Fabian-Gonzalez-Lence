@@ -15,6 +15,7 @@ export {UserRole} from './user-role';
 export {TournamentStatus} from './tournament-status';
 export {TournamentType} from './tournament-type';
 export {Surface} from './surface';
+export {FacilityType} from './facility-type';
 export {MatchStatus} from './match-status';
 export {BracketType} from './bracket-type';
 export {AcceptanceType} from './acceptance-type';

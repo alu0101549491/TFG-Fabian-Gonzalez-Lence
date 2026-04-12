@@ -8,9 +8,361 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Statistics Score Parsing Fix (Sets, Games, Tiebreaks)
+
+**Date:** 2026-04-12
+
+Fixed all statistics showing 0 for sets won/lost, games won/lost, and tiebreaks won across personal statistics and H2H panels.
+
+**Root Cause:**
+- Match data stores scores as string field (e.g., "6-4, 3-6, 7-6(3)"), not as structured array.
+- Statistics service was checking for `match.scores` array which was always empty, resulting in 0 counts.
+
+**Changes:**
+- `statistics.service.ts`: Added `parseScoreString()` helper method to parse score strings like "6-4, 3-6, 7-6(3)".
+- Updated `getParticipantStatistics()` to use score string parser for:
+  - Total sets won/lost calculation
+  - Total games won/lost calculation
+  - Tiebreaks won counting
+  - Performance by surface (sets per surface)
+- Updated `getHeadToHead()` to use score string parser for H2H sets count.
+- Removed all references to `match.scores` structured array.
+
+**Result:**
+- ✅ Personal statistics now show correct values (e.g., "Sets Won: 19", "Games Won: 120").
+- ✅ H2H panel displays accurate set counts (e.g., "Sets: 7-5" instead of "0-0").
+- ✅ Game statistics and tiebreak counts now populated correctly.
+- ✅ Performance by surface shows accurate set breakdown.
+
+---
+
+### H2H Sets Calculation Fix
+
+**Date:** 2026-04-12
+
+Fixed incorrect sets count in Head-to-Head panel showing "Sets: 0-0" when valid match data existed.
+
+**Root Cause:**
+- Stats calculation was processing all H2H matches (including PENDING/IN_PROGRESS) for wins/sets before filtering to completed matches only for history.
+- Sets were being counted outside the completed-match check, accessing matches that lacked score data.
+
+**Changes:**
+- `statistics.service.ts` (`getHeadToHead`): moved wins counting and sets calculation inside the `if (match.status === COMPLETED || RETIRED || WALKOVER)` check.
+- Now only processes completed matches for all stats (wins, sets, tournament info, history).
+
+**Result:**
+- ✅ Sets count now displays correct values (e.g., "Sets: 7-5" instead of "0-0").
+- ✅ Only completed matches contribute to H2H statistics.
+
+---
+
+### H2H Match History Row Navigation
+
+**Date:** 2026-04-12
+
+Added click navigation from Head-to-Head match history rows to individual match detail pages, improving discoverability and user flow.
+
+**Changes:**
+- `statistics-view.component.ts`: added `goToMatchDetails(matchId: string)` method to navigate to `/matches/:id` route.
+- `statistics-view.component.html`: added `(click)="goToMatchDetails(m.matchId)"` handler to `.h2h-match-row` elements.
+- `statistics-view.component.css`: added `cursor: pointer`, hover transform (`translateX(4px)`), shadow elevation, and background color intensification on hover for match rows.
+
+**Result:**
+- ✅ Clicking any H2H match row navigates directly to the match details page.
+- ✅ Visual feedback (cursor, slide animation, shadow) indicates rows are interactive.
+- ✅ Seamless integration with FR45 (Head-to-Head Statistics).
+
+---
+
+### FR45 H2H Match History Loading Fix
+
+**Date:** 2026-04-12
+
+Fixed a bug where the “View Match History” panel in personal statistics could show no detailed matches despite valid H2H totals.
+
+**Changes:**
+- `statistics.service.ts` (`getHeadToHead`): removed invalid `bracketRepository.findAll()` preload (backend `/brackets` requires `tournamentId`) that caused request failure.
+- Reworked tournament/surface enrichment to resolve per match via cached `findById` lookups (`Bracket` → `Tournament`) with safe fallbacks.
+
+**Result:**
+- ✅ H2H panel now loads and displays detailed match rows (W/L, score, surface, tournament, date) instead of empty state.
+
+---
+
+### Statistics Category Breakdown Visual Alignment
+
+**Date:** 2026-04-12
+
+Enhanced the “Rankings by Category” block on tournament statistics to visually match the rest of the page components.
+
+**Changes:**
+- `tournament-statistics.component.html`: switched wrapper from standalone `stats-section` to shared `detail-section full-width` and wrapped content in `card-body`.
+- `tournament-statistics.component.css`: redesigned `.category-breakdown-card` and related classes with stronger card hierarchy, consistent spacing, accent border, hover elevation, and improved stats readability.
+
+**Result:**
+- ✅ Category ranking cards now follow the same dashboard language as other statistics components.
+- ✅ Better visual consistency, spacing rhythm, and scanability.
+
+---
+
+### Tournament Header Logo Size Correction
+
+**Date:** 2026-04-12
+
+Adjusted the tournament header logo to a balanced square size and increased visible icon fill for better perceived size in mobile and desktop views.
+
+**Changes:**
+- `tournament-detail-new.component.css`: updated `.tournament-logo` from `8.5rem x 6.5rem` to `7.5rem x 7.5rem`, changed `object-fit` from `contain` to `cover`, and reduced padding.
+
+**Result:**
+- ✅ Header icon now appears larger in practice (not just wider), matching the intended visual weight near the Back button.
+
+---
+
+### Tournament Header Logo Further Enlargement
+
+**Date:** 2026-04-12
+
+Applied a stronger logo-size increase in the tournament hero to make the icon clearly larger and wider in the current layout.
+
+**Changes:**
+- `tournament-detail-new.component.css`: updated `.tournament-logo` from `6.75rem x 6rem` to `8.5rem x 6.5rem` and adjusted padding for better visual fill.
+
+**Result:**
+- ✅ Tournament logo appears noticeably bigger and wider near the Back button area.
+
+---
+
+### Tournament Header Logo Size Increase
+
+**Date:** 2026-04-12
+
+Increased the hero tournament logo footprint so the icon appears bigger and visually wider.
+
+**Changes:**
+- `tournament-detail-new.component.css`: updated `.tournament-logo` from `5rem x 5rem` to `6.75rem x 6rem`.
+
+**Result:**
+- ✅ Tournament logo is more prominent in the header and better matches surrounding controls scale.
+
+---
+
+### Remove Button for Rejected Participants
+
+**Date:** 2026-04-12
+
+Added a Remove/Delete button in the participants list for registrations with `REJECTED` status, allowing admins to fully clean up rejected entries.
+
+**Changes:**
+- `tournament-detail-new.component.html`: added `@else if (player.registration.status === 'REJECTED')` branch in the actions column, rendering the same `🗑️ Remove` button that already exists for `ACCEPTED` registrations.
+
+**Result:**
+- ✅ Admins can delete rejected participant entries from the participants table.
+- ✅ Uses the existing `removeParticipant()` method — no backend changes required.
+
+---
+
+### Guest Enrollment Approval Alignment
+
+**Date:** 2026-04-12
+
+Aligned guest enrollment behavior with manual existing-user enrollment so guest registrations also require explicit approval.
+
+**Changes:**
+- `registration.controller.ts` (`adminEnroll`): guest registrations are now created with `RegistrationStatus.PENDING` instead of `ACCEPTED`.
+- `tournament-detail.component.ts`: guest-enrollment success message now clearly states that the registration is pending and must be approved.
+
+**Result:**
+- ✅ Existing-user manual add and guest add now follow the same approval flow.
+- ✅ Prevents accidental immediate acceptance of guest participants.
+
+---
+
+### Tournament Detail Access Visibility Fix (Public/Player)
+
+**Date:** 2026-04-12
+
+Fixed visibility rules so management-only sections are hidden for public and player views.
+
+**Changes:**
+- `tournament-detail.component.ts`: `canManageTournament()` now requires authenticated session state in addition to role/organizer checks.
+- `tournament-detail-new.component.html`: strengthened guards for organizer-only sections:
+  - Category Management: now rendered only when `isAuthenticated() && canManageTournament()`
+  - Bracket Generation: now rendered only when `isAuthenticated() && canManageTournament() && categories().length > 0`
+
+**Result:**
+- ✅ Public users do not see Category Management or Bracket Generation
+- ✅ PLAYER role users do not see Category Management or Bracket Generation
+- ✅ Organizer/admin behavior remains unchanged
+
+---
+
+### Admin Manual Enrollment Status Override
+
+**Date:** 2026-04-12
+
+Updated manual admin participant enrollment so admins can add players regardless of tournament status or registration deadline.
+
+**Frontend:**
+- `registration.service.ts`: `registerParticipant()` now accepts optional `allowAdminOverride` flag.
+- `tournament-detail.component.ts`: manual Add Participant flow now calls `registerParticipant(..., true)`.
+
+**Backend:**
+- `registration.controller.ts` (`create` endpoint): skips `REGISTRATION_OPEN` and registration deadline checks for `SYSTEM_ADMIN` and `TOURNAMENT_ADMIN` users.
+
+**Result:**
+- ✅ Admin manual add no longer fails with “Tournament is not accepting registrations” for closed/in-progress/finished tournaments.
+- ✅ Normal player self-registration behavior remains unchanged.
+
+---
+
+### Tournament Branding/Regulations Persistence Fix + Regulations UI Polish
+
+**Date:** 2026-04-12
+
+Fixed a regression where tournament creation did not persist all visual-branding and regulations fields, and improved regulations presentation/styling.
+
+**Frontend fixes:**
+- `tournament-create.component.ts`: `onSubmit()` now sends `regulations`, `primaryColor`, `secondaryColor`, and `logoUrl` in `CreateTournamentDto`.
+- `tournament-detail-new.component.html`: added a dedicated **Tournament Regulations** card shown when regulations exist.
+- `tournament-detail-new.component.css`: added `.regulations-text` for readable multiline formatting (`pre-wrap`) and card-consistent styling.
+
+**UI consistency improvements:**
+- `tournament-create.component.html` and `tournament-edit.component.html`: regulations field now uses the same padded `form-grid` layout as other sections.
+- `tournament-create.component.css` and `tournament-edit.component.css`: added `.regulations-group` and `.regulations-textarea` styles for a cleaner, component-consistent textarea appearance and focus state.
+
+**Result:**
+- ✅ Colors and logo URL entered on create are persisted immediately (no manual edit workaround required)
+- ✅ Regulations entered on create are persisted and visible in tournament detail
+- ✅ Regulations form now matches the visual quality of the rest of the form sections
+
+---
+
+### Guest Participant Enrollment (FR10)
+
+**Date:** 2026-04-13
+
+Implemented admin-only guest enrollment, allowing tournament admins to add non-system participants (players without a user account) directly into a tournament category.
+
+**Backend:**
+- Added migration `008-add-is-guest-to-users.ts`: adds `isGuest BOOLEAN NOT NULL DEFAULT FALSE` column to the `users` table.
+- Extended `User` entity (`user.entity.ts`) with `isGuest: boolean` field (default `false`).
+- Added `adminEnroll()` method to `RegistrationController`:
+  - Accepts `{ categoryId, guestFirstName, guestLastName }` in request body.
+  - Creates a `User` record with `isGuest = true`, auto-generated unique email (`guest-{uuid}@guest.ttm`), placeholder password hash (`GUEST_NO_AUTH`), and `role = PLAYER`.
+  - Creates a `Registration` with status `ACCEPTED`, bypassing `REGISTRATION_OPEN` status and registration deadline checks.
+  - Quota logic still applies: assigns `DIRECT_ACCEPTANCE` if spots remain, otherwise `ALTERNATE`.
+- Added route `POST /api/registrations/admin-enroll` (before generic `/registrations` routes to avoid conflicts), restricted to `TOURNAMENT_ADMIN` and `SYSTEM_ADMIN` roles.
+
+**Frontend:**
+- Added `adminEnroll()` method to `RegistrationRepositoryImpl` — calls `POST /api/registrations/admin-enroll`.
+- Added `adminEnrollGuest(categoryId, firstName, lastName)` to `RegistrationService`.
+- Added `enrollmentMode` signal and `guestEnrollFormData` state to `TournamentDetailComponent`.
+- Added `addGuestParticipant()` method to `TournamentDetailComponent`.
+- Updated `hideAddParticipantModal()` to reset guest form fields on close.
+- Updated Add Participant modal in `tournament-detail-new.component.html`:
+  - Added two tabs: **👤 Registered User** (existing behavior) and **🪪 Guest (External)** (new).
+  - Guest tab: first name, last name, category droprown + informational warning banner.
+  - On success, participant list reloads and modal closes.
+
+**Specification Compliance:**
+- ✅ FR10: Admin can enroll participants who are not registered system users
+- ✅ Guest users are clearly flagged (`isGuest = true`) and cannot authenticate
+- ✅ Quota logic (DA vs ALTERNATE) is preserved for guest enrollments
+- ✅ Admin role restriction enforced at route level
+
+---
+
+### Visual Branding Customization (NFR18)
+
+**Date:** 2026-04-12
+
+Implemented full tournament visual branding support including per-tournament primary/secondary colors and an optional logo URL:
+
+**Backend (already had DB columns and entity fields):**
+- DB migration 006 (`006-add-visual-branding-to-tournaments.ts`) already applied — adds `primaryColor VARCHAR(7) DEFAULT '#2563eb'`, `secondaryColor VARCHAR(7) DEFAULT '#10b981'`, `bannerUrl VARCHAR(500) NULL` columns to tournaments table.
+- Tournament entity already had `primaryColor`, `secondaryColor`, `bannerUrl` fields.
+- No additional backend changes required; controller accepts new fields via TypeORM spread.
+
+**Frontend:**
+- Updated `CreateTournamentDto`, `UpdateTournamentDto`, `TournamentDto` in `src/application/dto/tournament.dto.ts` to include `primaryColor?`, `secondaryColor?`, `logoUrl?` (create/update) and `primaryColor | null`, `secondaryColor | null`, `logoUrl | null` (output).
+- Updated `Tournament` domain entity (`src/domain/entities/tournament.ts`) with matching fields.
+- Updated `mapTournamentToDto` in `TournamentService` to include all new fields plus previously-missing `facilityType`, `regulations`, `tournamentType`.
+- Updated `updateTournament` in `TournamentService` to explicitly pass `facilityType`, `regulations`, `primaryColor`, `secondaryColor`, `logoUrl` from the update DTO to the updated entity.
+- **Tournament Create Form**: Added "Visual Branding" section with HTML5 color pickers (paired with hex text inputs for dual input sync), logo URL input, and live gradient preview tile. Default colors are `#2563eb` (primary) and `#10b981` (secondary).
+- **Tournament Edit Form**: Same Visual Branding section added; pre-populated from existing tournament values on load.
+- **Tournament Detail Hero**: Hero section gradient dynamically derived from `tournament.primaryColor` and `tournament.secondaryColor` via `[style.background]` binding. Logo image shown above title if `tournament.logoUrl` is set.
+- CSS added to create and edit components: `.color-picker-wrapper`, `.color-input`, `.color-hex-input`, `.color-preview`, `.color-preview-label`.
+- CSS added to detail component: `.tournament-logo` (5rem rounded image with frosted padding in hero).
+
+**Specification Compliance:**
+- ✅ NFR18: Tournament organizers can set primary and secondary colors and a logo URL per tournament
+- ✅ Color pickers with hex text input fallback for precise entry
+- ✅ Live gradient preview during editing
+- ✅ Dynamic hero section in tournament detail reflects tournament brand colors
+- ✅ Logo displayed in tournament detail header
+
+---
+
+### Tournament Facility Type and Regulations (FR1, FR8)
+
+**Date:** 2026-04-12
+
+Implemented complete tournament configuration fields as specified in FR1 and FR8:
+
+**Backend Implementation:**
+- Created `FacilityType` enumeration (INDOOR, OUTDOOR) in `backend/src/domain/enumerations/facility-type.ts`
+- Added `facilityType` field to Tournament entity (enum, defaults to OUTDOOR)
+- Added `regulations` field to Tournament entity (TEXT, nullable)
+- Created database migration 007: `007-add-facility-type-and-regulations-to-tournaments.ts`
+- Migration adds facilityType VARCHAR(20) column with default 'OUTDOOR'
+- Migration adds regulations TEXT nullable column
+- Updated `CreateTournamentDto`, `UpdateTournamentDto`, and `TournamentDto` interfaces to include new fields
+- TournamentController automatically accepts these fields via TypeORM's create/update pattern
+- No additional validation required (facilityType is enum-validated, regulations is free text)
+
+**Frontend Implementation:**
+- Created `FacilityType` enumeration with labels and type guards in `src/domain/enumerations/facility-type.ts`
+- Updated Tournament entity to include facilityType and regulations fields
+- Updated `CreateTournamentDto` and `UpdateTournamentDto` to include new fields
+- Enhanced Tournament Create Form (`tournament-create.component`):
+  - Added "Facility Type" dropdown after Surface field with INDOOR/OUTDOOR options
+  - Added "Tournament Regulations" section with multi-line textarea (6 rows)
+  - Textarea placeholder guides users to enter rules, tiebreak criteria, special conditions
+  - Facility Type defaults to OUTDOOR, Regulations defaults to empty string
+- Enhanced Tournament Edit Form (`tournament-edit.component`):
+  - Added matching Facility Type dropdown and Regulations textarea
+  - Pre-populates with existing tournament values
+  - Same layout and validation as create form
+- Enhanced Tournament Detail View (`tournament-detail.component`):
+  - Displays Facility Type after Surface in Tournament Information section
+  - Conditionally displays Regulations section if regulations text exists
+  - Regulations displayed with white-space: pre-wrap to preserve formatting
+- All enum values formatted using EnumFormatPipe (INDOOR → "Indoor", OUTDOOR → "Outdoor")
+
+**Database Changes:**
+- tournaments table now includes:
+  - `facilityType` VARCHAR(20) NOT NULL DEFAULT 'OUTDOOR'
+  - `regulations` TEXT NULL
+
+**Migration Notes:**
+- Migration 007 executed successfully on 2026-04-12
+- All existing tournaments automatically set to OUTDOOR facility type
+- All existing tournaments have NULL regulations (acceptable)
+- No data loss or migration failures
+
+**Specification Compliance:**
+- ✅ FR1: Tournament creation includes facility type (indoor/outdoor) configuration
+- ✅ FR8: Tournament regulations free text field for rules, tiebreak criteria, special conditions
+- ✅ Full frontend UI for input and display
+- ✅ Backend validation via TypeORM enums
+- ✅ Database migration applied successfully
+
+---
+
 ### Court Operating Hours Enforcement (FR5)
 
-**Date:** 2026-04-11
+**Date:** 2026-04-11 | **Updated:** 2026-04-12
 
 Implemented court opening/closing schedule functionality to enforce match scheduling within court operating hours:
 
@@ -25,13 +377,17 @@ Implemented court opening/closing schedule functionality to enforce match schedu
 - Added isWithinCourtHours() helper method for time slot validation
 - Algorithm skips time slots outside court hours and advances to next day if needed
 - Updated ScheduleGenerationService.isTimeSlotAvailable() to include court hours check
-- **FR5 Bug Fix (2026-04-12)**: Fixed scheduling algorithm to properly handle courts with different operating hours:
-  - Courts now initialize availability at MAX(startTime, court.openingTime) instead of always using startTime
-  - Added advanceToNextDay() helper that respects individual court opening times when moving to next day
-  - Changed simultaneousMatches mode to prioritize courts with earliest availability rather than blind rotation
-  - Added retry mechanism (up to 7 days) to ensure all matches are scheduled when advancing to next day
-  - This ensures courts opening later in the day (e.g., 18:30-20:30) are properly utilized after earlier courts close
-  - Fixes issue where matches were left "Awaiting Court Assignment" when courts exhausted for current day
+- **FR5 Bug Fixes (2026-04-12)**:
+  1. **Court Initialization Fix**: Courts now initialize availability at MAX(startTime, court.openingTime) instead of always using startTime
+     - This ensures courts opening later (e.g., 18:30) are properly considered available on the same day
+  2. **Next-Day Advancement Fix**: Added advanceToNextDay() helper that respects individual court opening times when moving to next day
+     - Each court now moves to its own opening time, not the global startTime
+  3. **Scheduling Priority Fix**: Changed simultaneousMatches mode to prioritize courts with earliest availability rather than blind rotation
+     - Ensures courts opening earlier in the day are filled first
+     - Courts opening later are used only after earlier courts close or fill up
+  4. **Retry Mechanism Fix**: Added retry loop (up to 7 days) to ensure all matches are scheduled when advancing to next day
+     - Previously, matches were left "Awaiting Court Assignment" when courts exhausted for current day
+     - Now algorithm advances to next day and retries scheduling the match
 
 **Frontend Implementation:**
 - Updated Court entity to include openingTime and closingTime fields

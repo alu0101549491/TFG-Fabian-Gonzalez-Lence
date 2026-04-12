@@ -283,7 +283,46 @@
                         }
                       </span>
                     </div>
+                    <button class="h2h-toggle-btn" (click)="toggleH2H(matchup.opponentId)">
+                      @if (expandedH2hOpponentId() === matchup.opponentId) {
+                        Hide Match History ▲
+                      } @else {
+                        View Match History ▼
+                      }
+                    </button>
                   </div>
+
+                  <!-- H2H Match History Panel -->
+                  @if (expandedH2hOpponentId() === matchup.opponentId) {
+                    <div class="h2h-panel">
+                      @if (isH2HLoading(matchup.opponentId)) {
+                        <div class="h2h-loading">
+                          <div class="spinner-small"></div>
+                          <span>Loading match history...</span>
+                        </div>
+                      } @else {
+                        @let h2h = getH2H(matchup.opponentId);
+                        @if (h2h && h2h.matchHistory && h2h.matchHistory.length > 0) {
+                          <div class="h2h-summary">
+                            <span class="h2h-stat">Sets: <strong>{{ h2h.player1SetsWon }}–{{ h2h.player2SetsWon }}</strong></span>
+                          </div>
+                          <div class="h2h-match-list">
+                            @for (m of h2h.matchHistory; track m.matchId) {
+                              <div class="h2h-match-row" [class.won]="m.winnerId === (statistics()!.participantId)" [class.lost]="m.winnerId !== (statistics()!.participantId)" (click)="goToMatchDetails(m.matchId)">
+                                <span class="h2h-match-result">{{ m.winnerId === statistics()!.participantId ? 'W' : 'L' }}</span>
+                                <span class="h2h-match-score">{{ m.score }}</span>
+                                <span class="h2h-match-surface">{{ m.surface ?? '—' }}</span>
+                                <span class="h2h-match-tournament">{{ m.tournamentName ?? '—' }}</span>
+                                <span class="h2h-match-date">{{ m.date | date: 'MMM d, yyyy' }}</span>
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <p class="h2h-empty">No detailed match history available.</p>
+                        }
+                      }
+                    </div>
+                  }
                 </div>
               }
             </div>

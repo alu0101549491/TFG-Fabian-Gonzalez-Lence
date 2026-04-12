@@ -15,6 +15,7 @@ import {Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyT
 import {TournamentStatus} from '../enumerations/tournament-status';
 import {TournamentType} from '../enumerations/tournament-type';
 import {Surface} from '../enumerations/surface';
+import {FacilityType} from '../enumerations/facility-type';
 import {RankingSystem} from '../enumerations/ranking-system';
 import {User} from './user.entity';
 import {Category} from './category.entity';
@@ -38,6 +39,16 @@ export class Tournament {
   @Column('text', {nullable: true})
   public description!: string | null;
 
+  // NFR18: Visual Customization
+  @Column('varchar', {length: 7, nullable: true, default: '#2563eb'})
+  public primaryColor!: string | null; // Hex color for primary branding
+
+  @Column('varchar', {length: 7, nullable: true, default: '#10b981'})
+  public secondaryColor!: string | null; // Hex color for secondary/accent
+
+  @Column('varchar', {length: 500, nullable: true})
+  public bannerUrl!: string | null; // Tournament banner/header image
+
   @Column('timestamp')
   public startDate!: Date;
 
@@ -53,6 +64,16 @@ export class Tournament {
     default: Surface.HARD,
   })
   public surface!: Surface;
+
+  @Column({
+    type: 'enum',
+    enum: FacilityType,
+    default: FacilityType.OUTDOOR,
+  })
+  public facilityType!: FacilityType;
+
+  @Column('text', {nullable: true})
+  public regulations!: string | null;
 
   @Column({
     type: 'enum',

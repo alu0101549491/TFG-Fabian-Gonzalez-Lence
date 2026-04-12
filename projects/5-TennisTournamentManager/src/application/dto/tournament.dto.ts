@@ -14,6 +14,7 @@
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {TournamentType} from '@domain/enumerations/tournament-type';
 import {Surface} from '@domain/enumerations/surface';
+import {FacilityType} from '@domain/enumerations/facility-type';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
 
 /** DTO for creating a tournament. */
@@ -24,6 +25,11 @@ export interface CreateTournamentDto {
   endDate: Date;
   location: string;
   surface: Surface;
+  facilityType?: FacilityType;
+  regulations?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  logoUrl?: string;
   tournamentType: TournamentType;
   maxParticipants: number;
   registrationFee?: number;
@@ -42,6 +48,11 @@ export interface UpdateTournamentDto {
   endDate?: Date;
   location?: string;
   surface?: Surface;
+  facilityType?: FacilityType;
+  regulations?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  logoUrl?: string;
   tournamentType?: TournamentType;
   maxParticipants?: number;
   registrationFee?: number;
@@ -58,6 +69,11 @@ export interface TournamentDto {
   endDate: Date;
   location: string;
   surface: Surface;
+  facilityType: FacilityType;
+  regulations: string;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  logoUrl: string | null;
   tournamentType: TournamentType;
   status: TournamentStatus;
   maxParticipants: number;

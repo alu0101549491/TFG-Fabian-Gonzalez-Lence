@@ -18,6 +18,7 @@ import {FormsModule} from '@angular/forms';
 import {TournamentService} from '@application/services';
 import {type UpdateTournamentDto} from '@application/dto';
 import {Surface} from '@domain/enumerations/surface';
+import {FacilityType} from '@domain/enumerations/facility-type';
 import {TournamentType} from '@domain/enumerations/tournament-type';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
@@ -58,11 +59,16 @@ export class TournamentEditComponent implements OnInit {
     endDate: '',
     location: '',
     surface: Surface.HARD,
+    facilityType: FacilityType.OUTDOOR,
+    regulations: '',
     tournamentType: TournamentType.SINGLES,
     maxParticipants: 32,
     registrationFee: 0,
     rankingSystem: RankingSystem.POINTS_BASED,
     status: TournamentStatus.DRAFT,
+    primaryColor: '#2563eb',
+    secondaryColor: '#10b981',
+    logoUrl: '',
   };
 
   /** Loading state */
@@ -76,6 +82,9 @@ export class TournamentEditComponent implements OnInit {
 
   /** Available surfaces */
   public readonly surfaces = Object.values(Surface);
+
+  /** Available facility types */
+  public readonly facilityTypes = Object.values(FacilityType);
 
   /** Available tournament types */
   public readonly tournamentTypes = Object.values(TournamentType);
@@ -118,11 +127,16 @@ export class TournamentEditComponent implements OnInit {
         endDate: this.formatDateForInput(tournament.endDate),
         location: tournament.location,
         surface: tournament.surface,
+        facilityType: tournament.facilityType,
+        regulations: tournament.regulations || '',
         tournamentType: tournament.tournamentType,
         maxParticipants: tournament.maxParticipants,
         registrationFee: tournament.registrationFee,
         rankingSystem: tournament.rankingSystem,
         status: tournament.status,
+        primaryColor: tournament.primaryColor || '#2563eb',
+        secondaryColor: tournament.secondaryColor || '#10b981',
+        logoUrl: tournament.logoUrl || '',
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load tournament';
@@ -196,11 +210,16 @@ export class TournamentEditComponent implements OnInit {
         endDate: new Date(this.formData.endDate),
         location: this.formData.location,
         surface: this.formData.surface,
+        facilityType: this.formData.facilityType,
+        regulations: this.formData.regulations || undefined,
         tournamentType: this.formData.tournamentType,
         maxParticipants: Number(this.formData.maxParticipants),
         registrationFee: this.formData.registrationFee ? Number(this.formData.registrationFee) : 0,
         rankingSystem: this.formData.rankingSystem,
         status: this.formData.status,
+        primaryColor: this.formData.primaryColor || undefined,
+        secondaryColor: this.formData.secondaryColor || undefined,
+        logoUrl: this.formData.logoUrl || undefined,
       };
 
       // Update the tournament

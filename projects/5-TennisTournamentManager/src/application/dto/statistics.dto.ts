@@ -69,6 +69,19 @@ export interface TournamentStatisticsDto {
   resultDistribution: ResultDistributionDto;
   mostActiveParticipants: ParticipantActivityDto[];
   topPerformers: ParticipantPerformanceDto[];
+  /** Per-category breakdown (FR46: rankings by category). */
+  categoryBreakdown: CategoryStatsDto[];
+}
+
+/** DTO for statistics broken down by tournament category (FR46). */
+export interface CategoryStatsDto {
+  categoryId: string;
+  categoryName: string;
+  totalParticipants: number;
+  totalMatches: number;
+  completedMatches: number;
+  /** Top performer (highest win %) within this category. */
+  topPerformer?: string;
 }
 
 /** DTO for result distribution in tournament. */

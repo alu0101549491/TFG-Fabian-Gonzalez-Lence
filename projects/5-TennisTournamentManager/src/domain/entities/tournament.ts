@@ -13,6 +13,7 @@
 
 import {TournamentStatus} from '../enumerations/tournament-status';
 import {Surface} from '../enumerations/surface';
+import {FacilityType} from '../enumerations/facility-type';
 import {AcceptanceType} from '../enumerations/acceptance-type';
 import {RankingSystem} from '../enumerations/ranking-system';
 import {Category} from './category';
@@ -36,6 +37,16 @@ export interface TournamentProps {
   location: string;
   /** Default court surface type. */
   surface: Surface;
+  /** Facility type (indoor or outdoor). */
+  facilityType?: FacilityType;
+  /** Tournament-specific regulations, rules, and tiebreak criteria. */
+  regulations?: string;
+  /** Primary branding colour (hex, e.g. '#2563eb'). */
+  primaryColor?: string | null;
+  /** Secondary/accent branding colour (hex, e.g. '#10b981'). */
+  secondaryColor?: string | null;
+  /** URL of the tournament logo image. */
+  logoUrl?: string | null;
   /** Current lifecycle status. */
   status?: TournamentStatus;
   /** Maximum number of participants allowed. */
@@ -84,6 +95,11 @@ export class Tournament {
   public readonly endDate: Date;
   public readonly location: string;
   public readonly surface: Surface;
+  public readonly facilityType: FacilityType;
+  public readonly regulations: string;
+  public readonly primaryColor: string | null;
+  public readonly secondaryColor: string | null;
+  public readonly logoUrl: string | null;
   public readonly status: TournamentStatus;
   public readonly maxParticipants: number;
   public readonly registrationFee: number;
@@ -107,6 +123,11 @@ export class Tournament {
     this.endDate = props.endDate;
     this.location = props.location;
     this.surface = props.surface;
+    this.facilityType = props.facilityType ?? FacilityType.OUTDOOR;
+    this.regulations = props.regulations ?? '';
+    this.primaryColor = props.primaryColor ?? null;
+    this.secondaryColor = props.secondaryColor ?? null;
+    this.logoUrl = props.logoUrl ?? null;
     this.status = props.status ?? TournamentStatus.DRAFT;
     this.maxParticipants = props.maxParticipants;
     this.registrationFee = props.registrationFee ?? 0;
