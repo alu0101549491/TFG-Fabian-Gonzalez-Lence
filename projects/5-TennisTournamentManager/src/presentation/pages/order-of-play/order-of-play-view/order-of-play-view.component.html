@@ -132,10 +132,15 @@
                             @default { 🎾 }
                           }
                         </span>
-                        <span class="court-name-compact">{{ court.name }}</span>
-                        @if (!court.isAvailable) {
-                          <span class="unavailable-tag">Unavailable</span>
-                        }
+                        <div class="court-details">
+                          <span class="court-name-compact">{{ court.name }}</span>
+                          @if (court.openingTime && court.closingTime) {
+                            <small class="court-hours">⏰ {{ court.openingTime }} - {{ court.closingTime }}</small>
+                          }
+                          @if (!court.isAvailable) {
+                            <span class="unavailable-tag">Unavailable</span>
+                          }
+                        </div>
                       </div>
                       <div class="court-edit-actions">
                         <button 
@@ -316,6 +321,36 @@
                 autofocus />
               <small class="form-hint">The court will use the tournament's surface type</small>
             </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="openingTime">Opening Time (Optional)</label>
+                <input 
+                  type="time" 
+                  id="openingTime"
+                  class="form-control"
+                  [value]="newCourtOpeningTime()"
+                  (input)="newCourtOpeningTime.set($any($event.target).value)" />
+                <small class="form-hint">24-hour format (e.g., 08:00)</small>
+              </div>
+
+              <div class="form-group">
+                <label for="closingTime">Closing Time (Optional)</label>
+                <input 
+                  type="time" 
+                  id="closingTime"
+                  class="form-control"
+                  [value]="newCourtClosingTime()"
+                  (input)="newCourtClosingTime.set($any($event.target).value)" />
+                <small class="form-hint">24-hour format (e.g., 22:00)</small>
+              </div>
+            </div>
+
+            @if (newCourtOpeningTime() || newCourtClosingTime()) {
+              <small class="form-hint" style="display: block; margin-top: -8px;">
+                💡 Matches will only be scheduled within these hours. Leave blank for 24/7 availability.
+              </small>
+            }
           </div>
           
           <div class="modal-footer">

@@ -276,10 +276,11 @@ export class OrderOfPlayController {
         estimatedDuration: 90, // default
       }));
 
-      // Check if new slot is available with break time enforcement
+      // Check if new slot is available with break time enforcement and court hours (FR5)
       const isAvailable = this.scheduleService.isTimeSlotAvailable(
         id,
         actualCourtId,
+        court, // Pass court entity for operating hours validation
         new Date(scheduledTime),
         90,
         currentSchedule,
@@ -288,7 +289,7 @@ export class OrderOfPlayController {
 
       if (!isAvailable) {
         throw new AppError(
-          `Time slot conflict: Insufficient break time (${breakTime} minutes required) or overlap with another match`,
+          `Time slot conflict: Insufficient break time (${breakTime} minutes required), overlap with another match, or outside court operating hours`,
           HTTP_STATUS.CONFLICT,
           ERROR_CODES.INVALID_INPUT
         );

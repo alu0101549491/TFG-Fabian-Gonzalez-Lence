@@ -52,10 +52,31 @@ export class CourtController {
    */
   public async create(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {tournamentId, name} = req.body;
+      const {tournamentId, name, openingTime, closingTime} = req.body;
 
       if (!tournamentId || !name) {
         throw new AppError('tournamentId and name are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Validate time format if provided (HH:MM)
+      const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+      if (openingTime && !timeRegex.test(openingTime)) {
+        throw new AppError('openingTime must be in HH:MM format (24-hour)', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+      if (closingTime && !timeRegex.test(closingTime)) {
+        throw new AppError('closingTime must be in HH:MM format (24-hour)', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Validate closing time is after opening time
+      if (openingTime && closingTime) {
+        const [openHour, openMin] = openingTime.split(':').map(Number);
+        const [closeHour, closeMin] = closingTime.split(':').map(Number);
+        const openMinutes = openHour * 60 + openMin;
+        const closeMinutes = closeHour * 60 + closeMin;
+        
+        if (closeMinutes <= openMinutes) {
+          throw new AppError('closingTime must be after openingTime', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+        }
       }
 
       const tournamentRepository = AppDataSource.getRepository(Tournament);
@@ -87,6 +108,8 @@ export class CourtController {
         name,
         surface: tournament.surface,
         isAvailable: true,
+        openingTime: openingTime || null,
+        closingTime: closingTime || null,
       });
 
       await courtRepository.save(court);
@@ -99,16 +122,37 @@ export class CourtController {
 
   /**
    * PUT /api/courts/:id
-   * Updates a court's name.
+   * Updates a court's name and schedule.
    * Admin only.
    */
   public async update(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
-      const {name} = req.body;
+      const {name, openingTime, closingTime} = req.body;
 
       if (!name) {
         throw new AppError('name is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Validate time format if provided (HH:MM)
+      const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+      if (openingTime && !timeRegex.test(openingTime)) {
+        throw new AppError('openingTime must be in HH:MM format (24-hour)', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+      if (closingTime && !timeRegex.test(closingTime)) {
+        throw new AppError('closingTime must be in HH:MM format (24-hour)', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Validate closing time is after opening time
+      if (openingTime && closingTime) {
+        const [openHour, openMin] = openingTime.split(':').map(Number);
+        const [closeHour, closeMin] = closingTime.split(':').map(Number);
+        const openMinutes = openHour * 60 + openMin;
+        const closeMinutes = closeHour * 60 + closeMin;
+        
+        if (closeMinutes <= openMinutes) {
+          throw new AppError('closingTime must be after openingTime', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+        }
       }
 
       const courtRepository = AppDataSource.getRepository(Court);
@@ -134,6 +178,9 @@ export class CourtController {
       }
 
       court.name = name;
+      court.openingTime = openingTime !== undefined ? openingTime : court.openingTime;
+      court.closingTime = closingTime !== undefined ? closingTime : court.closingTime;
+      
       await courtRepository.save(court);
 
       res.status(HTTP_STATUS.OK).json(court);

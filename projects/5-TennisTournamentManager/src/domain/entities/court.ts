@@ -33,6 +33,10 @@ export interface CourtProps {
   availableSlots?: string[];
   /** Whether the court is currently available for scheduling. */
   isAvailable?: boolean;
+  /** Court opening time in HH:MM format (24-hour). */
+  openingTime?: string | null;
+  /** Court closing time in HH:MM format (24-hour). */
+  closingTime?: string | null;
 }
 
 /**
@@ -50,6 +54,8 @@ export class Court {
   public readonly capacity: number;
   public readonly availableSlots: string[];
   public readonly isAvailable: boolean;
+  public readonly openingTime: string | null;
+  public readonly closingTime: string | null;
 
   constructor(props: CourtProps) {
     this.id = props.id;
@@ -60,6 +66,8 @@ export class Court {
     this.capacity = props.capacity ?? 0;
     this.availableSlots = props.availableSlots ?? [];
     this.isAvailable = props.isAvailable ?? true;
+    this.openingTime = props.openingTime ?? null;
+    this.closingTime = props.closingTime ?? null;
   }
 
   /**

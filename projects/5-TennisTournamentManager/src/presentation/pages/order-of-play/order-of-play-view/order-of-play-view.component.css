@@ -411,6 +411,14 @@
   flex-shrink: 0;
 }
 
+.court-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
 .court-name-compact {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -418,6 +426,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.court-hours {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+  font-weight: var(--font-weight-normal);
 }
 
 .unavailable-tag {
@@ -972,6 +986,19 @@
 
 .form-group {
   margin-bottom: var(--spacing-md);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .form-group label {

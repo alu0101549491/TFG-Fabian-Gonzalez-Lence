@@ -159,6 +159,8 @@ export class OrderOfPlayViewComponent implements OnInit {
   /** Court management UI state */
   public showAddCourtModal = signal<boolean>(false);
   public newCourtName = signal<string>('');
+  public newCourtOpeningTime = signal<string>('');
+  public newCourtClosingTime = signal<string>('');
   public editingCourtId = signal<string | null>(null);
   public editingCourtName = signal<string>('');
 
@@ -442,6 +444,43 @@ export class OrderOfPlayViewComponent implements OnInit {
 
     try {
       const opts = this.scheduleOptions();
+      
+      // FR5: Validate start time against court operating hours
+      const courtsWithHours = this.courts().filter(c => c.openingTime && c.closingTime);
+      if (courtsWithHours.length > 0) {
+        // Find earliest opening time among all courts
+        const earliestOpening = courtsWithHours.reduce((earliest, court) => {
+          if (!earliest) return court.openingTime;
+          return court.openingTime < earliest ? court.openingTime : earliest;
+        }, undefined as string | undefined);
+
+        // Find latest closing time among all courts
+        const latestClosing = courtsWithHours.reduce((latest, court) => {
+          if (!latest) return court.closingTime;
+          return court.closingTime > latest ? court.closingTime : latest;
+        }, undefined as string | undefined);
+
+        // Compare start time with earliest opening
+        if (earliestOpening && opts.startTime < earliestOpening) {
+          this.errorMessage.set(
+            `⏰ Start time (${opts.startTime}) is before courts open. ` +
+            `Earliest court opening: ${earliestOpening}. Please adjust the start time.`
+          );
+          this.isGenerating.set(false);
+          return;
+        }
+
+        // Also check if start time is at or after latest closing
+        if (latestClosing && opts.startTime >= latestClosing) {
+          this.errorMessage.set(
+            `⏰ Start time (${opts.startTime}) is at or after courts close. ` +
+            `Latest court closing: ${latestClosing}. Please adjust the start time.`
+          );
+          this.isGenerating.set(false);
+          return;
+        }
+      }
+      
       const payload = {
         tournamentId: this.tournamentId(),
         ...opts,
@@ -538,6 +577,43 @@ export class OrderOfPlayViewComponent implements OnInit {
 
     try {
       const opts = this.scheduleOptions();
+      
+      // FR5: Validate start time against court operating hours
+      const courtsWithHours = this.courts().filter(c => c.openingTime && c.closingTime);
+      if (courtsWithHours.length > 0) {
+        // Find earliest opening time among all courts
+        const earliestOpening = courtsWithHours.reduce((earliest, court) => {
+          if (!earliest) return court.openingTime;
+          return court.openingTime < earliest ? court.openingTime : earliest;
+        }, undefined as string | undefined);
+
+        // Find latest closing time among all courts
+        const latestClosing = courtsWithHours.reduce((latest, court) => {
+          if (!latest) return court.closingTime;
+          return court.closingTime > latest ? court.closingTime : latest;
+        }, undefined as string | undefined);
+
+        // Compare start time with earliest opening
+        if (earliestOpening && opts.startTime < earliestOpening) {
+          this.errorMessage.set(
+            `⏰ Start time (${opts.startTime}) is before courts open. ` +
+            `Earliest court opening: ${earliestOpening}. Please adjust the start time.`
+          );
+          this.isGenerating.set(false);
+          return;
+        }
+
+        // Also check if start time is at or after latest closing
+        if (latestClosing && opts.startTime >= latestClosing) {
+          this.errorMessage.set(
+            `⏰ Start time (${opts.startTime}) is at or after courts close. ` +
+            `Latest court closing: ${latestClosing}. Please adjust the start time.`
+          );
+          this.isGenerating.set(false);
+          return;
+        }
+      }
+      
       const response = await this.http.post<{
         message: string;
         scheduledCount: number;
@@ -777,6 +853,8 @@ export class OrderOfPlayViewComponent implements OnInit {
   public closeAddCourtModal(): void {
     this.showAddCourtModal.set(false);
     this.newCourtName.set('');
+    this.newCourtOpeningTime.set('');
+    this.newCourtClosingTime.set('');
   }
 
   /**
@@ -784,10 +862,36 @@ export class OrderOfPlayViewComponent implements OnInit {
    */
   public async createCourt(): Promise<void> {
     const name = this.newCourtName().trim();
+    const openingTime = this.newCourtOpeningTime().trim() || undefined;
+    const closingTime = this.newCourtClosingTime().trim() || undefined;
     
     if (!name) {
       this.errorMessage.set('Court name is required');
       return;
+    }
+
+    // Validate time format if provided
+    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+    if (openingTime && !timeRegex.test(openingTime)) {
+      this.errorMessage.set('Opening time must be in HH:MM format (e.g., 08:00)');
+      return;
+    }
+    if (closingTime && !timeRegex.test(closingTime)) {
+      this.errorMessage.set('Closing time must be in HH:MM format (e.g., 22:00)');
+      return;
+    }
+
+    // Validate closing time is after opening time
+    if (openingTime && closingTime) {
+      const [openHour, openMin] = openingTime.split(':').map(Number);
+      const [closeHour, closeMin] = closingTime.split(':').map(Number);
+      const openMinutes = openHour * 60 + openMin;
+      const closeMinutes = closeHour * 60 + closeMin;
+      
+      if (closeMinutes <= openMinutes) {
+        this.errorMessage.set('Closing time must be after opening time');
+        return;
+      }
     }
 
     this.isGenerating.set(true);
@@ -798,6 +902,8 @@ export class OrderOfPlayViewComponent implements OnInit {
       await this.http.post('/courts', {
         tournamentId: this.tournamentId(),
         name,
+        openingTime,
+        closingTime,
       });
 
       this.successMessage.set(`✅ Court "${name}" created successfully!`);

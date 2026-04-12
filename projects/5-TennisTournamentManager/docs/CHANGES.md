@@ -8,7 +8,85 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-### Standings Quick-Link Intent Navigation
+### Court Operating Hours Enforcement (FR5)
+
+**Date:** 2026-04-11
+
+Implemented court opening/closing schedule functionality to enforce match scheduling within court operating hours:
+
+**Backend Implementation:**
+- Added `openingTime` and `closingTime` fields to Court entity (nullable varchar(5) in HH:MM 24-hour format)
+- Updated CourtController.create() and update() methods to accept and validate time fields
+- Validation: HH:MM format, closing time must be after opening time
+- Default behavior: courts without time restrictions are available 24/7
+
+**Schedule Generation Enhancement:**
+- Modified ScheduleGenerationService.generateSchedule() to respect court operating hours
+- Added isWithinCourtHours() helper method for time slot validation
+- Algorithm skips time slots outside court hours and advances to next day if needed
+- Updated ScheduleGenerationService.isTimeSlotAvailable() to include court hours check
+- **FR5 Bug Fix (2026-04-12)**: Fixed scheduling algorithm to properly handle courts with different operating hours:
+  - Courts now initialize availability at MAX(startTime, court.openingTime) instead of always using startTime
+  - Added advanceToNextDay() helper that respects individual court opening times when moving to next day
+  - Changed simultaneousMatches mode to prioritize courts with earliest availability rather than blind rotation
+  - Added retry mechanism (up to 7 days) to ensure all matches are scheduled when advancing to next day
+  - This ensures courts opening later in the day (e.g., 18:30-20:30) are properly utilized after earlier courts close
+  - Fixes issue where matches were left "Awaiting Court Assignment" when courts exhausted for current day
+
+**Frontend Implementation:**
+- Updated Court entity to include openingTime and closingTime fields
+- Enhanced Add Court modal with two time input fields (HTML5 time type)
+- Added form validation: HH:MM format, closing > opening time
+- Updated court display to show operating hours (⏰ HH:MM - HH:MM)
+- Responsive layout: time inputs side-by-side on desktop, stacked on mobile
+- Real-time feedback: shows tip when times are entered about scheduling within hours
+- **Schedule Generator Validation**: Added pre-generation validation that checks if start time falls within court operating hours:
+  - Prevents generation if start time is before earliest court opening
+  - Prevents generation if start time is at or after latest court closing
+  - Shows clear error messages with specific court hours instead of confusing "0 matches scheduled"
+  - Validation applied to both `generateSchedule()` and `regenerateSchedule()` methods
+  - Validation verified with comprehensive test suite:
+    - ✅ Start time before earliest opening (e.g., 07:00 < 08:00) → Shows error
+    - ✅ Start time at earliest opening (08:00 = 08:00) → Valid (allows starting exactly when courts open)
+    - ✅ Start time at latest closing (22:00 = 22:00) → Shows error (can't start when courts close)
+    - ✅ Start time within operating hours → Valid
+    - ✅ Correct min/max calculation across multiple courts with different hours
+
+**API Changes:**
+- POST /api/courts - now accepts optional openingTime and closingTime fields
+- PUT /api/courts/:id - now accepts optional openingTime and closingTime fields
+- Reschedule operations enforce court operating hours with appropriate error messages
+
+**Files Modified:**
+- Backend:
+  - [court.entity.ts](backend/src/domain/entities/court.entity.ts) - Added openingTime and closingTime columns
+  - [court.controller.ts](backend/src/presentation/controllers/court.controller.ts) - Added time validation in create/update methods
+  - [schedule-generation.service.ts](backend/src/application/services/schedule-generation.service.ts) - Added court hours enforcement logic
+  - [order-of-play.controller.ts](backend/src/presentation/controllers/order-of-play.controller.ts) - Updated rescheduleMatch to pass court entity
+- Frontend:
+  - [court.ts](src/domain/entities/court.ts) - Added openingTime and closingTime fields to entity
+  - [order-of-play-view.component.ts](src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts) - Added time signals, validation, API integration
+  - [order-of-play-view.component.html](src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.html) - Added time input fields and hours display
+  - [order-of-play-view.component.css](src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.css) - Added form-row, court-details, court-hours styles
+
+**Functional Requirement:** FR5 - Court opening/closing schedules enforcement in order-of-play generation
+
+**Testing Guide:**
+1. Backend: Database migration completed - columns added to courts table
+2. Navigate to Tournament → Order of Play tab
+3. Click "Add" court button in Available Courts section
+4. Enter court name and optional opening/closing times (e.g., 08:00 to 22:00)
+5. Generate order of play - verify matches only scheduled within court hours
+6. View court list - see operating hours displayed below court name (⏰ 08:00 - 22:00)
+7. Attempt to reschedule match outside court hours - should fail with error message
+
+**Testing Courts with Different Operating Hours:**
+- Example: Court 1 (18:30-20:30), Court 2 (09:30-17:30), 90-min matches with 15-min breaks
+- Expected: Court 2 fills first (09:30, 11:15, 13:00, 14:45 = 4 matches), then Court 1 (18:30 = 1 match)
+- Capacity calculation: Available hours ÷ (match duration + break time) = max matches per court
+- Courts opening later in the day will be utilized after earlier courts close or fill up
+
+### Standings Quick -Link Intent Navigation
 
 **Date:** 2026-04-11
 

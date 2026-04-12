@@ -38,6 +38,22 @@ export class Court {
   @Column('boolean', {default: true})
   public isAvailable!: boolean;
 
+  /**
+   * Court opening time in HH:MM format (24-hour).
+   * Represents when the court becomes available for scheduling.
+   * @example "08:00"
+   */
+  @Column('varchar', {length: 5, nullable: true})
+  public openingTime!: string | null;
+
+  /**
+   * Court closing time in HH:MM format (24-hour).
+   * Represents when the court is no longer available for scheduling.
+   * @example "22:00"
+   */
+  @Column('varchar', {length: 5, nullable: true})
+  public closingTime!: string | null;
+
   // Relationships
   @ManyToOne(() => Tournament, (tournament) => tournament.courts)
   @JoinColumn({name: 'tournamentId'})
