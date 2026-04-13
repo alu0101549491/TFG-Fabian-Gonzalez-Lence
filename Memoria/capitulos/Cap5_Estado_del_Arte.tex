@@ -7,6 +7,89 @@
 \cleardoublepage
 \chapter{Estado del Arte} \label{chap:RelatedWork}
 
+La integración de la inteligencia artificial en la ingeniería del software ha evolucionado rápidamente con la aparición de los \ac{LLM}. Diversas investigaciones recientes coinciden en que estos modelos están transformando la forma en que se concibe, desarrolla y mantiene el software, al permitir automatizar tareas que tradicionalmente requerían intervención humana directa. El presente capítulo revisa los trabajos más relevantes en torno a tres ejes temáticos: la generación de código mediante \ac{LLM}, la evaluación de la calidad del software producido por \ac{IA}, y los enfoques emergentes de colaboración multiagente en el desarrollo de software. Al final del capítulo se sitúa el presente trabajo en el contexto de la literatura existente, identificando el vacío que motiva esta contribución.
+
+\section{Generación de código con LLMs} \label{sec:generacion-codigo}
+
+La capacidad de los \ac{LLM} para generar código a partir de descripciones en lenguaje natural constituye una de las aplicaciones más visibles y estudiadas de la \ac{IA} generativa en el ámbito de la ingeniería del software. Modelos como GPT-4 (OpenAI), Claude (Anthropic), Codex (OpenAI), CodeT5 (Salesforce) o StarCoder (BigCode) se han integrado progresivamente en los entornos de desarrollo, ofreciendo asistencia en tiempo real para la escritura, completado y refactorización de código.\\
+
+Wang y Chen \cite{Wang:2023:LLMReview} presentan una revisión exhaustiva del panorama actual de la generación de código con \ac{LLM}, destacando que estos modelos han demostrado una notable capacidad para comprender y producir código funcional en múltiples lenguajes de programación. Su análisis abarca tanto las arquitecturas subyacentes (encoder-decoder, decoder-only) como los principales \textit{benchmarks} empleados para su evaluación, entre los que destacan HumanEval y MBPP (\textit{Mostly Basic Python Programming}). No obstante, los autores subrayan una carencia importante: la evaluación sistemática de la calidad del código generado no ha avanzado al mismo ritmo que las aplicaciones prácticas, dejando abierta la necesidad de métodos de análisis más completos que consideren múltiples dimensiones de calidad más allá de la mera corrección funcional.\\
+
+% NOTA: Nueva referencia sobre benchmarks (HumanEval, MBPP, SWE-bench) y sobre modelos específicos (Codex, StarCoder, CodeLlama).
+El \textit{benchmark} más influyente en este dominio es \textbf{HumanEval} \cite{Chen:2021:Codex}, introducido junto con Codex ---el modelo subyacente a GitHub Copilot--- y diseñado para medir la corrección funcional mediante la métrica \textit{pass@k}. Sus limitaciones ---problemas autocontenidos, dominio reducido, ausencia de contexto arquitectónico--- son precisamente las que motivan el enfoque de este trabajo, centrado en proyectos completos en lugar de fragmentos aislados.\\
+
+El impacto práctico de estas herramientas es ya innegable. GitHub Copilot, basado inicialmente en OpenAI Codex y actualmente integrado con modelos más avanzados, se ha convertido en la herramienta de asistencia al código más adoptada de la industria, con millones de desarrolladores activos. Su evolución reciente hacia un modo ``agente'' ---capaz no solo de completar fragmentos sino de ejecutar tareas complejas de forma autónoma dentro del IDE--- representa un salto cualitativo respecto a las primeras versiones de autocompletado inteligente.\\
+
+Sin embargo, la generación de código mediante \ac{LLM} presenta limitaciones bien documentadas. Los modelos tienden a producir código que funciona para los casos de prueba más evidentes pero que puede fallar en casos límite, presentar vulnerabilidades de seguridad o no adherirse a los principios de diseño y las convenciones del proyecto. Además, la calidad del resultado depende en gran medida de la calidad del \textit{prompt} proporcionado: especificaciones ambiguas o incompletas conducen invariablemente a código que requiere intervención humana significativa para ser utilizable en un contexto profesional.\\
+
+\section{Evaluación de la calidad del código generado por IA} \label{sec:evaluacion-calidad}
+
+Si bien la capacidad de los \ac{LLM} para producir código funcional ha quedado ampliamente demostrada, una cuestión distinta ---y considerablemente menos resuelta--- es la \textbf{calidad} de ese código más allá de su corrección funcional inmediata. La evaluación de la calidad del software generado por \ac{IA} constituye un área de investigación activa en la que confluyen métricas tradicionales de ingeniería del software con nuevos desafíos específicos del contexto generativo.\\
+
+Tosi \cite{Tosi:2024:CodeQuality} realiza una de las evaluaciones empíricas más completas hasta la fecha, comparando la calidad del código generado por GPT-3.5, GPT-4 y Google Bard en un conjunto diverso de tareas de programación. Sus resultados confirman que, aunque estos modelos logran producir código funcional y coherente en la mayoría de los casos de prueba, aún presentan limitaciones significativas en cuanto a mantenibilidad y adherencia a buenas prácticas. En particular, el autor observa que el código generado tiende a exhibir una \textbf{complejidad ciclomática moderada-alta} y la presencia recurrente de \textit{code smells} ---como métodos excesivamente largos, duplicación de lógica o acoplamiento innecesario---, lo que subraya la importancia de la revisión humana incluso cuando el código funciona correctamente. Tosi concluye que la correcta definición de los requisitos en el \textit{prompt} es un factor determinante para la calidad del resultado, y que la supervisión constante de expertos sigue siendo imprescindible.\\
+
+% NOTA: Referencia sobre benchmarks de calidad como SonarQube, estudios sobre code smells en código generado por IA, o trabajos sobre métricas de mantenibilidad (complejidad ciclomática, acoplamiento, cohesión).
+Cabe señalar que la métrica \textit{pass@k} \cite{Chen:2021:Codex} resulta insuficiente como indicador de calidad global: un programa puede superar todos sus casos de prueba y presentar simultáneamente alta complejidad ciclomática o ausencia de principios como \ac{SOLID}, lo que refuerza la necesidad de un análisis multidimensional como el adoptado en este trabajo.\\
+
+Estas observaciones plantean una tensión fundamental en el uso de \ac{IA} generativa para el desarrollo de software: la facilidad para producir código que ``funciona'' puede crear una falsa sensación de calidad si no se acompaña de procesos rigurosos de revisión. Un módulo que supera sus casos de prueba pero que presenta alta complejidad, baja cohesión o dependencias innecesarias generará \textbf{deuda técnica} que se acumulará a medida que el proyecto escale. Este problema es especialmente relevante en el contexto del presente trabajo, donde los proyectos van creciendo en complejidad y las decisiones arquitectónicas tomadas ---o no tomadas--- en las primeras fases condicionan el éxito de las fases posteriores.\\
+
+La literatura existente se ha centrado mayoritariamente en evaluar la calidad del código generado para \textbf{fragmentos aislados}, utilizando \textit{benchmarks} como HumanEval o MBPP que plantean problemas autocontenidos de complejidad limitada. Sin embargo, la evaluación de la calidad en el contexto de \textbf{aplicaciones completas} ---con múltiples módulos interrelacionados, patrones arquitectónicos definidos y requisitos no funcionales como rendimiento, seguridad o accesibilidad--- ha recibido considerablemente menos atención. El presente trabajo contribuye precisamente en esta dirección, al evaluar la calidad del código generado por \ac{IA} no en tareas aisladas, sino en el contexto de cinco proyectos web completos con arquitecturas reales y requisitos heterogéneos.\\
+
+Otro aspecto relevante, señalado por Khade y Sambhe \cite{Khade:2025:AIinSD}, es la aplicación de la \ac{IA} no solo a la generación de código sino también a su \textbf{evaluación automatizada}. Estos autores documentan cómo las herramientas de \ac{IA} pueden emplearse para la detección automatizada de defectos, el análisis estático de seguridad y la generación de suites de pruebas, configurando un escenario en el que la propia \ac{IA} actúa como mecanismo de control de calidad del código producido por otros modelos. Esta idea ---que la \ac{IA} no solo genere sino que también revise código--- es central en la metodología adoptada en este trabajo, donde se asignan modelos específicos a las tareas de revisión (GitHub Copilot) y testing (Qwen), evaluando su capacidad para detectar defectos en código producido por un modelo distinto (Mistral).\\
+
+\section{Colaboración multiagente en el desarrollo de software} \label{sec:colaboracion-multiagente}
+
+Más allá del uso de modelos individuales para tareas aisladas, una línea de investigación emergente explora la posibilidad de organizar múltiples agentes de \ac{IA} en flujos de trabajo colaborativos que reproduzcan la dinámica de un equipo de desarrollo humano. En este paradigma, cada agente asume un rol especializado ---analista, arquitecto, desarrollador, revisor, tester--- y coopera con los demás mediante intercambio de artefactos y conversaciones estructuradas, siguiendo las fases del \ac{SDLC} tradicional.\\
+
+Turunen y Fagerholm \cite{Turunen:2023:FromIdeas} constituyen una de las referencias más relevantes en esta dirección. Su informe tecnológico explora la automatización de la creación de aplicaciones a partir de ideas o especificaciones textuales, documentando cómo herramientas basadas en agentes de \ac{IA} ---como AutoGPT o Microsoft AutoGen--- permiten distribuir las tareas del ciclo de vida del software entre distintos roles inteligentes que colaboran mediante conversaciones. Los autores describen escenarios en los que un agente genera código a partir de requisitos, otro lo revisa, un tercero produce pruebas y un cuarto coordina el flujo global, configurando lo que denominan \textit{multi-agent software development}. Su conclusión principal es que el futuro de la ingeniería del software podría pasar por entornos de agentes colaborativos capaces de transformar radicalmente los flujos de trabajo tradicionales, aunque reconocen que la coordinación efectiva entre agentes sigue siendo un problema abierto.\\
+
+% NOTA: Referencias a frameworks multiagente recientes como:
+% - ChatDev (Qian et al., 2023)
+% - MetaGPT (Hong et al., 2023)
+% - AgentCoder (Huang et al., 2024)
+Dos trabajos recientes ilustran este paradigma. ChatDev \cite{Qian:2024:ChatDev} organiza agentes especializados en un flujo de diseño, codificación y testing guiado por lenguaje natural, completando proyectos simples en menos de siete minutos. MetaGPT \cite{Hong:2024:MetaGPT} va más lejos al codificar \textit{Procedimientos Operativos Estándar} (SOPs) en los prompts de cada agente ---gestor de producto, arquitecto, ingeniero, tester--- y exigir artefactos intermedios estructurados que actúan como contrato entre fases, reduciendo la acumulación de errores por alucinación.\\
+
+Este enfoque multiagente presenta ventajas teóricas significativas frente al uso de un único modelo. En primer lugar, permite explotar las \textbf{fortalezas complementarias} de distintos modelos: un modelo puede sobresalir en la comprensión de arquitecturas complejas mientras que otro puede ser más eficaz generando código idiomático o produciendo suites de pruebas exhaustivas. En segundo lugar, la separación de roles introduce \textbf{mecanismos implícitos de control de calidad}: cuando el modelo que revisa el código es distinto del que lo generó, se evita el sesgo de autoconfirmación que se produciría si un único modelo evaluase su propia producción. En tercer lugar, la estructura de fases facilita la \textbf{trazabilidad del proceso}, ya que cada artefacto intermedio ---especificación, diseño, código, informe de revisión, suite de pruebas--- queda documentado y puede ser analizado de forma independiente.\\
+
+No obstante, la colaboración multiagente también plantea desafíos considerables. La \textbf{pérdida de contexto} entre fases es uno de los más críticos: cada modelo opera con una ventana de contexto limitada y no tiene acceso directo al estado mental del modelo anterior, lo que puede generar inconsistencias cuando un diseño arquitectónico complejo debe traducirse fielmente en código. La \textbf{propagación de errores} constituye otro riesgo importante: un error en la fase de diseño que no sea detectado se amplificará en las fases de codificación y testing. Además, la \textbf{heterogeneidad de los modelos} ---cada uno con sus propios sesgos, limitaciones y formas de interpretar las instrucciones--- puede generar fricciones cuando los artefactos producidos por un modelo deben ser procesados por otro.\\
+
+Khade y Sambhe \cite{Khade:2025:AIinSD} aportan una perspectiva complementaria al enfatizar que la \ac{IA} en el desarrollo de software no debe entenderse como un reemplazo del ingeniero humano, sino como un \textbf{aumento de sus capacidades}. Estos autores argumentan que el escenario más productivo es aquel en el que la \ac{IA} automatiza las tareas más repetitivas y mecánicas ---generación de código boilerplate, escritura de pruebas unitarias, detección de code smells--- mientras que el ser humano aporta el juicio crítico, la visión arquitectónica global y la toma de decisiones que los modelos aún no pueden realizar de forma fiable. Esta visión de \textbf{cooperación humano-máquina equilibrada} es precisamente la que adopta el presente trabajo, donde el autor actúa como supervisor y director de orquesta de un equipo de agentes de \ac{IA}, interviniendo cuando los modelos producen resultados insatisfactorios pero delegando en ellos la mayor parte del trabajo de producción.\\
+
+\section{Posicionamiento del presente trabajo} \label{sec:posicionamiento}
+
+La revisión de la literatura presentada en las secciones anteriores revela un campo en rápida expansión pero con vacíos significativos que el presente Trabajo de Fin de Grado pretende abordar. La Tabla~\ref{tab:comparativa-trabajos} sintetiza las principales diferencias entre los trabajos revisados y la contribución propuesta.\\
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lcccc}
+\hline
+\textbf{Característica} & \textbf{Wang} & \textbf{Tosi} & \textbf{Turunen} & \textbf{Este TFG} \\
+ & \cite{Wang:2023:LLMReview} & \cite{Tosi:2024:CodeQuality} & \cite{Turunen:2023:FromIdeas} & \\
+\hline
+Múltiples modelos de IA          & No  & Sí  & Sí  & Sí \\
+Roles especializados por fase    & No  & No  & Sí  & Sí \\
+Proyectos completos (no fragmentos) & No  & No  & No  & Sí \\
+Complejidad creciente            & No  & No  & No  & Sí \\
+Revisión cruzada entre modelos   & No  & No  & No  & Sí \\
+Testing generado por IA          & No  & No  & No  & Sí \\
+Documentación de prompts         & No  & Parcial & Parcial & Completa \\
+Métricas de calidad de código    & Teórico & Sí  & No  & Sí \\
+\hline
+\end{tabular}
+\caption{Comparativa entre los trabajos revisados y el presente TFG.}
+\label{tab:comparativa-trabajos}
+\end{table}
+
+En primer lugar, la investigación existente sobre generación de código con \ac{LLM} se ha centrado predominantemente en la evaluación de \textbf{tareas aisladas}: funciones individuales, algoritmos autocontenidos o fragmentos de código de complejidad limitada, evaluados mediante \textit{benchmarks} como HumanEval o MBPP \cite{Wang:2023:LLMReview}. Sin embargo, el desarrollo de software real implica construir \textbf{aplicaciones completas} con múltiples módulos interrelacionados, patrones arquitectónicos definidos, gestión de estado, interacción con el usuario y requisitos no funcionales como el rendimiento, la accesibilidad o la seguridad. El presente trabajo aborda directamente esta limitación al evaluar la capacidad de los modelos de \ac{IA} para construir cinco proyectos web completos, cada uno con su propia arquitectura, tecnologías y nivel de complejidad.\\
+
+En segundo lugar, los estudios que han evaluado la calidad del código generado por \ac{IA} \cite{Tosi:2024:CodeQuality} lo han hecho, en su mayoría, analizando la producción de un \textbf{único modelo} en un conjunto de tareas predefinidas. El presente trabajo introduce una dimensión adicional: la \textbf{revisión cruzada entre modelos}, donde el código generado por un modelo (Mistral o GitHub Copilot) es revisado por otro (GitHub Copilot con GPT-4o mini) y testeado por un tercero (Qwen). Este esquema permite estudiar no solo la calidad intrínseca del código generado, sino también la capacidad de los modelos para detectar defectos en código producido por otros, una cuestión escasamente explorada en la literatura.\\
+
+En tercer lugar, aunque los enfoques de colaboración multiagente han sido descritos conceptualmente \cite{Turunen:2023:FromIdeas}, las implementaciones prácticas documentadas hasta la fecha se limitan a demostraciones con proyectos de alcance reducido o a prototipos experimentales. El presente trabajo aporta una \textbf{implementación práctica a escala real} de un flujo multimodelo aplicado a cinco proyectos de complejidad creciente ---desde una \ac{SPA} sencilla hasta un sistema de gestión con múltiples roles de usuario---, documentando exhaustivamente cada interacción: los prompts empleados, las respuestas obtenidas, las correcciones necesarias y las decisiones tomadas por el supervisor humano.\\\\\\
+
+Finalmente, un aspecto diferenciador clave del presente trabajo es la \textbf{progresión en complejidad} de los proyectos desarrollados. Esta progresión no es meramente ilustrativa: permite observar cómo las capacidades y limitaciones de los modelos escalan ---o no--- ante exigencias crecientes, y cómo la metodología de trabajo debe adaptarse en consecuencia. El cambio de enfoque introducido a partir del cuarto proyecto, donde se sustituyó el modelo conversacional por GitHub Copilot en modo agente, es un ejemplo directo de esta adaptación y constituye un hallazgo metodológico que enriquece las conclusiones del trabajo.\\
+
+En síntesis, el presente TFG se posiciona en la intersección entre tres líneas de investigación ---generación de código, evaluación de calidad y colaboración multiagente--- y contribuye con una evaluación empírica integral que abarca el ciclo completo de desarrollo de software, desde la arquitectura hasta el testing, aplicada a proyectos web reales y documentada con un nivel de detalle que permite la reproducibilidad del experimento.\\
+
 \begin{comment}
     Reseñar/Revisar aquí algunos de los trabajos más relevantes (related work) que hacen cosas similares a las que nosotros queremos hacer.\\
     
@@ -28,6 +111,7 @@
     \end{itemize}
 \end{comment}
 
+\begin{comment}
 La integración de la inteligencia artificial en la ingeniería del software ha evolucionado rápidamente con la aparición de los LLMs. Diversas investigaciones recientes coinciden en que estos modelos están transformando la forma en que se concibe, desarrolla y mantiene el software, al permitir automatizar tareas que tradicionalmente requerían intervención humana directa.\\
 
 Wang y Chen \cite{Wang:2023:LLMReview} revisan el panorama actual de la generación de código con LLMs, destacando que estos modelos han demostrado una notable capacidad para comprender y producir código funcional en múltiples lenguajes de programación. Sin embargo, subrayan una carencia importante: la evaluación sistemática de la calidad del código no ha mostrado un avance al mismo ritmo que las aplicaciones prácticas, dejando abierta la necesidad de métodos de análisis más completos que consideren múltiples características de calidad más allá de la corrección funcional.\\
@@ -39,7 +123,4 @@ Por su parte, Davide Tosi \cite{Tosi:2024:CodeQuality} realiza una evaluación e
 De modo complementario, Khade y Sambhe \cite{Khade:2025:AIinSD} amplían la perspectiva al examinar la aplicación de la IA no solo en la generación de código, sino también en pruebas automatizadas, mantenimiento y seguridad. Enfatizan que, más que reemplazar a los ingenieros de software, la IA está aumentando sus capacidades al automatizar tareas tediosas, permitiéndoles enfocarse en el diseño de alto nivel y la resolución de problemas complejos, aunque esto requiere una cooperación equilibrada entre humanos y máquinas.\\
 
 En conjunto, estos estudios reflejan un campo de rápida expansión, pero todavía fragmentado. Las investigaciones actuales se centran mayoritariamente en el rendimiento individual de los modelos en tareas específicas, mientras que el potencial de colaboración entre múltiples IAs especializadas a lo largo del ciclo del desarrollo de software sigue poco explorado. Precisamente en este vacío se enmarca el presente Trabajo de Fin de Grado, que propone analizar cómo distintos agentes de IA pueden cooperar de forma complementaria para desarrollar software de manera integrada, evaluando la coherencia, calidad y eficacia del producto resultante.
-
-
-
-
+\end{comment}
