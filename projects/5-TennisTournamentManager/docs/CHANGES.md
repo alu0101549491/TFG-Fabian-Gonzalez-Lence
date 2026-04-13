@@ -8,6 +8,83 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### FR15 UI Enhancement: Pending Invitations Card (2026-04-13)
+
+**Improved Pending Invitations Section Readability:**
+- ✅ **Frontend**: Updated `my-invitations.component.html`:
+  - Wrapped "Pending Invitations (Action Required)" section title in a card component
+  - Added descriptive subtitle "Review and respond to partner requests"
+- ✅ **Frontend**: Updated `my-invitations.component.css`:
+  - Created `.section-header-card` style with white background, shadow, and border-radius
+  - Added warning-colored left border (4px solid) for visual emphasis
+  - Updated `.section-title` to use gray-800 color for better readability
+  - Added `.section-subtitle` with gray-600 color for supporting text
+  - Removed previous border-bottom styling in favor of card design
+
+**User Experience Improvements:**
+- Section header now stands out as a distinct card component
+- Better text contrast and readability with dark gray on white background
+- Visual hierarchy improved with card elevation and colored accent border
+- Consistent with overall app design language (card-based UI)
+
+### FR15 Enhancement: Dashboard Integration & UI Styling (2026-04-13)
+
+**Added Partner Invitations to Player Dashboard:**
+- ✅ **Frontend**: Updated `dashboard.component.ts`:
+  - Imported and injected `PartnerInvitationService`
+  - Added `pendingInvitationsCount` computed signal to expose invitation count
+  - Modified `loadDashboardData()` to load partner invitations for players (not admins)
+  - Added call to `partnerInvitationService.loadMyInvitations()` in player data loading flow
+- ✅ **Frontend**: Updated `dashboard.component.html`:
+  - Added new "Partner Invitations" card section in player view (between "My Tournaments" and "Admin Tools")
+  - Shows pending invitation count with large number display and gradient styling
+  - Empty state when no pending invitations with friendly message
+  - "View All Invitations" link to `/my-invitations` page
+- ✅ **Frontend**: Updated `dashboard.component.css`:
+  - Added `.invitations-summary` styles for invitation count display
+  - Added `.invitation-count-card` with gradient background and hover animation
+  - Added `.count-number` and `.count-label` for large number display
+  - Added `.view-invitations-btn` with hover effects matching app design
+
+**Improved My Invitations Page Styling:**
+- ✅ **Frontend**: Updated `my-invitations.component.html`:
+  - Restructured with hero section featuring green gradient background
+  - Added glassmorphism back button in hero-top section
+  - Updated card structure to match app design patterns (card-header, card-body, card-actions)
+  - Enhanced invitation metadata display with structured layout
+  - Added responsive date display
+- ✅ **Frontend**: Updated `my-invitations.component.ts`:
+  - Imported and injected `Router` service
+  - Added `goBack()` method for back button navigation
+- ✅ **Frontend**: Replaced `my-invitations.component.css` (470 lines):
+  - Hero section with green gradient: `linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-secondary) 100%)`
+  - Glassmorphism back button with blur effects
+  - Card components with hover animations and shadows
+  - Status badge variants (pending: yellow, accepted: green, declined: red, cancelled: gray)
+  - Loading spinner with keyframe animation
+  - Action button styles (accept: green, decline: red, cancel: gray)
+  - Responsive design for mobile devices (768px, 480px breakpoints)
+
+**User Experience Improvements:**
+- Players can now see pending invitations count directly on dashboard
+- One-click access to invitations from dashboard
+- Consistent visual design across all pages (hero sections, card patterns, color scheme)
+- Enhanced mobile responsiveness
+- Improved navigation with back button
+
+### FR15 Fixes: Partner Invitation Notifications (2026-04-13)
+
+**Fixed notification metadata for partner invitations:**
+- ✅ **Backend**: Updated `notification.service.ts` to include `tournamentId` in metadata for all partner invitation notifications:
+  - `notifyPartnerInvitation()` — Now includes `tournamentId` parameter and in metadata
+  - `notifyPartnerInvitationAccepted()` — Now includes `tournamentId` parameter and in metadata
+  - `notifyPartnerInvitationDeclined()` — Now includes `tournamentId` parameter and in metadata
+- ✅ **Backend**: Updated `partner-invitation.service.ts` calls to pass `tournamentId` to notification methods
+- ✅ **Frontend**: Updated `notification-list.component.ts` to handle partner invitation notifications:
+  - Added check for `invitationId` in metadata
+  - Partner invitation notifications now navigate to `/my-invitations` page instead of tournament detail page
+  - This allows users to accept/decline invitations directly from the notification
+
 ### FR15: Partner Invitation System with Mutual Confirmation (COMPLETE)
 
 **Date:** 2026-04-12

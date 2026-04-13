@@ -13,9 +13,11 @@
 
 import {Component, OnInit, inject, signal, computed} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {RouterModule} from '@angular/router';
+import {Router, RouterModule} from '@angular/router';
 import {PartnerInvitationService, type PartnerInvitationDto, PartnerInvitationStatus} from '@infrastructure/services/partner-invitation.service';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import templateHtml from './my-invitations.component.html?raw';
+import styles from './my-invitations.component.css?inline';
 
 /**
  * Component for managing partner invitations.
@@ -30,12 +32,13 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
   selector: 'app-my-invitations',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './my-invitations.component.html',
-  styleUrls: ['./my-invitations.component.css'],
+  template: templateHtml,
+  styles: [styles],
 })
 export class MyInvitationsComponent implements OnInit {
   private readonly partnerInvitationService = inject(PartnerInvitationService);
   private readonly authStateService = inject(AuthStateService);
+  private readonly router = inject(Router);
 
   /**
    * All invitations for the current user.
@@ -219,5 +222,12 @@ export class MyInvitationsComponent implements OnInit {
       default:
         return '';
     }
+  }
+
+  /**
+   * Navigates back to the home page.
+   */
+  public goBack(): void {
+    void this.router.navigate(['/']);
   }
 }

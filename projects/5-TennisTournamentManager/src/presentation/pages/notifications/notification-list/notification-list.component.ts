@@ -161,6 +161,13 @@ export class NotificationListComponent implements OnInit {
     // Determine navigation route based on notification type and metadata
     const metadata = notification.metadata as Record<string, string> | null;
     
+    // For partner invitation notifications, navigate to My Invitations page
+    if (metadata?.invitationId && notification.title.includes('Partner Invitation')) {
+      console.log('Navigating to My Invitations for partner invitation notification');
+      await this.router.navigate(['/my-invitations']);
+      return;
+    }
+    
     // For dispute notifications, navigate admins to disputed matches page
     if (notification.title === '⚠️ Match Result Disputed') {
       console.log('Navigating to disputed matches for admin notification');

@@ -19,6 +19,7 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
 import {RegistrationService} from '@application/services/registration.service';
 import {StatisticsService} from '@application/services/statistics.service';
 import {MatchService} from '@application/services/match.service';
+import {PartnerInvitationService} from '@infrastructure/services/partner-invitation.service';
 import {RegistrationDto} from '@application/dto';
 import {StatisticsDto} from '@application/dto/statistics.dto';
 import {MatchDto} from '@application/dto/match.dto';
@@ -51,6 +52,7 @@ export class DashboardComponent implements OnInit {
   private readonly registrationService = inject(RegistrationService);
   private readonly statisticsService = inject(StatisticsService);
   private readonly matchService = inject(MatchService);
+  private readonly partnerInvitationService = inject(PartnerInvitationService);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
 
@@ -93,6 +95,11 @@ export class DashboardComponent implements OnInit {
   /** Disputed matches (for admin view) */
   protected readonly disputedMatches = signal<any[]>([]);
 
+  /** Pending partner invitations count */
+  protected readonly pendingInvitationsCount = computed(() => 
+    this.partnerInvitationService.pendingInvitationsCount()
+  );
+
   /** Win percentage computed */
   protected readonly winPercentage = computed(() => {
     const stats = this.statistics();
@@ -132,7 +139,7 @@ export class DashboardComponent implements OnInit {
         });
         this.disputedMatches.set(disputedResults);
       } else {
-        // Regular players: Load registrations, stats, and matches
+        // Regular players: Load registrations, stats, matches, and partner invitations
         const [registrations, stats, matches] = await Promise.all([
           this.registrationService.getRegistrationsByParticipant(user.id).catch((err) => {
             console.warn('Failed to load registrations:', err.message);
@@ -151,6 +158,11 @@ export class DashboardComponent implements OnInit {
         this.registrations.set(registrations);
         this.statistics.set(stats);
         this.upcomingMatches.set(matches);
+
+        // Load partner invitations to update the count
+        await this.partnerInvitationService.loadMyInvitations().catch((err) => {
+          console.warn('Failed to load partner invitations:', err.message);
+        });
       }
     } catch (error) {
       // This catch should rarely trigger now since individual promises handle their errors

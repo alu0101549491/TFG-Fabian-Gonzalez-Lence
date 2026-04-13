@@ -177,7 +177,8 @@ export class PartnerInvitationService {
       inviterId,
       tournament.name,
       category.name,
-      invitation.id
+      invitation.id,
+      tournamentId
     );
 
     console.log(`✉️ Partner invitation sent: ${inviterId} → ${inviteeId} for tournament ${tournamentId}`);
@@ -261,7 +262,8 @@ export class PartnerInvitationService {
       invitation.inviterId,
       invitation.inviteeId,
       invitation.tournament!.name,
-      invitation.category!.name
+      invitation.category!.name,
+      invitation.tournamentId
     );
 
     // Notif admins that new pair is waiting for approval
@@ -314,7 +316,8 @@ export class PartnerInvitationService {
       invitation.inviterId,
       invitation.inviteeId,
       invitation.tournament!.name,
-      invitation.category!.name
+      invitation.category!.name,
+      invitation.tournamentId
     );
 
     console.log(`❌ Partner invitation declined: ${invitationId}`);

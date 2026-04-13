@@ -16,6 +16,7 @@ export {Tournament} from './tournament.entity';
 export {Category} from './category.entity';
 export {Court} from './court.entity';
 export {Registration} from './registration.entity';
+export {PartnerInvitation} from './partner-invitation.entity';
 export {Bracket} from './bracket.entity';
 export {Phase} from './phase.entity';
 export {Match} from './match.entity';

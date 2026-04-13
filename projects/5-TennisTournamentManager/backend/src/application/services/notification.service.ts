@@ -573,6 +573,7 @@ export class NotificationService {
    * @param tournamentName - Tournament name
    * @param categoryName - Category name
    * @param invitationId - Invitation ID
+   * @param tournamentId - Tournament ID
    */
   public async notifyPartnerInvitation(
     inviteeId: string,
@@ -580,6 +581,7 @@ export class NotificationService {
     tournamentName: string,
     categoryName: string,
     invitationId: string,
+    tournamentId: string,
   ): Promise<void> {
     const message = `You've been invited to be a doubles partner for ${tournamentName} (${categoryName}). Please review your invitations.`;
     await this.createNotification(
@@ -587,7 +589,7 @@ export class NotificationService {
       NotificationType.REGISTRATION_CONFIRMED,
       '✉️ Partner Invitation Received',
       message,
-      {invitationId, inviterId, tournamentName, categoryName},
+      {invitationId, inviterId, tournamentName, categoryName, tournamentId},
     );
   }
 
@@ -598,12 +600,14 @@ export class NotificationService {
    * @param inviteeId - Player who accepted
    * @param tournamentName - Tournament name
    * @param categoryName - Category name
+   * @param tournamentId - Tournament ID
    */
   public async notifyPartnerInvitationAccepted(
     inviterId: string,
     inviteeId: string,
     tournamentName: string,
     categoryName: string,
+    tournamentId: string,
   ): Promise<void> {
     const message = `Your partner invitation has been accepted! Both of you are now registered for ${tournamentName} (${categoryName}), pending admin approval.`;
     await this.createNotification(
@@ -611,7 +615,7 @@ export class NotificationService {
       NotificationType.REGISTRATION_CONFIRMED,
       '✅ Partner Invitation Accepted',
       message,
-      {inviteeId, tournamentName, categoryName},
+      {inviteeId, tournamentName, categoryName, tournamentId},
     );
   }
 
@@ -622,12 +626,14 @@ export class NotificationService {
    * @param inviteeId - Player who declined
    * @param tournamentName - Tournament name
    * @param categoryName - Category name
+   * @param tournamentId - Tournament ID
    */
   public async notifyPartnerInvitationDeclined(
     inviterId: string,
     inviteeId: string,
     tournamentName: string,
     categoryName: string,
+    tournamentId: string,
   ): Promise<void> {
     const message = `Your partner invitation for ${tournamentName} (${categoryName}) has been declined.`;
     await this.createNotification(
@@ -635,7 +641,7 @@ export class NotificationService {
       NotificationType.REGISTRATION_CONFIRMED,
       '❌ Partner Invitation Declined',
       message,
-      {inviteeId, tournamentName, categoryName},
+      {inviteeId, tournamentName, categoryName, tournamentId},
     );
   }
 

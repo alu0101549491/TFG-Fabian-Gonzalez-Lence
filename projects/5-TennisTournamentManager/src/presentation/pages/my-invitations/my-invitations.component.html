@@ -11,142 +11,207 @@
   @see https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager
 -->
 
-<div class="my-invitations-container">
-  <header class="page-header">
-    <h1>Partner Invitations</h1>
-    <p class="subtitle">Manage your doubles tournament partner requests</p>
-  </header>
-
-  @if (isLoading()) {
-    <div class="loading-state">
-      <p>Loading invitations...</p>
+<div class="invitations-list-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-top">
+        <button
+          class="back-button"
+          (click)="goBack()"
+          type="button"
+          title="Go back">
+          ← Back
+        </button>
+      </div>
+      <h1 class="hero-title">✉️ Partner Invitations</h1>
+      <p class="hero-subtitle">Manage your doubles tournament partner requests</p>
     </div>
-  } @else {
-    <!-- Pending Invitations (Action Required) -->
-    @if (receivedPendingInvitations().length > 0) {
-      <section class="invitations-section">
-        <h2 class="section-title">⏳ Pending Invitations (Action Required)</h2>
-        <div class="invitations-grid">
-          @for (invitation of receivedPendingInvitations(); track invitation.id) {
-            <div class="invitation-card pending-card">
-              <div class="card-header">
-                <div class="status-badge" [ngClass]="getStatusClass(invitation.status)">
-                  {{ invitation.status }}
-                </div>
-                <div class="date">{{ formatDate(invitation.createdAt) }}</div>
-              </div>
-              <div class="card-body">
-                <h3 class="tournament-name">{{ invitation.tournament?.name }}</h3>
-                <p class="category-name">Category: {{ invitation.category?.name }}</p>
-                <p class="partner-info">
-                  <strong>From:</strong> {{ getUserName(invitation, 'inviter') }}
-                </p>
-                @if (invitation.message) {
-                  <p class="invitation-message">"{{ invitation.message }}"</p>
-                }
-              </div>
-              <div class="card-actions">
-                <button 
-                  class="btn btn-success" 
-                  (click)="acceptInvitation(invitation.id)">
-                  ✓ Accept
-                </button>
-                <button 
-                  class="btn btn-danger" 
-                  (click)="declineInvitation(invitation.id)">
-                  ✗ Decline
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-    }
+  </section>
 
-    <!-- Sent Invitations -->
-    @if (sentInvitations().length > 0) {
-      <section class="invitations-section">
-        <h2 class="section-title">📤 Sent Invitations</h2>
-        <div class="invitations-grid">
-          @for (invitation of sentInvitations(); track invitation.id) {
-            <div class="invitation-card sent-card">
-              <div class="card-header">
-                <div class="status-badge" [ngClass]="getStatusClass(invitation.status)">
-                  {{ invitation.status }}
-                </div>
-                <div class="date">{{ formatDate(invitation.createdAt) }}</div>
-              </div>
-              <div class="card-body">
-                <h3 class="tournament-name">{{ invitation.tournament?.name }}</h3>
-                <p class="category-name">Category: {{ invitation.category?.name }}</p>
-                <p class="partner-info">
-                  <strong>To:</strong> {{ getUserName(invitation, 'invitee') }}
-                </p>
-                @if (invitation.message) {
-                  <p class="invitation-message">"{{ invitation.message }}"</p>
-                }
-                @if (invitation.status === PartnerInvitationStatus.ACCEPTED) {
-                  <p class="success-message">✅ Both players registered (pending admin approval)</p>
-                }
-              </div>
-              @if (invitation.status === PartnerInvitationStatus.PENDING) {
-                <div class="card-actions">
-                  <button 
-                    class="btn btn-secondary" 
-                    (click)="cancelInvitation(invitation.id)">
-                    Cancel Invitation
-                  </button>
-                </div>
-              }
-            </div>
-          }
-        </div>
-      </section>
-    }
+  <!-- Main Content -->
+  <main class="main-content">
 
-    <!-- Past Invitations -->
-    @if (pastInvitations().length > 0) {
-      <section class="invitations-section">
-        <h2 class="section-title">📋 Past Invitations</h2>
-        <div class="invitations-grid">
-          @for (invitation of pastInvitations(); track invitation.id) {
-            <div class="invitation-card past-card">
-              <div class="card-header">
-                <div class="status-badge" [ngClass]="getStatusClass(invitation.status)">
-                  {{ invitation.status }}
-                </div>
-                <div class="date">{{ formatDate(invitation.createdAt) }}</div>
-              </div>
-              <div class="card-body">
-                <h3 class="tournament-name">{{ invitation.tournament?.name }}</h3>
-                <p class="category-name">Category: {{ invitation.category?.name }}</p>
-                <p class="partner-info">
-                  @if (invitation.inviterId === currentUserId()) {
-                    <strong>To:</strong> {{ getUserName(invitation, 'invitee') }}
-                  } @else {
-                    <strong>From:</strong> {{ getUserName(invitation, 'inviter') }}
-                  }
-                </p>
-                @if (invitation.respondedAt) {
-                  <p class="responded-date">
-                    Responded: {{ formatDate(invitation.respondedAt) }}
-                  </p>
-                }
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-    }
-
-    <!-- Empty State -->
-    @if (allInvitations().length === 0) {
-      <div class="empty-state">
-        <div class="empty-icon">✉️</div>
-        <h2>No Invitations Yet</h2>
-        <p>When you receive partner invitations for doubles tournaments, they'll appear here.</p>
-        <a routerLink="/tournaments" class="btn btn-primary">Browse Tournaments</a>
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-card">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Loading your invitations...</p>
       </div>
     }
-  }
+
+    <!-- Invitations Content -->
+    @if (!isLoading()) {
+      <!-- Pending Invitations (Action Required) -->
+      @if (receivedPendingInvitations().length > 0) {
+        <section class="invitations-section">
+          <div class="section-header-card">
+            <h2 class="section-title">⏳ Pending Invitations (Action Required)</h2>
+            <p class="section-subtitle">Review and respond to partner requests</p>
+          </div>
+          <div class="invitations-grid">
+            @for (invitation of receivedPendingInvitations(); track invitation.id) {
+              <div class="invitation-card pending-highlight">
+                <div class="invitation-card-header">
+                  <span class="status-badge status-pending">
+                    {{ invitation.status }}
+                  </span>
+                  <span class="invitation-date">{{ formatDate(invitation.createdAt) }}</span>
+                </div>
+                <div class="invitation-card-body">
+                  <h3 class="tournament-title">
+                    <a [routerLink]="['/tournaments', invitation.tournamentId]">
+                      {{ invitation.tournament?.name }}
+                    </a>
+                  </h3>
+                  <p class="category-name">{{ invitation.category?.name }}</p>
+                  <div class="invitation-meta">
+                    <div class="meta-item">
+                      <span class="meta-label">From:</span>
+                      <span class="meta-value">{{ getUserName(invitation, 'inviter') }}</span>
+                    </div>
+                  </div>
+                  @if (invitation.message) {
+                    <div class="invitation-message">
+                      <span class="message-icon">💬</span>
+                      <p class="message-text">{{ invitation.message }}</p>
+                    </div>
+                  }
+                </div>
+                <div class="invitation-card-actions">
+                  <button 
+                    class="action-btn accept-btn" 
+                    (click)="acceptInvitation(invitation.id)">
+                    ✓ Accept
+                  </button>
+                  <button 
+                    class="action-btn decline-btn" 
+                    (click)="declineInvitation(invitation.id)">
+                    ✗ Decline
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Sent Invitations -->
+      @if (sentInvitations().length > 0) {
+        <section class="invitations-section">
+          <div class="section-header-card section-header-sent">
+            <h2 class="section-title">📤 Sent Invitations</h2>
+            <p class="section-subtitle">Invitations you have sent to other players</p>
+          </div>
+          <div class="invitations-grid">
+            @for (invitation of sentInvitations(); track invitation.id) {
+              <div class="invitation-card">
+                <div class="invitation-card-header">
+                  <span class="status-badge" [ngClass]="getStatusClass(invitation.status)">
+                    {{ invitation.status }}
+                  </span>
+                  <span class="invitation-date">{{ formatDate(invitation.createdAt) }}</span>
+                </div>
+                <div class="invitation-card-body">
+                  <h3 class="tournament-title">
+                    <a [routerLink]="['/tournaments', invitation.tournamentId]">
+                      {{ invitation.tournament?.name }}
+                    </a>
+                  </h3>
+                  <p class="category-name">{{ invitation.category?.name }}</p>
+                  <div class="invitation-meta">
+                    <div class="meta-item">
+                      <span class="meta-label">To:</span>
+                      <span class="meta-value">{{ getUserName(invitation, 'invitee') }}</span>
+                    </div>
+                  </div>
+                  @if (invitation.message) {
+                    <div class="invitation-message">
+                      <span class="message-icon">💬</span>
+                      <p class="message-text">{{ invitation.message }}</p>
+                    </div>
+                  }
+                  @if (invitation.status === PartnerInvitationStatus.ACCEPTED) {
+                    <div class="success-banner">
+                      <span class="success-icon">✅</span>
+                      <p class="success-text">Both players registered (pending admin approval)</p>
+                    </div>
+                  }
+                </div>
+                @if (invitation.status === PartnerInvitationStatus.PENDING) {
+                  <div class="invitation-card-actions">
+                    <button 
+                      class="action-btn cancel-btn" 
+                      (click)="cancelInvitation(invitation.id)">
+                      Cancel Invitation
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Past Invitations -->
+      @if (pastInvitations().length > 0) {
+        <section class="invitations-section">
+          <div class="section-header-card section-header-past">
+            <h2 class="section-title">📋 Past Invitations</h2>
+            <p class="section-subtitle">Completed, declined or cancelled invitations</p>
+          </div>
+          <div class="invitations-grid">
+            @for (invitation of pastInvitations(); track invitation.id) {
+              <div class="invitation-card past-card">
+                <div class="invitation-card-header">
+                  <span class="status-badge" [ngClass]="getStatusClass(invitation.status)">
+                    {{ invitation.status }}
+                  </span>
+                  <span class="invitation-date">{{ formatDate(invitation.createdAt) }}</span>
+                </div>
+                <div class="invitation-card-body">
+                  <h3 class="tournament-title">
+                    <a [routerLink]="['/tournaments', invitation.tournamentId]">
+                      {{ invitation.tournament?.name }}
+                    </a>
+                  </h3>
+                  <p class="category-name">{{ invitation.category?.name }}</p>
+                  <div class="invitation-meta">
+                    <div class="meta-item">
+                      @if (invitation.inviterId === currentUserId()) {
+                        <span class="meta-label">To:</span>
+                        <span class="meta-value">{{ getUserName(invitation, 'invitee') }}</span>
+                      } @else {
+                        <span class="meta-label">From:</span>
+                        <span class="meta-value">{{ getUserName(invitation, 'inviter') }}</span>
+                      }
+                    </div>
+                    @if (invitation.respondedAt) {
+                      <div class="meta-item">
+                        <span class="meta-label">Responded:</span>
+                        <span class="meta-value">{{ formatDate(invitation.respondedAt) }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Empty State -->
+      @if (allInvitations().length === 0) {
+        <div class="empty-card">
+          <span class="empty-icon">✉️</span>
+          <h2 class="empty-title">No Invitations Yet</h2>
+          <p class="empty-text">When you receive partner invitations for doubles tournaments, they'll appear here.</p>
+          <a routerLink="/tournaments" class="browse-btn">
+            🔍 Browse Tournaments
+          </a>
+        </div>
+      }
+    }
+  </main>
 </div>
