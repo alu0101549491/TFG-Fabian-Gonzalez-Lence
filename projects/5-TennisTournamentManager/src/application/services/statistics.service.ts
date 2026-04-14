@@ -23,6 +23,7 @@ import {
   ParticipantPerformanceDto,
   HeadToHeadMatchDto,
   OpponentMatchupDto,
+  DoublesTeamMatchupDto,
   CategoryStatsDto,
 } from '../dto/statistics.dto';
 import {StatisticsRepositoryImpl} from '@infrastructure/repositories/statistics.repository';
@@ -330,6 +331,94 @@ export class StatisticsService implements IStatisticsService {
     // Sort by total matches (most frequent opponents first)
     opponentMatchups.sort((a, b) => b.totalMatches - a.totalMatches);
     
+    // Calculate doubles team matchups (separate from singles matchups)
+    const doublesTeamMatchupsMap: Record<string, {matches: number, wins: number, losses: number, lastMatch?: Date}> = {};
+    
+    for (const match of matches) {
+      // Only process doubles matches
+      const isDoubles = Boolean((match as any).participant1TeamId || (match as any).participant2TeamId);
+      if (!isDoubles) continue;
+      
+      // For doubles matches, check winnerTeamId instead of winnerId
+      const hasWinner = isDoubles ? Boolean((match as any).winnerTeamId) : Boolean(match.winnerId);
+      if (!hasWinner || 
+          (match.status !== MatchStatus.COMPLETED && 
+           match.status !== MatchStatus.RETIRED && 
+           match.status !== MatchStatus.WALKOVER)) {
+        continue;
+      }
+      
+      // Find which team the participant belongs to
+      const participant1Team = (match as any).participant1Team;
+      const participant2Team = (match as any).participant2Team;
+      
+      const participantInTeam1 = participant1Team && 
+        (participant1Team.player1?.id === participantId || participant1Team.player2?.id === participantId);
+      const participantInTeam2 = participant2Team && 
+        (participant2Team.player1?.id === participantId || participant2Team.player2?.id === participantId);
+      
+      if (!participantInTeam1 && !participantInTeam2) continue;
+      
+      // Determine opponent team ID
+      const opponentTeamId = participantInTeam1 
+        ? (match as any).participant2TeamId 
+        : (match as any).participant1TeamId;
+      
+      const didWin = (match as any).winnerTeamId === (participantInTeam1 ? (match as any).participant1TeamId : (match as any).participant2TeamId);
+      const matchDate = match.completedAt || match.updatedAt;
+      
+      if (!doublesTeamMatchupsMap[opponentTeamId]) {
+        doublesTeamMatchupsMap[opponentTeamId] = {matches: 0, wins: 0, losses: 0};
+      }
+      
+      doublesTeamMatchupsMap[opponentTeamId].matches++;
+      if (didWin) {
+        doublesTeamMatchupsMap[opponentTeamId].wins++;
+      } else {
+        doublesTeamMatchupsMap[opponentTeamId].losses++;
+      }
+      
+      // Track most recent match
+      if (!doublesTeamMatchupsMap[opponentTeamId].lastMatch || matchDate > doublesTeamMatchupsMap[opponentTeamId].lastMatch!) {
+        doublesTeamMatchupsMap[opponentTeamId].lastMatch = matchDate;
+      }
+    }
+    
+    // Fetch opponent team names and create DTOs
+    const doublesTeamMatchups: DoublesTeamMatchupDto[] = [];
+    
+    for (const [opponentTeamId, stats] of Object.entries(doublesTeamMatchupsMap)) {
+      // Find the team data in one of the matches
+      let opponentTeamName = 'Unknown';
+      for (const match of matches) {
+        const isDoubles = Boolean((match as any).participant1TeamId || (match as any).participant2TeamId);
+        if (!isDoubles) continue;
+        
+        if ((match as any).participant1TeamId === opponentTeamId && (match as any).participant1Team) {
+          const team = (match as any).participant1Team;
+          opponentTeamName = `${team.player1.firstName} ${team.player1.lastName} / ${team.player2.firstName} ${team.player2.lastName}`;
+          break;
+        } else if ((match as any).participant2TeamId === opponentTeamId && (match as any).participant2Team) {
+          const team = (match as any).participant2Team;
+          opponentTeamName = `${team.player1.firstName} ${team.player1.lastName} / ${team.player2.firstName} ${team.player2.lastName}`;
+          break;
+        }
+      }
+      
+      doublesTeamMatchups.push({
+        opponentTeamId,
+        opponentTeamName,
+        totalMatches: stats.matches,
+        wins: stats.wins,
+        losses: stats.losses,
+        winPercentage: stats.matches > 0 ? (stats.wins / stats.matches) * 100 : 0,
+        lastMatch: stats.lastMatch,
+      });
+    }
+    
+    // Sort by total matches (most frequent opponent teams first)
+    doublesTeamMatchups.sort((a, b) => b.totalMatches - a.totalMatches);
+    
     return {
       participantId,
       participantName: null,
@@ -350,6 +439,7 @@ export class StatisticsService implements IStatisticsService {
       worstLossStreak,
       performanceBySurface: Object.keys(performanceBySurface).length > 0 ? performanceBySurface : undefined,
       opponentMatchups: opponentMatchups.length > 0 ? opponentMatchups : undefined,
+      doublesTeamMatchups: doublesTeamMatchups.length > 0 ? doublesTeamMatchups : undefined,
     };
   }
 
@@ -894,5 +984,156 @@ export class StatisticsService implements IStatisticsService {
     };
 
     return h2hDto as unknown as Record<string, unknown>;
+  }
+
+  /**
+   * Get head-to-head statistics between a participant's team and an opponent team (doubles).
+   *
+   * @param participantId - ID of the participant (player)
+   * @param opponentTeamId - ID of the opponent doubles team
+   * @returns Team head-to-head statistics
+   */
+  public async getTeamHeadToHead(participantId: string, opponentTeamId: string): Promise<Record<string, unknown>> {
+    // Validate input
+    if (!participantId || participantId.trim().length === 0) {
+      throw new Error('Participant ID is required');
+    }
+
+    if (!opponentTeamId || opponentTeamId.trim().length === 0) {
+      throw new Error('Opponent team ID is required');
+    }
+
+    // Caches
+    const bracketToTournamentId = new Map<string, string | null>();
+    const tournamentNameCache = new Map<string, string>();
+    const tournamentSurfaceCache = new Map<string, string | undefined>();
+
+    // Get all matches
+    const matches = await this.matchRepository.findAll();
+    
+    // Filter doubles matches involving the participant and the opponent team
+    const teamH2hMatches = matches.filter((match) => {
+      const isDoubles = Boolean((match as any).participant1TeamId || (match as any).participant2TeamId);
+      if (!isDoubles) return false;
+
+      const participant1Team = (match as any).participant1Team;
+      const participant2Team = (match as any).participant2Team;
+
+      const participantInTeam1 = participant1Team && 
+        (participant1Team.player1?.id === participantId || participant1Team.player2?.id === participantId);
+      const participantInTeam2 = participant2Team && 
+        (participant2Team.player1?.id === participantId || participant2Team.player2?.id === participantId);
+
+      if (!participantInTeam1 && !participantInTeam2) return false;
+
+      // Check if opponent team is involved
+      const team1Id = (match as any).participant1TeamId;
+      const team2Id = (match as any).participant2TeamId;
+
+      if (participantInTeam1 && team2Id === opponentTeamId) return true;
+      if (participantInTeam2 && team1Id === opponentTeamId) return true;
+
+      return false;
+    });
+
+    // Calculate statistics
+    let participantTeamWins = 0;
+    let opponentTeamWins = 0;
+    let participantTeamSetsWon = 0;
+    let opponentTeamSetsWon = 0;
+    let participantTeamId = '';
+    let participantTeamName = 'Unknown Team';
+    let opponentTeamName = 'Unknown Team';
+    const matchHistory: TeamHeadToHeadMatchDto[] = [];
+
+    for (const match of teamH2hMatches) {
+      if (match.status === MatchStatus.COMPLETED || match.status === MatchStatus.RETIRED || match.status === MatchStatus.WALKOVER) {
+        const participant1Team = (match as any).participant1Team;
+        const participant2Team = (match as any).participant2Team;
+
+        const participantInTeam1 = participant1Team && 
+          (participant1Team.player1?.id === participantId || participant1Team.player2?.id === participantId);
+        
+        participantTeamId = participantInTeam1 ? (match as any).participant1TeamId : (match as any).participant2TeamId;
+        const winnerTeamId = (match as any).winnerTeamId;
+
+        // Get team names
+        if (participant1Team && participantInTeam1) {
+          participantTeamName = `${participant1Team.player1.firstName} ${participant1Team.player1.lastName} / ${participant1Team.player2.firstName} ${participant1Team.player2.lastName}`;
+        }
+        if (participant2Team && !participantInTeam1) {
+          participantTeamName = `${participant2Team.player1.firstName} ${participant2Team.player1.lastName} / ${participant2Team.player2.firstName} ${participant2Team.player2.lastName}`;
+        }
+        if (participant1Team && !participantInTeam1) {
+          opponentTeamName = `${participant1Team.player1.firstName} ${participant1Team.player1.lastName} / ${participant1Team.player2.firstName} ${participant1Team.player2.lastName}`;
+        }
+        if (participant2Team && participantInTeam1) {
+          opponentTeamName = `${participant2Team.player1.firstName} ${participant2Team.player1.lastName} / ${participant2Team.player2.firstName} ${participant2Team.player2.lastName}`;
+        }
+
+        // Count wins
+        if (winnerTeamId === participantTeamId) {
+          participantTeamWins++;
+        } else {
+          opponentTeamWins++;
+        }
+
+        // Track set totals
+        const isParticipantTeam1 = participantInTeam1;
+        const scoreData = this.parseScoreString(match.score, isParticipantTeam1);
+        participantTeamSetsWon += scoreData.setsWon;
+        opponentTeamSetsWon += scoreData.setsLost;
+
+        // Resolve tournament info
+        let tournamentName = 'Unknown Tournament';
+        let surface: string | undefined;
+
+        let tournamentId = bracketToTournamentId.get(match.bracketId);
+        if (tournamentId === undefined) {
+          const bracket = await this.bracketRepository.findById(match.bracketId).catch(() => null);
+          tournamentId = bracket?.tournamentId ?? null;
+          bracketToTournamentId.set(match.bracketId, tournamentId);
+        }
+
+        if (tournamentId) {
+          if (!tournamentNameCache.has(tournamentId)) {
+            const tournament = await this.tournamentRepository.findById(tournamentId).catch(() => null);
+            tournamentNameCache.set(tournamentId, tournament?.name ?? 'Unknown Tournament');
+            tournamentSurfaceCache.set(tournamentId, tournament?.surface as string | undefined);
+          }
+
+          tournamentName = tournamentNameCache.get(tournamentId) ?? 'Unknown Tournament';
+          surface = tournamentSurfaceCache.get(tournamentId);
+        }
+
+        matchHistory.push({
+          matchId: match.id,
+          date: match.createdAt,
+          tournamentName,
+          surface,
+          score: match.score || 'N/A',
+          winnerTeamId: winnerTeamId || 'Unknown',
+        });
+      }
+    }
+
+    // Sort by most recent first
+    matchHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const teamH2hDto: TeamHeadToHeadDto = {
+      participantTeamId,
+      participantTeamName,
+      opponentTeamId,
+      opponentTeamName,
+      totalMatches: teamH2hMatches.length,
+      participantTeamWins,
+      opponentTeamWins,
+      participantTeamSetsWon,
+      opponentTeamSetsWon,
+      lastMatch: matchHistory.length > 0 ? matchHistory[0].date : undefined,
+      matchHistory,
+    };
+
+    return teamH2hDto as unknown as Record<string, unknown>;
   }
 }

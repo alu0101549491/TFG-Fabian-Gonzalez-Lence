@@ -8,6 +8,352 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Enhancement: View Match History for Doubles Team Matchups (2026-04-14)
+
+**Feature:** Added "View Match History" button to doubles team matchup cards in player statistics, enabling users to expand and view detailed match-by-match history against specific doubles teams.
+
+**Motivation:** The doubles team matchup section showed aggregate statistics (wins, losses, percentages) but lacked the detailed match history expansion that the singles matchup section provided. Users wanted to see individual match details against specific doubles teams.
+
+**Implementation:**
+
+- ✅ **DTOs** `src/application/dto/statistics.dto.ts`:
+  - **New Interface**: `TeamHeadToHeadDto` for team vs team H2H statistics:
+    - `participantTeamId`, `participantTeamName`
+    - `opponentTeamId`, `opponentTeamName`
+    - `totalMatches`, wins/losses for both teams
+    - `participantTeamSetsWon`, `opponentTeamSetsWon`
+    - `matchHistory` array of match details
+  - **New Interface**: `TeamHeadToHeadMatchDto` for individual match records:
+    - `matchId`, `date`, `tournamentName`, `surface`
+    - `score`, `winnerTeamId`
+
+- ✅ **Statistics Service** `src/application/services/statistics.service.ts`:
+  - **New Method**: `getTeamHeadToHead(participantId, opponentTeamId)`
+    - Filters doubles matches involving both the participant's team and opponent team
+    - Calculates wins/losses and set counts for both teams
+    - Extracts team names from match data
+    - Resolves tournament names and surfaces
+    - Returns match history sorted by most recent first
+
+- ✅ **Component** `src/presentation/pages/statistics/statistics-view/statistics-view.component.ts`:
+  - **New State**: `expandedTeamH2hId` signal for tracking which team panel is expanded
+  - **New State**: `teamH2hData` map storing TeamHeadToHeadDto for each team
+  - **New State**: `teamH2hLoading` set for tracking loading states
+  - **New Method**: `toggleTeamH2H(opponentTeamId)` to expand/collapse and lazy-load data
+  - **Helper Methods**: `isTeamH2HLoading()`, `getTeamH2H()` for template usage
+
+- ✅ **Template** `statistics-view.component.html`:
+  - **Button**: "View Match History ▼" / "Hide Match History ▲" in matchup footer
+  - **Panel**: Expandable H2H panel showing:
+    - Sets won summary: "Sets: X–Y"
+    - Match list with W/L indicator, score, surface, tournament, date
+    - Click-through to individual match details
+    - Loading spinner during data fetch
+    - Empty state when no history available
+  - **Styling**: Reuses existing `.h2h-panel`, `.h2h-match-row` CSS classes
+
+**Impact:**
+- **Enhanced Visibility**: Users can now drill down into individual matches against specific doubles teams
+- **Feature Parity**: Doubles matchups now have same functionality as singles matchups
+- **Performance**: Lazy-loading ensures data is only fetched when panel is expanded
+- **User Experience**: Smooth expand/collapse with loading states and error handling
+
+**Technical Details:**
+- Team identification: Searches participant in both `participant1Team` and `participant2Team` player arrays
+- Winner determination: Uses `winnerTeamId` instead of `winnerId`
+- Score parsing: Reuses existing `parseScoreString()` method for set counts
+- Data caching: Once loaded, team H2H data persists in component state (no re-fetch on toggle)
+- Tournament lookup: Uses same caching strategy as singles H2H to minimize API calls
+
+---
+
+### Bug Fix: Doubles Team Matchup History Not Displaying (2026-04-14)
+
+**Problem:** The "Doubles Team Matchup History" section in player statistics was not appearing even when users had played doubles matches.
+
+**Root Cause:** In `statistics.service.ts`, the code was checking for `match.winnerId` to filter completed matches. However, doubles matches store the winner in `match.winnerTeamId` instead of `winnerId`. This caused all doubles matches to be skipped when calculating team matchup statistics.
+
+**Solution:** Updated the winner check to use `winnerTeamId` for doubles matches:
+```typescript
+const hasWinner = isDoubles ? Boolean((match as any).winnerTeamId) : Boolean(match.winnerId);
+```
+
+**Files Changed:**
+- `src/application/services/statistics.service.ts` (line 346-350)
+
+**Impact:** Players can now see their doubles team matchup history correctly when viewing statistics.
+
+---
+
+### Feature: Doubles Team Matchup History in Player Statistics (2026-04-14)
+
+**Feature:** Add a new section in the player statistics page to show matchup history against doubles teams separately from singles matchups. Players can now see their performance records (wins/losses/win percentage) against specific doubles teams they have faced.
+
+**Motivation:** The existing matchup history only showed individual opponent statistics for singles matches. For players who participate in doubles tournaments, there was no way to view their performance against specific doubles teams. This feature provides visibility into doubles team rivalries and performance trends.
+
+**Implementation:**
+
+- ✅ **DTOs - DoublesTeamMatchupDto** `src/application/dto/statistics.dto.ts`:
+  - **New Interface**: `DoublesTeamMatchupDto` with fields:
+    - `opponentTeamId`: Unique identifier for the opponent doubles team
+    - `opponentTeamName`: Formatted as "Player1 / Player2"
+    - `totalMatches`: Number of matches played against this team
+    - `wins`: Number of wins against this team
+    - `losses`: Number of losses against this team
+    - `winPercentage`: Calculated win percentage
+    - `lastMatch`: Date of most recent match (optional)
+  - **StatisticsDto Update**: Added `doublesTeamMatchups?: DoublesTeamMatchupDto[]` field
+
+- ✅ **Statistics Service** `src/application/services/statistics.service.ts`:
+  - **Import**: Added `DoublesTeamMatchupDto` to imports
+  - **`getParticipantStatistics()` method** (lines 300-400):
+    - **Doubles Detection**: Identifies doubles matches via `participant1TeamId`/`participant2TeamId` presence
+    - **Team Identification**: Determines which team contains the participant (player1 or player2)
+    - **Opponent Team Tracking**: Maps opponent team IDs to match statistics
+    - **Win/Loss Calculation**: Compares `winnerTeamId` to participant's team ID
+    - **Team Name Extraction**: Pulls player names from team data in match objects
+    - **Formatting**: Displays team names as "FirstName LastName / FirstName LastName"
+    - **Sorting**: Orders by total matches descending (most frequent opponents first)
+    - **Exclusion**: Only includes completed/retired/walkover matches (same as singles)
+    - **Separation**: Completely separate from singles matchup tracking
+
+- ✅ **Statistics View Template** `src/presentation/pages/statistics/statistics-view/statistics-view.component.html`:
+  - **New Section**: "Doubles Team Matchup History" (lines 320-400)
+  - **Icon**: 🎾 (tennis racket) to distinguish from singles ⚔️ (swords)
+  - **Conditional Rendering**: Only shows if `doublesTeamMatchups` array has items
+  - **Layout**: Same card-based design as singles matchup history
+  - **Matchup Cards**:
+    - **Header**: Team name with first character avatar, total matches badge
+    - **Win Rate Display**: Large percentage with "winning" or "losing" styling
+    - **Record Breakdown**: Win/Loss counts with visual icons
+    - **Progress Bar**: Green (wins) vs Red (losses) proportional widths
+    - **Last Match Date**: Formatted as "MMM d, yyyy" or "N/A"
+  - **Styling**: Reuses existing CSS classes (`.matchup-card`, `.winning-record`, etc.)
+  - **No H2H Expansion**: Simplified view (future enhancement for detailed match list)
+
+**Impact:**
+- **Player Insights**: Players can now see their performance against specific doubles teams
+- **Rivalry Tracking**: Identifies most frequent opponents and win rates in doubles
+- **Separate Statistics**: Doubles team matchups don't interfere with singles matchup data
+- **Visual Consistency**: Matches existing singles matchup history UI/UX
+- **Performance**: No additional API calls (data included in statistics response)
+- **Backward Compatibility**: Singles-only players see no change (section hidden when empty)
+
+**Technical Details:**
+- Doubles match detection: `Boolean((match as any).participant1TeamId || (match as any).participant2TeamId)`
+- Participant team check: Searches both `participant1Team` and `participant2Team` for user ID
+- Team name extraction: Uses `player1.firstName/lastName` and `player2.firstName/lastName` from team object
+- Win determination: Compares `winnerTeamId` to participant's team ID (not individual player ID)
+- Sorting algorithm: Descending by `totalMatches`, then by `winPercentage`
+- Template condition: `@if (statistics()!.doublesTeamMatchups && statistics()!.doublesTeamMatchups!.length > 0)`
+- CSS reuse: All existing `.matchup-*` classes applied without modification
+
+---
+
+### Bug Fix: Disputed Match Resolution Not Working for Doubles (2026-04-14)
+
+**Problem:** When doubles matches were disputed, the admin dispute resolution page showed "Unknown" instead of team member names. Additionally, resolving or annulling disputes for doubles matches failed because the backend attempted to store team IDs in the `winnerId` field (singles-only), and notifications were only sent to 2 players instead of all 4 participants.
+
+**Root Cause:** The backend endpoints for disputed matches (`GET /api/admin/matches/disputed`, `PUT /api/admin/matches/:id/result/resolve`, `DELETE /api/admin/matches/:id/result/annul`) did not load doubles team relations or handle `winnerTeamId` properly. The frontend interface lacked team data properties, and the template only displayed singles participant names without checking for doubles matches. Notification logic only sent to `participant1Id` and `participant2Id` without considering team members.
+
+**Fix Applied:**
+
+- ✅ **Backend - Match Controller Disputed Results** `backend/src/presentation/controllers/match.controller.ts`:
+  - **`getDisputedResults()` method** (lines 880-970):
+    - **Team Relations**: Added loading of `participant1Team`, `participant2Team` with nested player relations
+    - **Response Enrichment**: Includes `participant1TeamId`, `participant2TeamId`, and full team objects with player data
+    - **Team Data Structure**: Returns team player info (id, firstName, lastName, email) for frontend display
+
+- ✅ **Backend - Match Controller Resolve Dispute** `backend/src/presentation/controllers/match.controller.ts`:
+  - **`resolveDispute()` method** (lines 980-1080):
+    - **Team Relations Loading**: Loads team relations when fetching match
+    - **Doubles Detection**: Checks if match is doubles via `participant1TeamId` or `participant2TeamId`
+    - **Winner Assignment**:
+      - **Doubles**: Sets `result.winnerTeamId = winnerId` (from request), `result.winnerId = null`
+      - **Singles**: Sets `result.winnerId = winnerId`, `result.winnerTeamId = null`
+    - **Match Winner Update**: Applies same logic to match entity (winnerTeamId for doubles, winnerId for singles)
+    - **Winner Name Formatting**: Extracts team name as "Player1 / Player2" for doubles notification
+    - **Notification Logic**:
+      - **Doubles**: Sends notifications to all 4 players (both members of each team)
+      - **Singles**: Maintains original 2-player notification
+    - **API Consistency**: winnerId parameter in request body represents teamId for doubles matches
+
+- ✅ **Backend - Match Controller Annul Result** `backend/src/presentation/controllers/match.controller.ts`:
+  - **`annulResult()` method** (lines 1150-1240):
+    - **Team Relations Loading**: Loads team relations when fetching match
+    - **Doubles Detection**: Identifies doubles matches
+    - **Match Reset**: Clears both `winnerId` AND `winnerTeamId` when resetting to SCHEDULED
+    - **Notification Logic**:
+      - **Doubles**: Notifies all 4 players about annulment
+      - **Singles**: Notifies both participants
+
+- ✅ **Frontend - Disputed Matches Component** `src/presentation/pages/admin/disputed-matches/disputed-matches.component.ts`:
+  - **Interface Update**: Extended `DisputedResult` interface to include:
+    - `winnerTeamId` field
+    - `participant1TeamId`, `participant2TeamId` in match object
+    - `participant1Team`, `participant2Team` objects with player1/player2 data
+  - **Helper Methods** (lines 440-485):
+    - **`getTeamName()`**: Formats team as "Player1 / Player2"
+    - **`getTeamInitials()`**: Gets initials from first team player
+    - **`isDoublesMatch()`**: Detects doubles via team ID presence
+  - **Type Safety**: Made `winnerId` nullable in interface to match backend
+
+- ✅ **Frontend - Disputed Matches Template** `src/presentation/pages/admin/disputed-matches/disputed-matches.component.html`:
+  - **Participant Display** (lines 60-145):
+    - **Conditional Rendering**: Uses `isDoublesMatch()` to choose display mode
+    - **Doubles Display**: Shows team names via `getTeamName()`, initials via `getTeamInitials()`
+    - **Singles Display**: Maintains original behavior with individual names
+    - **Winner Indication**: Checks against team ID for doubles, participant ID for singles
+    - **Email Display**: Hidden for doubles (team display), shown for singles
+  - **Resolution Modal** (lines 175-220):
+    - **Match Info**: Displays team names for doubles, individual names for singles
+    - **Winner Selection Radio Buttons**:
+      - **Doubles**: Uses `participant1TeamId`/`participant2TeamId` as values, displays team names
+      - **Singles**: Uses `participant1.id`/`participant2.id` as values, displays individual names
+    - **Consistent UX**: Modal adapts to match type seamlessly
+
+**Impact:**
+- **Admin Visibility**: Tournament admins now see correct team member names in disputed doubles matches
+- **Resolution Functionality**: Resolving disputes for doubles matches now works without foreign key errors
+- **Database Integrity**: Proper use of `winnerTeamId` for doubles, `winnerId` for singles
+- **Notification Coverage**: All 4 players in doubles matches receive dispute resolution/annulment notifications
+- **Match Reset**: Annulling matches properly clears both winner fields
+- **UI Consistency**: Dispute cards, modals, and winner selection all handle singles and doubles correctly
+- **Backward Compatibility**: Singles match dispute handling unchanged
+
+**Technical Details:**
+- Backend relations loaded: `participant1Team.player1`, `participant1Team.player2`, `participant2Team.player1`, `participant2Team.player2`
+- Doubles detection: `Boolean(match.participant1TeamId || match.participant2TeamId)`
+- Winner storage pattern: Singles use `winnerId`/`result.winnerId`, doubles use `winnerTeamId`/`result.winnerTeamId`
+- Notification flow (doubles): 2 calls to `notifyDisputeResolved()`, each with 2 player IDs (team1, team2)
+- Frontend conditional rendering: `@if (isDoublesMatch(result))` blocks in template
+- Winner name formatting: Team name as "FirstName LastName / FirstName LastName"
+- Admin API contract: `winnerId` parameter semantically represents "winning participant ID" (user ID for singles, team ID for doubles)
+
+---
+
+### Bug Fix: Match Result Submission Foreign Key Error for Doubles (2026-04-14)
+
+**Problem:** Submitting match results for doubles matches failed with a foreign key constraint violation error: `insert or update on table "match_results" violates foreign key constraint "FK_8169831b2147713d28f44ee651d"`. Additionally, match notifications did not reach all participants in doubles matches, and teammates of the submitter did not see pending approval status.
+
+**Root Cause:** The `MatchResult` entity defined `winnerId` as a required foreign key to the `User` table. For doubles matches, the backend attempted to insert a team ID (e.g., `dtm_...`) into this field instead of a user ID, causing the foreign key violation. The entity lacked support for `winnerTeamId` to differentiate between singles and doubles winners. Additionally, notification logic did not account for 4-player doubles scenarios (submitter, teammate, opponent 1, opponent 2).
+
+**Fix Applied:**
+
+- ✅ **Backend - MatchResult Entity** `backend/src/domain/entities/match-result.entity.ts`:
+  - **Import**: Added `DoublesTeam` entity import
+  - **`winnerId` field**: Made nullable (`nullable: true`) since it won't be used for doubles
+  - **`winnerTeamId` field**: Added new column for doubles winner team ID (`nullable: true`)
+  - **`winner` relationship**: Updated to nullable (`nullable: true`) for singles matches
+  - **`winnerTeam` relationship**: Added new `ManyToOne` relationship to `DoublesTeam` (`nullable: true`)
+  - **Schema**: Now supports both singles (winnerId) and doubles (winnerTeamId) winner tracking
+
+- ✅ **Backend - Match Controller Submission** `backend/src/presentation/controllers/match.controller.ts`:
+  - **`submitResultAsParticipant()` method** (lines 610-620):
+    - **Doubles Detection**: Added `isDoublesMatch` check using `participant1TeamId` or `participant2TeamId`
+    - **Conditional Winner Assignment**:
+      - **Doubles**: Sets `winnerId = null`, `winnerTeamId = winnerId` (from request body)
+      - **Singles**: Sets `winnerId = winnerId`, `winnerTeamId = null`
+    - **Teammate Notification** (lines 635-660):
+      - For doubles: identifies submitter's team and notifies their teammate with message "Your teammate"
+      - Ensures teammate sees match as pending approval
+    - **Opponent Notification**:
+      - For doubles: notifies BOTH opponents (both players on opposing team)
+      - For singles: maintains original single opponent notification
+
+- ✅ **Backend - Match Controller Confirmation** `backend/src/presentation/controllers/match.controller.ts`:
+  - **`confirmResult()` method** (lines 720-750):
+    - **Winner Assignment**: Uses `result.winnerTeamId` for doubles, `result.winnerId` for singles
+    - **Teammate Validation**: Prevents teammates from confirming each other's submissions
+      - Queries `DoublesTeam` repository to identify submitter's team
+      - Throws `HTTP 403 Forbidden` error if confirming user is on same team as submitter
+      - Error message: "Cannot confirm your teammate's result"
+    - **Teammate Notifications** (lines 738-758):
+      - **Submitter's Teammate**: Notifies with message "Your opponent" (result confirmed)
+      - **Confirmer's Teammate**: Notifies with message "Your teammate" (your teammate confirmed)
+    - Ensures all 4 players in doubles match receive appropriate notifications
+  - **`disputeResult()` method** (lines 790-830):
+    - **Teammate Validation**: Prevents teammates from disputing each other's submissions
+      - Queries `DoublesTeam` repository to identify submitter's team
+      - Throws `HTTP 403 Forbidden` error if disputing user is on same team as submitter
+      - Error message: "Cannot dispute your teammate's result"
+
+- ✅ **Frontend - My Matches Component** `src/presentation/pages/matches/my-matches/my-matches.component.ts`:
+  - **`needsConfirmation()` method** (lines 590-635):
+    - **Doubles Team Detection**: Checks if match is doubles using `participant1TeamId` or `participant2TeamId`
+    - **Submitter Team Identification**: Determines which team the result submitter belongs to
+    - **Teammate Check**: Verifies if current user is on same team as submitter
+    - **UI Logic**: Returns false if user is submitter's teammate (hides Confirm/Dispute buttons)
+    - **Singles Compatibility**: Maintains original behavior for singles matches
+  - **`isWaitingForConfirmation()` method** (lines 640-685):
+    - **Extended Logic**: Now returns true for BOTH submitter and their teammate
+    - **Team Matching**: Checks if current user is on same team as submitter
+    - **Status Display**: Ensures teammate sees "⏳ Waiting for opponent to confirm..." message
+    - **Consistency**: Aligns frontend status with backend notification behavior
+
+**Impact:**
+- **Match Result Submission**: Doubles matches now successfully save results without foreign key errors
+- **Database Integrity**: Foreign key constraints properly validated (winnerId → User, winnerTeamId → DoublesTeam)
+- **Notification Coverage**:
+  - **Submission**: Submitter's teammate + both opponents receive notifications (3 notifications)
+  - **Confirmation**: Submitter + submitter's teammate + confirmer's teammate receive notifications (3 notifications)
+- **Teammate Visibility**: Teammate of submitter sees match as "Pending Confirmation" with waiting message
+- **Teammate Restrictions**: Teammates cannot confirm or dispute each other's submissions (prevents collusion)
+- **UI Consistency**: Confirm/Dispute buttons hidden for teammates (backend + frontend validation)
+- **Confirmation Workflow**: Only opponents can confirm/dispute results, triggering completion and standings updates
+- **Backward Compatibility**: Singles matches continue to use `winnerId` field exclusively
+
+**Technical Details:**
+- Entity schema changes: Added `winnerTeamId` column and `winnerTeam` relation, made `winnerId` nullable
+- Doubles detection: `Boolean(match.participant1TeamId || match.participant2TeamId)`
+- Notification flow (doubles):
+  1. Submission: teammate + opponent1 + opponent2 (3 total)
+  2. Confirmation: submitter + submitter's teammate + confirmer's teammate (3 total)
+- Team identification: Queries `DoublesTeam` repository to find which team contains submitter/confirmer
+- Teammate lookup: `team.player1Id === userId ? team.player2Id : team.player1Id`
+- Backend teammate validation: Checks if confirming/disputing user is on same team as submitter
+- Frontend teammate validation: Uses team player data from `participant1Team`/`participant2Team` relations
+- Authorization errors: HTTP 403 Forbidden for teammates attempting to confirm/dispute each other
+- UI button visibility: Controlled by `needsConfirmation()` method (returns false for teammates)
+- UI status display: Controlled by `isWaitingForConfirmation()` method (returns true for submitter and teammate)
+- Winner storage: Singles use `winnerId`, doubles use `winnerTeamId`
+- Database migration: Existing records unaffected (winnerId remains populated for historical singles matches)
+
+---
+
+### Bug Fix: Doubles Matches Not Appearing in "My Matches" Page (2026-04-14)
+
+**Problem:** Doubles matches did not appear in the "My Matches" page for players. When a user navigated to their matches page, only singles matches were displayed, while doubles matches (where they were part of a team) were missing entirely.
+
+**Root Cause:** The backend endpoint `GET /api/matches?participantId={userId}` only queried for matches where the user was directly `participant1Id` or `participant2Id`. For doubles matches, participants are stored as teams in `participant1TeamId` and `participant2TeamId` fields, with individual players tracked within `DoublesTeam` entities (`player1Id`, `player2Id`). The query did not check if the user was a member of the participating teams.
+
+**Fix Applied:**
+
+- ✅ **Backend - Match Controller** `backend/src/presentation/controllers/match.controller.ts`:
+  - **`getByBracket()` method** (lines 212-248): Enhanced participant query logic to include doubles teams
+  - **Team Lookup**: Queries `DoublesTeam` repository to find all teams where user is `player1Id` or `player2Id`
+  - **Expanded Query Conditions**: Now includes 4 conditions instead of 2:
+    - Singles: `participant1Id = userId` OR `participant2Id = userId`
+    - Doubles: `participant1TeamId IN (userTeamIds)` OR `participant2TeamId IN (userTeamIds)`
+  - **Relations**: Added team relations (`participant1Team`, `participant1Team.player1`, `participant1Team.player2`, `participant2Team`, `participant2Team.player1`, `participant2Team.player2`) to load team data
+  - **Consistency**: Applied team relations to both participant-filtered queries and general bracket queries
+
+**Impact:**
+- **My Matches Page**: Now displays both singles and doubles matches for each player
+- **Dashboard**: User dashboard also shows doubles matches (uses same backend endpoint)
+- **Team Data**: Doubles matches include full team information with both players' names
+- **Query Performance**: Minimal impact - single additional query to find user's teams before match query
+- **Backward Compatibility**: Singles matches continue to work exactly as before
+
+**Technical Details:**
+- Query expansion: 2 conditions → up to 2 + (2 × number of user's teams) conditions
+- DoublesTeam lookup: `WHERE player1Id = userId OR player2Id = userId`
+- Match query: Uses TypeORM's array of `where` conditions for OR logic
+- Relations loaded: `participant1Team.player1`, `participant1Team.player2`, `participant2Team.player1`, `participant2Team.player2`
+- Frontend display: Already handles team data via existing `isDoubles` detection and team name formatting
+
+---
+
 ### Feature: Doubles Support for Phase Operations (2026-04-14)
 
 **Problem:** The "Advance Qualifiers from Round Robin" and "Promote Lucky Loser" features only worked with individual players. For doubles tournaments, these operations need to work with teams (pairs of players) instead of individual participants. Specifically:

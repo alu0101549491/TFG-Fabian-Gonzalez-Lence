@@ -53,20 +53,28 @@
           <div class="dispute-body">
             <!-- Participants Grid with Avatars -->
             <div class="participants-grid">
-              <!-- Participant 1 -->
-              <div class="participant-box" [class.declared-winner]="result.winnerId === result.match?.participant1?.id">
+              <!-- Participant 1 or Team 1 -->
+              <div class="participant-box" [class.declared-winner]="result.winnerId === (result.match?.participant1TeamId ?? result.match?.participant1?.id)">
                 <div class="participant-content">
                   <div class="avatar">
-                    {{ getInitials(result.match?.participant1) }}
+                    @if (isDoublesMatch(result)) {
+                      {{ getTeamInitials(result.match?.participant1Team) }}
+                    } @else {
+                      {{ getInitials(result.match?.participant1) }}
+                    }
                   </div>
                   <div class="participant-details">
                     <h4 class="participant-name">
-                      {{ getFullName(result.match?.participant1) }}
-                      @if (result.winnerId === result.match?.participant1?.id) {
+                      @if (isDoublesMatch(result)) {
+                        {{ getTeamName(result.match?.participant1Team) }}
+                      } @else {
+                        {{ getFullName(result.match?.participant1) }}
+                      }
+                      @if (result.winnerId === (result.match?.participant1TeamId ?? result.match?.participant1?.id)) {
                         <span class="crown-icon">🏆</span>
                       }
                     </h4>
-                    @if (result.match?.participant1?.email) {
+                    @if (!isDoublesMatch(result) && result.match?.participant1?.email) {
                       <p class="participant-email">{{ result.match.participant1.email }}</p>
                     }
                   </div>
@@ -83,20 +91,28 @@
                 </div>
               </div>
 
-              <!-- Participant 2 -->
-              <div class="participant-box" [class.declared-winner]="result.winnerId === result.match?.participant2?.id">
+              <!-- Participant 2 or Team 2 -->
+              <div class="participant-box" [class.declared-winner]="result.winnerId === (result.match?.participant2TeamId ?? result.match?.participant2?.id)">
                 <div class="participant-content">
                   <div class="avatar">
-                    {{ getInitials(result.match?.participant2) }}
+                    @if (isDoublesMatch(result)) {
+                      {{ getTeamInitials(result.match?.participant2Team) }}
+                    } @else {
+                      {{ getInitials(result.match?.participant2) }}
+                    }
                   </div>
                   <div class="participant-details">
                     <h4 class="participant-name">
-                      {{ getFullName(result.match?.participant2) }}
-                      @if (result.winnerId === result.match?.participant2?.id) {
+                      @if (isDoublesMatch(result)) {
+                        {{ getTeamName(result.match?.participant2Team) }}
+                      } @else {
+                        {{ getFullName(result.match?.participant2) }}
+                      }
+                      @if (result.winnerId === (result.match?.participant2TeamId ?? result.match?.participant2?.id)) {
                         <span class="crown-icon">🏆</span>
                       }
                     </h4>
-                    @if (result.match?.participant2?.email) {
+                    @if (!isDoublesMatch(result) && result.match?.participant2?.email) {
                       <p class="participant-email">{{ result.match.participant2.email }}</p>
                     }
                   </div>
@@ -176,7 +192,11 @@
       <div class="modal-body">
         <!-- Match Info -->
         <div class="modal-match-info">
-          <p><strong>{{ getFullName(selectedResult()!.match?.participant1) }}</strong> vs <strong>{{ getFullName(selectedResult()!.match?.participant2) }}</strong></p>
+          @if (isDoublesMatch(selectedResult()!)) {
+            <p><strong>{{ getTeamName(selectedResult()!.match?.participant1Team) }}</strong> vs <strong>{{ getTeamName(selectedResult()!.match?.participant2Team) }}</strong></p>
+          } @else {
+            <p><strong>{{ getFullName(selectedResult()!.match?.participant1) }}</strong> vs <strong>{{ getFullName(selectedResult()!.match?.participant2) }}</strong></p>
+          }
           <p class="dispute-reason-modal"><strong>Dispute Reason:</strong> {{ selectedResult()!.disputeReason }}</p>
         </div>
 
@@ -184,24 +204,45 @@
         <div class="form-group">
           <label>Select Winner</label>
           <div class="radio-group">
-            <label class="radio-label">
-              <input
-                type="radio"
-                [checked]="resolutionForm().winnerId === selectedResult()!.match?.participant1?.id"
-                (change)="updateWinnerId(selectedResult()!.match?.participant1?.id!)"
-                name="winnerId"
-              />
-              <span>{{ getFullName(selectedResult()!.match?.participant1) }}</span>
-            </label>
-            <label class="radio-label">
-              <input
-                type="radio"
-                [checked]="resolutionForm().winnerId === selectedResult()!.match?.participant2?.id"
-                (change)="updateWinnerId(selectedResult()!.match?.participant2?.id!)"
-                name="winnerId"
-              />
-              <span>{{ getFullName(selectedResult()!.match?.participant2) }}</span>
-            </label>
+            @if (isDoublesMatch(selectedResult()!)) {
+              <label class="radio-label">
+                <input
+                  type="radio"
+                  [checked]="resolutionForm().winnerId === selectedResult()!.match?.participant1TeamId"
+                  (change)="updateWinnerId(selectedResult()!.match?.participant1TeamId!)"
+                  name="winnerId"
+                />
+                <span>{{ getTeamName(selectedResult()!.match?.participant1Team) }}</span>
+              </label>
+              <label class="radio-label">
+                <input
+                  type="radio"
+                  [checked]="resolutionForm().winnerId === selectedResult()!.match?.participant2TeamId"
+                  (change)="updateWinnerId(selectedResult()!.match?.participant2TeamId!)"
+                  name="winnerId"
+                />
+                <span>{{ getTeamName(selectedResult()!.match?.participant2Team) }}</span>
+              </label>
+            } @else {
+              <label class="radio-label">
+                <input
+                  type="radio"
+                  [checked]="resolutionForm().winnerId === selectedResult()!.match?.participant1?.id"
+                  (change)="updateWinnerId(selectedResult()!.match?.participant1?.id!)"
+                  name="winnerId"
+                />
+                <span>{{ getFullName(selectedResult()!.match?.participant1) }}</span>
+              </label>
+              <label class="radio-label">
+                <input
+                  type="radio"
+                  [checked]="resolutionForm().winnerId === selectedResult()!.match?.participant2?.id"
+                  (change)="updateWinnerId(selectedResult()!.match?.participant2?.id!)"
+                  name="winnerId"
+                />
+                <span>{{ getFullName(selectedResult()!.match?.participant2) }}</span>
+              </label>
+            }
           </div>
         </div>
 

@@ -23,8 +23,10 @@ export interface MatchResultProps {
   matchId: string;
   /** ID of the user who submitted this result. */
   submittedBy: string;
-  /** ID of the match winner. */
-  winnerId: string;
+  /** ID of the match winner (for singles). */
+  winnerId: string | null;
+  /** ID of the winner team (for doubles). */
+  winnerTeamId?: string | null;
   /** Set scores in order (e.g., ["6-4", "4-6", "7-5"]). */
   setScores: string[];
   /** Total games won by player 1. */
@@ -70,7 +72,8 @@ export class MatchResult {
   public readonly id: string;
   public readonly matchId: string;
   public readonly submittedBy: string;
-  public readonly winnerId: string;
+  public readonly winnerId: string | null;
+  public readonly winnerTeamId: string | null;
   public readonly setScores: string[];
   public readonly player1Games: number;
   public readonly player2Games: number;
@@ -90,6 +93,7 @@ export class MatchResult {
     this.matchId = props.matchId;
     this.submittedBy = props.submittedBy;
     this.winnerId = props.winnerId;
+    this.winnerTeamId = props.winnerTeamId ?? null;
     this.setScores = props.setScores;
     this.player1Games = props.player1Games;
     this.player2Games = props.player2Games;

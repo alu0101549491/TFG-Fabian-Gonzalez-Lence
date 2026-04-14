@@ -210,20 +210,44 @@ export class MatchController {
       }
       
       // If participantId is provided, use OR condition to find matches where user is either participant
+      // For singles: check participant1Id/participant2Id
+      // For doubles: check if user is member of participant1TeamId/participant2TeamId
       let matches: Match[];
       if (participantId) {
-        matches = await matchRepository.find({
+        const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
+        
+        // Find all doubles teams where this user is a player
+        const userTeams = await doublesTeamRepository.find({
           where: [
-            {...whereClause, participant1Id: participantId as string},
-            {...whereClause, participant2Id: participantId as string},
+            {player1Id: participantId as string},
+            {player2Id: participantId as string},
           ],
-          relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
+        });
+        const userTeamIds = userTeams.map(team => team.id);
+        
+        // Build query conditions for both singles and doubles
+        const queryConditions: any[] = [
+          {...whereClause, participant1Id: participantId as string}, // Singles: user is participant 1
+          {...whereClause, participant2Id: participantId as string}, // Singles: user is participant 2
+        ];
+        
+        // Add doubles conditions if user is in any teams
+        if (userTeamIds.length > 0) {
+          for (const teamId of userTeamIds) {
+            queryConditions.push({...whereClause, participant1TeamId: teamId}); // Doubles: user's team is participant 1
+            queryConditions.push({...whereClause, participant2TeamId: teamId}); // Doubles: user's team is participant 2
+          }
+        }
+        
+        matches = await matchRepository.find({
+          where: queryConditions,
+          relations: ['scores', 'court', 'participant1', 'participant2', 'winner', 'participant1Team', 'participant1Team.player1', 'participant1Team.player2', 'participant2Team', 'participant2Team.player1', 'participant2Team.player2'],
         });
       } else {
         // If no participantId, filter by bracket or return all matches
         matches = await matchRepository.find({
           where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
-          relations: ['scores', 'court', 'participant1', 'participant2', 'winner'],
+          relations: ['scores', 'court', 'participant1', 'participant2', 'winner', 'participant1Team', 'participant1Team.player1', 'participant1Team.player2', 'participant2Team', 'participant2Team.player1', 'participant2Team.player2'],
         });
       }
       
@@ -576,11 +600,13 @@ export class MatchController {
       }
 
       // Create result entity
+      const isDoublesMatch = Boolean(match.participant1TeamId || match.participant2TeamId);
       const result = matchResultRepository.create({
         id: generateId('res'),
         matchId: id,
         submittedBy: userId,
-        winnerId,
+        winnerId: isDoublesMatch ? null : winnerId,
+        winnerTeamId: isDoublesMatch ? winnerId : null, // winnerId from body is actually teamId for doubles
         setScores,
         player1Games: player1Games || 0,
         player2Games: player2Games || 0,
@@ -600,7 +626,16 @@ export class MatchController {
         const t1 = match.participant1TeamId ? await doublesTeamRepo.findOne({where: {id: match.participant1TeamId}}) : null;
         const t2 = match.participant2TeamId ? await doublesTeamRepo.findOne({where: {id: match.participant2TeamId}}) : null;
         const submitterInTeam1 = t1 && (t1.player1Id === userId || t1.player2Id === userId);
+        const submitterTeam = submitterInTeam1 ? t1 : t2;
         const opponentTeam = submitterInTeam1 ? t2 : t1;
+        
+        // Notify teammate (so they see the match as pending approval)
+        if (submitterTeam) {
+          const teammateId = submitterTeam.player1Id === userId ? submitterTeam.player2Id : submitterTeam.player1Id;
+          await this.notificationService.notifyResultEntered(id, teammateId, 'Your teammate');
+        }
+        
+        // Notify both opponents
         if (opponentTeam) {
           const submitterName = 'Your opponent';
           await this.notificationService.notifyResultEntered(id, opponentTeam.player1Id, submitterName);
@@ -672,6 +707,20 @@ export class MatchController {
         throw new AppError('Cannot confirm your own result', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
       }
 
+      // For doubles: verify user is NOT the submitter's teammate (can't confirm teammate's result)
+      if (match.participant1TeamId || match.participant2TeamId) {
+        const doublesTeamRepo = AppDataSource.getRepository(DoublesTeam);
+        const t1 = match.participant1TeamId ? await doublesTeamRepo.findOne({where: {id: match.participant1TeamId}}) : null;
+        const t2 = match.participant2TeamId ? await doublesTeamRepo.findOne({where: {id: match.participant2TeamId}}) : null;
+        
+        const submitterInTeam1 = t1 && (t1.player1Id === result.submittedBy || t1.player2Id === result.submittedBy);
+        const submitterTeam = submitterInTeam1 ? t1 : t2;
+        
+        if (submitterTeam && (submitterTeam.player1Id === userId || submitterTeam.player2Id === userId)) {
+          throw new AppError('Cannot confirm your teammate\'s result', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+        }
+      }
+
       // Update result status
       result.confirmationStatus = ConfirmationStatus.CONFIRMED;
       result.confirmedBy = userId;
@@ -685,17 +734,42 @@ export class MatchController {
       match.score = result.setScores.join(', ');
       match.updatedAt = new Date();
       if (match.participant1TeamId || match.participant2TeamId) {
-        // Doubles: the winnerId in result is a team ID
-        match.winnerTeamId = result.winnerId;
+        // Doubles: use winnerTeamId from result
+        match.winnerTeamId = result.winnerTeamId;
         match.winnerId = null;
       } else {
+        // Singles: use winnerId from result
         match.winnerId = result.winnerId;
+        match.winnerTeamId = null;
       }
       await matchRepository.save(match);
 
       // Notify submitter that result was confirmed
       const confirmerName = 'Your opponent';
       await this.notificationService.notifyResultConfirmed(id, result.submittedBy, confirmerName);
+      
+      // For doubles, also notify teammates
+      if (match.participant1TeamId || match.participant2TeamId) {
+        const doublesTeamRepo = AppDataSource.getRepository(DoublesTeam);
+        const t1 = match.participant1TeamId ? await doublesTeamRepo.findOne({where: {id: match.participant1TeamId}}) : null;
+        const t2 = match.participant2TeamId ? await doublesTeamRepo.findOne({where: {id: match.participant2TeamId}}) : null;
+        
+        // Find submitter's teammate
+        const submitterInTeam1 = t1 && (t1.player1Id === result.submittedBy || t1.player2Id === result.submittedBy);
+        const submitterTeam = submitterInTeam1 ? t1 : t2;
+        if (submitterTeam) {
+          const submitterTeammateId = submitterTeam.player1Id === result.submittedBy ? submitterTeam.player2Id : submitterTeam.player1Id;
+          await this.notificationService.notifyResultConfirmed(id, submitterTeammateId, confirmerName);
+        }
+        
+        // Find confirmer's teammate
+        const confirmerInTeam1 = t1 && (t1.player1Id === userId || t1.player2Id === userId);
+        const confirmerTeam = confirmerInTeam1 ? t1 : t2;
+        if (confirmerTeam) {
+          const confirmerTeammateId = confirmerTeam.player1Id === userId ? confirmerTeam.player2Id : confirmerTeam.player1Id;
+          await this.notificationService.notifyResultConfirmed(id, confirmerTeammateId, 'Your teammate');
+        }
+      }
 
       // Advance winner to next round if single elimination
       await this.advanceWinnerToNextRound(match, matchRepository);
@@ -765,6 +839,20 @@ export class MatchController {
         throw new AppError('Cannot dispute your own result', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
       }
 
+      // For doubles: verify user is NOT the submitter's teammate (can't dispute teammate's result)
+      if (match.participant1TeamId || match.participant2TeamId) {
+        const doublesTeamRepo = AppDataSource.getRepository(DoublesTeam);
+        const t1 = match.participant1TeamId ? await doublesTeamRepo.findOne({where: {id: match.participant1TeamId}}) : null;
+        const t2 = match.participant2TeamId ? await doublesTeamRepo.findOne({where: {id: match.participant2TeamId}}) : null;
+        
+        const submitterInTeam1 = t1 && (t1.player1Id === result.submittedBy || t1.player2Id === result.submittedBy);
+        const submitterTeam = submitterInTeam1 ? t1 : t2;
+        
+        if (submitterTeam && (submitterTeam.player1Id === userId || submitterTeam.player2Id === userId)) {
+          throw new AppError('Cannot dispute your teammate\'s result', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+        }
+      }
+
       // Update result status
       result.confirmationStatus = ConfirmationStatus.DISPUTED;
       result.disputeReason = disputeReason;
@@ -809,8 +897,20 @@ export class MatchController {
       const enrichedResults = await Promise.all(disputedResults.map(async (result) => {
         const match = await matchRepository.findOne({
           where: {id: result.matchId},
-          relations: ['participant1', 'participant2', 'bracket'],
+          relations: [
+            'participant1',
+            'participant2',
+            'bracket',
+            'participant1Team',
+            'participant1Team.player1',
+            'participant1Team.player2',
+            'participant2Team',
+            'participant2Team.player1',
+            'participant2Team.player2',
+          ],
         });
+
+        const isDoubles = Boolean(match?.participant1TeamId || match?.participant2TeamId);
 
         return {
           ...result,
@@ -819,6 +919,8 @@ export class MatchController {
             matchNumber: match.matchNumber,
             round: match.round,
             bracketId: match.bracketId,
+            participant1TeamId: match.participant1TeamId,
+            participant2TeamId: match.participant2TeamId,
             participant1: match.participant1 ? {
               id: match.participant1.id,
               firstName: match.participant1.firstName,
@@ -830,6 +932,36 @@ export class MatchController {
               firstName: match.participant2.firstName,
               lastName: match.participant2.lastName,
               email: match.participant2.email,
+            } : null,
+            participant1Team: match.participant1Team ? {
+              id: match.participant1Team.id,
+              player1: {
+                id: match.participant1Team.player1.id,
+                firstName: match.participant1Team.player1.firstName,
+                lastName: match.participant1Team.player1.lastName,
+                email: match.participant1Team.player1.email,
+              },
+              player2: {
+                id: match.participant1Team.player2.id,
+                firstName: match.participant1Team.player2.firstName,
+                lastName: match.participant1Team.player2.lastName,
+                email: match.participant1Team.player2.email,
+              },
+            } : null,
+            participant2Team: match.participant2Team ? {
+              id: match.participant2Team.id,
+              player1: {
+                id: match.participant2Team.player1.id,
+                firstName: match.participant2Team.player1.firstName,
+                lastName: match.participant2Team.player1.lastName,
+                email: match.participant2Team.player1.email,
+              },
+              player2: {
+                id: match.participant2Team.player2.id,
+                firstName: match.participant2Team.player2.firstName,
+                lastName: match.participant2Team.player2.lastName,
+                email: match.participant2Team.player2.email,
+              },
             } : null,
           } : null,
         };
@@ -894,12 +1026,25 @@ export class MatchController {
       // Fetch match
       const match = await matchRepository.findOne({
         where: {id},
-        relations: ['participant1', 'participant2', 'bracket'],
+        relations: [
+          'participant1',
+          'participant2',
+          'bracket',
+          'participant1Team',
+          'participant1Team.player1',
+          'participant1Team.player2',
+          'participant2Team',
+          'participant2Team.player1',
+          'participant2Team.player2',
+        ],
       });
 
       if (!match) {
         throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
+
+      // Check if this is a doubles match
+      const isDoublesMatch = Boolean(match.participant1TeamId || match.participant2TeamId);
 
       // Find disputed result
       const result = await matchResultRepository.findOne({
@@ -914,7 +1059,13 @@ export class MatchController {
       }
 
       // Update result with admin resolution
-      result.winnerId = winnerId;
+      if (isDoublesMatch) {
+        result.winnerId = null;
+        result.winnerTeamId = winnerId; // winnerId from request is actually teamId for doubles
+      } else {
+        result.winnerId = winnerId;
+        result.winnerTeamId = null;
+      }
       result.setScores = setScores;
       result.confirmationStatus = ConfirmationStatus.CONFIRMED;
       result.isAdminEntry = true;
@@ -925,7 +1076,13 @@ export class MatchController {
 
       // Update match status to COMPLETED
       match.status = MatchStatus.COMPLETED;
-      match.winnerId = winnerId;
+      if (isDoublesMatch) {
+        match.winnerId = null;
+        match.winnerTeamId = winnerId; // winnerId from request is actually teamId for doubles
+      } else {
+        match.winnerId = winnerId;
+        match.winnerTeamId = null;
+      }
       match.score = setScores.join(', '); // Format setScores as comma-separated string
       match.endTime = new Date();
       match.updatedAt = new Date();
@@ -935,16 +1092,48 @@ export class MatchController {
       // Advance winner to next round if single elimination
       await this.advanceWinnerToNextRound(match, matchRepository);
 
-      // Notify both participants that the dispute has been resolved
-      const winnerUser = await AppDataSource.getRepository(User).findOne({where: {id: winnerId}});
-      const winnerName = winnerUser ? `${winnerUser.firstName} ${winnerUser.lastName}` : 'Unknown';
-      await this.notificationService.notifyDisputeResolved(
-        id,
-        match.participant1Id,
-        match.participant2Id,
-        winnerName,
-        resolutionNotes,
-      );
+      // Notify participants that the dispute has been resolved
+      let winnerName = 'Unknown';
+      if (isDoublesMatch) {
+        const doublesTeamRepo = AppDataSource.getRepository(DoublesTeam);
+        const winnerTeam = await doublesTeamRepo.findOne({
+          where: {id: winnerId},
+          relations: ['player1', 'player2'],
+        });
+        if (winnerTeam) {
+          winnerName = `${winnerTeam.player1.firstName} ${winnerTeam.player1.lastName} / ${winnerTeam.player2.firstName} ${winnerTeam.player2.lastName}`;
+        }
+        
+        // Notify all 4 players
+        if (match.participant1Team) {
+          await this.notificationService.notifyDisputeResolved(
+            id,
+            match.participant1Team.player1Id,
+            match.participant1Team.player2Id,
+            winnerName,
+            resolutionNotes,
+          );
+        }
+        if (match.participant2Team) {
+          await this.notificationService.notifyDisputeResolved(
+            id,
+            match.participant2Team.player1Id,
+            match.participant2Team.player2Id,
+            winnerName,
+            resolutionNotes,
+          );
+        }
+      } else {
+        const winnerUser = await AppDataSource.getRepository(User).findOne({where: {id: winnerId}});
+        winnerName = winnerUser ? `${winnerUser.firstName} ${winnerUser.lastName}` : 'Unknown';
+        await this.notificationService.notifyDisputeResolved(
+          id,
+          match.participant1Id,
+          match.participant2Id,
+          winnerName,
+          resolutionNotes,
+        );
+      }
 
       // FR39/FR40/FR43: Recalculate standings after admin dispute resolution
       await this.standingService.recalculateForMatch(id);
@@ -975,14 +1164,24 @@ export class MatchController {
       const matchRepository = AppDataSource.getRepository(Match);
       const matchResultRepository = AppDataSource.getRepository(MatchResult);
 
-      // Fetch match
+      // Fetch match with team relations
       const match = await matchRepository.findOne({
         where: {id},
+        relations: [
+          'participant1Team',
+          'participant1Team.player1',
+          'participant1Team.player2',
+          'participant2Team',
+          'participant2Team.player1',
+          'participant2Team.player2',
+        ],
       });
 
       if (!match) {
         throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
+
+      const isDoublesMatch = Boolean(match.participant1TeamId || match.participant2TeamId);
 
       // Find disputed result
       const result = await matchResultRepository.findOne({
@@ -1006,19 +1205,43 @@ export class MatchController {
       // Reset match to SCHEDULED
       match.status = MatchStatus.SCHEDULED;
       match.winnerId = null;
+      match.winnerTeamId = null;
       match.endTime = null;
       match.updatedAt = new Date();
 
       await matchRepository.save(match);
 
-      // Notify both participants that the result was annulled and match is reset
-      await this.notificationService.notifyDisputeResolved(
-        id,
-        match.participant1Id,
-        match.participant2Id,
-        'N/A (match annulled)',
-        `Result annulled: ${annulReason}`,
-      );
+      // Notify participants that the result was annulled and match is reset
+      if (isDoublesMatch) {
+        // Notify all 4 players
+        if (match.participant1Team) {
+          await this.notificationService.notifyDisputeResolved(
+            id,
+            match.participant1Team.player1Id,
+            match.participant1Team.player2Id,
+            'N/A (match annulled)',
+            `Result annulled: ${annulReason}`,
+          );
+        }
+        if (match.participant2Team) {
+          await this.notificationService.notifyDisputeResolved(
+            id,
+            match.participant2Team.player1Id,
+            match.participant2Team.player2Id,
+            'N/A (match annulled)',
+            `Result annulled: ${annulReason}`,
+          );
+        }
+      } else {
+        // Singles: notify both participants
+        await this.notificationService.notifyDisputeResolved(
+          id,
+          match.participant1Id,
+          match.participant2Id,
+          'N/A (match annulled)',
+          `Result annulled: ${annulReason}`,
+        );
+      }
 
       res.status(HTTP_STATUS.OK).json({
         result,

@@ -14,6 +14,7 @@
 import {Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn} from 'typeorm';
 import {Match} from './match.entity';
 import {User} from './user.entity';
+import {DoublesTeam} from './doubles-team.entity';
 
 /**
  * Confirmation status for match results.
@@ -46,8 +47,11 @@ export class MatchResult {
   @Column('varchar', {length: 50})
   public submittedBy!: string;
 
-  @Column('varchar', {length: 50})
-  public winnerId!: string;
+  @Column('varchar', {length: 50, nullable: true})
+  public winnerId!: string | null;
+
+  @Column('varchar', {length: 50, nullable: true})
+  public winnerTeamId!: string | null;
 
   @Column('simple-array')
   public setScores!: string[];
@@ -101,11 +105,15 @@ export class MatchResult {
   @JoinColumn({name: 'submittedBy'})
   public submitter!: User;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, {nullable: true})
   @JoinColumn({name: 'winnerId'})
-  public winner!: User;
+  public winner!: User | null;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => DoublesTeam, {nullable: true})
+  @JoinColumn({name: 'winnerTeamId'})
+  public winnerTeam!: DoublesTeam | null;
+
+  @ManyToOne(() => User, {nullable: true})
   @JoinColumn({name: 'confirmedBy'})
   public confirmer!: User | null;
 }

@@ -329,6 +329,124 @@
           </div>
         </div>
       }
+
+      <!-- Doubles Team Matchup History -->
+      @if (statistics()!.doublesTeamMatchups && statistics()!.doublesTeamMatchups!.length > 0) {
+        <div class="detail-section">
+          <div class="section-header">
+            <span class="section-icon">🎾</span>
+            <h2 class="section-title">Doubles Team Matchup History</h2>
+          </div>
+          <div class="card-body">
+            <div class="matchup-list">
+              @for (matchup of statistics()!.doublesTeamMatchups!; track matchup.opponentTeamId) {
+                <div class="matchup-card" [class.winning-record]="matchup.winPercentage >= 50" [class.losing-record]="matchup.winPercentage < 50">
+                  <div class="matchup-header">
+                    <div class="opponent-info">
+                      <div class="opponent-avatar">
+                        {{ matchup.opponentTeamName.charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="opponent-details">
+                        <div class="opponent-name">{{ matchup.opponentTeamName }}</div>
+                        <div class="opponent-meta">
+                          <span class="total-matches-badge">{{ matchup.totalMatches }} {{ matchup.totalMatches === 1 ? 'match' : 'matches' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="matchup-winrate">
+                      <div class="winrate-value" [class.winning]="matchup.winPercentage >= 50" [class.losing]="matchup.winPercentage < 50">
+                        {{ matchup.winPercentage.toFixed(1) }}%
+                      </div>
+                      <div class="winrate-label">Win Rate</div>
+                    </div>
+                  </div>
+                  
+                  <div class="matchup-body">
+                    <div class="record-breakdown">
+                      <div class="record-item wins">
+                        <div class="record-icon">✅</div>
+                        <div class="record-details">
+                          <div class="record-value">{{ matchup.wins }}</div>
+                          <div class="record-label">Wins</div>
+                        </div>
+                      </div>
+                      
+                      <div class="record-separator">vs</div>
+                      
+                      <div class="record-item losses">
+                        <div class="record-icon">❌</div>
+                        <div class="record-details">
+                          <div class="record-value">{{ matchup.losses }}</div>
+                          <div class="record-label">Losses</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="progress-bar-container">
+                      <div class="progress-bar">
+                        <div class="progress-fill wins-fill" [style.width.%]="matchup.winPercentage"></div>
+                        <div class="progress-fill losses-fill" [style.width.%]="100 - matchup.winPercentage"></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="matchup-footer">
+                    <div class="last-match-info">
+                      <span class="last-match-label">Last Match:</span>
+                      <span class="last-match-date">
+                        @if (matchup.lastMatch) {
+                          {{ matchup.lastMatch | date: 'MMM d, yyyy' }}
+                        } @else {
+                          N/A
+                        }
+                      </span>
+                    </div>
+                    <button class="h2h-toggle-btn" (click)="toggleTeamH2H(matchup.opponentTeamId)">
+                      @if (expandedTeamH2hId() === matchup.opponentTeamId) {
+                        Hide Match History ▲
+                      } @else {
+                        View Match History ▼
+                      }
+                    </button>
+                  </div>
+
+                  <!-- Team H2H Match History Panel -->
+                  @if (expandedTeamH2hId() === matchup.opponentTeamId) {
+                    <div class="h2h-panel">
+                      @if (isTeamH2HLoading(matchup.opponentTeamId)) {
+                        <div class="h2h-loading">
+                          <div class="spinner-small"></div>
+                          <span>Loading match history...</span>
+                        </div>
+                      } @else {
+                        @let teamH2h = getTeamH2H(matchup.opponentTeamId);
+                        @if (teamH2h && teamH2h.matchHistory && teamH2h.matchHistory.length > 0) {
+                          <div class="h2h-summary">
+                            <span class="h2h-stat">Sets: <strong>{{ teamH2h.participantTeamSetsWon }}–{{ teamH2h.opponentTeamSetsWon }}</strong></span>
+                          </div>
+                          <div class="h2h-match-list">
+                            @for (m of teamH2h.matchHistory; track m.matchId) {
+                              <div class="h2h-match-row" [class.won]="m.winnerTeamId === teamH2h.participantTeamId" [class.lost]="m.winnerTeamId !== teamH2h.participantTeamId" (click)="goToMatchDetails(m.matchId)">
+                                <span class="h2h-match-result">{{ m.winnerTeamId === teamH2h.participantTeamId ? 'W' : 'L' }}</span>
+                                <span class="h2h-match-score">{{ m.score }}</span>
+                                <span class="h2h-match-surface">{{ m.surface ?? '—' }}</span>
+                                <span class="h2h-match-tournament">{{ m.tournamentName ?? '—' }}</span>
+                                <span class="h2h-match-date">{{ m.date | date: 'MMM d, yyyy' }}</span>
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <p class="h2h-empty">No detailed match history available.</p>
+                        }
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
     }
 
     <!-- Empty State -->

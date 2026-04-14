@@ -28,7 +28,8 @@ interface DisputedResult {
   id: string;
   matchId: string;
   submittedBy: string;
-  winnerId: string;
+  winnerId: string | null;
+  winnerTeamId?: string | null;
   setScores: string[];
   confirmationStatus: string;
   disputeReason: string;
@@ -38,6 +39,8 @@ interface DisputedResult {
     id: string;
     matchNumber: number;
     round: number;
+    participant1TeamId?: string | null;
+    participant2TeamId?: string | null;
     participant1: {
       id: string;
       firstName: string;
@@ -49,6 +52,36 @@ interface DisputedResult {
       firstName: string;
       lastName: string;
       email: string;
+    } | null;
+    participant1Team?: {
+      id: string;
+      player1: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+      };
+      player2: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+      };
+    } | null;
+    participant2Team?: {
+      id: string;
+      player1: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+      };
+      player2: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+      };
     } | null;
   };
 }
@@ -408,6 +441,40 @@ export class DisputedMatchesComponent implements OnInit {
     const first = participant.firstName?.charAt(0)?.toUpperCase() || '';
     const last = participant.lastName?.charAt(0)?.toUpperCase() || '';
     return first + last || '?';
+  }
+
+  /**
+   * Gets team name from doubles team.
+   *
+   * @param team - The doubles team
+   * @returns Team name as "Player1 / Player2"
+   */
+  public getTeamName(team: { player1: { firstName: string; lastName: string }; player2: { firstName: string; lastName: string } } | null | undefined): string {
+    if (!team) return 'Unknown';
+    return `${team.player1.firstName} ${team.player1.lastName} / ${team.player2.firstName} ${team.player2.lastName}`;
+  }
+
+  /**
+   * Gets initials from doubles team (first player's initials).
+   *
+   * @param team - The doubles team
+   * @returns Initials of first player
+   */
+  public getTeamInitials(team: { player1: { firstName: string; lastName: string } } | null | undefined): string {
+    if (!team || !team.player1) return '?';
+    const first = team.player1.firstName?.charAt(0)?.toUpperCase() || '';
+    const last = team.player1.lastName?.charAt(0)?.toUpperCase() || '';
+    return first + last || '?';
+  }
+
+  /**
+   * Checks if match is doubles.
+   *
+   * @param result - The disputed result
+   * @returns True if doubles match
+   */
+  public isDoublesMatch(result: DisputedResult): boolean {
+    return Boolean(result.match?.participant1TeamId || result.match?.participant2TeamId);
   }
 
   /**

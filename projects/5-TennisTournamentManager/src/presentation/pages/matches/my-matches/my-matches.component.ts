@@ -593,8 +593,44 @@ export class MyMatchesComponent implements OnInit {
       return false;
     }
 
-    // User needs to confirm if they're not the submitter
-    return match.pendingResult.submittedBy !== userId;
+    // User cannot confirm their own submission
+    if (match.pendingResult.submittedBy === userId) {
+      return false;
+    }
+
+    // For doubles: user cannot confirm their teammate's submission
+    const isDoubles = Boolean(match.participant1TeamId || match.participant2TeamId);
+    if (isDoubles) {
+      const submitterId = match.pendingResult.submittedBy;
+      
+      // Check if submitter is on team 1
+      const submitterOnTeam1 = match.participant1Team &&
+        (match.participant1Team.player1.id === submitterId || match.participant1Team.player2?.id === submitterId);
+      
+      // Check if submitter is on team 2
+      const submitterOnTeam2 = match.participant2Team &&
+        (match.participant2Team.player1.id === submitterId || match.participant2Team.player2?.id === submitterId);
+      
+      // Check if current user is on same team as submitter
+      if (submitterOnTeam1) {
+        const userOnTeam1 = match.participant1Team &&
+          (match.participant1Team.player1.id === userId || match.participant1Team.player2?.id === userId);
+        if (userOnTeam1) {
+          return false; // Same team, cannot confirm
+        }
+      }
+      
+      if (submitterOnTeam2) {
+        const userOnTeam2 = match.participant2Team &&
+          (match.participant2Team.player1.id === userId || match.participant2Team.player2?.id === userId);
+        if (userOnTeam2) {
+          return false; // Same team, cannot confirm
+        }
+      }
+    }
+
+    // User can confirm (they're an opponent, not the submitter or teammate)
+    return true;
   }
 
   /**
@@ -610,7 +646,42 @@ export class MyMatchesComponent implements OnInit {
     }
 
     // User is waiting if they submitted the result
-    return match.pendingResult.submittedBy === userId;
+    if (match.pendingResult.submittedBy === userId) {
+      return true;
+    }
+
+    // For doubles: teammate is also waiting if their partner submitted
+    const isDoubles = Boolean(match.participant1TeamId || match.participant2TeamId);
+    if (isDoubles) {
+      const submitterId = match.pendingResult.submittedBy;
+      
+      // Check if submitter is on team 1
+      const submitterOnTeam1 = match.participant1Team &&
+        (match.participant1Team.player1.id === submitterId || match.participant1Team.player2?.id === submitterId);
+      
+      // Check if submitter is on team 2
+      const submitterOnTeam2 = match.participant2Team &&
+        (match.participant2Team.player1.id === submitterId || match.participant2Team.player2?.id === submitterId);
+      
+      // Check if current user is on same team as submitter
+      if (submitterOnTeam1) {
+        const userOnTeam1 = match.participant1Team &&
+          (match.participant1Team.player1.id === userId || match.participant1Team.player2?.id === userId);
+        if (userOnTeam1) {
+          return true; // Same team, also waiting
+        }
+      }
+      
+      if (submitterOnTeam2) {
+        const userOnTeam2 = match.participant2Team &&
+          (match.participant2Team.player1.id === userId || match.participant2Team.player2?.id === userId);
+        if (userOnTeam2) {
+          return true; // Same team, also waiting
+        }
+      }
+    }
+
+    return false;
   }
 
   /**

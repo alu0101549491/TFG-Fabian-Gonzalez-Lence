@@ -34,12 +34,24 @@ export interface StatisticsDto {
   worstLossStreak?: number;
   performanceBySurface?: Record<string, SurfacePerformanceDto>;
   opponentMatchups?: OpponentMatchupDto[];
+  doublesTeamMatchups?: DoublesTeamMatchupDto[];
 }
 
 /** DTO for opponent matchup history. */
 export interface OpponentMatchupDto {
   opponentId: string;
   opponentName: string;
+  totalMatches: number;
+  wins: number;
+  losses: number;
+  winPercentage: number;
+  lastMatch?: Date;
+}
+
+/** DTO for doubles team matchup history. */
+export interface DoublesTeamMatchupDto {
+  opponentTeamId: string;
+  opponentTeamName: string;
   totalMatches: number;
   wins: number;
   losses: number;
@@ -136,4 +148,29 @@ export interface HeadToHeadMatchDto {
   surface?: Surface;
   score: string;
   winnerId: string;
+}
+
+/** DTO for team vs team head-to-head statistics (doubles). */
+export interface TeamHeadToHeadDto {
+  participantTeamId: string;
+  participantTeamName?: string;
+  opponentTeamId: string;
+  opponentTeamName?: string;
+  totalMatches: number;
+  participantTeamWins: number;
+  opponentTeamWins: number;
+  participantTeamSetsWon: number;
+  opponentTeamSetsWon: number;
+  lastMatch?: Date;
+  matchHistory?: TeamHeadToHeadMatchDto[];
+}
+
+/** DTO for individual match in team head-to-head history. */
+export interface TeamHeadToHeadMatchDto {
+  matchId: string;
+  date: Date;
+  tournamentName?: string;
+  surface?: string;
+  score: string;
+  winnerTeamId: string;
 }

@@ -15,7 +15,7 @@ import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {StatisticsService} from '@application/services';
-import {type StatisticsDto, type HeadToHeadDto} from '@application/dto';
+import {type StatisticsDto, type HeadToHeadDto, type TeamHeadToHeadDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import templateHtml from './statistics-view.component.html?raw';
 import stylesCss from './statistics-view.component.css?inline';
@@ -57,6 +57,15 @@ export class StatisticsViewComponent implements OnInit {
 
   /** H2H loading state per opponent */
   public h2hLoading = signal<Set<string>>(new Set());
+
+  /** Currently expanded opponent team ID for team H2H panel */
+  public expandedTeamH2hId = signal<string | null>(null);
+
+  /** Team H2H data map: opponentTeamId → TeamHeadToHeadDto */
+  public teamH2hData = signal<Map<string, TeamHeadToHeadDto>>(new Map());
+
+  /** Team H2H loading state per opponent team */
+  public teamH2hLoading = signal<Set<string>>(new Set());
 
   /** Current player ID (resolved after login check) */
   private currentParticipantId: string | null = null;
@@ -159,6 +168,62 @@ export class StatisticsViewComponent implements OnInit {
    */
   public getH2H(opponentId: string): HeadToHeadDto | null {
     return this.h2hData().get(opponentId) ?? null;
+  }
+
+  /**
+   * Toggles the team H2H details panel for a given opponent team.
+   * Lazily loads team H2H data the first time the panel is expanded.
+   *
+   * @param opponentTeamId - ID of the opponent team to show H2H for
+   */
+  public async toggleTeamH2H(opponentTeamId: string): Promise<void> {
+    const current = this.expandedTeamH2hId();
+    if (current === opponentTeamId) {
+      // Collapse
+      this.expandedTeamH2hId.set(null);
+      return;
+    }
+
+    // Expand and load if not already loaded
+    this.expandedTeamH2hId.set(opponentTeamId);
+    if (!this.teamH2hData().has(opponentTeamId) && this.currentParticipantId) {
+      const loading = new Set(this.teamH2hLoading());
+      loading.add(opponentTeamId);
+      this.teamH2hLoading.set(loading);
+
+      try {
+        const teamH2h = await this.statisticsService.getTeamHeadToHead(this.currentParticipantId, opponentTeamId) as TeamHeadToHeadDto;
+        const map = new Map(this.teamH2hData());
+        map.set(opponentTeamId, teamH2h);
+        this.teamH2hData.set(map);
+      } catch {
+        // Silently ignore — panel will show empty state
+      } finally {
+        const done = new Set(this.teamH2hLoading());
+        done.delete(opponentTeamId);
+        this.teamH2hLoading.set(done);
+      }
+    }
+  }
+
+  /**
+   * Returns whether a team H2H panel is currently loading for a given opponent team.
+   *
+   * @param opponentTeamId - Opponent team ID to check
+   * @returns True if the team H2H for this team is loading
+   */
+  public isTeamH2HLoading(opponentTeamId: string): boolean {
+    return this.teamH2hLoading().has(opponentTeamId);
+  }
+
+  /**
+   * Returns team H2H data for a given opponent team, or null if not yet loaded.
+   *
+   * @param opponentTeamId - Opponent team ID
+   * @returns TeamHeadToHeadDto or null
+   */
+  public getTeamH2H(opponentTeamId: string): TeamHeadToHeadDto | null {
+    return this.teamH2hData().get(opponentTeamId) ?? null;
   }
 
   /**
