@@ -260,12 +260,16 @@ export class MatchListComponent implements OnInit {
         const tournament = bracket ? tournamentsMap.get(bracket.tournamentId) : null;
         const category = bracket ? categoriesMap.get(bracket.categoryId) : null;
 
-        // Use participant objects from backend if available
-        const participant1Name = match.participant1 
+        // Use team data for doubles, or participant objects for singles
+        const participant1Name = match.participant1Team
+          ? `${match.participant1Team.player1.firstName} ${match.participant1Team.player1.lastName} / ${match.participant1Team.player2.firstName} ${match.participant1Team.player2.lastName}`
+          : match.participant1
           ? `${match.participant1.firstName} ${match.participant1.lastName}`
           : 'TBD';
         
-        const participant2Name = match.participant2 
+        const participant2Name = match.participant2Team
+          ? `${match.participant2Team.player1.firstName} ${match.participant2Team.player1.lastName} / ${match.participant2Team.player2.firstName} ${match.participant2Team.player2.lastName}`
+          : match.participant2
           ? `${match.participant2.firstName} ${match.participant2.lastName}`
           : 'TBD';
 

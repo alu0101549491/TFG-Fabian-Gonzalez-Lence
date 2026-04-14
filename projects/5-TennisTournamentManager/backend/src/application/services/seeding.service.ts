@@ -14,6 +14,7 @@
 
 import {Registration} from '../../domain/entities/registration.entity';
 import {User} from '../../domain/entities/user.entity';
+import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
 
 /**
  * Participant with seeding information.
@@ -27,6 +28,20 @@ export interface SeededParticipant {
   ranking: number | null;
   /** Original registration entity */
   registration: Registration;
+}
+
+/**
+ * Seeded doubles team information.
+ */
+export interface SeededDoublesTeam {
+  /** DoublesTeam ID used as the bracket slot identifier */
+  teamId: string;
+  /** Seed number (1 = top seed) */
+  seedNumber: number;
+  /** Combined ranking (average of both players, lower is better) */
+  combinedRanking: number | null;
+  /** Original DoublesTeam entity */
+  team: DoublesTeam;
 }
 
 /**
@@ -169,4 +184,79 @@ export class SeedingService {
 
     return {participantIds, seededParticipants};
   }
+
+  /**
+   * Assigns seed numbers to doubles teams based on their combined ranking.
+   * 
+   * The combined ranking for doubles is the average of both players' rankings.
+   * Teams/players without rankings are placed after seeded teams.
+   * 
+   * @param teams - DoublesTeam entities with player1 and player2 loaded
+   * @returns Array of seeded team info sorted by combined ranking
+   */
+  public static assignDoublesTeamSeeds(
+    teams: (DoublesTeam & {player1: User; player2: User})[],
+  ): SeededDoublesTeam[] {
+    const computeCombinedRanking = (team: DoublesTeam & {player1: User; player2: User}): number | null => {
+      const r1 = team.player1?.ranking ?? null;
+      const r2 = team.player2?.ranking ?? null;
+      if (r1 !== null && r2 !== null) return (r1 + r2) / 2;
+      if (r1 !== null) return r1;
+      if (r2 !== null) return r2;
+      return null;
+    };
+
+    const rankedTeams = teams.filter(t => computeCombinedRanking(t) !== null);
+    const unrankedTeams = teams.filter(t => computeCombinedRanking(t) === null);
+
+    rankedTeams.sort((a, b) => computeCombinedRanking(a)! - computeCombinedRanking(b)!);
+
+    return [...rankedTeams, ...unrankedTeams].map((team, index) => ({
+      teamId: team.id,
+      seedNumber: index + 1,
+      combinedRanking: computeCombinedRanking(team),
+      team,
+    }));
+  }
+
+  /**
+   * Applies seeding positions to doubles teams and returns team IDs in bracket order.
+   * 
+   * @param seededTeams - Teams sorted by seed number
+   * @param bracketSize - Power-of-2 bracket size
+   * @returns Array of team IDs in correct bracket positions, nulls for byes
+   */
+  public static applyDoublesTeamSeedingPositions(
+    seededTeams: SeededDoublesTeam[],
+    bracketSize: number,
+  ): (string | null)[] {
+    const seedingPositions = this.generateSeedingPositions(bracketSize);
+    const teamIds = new Array<string | null>(bracketSize).fill(null);
+
+    seededTeams.forEach((seededTeam) => {
+      const positionIndex = seedingPositions.indexOf(seededTeam.seedNumber);
+      if (positionIndex !== -1) {
+        teamIds[positionIndex] = seededTeam.teamId;
+      }
+    });
+
+    return teamIds;
+  }
+
+  /**
+   * Complete seeding process for doubles teams.
+   * 
+   * @param teams - DoublesTeam entities with player data
+   * @param bracketSize - Power-of-2 bracket size
+   * @returns Team IDs in bracket positions and seeded team list
+   */
+  public static seedDoublesTeams(
+    teams: (DoublesTeam & {player1: User; player2: User})[],
+    bracketSize: number,
+  ): {teamIds: (string | null)[]; seededTeams: SeededDoublesTeam[]} {
+    const seededTeams = this.assignDoublesTeamSeeds(teams);
+    const teamIds = this.applyDoublesTeamSeedingPositions(seededTeams, bracketSize);
+    return {teamIds, seededTeams};
+  }
 }
+

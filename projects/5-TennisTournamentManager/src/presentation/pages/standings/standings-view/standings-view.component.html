@@ -69,7 +69,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (standing of group.standings; track standing.participantId) {
+                @for (standing of group.standings; track standing.id) {
                   <tr class="standing-row" [class.top-position]="standing.position <= 3">
                     <td class="col-position">
                       <div class="position-badge" [class]="getPositionClass(standing.position)">
@@ -86,7 +86,7 @@
                     </td>
                     <td class="col-participant">
                       <div class="participant-info">
-                        <span class="participant-icon">👤</span>
+                        <span class="participant-icon">{{ standing.teamId ? '👥' : '👤' }}</span>
                         <span class="participant-name">{{ standing.participantName }}</span>
                       </div>
                     </td>

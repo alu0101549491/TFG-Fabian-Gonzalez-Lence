@@ -67,7 +67,7 @@
                       </div>
                       <div class="result-winner">
                         <strong>Winner:</strong> 
-                        {{ match.pendingResult.winnerId === match.participant1Id ? match.participant1Name : match.participant2Name }}
+                        {{ match.pendingResult.winnerId === (match.participant1TeamId ?? match.participant1Id) ? match.participant1Name : match.participant2Name }}
                       </div>
                       @if (isWaitingForConfirmation(match)) {
                         <div class="waiting-message">
@@ -79,14 +79,13 @@
 
                   <!-- Participants with Winner Indication -->
                   <div class="participants-grid">
-                    <div class="participant-box" [class.potential-winner]="match.pendingResult.winnerId === match.participant1Id">
-                      @if (match.participant1) {
+                    <div class="participant-box" [class.potential-winner]="match.pendingResult.winnerId === (match.participant1TeamId ?? match.participant1Id)">
+                      @if (match.participant1 || match.participant1Team) {
                         <div class="participant-content">
-                          <div class="avatar">{{ getInitials(match.participant1.firstName, match.participant1.lastName) }}</div>
                           <div class="participant-details">
                             <h3 class="participant-name">
                               {{ match.participant1Name }}
-                              @if (match.pendingResult.winnerId === match.participant1Id) {
+                              @if (match.pendingResult.winnerId === (match.participant1TeamId ?? match.participant1Id)) {
                                 <span class="potential-crown">🏆</span>
                               }
                             </h3>
@@ -99,14 +98,13 @@
                       <span class="vs-text">VS</span>
                     </div>
 
-                    <div class="participant-box" [class.potential-winner]="match.pendingResult.winnerId === match.participant2Id">
-                      @if (match.participant2) {
+                    <div class="participant-box" [class.potential-winner]="match.pendingResult.winnerId === (match.participant2TeamId ?? match.participant2Id)">
+                      @if (match.participant2 || match.participant2Team) {
                         <div class="participant-content">
-                          <div class="avatar">{{ getInitials(match.participant2.firstName, match.participant2.lastName) }}</div>
                           <div class="participant-details">
                             <h3 class="participant-name">
                               {{ match.participant2Name }}
-                              @if (match.pendingResult.winnerId === match.participant2Id) {
+                              @if (match.pendingResult.winnerId === (match.participant2TeamId ?? match.participant2Id)) {
                                 <span class="potential-crown">🏆</span>
                               }
                             </h3>
@@ -257,20 +255,16 @@
               <div class="match-body">
                 <div class="participants-grid">
                   <!-- Participant 1 -->
-                  <div class="participant-box" [class.winner]="match.winnerId === match.participant1Id">
-                    @if (match.participant1) {
+                  <div class="participant-box" [class.winner]="match.participant1TeamId ? match.winnerTeamId === match.participant1TeamId : match.winnerId === match.participant1Id">
+                    @if (match.participant1 || match.participant1Team) {
                       <div class="participant-content">
-                        <div class="avatar">{{ getInitials(match.participant1.firstName, match.participant1.lastName) }}</div>
                         <div class="participant-details">
                           <h3 class="participant-name">
                             {{ match.participant1Name }}
-                            @if (match.winnerId === match.participant1Id) {
+                            @if (match.participant1TeamId ? match.winnerTeamId === match.participant1TeamId : match.winnerId === match.participant1Id) {
                               <span class="winner-crown">👑</span>
                             }
                           </h3>
-                          @if (match.participant1.email) {
-                            <p class="participant-email">{{ match.participant1.email }}</p>
-                          }
                         </div>
                       </div>
                     } @else {
@@ -295,20 +289,16 @@
                   </div>
 
                   <!-- Participant 2 -->
-                  <div class="participant-box" [class.winner]="match.winnerId === match.participant2Id">
-                    @if (match.participant2) {
+                  <div class="participant-box" [class.winner]="match.participant2TeamId ? match.winnerTeamId === match.participant2TeamId : match.winnerId === match.participant2Id">
+                    @if (match.participant2 || match.participant2Team) {
                       <div class="participant-content">
-                        <div class="avatar">{{ getInitials(match.participant2.firstName, match.participant2.lastName) }}</div>
                         <div class="participant-details">
                           <h3 class="participant-name">
                             {{ match.participant2Name }}
-                            @if (match.winnerId === match.participant2Id) {
+                            @if (match.participant2TeamId ? match.winnerTeamId === match.participant2TeamId : match.winnerId === match.participant2Id) {
                               <span class="winner-crown">👑</span>
                             }
                           </h3>
-                          @if (match.participant2.email) {
-                            <p class="participant-email">{{ match.participant2.email }}</p>
-                          }
                         </div>
                       </div>
                     } @else {
@@ -362,9 +352,9 @@
                   <input
                     type="radio"
                     [(ngModel)]="resultForm().winnerId"
-                    [value]="selectedMatch()!.participant1Id"
+                    [value]="selectedMatch()!.participant1TeamId ?? selectedMatch()!.participant1Id"
                     name="winnerId"
-                    (change)="selectWinner(selectedMatch()!.participant1Id!)"
+                    (change)="selectWinner((selectedMatch()!.participant1TeamId ?? selectedMatch()!.participant1Id)!)"
                     required
                   />
                   <span>{{ selectedMatch()!.participant1Name }}</span>
@@ -373,9 +363,9 @@
                   <input
                     type="radio"
                     [(ngModel)]="resultForm().winnerId"
-                    [value]="selectedMatch()!.participant2Id"
+                    [value]="selectedMatch()!.participant2TeamId ?? selectedMatch()!.participant2Id"
                     name="winnerId"
-                    (change)="selectWinner(selectedMatch()!.participant2Id!)"
+                    (change)="selectWinner((selectedMatch()!.participant2TeamId ?? selectedMatch()!.participant2Id)!)"
                     required
                   />
                   <span>{{ selectedMatch()!.participant2Name }}</span>

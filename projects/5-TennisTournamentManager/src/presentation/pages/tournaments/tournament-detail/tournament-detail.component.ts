@@ -68,7 +68,7 @@ export class TournamentDetailComponent implements OnInit {
   public categories = signal<CategoryDto[]>([]);
 
   /** Registered players with their details */
-  public registeredPlayers = signal<Array<{user: User; registration: RegistrationDto}>>([]);
+  public registeredPlayers = signal<Array<{user: User; registration: RegistrationDto; partner?: {user: User; registration: RegistrationDto} | null}>>([]);
 
   /** Count of pending registrations */
   public pendingRegistrationsCount = computed(() => {
@@ -331,15 +331,19 @@ export class TournamentDetailComponent implements OnInit {
 
   /**
    * Loads the list of registered players for this tournament.
+   * For doubles pairs, deduplicates to one row per pair.
    */
   private async loadPlayers(): Promise<void> {
     if (!this.tournamentId) return;
 
     try {
-      // Fetch all registrations for this tournament
-      const registrations = await this.registrationService.getRegistrationsByTournament(this.tournamentId);
-      
-      // Fetch user details for each registration using public endpoint (no auth required)
+      // Fetch all registrations + authoritative doubles-team pairings in parallel
+      const [registrations, doublesTeams] = await Promise.all([
+        this.registrationService.getRegistrationsByTournament(this.tournamentId),
+        this.partnerInvitationService.getDoublesTeamsByTournament(this.tournamentId).catch(() => []),
+      ]);
+
+      // Fetch user details for each registration
       const playersWithDetails = await Promise.all(
         registrations.map(async (registration) => {
           try {
@@ -351,14 +355,49 @@ export class TournamentDetailComponent implements OnInit {
           }
         })
       );
-      
-      // Filter out any null entries (users that couldn't be loaded)
+
+      // Filter out any null entries
       const validPlayers = playersWithDetails.filter((p): p is {user: User; registration: RegistrationDto} => p !== null);
-      
-      this.registeredPlayers.set(validPlayers);
+
+      // Deduplicate doubles pairs using DoublesTeam records as source of truth.
+      // For each team {player1Id, player2Id}, keep only one combined row and suppress the partner's row.
+      const seenParticipantIds = new Set<string>();
+      const deduped: Array<{user: User; registration: RegistrationDto; partner?: {user: User; registration: RegistrationDto} | null}> = [];
+
+      for (const entry of validPlayers) {
+        const participantId = entry.registration.participantId;
+        if (seenParticipantIds.has(participantId)) continue;
+        seenParticipantIds.add(participantId);
+
+        // Prefer DoublesTeam record (authoritative for new registrations);
+        // fall back to partnerId field for registrations created before DoublesTeam existed.
+        const team = doublesTeams.find(
+          t => t.player1Id === participantId || t.player2Id === participantId
+        );
+
+        let partnerUserId: string | null = null;
+        if (team) {
+          partnerUserId = team.player1Id === participantId ? team.player2Id : team.player1Id;
+        } else {
+          partnerUserId = entry.registration.partnerId ?? entry.registration.partner?.id ?? null;
+        }
+
+        if (partnerUserId) {
+          const partnerEntry = validPlayers.find(p => p.registration.participantId === partnerUserId);
+          if (partnerEntry) {
+            seenParticipantIds.add(partnerUserId);
+            deduped.push({...entry, partner: partnerEntry});
+          } else {
+            deduped.push({...entry, partner: null});
+          }
+        } else {
+          deduped.push(entry);
+        }
+      }
+
+      this.registeredPlayers.set(deduped);
     } catch (error) {
       console.error('Failed to load registered players:', error);
-      // Don't set error message - player list is optional info
     }
   }
 
@@ -984,11 +1023,12 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   /**
-   * Approves a pending registration.
+   * Approves a pending registration. For doubles pairs, also approves the partner's registration.
    * @param registrationId - The registration ID to approve
    * @param playerName - Player name for confirmation message
+   * @param partnerRegistrationId - Optional partner registration ID for doubles
    */
-  public async approveRegistration(registrationId: string, playerName: string): Promise<void> {
+  public async approveRegistration(registrationId: string, playerName: string, partnerRegistrationId?: string): Promise<void> {
     const confirmed = confirm(`Approve registration for ${playerName}?`);
     if (!confirmed) return;
 
@@ -1002,10 +1042,19 @@ export class TournamentDetailComponent implements OnInit {
       const updateData: UpdateRegistrationStatusDto = {
         registrationId,
         status: RegistrationStatus.ACCEPTED,
-        acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE, // Explicitly set DA
+        acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE,
       };
 
       await this.registrationService.updateStatus(updateData, currentUser.id);
+
+      // For doubles pairs: approve partner registration simultaneously
+      if (partnerRegistrationId) {
+        await this.registrationService.updateStatus(
+          {registrationId: partnerRegistrationId, status: RegistrationStatus.ACCEPTED, acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE},
+          currentUser.id,
+        );
+      }
+
       await this.loadPlayers();
       alert(`${playerName} has been approved!`);
     } catch (error) {
@@ -1015,11 +1064,12 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   /**
-   * Sets a pending registration as alternate (waiting list).
+   * Sets a pending registration as alternate (waiting list). For doubles pairs, sets both.
    * @param registrationId - The registration ID to set as alternate
    * @param playerName - Player name for confirmation message
+   * @param partnerRegistrationId - Optional partner registration ID for doubles
    */
-  public async setAsAlternate(registrationId: string, playerName: string): Promise<void> {
+  public async setAsAlternate(registrationId: string, playerName: string, partnerRegistrationId?: string): Promise<void> {
     const confirmed = confirm(
       `Place ${playerName} on the waiting list as an alternate?\n\n` +
       `They will be notified and can participate if a spot opens up.`
@@ -1040,6 +1090,14 @@ export class TournamentDetailComponent implements OnInit {
       };
 
       await this.registrationService.updateStatus(updateData, currentUser.id);
+
+      if (partnerRegistrationId) {
+        await this.registrationService.updateStatus(
+          {registrationId: partnerRegistrationId, status: RegistrationStatus.ACCEPTED, acceptanceType: AcceptanceType.ALTERNATE},
+          currentUser.id,
+        );
+      }
+
       await this.loadPlayers();
       alert(`${playerName} has been placed on the waiting list as an alternate.`);
     } catch (error) {
@@ -1101,26 +1159,28 @@ export class TournamentDetailComponent implements OnInit {
     // Get all players for this category
     const categoryPlayers = this.registeredPlayers().filter(p => p.registration.categoryId === categoryId);
     
-    // Count ACCEPTED registrations with DA or LL for this category
-    const acceptedCount = categoryPlayers.filter(
-      player => {
-        const isAccepted = player.registration.status === RegistrationStatus.ACCEPTED;
-        const acceptanceType = player.registration.acceptanceType;
-        const isDAorLL = acceptanceType === AcceptanceType.DIRECT_ACCEPTANCE || acceptanceType === AcceptanceType.LUCKY_LOSER;
-        
-        return isAccepted && isDAorLL;
+    // Count ACCEPTED registrations with DA or LL for this category.
+    // For doubles pairs (has partner), each entry counts as 2 slots.
+    let acceptedCount = 0;
+    for (const player of categoryPlayers) {
+      const isAccepted = player.registration.status === RegistrationStatus.ACCEPTED;
+      const acceptanceType = player.registration.acceptanceType;
+      const isDAorLL = acceptanceType === AcceptanceType.DIRECT_ACCEPTANCE || acceptanceType === AcceptanceType.LUCKY_LOSER;
+      if (isAccepted && isDAorLL) {
+        acceptedCount += player.partner ? 2 : 1;
       }
-    ).length;
+    }
 
     return acceptedCount >= category.maxParticipants;
   }
 
   /**
-   * Rejects a pending registration.
+   * Rejects a pending registration. For doubles pairs, rejects both.
    * @param registrationId - The registration ID to reject
    * @param playerName - Player name for confirmation message
+   * @param partnerRegistrationId - Optional partner registration ID for doubles
    */
-  public async rejectRegistration(registrationId: string, playerName: string): Promise<void> {
+  public async rejectRegistration(registrationId: string, playerName: string, partnerRegistrationId?: string): Promise<void> {
     const confirmed = confirm(`Reject registration for ${playerName}? They will not be able to participate.`);
     if (!confirmed) return;
 
@@ -1131,12 +1191,18 @@ export class TournamentDetailComponent implements OnInit {
     }
 
     try {
-      const updateData: UpdateRegistrationStatusDto = {
-        registrationId,
-        status: RegistrationStatus.REJECTED,
-      };
+      await this.registrationService.updateStatus(
+        {registrationId, status: RegistrationStatus.REJECTED},
+        currentUser.id,
+      );
 
-      await this.registrationService.updateStatus(updateData, currentUser.id);
+      if (partnerRegistrationId) {
+        await this.registrationService.updateStatus(
+          {registrationId: partnerRegistrationId, status: RegistrationStatus.REJECTED},
+          currentUser.id,
+        );
+      }
+
       await this.loadPlayers();
       alert(`${playerName}'s registration has been rejected.`);
     } catch (error) {

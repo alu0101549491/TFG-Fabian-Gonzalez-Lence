@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal, inject} from '@angular/core';
+import {Component, OnInit, signal, computed, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, RouterModule, Router} from '@angular/router';
 import {FormsModule} from '@angular/forms';
@@ -123,6 +123,45 @@ export class MatchDetailComponent implements OnInit {
   /** Validation errors for score form */
   public scoreValidationErrors = signal<string[]>([]);
 
+  /** Whether this is a doubles match */
+  public readonly isDoublesMatch = computed(() => {
+    const m = this.match();
+    return Boolean(m && (m.participant1TeamId || m.participant2TeamId));
+  });
+
+  /**
+   * Gets the display name for a participant slot (handles doubles "A / B" format).
+   *
+   * @param participantNumber - 1 or 2
+   * @returns Display name string
+   */
+  public getParticipantDisplayName(participantNumber: 1 | 2): string {
+    const m = this.match();
+    if (!m) return 'TBD';
+    const team = participantNumber === 1 ? m.participant1Team : m.participant2Team;
+    if (team) {
+      return `${team.player1.firstName} ${team.player1.lastName} / ${team.player2.firstName} ${team.player2.lastName}`;
+    }
+    const p = participantNumber === 1 ? m.participant1 : m.participant2;
+    if (!p) return 'TBD';
+    return `${p.firstName} ${p.lastName}`;
+  }
+
+  /**
+   * Gets the effective winner slot ID (teamId for doubles, userId for singles).
+   *
+   * @param participantNumber - 1 or 2
+   * @returns ID string to use as winnerId value
+   */
+  public getWinnerSlotId(participantNumber: 1 | 2): string {
+    const m = this.match();
+    if (!m) return '';
+    if (m.participant1TeamId || m.participant2TeamId) {
+      return participantNumber === 1 ? (m.participant1TeamId ?? '') : (m.participant2TeamId ?? '');
+    }
+    return participantNumber === 1 ? (m.participant1Id ?? '') : (m.participant2Id ?? '');
+  }
+
   /**
    * Initializes component and loads match data.
    */
@@ -157,10 +196,21 @@ export class MatchDetailComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
+      console.log('[Match Detail] Loading match with ID:', matchId);
       const match = await this.matchService.getMatchById(matchId);
+      console.log('[Match Detail] Match loaded successfully:', {
+        matchId: match.id,
+        bracketId: match.bracketId,
+        status: match.status,
+        participant1Id: match.participant1Id,
+        participant2Id: match.participant2Id,
+        participant1TeamId: match.participant1TeamId,
+        participant2TeamId: match.participant2TeamId
+      });
       this.match.set(match);
 
       // Check if user can manage this match
+      console.log('[Match Detail] About to check permissions...');
       await this.checkPermissions(match);
 
       // Pre-fill forms
@@ -188,8 +238,17 @@ export class MatchDetailComponent implements OnInit {
    * @param match - The match to check permissions for
    */
   private async checkPermissions(match: MatchDto): Promise<void> {
+    console.log('[Match Detail] checkPermissions() called for match:', match.id);
+    
     const user = this.authStateService.getCurrentUser();
+    console.log('[Match Detail] Current user:', user ? {
+      id: user.id,
+      role: user.role,
+      email: user.email
+    } : 'null (not logged in)');
+    
     if (!user) {
+      console.log('[Match Detail] No user logged in, setting canManageMatch to false');
       this.canManageMatch.set(false);
       return;
     }
@@ -197,26 +256,56 @@ export class MatchDetailComponent implements OnInit {
     // System admins and tournament admins can manage matches
     if (user.role === UserRole.SYSTEM_ADMIN || user.role === UserRole.TOURNAMENT_ADMIN) {
       try {
+        console.log('[Match Detail] Checking permissions for match:', {
+          matchId: match.id,
+          bracketId: match.bracketId,
+          userRole: user.role,
+          userId: user.id
+        });
+
         // Get bracket to find tournament
         const bracket = await this.bracketService.getBracketById(match.bracketId);
+        console.log('[Match Detail] Bracket loaded:', {
+          bracketId: bracket.id,
+          tournamentId: bracket.tournamentId,
+          bracketType: bracket.bracketType
+        });
+
         const tournament = await this.tournamentService.getTournamentById(bracket.tournamentId);
+        console.log('[Match Detail] Tournament loaded:', {
+          tournamentId: tournament.id,
+          organizerId: tournament.organizerId,
+          name: tournament.name
+        });
 
         // Store tournament data for date restrictions
         this.tournament.set(tournament);
 
-        // System admins can manage any match
-        // Tournament admins can manage matches for tournaments they organize
-        this.canManageMatch.set(
-          user.role === UserRole.SYSTEM_ADMIN || 
-          tournament.organizerId === user.id
-        );
+        // System admins and tournament admins can manage any match
+        const canManage = user.role === UserRole.SYSTEM_ADMIN || user.role === UserRole.TOURNAMENT_ADMIN;
+        console.log('[Match Detail] Permission result:', {
+          canManage,
+          isSystemAdmin: user.role === UserRole.SYSTEM_ADMIN,
+          isTournamentAdmin: user.role === UserRole.TOURNAMENT_ADMIN,
+          isOrganizer: tournament.organizerId === user.id
+        });
+
+        this.canManageMatch.set(canManage);
       } catch (error) {
-        console.error('Error checking permissions:', error);
+        console.error('[Match Detail] Error checking permissions:', error);
+        console.error('[Match Detail] Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          matchBracketId: match.bracketId,
+          userRole: user.role
+        });
         this.canManageMatch.set(false);
       }
     } else {
+      console.log('[Match Detail] User role is not SYSTEM_ADMIN or TOURNAMENT_ADMIN:', user.role);
       this.canManageMatch.set(false);
     }
+    
+    console.log('[Match Detail] Final canManageMatch value:', this.canManageMatch());
   }
 
   // Modal management methods
@@ -268,11 +357,13 @@ export class MatchDetailComponent implements OnInit {
    * Opens the record scores modal.
    */
   public openScoresModal(): void {
-    if (this.match()?.participant1Id) {
-      this.scoresForm.winnerId = this.match()!.participant1Id!;
-    } else if (this.match()?.participant1?.id) {
-      // Fallback: use participant object ID if participant1Id is missing
-      this.scoresForm.winnerId = this.match()!.participant1!.id;
+    const m = this.match();
+    if (m?.participant1TeamId) {
+      this.scoresForm.winnerId = m.participant1TeamId;
+    } else if (m?.participant1Id) {
+      this.scoresForm.winnerId = m.participant1Id;
+    } else if (m?.participant1?.id) {
+      this.scoresForm.winnerId = m.participant1.id;
     }
     
     this.showScoresModal.set(true);

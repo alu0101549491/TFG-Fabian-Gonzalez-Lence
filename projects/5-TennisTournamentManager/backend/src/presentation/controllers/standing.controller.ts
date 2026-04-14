@@ -14,6 +14,7 @@
 import {Response, NextFunction} from 'express';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Standing} from '../../domain/entities/standing.entity';
+import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
@@ -39,11 +40,40 @@ export class StandingController {
       }
       
       const standingRepository = AppDataSource.getRepository(Standing);
+      const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
       const standings = await standingRepository.find({
         where: {categoryId: categoryId as string},
         order: {rank: 'ASC'},
       });
-      
+
+      // For doubles standings: enrich with team player names
+      const teamIds = standings.map(s => s.teamId).filter(Boolean) as string[];
+      if (teamIds.length > 0) {
+        const teams = await doublesTeamRepository.find({
+          where: teamIds.map(id => ({id})),
+          relations: ['player1', 'player2'],
+        }) as (DoublesTeam & {player1: {id: string; firstName: string; lastName: string}; player2: {id: string; firstName: string; lastName: string}})[];
+        const teamMap = new Map(teams.map(t => [t.id, t]));
+
+        const enrichedStandings = standings.map(s => {
+          if (s.teamId) {
+            const team = teamMap.get(s.teamId);
+            return {
+              ...s,
+              team: team ? {
+                id: team.id,
+                seedNumber: team.seedNumber,
+                player1: {id: team.player1.id, firstName: team.player1.firstName, lastName: team.player1.lastName},
+                player2: {id: team.player2.id, firstName: team.player2.firstName, lastName: team.player2.lastName},
+              } : null,
+            };
+          }
+          return s;
+        });
+        res.status(HTTP_STATUS.OK).json(enrichedStandings);
+        return;
+      }
+
       res.status(HTTP_STATUS.OK).json(standings);
     } catch (error) {
       next(error);

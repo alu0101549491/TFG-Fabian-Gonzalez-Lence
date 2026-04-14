@@ -14,6 +14,7 @@
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {PartnerInvitation, PartnerInvitationStatus} from '../../domain/entities/partner-invitation.entity';
 import {Registration} from '../../domain/entities/registration.entity';
+import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
 import {RegistrationStatus} from '../../domain/enumerations/registration-status';
 import {Tournament} from '../../domain/entities/tournament.entity';
 import {TournamentType} from '../../domain/enumerations/tournament-type';
@@ -45,6 +46,7 @@ import {generateId} from '../../shared/utils/id-generator';
 export class PartnerInvitationService {
   private invitationRepository = AppDataSource.getRepository(PartnerInvitation);
   private registrationRepository = AppDataSource.getRepository(Registration);
+  private doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
   private tournamentRepository = AppDataSource.getRepository(Tournament);
   private userRepository = AppDataSource.getRepository(User);
   private categoryRepository = AppDataSource.getRepository(Category);
@@ -248,6 +250,19 @@ export class PartnerInvitationService {
     });
 
     await this.registrationRepository.save([inviterRegistration, inviteeRegistration]);
+
+    // Create DoublesTeam entity that represents this pair as a single bracket slot
+    const doublesTeam = this.doublesTeamRepository.create({
+      id: generateId('dbl'),
+      tournamentId: invitation.tournamentId,
+      categoryId: invitation.categoryId,
+      player1Id: invitation.inviterId,
+      player2Id: invitation.inviteeId,
+      registration1Id: inviterRegistration.id,
+      registration2Id: inviteeRegistration.id,
+      seedNumber: null,
+    });
+    await this.doublesTeamRepository.save(doublesTeam);
 
     // Update invitation
     invitation.status = PartnerInvitationStatus.ACCEPTED;

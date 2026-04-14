@@ -47,15 +47,19 @@
         <div class="card-body">
           <div class="participants-grid">
             <!-- Participant 1 -->
-            <div class="participant-box" [class.winner]="match()!.winnerId === match()!.participant1Id">
+            <div class="participant-box" [class.winner]="!isDoublesMatch() ? match()!.winnerId === match()!.participant1Id : match()!.winnerTeamId === match()!.participant1TeamId">
               <div class="participant-header">
-                <span class="participant-label">Participant 1</span>
-                @if (match()!.winnerId === match()!.participant1Id) {
+                <span class="participant-label">{{ isDoublesMatch() ? 'Team 1' : 'Participant 1' }}</span>
+                @if (!isDoublesMatch() ? match()!.winnerId === match()!.participant1Id : match()!.winnerTeamId === match()!.participant1TeamId) {
                   <span class="winner-badge">👑 Winner</span>
                 }
               </div>
               <div class="participant-info">
-                @if (match()!.participant1) {
+                @if (isDoublesMatch() && match()!.participant1Team) {
+                  <div class="participant-details">
+                    <p class="participant-name">{{ getParticipantDisplayName(1) }}</p>
+                  </div>
+                } @else if (match()!.participant1) {
                   <div class="avatar">{{ getInitials(match()!.participant1!.firstName, match()!.participant1!.lastName) }}</div>
                   <div class="participant-details">
                     <a class="participant-name participant-link" 
@@ -82,15 +86,19 @@
             </div>
 
             <!-- Participant 2 -->
-            <div class="participant-box" [class.winner]="match()!.winnerId === match()!.participant2Id">
+            <div class="participant-box" [class.winner]="!isDoublesMatch() ? match()!.winnerId === match()!.participant2Id : match()!.winnerTeamId === match()!.participant2TeamId">
               <div class="participant-header">
-                <span class="participant-label">Participant 2</span>
-                @if (match()!.winnerId === match()!.participant2Id) {
+                <span class="participant-label">{{ isDoublesMatch() ? 'Team 2' : 'Participant 2' }}</span>
+                @if (!isDoublesMatch() ? match()!.winnerId === match()!.participant2Id : match()!.winnerTeamId === match()!.participant2TeamId) {
                   <span class="winner-badge">👑 Winner</span>
                 }
               </div>
               <div class="participant-info">
-                @if (match()!.participant2) {
+                @if (isDoublesMatch() && match()!.participant2Team) {
+                  <div class="participant-details">
+                    <p class="participant-name">{{ getParticipantDisplayName(2) }}</p>
+                  </div>
+                } @else if (match()!.participant2) {
                   <div class="avatar">{{ getInitials(match()!.participant2!.firstName, match()!.participant2!.lastName) }}</div>
                   <div class="participant-details">
                     <a class="participant-name participant-link" 
@@ -409,31 +417,46 @@
               <div class="form-group">
                 <label>Winner</label>
                 <div class="radio-group">
-                  @if (match()!.participant1) {
-                    <label class="radio-label">
-                      <input 
-                        type="radio" 
-                        [(ngModel)]="scoresForm.winnerId" 
-                        [value]="match()!.participant1Id" 
-                        name="winnerId"
-                        (change)="onWinnerChange('participant1', match()!.participant1Id!)"
-                        required
-                      />
-                      <span>{{ match()!.participant1!.firstName }} {{ match()!.participant1!.lastName }}</span>
-                    </label>
-                  }
-                  @if (match()!.participant2) {
-                    <label class="radio-label">
-                      <input 
-                        type="radio" 
-                        [(ngModel)]="scoresForm.winnerId" 
-                        [value]="match()!.participant2Id" 
-                        name="winnerId"
-                        (change)="onWinnerChange('participant2', match()!.participant2Id!)"
-                        required
-                      />
-                      <span>{{ match()!.participant2!.firstName }} {{ match()!.participant2!.lastName }}</span>
-                    </label>
+                  @if (isDoublesMatch()) {
+                    @if (match()!.participant1Team) {
+                      <label class="radio-label">
+                        <input type="radio" [(ngModel)]="scoresForm.winnerId" [value]="match()!.participant1TeamId" name="winnerId" required />
+                        <span>{{ getParticipantDisplayName(1) }}</span>
+                      </label>
+                    }
+                    @if (match()!.participant2Team) {
+                      <label class="radio-label">
+                        <input type="radio" [(ngModel)]="scoresForm.winnerId" [value]="match()!.participant2TeamId" name="winnerId" required />
+                        <span>{{ getParticipantDisplayName(2) }}</span>
+                      </label>
+                    }
+                  } @else {
+                    @if (match()!.participant1) {
+                      <label class="radio-label">
+                        <input 
+                          type="radio" 
+                          [(ngModel)]="scoresForm.winnerId" 
+                          [value]="match()!.participant1Id" 
+                          name="winnerId"
+                          (change)="onWinnerChange('participant1', match()!.participant1Id!)"
+                          required
+                        />
+                        <span>{{ match()!.participant1!.firstName }} {{ match()!.participant1!.lastName }}</span>
+                      </label>
+                    }
+                    @if (match()!.participant2) {
+                      <label class="radio-label">
+                        <input 
+                          type="radio" 
+                          [(ngModel)]="scoresForm.winnerId" 
+                          [value]="match()!.participant2Id" 
+                          name="winnerId"
+                          (change)="onWinnerChange('participant2', match()!.participant2Id!)"
+                          required
+                        />
+                        <span>{{ match()!.participant2!.firstName }} {{ match()!.participant2!.lastName }}</span>
+                      </label>
+                    }
                   }
                 </div>
               </div>

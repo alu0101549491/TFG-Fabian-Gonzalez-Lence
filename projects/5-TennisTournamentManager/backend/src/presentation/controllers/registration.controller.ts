@@ -62,6 +62,10 @@ export class RegistrationController {
     return Promise.all(registrations.map(async (registration) => {
       const filteredRegistration = {...registration};
       
+      // Explicitly forward the partnerId FK column value. TypeORM may not include it in
+      // the entity spread when both @Column and @JoinColumn share the same property name.
+      filteredRegistration.partnerId = registration.partnerId ?? null;
+
       // Filter participant if present
       if (registration.participant) {
         filteredRegistration.participant = await this.privacyService.filterUserData(
@@ -70,7 +74,16 @@ export class RegistrationController {
           tournamentId
         ) as typeof registration.participant;
       }
-      
+
+      // Filter partner if present (apply same privacy rules to the loaded relation)
+      if (registration.partner) {
+        filteredRegistration.partner = await this.privacyService.filterUserData(
+          registration.partner,
+          viewer,
+          tournamentId
+        ) as typeof registration.partner;
+      }
+
       return filteredRegistration;
     }));
   }

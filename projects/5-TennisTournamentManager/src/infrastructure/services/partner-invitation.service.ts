@@ -73,6 +73,20 @@ export interface CreatePartnerInvitationDto {
 }
 
 /**
+ * DTO representing a doubles team (pair of players registered together).
+ */
+export interface DoublesTeamDto {
+  id: string;
+  tournamentId: string;
+  categoryId: string;
+  player1Id: string;
+  player2Id: string;
+  registration1Id: string | null;
+  registration2Id: string | null;
+  seedNumber: number | null;
+}
+
+/**
  * Service for managing partner invitations via API.
  * 
  * Provides methods to:
@@ -225,6 +239,19 @@ export class PartnerInvitationService {
    */
   public async loadPendingCount(): Promise<void> {
     await this.getPendingInvitations();
+  }
+
+  /**
+   * Fetches all doubles team records for a given tournament.
+   * Uses the DoublesTeam entity as authoritative source for pair grouping.
+   *
+   * @param tournamentId - Tournament ID
+   * @returns Array of doubles team records
+   */
+  public async getDoublesTeamsByTournament(tournamentId: string): Promise<DoublesTeamDto[]> {
+    return firstValueFrom(
+      this.http.get<DoublesTeamDto[]>(`/api/doubles-teams?tournamentId=${tournamentId}`)
+    );
   }
 
   /**

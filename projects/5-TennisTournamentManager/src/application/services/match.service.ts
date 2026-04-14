@@ -1033,18 +1033,24 @@ export class MatchService implements IMatchService {
       startTime: match.startedAt,  // Domain: startedAt → DTO: startTime
       endTime: match.completedAt,  // Domain: completedAt → DTO: endTime
       score,
+      // Doubles team IDs (from backend enrichment)
+      participant1TeamId: (match as any).participant1TeamId ?? null,
+      participant2TeamId: (match as any).participant2TeamId ?? null,
+      winnerTeamId: (match as any).winnerTeamId ?? null,
       // Map participant User objects from backend relations
       participant1: (match as any).participant1 ? {
         id: (match as any).participant1.id,
         firstName: (match as any).participant1.firstName,
         lastName: (match as any).participant1.lastName,
         email: (match as any).participant1.email,
+        seed: (match as any).participant1.seed ?? null,
       } : null,
       participant2: (match as any).participant2 ? {
         id: (match as any).participant2.id,
         firstName: (match as any).participant2.firstName,
         lastName: (match as any).participant2.lastName,
         email: (match as any).participant2.email,
+        seed: (match as any).participant2.seed ?? null,
       } : null,
       winner: (match as any).winner ? {
         id: (match as any).winner.id,
@@ -1052,6 +1058,9 @@ export class MatchService implements IMatchService {
         lastName: (match as any).winner.lastName,
         email: (match as any).winner.email,
       } : null,
+      // Doubles team data (from backend enrichment)
+      participant1Team: (match as any).participant1Team ?? null,
+      participant2Team: (match as any).participant2Team ?? null,
       pendingResult: (match as any).pendingResult || null,
     };
   }

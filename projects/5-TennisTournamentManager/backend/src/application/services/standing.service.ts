@@ -17,6 +17,7 @@ import {Match} from '../../domain/entities/match.entity';
 import {Standing} from '../../domain/entities/standing.entity';
 import {Bracket} from '../../domain/entities/bracket.entity';
 import {Registration} from '../../domain/entities/registration.entity';
+import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
 import {MatchStatus} from '../../domain/enumerations/match-status';
 import {generateId} from '../../shared/utils/id-generator';
 
@@ -38,6 +39,23 @@ interface PlayerStats {
 }
 
 /**
+ * Aggregated per-team stats for doubles standings computation.
+ */
+interface TeamStats {
+  teamId: string;
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  setsWon: number;
+  setsLost: number;
+  gamesWon: number;
+  gamesLost: number;
+  points: number;
+  headToHead: Map<string, number>;
+  seedNumber: number | null;
+}
+
+/**
  * Backend service that computes standings from completed matches and persists them.
  *
  * @remarks
@@ -51,12 +69,14 @@ export class StandingService {
   private readonly standingRepository: Repository<Standing>;
   private readonly bracketRepository: Repository<Bracket>;
   private readonly registrationRepository: Repository<Registration>;
+  private readonly doublesTeamRepository: Repository<DoublesTeam>;
 
   public constructor() {
     this.matchRepository = AppDataSource.getRepository(Match);
     this.standingRepository = AppDataSource.getRepository(Standing);
     this.bracketRepository = AppDataSource.getRepository(Bracket);
     this.registrationRepository = AppDataSource.getRepository(Registration);
+    this.doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
   }
 
   /**
@@ -91,14 +111,25 @@ export class StandingService {
       return;
     }
 
-    // Fetch all completed (non-bye) matches in this bracket
+    // Fetch all completed matches in this bracket
     const completedMatches = await this.matchRepository.find({
-      where: {
-        bracketId,
-        status: MatchStatus.COMPLETED,
-      },
+      where: {bracketId, status: MatchStatus.COMPLETED},
       relations: ['scores'],
     });
+
+    // Detect doubles bracket from the first match that has team columns
+    const isDoubles = completedMatches.some(m => m.participant1TeamId || m.participant2TeamId);
+    if (isDoubles) {
+      return this.recalculateDoublesForBracket(bracketId, bracket, completedMatches);
+    }
+
+    return this.recalculateSinglesForBracket(bracketId, bracket, completedMatches);
+  }
+
+  /**
+   * Recalculates singles standings for a bracket.
+   */
+  private async recalculateSinglesForBracket(bracketId: string, bracket: Bracket, completedMatches: Match[]): Promise<void> {
 
     // Collect participant seeds from registrations
     const participantIds = new Set<string>();
@@ -240,6 +271,125 @@ export class StandingService {
     console.log(
       `✅ [StandingService] Standings recalculated for bracket ${bracketId} ` +
       `(${sorted.length} players, bracket type: ${bracket.bracketType})`,
+    );
+  }
+
+  /**
+   * Recalculates doubles standings for a bracket, keyed by team ID.
+   */
+  private async recalculateDoublesForBracket(bracketId: string, bracket: Bracket, completedMatches: Match[]): Promise<void> {
+    // Collect team IDs from completed doubles matches
+    const teamIds = new Set<string>();
+    for (const m of completedMatches) {
+      if (m.participant1TeamId) teamIds.add(m.participant1TeamId);
+      if (m.participant2TeamId) teamIds.add(m.participant2TeamId);
+    }
+
+    // Load teams for seed info
+    const teams = teamIds.size > 0
+      ? await this.doublesTeamRepository.find({where: Array.from(teamIds).map(id => ({id}))})
+      : [];
+    const teamSeedMap = new Map<string, number | null>();
+    for (const team of teams) {
+      teamSeedMap.set(team.id, team.seedNumber ?? null);
+    }
+
+    const statsMap = new Map<string, TeamStats>();
+
+    const ensureTeam = (id: string): TeamStats => {
+      if (!statsMap.has(id)) {
+        statsMap.set(id, {
+          teamId: id, matchesPlayed: 0, wins: 0, losses: 0,
+          setsWon: 0, setsLost: 0, gamesWon: 0, gamesLost: 0,
+          points: 0, headToHead: new Map(),
+          seedNumber: teamSeedMap.get(id) ?? null,
+        });
+      }
+      return statsMap.get(id)!;
+    };
+
+    for (const match of completedMatches) {
+      if (!match.participant1TeamId || !match.participant2TeamId || !match.winnerTeamId) continue;
+
+      const t1 = ensureTeam(match.participant1TeamId);
+      const t2 = ensureTeam(match.participant2TeamId);
+      const isT1Winner = match.winnerTeamId === match.participant1TeamId;
+
+      t1.matchesPlayed++;
+      t2.matchesPlayed++;
+
+      if (isT1Winner) {
+        t1.wins++; t2.losses++; t1.points += 3;
+        t1.headToHead.set(t2.teamId, (t1.headToHead.get(t2.teamId) ?? 0) + 1);
+      } else {
+        t2.wins++; t1.losses++; t2.points += 3;
+        t2.headToHead.set(t1.teamId, (t2.headToHead.get(t1.teamId) ?? 0) + 1);
+      }
+
+      for (const score of match.scores ?? []) {
+        t1.setsWon += score.player1Games > score.player2Games ? 1 : 0;
+        t1.setsLost += score.player1Games < score.player2Games ? 1 : 0;
+        t2.setsWon += score.player2Games > score.player1Games ? 1 : 0;
+        t2.setsLost += score.player2Games < score.player1Games ? 1 : 0;
+        t1.gamesWon += score.player1Games;
+        t1.gamesLost += score.player2Games;
+        t2.gamesWon += score.player2Games;
+        t2.gamesLost += score.player1Games;
+      }
+    }
+
+    const sorted = Array.from(statsMap.values()).sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      const aSetRatio = a.setsLost > 0 ? a.setsWon / a.setsLost : (a.setsWon > 0 ? Infinity : 0);
+      const bSetRatio = b.setsLost > 0 ? b.setsWon / b.setsLost : (b.setsWon > 0 ? Infinity : 0);
+      if (bSetRatio !== aSetRatio) return bSetRatio - aSetRatio;
+      const aGameRatio = a.gamesLost > 0 ? a.gamesWon / a.gamesLost : (a.gamesWon > 0 ? Infinity : 0);
+      const bGameRatio = b.gamesLost > 0 ? b.gamesWon / b.gamesLost : (b.gamesWon > 0 ? Infinity : 0);
+      if (bGameRatio !== aGameRatio) return bGameRatio - aGameRatio;
+      const aH2H = a.headToHead.get(b.teamId) ?? 0;
+      const bH2H = b.headToHead.get(a.teamId) ?? 0;
+      if (bH2H !== aH2H) return bH2H - aH2H;
+      const aSeed = a.seedNumber ?? Number.MAX_SAFE_INTEGER;
+      const bSeed = b.seedNumber ?? Number.MAX_SAFE_INTEGER;
+      return aSeed - bSeed;
+    });
+
+    for (let i = 0; i < sorted.length; i++) {
+      const stats = sorted[i];
+      const rank = i + 1;
+
+      const existing = await this.standingRepository.findOne({
+        where: {tournamentId: bracket.tournamentId, categoryId: bracket.categoryId, teamId: stats.teamId},
+      });
+
+      if (existing) {
+        existing.matchesPlayed = stats.matchesPlayed;
+        existing.wins = stats.wins;
+        existing.losses = stats.losses;
+        existing.points = stats.points;
+        existing.rank = rank;
+        await this.standingRepository.save(existing);
+      } else {
+        const standing = this.standingRepository.create({
+          id: generateId('std'),
+          tournamentId: bracket.tournamentId,
+          categoryId: bracket.categoryId,
+          participantId: null, // null for doubles standings
+          teamId: stats.teamId,
+          matchesPlayed: stats.matchesPlayed,
+          wins: stats.wins,
+          losses: stats.losses,
+          draws: 0,
+          points: stats.points,
+          rank,
+        });
+        await this.standingRepository.save(standing);
+      }
+    }
+
+    console.log(
+      `✅ [StandingService] Doubles standings recalculated for bracket ${bracketId} ` +
+      `(${sorted.length} teams, bracket type: ${bracket.bracketType})`,
     );
   }
 }

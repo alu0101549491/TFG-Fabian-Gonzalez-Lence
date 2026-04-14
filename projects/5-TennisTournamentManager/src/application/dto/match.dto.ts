@@ -32,6 +32,14 @@ export interface MatchParticipant {
   seed?: number | null;
 }
 
+/** Doubles team player pair for match display. */
+export interface DoublesTeamDto {
+  id: string;
+  seedNumber?: number | null;
+  player1: {id: string; firstName: string; lastName: string};
+  player2: {id: string; firstName: string; lastName: string};
+}
+
 /** DTO for match output representation. */
 export interface MatchDto {
   id: string;
@@ -44,7 +52,10 @@ export interface MatchDto {
   matchNumber: number;
   participant1Id: string | null;
   participant2Id: string | null;
+  participant1TeamId?: string | null;
+  participant2TeamId?: string | null;
   winnerId: string | null;
+  winnerTeamId?: string | null;
   status: MatchStatus;
   scheduledTime: Date | null;
   startTime: Date | null;
@@ -53,6 +64,8 @@ export interface MatchDto {
   participant1?: MatchParticipant | null;
   participant2?: MatchParticipant | null;
   winner?: MatchParticipant | null;
+  participant1Team?: DoublesTeamDto | null;
+  participant2Team?: DoublesTeamDto | null;
   pendingResult?: {
     id: string;
     submittedBy: string;

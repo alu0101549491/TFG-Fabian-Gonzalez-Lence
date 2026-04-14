@@ -196,14 +196,23 @@ export class MyMatchesComponent implements OnInit {
 
       // Enhance with additional info
       const enhanced: EnhancedMatch[] = myMatches.map(match => {
-        const isParticipant1 = match.participant1Id === userId;
-        const opponentId = isParticipant1 ? match.participant2Id : match.participant1Id;
+        const isDoubles = Boolean(match.participant1TeamId || match.participant2TeamId);
+        const isParticipant1 = isDoubles
+          ? (match.participant1Team?.player1.id === userId || match.participant1Team?.player2?.id === userId)
+          : match.participant1Id === userId;
+        const opponentId = isParticipant1
+          ? (isDoubles ? (match.participant2TeamId ?? null) : match.participant2Id)
+          : (isDoubles ? (match.participant1TeamId ?? null) : match.participant1Id);
         
-        // Format participant names from firstName and lastName
-        const participant1Name = match.participant1
+        // Format participant names from team or individual
+        const participant1Name = match.participant1Team
+          ? `${match.participant1Team.player1.firstName} ${match.participant1Team.player1.lastName} / ${match.participant1Team.player2.firstName} ${match.participant1Team.player2.lastName}`
+          : match.participant1
           ? `${match.participant1.firstName} ${match.participant1.lastName}`.trim()
           : 'TBD';
-        const participant2Name = match.participant2
+        const participant2Name = match.participant2Team
+          ? `${match.participant2Team.player1.firstName} ${match.participant2Team.player1.lastName} / ${match.participant2Team.player2.firstName} ${match.participant2Team.player2.lastName}`
+          : match.participant2
           ? `${match.participant2.firstName} ${match.participant2.lastName}`.trim()
           : 'TBD';
         
@@ -473,8 +482,11 @@ export class MyMatchesComponent implements OnInit {
       return;
     }
 
+    const winnerName = match.participant1TeamId || match.participant2TeamId
+      ? (match.pendingResult.winnerId === match.participant1TeamId ? match.participant1Name : match.participant2Name)
+      : (match.pendingResult.winnerId === match.participant1Id ? match.participant1Name : match.participant2Name);
     const confirm = window.confirm(
-      `Confirm this result?\n\nWinner: ${match.pendingResult.winnerId === match.participant1Id ? match.participant1Name : match.participant2Name}\nScores: ${match.pendingResult.setScores.join(', ')}`
+      `Confirm this result?\n\nWinner: ${winnerName}\nScores: ${match.pendingResult.setScores.join(', ')}`
     );
 
     if (!confirm) {

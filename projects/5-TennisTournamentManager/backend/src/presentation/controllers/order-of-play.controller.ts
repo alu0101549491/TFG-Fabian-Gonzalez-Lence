@@ -17,6 +17,7 @@ import {OrderOfPlay} from '../../domain/entities/order-of-play.entity';
 import {Match} from '../../domain/entities/match.entity';
 import {Court} from '../../domain/entities/court.entity';
 import {Tournament} from '../../domain/entities/tournament.entity';
+import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
@@ -94,7 +95,7 @@ export class OrderOfPlayController {
 
       // Get all unscheduled matches for this tournament
       // Include matches that:
-      // 1. Have both participants assigned (ready to play)
+      // 1. Have both participants assigned (ready to play) - for singles OR doubles
       // 2. Don't have a scheduled time yet
       // 3. Are either NOT_SCHEDULED or SCHEDULED status
       const unscheduledMatches = await matchRepository
@@ -105,8 +106,11 @@ export class OrderOfPlayController {
           statuses: [MatchStatus.NOT_SCHEDULED, MatchStatus.SCHEDULED],
         })
         .andWhere('match.scheduledTime IS NULL')
-        .andWhere('match.participant1Id IS NOT NULL')
-        .andWhere('match.participant2Id IS NOT NULL')
+        .andWhere(
+          // Singles: both participant IDs set, OR Doubles: both team IDs set
+          '((match.participant1Id IS NOT NULL AND match.participant2Id IS NOT NULL) OR ' +
+          '(match.participant1TeamId IS NOT NULL AND match.participant2TeamId IS NOT NULL))'
+        )
         .orderBy('match.round', 'ASC')
         .addOrderBy('match.matchNumber', 'ASC')
         .getMany();
@@ -242,19 +246,27 @@ export class OrderOfPlayController {
         throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
 
-      // Find court by name OR by id (to support both court names and UUIDs)
-      let court = await courtRepository.findOne({where: {name: courtId}});
+      const tournamentId = match.bracket.tournamentId;
+
+      // Find court by name OR by id, filtered by tournament
+      // This ensures we get the correct court for this specific tournament
+      let court = await courtRepository.findOne({
+        where: {name: courtId, tournamentId}
+      });
+      
       if (!court) {
-        // Try finding by UUID as fallback
-        court = await courtRepository.findOne({where: {id: courtId}});
+        // Try finding by UUID as fallback (still scoped to tournament)
+        court = await courtRepository.findOne({
+          where: {id: courtId, tournamentId}
+        });
       }
       
       if (!court) {
-        throw new AppError('Court not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
-      }
-
-      if (court.tournamentId !== match.bracket.tournamentId) {
-        throw new AppError('Court does not belong to match tournament', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+        throw new AppError(
+          `Court '${courtId}' not found for this tournament`, 
+          HTTP_STATUS.NOT_FOUND, 
+          ERROR_CODES.NOT_FOUND
+        );
       }
 
       // Use the court's UUID for the rest of the logic
@@ -344,11 +356,49 @@ export class OrderOfPlayController {
       }
 
       // Notify participants about schedule change
-      if (match.participant1Id && match.participant2Id) {
+      const tournamentName = match.bracket?.tournament?.name;
+      const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
+      
+      // Check if this is a doubles match or singles match
+      const isDoubles = Boolean(match.participant1TeamId || match.participant2TeamId);
+      
+      if (isDoubles) {
+        // Doubles match: notify all 4 players
+        const team1 = match.participant1TeamId ? 
+          await doublesTeamRepository.findOne({where: {id: match.participant1TeamId}, relations: ['player1', 'player2']}) : null;
+        const team2 = match.participant2TeamId ? 
+          await doublesTeamRepository.findOne({where: {id: match.participant2TeamId}, relations: ['player1', 'player2']}) : null;
+        
+        if (team1 && team2) {
+          const team1Names = `${team1.player1.firstName} ${team1.player1.lastName} / ${team1.player2.firstName} ${team1.player2.lastName}`;
+          const team2Names = `${team2.player1.firstName} ${team2.player1.lastName} / ${team2.player2.firstName} ${team2.player2.lastName}`;
+          
+          // Notify team 1 players
+          for (const playerId of [team1.player1Id, team1.player2Id]) {
+            try {
+              await this.notificationService.notifyMatchScheduled(
+                id, playerId, team2Names, new Date(scheduledTime), court.name, tournamentId, tournamentName
+              );
+            } catch (error) {
+              console.error(`Failed to notify doubles player ${playerId}:`, error);
+            }
+          }
+          
+          // Notify team 2 players
+          for (const playerId of [team2.player1Id, team2.player2Id]) {
+            try {
+              await this.notificationService.notifyMatchScheduled(
+                id, playerId, team1Names, new Date(scheduledTime), court.name, tournamentId, tournamentName
+              );
+            } catch (error) {
+              console.error(`Failed to notify doubles player ${playerId}:`, error);
+            }
+          }
+        }
+      } else if (match.participant1Id && match.participant2Id) {
+        // Singles match: notify 2 players
         const participant1Name = match.participant1 ? `${match.participant1.firstName} ${match.participant1.lastName}` : 'Opponent';
         const participant2Name = match.participant2 ? `${match.participant2.firstName} ${match.participant2.lastName}` : 'Opponent';
-        const tournamentName = match.bracket?.tournament?.name;
-        const tournamentId = match.bracket?.tournamentId;
 
         try {
           await this.notificationService.notifyMatchScheduled(
@@ -414,11 +464,30 @@ export class OrderOfPlayController {
         relations: ['participant1', 'participant2'],
       });
 
-      // Collect unique participant IDs
+      // Collect unique  participant IDs (singles + doubles team players)
       const participantIds = new Set<string>();
+      const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
+      
       for (const match of matches) {
+        // Singles participants
         if (match.participant1Id) participantIds.add(match.participant1Id);
         if (match.participant2Id) participantIds.add(match.participant2Id);
+        
+        // Doubles team players
+        if (match.participant1TeamId) {
+          const team1 = await doublesTeamRepository.findOne({where: {id: match.participant1TeamId}});
+          if (team1) {
+            participantIds.add(team1.player1Id);
+            participantIds.add(team1.player2Id);
+          }
+        }
+        if (match.participant2TeamId) {
+          const team2 = await doublesTeamRepository.findOne({where: {id: match.participant2TeamId}});
+          if (team2) {
+            participantIds.add(team2.player1Id);
+            participantIds.add(team2.player2Id);
+          }
+        }
       }
 
       // Send notifications (batch them for efficiency)
@@ -478,11 +547,40 @@ export class OrderOfPlayController {
         matchesByDate.set(dateKey, existing);
       }
 
-      // Collect all unique participant IDs
+      // Collect all unique participant IDs (singles + doubles team players)
+      // Also build a team map for display formatting
       const participantIds = new Set<string>();
+      const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
+      const teamMap = new Map<string, DoublesTeam & {player1: any; player2: any}>();
+      
       for (const match of matches) {
+        // Singles participants
         if (match.participant1Id) participantIds.add(match.participant1Id);
         if (match.participant2Id) participantIds.add(match.participant2Id);
+        
+        // Doubles team players
+        if (match.participant1TeamId) {
+          const team1 = await doublesTeamRepository.findOne({
+            where: {id: match.participant1TeamId},
+            relations: ['player1', 'player2']
+          }) as DoublesTeam & {player1: any; player2: any};
+          if (team1) {
+            participantIds.add(team1.player1Id);
+            participantIds.add(team1.player2Id);
+            teamMap.set(team1.id, team1);
+          }
+        }
+        if (match.participant2TeamId) {
+          const team2 = await doublesTeamRepository.findOne({
+            where: {id: match.participant2TeamId},
+            relations: ['player1', 'player2']
+          }) as DoublesTeam & {player1: any; player2: any};
+          if (team2) {
+            participantIds.add(team2.player1Id);
+            participantIds.add(team2.player2Id);
+            teamMap.set(team2.id, team2);
+          }
+        }
       }
 
       // Create or update OrderOfPlay records for each date
@@ -493,16 +591,37 @@ export class OrderOfPlayController {
           where: {tournamentId, date: matchDate},
         });
 
-        const matchesData = dateMatches.map(m => ({
-          matchId: m.id,
-          courtId: m.courtId,
-          courtName: m.courtName,
-          time: m.scheduledTime!.toISOString(),
-          participants: [
-            m.participant1 ? `${m.participant1.firstName} ${m.participant1.lastName}` : 'TBD',
-            m.participant2 ? `${m.participant2.firstName} ${m.participant2.lastName}` : 'TBD',
-          ],
-        }));
+        const matchesData = dateMatches.map(m => {
+          // Format participant 1 name
+          let participant1Name = 'TBD';
+          if (m.participant1TeamId && teamMap.has(m.participant1TeamId)) {
+            const team = teamMap.get(m.participant1TeamId)!;
+            const p1Initial = team.player1.firstName?.charAt(0) || '';
+            const p2Initial = team.player2.firstName?.charAt(0) || '';
+            participant1Name = `${p1Initial}. ${team.player1.lastName} / ${p2Initial}. ${team.player2.lastName}`;
+          } else if (m.participant1) {
+            participant1Name = `${m.participant1.firstName} ${m.participant1.lastName}`;
+          }
+
+          // Format participant 2 name
+          let participant2Name = 'TBD';
+          if (m.participant2TeamId && teamMap.has(m.participant2TeamId)) {
+            const team = teamMap.get(m.participant2TeamId)!;
+            const p1Initial = team.player1.firstName?.charAt(0) || '';
+            const p2Initial = team.player2.firstName?.charAt(0) || '';
+            participant2Name = `${p1Initial}. ${team.player1.lastName} / ${p2Initial}. ${team.player2.lastName}`;
+          } else if (m.participant2) {
+            participant2Name = `${m.participant2.firstName} ${m.participant2.lastName}`;
+          }
+
+          return {
+            matchId: m.id,
+            courtId: m.courtId,
+            courtName: m.courtName,
+            time: m.scheduledTime!.toISOString(),
+            participants: [participant1Name, participant2Name],
+          };
+        });
 
         if (oop) {
           oop.matches = matchesData as any;
@@ -587,31 +706,74 @@ export class OrderOfPlayController {
         .andWhere('match.status IN (:...statuses)', {
           statuses: [MatchStatus.SCHEDULED, MatchStatus.NOT_SCHEDULED],
         })
-        .andWhere('match.participant1Id IS NOT NULL')
-        .andWhere('match.participant2Id IS NOT NULL')
+        .andWhere(
+          // Singles: both participant IDs set, OR Doubles: both team IDs set
+          '((match.participant1Id IS NOT NULL AND match.participant2Id IS NOT NULL) OR ' +
+          '(match.participant1TeamId IS NOT NULL AND match.participant2TeamId IS NOT NULL))'
+        )
         .orderBy('match.scheduledTime', 'ASC', 'NULLS LAST')
         .addOrderBy('match.round', 'ASC')
         .addOrderBy('match.matchNumber', 'ASC')
         .getMany();
 
+      // Fetch doubles teams for display
+      const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
+      const teamIds = new Set<string>();
+      for (const match of scheduledMatches) {
+        if (match.participant1TeamId) teamIds.add(match.participant1TeamId);
+        if (match.participant2TeamId) teamIds.add(match.participant2TeamId);
+      }
+      
+      const teamMap = new Map<string, DoublesTeam & {player1: any; player2: any}>();
+      if (teamIds.size > 0) {
+        const teams = await doublesTeamRepository.find({
+          where: Array.from(teamIds).map(id => ({id})),
+          relations: ['player1', 'player2'],
+        }) as (DoublesTeam & {player1: any; player2: any})[];
+        for (const team of teams) {
+          teamMap.set(team.id, team);
+        }
+      }
+
       // Format matches for Order of Play display
-      const formattedMatches = scheduledMatches.map(match => ({
-        matchId: match.id,
-        courtId: match.courtId,
-        courtName: match.courtName || match.court?.name || null,
-        scheduledTime: match.scheduledTime,
-        round: match.round,
-        matchNumber: match.matchNumber,
-        participants: [
-          match.participant1 ? `${match.participant1.firstName} ${match.participant1.lastName}` : 'TBD',
-          match.participant2 ? `${match.participant2.firstName} ${match.participant2.lastName}` : 'TBD',
-        ],
-        participantIds: [
-          match.participant1Id,
-          match.participant2Id,
-        ],
-        status: match.status,
-      }));
+      const formattedMatches = scheduledMatches.map(match => {
+        // Format participant 1 name
+        let participant1Name = 'TBD';
+        if (match.participant1TeamId && teamMap.has(match.participant1TeamId)) {
+          const team = teamMap.get(match.participant1TeamId)!;
+          const p1Initial = team.player1.firstName?.charAt(0) || '';
+          const p2Initial = team.player2.firstName?.charAt(0) || '';
+          participant1Name = `${p1Initial}. ${team.player1.lastName} / ${p2Initial}. ${team.player2.lastName}`;
+        } else if (match.participant1) {
+          participant1Name = `${match.participant1.firstName} ${match.participant1.lastName}`;
+        }
+
+        // Format participant 2 name
+        let participant2Name = 'TBD';
+        if (match.participant2TeamId && teamMap.has(match.participant2TeamId)) {
+          const team = teamMap.get(match.participant2TeamId)!;
+          const p1Initial = team.player1.firstName?.charAt(0) || '';
+          const p2Initial = team.player2.firstName?.charAt(0) || '';
+          participant2Name = `${p1Initial}. ${team.player1.lastName} / ${p2Initial}. ${team.player2.lastName}`;
+        } else if (match.participant2) {
+          participant2Name = `${match.participant2.firstName} ${match.participant2.lastName}`;
+        }
+
+        return {
+          matchId: match.id,
+          courtId: match.courtId,
+          courtName: match.courtName || match.court?.name || null,
+          scheduledTime: match.scheduledTime,
+          round: match.round,
+          matchNumber: match.matchNumber,
+          participants: [participant1Name, participant2Name],
+          participantIds: [
+            match.participant1Id,
+            match.participant2Id,
+          ],
+          status: match.status,
+        };
+      });
 
       // Group by time assignment status
       const withTime = formattedMatches.filter(m => m.scheduledTime !== null);
@@ -681,8 +843,11 @@ export class OrderOfPlayController {
         .createQueryBuilder('match')
         .leftJoinAndSelect('match.bracket', 'bracket')
         .where('bracket.tournamentId = :tournamentId', {tournamentId})
-        .andWhere('match.participant1Id IS NOT NULL')
-        .andWhere('match.participant2Id IS NOT NULL')
+        .andWhere(
+          // Singles: both participant IDs set, OR Doubles: both team IDs set
+          '((match.participant1Id IS NOT NULL AND match.participant2Id IS NOT NULL) OR ' +
+          '(match.participant1TeamId IS NOT NULL AND match.participant2TeamId IS NOT NULL))'
+        )
         .andWhere('match.status IN (:...statuses)', {
           statuses: [MatchStatus.NOT_SCHEDULED, MatchStatus.SCHEDULED],
         })

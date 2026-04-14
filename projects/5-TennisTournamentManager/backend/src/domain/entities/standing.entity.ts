@@ -27,8 +27,12 @@ export class Standing {
   @Column('varchar', {length: 50})
   public categoryId!: string;
 
-  @Column('varchar', {length: 50})
-  public participantId!: string;
+  @Column('varchar', {length: 50, nullable: true})
+  public participantId!: string | null;
+
+  /** For doubles standings: team ID instead of individual participant ID */
+  @Column('varchar', {length: 50, nullable: true})
+  public teamId!: string | null;
 
   @Column('int', {default: 0})
   public matchesPlayed!: number;

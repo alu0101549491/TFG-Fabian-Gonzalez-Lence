@@ -1417,6 +1417,9 @@ router.post('/partner-invitations/:id/decline', authMiddleware, partnerInvitatio
  */
 router.post('/partner-invitations/:id/cancel', authMiddleware, partnerInvitationController.cancelInvitation.bind(partnerInvitationController));
 
+// GET /api/doubles-teams?tournamentId=xxx (FR16: fetch doubles pair records for a tournament)
+router.get('/doubles-teams', optionalAuthMiddleware, partnerInvitationController.getDoublesTeamsByTournament.bind(partnerInvitationController));
+
 /**
  * @swagger
  * /brackets:

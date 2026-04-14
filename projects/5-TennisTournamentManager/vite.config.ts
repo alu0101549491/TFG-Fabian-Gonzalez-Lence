@@ -70,6 +70,11 @@ export default defineConfig(({mode}) => {
     server: {
       port: 4200,
       open: true,
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 4200,
+      },
       proxy: {
         '/api': {
           target: 'http://localhost:3000',

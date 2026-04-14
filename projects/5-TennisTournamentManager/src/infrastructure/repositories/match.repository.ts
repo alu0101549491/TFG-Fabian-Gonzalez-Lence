@@ -91,6 +91,23 @@ export class MatchRepositoryImpl implements IMatchRepository {
     if (response.pendingResult !== undefined) {
       (match as any).pendingResult = response.pendingResult;
     }
+
+    // Doubles team data
+    if (response.participant1TeamId) {
+      (match as any).participant1TeamId = response.participant1TeamId;
+    }
+    if (response.participant2TeamId) {
+      (match as any).participant2TeamId = response.participant2TeamId;
+    }
+    if (response.winnerTeamId) {
+      (match as any).winnerTeamId = response.winnerTeamId;
+    }
+    if (response.participant1Team) {
+      (match as any).participant1Team = response.participant1Team;
+    }
+    if (response.participant2Team) {
+      (match as any).participant2Team = response.participant2Team;
+    }
     
     return match;
   }

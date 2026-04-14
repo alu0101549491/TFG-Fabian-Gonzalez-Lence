@@ -18,6 +18,8 @@ import {Bracket} from '../../domain/entities/bracket.entity';
 import {Match} from '../../domain/entities/match.entity';
 import {Phase} from '../../domain/entities/phase.entity';
 import {Registration} from '../../domain/entities/registration.entity';
+import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
+import {Tournament} from '../../domain/entities/tournament.entity';
 import {Score} from '../../domain/entities/score.entity';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
@@ -28,6 +30,7 @@ import {SeedingService} from '../../application/services/seeding.service';
 import {RegistrationStatus} from '../../domain/enumerations/registration-status';
 import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
 import {MatchStatus} from '../../domain/enumerations/match-status';
+import {TournamentType} from '../../domain/enumerations/tournament-type';
 
 /**
  * Bracket controller.
@@ -116,64 +119,192 @@ export class BracketController {
       const savedBracket = await bracketRepository.save(bracket) as unknown as Bracket;
       console.log(`✅ Bracket ${savedBracket.id} saved successfully`);
       
-      // Get accepted participants for the category (excluding ALTERNATE and WITHDRAWN)
-      // ALTERNATE players are on the waiting list and should not be in the bracket draw
-      // WITHDRAWN players have withdrawn from the tournament
-      const registrations = await registrationRepository.find({
-        where: {
-          categoryId: savedBracket.categoryId,
-          status: RegistrationStatus.ACCEPTED,
-          acceptanceType: Not(In([AcceptanceType.ALTERNATE, AcceptanceType.WITHDRAWN])),
-        },
-        relations: ['participant'], // Include participant data for ranking information
-      });
-      
-      console.log(`📊 Found ${registrations.length} ACCEPTED registrations for category ${savedBracket.categoryId} (excluding ALTERNATE/WITHDRAWN)`);
-      
-      // Generate matches and phases based on bracket type
-      if (registrations.length >= 2) {
-        // Calculate bracket size (next power of 2)
-        const participantCount = registrations.length;
-        const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantCount)));
-        
-        // Apply seeding: sort by ranking and assign seed numbers
-        const {participantIds, seededParticipants} = SeedingService.seedBracket(
-          registrations,
-          bracketSize,
-        );
-        
-        console.log(`🎾 Generating seeded bracket: ${registrations.length} participants, bracket size ${bracketSize}`);
-        console.log(`🏆 Seeding:`, seededParticipants.map(p => `Seed #${p.seedNumber} (Ranking: ${p.ranking ?? 'N/A'})`));
-        
-        // Save seed numbers to registration entities
-        for (const seededParticipant of seededParticipants) {
-          await registrationRepository.update(
-            seededParticipant.registration.id,
-            {seedNumber: seededParticipant.seedNumber},
-          );
+      // Determine if this bracket belongs to a doubles tournament
+      const tournamentRepository = AppDataSource.getRepository(Tournament);
+      const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
+      const tournament = await tournamentRepository.findOne({where: {id: savedBracket.tournamentId}});
+      const isDoubles = tournament?.tournamentType === TournamentType.DOUBLES;
+
+      if (isDoubles) {
+        // --- DOUBLES bracket generation: use DoublesTeam entities as bracket slots ---
+        let teams = await doublesTeamRepository.find({
+          where: {categoryId: savedBracket.categoryId},
+          relations: ['player1', 'player2'],
+        }) as (DoublesTeam & {player1: {ranking: number | null}; player2: {ranking: number | null}})[];
+
+        console.log(`📊 Found ${teams.length} doubles teams for category ${savedBracket.categoryId}`);
+
+        // FALLBACK: Check for legacy registrations with partnerId but no DoublesTeam record
+        console.log(`⚠️ Checking for legacy registrations with partnerId that need DoublesTeam records...`);
+        const registrationsWithPartners = await registrationRepository.find({
+          where: {
+            categoryId: savedBracket.categoryId,
+            status: RegistrationStatus.ACCEPTED,
+            acceptanceType: Not(In([AcceptanceType.ALTERNATE, AcceptanceType.WITHDRAWN])),
+          },
+          relations: ['participant'],
+        });
+
+        // Group registrations by pairs (using partnerId)
+        const seenParticipantIds = new Set<string>();
+        const pairs: {player1Id: string; player2Id: string; reg1Id: string; reg2Id: string}[] = [];
+
+        for (const reg of registrationsWithPartners) {
+          if (!reg.partnerId || seenParticipantIds.has(reg.participantId)) continue;
+          const partnerReg = registrationsWithPartners.find(r => r.participantId === reg.partnerId);
+          if (partnerReg) {
+            // Check if DoublesTeam already exists for this pair
+            const existingTeam = teams.find(
+              t => (t.player1Id === reg.participantId && t.player2Id === reg.partnerId) ||
+                   (t.player1Id === reg.partnerId && t.player2Id === reg.participantId)
+            );
+            if (!existingTeam) {
+              pairs.push({
+                player1Id: reg.participantId,
+                player2Id: reg.partnerId,
+                reg1Id: reg.id,
+                reg2Id: partnerReg.id,
+              });
+            }
+            seenParticipantIds.add(reg.participantId);
+            seenParticipantIds.add(reg.partnerId);
+          }
         }
-        console.log(`✅ Seed numbers saved to ${seededParticipants.length} registrations`);
-        
-        // Generate matches with seeded participant order
-        const {matches, phases} = this.matchGenerator.generateMatches(
-          savedBracket.id,
-          savedBracket.tournamentId,
-          savedBracket.bracketType,
-          participantIds,
-          savedBracket.totalRounds,
-        );
-        
-        console.log(`💾 Saving ${phases.length} phases...`);
-        // Save phases first (matches reference them)
-        await phaseRepository.save(phases);
-        
-        console.log(`💾 Saving ${matches.length} matches...`);
-        // Save generated matches
-        await matchRepository.save(matches);
-        
-        console.log(`✅ Generated ${matches.length} matches across ${phases.length} phases for bracket ${savedBracket.id}`);
+
+        if (pairs.length > 0) {
+          console.log(`🔧 Creating ${pairs.length} missing DoublesTeam records from legacy registrations...`);
+          for (const pair of pairs) {
+            const newTeam = doublesTeamRepository.create({
+              id: generateId('dbl'),
+              tournamentId: savedBracket.tournamentId,
+              categoryId: savedBracket.categoryId,
+              player1Id: pair.player1Id,
+              player2Id: pair.player2Id,
+              registration1Id: pair.reg1Id,
+              registration2Id: pair.reg2Id,
+              seedNumber: null,
+            });
+            await doublesTeamRepository.save(newTeam);
+          }
+
+          // Reload ALL teams with player relations
+          teams = await doublesTeamRepository.find({
+            where: {categoryId: savedBracket.categoryId},
+            relations: ['player1', 'player2'],
+          }) as (DoublesTeam & {player1: {ranking: number | null}; player2: {ranking: number | null}})[];
+          console.log(`✅ Created ${pairs.length} DoublesTeam records. Total teams now: ${teams.length}`);
+        }
+
+        if (teams.length >= 2) {
+          const teamCount = teams.length;
+          const bracketSize = Math.pow(2, Math.ceil(Math.log2(teamCount)));
+          
+          // Recalculate totalRounds based on actual team count (after DoublesTeam fallback)
+          const correctTotalRounds = Math.log2(bracketSize);
+          if (savedBracket.totalRounds !== correctTotalRounds) {
+            console.log(`⚠️ Correcting totalRounds from ${savedBracket.totalRounds} to ${correctTotalRounds} for ${teamCount} teams`);
+            savedBracket.totalRounds = correctTotalRounds;
+            await bracketRepository.save(savedBracket);
+          }
+
+          // Seed teams by combined ranking
+          const {teamIds, seededTeams} = SeedingService.seedDoublesTeams(
+            teams as Parameters<typeof SeedingService.seedDoublesTeams>[0],
+            bracketSize,
+          );
+
+          console.log(`🎾 Generating seeded doubles bracket: ${teamCount} teams, bracket size ${bracketSize}, totalRounds ${correctTotalRounds}`);
+          console.log(`🏆 Seeding:`, seededTeams.map(t => `Seed #${t.seedNumber} (Combined ranking: ${t.combinedRanking ?? 'N/A'})`));
+
+          // Save seed numbers to DoublesTeam entities
+          for (const seededTeam of seededTeams) {
+            await doublesTeamRepository.update(seededTeam.teamId, {seedNumber: seededTeam.seedNumber});
+          }
+          console.log(`✅ Seed numbers saved to ${seededTeams.length} doubles teams`);
+
+          // Generate matches: generator places teamIds in participant1Id/participant2Id fields
+          const {matches, phases} = this.matchGenerator.generateMatches(
+            savedBracket.id,
+            savedBracket.tournamentId,
+            savedBracket.bracketType,
+            teamIds as string[],
+            correctTotalRounds,
+          );
+
+          // Post-process: move teamIds from participant1Id → participant1TeamId and clear participant1Id
+          for (const match of matches) {
+            if (match.participant1Id) {
+              match.participant1TeamId = match.participant1Id;
+              match.participant1Id = null;
+            }
+            if (match.participant2Id) {
+              match.participant2TeamId = match.participant2Id;
+              match.participant2Id = null;
+            }
+            if (match.winnerId) {
+              match.winnerTeamId = match.winnerId;
+              match.winnerId = null;
+            }
+          }
+
+          console.log(`💾 Saving ${phases.length} phases...`);
+          await phaseRepository.save(phases);
+          console.log(`💾 Saving ${matches.length} matches...`);
+          await matchRepository.save(matches);
+          console.log(`✅ Generated ${matches.length} doubles matches across ${phases.length} phases for bracket ${savedBracket.id}`);
+        } else {
+          console.log(`⚠️ Not enough doubles teams (${teams.length}) to generate matches. Need at least 2 confirmed pairs.`);
+        }
       } else {
-        console.log(`⚠️ Not enough participants (${registrations.length}) to generate matches. Need at least 2 ACCEPTED registrations.`);
+        // --- SINGLES bracket generation (unchanged) ---
+        // Get accepted participants for the category (excluding ALTERNATE and WITHDRAWN)
+        const registrations = await registrationRepository.find({
+          where: {
+            categoryId: savedBracket.categoryId,
+            status: RegistrationStatus.ACCEPTED,
+            acceptanceType: Not(In([AcceptanceType.ALTERNATE, AcceptanceType.WITHDRAWN])),
+          },
+          relations: ['participant'], // Include participant data for ranking information
+        });
+
+        console.log(`📊 Found ${registrations.length} ACCEPTED registrations for category ${savedBracket.categoryId} (excluding ALTERNATE/WITHDRAWN)`);
+
+        if (registrations.length >= 2) {
+          const participantCount = registrations.length;
+          const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantCount)));
+
+          const {participantIds, seededParticipants} = SeedingService.seedBracket(
+            registrations,
+            bracketSize,
+          );
+
+          console.log(`🎾 Generating seeded bracket: ${registrations.length} participants, bracket size ${bracketSize}`);
+          console.log(`🏆 Seeding:`, seededParticipants.map(p => `Seed #${p.seedNumber} (Ranking: ${p.ranking ?? 'N/A'})`));
+
+          for (const seededParticipant of seededParticipants) {
+            await registrationRepository.update(
+              seededParticipant.registration.id,
+              {seedNumber: seededParticipant.seedNumber},
+            );
+          }
+          console.log(`✅ Seed numbers saved to ${seededParticipants.length} registrations`);
+
+          const {matches, phases} = this.matchGenerator.generateMatches(
+            savedBracket.id,
+            savedBracket.tournamentId,
+            savedBracket.bracketType,
+            participantIds,
+            savedBracket.totalRounds,
+          );
+
+          console.log(`💾 Saving ${phases.length} phases...`);
+          await phaseRepository.save(phases);
+          console.log(`💾 Saving ${matches.length} matches...`);
+          await matchRepository.save(matches);
+          console.log(`✅ Generated ${matches.length} matches across ${phases.length} phases for bracket ${savedBracket.id}`);
+        } else {
+          console.log(`⚠️ Not enough participants (${registrations.length}) to generate matches. Need at least 2 ACCEPTED registrations.`);
+        }
       }
       
       res.status(HTTP_STATUS.CREATED).json(savedBracket);
@@ -260,57 +391,190 @@ export class BracketController {
       const phaseDeleteResult = await phaseRepository.delete({bracketId: id});
       console.log(`  Deleted ${phaseDeleteResult.affected || 0} phases`);
 
-      // Fetch UPDATED accepted registrations (with latest seed numbers)
-      const registrations = await registrationRepository.find({
-        where: {
-          categoryId: bracket.categoryId,
-          status: RegistrationStatus.ACCEPTED,
-          acceptanceType: Not(In([AcceptanceType.ALTERNATE, AcceptanceType.WITHDRAWN])),
-        },
-        relations: ['participant'],
-      });
+      // Determine if this bracket belongs to a doubles tournament
+      const tournamentRepository = AppDataSource.getRepository(Tournament);
+      const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
+      const tournament = await tournamentRepository.findOne({where: {id: bracket.tournamentId}});
+      const isDoubles = tournament?.tournamentType === TournamentType.DOUBLES;
 
-      console.log(`📊 Found ${registrations.length} ACCEPTED registrations for category ${bracket.categoryId}`);
+      let matchGenerationResult: {matches: Match[]; phases: Phase[]};
 
-      if (registrations.length < 2) {
-        throw new AppError(
-          'At least 2 accepted participants are required to regenerate bracket',
-          HTTP_STATUS.BAD_REQUEST,
-          ERROR_CODES.INVALID_OPERATION
+      if (isDoubles) {
+        // --- DOUBLES regeneration: re-seed by combined ranking ---
+        let teams = await doublesTeamRepository.find({
+          where: {categoryId: bracket.categoryId},
+          relations: ['player1', 'player2'],
+        }) as Parameters<typeof SeedingService.seedDoublesTeams>[0];
+
+        console.log(`📊 Found ${teams.length} doubles teams for category ${bracket.categoryId}`);
+
+        // FALLBACK: Check for legacy registrations with partnerId but no DoublesTeam record
+        console.log(`⚠️ Checking for legacy registrations with partnerId that need DoublesTeam records...`);
+        const registrationsWithPartners = await registrationRepository.find({
+          where: {
+            categoryId: bracket.categoryId,
+            status: RegistrationStatus.ACCEPTED,
+            acceptanceType: Not(In([AcceptanceType.ALTERNATE, AcceptanceType.WITHDRAWN])),
+          },
+          relations: ['participant'],
+        });
+
+        // Group registrations by pairs (using partnerId)
+        const seenParticipantIds = new Set<string>();
+        const pairs: {player1Id: string; player2Id: string; reg1Id: string; reg2Id: string}[] = [];
+
+        for (const reg of registrationsWithPartners) {
+          if (!reg.partnerId || seenParticipantIds.has(reg.participantId)) continue;
+          const partnerReg = registrationsWithPartners.find(r => r.participantId === reg.partnerId);
+          if (partnerReg) {
+            // Check if DoublesTeam already exists for this pair
+            const existingTeam = teams.find(
+              t => (t.player1Id === reg.participantId && t.player2Id === reg.partnerId) ||
+                   (t.player1Id === reg.partnerId && t.player2Id === reg.participantId)
+            );
+            if (!existingTeam) {
+              pairs.push({
+                player1Id: reg.participantId,
+                player2Id: reg.partnerId,
+                reg1Id: reg.id,
+                reg2Id: partnerReg.id,
+              });
+            }
+            seenParticipantIds.add(reg.participantId);
+            seenParticipantIds.add(reg.partnerId);
+          }
+        }
+
+        if (pairs.length > 0) {
+          console.log(`🔧 Creating ${pairs.length} missing DoublesTeam records from legacy registrations...`);
+          for (const pair of pairs) {
+            const newTeam = doublesTeamRepository.create({
+              id: generateId('dbl'),
+              tournamentId: bracket.tournamentId,
+              categoryId: bracket.categoryId,
+              player1Id: pair.player1Id,
+              player2Id: pair.player2Id,
+              registration1Id: pair.reg1Id,
+              registration2Id: pair.reg2Id,
+              seedNumber: null,
+            });
+            await doublesTeamRepository.save(newTeam);
+          }
+
+          // Reload ALL teams with player relations
+          teams = await doublesTeamRepository.find({
+            where: {categoryId: bracket.categoryId},
+            relations: ['player1', 'player2'],
+          }) as Parameters<typeof SeedingService.seedDoublesTeams>[0];
+          console.log(`✅ Created ${pairs.length} DoublesTeam records. Total teams now: ${teams.length}`);
+        }
+
+        if (teams.length < 2) {
+          throw new AppError(
+            'At least 2 confirmed doubles pairs are required to regenerate a doubles bracket.',
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.INVALID_OPERATION,
+          );
+        }
+
+        const teamCount = teams.length;
+        const bracketSize = Math.pow(2, Math.ceil(Math.log2(teamCount)));
+        
+        // Recalculate totalRounds based on actual team count (after DoublesTeam fallback)
+        const correctTotalRounds = Math.log2(bracketSize);
+        if (bracket.totalRounds !== correctTotalRounds) {
+          console.log(`⚠️ Correcting totalRounds from ${bracket.totalRounds} to ${correctTotalRounds} for ${teamCount} teams`);
+          bracket.totalRounds = correctTotalRounds;
+          await bracketRepository.save(bracket);
+        }
+        
+        const {teamIds, seededTeams} = SeedingService.seedDoublesTeams(teams, bracketSize);
+
+        console.log(`🎾 Regenerating doubles bracket with updated seeds: ${teamCount} teams, bracket size ${bracketSize}, totalRounds ${correctTotalRounds}`);
+        console.log('🏆 Seeding:', seededTeams.map(t => `Seed #${t.seedNumber} - Combined ranking: ${t.combinedRanking ?? 'N/A'}`));
+
+        matchGenerationResult = this.matchGenerator.generateMatches(
+          bracket.id,
+          bracket.tournamentId,
+          bracket.bracketType,
+          teamIds as string[],
+          correctTotalRounds,
+        );
+
+        // Post-process: move teamIds from participant columns to team columns
+        for (const match of matchGenerationResult.matches) {
+          if (match.participant1Id) {
+            match.participant1TeamId = match.participant1Id;
+            match.participant1Id = null;
+          }
+          if (match.participant2Id) {
+            match.participant2TeamId = match.participant2Id;
+            match.participant2Id = null;
+          }
+          if (match.winnerId) {
+            match.winnerTeamId = match.winnerId;
+            match.winnerId = null;
+          }
+        }
+
+        for (const seededTeam of seededTeams) {
+          await doublesTeamRepository.update(seededTeam.teamId, {seedNumber: seededTeam.seedNumber});
+        }
+      } else {
+        // --- SINGLES regeneration (unchanged) ---
+        // Fetch UPDATED accepted registrations (with latest seed numbers)
+        const registrations = await registrationRepository.find({
+          where: {
+            categoryId: bracket.categoryId,
+            status: RegistrationStatus.ACCEPTED,
+            acceptanceType: Not(In([AcceptanceType.ALTERNATE, AcceptanceType.WITHDRAWN])),
+          },
+          relations: ['participant'],
+        });
+
+        console.log(`📊 Found ${registrations.length} ACCEPTED registrations for category ${bracket.categoryId}`);
+
+        if (registrations.length < 2) {
+          throw new AppError(
+            'At least 2 accepted participants are required to regenerate bracket',
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.INVALID_OPERATION,
+          );
+        }
+
+        const participantCount = registrations.length;
+        const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantCount)));
+
+        const {participantIds, seededParticipants} = SeedingService.seedBracket(
+          registrations,
+          bracketSize,
+        );
+
+        console.log('🎾 Regenerating bracket with updated seeds:');
+        console.log(
+          '🏆 Seeding:',
+          seededParticipants.map(
+            participant =>
+              `Seed #${participant.seedNumber} - ${participant.registration.participant?.firstName} ${participant.registration.participant?.lastName}`
+          )
+        );
+
+        matchGenerationResult = this.matchGenerator.generateMatches(
+          bracket.id,
+          bracket.tournamentId,
+          bracket.bracketType,
+          participantIds,
+          bracket.totalRounds,
         );
       }
 
-      const participantCount = registrations.length;
-      const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantCount)));
-
-      const {participantIds, seededParticipants} = SeedingService.seedBracket(
-        registrations,
-        bracketSize,
-      );
-
-      console.log('🎾 Regenerating bracket with updated seeds:');
-      console.log(
-        '🏆 Seeding:',
-        seededParticipants.map(
-          participant =>
-            `Seed #${participant.seedNumber} - ${participant.registration.participant?.firstName} ${participant.registration.participant?.lastName}`
-        )
-      );
-
-      const {matches, phases} = this.matchGenerator.generateMatches(
-        bracket.id,
-        bracket.tournamentId,
-        bracket.bracketType,
-        participantIds,
-        bracket.totalRounds,
-      );
-
+      // Shared migration + save logic (doubles migrations not supported: keepResults ignored for doubles)
+      const {matches, phases} = matchGenerationResult;
       let migratedMatchCount = 0;
       let migratedScoreCount = 0;
-      // Always start with no scores to persist — only re-populate when migrating results
       let scoresToSave: Score[] = [];
 
-      if (keepResults && completedMatches.length > 0) {
+      if (!isDoubles && keepResults && completedMatches.length > 0) {
         const migration = this.migrateCompletedMatches(completedMatches, existingScores, matches);
         migratedMatchCount = migration.migratedMatchCount;
         migratedScoreCount = migration.migratedScores.length;
@@ -326,7 +590,7 @@ export class BracketController {
 
       console.log(`💾 Saving ${phases.length} phases and ${matches.length} matches...`);
       await phaseRepository.save(phases);
-      await matchRepository.save(matches); // Saves matches WITH migrated data (winnerId, status, score, etc.)
+      await matchRepository.save(matches);
 
       if (scoresToSave.length > 0) {
         console.log(`💾 Saving ${scoresToSave.length} migrated score rows...`);

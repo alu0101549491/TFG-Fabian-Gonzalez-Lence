@@ -18,6 +18,7 @@ import {Phase} from './phase.entity';
 import {Court} from './court.entity';
 import {Score} from './score.entity';
 import {User} from './user.entity';
+import {DoublesTeam} from './doubles-team.entity';
 
 /**
  * Match entity representing a tennis match.
@@ -98,6 +99,18 @@ export class Match {
   @JoinColumn({name: 'courtId'})
   public court!: Court | null;
 
+  /** Nullable team ID for doubles participant 1 (set instead of participant1Id for doubles matches) */
+  @Column('varchar', {length: 50, nullable: true})
+  public participant1TeamId!: string | null;
+
+  /** Nullable team ID for doubles participant 2 (set instead of participant2Id for doubles matches) */
+  @Column('varchar', {length: 50, nullable: true})
+  public participant2TeamId!: string | null;
+
+  /** Nullable winner team ID for doubles matches */
+  @Column('varchar', {length: 50, nullable: true})
+  public winnerTeamId!: string | null;
+
   @ManyToOne(() => User)
   @JoinColumn({name: 'participant1Id'})
   public participant1!: User | null;
@@ -109,6 +122,18 @@ export class Match {
   @ManyToOne(() => User)
   @JoinColumn({name: 'winnerId'})
   public winner!: User | null;
+
+  @ManyToOne(() => DoublesTeam, {nullable: true, eager: false})
+  @JoinColumn({name: 'participant1TeamId'})
+  public participant1Team!: DoublesTeam | null;
+
+  @ManyToOne(() => DoublesTeam, {nullable: true, eager: false})
+  @JoinColumn({name: 'participant2TeamId'})
+  public participant2Team!: DoublesTeam | null;
+
+  @ManyToOne(() => DoublesTeam, {nullable: true, eager: false})
+  @JoinColumn({name: 'winnerTeamId'})
+  public winnerTeam!: DoublesTeam | null;
 
   @OneToMany(() => Score, (score) => score.match)
   public scores!: Score[];

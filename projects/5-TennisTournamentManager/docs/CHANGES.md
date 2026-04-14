@@ -8,6 +8,253 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Bug Fix: Match Actions Not Visible for Tournament Admins in Doubles Matches (2026-04-14)
+
+**Problem:** Tournament admins could not see the "Match Actions" section when viewing match details, even for tournaments in the system. The permission check was too restrictive.
+
+**Root Cause:** Permission logic only allowed tournament admins to manage matches in tournaments they personally created (organizerId check). This prevented tournament admins from managing tournaments created by other users or the system.
+
+**Fix Applied:**
+
+- ✅ **Frontend** `src/presentation/pages/matches/match-detail/match-detail.component.ts`:
+  - **`checkPermissions()` method**: Changed permission logic from:
+    ```typescript
+    // OLD: Only organizer can manage
+    canManage = userRole === SYSTEM_ADMIN || tournament.organizerId === userId
+    ```
+    To:
+    ```typescript
+    // NEW: All tournament admins can manage any tournament
+    canManage = userRole === SYSTEM_ADMIN || userRole === TOURNAMENT_ADMIN
+    ```
+  - Added comprehensive logging for debugging permission checks
+  - Logs include: matchId, bracketId, tournamentId, organizerId, userRole, userId, permission result
+
+**Impact:** All users with TOURNAMENT_ADMIN role can now manage matches in any tournament, not just tournaments they created. This aligns with typical admin behavior and enables testing/development workflows.
+
+---
+
+### Bug Fix: Backend Server Crash Due to Duplicate Variable Declaration (2025-01-14)
+
+**Problem:** All backend API endpoints returned 500 Internal Server Error. The backend server process (tsx watch) was running but not responding to requests on port 3000. Frontend errors appeared for `/api/notifications`, `/api/order-of-play/tournament/.../scheduled-matches`, and `/api/courts` endpoints.
+
+**Root Cause:** Duplicate `const tournamentId` variable declaration in `rescheduleMatch()` method of `order-of-play.controller.ts`:
+- First declaration at line 249: `const tournamentId = match.bracket.tournamentId;`
+- Duplicate declaration at line 360: `const tournamentId = match.bracket?.tournamentId;`
+
+This caused: `ERROR: The symbol "tournamentId" has already been declared`
+
+The esbuild TypeScript transformer failed during compilation, preventing the backend server from starting and binding to port 3000. The tsx watch process remained alive but could not serve requests.
+
+**Fix Applied:**
+
+- ✅ **Backend** `backend/src/presentation/controllers/order-of-play.controller.ts`:
+  - **`rescheduleMatch()` method (line 360)**: Removed duplicate `const tournamentId = match.bracket?.tournamentId;` declaration since the variable was already declared at line 249 and available throughout function scope.
+
+**Impact:** Backend server now compiles successfully, all API endpoints respond correctly.
+
+---
+
+### Bug Fix: Match Reschedule Fails with "Court does not belong to match tournament" (2025-01-14)
+
+**Problem:** When attempting to reschedule a match using a court name (e.g., "Court 1"), the system returned error "Court does not belong to match tournament" even when the court was valid and belonged to the correct tournament.
+
+**Root Cause:** The `rescheduleMatch()` method looked up courts by name WITHOUT filtering by `tournamentId`. When multiple tournaments have courts with the same name (e.g., "Court 1" in Tournament A and "Court 1" in Tournament B), the query could find the wrong court from a different tournament. The subsequent validation `if (court.tournamentId !== match.bracket.tournamentId)` would then fail.
+
+**Fixes Applied:**
+
+- ✅ **Backend** `backend/src/presentation/controllers/order-of-play.controller.ts`:
+  - **`rescheduleMatch()` method**: 
+    - Extract `tournamentId` from match bracket before court lookup
+    - Updated court lookup queries to include `tournamentId` filter:
+      ```typescript
+      court = await courtRepository.findOne({
+        where: {name: courtId, tournamentId}
+      });
+      ```
+    - Removed redundant tournament validation check (now guaranteed by query filter)
+    - Improved error message: "Court 'X' not found for this tournament" instead of generic "Court not found"
+
+**Impact:** Match rescheduling now correctly finds courts scoped to the specific tournament, preventing false validation errors.
+
+### Bug Fix: Order of Play Display Shows "TBD vs TBD" for Doubles Matches (2025-01-14)
+
+**Problem:** When viewing scheduled doubles matches in the order-of-play, the system displayed "TBD vs TBD" instead of showing the actual player names, even though the teams were assigned and known.
+
+**Root Cause:** The participant name formatting logic in two order-of-play methods only checked for singles participant objects (`match.participant1`, `match.participant2`). For doubles matches, these fields are null because participants are stored in DoublesTeam entities linked via `participant1TeamId` and `participant2TeamId`.
+
+**Fixes Applied:**
+
+- ✅ **Backend** `backend/src/presentation/controllers/order-of-play.controller.ts`:
+  - **`publishByTournament()` method** (line ~545): 
+    - Updated participant collection loop to fetch DoublesTeam entities with player relations
+    - Created `teamMap` to store teams for efficient lookup during formatting
+    - Updated `matchesData` mapping to check for team IDs first, format with abbreviated names ("F. LastName / F. LastName"), then fall back to singles participant names
+  
+  - **`getOrderOfPlayByTournament()` method** (line ~656):
+    - Added DoublesTeam fetch after initial match query
+    - Built `teamMap` with all teams for the queried matches
+    - Updated `formattedMatches` mapping to check team IDs and format doubles names with abbreviated format
+    - Falls back to singles names or "TBD" if no participant/team data
+
+**Impact:** Scheduled doubles matches now display correctly in order-of-play views with both player names per team in abbreviated format (e.g., "R. Federer / A. Murray vs C. Alcaraz / R. Nadal").
+
+### Bug Fix: Doubles Match Scheduling Failed (0 Matches Scheduled) (2025-01-14)
+
+**Problem:** When attempting to schedule doubles matches via "Generate Schedule", the system reported "0 matches scheduled successfully!" even though unscheduled doubles matches existed in the tournament. Additionally, several other order-of-play operations failed to handle doubles matches properly.
+
+**Root Cause:** Multiple methods in the order-of-play controller filtered matches using:
+```typescript
+.andWhere('match.participant1Id IS NOT NULL')
+.andWhere('match.participant2Id IS NOT NULL')
+```
+
+For doubles matches, participants are stored in `participant1TeamId` and `participant2TeamId` (not `participant1Id`/`participant2Id`), so these queries excluded all doubles matches. Additionally, notification logic and participant collection only considered singles participant IDs, missing the 4 players in doubles matches.
+
+**Fixes Applied:**
+
+- ✅ **Backend** `backend/src/presentation/controllers/order-of-play.controller.ts`:
+  - **Imports**: Added `DoublesTeam` entity import
+  - **`generateSchedule()` method**: Updated query to check BOTH singles and doubles participant fields (already fixed previously)
+  - **`getOrderOfPlayByTournament()` method**: Updated query to include team IDs:
+    ```typescript
+    .andWhere(
+      '((match.participant1Id IS NOT NULL AND match.participant2Id IS NOT NULL) OR ' +
+      '(match.participant1TeamId IS NOT NULL AND match.participant2TeamId IS NOT NULL))'
+    )
+    ```
+  - **`regenerateAll()` method**: Same query fix for team IDs
+  - **`publishSingle()` method**: Updated participant collection to fetch DoublesTeam entities and extract all 4 player IDs for doubles matches
+  - **`publishAllScheduled()` method**: Same participant collection fix for team players
+  - **`rescheduleMatch()` method**: Complete rewrite of notification logic:
+    - Detects doubles matches via `participant1TeamId`/`participant2TeamId` presence
+    - Fetches DoublesTeam entities with player relations
+    - Notifies all 4 players (2 per team) with opponent team names (e.g., "Player1 / Player2")
+    - Falls back to singles notification for non-doubles matches
+
+**Impact:** 
+- Doubles matches can now be scheduled automatically through order-of-play generation
+- All 4 players in doubles matches receive notifications when matches are scheduled/rescheduled/published
+- Order-of-play queries correctly identify doubles matches as schedule-ready
+
+### Bug Fix: Visual Bracket Component Doubles Display Issues (2025-01-14)
+
+**Problems:**
+1. Bracket view showed only one player per team (e.g., "Andy Murray") instead of both team members
+2. Both participants incorrectly displayed trophy emoji even when match was not completed  
+3. Doubles matches incorrectly marked as "BYE" because component checked `!match.participant1Id` instead of team ID
+4. Display format used full names instead of abbreviated format (wanted: "R. Federer / A. Murray")
+
+**Root Cause:** 
+- The BYE condition checked `!match.participant1Id`, but doubles matches have `participant1TeamId` set instead (participant1Id is null)
+- Winner detection didn't require both winnerId/winnerTeamId AND participant existence, causing false positives when winnerId was undefined
+- Name formatting used full names instead of first initial + last name for better visual appeal
+
+**Fixes Applied:**
+
+- ✅ **Frontend** `src/presentation/components/visual-bracket/visual-bracket.component.ts`:
+  - **`getParticipantName()`**: Changed doubles display format from "FirstName LastName / FirstName LastName" to "F. LastName / F. LastName" using `firstName.charAt(0)` for first initial
+  - **`isWinner()`**: Added explicit null checks using `Boolean(match.winnerTeamId && match.winnerTeamId === teamId)` to prevent false positives when winner is undefined
+  
+- ✅ **Frontend** `src/presentation/components/visual-bracket/visual-bracket.component.html`:
+  - **BYE detection**: Changed from `!match.participant1Id` to `!match.participant1Id && !match.participant1TeamId` to correctly identify BYEs in doubles matches
+  - Applied same fix for participant 2
+
+**Impact:** Doubles matches now display correctly in bracket view with abbreviated names and accurate winner/BYE indicators.
+
+### Bug Fix: Doubles Match Display Missing Team Player Names in Bracket View (2025-01-14)
+
+**Problem:** Visual bracket component showed only one player per team (e.g., "Andy Murray" vs "Rafael Nadal") instead of both team members (e.g., "Roger Federer / Andy Murray" vs "Carlos Alcaraz / Rafael Nadal").
+
+**Root Cause:** The frontend `MatchService.mapMatchToDto()` method wasn't preserving doubles team data fields (`participant1Team`, `participant2Team`, `participant1TeamId`, `participant2TeamId`, `winnerTeamId`) that were being enriched by the backend's `enrichMatchesWithSeeds()` method. The backend was correctly fetching and populating team data, but the frontend was stripping it during DTO conversion.
+
+**Fixes Applied:**
+
+- ✅ **Frontend** `src/application/services/match.service.ts`:
+  - Updated `mapMatchToDto()` to preserve `participant1TeamId`, `participant2TeamId`, `winnerTeamId` from backend enrichment
+  - Added `participant1Team` and `participant2Team` mapping from backend-enriched match data
+  - Added `seed` field mapping for participant1/participant2 (singles seed display)
+
+**Impact:** Doubles matches now correctly display both team members in bracket view: "Player1 FN LN / Player2 FN LN" instead of just one player name.
+
+### Bug Fix: Doubles Bracket Incorrect Match Structure for Small Team Counts (2025-01-14)
+
+**Problem:** When generating a doubles bracket with exactly 2 teams, the system created a 2-round bracket (semi-finals with BYEs + final) instead of a single final match. This occurred because `totalRounds` was calculated on the frontend based on the initial team count (possibly 0 or incorrect) before DoublesTeam records were created from legacy registrations.
+
+**Root Cause:** The bracket controller created missing DoublesTeam records after the bracket entity was saved with `totalRounds` from the request body. The `totalRounds` value wasn't recalculated based on the actual team count after fallback completion, causing the match generator to create an incorrect bracket structure.
+
+**Fixes Applied:**
+
+- ✅ **Backend** `backend/src/presentation/controllers/bracket.controller.ts`:
+  - **`create()` method**: After DoublesTeam fallback completes and teams are reloaded, recalculate `correctTotalRounds = Math.log2(bracketSize)` based on actual team count. Save updated `totalRounds` to bracket entity if different. Use `correctTotalRounds` when calling `generateMatches()` instead of original `savedBracket.totalRounds`.
+  - **`regenerate()` method**: Same fix applied to ensure bracket regeneration uses correct round count.
+  - For 2 teams: `bracketSize = 2`, `totalRounds = log2(2) = 1` → generates 1 match (final only), not 2 rounds.
+
+**Impact:** Eliminates phantom semi-final rounds and BYE matches when team count exactly matches a power of 2, ensuring correct bracket structure for all doubles tournaments.
+
+### Bug Fix: Legacy Doubles Pairs Without DoublesTeam Records (2025-01-14)
+
+**Problem:** Doubles pairs created via old invitation flow (before DoublesTeam entity was introduced) existed as registrations with `partnerId` but had no corresponding `DoublesTeam` record. This caused:
+1. Participant list deduplication failures (pairs shown as separate rows)
+2. Bracket generation failures ("need 2 teams" error despite pairs existing)
+
+**Root Cause:** `doubles_teams` table was empty for legacy tournaments. Frontend deduplication and bracket generation relied on DoublesTeam records that didn't exist.
+
+**Fixes Applied:**
+
+- ✅ **Backend** `backend/src/presentation/controllers/bracket.controller.ts`:
+  - **Fallback logic in `create()` and `regenerate()` methods**: Before match generation, check for ACCEPTED registrations with `partnerId` that lack a DoublesTeam record. Automatically create missing DoublesTeam records with `id: generateId('dbl')`, linking both registrations. Reload teams after creation to ensure accurate count.
+- ✅ **Backend** `backend/src/presentation/controllers/partner-invitation.controller.ts`:
+  - **New endpoint** `GET /api/doubles-teams?tournamentId=xxx`: Returns DoublesTeam records for a tournament.
+- ✅ **Backend** `backend/src/presentation/routes/index.ts`:
+  - Added route: `GET /api/doubles-teams` → `partnerInvitationController.getDoublesTeamsByTournament()`
+- ✅ **Frontend** `src/infrastructure/services/partner-invitation.service.ts`:
+  - **New method** `getDoublesTeamsByTournament(tournamentId)`: Fetches DoublesTeam records from API.
+- ✅ **Frontend** `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts`:
+  - **`loadPlayers()` rewrite**: Fetches both registrations and doublesTeams in parallel. Uses DoublesTeam records as primary source for pairs, falls back to `partnerId` for legacy data. Deduplicate using team records when available, else registration `partnerId ?? partner?.id`.
+
+**Impact:** Legacy doubles pairs now work seamlessly in participant lists and bracket generation without requiring manual data migration.
+
+### Bug Fix: Doubles Pair Deduplication in Tournament Participants List (2026-04-13)
+
+**Problem:** Tournament participant management view displayed two separate rows for each doubles pair instead of one combined entry.
+
+**Root Cause:** TypeORM may not reliably serialize the `partnerId` FK column as an own enumerable property on the entity instance when both `@Column('varchar') partnerId` and `@ManyToOne @JoinColumn({name: 'partnerId'}) partner` are declared on the same column name. The entity spread `{...registration}` used in `applyPrivacyToRegistrations` could miss the `partnerId` string, causing the frontend deduplication to fail silently.
+
+**Fixes Applied:**
+
+- ✅ **Backend** `backend/src/presentation/controllers/registration.controller.ts`: Explicitly reassign `filteredRegistration.partnerId = registration.partnerId ?? null` after spread in `applyPrivacyToRegistrations()` to guarantee the FK string is always present in the JSON response.
+- ✅ **Frontend** `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` (`loadPlayers()`): Changed deduplication key to `partnerUserId = entry.registration.partnerId ?? entry.registration.partner?.id ?? null`. Falls back to the loaded relation's `id` (which IS reliably serialized via `relations: ['partner']`) if the raw FK string is missing. Suppresses partner's row using the concrete `partnerEntry.registration.participantId` instead of the potentially-null `partnerId` string.
+
+### FR16: Doubles Pair System — Full Integration (2026-04-13)
+
+**Doubles teams as first-class bracket entities (backend + frontend):**
+
+**Backend Changes:**
+- ✅ **New entity** `doubles-team.entity.ts`: `DoublesTeam` with `player1Id`, `player2Id`, `seedNumber`, tournament/category FK, registration links
+- ✅ **Migration 011** (`011-create-doubles-teams-table.ts`): Creates `doubles_teams` table; adds `participant1TeamId`, `participant2TeamId`, `winnerTeamId` (VARCHAR nullable) to `matches`; adds `teamId` (VARCHAR nullable) to `standings`; makes `standings.participantId` nullable for doubles rows
+- ✅ **`match.entity.ts`**: Added `participant1TeamId`, `participant2TeamId`, `winnerTeamId` columns + `DoublesTeam` relations
+- ✅ **`standing.entity.ts`**: `participantId` made nullable; added `teamId` nullable column
+- ✅ **`entities/index.ts`**: Exported `DoublesTeam`
+- ✅ **`partner-invitation.service.ts`**: Creates `DoublesTeam` record when an invitation is accepted
+- ✅ **`seeding.service.ts`**: Added `seedDoublesTeams()`, `assignDoublesTeamSeeds()`, `applyDoublesTeamSeedingPositions()` using combined ranking and ITF seeding positions
+- ✅ **`bracket.controller.ts`**: Doubles branch in `create()` and `regenerate()` — loads teams, seeds them, generates matches with `participant1TeamId`, falls back to singles logic for non-doubles tournaments
+- ✅ **`match.controller.ts`**: `isUserMatchParticipant()` team membership helper; `enrichMatchesWithSeeds()` doubles team enrichment; `submitResultAsParticipant/confirmResult/disputeResult` team auth; `advanceWinnerToNextRound()` doubles team column propagation; doubles match notifications
+- ✅ **`standing.service.ts`**: `recalculateDoublesForBracket()` — team stat aggregation, points/set/game ratios, upsert with `participantId=null, teamId=team.id`
+- ✅ **`standing.controller.ts`**: Enriches doubles standings with `participant1Team/participant2Team` player data
+
+**Frontend Changes:**
+- ✅ **`match.dto.ts`**: Added `DoublesTeamDto`, `participant1Team`, `participant2Team`, `participant1TeamId`, `participant2TeamId`, `winnerTeamId` to `MatchDto`
+- ✅ **`standing.dto.ts`**: Added `StandingTeamDto`, `teamId`, `team`; `participantId` now `string | null`
+- ✅ **`match.repository.ts`** (`mapBackendToMatch`): Preserves `participant1TeamId`, `participant2TeamId`, `winnerTeamId`, `participant1Team`, `participant2Team` as dynamic properties
+- ✅ **`visual-bracket.component.ts`**: `getParticipantName()` returns "FN1 LN1 / FN2 LN2" for doubles; `getParticipantSeed()` uses team seed; `isWinner()` checks `winnerTeamId`
+- ✅ **`match-detail.component.ts/.html`**: `isDoublesMatch` computed signal; `getParticipantDisplayName()`; `getWinnerSlotId()`; doubles-aware winner badges and score modal
+- ✅ **`match-list.component.ts`**: Team name display for doubles participants
+- ✅ **`my-matches.component.ts`**: Doubles-aware `isParticipant1`, `opponentId`, team name display, `confirmResult()` winner name
+- ✅ **`my-matches.component.html`**: Winner radio buttons, winner badges, pending result winner display — all doubles-aware via `participant1TeamId ?? participant1Id`
+- ✅ **`standing.service.ts`** (`calculateDoublesStandings()`): New private method computes standings from doubles match team data; detects doubles from `participant1TeamId` presence
+- ✅ **`standings-view.component.html`**: `track standing.id` (safe for null `participantId`); doubles team icon 👥
+
 ### FR15 UI Enhancement: Pending Invitations Card (2026-04-13)
 
 **Improved Pending Invitations Section Readability:**

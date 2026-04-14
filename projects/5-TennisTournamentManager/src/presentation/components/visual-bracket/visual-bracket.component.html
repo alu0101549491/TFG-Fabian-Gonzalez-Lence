@@ -29,7 +29,7 @@
                     <div 
                       class="participant"
                       [class.winner]="isWinner(match, 1)"
-                      [class.bye]="!match.participant1Id"
+                      [class.bye]="!match.participant1Id && !match.participant1TeamId"
                     >
                       <div class="participant-content">
                         @if (getParticipantSeed(match, 1)) {
@@ -51,7 +51,7 @@
                     <div 
                       class="participant"
                       [class.winner]="isWinner(match, 2)"
-                      [class.bye]="!match.participant2Id"
+                      [class.bye]="!match.participant2Id && !match.participant2TeamId"
                     >
                       <div class="participant-content">
                         @if (getParticipantSeed(match, 2)) {

@@ -16,6 +16,7 @@ import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Match} from '../../domain/entities/match.entity';
 import {Score} from '../../domain/entities/score.entity';
 import {Registration} from '../../domain/entities/registration.entity';
+import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
 import {MatchResult, ConfirmationStatus} from '../../domain/entities/match-result.entity';
 import {MatchStatus} from '../../domain/enumerations/match-status';
 import {AuthRequest} from '../middleware/auth.middleware';
@@ -48,6 +49,24 @@ export class MatchController {
       requireTiebreakAt6All: true,
     });
   }
+  /**
+   * Checks if a user is a direct participant (singles) or team member (doubles) in a match.
+   *
+   * @param match - The match to check
+   * @param userId - The user ID to test
+   * @returns True if the user may participate in this match
+   */
+  private async isUserMatchParticipant(match: Match, userId: string): Promise<boolean> {
+    if (match.participant1TeamId || match.participant2TeamId) {
+      const doublesTeamRepo = AppDataSource.getRepository(DoublesTeam);
+      const teamIds = [match.participant1TeamId, match.participant2TeamId].filter(Boolean) as string[];
+      if (teamIds.length === 0) return false;
+      const teams = await doublesTeamRepo.findByIds(teamIds);
+      return teams.some(team => team.player1Id === userId || team.player2Id === userId);
+    }
+    return match.participant1Id === userId || match.participant2Id === userId;
+  }
+
   /**
    * Applies privacy filtering to participant user objects in matches.
    * Filters participant1, participant2, and winner based on viewer permissions.
@@ -100,30 +119,64 @@ export class MatchController {
    */
   private async enrichMatchesWithSeeds(matches: Match[]): Promise<any[]> {
     const registrationRepository = AppDataSource.getRepository(Registration);
-    
-    // Collect all unique participant IDs from matches
+    const doublesTeamRepo = AppDataSource.getRepository(DoublesTeam);
+
+    // Collect singles participant IDs and doubles team IDs
     const participantIds = new Set<string>();
+    const teamIds = new Set<string>();
     for (const match of matches) {
       if (match.participant1Id) participantIds.add(match.participant1Id);
       if (match.participant2Id) participantIds.add(match.participant2Id);
+      if (match.participant1TeamId) teamIds.add(match.participant1TeamId);
+      if (match.participant2TeamId) teamIds.add(match.participant2TeamId);
     }
-    
-    // Fetch all registrations for these participants in this bracket's category
-    const registrations = await registrationRepository.find({
-      where: {
-        participantId: Array.from(participantIds) as any,
-      },
-    });
-    
-    // Create a map of participantId -> seed number
+
+    // Singles: build seedNumber map from registrations
     const seedMap = new Map<string, number | null>();
-    for (const registration of registrations) {
-      seedMap.set(registration.participantId, registration.seedNumber || null);
+    if (participantIds.size > 0) {
+      const registrations = await registrationRepository.find({
+        where: {participantId: Array.from(participantIds) as any},
+      });
+      for (const registration of registrations) {
+        seedMap.set(registration.participantId, registration.seedNumber || null);
+      }
     }
-    
-    // Enrich matches with seed info
+
+    // Doubles: build team map with seed + player names
+    const teamMap = new Map<string, DoublesTeam & {player1: any; player2: any}>();
+    if (teamIds.size > 0) {
+      const teams = await doublesTeamRepo.find({
+        where: Array.from(teamIds).map(id => ({id})),
+        relations: ['player1', 'player2'],
+      }) as (DoublesTeam & {player1: any; player2: any})[];
+      for (const team of teams) {
+        teamMap.set(team.id, team);
+      }
+    }
+
     return matches.map(match => {
-      const matchData = {
+      const isDoubles = Boolean(match.participant1TeamId || match.participant2TeamId);
+      if (isDoubles) {
+        const team1 = match.participant1TeamId ? teamMap.get(match.participant1TeamId) : null;
+        const team2 = match.participant2TeamId ? teamMap.get(match.participant2TeamId) : null;
+        return {
+          ...match,
+          participant1: team1 ? {id: team1.player1Id, firstName: team1.player1?.firstName, lastName: team1.player1?.lastName} : null,
+          participant2: team2 ? {id: team2.player1Id, firstName: team2.player1?.firstName, lastName: team2.player1?.lastName} : null,
+          participant1Team: team1 ? {
+            id: team1.id, seedNumber: team1.seedNumber,
+            player1: {id: team1.player1Id, firstName: team1.player1?.firstName, lastName: team1.player1?.lastName},
+            player2: {id: team1.player2Id, firstName: team1.player2?.firstName, lastName: team1.player2?.lastName},
+          } : null,
+          participant2Team: team2 ? {
+            id: team2.id, seedNumber: team2.seedNumber,
+            player1: {id: team2.player1Id, firstName: team2.player1?.firstName, lastName: team2.player1?.lastName},
+            player2: {id: team2.player2Id, firstName: team2.player2?.firstName, lastName: team2.player2?.lastName},
+          } : null,
+        };
+      }
+      // Singles: enrich with registration seed
+      return {
         ...match,
         participant1: match.participant1 ? {
           ...match.participant1,
@@ -134,7 +187,6 @@ export class MatchController {
           seed: seedMap.get(match.participant2Id!) || null,
         } : null,
       };
-      return matchData;
     });
   }
 
@@ -351,10 +403,20 @@ export class MatchController {
 
     // Determine if winner goes to participant1 or participant2 slot
     // Odd match numbers go to participant1, even to participant2
-    if (match.matchNumber % 2 === 1) {
-      nextMatch.participant1Id = match.winnerId;
+    if (match.participant1TeamId || match.participant2TeamId) {
+      // Doubles match: advance team winner
+      if (match.matchNumber % 2 === 1) {
+        nextMatch.participant1TeamId = match.winnerTeamId;
+      } else {
+        nextMatch.participant2TeamId = match.winnerTeamId;
+      }
     } else {
-      nextMatch.participant2Id = match.winnerId;
+      // Singles match: advance individual winner
+      if (match.matchNumber % 2 === 1) {
+        nextMatch.participant1Id = match.winnerId;
+      } else {
+        nextMatch.participant2Id = match.winnerId;
+      }
     }
 
     await matchRepository.save(nextMatch);
@@ -455,8 +517,9 @@ export class MatchController {
         throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
 
-      // Verify user is a participant
-      if (match.participant1Id !== userId && match.participant2Id !== userId) {
+      // Verify user is a participant (singles) or team member (doubles)
+      const isParticipant = await this.isUserMatchParticipant(match, userId);
+      if (!isParticipant) {
         throw new AppError('Only match participants can submit results', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
       }
 
@@ -524,13 +587,27 @@ export class MatchController {
 
       await matchResultRepository.save(result);
 
-      // Notify opponent about pending result
-      const opponentId = match.participant1Id === userId ? match.participant2Id : match.participant1Id;
-      const submitter = match.participant1Id === userId ? match.participant1 : match.participant2;
-      const submitterName = submitter ? `${submitter.firstName} ${submitter.lastName}` : 'Your opponent';
-      
-      if (opponentId) {
-        await this.notificationService.notifyResultEntered(id, opponentId, submitterName);
+      // Notify opponent(s) about pending result
+      if (match.participant1TeamId || match.participant2TeamId) {
+        // Doubles: find which team the user belongs to and notify the other team
+        const doublesTeamRepo = AppDataSource.getRepository(DoublesTeam);
+        const t1 = match.participant1TeamId ? await doublesTeamRepo.findOne({where: {id: match.participant1TeamId}}) : null;
+        const t2 = match.participant2TeamId ? await doublesTeamRepo.findOne({where: {id: match.participant2TeamId}}) : null;
+        const submitterInTeam1 = t1 && (t1.player1Id === userId || t1.player2Id === userId);
+        const opponentTeam = submitterInTeam1 ? t2 : t1;
+        if (opponentTeam) {
+          const submitterName = 'Your opponent';
+          await this.notificationService.notifyResultEntered(id, opponentTeam.player1Id, submitterName);
+          await this.notificationService.notifyResultEntered(id, opponentTeam.player2Id, submitterName);
+        }
+      } else {
+        // Singles: notify the other participant
+        const opponentId = match.participant1Id === userId ? match.participant2Id : match.participant1Id;
+        const submitter = match.participant1Id === userId ? match.participant1 : match.participant2;
+        const submitterName = submitter ? `${submitter.firstName} ${submitter.lastName}` : 'Your opponent';
+        if (opponentId) {
+          await this.notificationService.notifyResultEntered(id, opponentId, submitterName);
+        }
       }
 
       res.status(HTTP_STATUS.CREATED).json(result);
@@ -566,8 +643,9 @@ export class MatchController {
         throw new AppError('Match not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
 
-      // Verify user is a participant
-      if (match.participant1Id !== userId && match.participant2Id !== userId) {
+      // Verify user is a participant (singles) or team member (doubles)
+      const isParticipant = await this.isUserMatchParticipant(match, userId);
+      if (!isParticipant) {
         throw new AppError('Only match participants can confirm results', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
       }
 
@@ -598,14 +676,19 @@ export class MatchController {
 
       // Update match status to COMPLETED and set winner
       match.status = MatchStatus.COMPLETED;
-      match.winnerId = result.winnerId;
-      match.score = result.setScores.join(', '); // Format setScores as comma-separated string
+      match.score = result.setScores.join(', ');
       match.updatedAt = new Date();
+      if (match.participant1TeamId || match.participant2TeamId) {
+        // Doubles: the winnerId in result is a team ID
+        match.winnerTeamId = result.winnerId;
+        match.winnerId = null;
+      } else {
+        match.winnerId = result.winnerId;
+      }
       await matchRepository.save(match);
 
       // Notify submitter that result was confirmed
-      const confirmer = match.participant1Id === userId ? match.participant1 : match.participant2;
-      const confirmerName = confirmer ? `${confirmer.firstName} ${confirmer.lastName}` : 'Your opponent';
+      const confirmerName = 'Your opponent';
       await this.notificationService.notifyResultConfirmed(id, result.submittedBy, confirmerName);
 
       // Advance winner to next round if single elimination
@@ -654,7 +737,8 @@ export class MatchController {
       }
 
       // Verify user is a participant
-      if (match.participant1Id !== userId && match.participant2Id !== userId) {
+      const isParticipant = await this.isUserMatchParticipant(match, userId);
+      if (!isParticipant) {
         throw new AppError('Only match participants can dispute results', HTTP_STATUS.FORBIDDEN, ERROR_CODES.FORBIDDEN);
       }
 

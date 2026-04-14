@@ -101,37 +101,54 @@ export class VisualBracketComponent {
    * @returns Participant display name
    */
   public getParticipantName(match: MatchDto, participantNumber: 1 | 2): string {
+    // Doubles match: show "F. LastName1 / F. LastName2" with abbreviated first names
+    const team = participantNumber === 1 ? match.participant1Team : match.participant2Team;
+    if (team) {
+      const player1Initial = team.player1.firstName?.charAt(0) || '';
+      const player2Initial = team.player2.firstName?.charAt(0) || '';
+      return `${player1Initial}. ${team.player1.lastName} / ${player2Initial}. ${team.player2.lastName}`;
+    }
+
     const participant = participantNumber === 1 ? match.participant1 : match.participant2;
-    
     if (!participant) {
       return 'BYE';
     }
-
+    
+    // Singles: use full name
     return `${participant.firstName} ${participant.lastName}`;
   }
 
   /**
-   * Gets seed number for participant.
+   * Gets seed number for participant (or team in doubles).
    *
    * @param match - Match data
    * @param participantNumber - 1 or 2
    * @returns Seed number or null
    */
   public getParticipantSeed(match: MatchDto, participantNumber: 1 | 2): number | null {
+    const team = participantNumber === 1 ? match.participant1Team : match.participant2Team;
+    if (team) return team.seedNumber ?? null;
     const participant = participantNumber === 1 ? match.participant1 : match.participant2;
     return participant?.seed ?? null;
   }
 
   /**
-   * Checks if participant is the winner.
+   * Checks if participant (or team in doubles) is the winner.
    *
    * @param match - Match data
    * @param participantNumber - 1 or 2
    * @returns True if winner
    */
   public isWinner(match: MatchDto, participantNumber: 1 | 2): boolean {
+    // Doubles match: check team winner
+    if (match.participant1TeamId || match.participant2TeamId) {
+      const teamId = participantNumber === 1 ? match.participant1TeamId : match.participant2TeamId;
+      return Boolean(match.winnerTeamId && match.winnerTeamId === teamId);
+    }
+    
+    // Singles match: check participant winner
     const participantId = participantNumber === 1 ? match.participant1Id : match.participant2Id;
-    return match.winnerId === participantId;
+    return Boolean(match.winnerId && participantId && match.winnerId === participantId);
   }
 
   /**

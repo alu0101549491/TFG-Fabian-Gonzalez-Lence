@@ -11,11 +11,21 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
+/** Doubles team info in standings. */
+export interface StandingTeamDto {
+  id: string;
+  seedNumber?: number | null;
+  player1: {id: string; firstName: string; lastName: string};
+  player2: {id: string; firstName: string; lastName: string};
+}
+
 /** DTO for standing output representation. */
 export interface StandingDto {
   id: string;
   bracketId: string;
-  participantId: string;
+  participantId: string | null;
+  teamId?: string | null;
+  team?: StandingTeamDto | null;
   participantName: string;
   position: number;
   matchesPlayed: number;

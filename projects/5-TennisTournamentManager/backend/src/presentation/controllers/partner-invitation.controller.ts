@@ -16,6 +16,8 @@ import {AuthRequest} from '../middleware/auth.middleware';
 import {PartnerInvitationService} from '../../application/services/partner-invitation.service';
 import {AppError} from '../middleware/error.middleware';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
+import {AppDataSource} from '../../infrastructure/database/data-source';
+import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
 
 /**
  * Controller for partner invitation API endpoints.
@@ -272,6 +274,34 @@ export class PartnerInvitationController {
       res.status(200).json({invitation});
     } catch (error) {
       console.error('Error fetching invitation:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Gets all doubles teams for a tournament.
+   * GET /api/doubles-teams?tournamentId=xxx
+   *
+   * @param req.query.tournamentId - Tournament ID
+   * @returns {200} Array of doubles team records
+   */
+  public async getDoublesTeamsByTournament(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {tournamentId} = req.query;
+
+      if (!tournamentId || typeof tournamentId !== 'string') {
+        throw new AppError('tournamentId query parameter is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
+      const teams = await doublesTeamRepository.find({
+        where: {tournamentId},
+        select: ['id', 'tournamentId', 'categoryId', 'player1Id', 'player2Id', 'registration1Id', 'registration2Id', 'seedNumber'],
+      });
+
+      res.status(HTTP_STATUS.OK).json(teams);
+    } catch (error) {
+      console.error('Error fetching doubles teams:', error);
       next(error);
     }
   }
