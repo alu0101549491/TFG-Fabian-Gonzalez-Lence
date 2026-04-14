@@ -101,12 +101,10 @@ export class VisualBracketComponent {
    * @returns Participant display name
    */
   public getParticipantName(match: MatchDto, participantNumber: 1 | 2): string {
-    // Doubles match: show "F. LastName1 / F. LastName2" with abbreviated first names
+    // Doubles match: show "FirstName LastName / FirstName LastName" with full names
     const team = participantNumber === 1 ? match.participant1Team : match.participant2Team;
     if (team) {
-      const player1Initial = team.player1.firstName?.charAt(0) || '';
-      const player2Initial = team.player2.firstName?.charAt(0) || '';
-      return `${player1Initial}. ${team.player1.lastName} / ${player2Initial}. ${team.player2.lastName}`;
+      return `${team.player1.firstName} ${team.player1.lastName} / ${team.player2.firstName} ${team.player2.lastName}`;
     }
 
     const participant = participantNumber === 1 ? match.participant1 : match.participant2;

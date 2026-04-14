@@ -45,8 +45,8 @@ export class BracketViewComponent implements OnInit {
   private readonly authStateService = inject(AuthStateService);
   private readonly exportService = inject(ExportService);
 
-  /** Tournament ID */
-  private tournamentId = '';
+  /** Bracket ID */
+  private bracketId = '';
 
   /** Tournament data */
   public tournament = signal<TournamentDto | null>(null);
@@ -113,10 +113,10 @@ export class BracketViewComponent implements OnInit {
    */
   public ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
-      const tournamentId = params.get('id');
-      if (tournamentId) {
-        this.tournamentId = tournamentId;
-        void this.loadData(tournamentId);
+      const bracketId = params.get('id');
+      if (bracketId) {
+        this.bracketId = bracketId;
+        void this.loadData(bracketId);
       }
     });
   }
@@ -124,50 +124,32 @@ export class BracketViewComponent implements OnInit {
   /**
    * Loads tournament and bracket data.
    *
-   * @param tournamentId - ID of the tournament
+   * @param bracketId - ID of the bracket
    */
-  private async loadData(tournamentId: string): Promise<void> {
+  private async loadData(bracketId: string): Promise<void> {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
     try {
-      // Load tournament and bracket in parallel
-      const [tournament] = await Promise.all([
-        this.tournamentService.getTournamentById(tournamentId),
-        this.loadBracket(tournamentId),
+      // Load bracket first to get tournament ID
+      const bracket = await this.bracketService.getBracketById(bracketId);
+      this.bracket.set(bracket);
+
+      // Load tournament, phases, and matches in parallel
+      const [tournament, phases, matches] = await Promise.all([
+        this.tournamentService.getTournamentById(bracket.tournamentId),
+        this.bracketService.getPhases(bracket.id),
+        this.matchService.getMatchesByBracket(bracket.id),
       ]);
+      
       this.tournament.set(tournament);
+      this.phases.set(phases);
+      this.matches.set(matches);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load data';
       this.errorMessage.set(message);
     } finally {
       this.isLoading.set(false);
-    }
-  }
-
-  /**
-   * Loads bracket for tournament.
-   *
-   * @param tournamentId - ID of the tournament
-   */
-  private async loadBracket(tournamentId: string): Promise<void> {
-    try {
-      const brackets = await this.bracketService.getBracketsByTournament(tournamentId);
-      if (brackets.length > 0) {
-        this.bracket.set(brackets[0]);
-        
-        // Load phases and matches in parallel
-        const [phases, matches] = await Promise.all([
-          this.bracketService.getPhases(brackets[0].id),
-          this.matchService.getMatchesByBracket(brackets[0].id),
-        ]);
-        
-        this.phases.set(phases);
-        this.matches.set(matches);
-      }
-    } catch (error) {
-      // Bracket not found is not an error - it's expected if no bracket generated yet
-      console.log('No bracket found for tournament');
     }
   }
 
@@ -326,7 +308,10 @@ export class BracketViewComponent implements OnInit {
    * Navigates back to tournament detail page.
    */
   public goBack(): void {
-    void this.router.navigate(['/tournaments', this.tournamentId]);
+    const tournament = this.tournament();
+    if (tournament) {
+      void this.router.navigate(['/tournaments', tournament.id]);
+    }
   }
 
   /**

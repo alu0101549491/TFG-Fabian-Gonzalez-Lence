@@ -23,10 +23,13 @@ export default {
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^\./user.service$': '<rootDir>/tests/mocks/user.service.ts',
     '^@domain/(.*)$': '<rootDir>/src/domain/$1',
     '^@application/(.*)$': '<rootDir>/src/application/$1',
+    '^@application/services/user.service$': '<rootDir>/tests/mocks/user.service.ts',
     '^@infrastructure/(.*)$': '<rootDir>/src/infrastructure/$1',
     '^@presentation/(.*)$': '<rootDir>/src/presentation/$1',
+    '^@shared/constants$': '<rootDir>/tests/mocks/shared-constants.ts',
     '^@shared/(.*)$': '<rootDir>/src/shared/$1',
   },
   transform: {
