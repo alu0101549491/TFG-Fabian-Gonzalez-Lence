@@ -18,12 +18,15 @@ import {Phase} from '../../domain/entities/phase.entity';
 import {Match} from '../../domain/entities/match.entity';
 import {Registration} from '../../domain/entities/registration.entity';
 import {Standing} from '../../domain/entities/standing.entity';
+import {Tournament} from '../../domain/entities/tournament.entity';
+import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {AppError} from '../middleware/error.middleware';
 import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
 import {RegistrationStatus} from '../../domain/enumerations/registration-status';
 import {MatchStatus} from '../../domain/enumerations/match-status';
+import {TournamentType} from '../../domain/enumerations/tournament-type';
 import {generateId} from '../../shared/utils/id-generator';
 
 /**
@@ -104,6 +107,26 @@ export class PhaseController {
       // For phases in the same tournament, enforce forward-only progression.
       if (isSameTournament && targetPhase.sequenceOrder <= sourcePhase.sequenceOrder) {
         throw new AppError('Target phase must have a higher sequence order than source phase', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
+
+      // Fetch tournaments to validate tournament type compatibility
+      const tournamentRepository = AppDataSource.getRepository(Tournament);
+      const sourceTournament = await tournamentRepository.findOne({where: {id: sourcePhase.tournamentId}});
+      const targetTournament = await tournamentRepository.findOne({where: {id: targetPhase.tournamentId}});
+
+      if (!sourceTournament || !targetTournament) {
+        throw new AppError('Source or target tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      // Validate tournament type compatibility: doubles can only link to doubles, singles to singles
+      if (sourceTournament.tournamentType !== targetTournament.tournamentType) {
+        const sourceType = sourceTournament.tournamentType === TournamentType.DOUBLES ? 'doubles' : 'singles';
+        const targetType = targetTournament.tournamentType === TournamentType.DOUBLES ? 'doubles' : 'singles';
+        throw new AppError(
+          `Cannot link ${sourceType} tournament phase to ${targetType} tournament phase. Tournament types must match.`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.INVALID_INPUT
+        );
       }
 
       // Check for cycles
@@ -215,6 +238,15 @@ export class PhaseController {
         throw new AppError('Source phase must be completed before advancing qualifiers', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
       }
 
+      // Fetch source tournament to determine if it's doubles
+      const tournamentRepository = AppDataSource.getRepository(Tournament);
+      const sourceTournament = await tournamentRepository.findOne({where: {id: sourceTournamentId}});
+      if (!sourceTournament) {
+        throw new AppError('Source tournament not found', HTTP_STATUS.NOT_FOUND,ERROR_CODES.NOT_FOUND);
+      }
+
+      const isDoubles = sourceTournament.tournamentType === TournamentType.DOUBLES;
+
       // Fetch standings for source phase
       const standings = await standingRepository.find({
         where: {
@@ -227,7 +259,10 @@ export class PhaseController {
       let rankedCandidateIds: string[] = [];
 
       if (standings.length > 0) {
-        rankedCandidateIds = standings.map(standing => standing.participantId);
+        // For doubles: use teamId from standings; for singles: use participantId
+        rankedCandidateIds = standings.map(standing => 
+          isDoubles ? standing.teamId : standing.participantId
+        ).filter((id): id is string => id !== null);
       } else {
         // Fallback: derive ranking from completed source bracket matches when standings are missing.
         // Use bracketId instead of phaseId because Round Robin matches are spread across multiple phases.
@@ -361,21 +396,67 @@ export class PhaseController {
 
       // Create registrations in target phase
       const createdRegistrations: Registration[] = [];
+      const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
 
-      for (const participantId of qualifiedParticipantIds) {
-        const registration = registrationRepository.create({
-          id: generateId('reg'),
-          participantId,
-          tournamentId: targetTournamentId,
-          categoryId: targetCategoryId,
-          status: RegistrationStatus.ACCEPTED,
-          acceptanceType: AcceptanceType.QUALIFIER,
-          seedNumber: nextSeedNumber++,
-          registrationDate: new Date(),
-        });
+      if (isDoubles) {
+        // For doubles: create registrations for BOTH players in each team
+        for (const teamId of qualifiedParticipantIds) {
+          // Fetch the doubles team
+          const team = await doublesTeamRepository.findOne({where: {id: teamId}});
+          if (!team) {
+            console.warn(`Doubles team not found: ${teamId}, skipping`);
+            continue;
+          }
 
-        const saved = await registrationRepository.save(registration);
-        createdRegistrations.push(saved);
+          const currentSeed = nextSeedNumber++;
+
+          // Create registration for player 1
+          const reg1 = registrationRepository.create({
+            id: generateId('reg'),
+            participantId: team.player1Id,
+            partnerId: team.player2Id,
+            tournamentId: targetTournamentId,
+            categoryId: targetCategoryId,
+            status: RegistrationStatus.ACCEPTED,
+            acceptanceType: AcceptanceType.QUALIFIER,
+            seedNumber: currentSeed,
+            registrationDate: new Date(),
+          });
+
+          // Create registration for player 2
+          const reg2 = registrationRepository.create({
+            id: generateId('reg'),
+            participantId: team.player2Id,
+            partnerId: team.player1Id,
+            tournamentId: targetTournamentId,
+            categoryId: targetCategoryId,
+            status: RegistrationStatus.ACCEPTED,
+            acceptanceType: AcceptanceType.QUALIFIER,
+            seedNumber: currentSeed,
+            registrationDate: new Date(),
+          });
+
+          const saved1 = await registrationRepository.save(reg1);
+          const saved2 = await registrationRepository.save(reg2);
+          createdRegistrations.push(saved1, saved2);
+        }
+      } else {
+        // For singles: create one registration per participant
+        for (const participantId of qualifiedParticipantIds) {
+          const registration = registrationRepository.create({
+            id: generateId('reg'),
+            participantId,
+            tournamentId: targetTournamentId,
+            categoryId: targetCategoryId,
+            status: RegistrationStatus.ACCEPTED,
+            acceptanceType: AcceptanceType.QUALIFIER,
+            seedNumber: nextSeedNumber++,
+            registrationDate: new Date(),
+          });
+
+          const saved = await registrationRepository.save(registration);
+          createdRegistrations.push(saved);
+        }
       }
 
       // Link phases if not already linked
@@ -626,6 +707,7 @@ export class PhaseController {
 
   /**
    * Promote alternate to Lucky Loser when participant withdraws.
+   * For doubles tournaments, withdraws both team members and promotes an alternate team.
    *
    * @route POST /api/phases/promote-lucky-loser
    * @access TOURNAMENT_ADMIN, SYSTEM_ADMIN
@@ -640,6 +722,15 @@ export class PhaseController {
       }
 
       const registrationRepository = AppDataSource.getRepository(Registration);
+      const tournamentRepository = AppDataSource.getRepository(Tournament);
+
+      // Fetch tournament to check if it's doubles
+      const tournament = await tournamentRepository.findOne({where: {id: tournamentId}});
+      if (!tournament) {
+        throw new AppError('Tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+
+      const isDoubles = tournament.tournamentType === TournamentType.DOUBLES;
 
       // Find withdrawn participant's registration
       const allRegistrations = await registrationRepository.find({
@@ -654,38 +745,112 @@ export class PhaseController {
         throw new AppError(`Registration not found for participant: ${withdrawnParticipantId}`, HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
 
-      // Update withdrawn participant's status and acceptance type
-      withdrawnRegistration.status = RegistrationStatus.WITHDRAWN;
-      withdrawnRegistration.acceptanceType = AcceptanceType.WITHDRAWN;
-      await registrationRepository.save(withdrawnRegistration);
+      if (isDoubles) {
+        // For doubles: withdraw BOTH team members
+        const partnerId = withdrawnRegistration.partnerId;
+        if (!partnerId) {
+          throw new AppError('Doubles registration must have a partner', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+        }
 
-      // Find first ALTERNATE in waiting list
-      const alternates = allRegistrations
-        .filter(r => r.categoryId === categoryId && r.acceptanceType === AcceptanceType.ALTERNATE)
-        .sort((a, b) => a.registrationDate.getTime() - b.registrationDate.getTime());
+        // Withdraw player 1
+        withdrawnRegistration.status = RegistrationStatus.WITHDRAWN;
+        withdrawnRegistration.acceptanceType = AcceptanceType.WITHDRAWN;
+        await registrationRepository.save(withdrawnRegistration);
 
-      if (alternates.length === 0) {
+        // Withdraw player 2 (partner)
+        const partnerRegistration = allRegistrations.find(
+          r => r.participantId === partnerId && r.categoryId === categoryId
+        );
+        if (partnerRegistration) {
+          partnerRegistration.status = RegistrationStatus.WITHDRAWN;
+          partnerRegistration.acceptanceType = AcceptanceType.WITHDRAWN;
+          await registrationRepository.save(partnerRegistration);
+        }
+
+        // Find first ALTERNATE TEAM in waiting list (both players must be alternates)
+        const alternates = allRegistrations
+          .filter(r => r.categoryId === categoryId && r.acceptanceType === AcceptanceType.ALTERNATE)
+          .sort((a, b) => a.registrationDate.getTime() - b.registrationDate.getTime());
+
+        if (alternates.length < 2) {
+          res.status(HTTP_STATUS.OK).json({
+            message: 'Team withdrawn, but no complete alternate teams available',
+            withdrawnParticipantId,
+            promotedParticipantId: null,
+          });
+          return;
+        }
+
+        // Find the first complete alternate team (player with partner)
+        let firstAlternateTeam: {player1: Registration; player2: Registration} | null = null;
+        for (const alt of alternates) {
+          if (alt.partnerId) {
+            const partner = alternates.find(a => a.participantId === alt.partnerId && a.categoryId === categoryId);
+            if (partner) {
+              firstAlternateTeam = {player1: alt, player2: partner};
+              break;
+            }
+          }
+        }
+
+        if (!firstAlternateTeam) {
+          res.status(HTTP_STATUS.OK).json({
+            message: 'Team withdrawn, but no complete alternate teams available',
+            withdrawnParticipantId,
+            promotedParticipantId: null,
+          });
+          return;
+        }
+
+        // Promote both players to Lucky Loser
+        firstAlternateTeam.player1.acceptanceType = AcceptanceType.LUCKY_LOSER;
+        firstAlternateTeam.player1.status = RegistrationStatus.ACCEPTED;
+        await registrationRepository.save(firstAlternateTeam.player1);
+
+        firstAlternateTeam.player2.acceptanceType = AcceptanceType.LUCKY_LOSER;
+        firstAlternateTeam.player2.status = RegistrationStatus.ACCEPTED;
+        await registrationRepository.save(firstAlternateTeam.player2);
+
         res.status(HTTP_STATUS.OK).json({
-          message: 'Participant withdrawn, but no alternates available',
+          message: 'Doubles team Lucky Loser promoted successfully',
           withdrawnParticipantId,
-          promotedParticipantId: null,
+          promotedParticipantId: firstAlternateTeam.player1.participantId,
+          promotedTeamIds: [firstAlternateTeam.player1.participantId, firstAlternateTeam.player2.participantId],
         });
-        return;
+      } else {
+        // For singles: withdraw individual player
+        withdrawnRegistration.status = RegistrationStatus.WITHDRAWN;
+        withdrawnRegistration.acceptanceType = AcceptanceType.WITHDRAWN;
+        await registrationRepository.save(withdrawnRegistration);
+
+        // Find first ALTERNATE in waiting list
+        const alternates = allRegistrations
+          .filter(r => r.categoryId === categoryId && r.acceptanceType === AcceptanceType.ALTERNATE)
+          .sort((a, b) => a.registrationDate.getTime() - b.registrationDate.getTime());
+
+        if (alternates.length === 0) {
+          res.status(HTTP_STATUS.OK).json({
+            message: 'Participant withdrawn, but no alternates available',
+            withdrawnParticipantId,
+            promotedParticipantId: null,
+          });
+          return;
+        }
+
+        const firstAlternate = alternates[0];
+
+        // Promote alternate to Lucky Loser — set both acceptanceType AND status
+        firstAlternate.acceptanceType = AcceptanceType.LUCKY_LOSER;
+        firstAlternate.status = RegistrationStatus.ACCEPTED;
+        await registrationRepository.save(firstAlternate);
+
+        res.status(HTTP_STATUS.OK).json({
+          message: 'Lucky Loser promoted successfully',
+          withdrawnParticipantId,
+          promotedParticipantId: firstAlternate.participantId,
+          registration: firstAlternate,
+        });
       }
-
-      const firstAlternate = alternates[0];
-
-      // Promote alternate to Lucky Loser — set both acceptanceType AND status
-      firstAlternate.acceptanceType = AcceptanceType.LUCKY_LOSER;
-      firstAlternate.status = RegistrationStatus.ACCEPTED;
-      await registrationRepository.save(firstAlternate);
-
-      res.status(HTTP_STATUS.OK).json({
-        message: 'Lucky Loser promoted successfully',
-        withdrawnParticipantId,
-        promotedParticipantId: firstAlternate.participantId,
-        registration: firstAlternate,
-      });
     } catch (error) {
       next(error);
     }

@@ -342,12 +342,18 @@ export class MatchController {
       }
       
       const previousWinnerId = match.winnerId;
+      const previousWinnerTeamId = match.winnerTeamId;
       
       Object.assign(match, req.body);
       const updatedMatch = await matchRepository.save(match);
       
       // If match is completed and has a winner, advance to next round
-      if (updatedMatch.winnerId && updatedMatch.winnerId !== previousWinnerId) {
+      // Check both winnerId (singles) and winnerTeamId (doubles)
+      const hasNewWinner = 
+        (updatedMatch.winnerId && updatedMatch.winnerId !== previousWinnerId) ||
+        (updatedMatch.winnerTeamId && updatedMatch.winnerTeamId !== previousWinnerTeamId);
+      
+      if (hasNewWinner) {
         await this.advanceWinnerToNextRound(updatedMatch, matchRepository);
         // FR39/FR40/FR43: Recalculate standings after admin match update sets a winner
         await this.standingService.recalculateForMatch(updatedMatch.id);

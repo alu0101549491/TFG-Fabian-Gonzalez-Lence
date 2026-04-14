@@ -64,6 +64,12 @@ export interface MatchProps {
   suspensionReason?: string | null;
   /** Ball provider/brand for this match (e.g., "Wilson", "Penn", "Dunlop"). */
   ballProvider?: string | null;
+  /** ID of the first doubles team (for doubles matches only). */
+  participant1TeamId?: string | null;
+  /** ID of the second doubles team (for doubles matches only). */
+  participant2TeamId?: string | null;
+  /** ID of the winning doubles team (for doubles matches only). */
+  winnerTeamId?: string | null;
 }
 
 /**
@@ -107,6 +113,12 @@ export class Match {
   public readonly suspensionReason?: string | null;
   /** Ball provider/brand for this match. */
   public readonly ballProvider?: string | null;
+  /** ID of the first doubles team (for doubles matches only). */
+  public readonly participant1TeamId?: string | null;
+  /** ID of the second doubles team (for doubles matches only). */
+  public readonly participant2TeamId?: string | null;
+  /** ID of the winning doubles team (for doubles matches only). */
+  public readonly winnerTeamId?: string | null;
 
   constructor(props: MatchProps) {
     this.id = props.id;
@@ -127,6 +139,9 @@ export class Match {
     this.score = props.score ?? null;
     this.suspensionReason = props.suspensionReason ?? null;
     this.ballProvider = props.ballProvider ?? null;
+    this.participant1TeamId = props.participant1TeamId ?? null;
+    this.participant2TeamId = props.participant2TeamId ?? null;
+    this.winnerTeamId = props.winnerTeamId ?? null;
   }
 
   /**
@@ -176,7 +191,7 @@ export class Match {
   /**
    * Assigns a walkover to the specified winner.
    *
-   * @param winnerId - The ID of the player receiving the walkover
+   * @param winnerId - The ID of the player or team receiving the walkover
    */
   public assignWalkover(winnerId: string): void {
     if (this.status !== MatchStatus.SCHEDULED) {
@@ -186,10 +201,23 @@ export class Match {
       );
     }
     
-    if (winnerId !== this.player1Id && winnerId !== this.player2Id) {
-      throw new Error(
-        'Walkover winner must be one of the match participants.'
-      );
+    // Check if this is a doubles match
+    const isDoubles = Boolean(this.participant1TeamId || this.participant2TeamId);
+    
+    if (isDoubles) {
+      // For doubles: validate winnerId is one of the team IDs
+      if (winnerId !== this.participant1TeamId && winnerId !== this.participant2TeamId) {
+        throw new Error(
+          'Walkover winner must be one of the match participants.'
+        );
+      }
+    } else {
+      // For singles: validate winnerId is one of the player IDs
+      if (winnerId !== this.player1Id && winnerId !== this.player2Id) {
+        throw new Error(
+          'Walkover winner must be one of the match participants.'
+        );
+      }
     }
     
     // Note: Actual status and winner update should be done via repository in application layer

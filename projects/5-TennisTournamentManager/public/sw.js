@@ -8,15 +8,15 @@
  * @since 2026-04-12
  * @file public/sw.js
  * @desc Service worker for Tennis Tournament Manager PWA (NFR8).
- *       Implements a cache-first strategy for static assets and a
- *       network-first strategy for API calls, enabling offline usage
- *       of previously visited pages.
+ *       Implements a cache-first strategy for static assets (HTML, CSS, fonts)
+ *       and a network-first strategy for API calls.
+ *       JavaScript files are NOT cached during development to support HMR.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-const CACHE_VERSION = 'ttm-v1';
+const CACHE_VERSION = 'ttm-v2-20260414';
 
-/** Static assets cache — stores app shell (HTML, JS, CSS, fonts). */
+/** Static assets cache — stores app shell (HTML, CSS, fonts). */
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 /** API responses cache — stores recently fetched API data for offline fallback. */
@@ -67,6 +67,17 @@ self.addEventListener('fetch', (event) => {
 
   // Skip non-GET requests and cross-origin requests
   if (request.method !== 'GET' || url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Skip Vite HMR WebSocket connections (development)
+  if (url.pathname.includes('/@vite') || url.pathname.includes('/@fs') || url.searchParams.has('token')) {
+    return;
+  }
+
+  // Skip JavaScript files during development (to allow HMR)
+  // In production, these will be served from the server with cache headers
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.ts')) {
     return;
   }
 

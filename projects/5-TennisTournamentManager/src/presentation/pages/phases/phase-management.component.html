@@ -148,6 +148,7 @@
                       <select
                         id="linkSourcePhase"
                         [(ngModel)]="linkForm().sourcePhaseId"
+                        (ngModelChange)="onSourcePhaseChange($event)"
                         name="linkSourcePhase"
                         class="form-input"
                         required
@@ -266,7 +267,7 @@
                     <div class="form-group">
                       <label for="qualifierCount" class="form-label">
                         <span class="label-icon">🔢</span>
-                        Number of Qualifiers
+                        {{ getQualifierLabel() }}
                       </label>
                       <input
                         type="number"
@@ -278,7 +279,7 @@
                         class="form-input"
                         required
                       />
-                      <small class="form-hint">How many top participants should advance (e.g., top 4)</small>
+                      <small class="form-hint">{{ getQualifierHint() }}</small>
                     </div>
 
                     <div class="form-group">
@@ -307,7 +308,7 @@
                     @if (isProcessing()) {
                       <span>⏳ Advancing...</span>
                     } @else {
-                      <span>⬆️ Advance Top {{ advanceForm().qualifierCount }} Qualifiers</span>
+                      <span>{{ getQualifierButtonText() }}</span>
                     }
                   </button>
                 </form>

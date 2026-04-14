@@ -19,6 +19,7 @@ import {PhaseService} from '../../../application/services/phase.service';
 import {TournamentService} from '../../../application/services/tournament.service';
 import {BracketService} from '../../../application/services/bracket.service';
 import {RegistrationService} from '../../../application/services/registration.service';
+import {PartnerInvitationService} from '../../../infrastructure/services/partner-invitation.service';
 import {type PhaseDto, type TournamentDto, type BracketDto, type RegistrationDto} from '../../../application/dto';
 import {AuthStateService} from '../../services/auth-state.service';
 import {UserRepositoryImpl} from '../../../infrastructure/repositories/user.repository';
@@ -35,6 +36,7 @@ interface PhaseOption {
   bracketName: string;
   tournamentId: string;
   tournamentName: string;
+  tournamentType: string; // 'SINGLES' or 'DOUBLES'
   displayLabel: string;
   categoryId?: string;
 }
@@ -77,6 +79,7 @@ export class PhaseManagementComponent implements OnInit {
   private readonly tournamentService = inject(TournamentService);
   private readonly bracketService = inject(BracketService);
   private readonly registrationService = inject(RegistrationService);
+  private readonly partnerInvitationService = inject(PartnerInvitationService);
   private readonly userRepository = inject(UserRepositoryImpl);
   private readonly authState = inject(AuthStateService);
   private readonly route = inject(ActivatedRoute);
@@ -127,7 +130,7 @@ export class PhaseManagementComponent implements OnInit {
   protected advanceForm = signal({
     sourcePhaseId: '',
     targetPhaseId: '',
-    qualifierCount: 4,
+    qualifierCount: 2, // Default to 2, will be adjusted based on tournament type
     categoryId: '',
   });
 
@@ -191,6 +194,13 @@ export class PhaseManagementComponent implements OnInit {
       const tournamentData = await this.tournamentService.getTournamentById(id);
       this.tournament.set(tournamentData);
 
+      // Adjust qualifier count default based on tournament type
+      const isDoubles = tournamentData.tournamentType === 'DOUBLES';
+      this.advanceForm.update(form => ({
+        ...form,
+        qualifierCount: isDoubles ? 2 : 4, // Doubles: 2 teams, Singles: 4 players
+      }));
+
       // Load all available phase options for dropdowns
       await this.loadAllPhaseOptions();
 
@@ -247,6 +257,7 @@ export class PhaseManagementComponent implements OnInit {
                   bracketName,
                   tournamentId: tournament.id,
                   tournamentName: tournament.name,
+                  tournamentType: tournament.tournamentType,
                   displayLabel: `${tournament.name} > ${bracketName} > ${phase.name}`,
                   categoryId,
                 });
@@ -270,10 +281,10 @@ export class PhaseManagementComponent implements OnInit {
       this.sourcePhaseOptions.set(sourceOptions);
       console.log(`✅ Filtered ${sourceOptions.length} source phase options for current tournament`);
 
-      // Filter target phases to tournaments owned/managed by current user
-      // For now, show all tournaments (will add proper access control later)
+      // Target phases will be filtered based on source phase tournament type
+      // Initially show all phases (will be filtered when source is selected)
       this.targetPhaseOptions.set(phaseOptions);
-      console.log(`✅ Filtered ${phaseOptions.length} target phase options`);
+      console.log(`✅ Loaded ${phaseOptions.length} target phase options (will filter by type on source selection)`);
     } catch (err: any) {
       console.error('Failed to load phase options:', err);
       // Don't throw - allow component to continue with empty options
@@ -311,6 +322,9 @@ export class PhaseManagementComponent implements OnInit {
           targetPhaseId: linkedPhase.nextPhaseId!,
         });
 
+        // Filter target phases based on source tournament type (without clearing target selection)
+        this.filterTargetPhasesByType(linkedPhase.id);
+
         // Also populate advance form with the same link
         const targetOption = this.allPhaseOptions().find(opt => opt.phaseId === linkedPhase.nextPhaseId);
         if (targetOption) {
@@ -336,6 +350,85 @@ export class PhaseManagementComponent implements OnInit {
   protected switchTab(tab: 'link' | 'advance' | 'consolation' | 'lucky-loser'): void {
     this.activeTab.set(tab);
     this.clearMessages();
+  }
+
+  /**
+   * Get appropriate label for qualifier count based on tournament type.
+   */
+  protected getQualifierLabel(): string {
+    const tournament = this.tournament();
+    return tournament?.tournamentType === 'DOUBLES' ? 'Number of Team Qualifiers' : 'Number of Qualifiers';
+  }
+
+  /**
+   * Get appropriate hint text for qualifier count based on tournament type.
+   */
+  protected getQualifierHint(): string {
+    const tournament = this.tournament();
+    return tournament?.tournamentType === 'DOUBLES' 
+      ? 'How many top teams should advance (e.g., top 2)'
+      : 'How many top participants should advance (e.g., top 4)';
+  }
+
+  /**
+   * Get appropriate button text for qualifier advancement based on tournament type.
+   */
+  protected getQualifierButtonText(): string {
+    const tournament = this.tournament();
+    const count = this.advanceForm().qualifierCount;
+    return tournament?.tournamentType === 'DOUBLES'
+      ? `⬆️ Advance Top ${count} Teams`
+      : `⬆️ Advance Top ${count} Qualifiers`;
+  }
+
+  /**
+   * Filter target phase options when source phase changes.
+   * Only shows phases from tournaments with matching tournament type (SINGLES/DOUBLES).
+   *
+   * @param phaseId - Selected source phase ID
+   */
+  protected onSourcePhaseChange(phaseId: string): void {
+    // Clear target phase selection when source changes
+    this.linkForm.update(form => ({
+      ...form,
+      sourcePhaseId: phaseId,
+      targetPhaseId: '',
+    }));
+
+    // Filter target options based on tournament type
+    this.filterTargetPhasesByType(phaseId);
+  }
+
+  /**
+   * Filter target phase options based on source phase tournament type.
+   * Separated from onSourcePhaseChange to allow reuse without clearing target selection.
+   *
+   * @param sourcePhaseId - Source phase ID to get tournament type from
+   */
+  private filterTargetPhasesByType(sourcePhaseId: string): void {
+    if (!sourcePhaseId) {
+      // No source selected - show all phases
+      this.targetPhaseOptions.set(this.allPhaseOptions());
+      return;
+    }
+
+    // Find the selected source phase to get its tournament type
+    const sourcePhase = this.allPhaseOptions().find(p => p.phaseId === sourcePhaseId);
+    if (!sourcePhase) {
+      console.warn('Source phase not found:', sourcePhaseId);
+      this.targetPhaseOptions.set(this.allPhaseOptions());
+      return;
+    }
+
+    // Filter target phases to only show those from tournaments with matching type
+    const compatiblePhases = this.allPhaseOptions().filter(
+      p => p.tournamentType === sourcePhase.tournamentType
+    );
+
+    this.targetPhaseOptions.set(compatiblePhases);
+    console.log(
+      `Filtered target phases to ${compatiblePhases.length} ${sourcePhase.tournamentType} tournaments`
+    );
   }
 
   /**
@@ -389,12 +482,17 @@ export class PhaseManagementComponent implements OnInit {
 
   /**
    * Load ACCEPTED participants who can be withdrawn for Lucky Loser promotion.
+   * For doubles tournaments, displays both players as "Player1 / Player2".
+   * Deduplicates team pairs to show each team only once.
    *
    * @param tournamentId - Tournament ID
    * @param categoryId - Category ID
    */
   private async loadWithdrawableParticipants(tournamentId: string, categoryId: string): Promise<void> {
     try {
+      const tournament = this.tournament();
+      const isDoubles = tournament?.tournamentType === 'DOUBLES';
+
       // Fetch all registrations for this tournament
       const allRegistrations = await this.registrationService.getRegistrationsByTournament(tournamentId);
 
@@ -405,27 +503,66 @@ export class PhaseManagementComponent implements OnInit {
         (r.acceptanceType === 'DIRECT_ACCEPTANCE' || r.acceptanceType === 'QUALIFIER' || r.acceptanceType === 'LUCKY_LOSER')
       );
 
-      // Fetch user details for each registration
       const participantOptions: ParticipantOption[] = [];
 
-      for (const reg of acceptedRegs) {
-        try {
-          const user = await this.userRepository.findPublicById(reg.participantId);
-          if (user) {
-            const displayName = user.username || `${user.firstName} ${user.lastName}` || user.email;
-            const seedInfo = reg.seedNumber ? `Seed #${reg.seedNumber}` : reg.acceptanceType;
+      if (isDoubles) {
+        // Track seen teams to avoid duplicates (both players have registrations)
+        const seenTeams = new Set<string>();
 
-            participantOptions.push({
-              participantId: reg.participantId,
-              participantName: displayName,
-              registrationId: reg.id,
-              seedNumber: reg.seedNumber,
-              acceptanceType: reg.acceptanceType,
-              displayLabel: `${displayName} (${seedInfo})`,
-            });
+        // For doubles: fetch both players for each registration
+        for (const reg of acceptedRegs) {
+          if (!reg.partnerId) continue; // Skip incomplete teams
+
+          // Create a normalized team ID by sorting player IDs alphabetically
+          // This ensures we only add each team once regardless of which player's registration we see first
+          const teamKey = [reg.participantId, reg.partnerId].sort().join('|');
+          if (seenTeams.has(teamKey)) continue; // Already processed this team
+          seenTeams.add(teamKey);
+
+          try {
+            const player1 = await this.userRepository.findPublicById(reg.participantId);
+            const player2 = await this.userRepository.findPublicById(reg.partnerId);
+
+            if (player1 && player2) {
+              const player1Name = player1.username || `${player1.firstName} ${player1.lastName}` || player1.email;
+              const player2Name = player2.username || `${player2.firstName} ${player2.lastName}` || player2.email;
+              const teamName = `${player1Name} / ${player2Name}`;
+              const seedInfo = reg.seedNumber ? `Seed #${reg.seedNumber}` : reg.acceptanceType;
+
+              participantOptions.push({
+                participantId: reg.participantId, // Keep player1 ID for backend
+                participantName: teamName,
+                registrationId: reg.id,
+                seedNumber: reg.seedNumber,
+                acceptanceType: reg.acceptanceType,
+                displayLabel: `${teamName} (${seedInfo})`,
+              });
+            }
+          } catch (error) {
+            console.warn(`Failed to load doubles team for registration ${reg.id}:`, error);
           }
-        } catch (error) {
-          console.warn(`Failed to load user ${reg.participantId}:`, error);
+        }
+      } else {
+        // For singles: fetch individual users
+        for (const reg of acceptedRegs) {
+          try {
+            const user = await this.userRepository.findPublicById(reg.participantId);
+            if (user) {
+              const displayName = user.username || `${user.firstName} ${user.lastName}` || user.email;
+              const seedInfo = reg.seedNumber ? `Seed #${reg.seedNumber}` : reg.acceptanceType;
+
+              participantOptions.push({
+                participantId: reg.participantId,
+                participantName: displayName,
+                registrationId: reg.id,
+                seedNumber: reg.seedNumber,
+                acceptanceType: reg.acceptanceType,
+                displayLabel: `${displayName} (${seedInfo})`,
+              });
+            }
+          } catch (error) {
+            console.warn(`Failed to load user ${reg.participantId}:`, error);
+          }
         }
       }
 
@@ -438,7 +575,7 @@ export class PhaseManagementComponent implements OnInit {
       });
 
       this.withdrawableParticipants.set(participantOptions);
-      console.log(`Loaded ${participantOptions.length} withdrawable participants`);
+      console.log(`Loaded ${participantOptions.length} withdrawable ${isDoubles ? 'teams' : 'participants'}`);
     } catch (error) {
       console.error('Failed to load withdrawable participants:', error);
       this.withdrawableParticipants.set([]);

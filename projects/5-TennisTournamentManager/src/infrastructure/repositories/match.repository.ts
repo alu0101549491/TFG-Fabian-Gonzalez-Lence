@@ -67,6 +67,9 @@ export class MatchRepositoryImpl implements IMatchRepository {
       score: response.score ?? null,  // Include score string (from dispute resolution)
       suspensionReason: response.suspensionReason ?? null,  // Include suspension reason
       ballProvider: response.ballProvider ?? null,  // Include ball provider (FR31)
+      participant1TeamId: response.participant1TeamId ?? null,  // Include team IDs for doubles
+      participant2TeamId: response.participant2TeamId ?? null,
+      winnerTeamId: response.winnerTeamId ?? null,
     });
     
     // Preserve participant objects from backend for display
@@ -92,16 +95,7 @@ export class MatchRepositoryImpl implements IMatchRepository {
       (match as any).pendingResult = response.pendingResult;
     }
 
-    // Doubles team data
-    if (response.participant1TeamId) {
-      (match as any).participant1TeamId = response.participant1TeamId;
-    }
-    if (response.participant2TeamId) {
-      (match as any).participant2TeamId = response.participant2TeamId;
-    }
-    if (response.winnerTeamId) {
-      (match as any).winnerTeamId = response.winnerTeamId;
-    }
+    // Doubles team data (objects)
     if (response.participant1Team) {
       (match as any).participant1Team = response.participant1Team;
     }
@@ -189,12 +183,15 @@ export class MatchRepositoryImpl implements IMatchRepository {
     const backendRound = (match as any).round || 1;
     const backendMatchNumber = (match as any).matchNumber || match.matchOrder || 1;
     
+    // Check if this is a doubles match
+    const isDoubles = Boolean(match.participant1TeamId || match.participant2TeamId);
+    
     const matchData: any = {
       bracketId: match.bracketId,
       phaseId: match.phaseId,
       participant1Id: match.player1Id,  // Frontend: player1Id → Backend: participant1Id
       participant2Id: match.player2Id,  // Frontend: player2Id → Backend: participant2Id
-      winnerId: match.winnerId,
+      winnerId: isDoubles ? null : match.winnerId,  // For doubles, winnerId is null (use winnerTeamId)
       status: match.status,
       scheduledTime: this.serializeDate(match.scheduledTime),
       startTime: this.serializeDate(match.startedAt),  // Frontend: startedAt → Backend: startTime
@@ -202,6 +199,13 @@ export class MatchRepositoryImpl implements IMatchRepository {
       round: backendRound,  // Preserve from backend
       matchNumber: backendMatchNumber,  // Preserve from backend
     };
+    
+    // For doubles matches, set winnerTeamId instead of winnerId
+    if (isDoubles && match.winnerTeamId) {
+      matchData.winnerTeamId = match.winnerTeamId;
+    } else if (!isDoubles && match.winnerId) {
+      matchData.winnerId = match.winnerId;
+    }
     
     // Only include courtId if it exists (don't send null to avoid clearing existing court)
     if (match.courtId) {

@@ -219,9 +219,19 @@ export class MatchService implements IMatchService {
       throw new Error('Match not found');
     }
     
-    // Validate winner is one of the participants
-    if (data.winnerId !== match.player1Id && data.winnerId !== match.player2Id) {
-      throw new Error('Winner must be one of the match participants');
+    // Validate winner is one of the participants (handle both singles and doubles)
+    const isDoubles = Boolean(match.participant1TeamId || match.participant2TeamId);
+    
+    if (isDoubles) {
+      // For doubles: validate winnerId is one of the team IDs
+      if (data.winnerId !== match.participant1TeamId && data.winnerId !== match.participant2TeamId) {
+        throw new Error('Winner must be one of the match participants');
+      }
+    } else {
+      // For singles: validate winnerId is one of the player IDs
+      if (data.winnerId !== match.player1Id && data.winnerId !== match.player2Id) {
+        throw new Error('Winner must be one of the match participants');
+      }
     }
     
     // Validate business rule
@@ -231,15 +241,26 @@ export class MatchService implements IMatchService {
     await this.scoreRepository.saveMatchScores(data.matchId, data.winnerId, data.sets);
     
     // Update match with result
+    // For doubles matches, set winnerTeamId instead of winnerId
+    const matchUpdateProps: any = {
+      ...match,
+      status: data.isRetirement ? MatchStatus.RETIRED : MatchStatus.COMPLETED,
+      completedAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    if (isDoubles) {
+      // For doubles: set winnerTeamId, keep winnerId null
+      matchUpdateProps.winnerTeamId = data.winnerId;
+      matchUpdateProps.winnerId = null;
+    } else {
+      // For singles: set winnerId
+      matchUpdateProps.winnerId = data.winnerId;
+    }
+    
     const updatedMatch = this.preserveBackendFields(
       match,
-      new Match({
-        ...match,
-        winnerId: data.winnerId,
-        status: data.isRetirement ? MatchStatus.RETIRED : MatchStatus.COMPLETED,
-        completedAt: new Date(),
-        updatedAt: new Date(),
-      })
+      new Match(matchUpdateProps)
     );
     
     const savedMatch = await this.matchRepository.update(updatedMatch);

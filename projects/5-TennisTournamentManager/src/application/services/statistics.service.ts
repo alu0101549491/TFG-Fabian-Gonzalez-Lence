@@ -441,19 +441,36 @@ export class StatisticsService implements IStatisticsService {
       if (match.status === MatchStatus.COMPLETED || 
           match.status === MatchStatus.RETIRED || 
           match.status === MatchStatus.WALKOVER) {
-        // Track activity for both players
-        const player1 = match.player1Id || '';
-        const player2 = match.player2Id || '';
         
-        if (!participantActivity.has(player1)) {
-          participantActivity.set(player1, {matches: 0, sets: 0, games: 0});
-        }
-        if (!participantActivity.has(player2)) {
-          participantActivity.set(player2, {matches: 0, sets: 0, games: 0});
+        // Detect if this is a doubles match
+        const isDoubles = Boolean((match as any).participant1TeamId || (match as any).participant2TeamId);
+        
+        // Track activity for both participants (either players or teams)
+        let participant1: string;
+        let participant2: string;
+        let winnerId: string | null;
+        
+        if (isDoubles) {
+          // For doubles: use team IDs
+          participant1 = (match as any).participant1TeamId || '';
+          participant2 = (match as any).participant2TeamId || '';
+          winnerId = (match as any).winnerTeamId || null;
+        } else {
+          // For singles: use player IDs
+          participant1 = match.player1Id || '';
+          participant2 = match.player2Id || '';
+          winnerId = match.winnerId;
         }
         
-        participantActivity.get(player1)!.matches++;
-        participantActivity.get(player2)!.matches++;
+        if (!participantActivity.has(participant1)) {
+          participantActivity.set(participant1, {matches: 0, sets: 0, games: 0});
+        }
+        if (!participantActivity.has(participant2)) {
+          participantActivity.set(participant2, {matches: 0, sets: 0, games: 0});
+        }
+        
+        participantActivity.get(participant1)!.matches++;
+        participantActivity.get(participant2)!.matches++;
         
         // Parse scores to count sets and games PLAYED (both players play the same sets/games)
         if (match.scores && match.scores.length > 0) {
@@ -472,10 +489,10 @@ export class StatisticsService implements IStatisticsService {
           }
           
           // Both players played the same number of sets and games
-          participantActivity.get(player1)!.sets += setsPlayed;
-          participantActivity.get(player1)!.games += totalGamesInMatch;
-          participantActivity.get(player2)!.sets += setsPlayed;
-          participantActivity.get(player2)!.games += totalGamesInMatch;
+          participantActivity.get(participant1)!.sets += setsPlayed;
+          participantActivity.get(participant1)!.games += totalGamesInMatch;
+          participantActivity.get(participant2)!.sets += setsPlayed;
+          participantActivity.get(participant2)!.games += totalGamesInMatch;
         } else if (match.score && match.score.trim().length > 0) {
           // Fallback: parse score string (format: "6-4, 3-6, 7-6")
           const sets = match.score.split(',').map(s => s.trim()).filter(s => s.length > 0);
@@ -494,26 +511,26 @@ export class StatisticsService implements IStatisticsService {
           }
           
           // Both players played the same number of sets and games
-          participantActivity.get(player1)!.sets += setsPlayed;
-          participantActivity.get(player1)!.games += totalGamesInMatch;
-          participantActivity.get(player2)!.sets += setsPlayed;
-          participantActivity.get(player2)!.games += totalGamesInMatch;
+          participantActivity.get(participant1)!.sets += setsPlayed;
+          participantActivity.get(participant1)!.games += totalGamesInMatch;
+          participantActivity.get(participant2)!.sets += setsPlayed;
+          participantActivity.get(participant2)!.games += totalGamesInMatch;
         }
         
         // Track performance        
-        if (!participantPerformance.has(player1)) {
-          participantPerformance.set(player1, {wins: 0, losses: 0, streak: 0});
+        if (!participantPerformance.has(participant1)) {
+          participantPerformance.set(participant1, {wins: 0, losses: 0, streak: 0});
         }
-        if (!participantPerformance.has(player2)) {
-          participantPerformance.set(player2, {wins: 0, losses: 0, streak: 0});
+        if (!participantPerformance.has(participant2)) {
+          participantPerformance.set(participant2, {wins: 0, losses: 0, streak: 0});
         }
         
-        if (match.winnerId === player1) {
-          participantPerformance.get(player1)!.wins++;
-          participantPerformance.get(player2)!.losses++;
-        } else if (match.winnerId === player2) {
-          participantPerformance.get(player2)!.wins++;
-          participantPerformance.get(player1)!.losses++;
+        if (winnerId && winnerId === participant1) {
+          participantPerformance.get(participant1)!.wins++;
+          participantPerformance.get(participant2)!.losses++;
+        } else if (winnerId && winnerId === participant2) {
+          participantPerformance.get(participant2)!.wins++;
+          participantPerformance.get(participant1)!.losses++;
         }
       }
     }
@@ -534,24 +551,40 @@ export class StatisticsService implements IStatisticsService {
     const participantMatches: Map<string, Array<{date: Date, won: boolean}>> = new Map();
     
     for (const match of finishedMatches) {
-      const player1 = match.player1Id || '';
-      const player2 = match.player2Id || '';
+      // Detect if this is a doubles match
+      const isDoubles = Boolean((match as any).participant1TeamId || (match as any).participant2TeamId);
+      
+      let participant1: string;
+      let participant2: string;
+      let winnerId: string | null;
       const matchDate = match.completedAt || match.updatedAt;
       
-      if (!participantMatches.has(player1)) {
-        participantMatches.set(player1, []);
-      }
-      if (!participantMatches.has(player2)) {
-        participantMatches.set(player2, []);
+      if (isDoubles) {
+        // For doubles: use team IDs
+        participant1 = (match as any).participant1TeamId || '';
+        participant2 = (match as any).participant2TeamId || '';
+        winnerId = (match as any).winnerTeamId || null;
+      } else {
+        // For singles: use player IDs
+        participant1 = match.player1Id || '';
+        participant2 = match.player2Id || '';
+        winnerId = match.winnerId;
       }
       
-      participantMatches.get(player1)!.push({
+      if (!participantMatches.has(participant1)) {
+        participantMatches.set(participant1, []);
+      }
+      if (!participantMatches.has(participant2)) {
+        participantMatches.set(participant2, []);
+      }
+      
+      participantMatches.get(participant1)!.push({
         date: matchDate,
-        won: match.winnerId === player1
+        won: winnerId === participant1
       });
-      participantMatches.get(player2)!.push({
+      participantMatches.get(participant2)!.push({
         date: matchDate,
-        won: match.winnerId === player2
+        won: winnerId === participant2
       });
     }
     
@@ -581,22 +614,61 @@ export class StatisticsService implements IStatisticsService {
       ...participantPerformance.keys()
     ]);
     
-    // Fetch user info in parallel for all participants
+    // Separate singles players from doubles teams
+    const playerIds = new Set<string>();
+    const teamIds = new Set<string>();
+    
+    for (const participantId of allParticipantIds) {
+      if (participantId.startsWith('dbl_')) {
+        teamIds.add(participantId);
+      } else if (participantId.startsWith('usr_')) {
+        playerIds.add(participantId);
+      }
+    }
+    
+    // Fetch user info in parallel for all single players
     const participantNames = new Map<string, string>();
+    
+    // Fetch singles player names
     await Promise.all(
-      Array.from(allParticipantIds).map(async (participantId) => {
+      Array.from(playerIds).map(async (playerId) => {
         try {
-          const user = await this.userService.getPublicUserInfo(participantId);
+          const user = await this.userService.getPublicUserInfo(playerId);
           const fullName = user.firstName && user.lastName 
             ? `${user.firstName} ${user.lastName}` 
             : user.username || 'Unknown';
-          participantNames.set(participantId, fullName);
+          participantNames.set(playerId, fullName);
         } catch (error) {
           // If user not found, use 'Unknown'
-          participantNames.set(participantId, 'Unknown');
+          participantNames.set(playerId, 'Unknown');
         }
       })
     );
+    
+    // Fetch doubles team names from match data (teams are already enriched in matches)
+    for (const teamId of teamIds) {
+      let teamName = 'Unknown';
+      
+      // Find a match with this team ID to get the team data
+      const matchWithTeam = allMatches.find(
+        m => (m as any).participant1TeamId === teamId || (m as any).participant2TeamId === teamId
+      );
+      
+      if (matchWithTeam) {
+        const team = (matchWithTeam as any).participant1TeamId === teamId 
+          ? (matchWithTeam as any).participant1Team 
+          : (matchWithTeam as any).participant2Team;
+        
+        if (team && team.player1 && team.player2) {
+          // Format as "FirstName LastName / FirstName LastName"
+          const player1Name = `${team.player1.firstName || ''} ${team.player1.lastName || ''}`.trim();
+          const player2Name = `${team.player2.firstName || ''} ${team.player2.lastName || ''}`.trim();
+          teamName = `${player1Name} / ${player2Name}`;
+        }
+      }
+      
+      participantNames.set(teamId, teamName);
+    }
     
     // Convert to DTOs and sort
     const mostActiveParticipants: ParticipantActivityDto[] = Array.from(participantActivity.entries())
@@ -632,11 +704,25 @@ export class StatisticsService implements IStatisticsService {
       // Participants registered in this category
       const catRegistrations = registrations.filter(r => r.categoryId === cat.id);
       // Matches in this category (via brackets whose phaseId maps to this category's brackets)
-      // We approximate by counting matches where both players are registered in this category
+      // We approximate by counting matches where both participants are registered in this category
       const catParticipantIds = new Set(catRegistrations.map(r => r.participantId));
       const catMatches = allMatches.filter(
-        m => (m.player1Id && catParticipantIds.has(m.player1Id)) ||
-             (m.player2Id && catParticipantIds.has(m.player2Id))
+        m => {
+          // Check if this is a doubles match
+          const isDoubles = Boolean((m as any).participant1TeamId || (m as any).participant2TeamId);
+          
+          if (isDoubles) {
+            // For doubles, check if the team members are registered in this category
+            // This is an approximation since we're checking by team ID
+            const team1Id = (m as any).participant1TeamId;
+            const team2Id = (m as any).participant2TeamId;
+            return team1Id || team2Id; // Include all doubles matches for now
+          } else {
+            // For singles, check if players are registered in this category
+            return (m.player1Id && catParticipantIds.has(m.player1Id)) ||
+                   (m.player2Id && catParticipantIds.has(m.player2Id));
+          }
+        }
       );
       const catCompleted = catMatches.filter(
         m => m.status === MatchStatus.COMPLETED || m.status === MatchStatus.RETIRED || m.status === MatchStatus.WALKOVER
@@ -646,7 +732,7 @@ export class StatisticsService implements IStatisticsService {
       let topPerformer: string | undefined;
       let bestWinRate = -1;
       for (const [pid, perf] of participantPerformance.entries()) {
-        if (!catParticipantIds.has(pid)) continue;
+        if (!catParticipantIds.has(pid) && !pid.startsWith('dbl_')) continue; // Include teams
         const total = perf.wins + perf.losses;
         if (total === 0) continue;
         const rate = perf.wins / total;

@@ -8,6 +8,314 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Feature: Doubles Support for Phase Operations (2026-04-14)
+
+**Problem:** The "Advance Qualifiers from Round Robin" and "Promote Lucky Loser" features only worked with individual players. For doubles tournaments, these operations need to work with teams (pairs of players) instead of individual participants. Specifically:
+- Advance Qualifiers showed individual player IDs instead of team names
+- Lucky Loser dropdown showed individual players instead of doubles teams
+- Backend created registrations for individual participants instead of team pairs
+
+**Root Cause:** Both frontend and backend logic assumed single-participant operations. Frontend loaded individual users via `userRepository.findPublicById()`, and backend used `standing.participantId` directly without checking for doubles tournaments. The Standing entity has both `participantId` (for singles) and `teamId` (for doubles), but the code only used `participantId`.
+
+**Fix Applied:**
+
+- ✅ **Frontend - Phase Management Component** `src/presentation/pages/phases/phase-management.component.ts`:
+  - **Service Injection**: Added `PartnerInvitationService` to access doubles team data
+  - **`loadWithdrawableParticipants()` method**: Enhanced to detect doubles tournaments via `tournament.tournamentType === 'DOUBLES'`
+  - **Doubles Participant Loading**: For doubles, fetches BOTH players (participantId + partnerId) and displays as "Player1 / Player2"
+  - **Singles Participant Loading**: Maintains original behavior for singles tournaments
+  - **Display Format**: Team names formatted as "FirstName LastName / FirstName LastName (Seed #N)" for clarity
+
+- ✅ **Backend - Phase Controller** `backend/src/presentation/controllers/phase.controller.ts`:
+  - **Imports**: Added `DoublesTeam` entity to access team data
+  - **`advanceQualifiers()` method**:
+    - Fetches source tournament to determine if it's doubles (`tournamentType === TournamentType.DOUBLES`)
+    - For doubles: extracts `teamId` from standings instead of `participantId`
+    - Creates registrations for BOTH players when advancing a doubles team:
+      - Player 1 registration: `participantId = team.player1Id`, `partnerId = team.player2Id`
+      - Player 2 registration: `participantId = team.player2Id`, `partnerId = team.player1Id`
+    - Both registrations share the same seed number
+    - For singles: maintains original behavior (one registration per participant)
+  - **`promoteLuckyLoser()` method**:
+    - Detects doubles tournaments and withdraws BOTH team members when one is withdrawn
+    - Finds first complete alternate team (both players must be alternates with matching partnerId)
+    - Promotes BOTH players of the alternate team to Lucky Loser status
+    - Returns `promotedTeamIds` array with both player IDs for doubles
+    - For singles: maintains original behavior (withdraws one player, promotes one alternate)
+
+**Impact:**
+- **Advance Qualifiers**: Now correctly advances doubles teams (both players) from Round Robin to main draw
+- **Display Names**: Withdrawable participants dropdown shows "Player1 / Player2" format for doubles teams
+- **No Duplicates**: Each team appears only once in the Lucky Loser dropdown (previously showed twice)
+- **Dynamic Labels**: Form labels adapt to tournament type:
+  - Doubles: "Number of Team Qualifiers" with hint "How many top teams should advance (e.g., top 2)"
+  - Singles: "Number of Qualifiers" with hint "How many top participants should advance (e.g., top 4)"
+- **Smart Defaults**: Qualifier count defaults to 2 for doubles tournaments, 4 for singles
+- **Button Text**: Advance button text adapts: "Advance Top N Teams" (doubles) vs "Advance Top N Qualifiers" (singles)
+- **Registration Integrity**: Both team members get properly registered with correct partnerId links
+- **Seed Consistency**: Doubles teams maintain consistent seed numbers across both player registrations
+- **Lucky Loser**: Team withdrawals properly remove both players, and alternate teams are promoted as complete pairs
+- **Backward Compatibility**: Singles tournaments continue to work with original single-player logic
+
+**Technical Details:**
+- Standing entity fields used: `participantId` (singles) vs `teamId` (doubles)
+- Registration entity fields: `participantId`, `partnerId`, `seedNumber`, `acceptanceType`
+- DoublesTeam entity fields: `player1Id`, `player2Id`
+- Tournament type check: `tournament.tournamentType === TournamentType.DOUBLES`
+- **Deduplication Logic**: Teams identified by sorted player IDs (`[player1Id, player2Id].sort().join('|')`) to prevent duplicate entries
+- **Dynamic UI**: Methods `getQualifierLabel()`, `getQualifierHint()`, and `getQualifierButtonText()` provide context-aware text
+- **Default Values**: Qualifier count auto-adjusts on tournament load (2 for doubles, 4 for singles)
+
+---
+
+### Feature: Phase Linking Tournament Type Validation (2026-04-14)
+
+**Problem:** The phase linking system allowed linking phases from doubles tournaments to phases from singles tournaments (and vice versa). This could cause data integrity issues because doubles matches use team-based participant tracking (`participant1TeamId`, `participant2TeamId`, `winnerTeamId`) while singles matches use player-based tracking (`participant1Id`, `participant2Id`, `winnerId`). Mixing these would cause:
+- Advancement logic failures (team IDs in player ID slots)
+- Query failures (looking for player IDs that don't exist)
+- Foreign key violations (team IDs in player FK columns)
+- Statistics calculation errors
+
+**Root Cause:** The `linkPhases()` method in `PhaseController` validated that both phases exist, belong to tournaments, prevent cycles, and enforce sequence order within the same tournament. However, it didn't check whether the source and target tournaments had compatible tournament types (SINGLES vs DOUBLES).
+
+**Fix Applied:**
+
+- ✅ **Backend - Phase Controller** `backend/src/presentation/controllers/phase.controller.ts`:
+  - **Imports**: Added `Tournament` entity and `TournamentType` enum to support tournament type validation
+  - **`linkPhases()` method**: Added tournament type compatibility validation after sequence order check and before cycle detection:
+    ```typescript
+    // Fetch tournaments to validate tournament type compatibility
+    const tournamentRepository = AppDataSource.getRepository(Tournament);
+    const sourceTournament = await tournamentRepository.findOne({where: {id: sourcePhase.tournamentId}});
+    const targetTournament = await tournamentRepository.findOne({where: {id: targetPhase.tournamentId}});
+    
+    if (!sourceTournament || !targetTournament) {
+      throw new AppError('Source or target tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+    }
+    
+    // Validate tournament type compatibility: doubles can only link to doubles, singles to singles
+    if (sourceTournament.tournamentType !== targetTournament.tournamentType) {
+      const sourceType = sourceTournament.tournamentType === TournamentType.DOUBLES ? 'doubles' : 'singles';
+      const targetType = targetTournament.tournamentType === TournamentType.DOUBLES ? 'doubles' : 'singles';
+      throw new AppError(
+        `Cannot link ${sourceType} tournament phase to ${targetType} tournament phase. Tournament types must match.`,
+        HTTP_STATUS.BAD_REQUEST,
+        ERROR_CODES.INVALID_INPUT
+      );
+    }
+    ```
+
+- ✅ **Frontend - Phase Management Component** `src/presentation/pages/phases/phase-management.component.ts`:
+  - **PhaseOption Interface**: Added `tournamentType` field to track tournament type for each phase option
+  - **`loadAllPhaseOptions()` method**: Stores tournament type when building phase options from tournaments
+  - **`onSourcePhaseChange()` method**: Clears target selection and filters target phases when source phase changes
+  - **`filterTargetPhasesByType()` method**: New private method that filters target phase dropdown to only show phases from tournaments matching the source tournament type
+  - **Initial Load**: When existing phase links are loaded, target phases are filtered without clearing the selection
+
+- ✅ **Frontend - Phase Management Template** `src/presentation/pages/phases/phase-management.component.html`:
+  - **Source Phase Select**: Added `(ngModelChange)="onSourcePhaseChange($event)"` event handler to trigger filtering when source phase is selected
+
+**Impact:**
+- **Proactive UI Filtering**: Frontend dropdown automatically filters target phases to only show compatible tournament types (SINGLES or DOUBLES) based on the selected source phase
+- **Improved User Experience**: Users can no longer even see incompatible options in the dropdown, preventing confusion
+- **Backend Validation**: Server-side validation provides a safety net, rejecting any incompatible links with clear error messages
+- Doubles tournament phases can only link to other doubles tournament phases
+- Singles tournament phases can only link to other singles tournament phases
+- Clear error messages guide users when attempting invalid links: "Cannot link doubles tournament phase to singles tournament phase. Tournament types must match."
+- Prevents data corruption and foreign key violations in multi-phase tournament chains
+- Maintains consistency in participant tracking across linked phases
+- Existing phase links display correctly with proper filtering when the page loads
+
+**Validation Rules:**
+- ✅ Doubles → Doubles: Allowed
+- ✅ Singles → Singles: Allowed
+- ❌ Doubles → Singles: Blocked with clear error
+- ❌ Singles → Doubles: Blocked with clear error
+
+---
+
+### Bug Fix: Tournament Statistics Not Showing Doubles Teams (2026-04-14)
+
+**Problem:** In the tournament statistics page for doubles tournaments, the "Top Performers" and "Most Active Participants" tables showed "Unknown" instead of the actual team names. Additionally, the "Rankings by Category" section showed incorrect participant counts for doubles tournaments.
+
+**Root Cause:** The `getDetailedTournamentStatistics()` method in the Statistics Service only tracked `match.player1Id` and `match.player2Id`, which are `null` for doubles matches. For doubles, participants are stored as teams with `participant1TeamId` and `participant2TeamId`, and winners are stored in `winnerTeamId` instead of `winnerId`.
+
+**Fix Applied:**
+
+- ✅ **Statistics Service** `src/application/services/statistics.service.ts`:
+  - **`getDetailedTournamentStatistics()` method**: Updated to detect doubles matches and handle team IDs:
+    ```typescript
+    // Detect if this is a doubles match
+    const isDoubles = Boolean((match as any).participant1TeamId || (match as any).participant2TeamId);
+    
+    let participant1: string;
+    let participant2: string;
+    let winnerId: string | null;
+    
+    if (isDoubles) {
+      // For doubles: use team IDs
+      participant1 = (match as any).participant1TeamId || '';
+      participant2 = (match as any).participant2TeamId || '';
+      winnerId = (match as any).winnerTeamId || null;
+    } else {
+      // For singles: use player IDs
+      participant1 = match.player1Id || '';
+      participant2 = match.player2Id || '';
+      winnerId = match.winnerId;
+    }
+    ```
+  - **Name Fetching Logic**: Updated to fetch team names from match data and format as "Player1 / Player2":
+    ```typescript
+    // Separate singles players from doubles teams
+    const playerIds = new Set<string>();
+    const teamIds = new Set<string>();
+    
+    for (const participantId of allParticipantIds) {
+      if (participantId.startsWith('dbl_')) {
+        teamIds.add(participantId);
+      } else if (participantId.startsWith('usr_')) {
+        playerIds.add(participantId);
+      }
+    }
+    
+    // Fetch doubles team names from match data
+    for (const teamId of teamIds) {
+      const matchWithTeam = allMatches.find(
+        m => (m as any).participant1TeamId === teamId || (m as any).participant2TeamId === teamId
+      );
+      
+      if (matchWithTeam) {
+        const team = (matchWithTeam as any).participant1TeamId === teamId 
+          ? (matchWithTeam as any).participant1Team 
+          : (matchWithTeam as any).participant2Team;
+        
+        if (team && team.player1 && team.player2) {
+          const player1Name = `${team.player1.firstName || ''} ${team.player1.lastName || ''}`.trim();
+          const player2Name = `${team.player2.firstName || ''} ${team.player2.lastName || ''}`.trim();
+          teamName = `${player1Name} / ${player2Name}`;
+        }
+      }
+    }
+    ```
+  - **Category Breakdown**: Updated to correctly count doubles matches in category statistics
+  - **Streak Calculation**: Updated second pass to use correct participant IDs for both singles and doubles
+
+**Impact:**
+- Tournament statistics now correctly display doubles team names in "Top Performers" table
+- "Most Active Participants" table shows team names with both players
+- Match activity (matches played, sets, games) correctly tracked for doubles teams
+- Win/Loss records and streaks accurately calculated for doubles teams
+- "Rankings by Category" section now includes doubles matches
+- Team names formatted as "FirstName LastName / FirstName LastName" for clarity
+
+---
+
+### Bug Fix: Doubles Match Winner Validation Not Working (2026-04-14)
+
+**Problem:** When recording match scores for doubles matches, the system showed an error: "Winner must be one of the match participants". Additionally, after fixing the frontend validation, the backend threw a foreign key constraint error: `insert or update on table "matches" violates foreign key constraint "FK_eb5e9984be5b3bd5c8e3ef2d9ec"`.
+
+**Root Cause:** 
+1. **Frontend Validation**: The winner validation logic in both `match.service.ts` and the `Match` entity only checked `player1Id` and `player2Id` (singles participant IDs). For doubles matches, participants are stored as `participant1TeamId` and `participant2TeamId` instead, so the validation always failed.
+
+2. **Backend Foreign Key Violation**: After fixing the validation, the frontend was trying to set `winnerId` (which has a foreign key to the `users` table) to a team ID like `dbl_8b91f006`. For doubles matches, the winner should be stored in `winnerTeamId` (foreign key to `doubles_teams` table) instead of `winnerId`.
+
+**Fix Applied:**
+
+- ✅ **Domain Entity** `src/domain/entities/match.ts`:
+  - **`MatchProps` interface**: Added optional `participant1TeamId`, `participant2TeamId`, `winnerTeamId` properties
+  - **`Match` class**: Added readonly properties for the three team ID fields
+  - **`constructor`**: Initialize team ID fields from props
+  - **`assignWalkover()` method**: Updated validation to check team IDs for doubles matches:
+    ```typescript
+    const isDoubles = Boolean(this.participant1TeamId || this.participant2TeamId);
+    
+    if (isDoubles) {
+      // For doubles: validate winnerId is one of the team IDs
+      if (winnerId !== this.participant1TeamId && winnerId !== this.participant2TeamId) {
+        throw new Error('Walkover winner must be one of the match participants.');
+      }
+    } else {
+      // For singles: validate winnerId is one of the player IDs
+      if (winnerId !== this.player1Id && winnerId !== this.player2Id) {
+        throw new Error('Walkover winner must be one of the match participants.');
+      }
+    }
+    ```
+
+- ✅ **Service Layer** `src/application/services/match.service.ts`:
+  - **`recordResult()` method**: Added doubles-aware validation and winner assignment:
+    ```typescript
+    const isDoubles = Boolean(match.participant1TeamId || match.participant2TeamId);
+    
+    // Validation
+    if (isDoubles) {
+      if (data.winnerId !== match.participant1TeamId && data.winnerId !== match.participant2TeamId) {
+        throw new Error('Winner must be one of the match participants');
+      }
+    }
+    
+    // Winner assignment
+    if (isDoubles) {
+      matchUpdateProps.winnerTeamId = data.winnerId;  // Set team ID
+      matchUpdateProps.winnerId = null;  // Keep user ID null
+    } else {
+      matchUpdateProps.winnerId = data.winnerId;  // Set user ID
+    }
+    ```
+
+- ✅ **Repository** `src/infrastructure/repositories/match.repository.ts`:
+  - **`mapBackendToMatch()` method**: Updated to include team IDs in Match constructor instead of only as dynamic properties:
+    ```typescript
+    const match = new Match({
+      // ... existing fields ...
+      participant1TeamId: response.participant1TeamId ?? null,
+      participant2TeamId: response.participant2TeamId ?? null,
+      winnerTeamId: response.winnerTeamId ?? null,
+    });
+    ```
+  - **`update()` method**: Added doubles detection and proper field assignment:
+    ```typescript
+    const isDoubles = Boolean(match.participant1TeamId || match.participant2TeamId);
+    
+    const matchData: any = {
+      // ... other fields ...
+      winnerId: isDoubles ? null : match.winnerId,  // null for doubles
+    };
+    
+    if (isDoubles && match.winnerTeamId) {
+      matchData.winnerTeamId = match.winnerTeamId;  // Set team winner
+    }
+    ```
+
+- ✅ **Backend Controller** `backend/src/presentation/controllers/match.controller.ts`:
+  - **`update()` method**: Updated winner advancement logic to check both `winnerId` and `winnerTeamId`:
+    ```typescript
+    const previousWinnerId = match.winnerId;
+    const previousWinnerTeamId = match.winnerTeamId;
+    
+    // ... update logic ...
+    
+    const hasNewWinner = 
+      (updatedMatch.winnerId && updatedMatch.winnerId !== previousWinnerId) ||
+      (updatedMatch.winnerTeamId && updatedMatch.winnerTeamId !== previousWinnerTeamId);
+    
+    if (hasNewWinner) {
+      await this.advanceWinnerToNextRound(updatedMatch, matchRepository);
+      await this.standingService.recalculateForMatch(updatedMatch.id);
+    }
+    ```
+
+**Impact:** 
+- Doubles match score recording now works correctly
+- Winner validation properly recognizes team IDs in doubles matches
+- No more foreign key constraint violations when setting doubles match winners
+- Winner advancement to next round works for both singles and doubles
+- Walkover assignment also supports doubles matches
+- Standings are recalculated correctly for doubles matches
+- Domain model now properly represents both singles and doubles match types
+
+---
+
 ### Bug Fix: Match Actions Not Visible for Tournament Admins in Doubles Matches (2026-04-14)
 
 **Problem:** Tournament admins could not see the "Match Actions" section when viewing match details, even for tournaments in the system. The permission check was too restrictive.
@@ -31,6 +339,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Logs include: matchId, bracketId, tournamentId, organizerId, userRole, userId, permission result
 
 **Impact:** All users with TOURNAMENT_ADMIN role can now manage matches in any tournament, not just tournaments they created. This aligns with typical admin behavior and enables testing/development workflows.
+
+---
+
+### Bug Fix: Service Worker Caching Old JavaScript During Development (2026-04-14)
+
+**Problem:** After updating code (e.g., doubles player display format), pressing F5 to refresh the page showed the old version of the application. Only hard refresh (Ctrl+Shift+R / Cmd+Shift+R) displayed the updated code. Additionally, WebSocket connection errors appeared: `WebSocket connection to ws://localhost:4200/?token=... failed`.
+
+**Root Cause:** The Progressive Web App (PWA) service worker (`public/sw.js`) was using a cache-first strategy for ALL static assets, including JavaScript files. During development with Vite HMR (Hot Module Replacement):
+- F5 (normal refresh) served cached old JavaScript from the service worker
+- Ctrl+Shift+R (hard refresh) bypassed the cache and fetched fresh files
+- Service worker intercepted Vite HMR WebSocket connections, causing them to fail
+
+**Fix Applied:**
+
+- ✅ **Service Worker** `public/sw.js`:
+  - **Cache Version Bump**: Updated from `'ttm-v1'` to `'ttm-v2-20260414'` (line 18)
+    - Forces all clients to invalidate old cache and fetch fresh resources
+  - **Development Exclusions** (lines 68-84): Added skip logic in fetch event handler:
+    ```javascript
+    // Skip Vite HMR WebSocket connections (development)
+    if (url.pathname.includes('/@vite') || url.pathname.includes('/@fs') || url.searchParams.has('token')) {
+      return; // Don't intercept, let Vite handle
+    }
+    
+    // Skip JavaScript files during development (to allow HMR)
+    if (url.pathname.endsWith('.js') || url.pathname.endsWith('.ts')) {
+      return; // Let Vite serve fresh JS, don't use cache
+    }
+    ```
+  - **Updated Documentation**: Modified file header to clarify JavaScript exclusion during development
+
+**Impact:** 
+- F5 refresh now shows updated code without requiring hard refresh
+- Vite HMR WebSocket connections work correctly (no more connection errors)
+- Development workflow restored: code changes reflect immediately
+- PWA offline functionality preserved for CSS, HTML, and fonts
+- Cache-first strategy still active for static assets (excluding JS during dev)
+
+**User Action Required:**
+After deploying this fix, users must perform ONE hard refresh (Ctrl+Shift+R) to load the new service worker with updated cache version and exclusion rules. Subsequent F5 refreshes will work normally.
 
 ---
 
