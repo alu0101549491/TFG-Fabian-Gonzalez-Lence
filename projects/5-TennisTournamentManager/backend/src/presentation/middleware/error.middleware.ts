@@ -42,7 +42,7 @@ export function errorMiddleware(
   error: Error | AppError,
   req: Request,
   res: Response,
-  _next: NextFunction
+  next: NextFunction
 ): void {
   console.error('❌ [ERROR]', {
     method: req.method,

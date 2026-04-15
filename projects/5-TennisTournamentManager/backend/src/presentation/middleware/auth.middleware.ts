@@ -87,7 +87,7 @@ export function authMiddleware(
  */
 export function optionalAuthMiddleware(
   req: AuthRequest,
-  _res: Response,
+  res: Response,
   next: NextFunction
 ): void {
   try {
