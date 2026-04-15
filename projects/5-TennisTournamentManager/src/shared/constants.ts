@@ -13,12 +13,12 @@
 
 /** Base URL for the REST API. Uses Vite proxy in dev, full URL in production. */
 export const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://your-production-domain.com/api'  // Update for production
+  ? (import.meta.env.VITE_API_BASE_URL || 'https://tennis-backend.onrender.com/api')  // Production API URL
   : '/api';  // Uses Vite proxy to localhost:3000 in development
 
 /** WebSocket connection URL. */
 export const WS_URL = import.meta.env.PROD
-  ? 'https://your-production-domain.com'  // Update for production
+  ? (import.meta.env.VITE_SOCKET_URL || 'https://tennis-backend.onrender.com')  // Production WebSocket URL
   : 'http://localhost:3000';  // Development WebSocket server
 
 /** JWT token key in local storage. */

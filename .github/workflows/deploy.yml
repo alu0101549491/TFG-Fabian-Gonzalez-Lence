@@ -32,6 +32,7 @@ jobs:
         env:
           REPO_NAME: ${{ github.event.repository.name }}
           CARTO_BACKEND_URL: ${{ secrets.CARTO_BACKEND_URL }}
+          TENNIS_BACKEND_URL: ${{ secrets.TENNIS_BACKEND_URL }}
         run: |
           mkdir -p deploy
           
@@ -93,6 +94,26 @@ jobs:
             cp -r dist/* "../../deploy/4-CartographicProjectManager/"
             cd ../..
             echo "✅ 4-CartographicProjectManager built successfully"
+          fi
+          
+          # Build 5-TennisTournamentManager
+          if [ -d "projects/5-TennisTournamentManager" ]; then
+            echo "🔨 Building 5-TennisTournamentManager..."
+            cd projects/5-TennisTournamentManager
+            npm ci
+            
+            # Set production environment variables
+            export BASE_URL="/$REPO_NAME/5-TennisTournamentManager/"
+            export VITE_API_BASE_URL="${TENNIS_BACKEND_URL:-https://tennis-backend.onrender.com}/api"
+            export VITE_SOCKET_URL="${TENNIS_BACKEND_URL:-https://tennis-backend.onrender.com}"
+            export NODE_ENV="production"
+            
+            echo "📡 API URL: $VITE_API_BASE_URL"
+            npm run build
+            mkdir -p "../../deploy/5-TennisTournamentManager"
+            cp -r dist/* "../../deploy/5-TennisTournamentManager/"
+            cd ../..
+            echo "✅ 5-TennisTournamentManager built successfully"
           fi
 
       - name: Create index page
@@ -188,6 +209,11 @@ jobs:
                           <div class="project-icon">🗺️</div>
                           <div class="project-name">Cartographic Project Manager</div>
                           <div class="project-description">Comprehensive management of cartographic projects with collaboration and task tracking</div>
+                      </a>
+                      <a href="./5-TennisTournamentManager/" class="project-card">
+                          <div class="project-icon">🎾</div>
+                          <div class="project-name">Tennis Tournament Manager</div>
+                          <div class="project-description">Comprehensive management of tennis tournaments with real-time notifications and standings</div>
                       </a>
                   </div>
               </div>

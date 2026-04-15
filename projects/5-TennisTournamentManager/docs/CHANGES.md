@@ -8,6 +8,127 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Infrastructure: GitHub Pages Deployment Configuration (2026-04-15)
+
+**Feature:** Added GitHub Actions workflow configuration to automatically deploy the Tennis Tournament Manager frontend to GitHub Pages.
+
+**Motivation:** Enable automatic deployment of the frontend application to GitHub Pages on every push to main branch, making the application publicly accessible and integrated with the monorepo portfolio.
+
+**Implementation:**
+
+- ✅ **Frontend Configuration** `src/shared/constants.ts`:
+  - Updated `API_BASE_URL` to use `import.meta.env.VITE_API_BASE_URL` environment variable
+  - Updated `WS_URL` to use `import.meta.env.VITE_SOCKET_URL` environment variable
+  - Fallback to Render backend URLs: `https://tennis-backend.onrender.com`
+  - Development mode still uses local proxy (`/api` → `localhost:3000`)
+
+- ✅ **GitHub Actions Workflow** `.github/workflows/deploy.yml`:
+  - **New Build Step**: `5-TennisTournamentManager`
+    - Installs dependencies with `npm ci`
+    - Sets production environment variables:
+      - `BASE_URL`: `/$REPO_NAME/5-TennisTournamentManager/`
+      - `VITE_API_BASE_URL`: Backend API URL (from secret or default)
+      - `VITE_SOCKET_URL`: WebSocket URL (from secret or default)
+    - Builds with `npm run build`
+    - Copies dist to deploy directory
+
+- ✅ **Portfolio Integration**:
+  - **Updated**: Portfolio `index.html` to include Tennis project card
+  - Icon: 🎾 Tennis ball emoji
+  - Description: "Comprehensive management of tennis tournaments with real-time notifications and standings"
+  - Link: `./5-TennisTournamentManager/`
+
+**Environment Variables (Optional GitHub Secrets):**
+- `TENNIS_BACKEND_URL`: Custom backend URL (defaults to `https://tennis-backend.onrender.com`)
+- If not set, uses the default Render deployment URL
+
+**Vite Configuration:**
+- Already configured in `vite.config.ts` to use `BASE_URL` from environment
+- Production mode: Uses `process.env.BASE_URL` or `/5-TennisTournamentManager/`
+- Development mode: Uses root path `/`
+
+**Deployment URLs:**
+- Production Frontend: `https://<username>.github.io/<repo>/5-TennisTournamentManager/`
+- Production Backend: `https://tennis-backend.onrender.com`
+- Portfolio: `https://<username>.github.io/<repo>/`
+
+**Benefits:**
+- ✅ Automatic deployment on git push to main
+- ✅ Integrated with monorepo portfolio
+- ✅ Environment-based configuration
+- ✅ No manual build/deploy steps required
+- ✅ Free hosting via GitHub Pages
+
+**Documentation:**
+- Frontend Deployment Guide: [docs/GITHUB-PAGES-DEPLOYMENT.md](GITHUB-PAGES-DEPLOYMENT.md)
+
+---
+
+### Infrastructure: Render Deployment Configuration (2026-04-15)
+
+**Feature:** Added complete Render deployment infrastructure for production hosting of Tennis Tournament Manager backend.
+
+**Motivation:** Enable production deployment of the Tennis backend on Render.com's free tier, similar to the CartographicProjectManager deployment, allowing the application to be accessible online with proper CI/CD integration from GitHub.
+
+**Implementation:**
+
+- ✅ **Deployment Documentation**:
+  - **New File**: `backend/RENDER.md` - Comprehensive deployment guide covering:
+    - Blueprint and manual deployment methods
+    - Email configuration (Gmail and SendGrid)
+    - Telegram bot setup for notifications
+    - Web Push notifications configuration
+    - Troubleshooting common deployment issues
+  - **New File**: `backend/QUICK-START-RENDER.md` - Quick reference guide for rapid deployment
+  - **New File**: `backend/.env.render.example` - Template for production environment variables
+
+- ✅ **Infrastructure as Code**:
+  - **Updated**: `/render.yaml` (monorepo root):
+    - Uncommented `tennis-backend` service configuration
+    - Uncommented `tennis-db` PostgreSQL database
+    - Configured build command: `npm ci && npm run build`
+    - Configured start command: `npm run db:migrate && npm start`
+    - Health check endpoint: `/api/health`
+    - 74 environment variables covering:
+      - Database configuration (TypeORM with PostgreSQL)
+      - JWT authentication secrets
+      - CORS and WebSocket origins
+      - Email SMTP settings
+      - Telegram bot integration
+      - Web Push notifications (VAPID keys)
+      - Rate limiting, logging, and session management
+
+- ✅ **Environment Configuration**:
+  - Database: PostgreSQL with TypeORM (not Prisma like CARTO)
+  - Required variables: CORS_ORIGIN, SOCKET_CORS_ORIGIN, APP_URL, EMAIL_*
+  - Optional variables: TELEGRAM_BOT_TOKEN, WEB_PUSH_* (for advanced notifications)
+  - Auto-generated: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET
+
+- ✅ **Features Enabled in Production**:
+  - Real-time tournament updates via WebSocket
+  - Multi-channel notifications (Email, Telegram, Web Push)
+  - Automatic SSL/TLS via Render
+  - Automatic deployment on git push to main
+  - Database migrations on deployment
+  - Health monitoring endpoint
+
+**Deployment Steps:**
+1. Configure email service (Gmail App Password or SendGrid API key)
+2. (Optional) Create Telegram bot via @BotFather
+3. (Optional) Generate VAPID keys for Web Push
+4. Push changes to GitHub main branch
+5. Deploy via Render Blueprint
+6. Configure manual environment variables in Render Dashboard
+7. Verify health endpoint: `https://tennis-backend.onrender.com/api/health`
+
+**References:**
+- Render Blueprint: `/render.yaml`
+- Deployment Guide: `backend/RENDER.md`
+- Quick Start: `backend/QUICK-START-RENDER.md`
+- Environment Template: `backend/.env.render.example`
+
+---
+
 ### Enhancement: View Match History for Doubles Team Matchups (2026-04-14)
 
 **Feature:** Added "View Match History" button to doubles team matchup cards in player statistics, enabling users to expand and view detailed match-by-match history against specific doubles teams.
