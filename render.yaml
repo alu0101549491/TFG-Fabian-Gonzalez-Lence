@@ -69,7 +69,7 @@ services:
     plan: free
     branch: main
     rootDir: projects/5-TennisTournamentManager/backend
-    buildCommand: npm ci --include=dev && npm run build
+    buildCommand: npm ci && npm run build:deploy
     startCommand: npm run db:migrate && npm start
     healthCheckPath: /api/health
     envVars:
