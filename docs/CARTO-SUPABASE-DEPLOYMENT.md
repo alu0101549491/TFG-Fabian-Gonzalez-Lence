@@ -41,11 +41,12 @@
 3. **Set Environment Variables** in Render Dashboard:
    ```bash
    # Database (Supabase Connection Pooler)
-   DATABASE_URL=postgresql://postgres.igjxocepryublozoiqwp:G4A1Iq28C9IBc4@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
+   # Get from: Supabase Dashboard → Settings → Database → Connection string (Session pooler)
+   DATABASE_URL=postgresql://postgres.[PROJECT_REF]:[YOUR_DB_PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres
 
    # Frontend URLs
-   CORS_ORIGIN=https://alu0101549491.github.io
-   SOCKET_CORS_ORIGIN=https://alu0101549491.github.io
+   CORS_ORIGIN=https://[YOUR_GITHUB_USERNAME].github.io
+   SOCKET_CORS_ORIGIN=https://[YOUR_GITHUB_USERNAME].github.io
 
    # Dropbox Integration (optional)
    DROPBOX_APP_KEY=[your_dropbox_app_key]
@@ -215,7 +216,7 @@ After successful deployment:
 
 ## 🔗 Resources
 
-- **Supabase Dashboard**: https://supabase.com/dashboard/project/igjxocepryublozoiqwp
+- **Supabase Dashboard**: https://supabase.com/dashboard/project/[YOUR_PROJECT_REF]
 - **Render Dashboard**: https://dashboard.render.com
 - **GitHub Pages**: https://alu0101549491.github.io/TFG-Fabian-Gonzalez-Lence/
 - **Backend API Docs**: [RENDER.md](projects/4-CartographicProjectManager/backend/RENDER.md)

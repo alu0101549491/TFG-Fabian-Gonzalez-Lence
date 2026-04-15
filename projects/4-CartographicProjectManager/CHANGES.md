@@ -70,7 +70,7 @@ Migrating from Render's free PostgreSQL (90-day limit, single database restricti
 
 **Database Connection Details:**
 ```
-URL: postgresql://postgres.igjxocepryublozoiqwp:***@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
+URL: postgresql://postgres.[PROJECT_REF]:***@aws-0-[REGION].pooler.supabase.com:5432/postgres
 Type: Session Pooler (port 5432)
 Region: Frankfurt (eu-west-1)
 Database: PostgreSQL 17.6
@@ -80,7 +80,7 @@ Tables: 12 (users, projects, tasks, files, messages, notifications, permissions,
 **Deployment URLs:**
 - Backend: `https://carto-backend-gl8l.onrender.com` (to be deployed)
 - Frontend: `https://alu0101549491.github.io/TFG-Fabian-Gonzalez-Lence/4-CartographicProjectManager/`
-- Database: Supabase Project `igjxocepryublozoiqwp`
+- Database: Supabase Project `[PROJECT_REF]`
 
 **Next Steps:**
 1. Deploy backend to Render with Supabase DATABASE_URL
@@ -113,7 +113,7 @@ Verified that the Express.js backend can successfully connect to and query the S
 Before proceeding with full deployment or Edge Functions migration, it's critical to validate that the existing backend codebase can communicate with the Supabase database. This hybrid approach (Express on Render + Supabase database) serves as an intermediate step and fallback option.
 
 **Impact:**
-- Database connection string validated: `postgresql://postgres.igjxocepryublozoiqwp:***@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`
+- Database connection string validated: `postgresql://postgres.[PROJECT_REF]:***@aws-0-[REGION].pooler.supabase.com:5432/postgres`
 - Prisma successfully queries Supabase PostgreSQL 17.6
 - All database tables accessible via ORM
 - Connection pooling working (17 connections initialized)
@@ -166,7 +166,7 @@ Successfully migrated the entire CARTO database schema from Prisma/PostgreSQL to
 The Render.com deployment presented limitations including single database support for multiple projects and 90-day free tier expiration. Supabase provides a production-ready platform with PostgreSQL database, automatic API generation, built-in authentication, real-time subscriptions, storage, and edge functions - all within a unified ecosystem designed for modern web applications.
 
 **Impact:**
-- Database schema fully deployed to Supabase cloud (Project: igjxocepryublozoiqwp)
+- Database schema fully deployed to Supabase cloud (Project: [PROJECT_REF])
 - All tables created with proper foreign keys, constraints, and indexes
 - Row Level Security enabled for all tables with role-based access policies
 - Automatic API endpoints generated for all database operations
@@ -203,7 +203,7 @@ The Render.com deployment presented limitations including single database suppor
 
 #### Configuration
 - `supabase/carto-backend/config.toml`:
-  - Linked to remote project: igjxocepryublozoiqwp
+  - Linked to remote project: [PROJECT_REF]
   - Configured database settings and migration paths
   
 **Next Steps:**
