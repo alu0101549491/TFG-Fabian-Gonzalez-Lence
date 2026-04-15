@@ -12,6 +12,6 @@
  */
 
 export const environment = {
-  production: false,
-  apiUrl: '/api', // Relative URL - uses Vite proxy to forward to backend on port 3000
+  production: import.meta.env.PROD ?? false,
+  apiUrl: import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://tennis-backend-ltkr.onrender.com/api' : '/api'),
 };

@@ -13,5 +13,5 @@
 
 export const environment = {
   production: true,
-  apiUrl: '/api',
+  apiUrl: import.meta.env.VITE_API_BASE_URL || 'https://tennis-backend-ltkr.onrender.com/api',
 };
