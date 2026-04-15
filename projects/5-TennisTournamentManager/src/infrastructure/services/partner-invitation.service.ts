@@ -14,6 +14,7 @@
 import {Injectable, signal, inject} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {firstValueFrom} from 'rxjs';
+import {environment} from '../../environments/environment';
 
 /**
  * Status of a partner invitation.
@@ -100,7 +101,7 @@ export interface DoublesTeamDto {
 })
 export class PartnerInvitationService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = `/api/partner-invitations`;
+  private readonly apiUrl = `${environment.apiUrl}/partner-invitations`;
 
   /**
    * Signal for pending invitations count (for badge display).
@@ -250,7 +251,7 @@ export class PartnerInvitationService {
    */
   public async getDoublesTeamsByTournament(tournamentId: string): Promise<DoublesTeamDto[]> {
     return firstValueFrom(
-      this.http.get<DoublesTeamDto[]>(`/api/doubles-teams?tournamentId=${tournamentId}`)
+      this.http.get<DoublesTeamDto[]>(`${environment.apiUrl}/doubles-teams?tournamentId=${tournamentId}`)
     );
   }
 
