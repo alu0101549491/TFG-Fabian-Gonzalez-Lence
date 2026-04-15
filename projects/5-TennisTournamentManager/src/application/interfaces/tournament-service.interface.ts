@@ -1,0 +1,89 @@
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since March 16, 2026
+ * @file src/application/interfaces/tournament-service.interface.ts
+ * @desc Tournament service interface for tournament management operations
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ */
+
+import {CreateTournamentDto, UpdateTournamentDto, TournamentDto, TournamentFilterDto} from '../dto';
+import {PaginatedResponseDto, PaginationDto} from '../dto';
+import {TournamentStatus} from '@domain/enumerations/tournament-status';
+
+/**
+ * Tournament service interface.
+ * Handles tournament creation, updates, querying, and status management.
+ */
+export interface ITournamentService {
+  /**
+   * Creates a new tournament.
+   *
+   * @param data - Tournament creation data
+   * @param organizerId - ID of the user creating the tournament
+   * @returns Created tournament information
+   */
+  createTournament(data: CreateTournamentDto, organizerId: string): Promise<TournamentDto>;
+
+  /**
+   * Updates an existing tournament.
+   *
+   * @param data - Tournament update data
+   * @param userId - ID of the user performing the update
+   * @returns Updated tournament information
+   */
+  updateTournament(data: UpdateTournamentDto, userId: string): Promise<TournamentDto>;
+
+  /**
+   * Deletes a tournament.
+   *
+   * @param tournamentId - ID of the tournament to delete
+   * @param userId - ID of the user performing the deletion
+   */
+  deleteTournament(tournamentId: string, userId: string): Promise<void>;
+
+  /**
+   * Retrieves a tournament by its ID.
+   *
+   * @param tournamentId - ID of the tournament
+   * @returns Tournament information
+   */
+  getTournamentById(tournamentId: string): Promise<TournamentDto>;
+
+  /**
+   * Lists tournaments with filtering and pagination.
+   *
+   * @param filter - Tournament filter criteria
+   * @param pagination - Pagination parameters
+   * @returns Paginated list of tournaments
+   */
+  listTournaments(filter: TournamentFilterDto, pagination: PaginationDto): Promise<PaginatedResponseDto<TournamentDto>>;
+
+  /**
+   * Updates the status of a tournament.
+   *
+   * @param tournamentId - ID of the tournament
+   * @param status - New status to set
+   * @param userId - ID of the user performing the update
+   * @returns Updated tournament information
+   */
+  updateStatus(tournamentId: string, status: TournamentStatus, userId: string): Promise<TournamentDto>;
+
+  /**
+   * Finalizes a tournament, completing all operations and locking modifications.
+   *
+   * @param id - ID of the tournament to finalize
+   */
+  finalizeTournament(id: string): Promise<void>;
+
+  /**
+   * Retrieves all active tournaments.
+   *
+   * @returns List of active tournaments
+   */
+  getActiveTournaments(): Promise<TournamentDto[]>;
+}

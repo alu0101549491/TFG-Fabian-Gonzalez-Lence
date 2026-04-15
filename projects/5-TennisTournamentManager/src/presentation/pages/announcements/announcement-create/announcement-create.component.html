@@ -1,0 +1,256 @@
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="hero-top">
+    <button
+      class="back-button"
+      (click)="goBack()"
+      type="button"
+      title="Go back">
+      ← Back
+    </button>
+  </div>
+  <div class="hero-content">
+    <h1 class="hero-title">📢 Create Announcement</h1>
+    <p class="hero-subtitle">
+      @if (tournamentName()) {
+        <span>For: {{ tournamentName() }}</span>
+      } @else {
+        <span>Communicate important information to tournament participants</span>
+      }
+    </p>
+  </div>
+</section>
+
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Error Banner -->
+  @if (errorMessage()) {
+    <div class="error-container">
+      <div class="error-icon">⚠️</div>
+      <p class="error-message">{{ errorMessage() }}</p>
+    </div>
+  }
+
+  <!-- Form Container -->
+  <form (ngSubmit)="onSubmit()" class="form-container">
+    <!-- Basic Information Section -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">📝</div>
+        <h2 class="section-title">Basic Information</h2>
+      </div>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label required" for="tournament">Tournament</label>
+          <select
+            id="tournament"
+            class="form-input"
+            [value]="formData().tournamentId"
+            (change)="updateField('tournamentId', $any($event.target).value)"
+            required
+          >
+            <option value="">Select a tournament...</option>
+            @for (tournament of tournaments(); track tournament.id) {
+              <option [value]="tournament.id">{{ tournament.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="title">Title</label>
+          <input
+            id="title"
+            type="text"
+            class="form-input"
+            [value]="formData().title"
+            (input)="updateField('title', $any($event.target).value)"
+            required
+            placeholder="Enter announcement title"
+            maxlength="200"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="summary">Summary <span class="hint">(optional, max 250 chars)</span></label>
+          <textarea
+            id="summary"
+            class="form-input"
+            [value]="formData().summary"
+            (input)="updateField('summary', $any($event.target).value)"
+            rows="2"
+            placeholder="Brief summary for preview..."
+            maxlength="250"
+          ></textarea>
+        </div>
+
+        <div class="form-group full-width">
+          <label class="form-label" for="longText">Full Content</label>
+          <textarea
+            id="longText"
+            class="form-input content-area"
+            [value]="formData().longText"
+            (input)="updateField('longText', $any($event.target).value)"
+            rows="8"
+            placeholder="Enter full announcement content (supports markdown)..."
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Section -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">⚙️</div>
+        <h2 class="section-title">Settings</h2>
+      </div>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="type">Visibility</label>
+          <select
+            id="type"
+            class="form-input"
+            (change)="updateField('type', $any($event.target).value)"
+          >
+            <option [value]="announcementTypes[0]" [selected]="formData().type === announcementTypes[0]">Public (visible to all)</option>
+            <option [value]="announcementTypes[1]" [selected]="formData().type === announcementTypes[1]">Private (registered only)</option>
+          </select>
+        </div>
+
+        <div class="form-group checkbox-wrapper">
+          <label class="form-label">Options</label>
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              class="form-checkbox"
+              [checked]="formData().isPinned"
+              (change)="updateField('isPinned', $any($event.target).checked)"
+            />
+            <span>Pin to top</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tags Section -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">🏷️</div>
+        <h2 class="section-title">Tags</h2>
+      </div>
+
+      <!-- Common Tags -->
+      <div class="tags-container">
+        @for (tag of commonTags; track tag) {
+          <button
+            type="button"
+            class="tag-button"
+            [class.selected]="selectedTags().includes(tag)"
+            (click)="toggleTag(tag)"
+          >
+            {{ tag }}
+          </button>
+        }
+      </div>
+
+      <!-- Custom Tag Input -->
+      <div class="custom-tag-input">
+        <input
+          type="text"
+          class="form-input"
+          placeholder="Add custom tag..."
+          [value]="customTag()"
+          (input)="customTag.set($any($event.target).value)"
+          (keyup.enter)="addCustomTag()"
+        />
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="addCustomTag()"
+        >
+          Add Tag
+        </button>      </div>
+
+      <!-- Selected Tags -->
+      @if (selectedTags().length > 0) {
+        <div class="selected-tags">
+          <p class="selected-tags-label">Selected tags:</p>
+          <div class="tags-list">
+            @for (tag of selectedTags(); track tag) {
+              <span class="selected-tag">
+                {{ tag }}
+                <button
+                  type="button"
+                  class="remove-tag"
+                  (click)="removeTag(tag)"
+                  aria-label="Remove tag"
+                >
+                  ×
+                </button>
+              </span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Scheduling Section -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">📅</div>
+        <h2 class="section-title">Scheduling (Optional)</h2>
+      </div>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="scheduledPublishAt">Schedule Publication</label>
+          <input
+            id="scheduledPublishAt"
+            type="datetime-local"
+            class="form-input"
+            [value]="getScheduledPublishAt()"
+            (input)="onScheduledPublishAtChange($event)"
+          />
+          <small class="form-hint">Leave empty to publish immediately</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="expirationDate">Expiration Date</label>
+          <input
+            id="expirationDate"
+            type="datetime-local"
+            class="form-input"
+            [value]="getExpirationDate()"
+            (input)="onExpirationDateChange($event)"
+          />
+          <small class="form-hint">Announcement will hide after this date</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="cancel()"
+        [disabled]="isSubmitting()"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="isSubmitting()"
+      >
+        @if (isSubmitting()) {
+          <span>Creating...</span>
+        } @else {
+          <span>Create Announcement</span>
+        }
+      </button>
+    </div>
+  </form>
+</div>

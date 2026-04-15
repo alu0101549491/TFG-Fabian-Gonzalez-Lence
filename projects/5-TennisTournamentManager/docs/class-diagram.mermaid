@@ -1,0 +1,507 @@
+classDiagram
+    %% ==================== CORE DOMAIN ENTITIES ====================
+
+    class User {
+        <<entity>>
+        -String id
+        -String username
+        -String email
+        -String passwordHash
+        -UserRole role
+        -ContactInfo contactInfo
+        -PrivacySettings privacySettings
+        +authenticate(password: String) bool
+        +hasPermission(permission: Permission) bool
+    }
+
+    class UserRole {
+        <<enumeration>>
+        SYSTEM_ADMIN
+        TOURNAMENT_ADMIN
+        REGISTERED_PARTICIPANT
+        PUBLIC
+    }
+
+    class Tournament {
+        <<entity>>
+        -String id
+        -String name
+        -DateTime startDate
+        -DateTime endDate
+        -TournamentStatus status
+        -List~Category~ categories
+        -List~Court~ courts
+        -RegistrationConfig config
+        +canAcceptRegistrations() bool
+        +finalize() void
+    }
+
+    class TournamentStatus {
+        <<enumeration>>
+        DRAFT
+        REGISTRATION_OPEN
+        IN_PROGRESS
+        FINALIZED
+    }
+
+    class Category {
+        <<entity>>
+        -String id
+        -String name
+        -int maxQuota
+        -int reservedSpots
+        +hasAvailableSpots() bool
+    }
+
+    class Court {
+        <<entity>>
+        -String id
+        -String name
+        -Surface surface
+        -List~TimeSlot~ availableSlots
+    }
+
+    class Surface {
+        <<enumeration>>
+        HARD
+        CLAY
+        GRASS
+        INDOOR
+    }
+
+    class Registration {
+        <<entity>>
+        -String id
+        -String tournamentId
+        -String participantId
+        -RegistrationStatus status
+        -AcceptanceType acceptanceType
+        -int ranking
+        +accept() void
+        +withdraw(time: WithdrawalTime) void
+    }
+
+    class RegistrationStatus {
+        <<enumeration>>
+        PENDING
+        ACCEPTED
+        WAITING_LIST
+        WITHDRAWN
+    }
+
+    class AcceptanceType {
+        <<enumeration>>
+        DIRECT_ACCEPTANCE
+        WILD_CARD
+        SEEDED
+    }
+
+    class Bracket {
+        <<entity>>
+        -String id
+        -String tournamentId
+        -String phaseId
+        -BracketType type
+        -List~Match~ matches
+        -List~Seed~ seeds
+        +generate(participants: List~Registration~) void
+        +regenerate(keepResults: bool) void
+    }
+
+    class BracketType {
+        <<enumeration>>
+        SINGLE_ELIMINATION
+        ROUND_ROBIN
+        MATCH_PLAY
+    }
+
+    class Phase {
+        <<entity>>
+        -String id
+        -String tournamentId
+        -String name
+        -int sequenceOrder
+        -String nextPhaseId
+        +linkToNextPhase(phaseId: String) void
+    }
+
+    class Match {
+        <<entity>>
+        -String id
+        -String bracketId
+        -String player1Id
+        -String player2Id
+        -MatchStatus status
+        -Score score
+        -DateTime scheduledTime
+        -String courtId
+        +recordResult(result: MatchResult) void
+        +suspend(reason: String) void
+        +assignWalkover(winnerId: String) void
+    }
+
+    class MatchStatus {
+        <<enumeration>>
+        SCHEDULED
+        IN_PROGRESS
+        COMPLETED
+        WALKOVER
+        SUSPENDED
+    }
+
+    class Score {
+        <<entity>>
+        -List~SetScore~ sets
+        -String winnerId
+        -bool isConfirmed
+        +needsConfirmation() bool
+    }
+
+    class Standing {
+        <<entity>>
+        -String id
+        -String bracketId
+        -String participantId
+        -int position
+        -int points
+        -int matchesWon
+        -int setsWon
+        -int gamesWon
+        +updateStats(result: MatchResult) void
+    }
+
+    class GlobalRanking {
+        <<entity>>
+        -String id
+        -String participantId
+        -int position
+        -double points
+        -RankingSystem system
+        +updatePoints(result: TournamentResult) void
+    }
+
+    class RankingSystem {
+        <<enumeration>>
+        POINTS_BASED
+        ELO
+    }
+
+    class OrderOfPlay {
+        <<entity>>
+        -String id
+        -String tournamentId
+        -DateTime playDate
+        -List~ScheduledMatch~ matches
+        -bool isPublished
+        +publish() void
+        +rescheduleMatch(matchId: String, newTime: DateTime) void
+    }
+
+    class Notification {
+        <<entity>>
+        -String id
+        -String userId
+        -NotificationType type
+        -String message
+        -NotificationChannel channel
+        -bool isRead
+        +send() void
+    }
+
+    class NotificationType {
+        <<enumeration>>
+        REGISTRATION_CONFIRMED
+        MATCH_SCHEDULED
+        RESULT_ENTERED
+        ORDER_OF_PLAY_PUBLISHED
+    }
+
+    class NotificationChannel {
+        <<enumeration>>
+        EMAIL
+        TELEGRAM
+        WEB_PUSH
+    }
+
+    class Announcement {
+        <<entity>>
+        -String id
+        -String tournamentId
+        -String title
+        -String content
+        -List~String~ tags
+        -bool isPublished
+        +publish() void
+    }
+
+    class Statistics {
+        <<entity>>
+        -String id
+        -String participantId
+        -String tournamentId
+        -int totalMatches
+        -int wins
+        -int losses
+        +updateFromMatch(match: Match) void
+    }
+
+    class Payment {
+        <<entity>>
+        -String id
+        -String registrationId
+        -double amount
+        -PaymentStatus status
+        -String transactionId
+        +process() void
+    }
+
+    class PaymentStatus {
+        <<enumeration>>
+        PENDING
+        PAID
+        REFUNDED
+    }
+
+    class Sanction {
+        <<entity>>
+        -String id
+        -String participantId
+        -SanctionType type
+        -String reason
+        -int pointsPenalty
+        +apply() void
+    }
+
+    class SanctionType {
+        <<enumeration>>
+        WARNING
+        POINT_DEDUCTION
+        EXCLUSION
+    }
+
+    %% ==================== APPLICATION SERVICES ====================
+
+    class AuthenticationService {
+        -IUserRepository userRepository
+        +login(username: String, password: String) AuthResult
+        +validateSession(token: String) bool
+    }
+
+    class AuthorizationService {
+        -IUserRepository userRepository
+        +canAccessTournament(userId: String, tournamentId: String) bool
+        +canModifyBracket(userId: String, bracketId: String) bool
+    }
+
+    class TournamentService {
+        -ITournamentRepository repository
+        -INotificationService notifications
+        +createTournament(data: TournamentData) Tournament
+        +finalizeTournament(id: String) void
+    }
+
+    class RegistrationService {
+        -IRegistrationRepository repository
+        -QuotaManager quotaManager
+        +registerParticipant(registration: Registration) Registration
+        +withdrawRegistration(id: String, time: WithdrawalTime) void
+    }
+
+    class BracketService {
+        -IBracketRepository repository
+        -BracketGeneratorFactory factory
+        +generateBracket(config: BracketConfig) Bracket
+        +regenerateBracket(id: String, keepResults: bool) Bracket
+    }
+
+    class BracketGeneratorFactory {
+        +createGenerator(type: BracketType) IBracketGenerator
+    }
+
+    class IBracketGenerator {
+        <<interface>>
+        +generate(participants: List~Registration~) Bracket
+    }
+
+    class MatchService {
+        -IMatchRepository repository
+        -StandingService standings
+        -INotificationService notifications
+        +recordResult(matchId: String, result: MatchResult) void
+        +confirmResult(matchId: String, userId: String) void
+        +scheduleMatch(matchId: String, courtId: String, time: DateTime) void
+    }
+
+    class StandingService {
+        -IStandingRepository repository
+        -TiebreakResolver resolver
+        +updateStandings(bracketId: String, result: MatchResult) void
+        +calculateStandings(bracketId: String) List~Standing~
+    }
+
+    class RankingService {
+        -IGlobalRankingRepository repository
+        -RankingCalculator calculator
+        +updateGlobalRanking(participantId: String, result: TournamentResult) void
+        +calculateSeeds(categoryId: String, count: int) List~String~
+    }
+
+    class OrderOfPlayService {
+        -IOrderOfPlayRepository repository
+        -CourtScheduler scheduler
+        +generateOrderOfPlay(tournamentId: String, date: DateTime) OrderOfPlay
+        +publishOrderOfPlay(id: String) void
+    }
+
+    class NotificationService {
+        -INotificationRepository repository
+        -NotificationChannelFactory factory
+        +sendNotification(notification: Notification) void
+        +sendBulkNotifications(notifications: List~Notification~) void
+    }
+
+    class StatisticsService {
+        -IStatisticsRepository repository
+        +getParticipantStatistics(participantId: String) Statistics
+        +getHeadToHead(player1Id: String, player2Id: String) HeadToHeadStats
+    }
+
+    class PaymentService {
+        -IPaymentRepository repository
+        -IPaymentGateway gateway
+        +processPayment(payment: Payment) PaymentResult
+        +refundPayment(id: String) RefundResult
+    }
+
+    %% ==================== REPOSITORIES ====================
+
+    class IUserRepository {
+        <<interface>>
+        +findById(id: String) User
+        +findByUsername(username: String) User
+        +save(user: User) User
+    }
+
+    class ITournamentRepository {
+        <<interface>>
+        +findById(id: String) Tournament
+        +findByStatus(status: TournamentStatus) List~Tournament~
+        +save(tournament: Tournament) Tournament
+    }
+
+    class IRegistrationRepository {
+        <<interface>>
+        +findById(id: String) Registration
+        +findByTournament(tournamentId: String) List~Registration~
+        +save(registration: Registration) Registration
+    }
+
+    class IBracketRepository {
+        <<interface>>
+        +findById(id: String) Bracket
+        +findByTournament(tournamentId: String) List~Bracket~
+        +save(bracket: Bracket) Bracket
+    }
+
+    class IMatchRepository {
+        <<interface>>
+        +findById(id: String) Match
+        +findByBracket(bracketId: String) List~Match~
+        +save(match: Match) Match
+    }
+
+    class IStandingRepository {
+        <<interface>>
+        +findByBracket(bracketId: String) List~Standing~
+        +save(standing: Standing) Standing
+    }
+
+    class IGlobalRankingRepository {
+        <<interface>>
+        +findByParticipant(participantId: String) GlobalRanking
+        +save(ranking: GlobalRanking) GlobalRanking
+    }
+
+    class INotificationRepository {
+        <<interface>>
+        +findByUser(userId: String) List~Notification~
+        +save(notification: Notification) Notification
+    }
+
+    class IStatisticsRepository {
+        <<interface>>
+        +findByParticipant(participantId: String) Statistics
+        +save(statistics: Statistics) Statistics
+    }
+
+    class IPaymentRepository {
+        <<interface>>
+        +findById(id: String) Payment
+        +save(payment: Payment) Payment
+    }
+
+    %% ==================== RELATIONSHIPS ====================
+
+    User "1" --> "1" UserRole
+    Tournament "1" --> "1" TournamentStatus
+    Tournament "1" --> "*" Category
+    Tournament "1" --> "*" Court
+    Tournament "*" --> "*" User : admins
+
+    Court "1" --> "1" Surface
+
+    Registration "1" --> "1" RegistrationStatus
+    Registration "1" --> "1" AcceptanceType
+    Registration "*" --> "1" User
+    Registration "*" --> "1" Tournament
+
+    Bracket "1" --> "1" BracketType
+    Bracket "1" --> "*" Match
+    Bracket "*" --> "1" Tournament
+    Bracket "*" --> "1" Phase
+
+    Match "1" --> "1" MatchStatus
+    Match "1" --> "1" Score
+    Match "*" --> "2" User : players
+    Match "*" --> "1" Court
+
+    Standing "*" --> "1" User
+    Standing "*" --> "1" Bracket
+
+    GlobalRanking "1" --> "1" RankingSystem
+    GlobalRanking "*" --> "1" User
+
+    OrderOfPlay "*" --> "1" Tournament
+
+    Notification "1" --> "1" NotificationType
+    Notification "1" --> "1" NotificationChannel
+    Notification "*" --> "1" User
+
+    Announcement "*" --> "1" Tournament
+
+    Statistics "*" --> "1" User
+
+    Payment "1" --> "1" PaymentStatus
+    Payment "1" --> "1" Registration
+
+    Sanction "1" --> "1" SanctionType
+    Sanction "*" --> "1" User
+
+    %% Service Dependencies
+    AuthenticationService --> IUserRepository
+    AuthorizationService --> IUserRepository
+    TournamentService --> ITournamentRepository
+    TournamentService --> NotificationService
+    RegistrationService --> IRegistrationRepository
+    BracketService --> IBracketRepository
+    BracketService --> BracketGeneratorFactory
+    BracketGeneratorFactory --> IBracketGenerator
+    MatchService --> IMatchRepository
+    MatchService --> StandingService
+    MatchService --> NotificationService
+    StandingService --> IStandingRepository
+    RankingService --> IGlobalRankingRepository
+    OrderOfPlayService --> IOrderOfPlayRepository
+    NotificationService --> INotificationRepository
+    StatisticsService --> IStatisticsRepository
+    PaymentService --> IPaymentRepository

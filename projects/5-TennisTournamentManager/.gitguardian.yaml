@@ -1,0 +1,9 @@
+version: 2
+
+# Exclude example/template files from GitGuardian scanning
+paths-ignore:
+  - "**/.env.example"
+  - "**/.env.template"
+  - "**/env.example"
+  - "**/*.example"
+  - "**/example.env"

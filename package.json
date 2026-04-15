@@ -17,5 +17,11 @@
     "projects/2-MusicWebPlayer",
     "projects/3-MiniBalatro",
     "projects/4-CartographicProjectManager"
-  ]
+  ],
+  "dependencies": {
+    "node-telegram-bot-api": "^0.67.0"
+  },
+  "devDependencies": {
+    "@types/node-telegram-bot-api": "^0.64.14"
+  }
 }

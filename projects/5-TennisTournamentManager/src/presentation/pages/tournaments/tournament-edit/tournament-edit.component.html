@@ -1,0 +1,393 @@
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <h1 class="hero-title">✏️ Edit Tournament</h1>
+    <p class="hero-subtitle">Update tournament details and settings</p>
+  </div>
+</section>
+
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading tournament data...</p>
+    </div>
+  }
+
+  <!-- Error Banner -->
+  @if (errorMessage()) {
+    <div class="error-container">
+      <div class="error-icon">⚠️</div>
+      <p class="error-message">{{ errorMessage() }}</p>
+    </div>
+  }
+
+  <!-- Form Container -->
+  <form (ngSubmit)="onSubmit()" class="form-container" *ngIf="!isLoading()">
+    <!-- Basic Information Section -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <h2 class="section-title">Basic Information</h2>
+      </div>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label required" for="name">Tournament Name</label>
+          <input
+            id="name"
+            type="text"
+            class="form-input"
+            [(ngModel)]="formData.name"
+            name="name"
+            required
+            placeholder="Enter tournament name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="location">Location</label>
+          <input
+            id="location"
+            type="text"
+            class="form-input"
+            [(ngModel)]="formData.location"
+            name="location"
+            required
+            placeholder="Enter location"
+          />
+        </div>
+
+        <div class="form-group full-width">
+          <label class="form-label" for="description">Description</label>
+          <textarea
+            id="description"
+            class="form-input"
+            [(ngModel)]="formData.description"
+            name="description"
+            rows="3"
+            placeholder="Enter tournament description (optional)"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tournament Details Section -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">🎾</div>
+        <h2 class="section-title">Tournament Details</h2>
+      </div>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label required" for="surface">Surface</label>
+          <select
+            id="surface"
+            class="form-input"
+            [(ngModel)]="formData.surface"
+            name="surface"
+            required
+          >
+            @for (surface of surfaces; track surface) {
+              <option [value]="surface">{{ surface | enumFormat }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="facilityType">Facility Type</label>
+          <select
+            id="facilityType"
+            class="form-input"
+            [(ngModel)]="formData.facilityType"
+            name="facilityType"
+            required
+          >
+            @for (facility of facilityTypes; track facility) {
+              <option [value]="facility">{{ facility | enumFormat }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="tournamentType">Tournament Type</label>
+          <select
+            id="tournamentType"
+            class="form-input"
+            [(ngModel)]="formData.tournamentType"
+            name="tournamentType"
+            required
+          >
+            @for (type of tournamentTypes; track type) {
+              <option [value]="type">{{ type | enumFormat }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="maxParticipants">Max Participants</label>
+          <input
+            id="maxParticipants"
+            type="number"
+            class="form-input"
+            [(ngModel)]="formData.maxParticipants"
+            name="maxParticipants"
+            required
+            min="2"
+            placeholder="Enter max participants"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="rankingSystem">Ranking System</label>
+          <select
+            id="rankingSystem"
+            class="form-input"
+            [(ngModel)]="formData.rankingSystem"
+            name="rankingSystem"
+          >
+            @for (system of rankingSystems; track system) {
+              <option [value]="system">{{ system | enumFormat }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="status">Tournament Status</label>
+          <select
+            id="status"
+            class="form-input"
+            [(ngModel)]="formData.status"
+            name="status"
+            required
+          >
+            @for (status of tournamentStatuses; track status) {
+              <option [value]="status">{{ status | enumFormat }}</option>
+            }
+          </select>
+          <div class="form-hint">
+            <strong>Valid transitions:</strong>
+            @switch (formData.status) {
+              @case ('DRAFT') {
+                <span>Can change to: REGISTRATION_OPEN, CANCELLED</span>
+              }
+              @case ('REGISTRATION_OPEN') {
+                <span>Can change to: REGISTRATION_CLOSED, CANCELLED</span>
+              }
+              @case ('REGISTRATION_CLOSED') {
+                <span>Can change to: DRAW_PENDING, CANCELLED</span>
+              }
+              @case ('DRAW_PENDING') {
+                <span>Can change to: IN_PROGRESS, CANCELLED</span>
+              }
+              @case ('IN_PROGRESS') {
+                <span>Can change to: FINALIZED, CANCELLED</span>
+              }
+              @case ('FINALIZED') {
+                <span>No transitions allowed (final state)</span>
+              }
+              @case ('CANCELLED') {
+                <span>No transitions allowed (final state)</span>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dates Section -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">📅</div>
+        <h2 class="section-title">Dates</h2>
+      </div>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label required" for="startDate">Start Date</label>
+          <input
+            id="startDate"
+            type="date"
+            class="form-input"
+            [(ngModel)]="formData.startDate"
+            name="startDate"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="endDate">End Date</label>
+          <input
+            id="endDate"
+            type="date"
+            class="form-input"
+            [(ngModel)]="formData.endDate"
+            name="endDate"
+            [min]="formData.startDate"
+            required
+          />
+          @if (formData.startDate && formData.endDate && formData.endDate < formData.startDate) {
+            <div class="form-error">End date cannot be before start date</div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Registration Fee Section -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">💰</div>
+        <h2 class="section-title">Registration Fee</h2>
+      </div>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="registrationFee">Fee Amount</label>
+          <input
+            id="registrationFee"
+            type="number"
+            class="form-input"
+            [(ngModel)]="formData.registrationFee"
+            name="registrationFee"
+            min="0"
+            step="0.01"
+            placeholder="0.00"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Regulations Section -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <h2 class="section-title">Tournament Regulations</h2>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group full-width regulations-group">
+          <label class="form-label" for="regulations">Regulations & Rules</label>
+          <textarea
+            id="regulations"
+            class="form-input regulations-textarea"
+            [(ngModel)]="formData.regulations"
+            name="regulations"
+            rows="6"
+            placeholder="Enter tournament-specific regulations, rules, tiebreak criteria, and special conditions..."
+          ></textarea>
+          <small class="form-hint">Optional: Define specific rules, tiebreak criteria, and special conditions for this tournament.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visual Branding Section (NFR18) -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">🎨</div>
+        <h2 class="section-title">Visual Branding</h2>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="primaryColor">Primary Colour</label>
+          <div class="color-picker-wrapper">
+            <input
+              id="primaryColor"
+              type="color"
+              class="color-input"
+              [(ngModel)]="formData.primaryColor"
+              name="primaryColor"
+            />
+            <input
+              type="text"
+              class="form-input color-hex-input"
+              [(ngModel)]="formData.primaryColor"
+              name="primaryColorHex"
+              maxlength="7"
+              placeholder="#2563eb"
+              pattern="^#[0-9A-Fa-f]{6}$"
+            />
+          </div>
+          <small class="form-hint">Main brand colour used for headers and accents.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="secondaryColor">Secondary Colour</label>
+          <div class="color-picker-wrapper">
+            <input
+              id="secondaryColor"
+              type="color"
+              class="color-input"
+              [(ngModel)]="formData.secondaryColor"
+              name="secondaryColor"
+            />
+            <input
+              type="text"
+              class="form-input color-hex-input"
+              [(ngModel)]="formData.secondaryColor"
+              name="secondaryColorHex"
+              maxlength="7"
+              placeholder="#10b981"
+              pattern="^#[0-9A-Fa-f]{6}$"
+            />
+          </div>
+          <small class="form-hint">Accent colour used for buttons and highlights.</small>
+        </div>
+
+        <div class="form-group col-span-2">
+          <label class="form-label" for="logoUrl">Logo URL</label>
+          <input
+            id="logoUrl"
+            type="url"
+            class="form-input"
+            [(ngModel)]="formData.logoUrl"
+            name="logoUrl"
+            placeholder="https://example.com/tournament-logo.png"
+          />
+          <small class="form-hint">Optional publicly accessible URL for the tournament logo image.</small>
+        </div>
+
+        <div class="form-group col-span-2">
+          <div class="color-preview" [style.background]="'linear-gradient(135deg, ' + (formData.primaryColor || '#2563eb') + ' 0%, ' + (formData.secondaryColor || '#10b981') + ' 100%)'">
+            <span class="color-preview-label">Colour Preview</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Buttons -->
+    <div class="form-actions">
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="isSubmitting()"
+      >
+        <span class="btn-icon">
+          @if (isSubmitting()) {
+            ⏳
+          } @else {
+            ✓
+          }
+        </span>
+        @if (isSubmitting()) {
+          Updating...
+        } @else {
+          Update Tournament
+        }
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-secondary"
+        (click)="goBack()"
+        [disabled]="isSubmitting()"
+      >
+        <span class="btn-icon">←</span>
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>

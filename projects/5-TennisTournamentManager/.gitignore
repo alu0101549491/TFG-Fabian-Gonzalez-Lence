@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.vite/
+.angular/
+
+# Coverage
+coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.backup
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeDoc generated docs
+docs/api/
+
+# Playwright
+playwright-report/
+test-results/
+e2e/.auth/

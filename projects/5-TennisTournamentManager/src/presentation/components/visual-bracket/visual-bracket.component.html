@@ -1,0 +1,179 @@
+<!-- Visual Bracket Display -->
+<div class="visual-bracket-container">
+  @if (bracket.bracketType === BracketType.SINGLE_ELIMINATION) {
+    <!-- Single Elimination Bracket Tree -->
+    <div class="bracket-tree">
+      <div class="bracket-rounds">
+        @for (roundData of matchesByRound(); track roundData.round) {
+          <div class="bracket-round">
+            <div class="round-header">
+              <h3 class="round-title">{{ roundData.roundName }}</h3>
+              <span class="round-match-count">{{ roundData.matches.length }} {{ roundData.matches.length === 1 ? 'match' : 'matches' }}</span>
+            </div>
+
+            <div class="round-matches">
+              @for (match of roundData.matches; track match.id) {
+                <div 
+                  class="match-card"
+                  [class.match-completed]="match.status === MatchStatus.COMPLETED"
+                  [class.match-in-progress]="match.status === MatchStatus.IN_PROGRESS"
+                  [class.match-retired]="match.status === MatchStatus.RETIRED"
+                  (click)="goToMatch(match.id)"
+                >
+                  <!-- Match Number -->
+                  <div class="match-number">Match {{ match.matchNumber }}</div>
+
+                  <!-- Match Participants Container -->
+                  <div class="match-participants">
+                    <!-- Participant 1 -->
+                    <div 
+                      class="participant"
+                      [class.winner]="isWinner(match, 1)"
+                      [class.bye]="!match.participant1Id && !match.participant1TeamId"
+                    >
+                      <div class="participant-content">
+                        @if (getParticipantSeed(match, 1)) {
+                          <span class="seed-badge">{{ getParticipantSeed(match, 1) }}</span>
+                        }
+                        <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                      </div>
+                      @if (isWinner(match, 1)) {
+                        <span class="winner-icon">🏆</span>
+                      }
+                    </div>
+
+                    <!-- VS Divider -->
+                    <div class="vs-divider">
+                      <span class="vs-text">VS</span>
+                    </div>
+
+                    <!-- Participant 2 -->
+                    <div 
+                      class="participant"
+                      [class.winner]="isWinner(match, 2)"
+                      [class.bye]="!match.participant2Id && !match.participant2TeamId"
+                    >
+                      <div class="participant-content">
+                        @if (getParticipantSeed(match, 2)) {
+                          <span class="seed-badge">{{ getParticipantSeed(match, 2) }}</span>
+                        }
+                        <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                      </div>
+                      @if (isWinner(match, 2)) {
+                        <span class="winner-icon">🏆</span>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Match Status -->
+                  <div class="match-status">
+                    <span class="status-badge status-{{ match.status.toLowerCase() }}">
+                      {{ match.status }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else if (bracket.bracketType === BracketType.ROUND_ROBIN) {
+    <!-- Round Robin Groups -->
+    <div class="round-robin-bracket">
+      @for (roundData of matchesByRound(); track roundData.round) {
+        <div class="round-robin-round">
+          <h3 class="round-title">{{ roundData.roundName }}</h3>
+          
+          <div class="round-robin-matches">
+            @for (match of roundData.matches; track match.id) {
+              <div 
+                class="match-card"
+                [class.match-completed]="match.status === MatchStatus.COMPLETED"
+                [class.match-retired]="match.status === MatchStatus.RETIRED"
+                (click)="goToMatch(match.id)"
+              >
+                <div class="match-header">
+                  <span class="match-number">Match {{ match.matchNumber }}</span>
+                  <span class="status-badge status-{{ match.status.toLowerCase() }}">
+                    {{ match.status }}
+                  </span>
+                </div>
+
+                <div class="match-participants">
+                  <!-- Participant 1 -->
+                  <div class="participant" [class.winner]="isWinner(match, 1)">
+                    <div class="participant-content">
+                      @if (getParticipantSeed(match, 1)) {
+                        <span class="seed-badge">{{ getParticipantSeed(match, 1) }}</span>
+                      }
+                      <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                    </div>
+                    @if (isWinner(match, 1)) {
+                      <span class="winner-icon">🏆</span>
+                    }
+                  </div>
+
+                  <span class="vs-text">vs</span>
+
+                  <!-- Participant 2 -->
+                  <div class="participant" [class.winner]="isWinner(match, 2)">
+                    <div class="participant-content">
+                      @if (getParticipantSeed(match, 2)) {
+                        <span class="seed-badge">{{ getParticipantSeed(match, 2) }}</span>
+                      }
+                      <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                    </div>
+                    @if (isWinner(match, 2)) {
+                      <span class="winner-icon">🏆</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- Match Play Format -->
+    <div class="match-play-bracket">
+      <div class="all-matches">
+        @for (roundData of matchesByRound(); track roundData.round) {
+          @for (match of roundData.matches; track match.id) {
+            <div 
+              class="match-card"
+              [class.match-completed]="match.status === MatchStatus.COMPLETED"
+              (click)="goToMatch(match.id)"
+            >
+              <div class="match-header">
+                <span class="match-number">Match {{ match.matchNumber }}</span>
+                <span class="status-badge status-{{ match.status.toLowerCase() }}">
+                  {{ match.status }}
+                </span>
+              </div>
+
+              <div class="match-participants">
+                <div class="participant" [class.winner]="isWinner(match, 1)">
+                  <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                  @if (isWinner(match, 1)) {
+                    <span class="winner-icon">🏆</span>
+                  }
+                </div>
+
+                <span class="vs-text">vs</span>
+
+                <div class="participant" [class.winner]="isWinner(match, 2)">
+                  <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                  @if (isWinner(match, 2)) {
+                    <span class="winner-icon">🏆</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+</div>
