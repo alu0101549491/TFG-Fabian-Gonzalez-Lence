@@ -40,7 +40,7 @@ export const AppDataSource = new DataSource({
   synchronize: config.db.synchronize,
   logging: config.db.logging,
   entities: Object.values(entities),
-  migrations: ['src/infrastructure/database/migrations/**/*.ts'],
+  migrations: [],  // DB_SYNCHRONIZE=true handles schema creation; no runtime migration loading
   subscribers: [],
 });
 
