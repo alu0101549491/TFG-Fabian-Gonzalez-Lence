@@ -80,9 +80,7 @@ services:
       - key: API_PREFIX
         value: /api
       - key: DATABASE_URL
-        fromDatabase:
-          name: tennis-db
-          property: connectionString
+        sync: false  # Set manually: Supabase connection string (Session pooler)
       - key: DB_SYNCHRONIZE
         value: false
       - key: DB_LOGGING
@@ -140,17 +138,11 @@ services:
       - key: SESSION_TIMEOUT_MINUTES
         value: 60
 
-databases:
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # TennisTournamentManager Database
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # NOTE: CARTO backend uses Supabase (DATABASE_URL set manually)
-  # Tennis uses Render PostgreSQL
-  - name: tennis-db
-    databaseName: tennis_tournament_manager
-    plan: free
-    region: frankfurt
-    ipAllowList: []
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# DATABASES
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Both CARTO and TENNIS use Supabase (external managed PostgreSQL)
+# No Render databases needed - DATABASE_URL set manually in each service
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # DEPLOYMENT NOTES
