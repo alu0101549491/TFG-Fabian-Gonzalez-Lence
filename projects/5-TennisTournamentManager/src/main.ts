@@ -33,7 +33,9 @@ bootstrapApplication(AppComponent, appConfig)
 // Register Service Worker for PWA support (NFR8)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    // Use import.meta.env.BASE_URL so the SW is registered at the correct scope
+    const swUrl = `${import.meta.env.BASE_URL}sw.js`;
+    navigator.serviceWorker.register(swUrl)
       .then((registration) => {
         console.log('[PWA] Service Worker registered:', registration.scope);
 
