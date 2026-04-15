@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Infrastructure: Move tsx to Runtime Dependencies (2026-04-15)
+
+**Fix:** Moved `tsx` from `devDependencies` to `dependencies` so it's available at runtime on Render.
+
+**Motivation:** Render sets `NODE_ENV=production`, so `npm ci` skips devDependencies. The `db:migrate` script runs `tsx src/infrastructure/database/migrate.ts` at startup, causing `sh: tsx: not found` error.
+
+**Implementation:**
+
+- ✅ **package.json**: Moved `tsx` from `devDependencies` to `dependencies`
+
+---
+
 ### Infrastructure: Skip TypeScript Type Checking on Render Build (2026-04-15)
 
 **Feature:** Modified Render build to skip TypeScript type checking completely, allowing deployment despite type errors.
