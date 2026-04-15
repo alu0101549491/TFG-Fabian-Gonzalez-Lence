@@ -20,6 +20,23 @@
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <title>Cartographic Project Manager</title>
+  <script>
+    // GitHub Pages SPA routing: 404.html redirects deep links to /?p=/path.
+    // This script reads ?p= and restores the original URL before the app boots.
+    (function(l) {
+      var params = new URLSearchParams(l.search);
+      var p = params.get('p');
+      if (p) {
+        var q = params.get('q');
+        window.history.replaceState(
+          null, null,
+          l.pathname.replace(/\/$/, '') + p.replace(/~and~/g, '&') +
+          (q ? '?' + q.replace(/~and~/g, '&') : '') +
+          l.hash
+        );
+      }
+    }(window.location));
+  </script>
 </head>
 <body>
   <div id="app"></div>
