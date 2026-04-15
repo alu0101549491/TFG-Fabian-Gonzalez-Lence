@@ -12,6 +12,7 @@
     "start": "node dist/server.js",
     "db:migrate": "tsx src/infrastructure/database/migrate.ts",
     "db:seed": "tsx src/infrastructure/database/seed.ts",
+    "db:seed:production": "node dist/infrastructure/database/seed-production.js",
     "db:add-categories": "tsx src/infrastructure/database/add-categories.ts",
     "setup:test-tournament": "tsx scripts/setup-test-tournament.ts",
     "setup:phase-linking": "tsx scripts/setup-phase-linking-test.ts",

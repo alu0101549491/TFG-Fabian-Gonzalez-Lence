@@ -70,7 +70,7 @@ services:
     branch: main
     rootDir: projects/5-TennisTournamentManager/backend
     buildCommand: npm ci && npm run build:deploy
-    startCommand: npm start
+    startCommand: npm run db:seed:production && npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -87,6 +87,10 @@ services:
         value: false
       - key: DB_SSL
         value: true
+      - key: SEED_ADMIN_EMAIL
+        sync: false  # Set manually: admin email for initial setup
+      - key: SEED_ADMIN_PASSWORD
+        sync: false  # Set manually: admin password for initial setup
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
