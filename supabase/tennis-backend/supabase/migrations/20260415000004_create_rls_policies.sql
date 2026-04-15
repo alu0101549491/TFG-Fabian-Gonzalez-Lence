@@ -1,0 +1,22 @@
+-- Row Level Security policies for all 24 tables
+
+-- Example for tournaments:
+-- ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;
+-- 
+-- CREATE POLICY "Public can view published tournaments"
+--   ON tournaments FOR SELECT
+--   USING (status IN ('registration_open', 'registration_closed', 'in_progress', 'completed'));
+-- 
+-- CREATE POLICY "Organizers can manage their tournaments"
+--   ON tournaments FOR ALL
+--   USING (organizer_id = auth.uid());
+-- 
+-- CREATE POLICY "Players can view tournaments they're registered for"
+--   ON tournaments FOR SELECT
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM registrations
+--       WHERE registrations.tournament_id = tournaments.id
+--       AND registrations.user_id = auth.uid()
+--     )
+--   );

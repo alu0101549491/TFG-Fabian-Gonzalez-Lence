@@ -1,0 +1,112 @@
+name: Deploy to Supabase
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-carto:
+    name: Deploy CARTO to Supabase
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link to CARTO Supabase project
+        working-directory: supabase/carto-backend
+        run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_CARTO_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy CARTO database migrations
+        working-directory: supabase/carto-backend
+        run: |
+          supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy CARTO Edge Functions
+        working-directory: supabase/carto-backend
+        run: |
+          # Set function secrets
+          supabase secrets set DROPBOX_APP_KEY="${{ secrets.DROPBOX_APP_KEY }}" --env-file .env.production || true
+          supabase secrets set DROPBOX_APP_SECRET="${{ secrets.DROPBOX_APP_SECRET }}" --env-file .env.production || true
+          
+          # Deploy all functions
+          supabase functions deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  deploy-tennis:
+    name: Deploy TENNIS to Supabase
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link to TENNIS Supabase project
+        working-directory: supabase/tennis-backend
+        run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_TENNIS_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy TENNIS database migrations
+        working-directory: supabase/tennis-backend
+        run: |
+          supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy TENNIS Edge Functions
+        working-directory: supabase/tennis-backend
+        run: |
+          # Set function secrets
+          supabase secrets set RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" --env-file .env.production || true
+          supabase secrets set TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}" --env-file .env.production || true
+          supabase secrets set WEB_PUSH_VAPID_PUBLIC_KEY="${{ secrets.WEB_PUSH_VAPID_PUBLIC_KEY }}" --env-file .env.production || true
+          supabase secrets set WEB_PUSH_VAPID_PRIVATE_KEY="${{ secrets.WEB_PUSH_VAPID_PRIVATE_KEY }}" --env-file .env.production || true
+          
+          # Deploy all functions
+          supabase functions deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  update-frontends:
+    name: Update Frontend Deployments
+    runs-on: ubuntu-latest
+    needs: [deploy-carto, deploy-tennis]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trigger frontend deployment
+        run: |
+          echo "✅ Supabase backends deployed successfully"
+          echo "📱 Frontends will use new Supabase endpoints"
+          echo ""
+          echo "CARTO Frontend: Update to use Supabase client"
+          echo "TENNIS Frontend: Update to use Supabase client"
+          echo ""
+          echo "Next: Push frontend changes to trigger deploy.yml workflow"

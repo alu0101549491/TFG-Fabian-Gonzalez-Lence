@@ -29,9 +29,7 @@ services:
       - key: API_VERSION
         value: v1
       - key: DATABASE_URL
-        fromDatabase:
-          name: carto-db
-          property: connectionString
+        sync: false  # Set manually: Supabase connection pooler URL
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -144,10 +142,9 @@ services:
 
 databases:
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # CartographicProjectManager Database
+  # TennisTournamentManager Database (future deployment)
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  - name: carto-db
-    databaseName: cartographic_manager
+  # NOTE: CARTO backend now uses Supabase (set DATABASE_URL manually)
     plan: free  # 256 MB RAM, 1 GB storage, 90 days retention
     region: frankfurt
     ipAllowList: []  # Empty = allow from anywhere (needed for Render services)
