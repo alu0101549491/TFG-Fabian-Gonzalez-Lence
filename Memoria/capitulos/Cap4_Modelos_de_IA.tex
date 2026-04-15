@@ -111,3 +111,62 @@ Durante el periodo de Prácticas Externas, se realizó un curso de introducción
 Desde un punto de vista práctico, el cambio implicó rediseñar los prompts de las fases de Revisión y Testing para adaptarlos al modelo agente. El \textbf{Revisor 2.0}, aplicado en \ac{CARTO}, adoptó un flujo de tres etapas: en la primera, el agente exploraba toda la base de código y generaba una TODO List con los grupos de ficheros a revisar; en la segunda, revisaba sistemáticamente cada grupo y generaba un informe de incidencias con identificadores, severidades y propuestas de corrección; en la tercera, seguía el informe para implementar y verificar las correcciones. En \ac{CARTO}, este proceso identificó 225 incidencias distribuidas en 41 grupos de revisión, con 5 incidencias críticas, 30 de severidad alta, 111 media y 79 baja. El \textbf{Tester 2.0} adoptó una lógica análoga para la generación de pruebas \textit{end-to-end} con Playwright: el agente analizaba primero los diagramas de casos de uso para definir los escenarios de prueba, y en una segunda pasada implementaba los tests correspondientes; en \ac{CARTO} se generaron 132 escenarios y se implementaron 131 tests reales.\\
 
 Una característica observada como efecto secundario del cambio de herramienta fue que las respuestas de los agentes de Copilot no producen salidas en formato Markdown estándar, sino trazas de ejecución que incluyen referencias a ficheros, resultados de búsquedas y fragmentos de código intercalados. Para paliar esto, se optó por pedirle al propio agente que generase informes de desarrollo resumidos en un formato más legible, o bien que otra \ac{IA} procesara la respuesta bruta para producir un resumen estructurado adecuado para el cuaderno de seguimiento.\\
+
+\section{Comparativa de modelos} \label{sec:comparativa-modelos}
+
+La Tabla~\ref{tab:comparativa-modelos} recoge de forma sintética los modelos y herramientas de \ac{IA} empleados en el trabajo, agrupando para cada uno el rol asignado, las fases del ciclo de desarrollo en que participó, los proyectos en que fue utilizado, sus principales fortalezas, sus limitaciones más relevantes y la modalidad de acceso empleada.
+Esta visión de conjunto complementa las descripciones individuales de la sección anterior y sirve de referencia para el análisis de resultados del Capítulo~\ref{chap:Results}.\\
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{2.2cm}|p{3.2cm}|p{1.8cm}|p{3cm}|p{3cm}|}
+\hline
+\textbf{Modelo} & \textbf{Rol y Fases} & \textbf{Proyectos} & \textbf{Fortalezas} & \textbf{Limitaciones} \\
+\hline
+\textbf{Claude} &
+Arquitecto (arquitectura); agente de codificación (P5) &
+Todos &
+Contexto amplio; coherencia arquitectónica; alta fidelidad al diseño; documentación técnica detallada &
+Suscripción de pago; integración como agente dependiente de Copilot \\
+\hline
+\textbf{Mistral} &
+Desarrollador (codificación) &
+P1--P3 &
+Gratuito; buen rendimiento en módulos de complejidad media; sigue instrucciones estructuradas &
+Pérdida de coherencia inter-módulo; dificultad con patrones avanzados; flujo manual no escalable \\
+\hline
+\textbf{GitHub Copilot} &
+Revisor (todos); desarrollador y tester (P4--P5) &
+Todos &
+Integración directa con ficheros; ejecución iterativa de comandos; gestión coherente a gran escala &
+Dependencia de modelos externos; trazas no legibles en Markdown \\
+\hline
+\textbf{Qwen} &
+Tester (testing) &
+P1--P3 &
+Eficaz con patrón \textit{Arrange-Act-Assert}; alta compilación inicial; cubre casos normales, límite y excepcionales &
+Flujo manual no escalable; desplazado por Copilot agente a partir de P4 \\
+\hline
+\textbf{ChatGPT} &
+Apoyo en especificación de requisitos (diseño previo a codificación) &
+P1--P3 (en pequeños arreglos de diseño) &
+Fluidez en texto técnico; familiaridad con convenciones estándar &
+Pérdida de coherencia en conversaciones largas; utilidad decreciente en proyectos complejos \\
+\hline
+\textbf{Perplexity} &
+Consulta técnica puntual (exploratoria) &
+Ninguno &
+Búsqueda en tiempo real con referencias verificables &
+No integrado en el flujo formal; descartado tras pruebas iniciales \\
+\hline
+\end{tabular}
+\caption{Comparativa de modelos y herramientas de \ac{IA} empleados. P1--P5: \ac{HANGMAN}, \ac{PLAYER}, \ac{BALATRO}, \ac{CARTO} y \ac{TENNIS} respectivamente.}
+\label{tab:comparativa-modelos}
+\end{table}
+
+Varios patrones emergen de esta comparativa.
+En primer lugar, ningún modelo resultó adecuado para todas las fases: las fortalezas de Claude en razonamiento arquitectónico lo hacen menos adecuado para la ejecución iterativa de tareas de codificación masiva, mientras que la capacidad operativa de Copilot como agente no sustituye la visión de alto nivel que Claude aporta en la fase de diseño.
+En segundo lugar, la modalidad de acceso condiciona fuertemente la elección: la accesibilidad gratuita de Mistral y Qwen resultó suficiente para los proyectos de menor complejidad, pero la escalabilidad del flujo requirió en los proyectos más complejos adoptar herramientas con integración nativa en el entorno de desarrollo.
+En tercer lugar, el rol de Revisor fue el único que se mantuvo estable ---siempre asignado a GitHub Copilot--- a lo largo de todos los proyectos, lo que refleja que la integración con el sistema de ficheros es especialmente crítica en las tareas de revisión, donde el acceso directo al código es imprescindible para producir informes de calidad.\\
