@@ -1003,9 +1003,9 @@ export class UserController {
           categoryId: reg.categoryId,
           categoryName: reg.category?.name,
           status: reg.status,
-          entryType: reg.entryType,
+          entryType: reg.acceptanceType,
           seedNumber: reg.seedNumber,
-          registrationDate: reg.createdAt,
+          registrationDate: reg.registrationDate,
         })),
         matches: matches.map(match => ({
           id: match.id,
@@ -1017,7 +1017,7 @@ export class UserController {
           score: match.score,
           scores: match.scores,
           scheduledTime: match.scheduledTime,
-          completedAt: match.completedAt,
+          completedAt: match.endTime,
         })),
         notifications: notifications.map((notif: any) => ({
           id: notif.id,

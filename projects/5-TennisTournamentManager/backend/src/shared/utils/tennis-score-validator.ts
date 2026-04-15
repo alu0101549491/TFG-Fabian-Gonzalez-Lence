@@ -78,7 +78,7 @@ export class TennisScoreValidator {
    * @param winnerId - ID of the declared winner
    * @returns Validation result with errors if invalid
    */
-  public validateMatch(sets: TennisSetScore[], winnerId: string): ValidationResult {
+  public validateMatch(sets: TennisSetScore[], _winnerId: string): ValidationResult {
     const errors: string[] = [];
 
     // Check if sets array is empty
@@ -111,8 +111,8 @@ export class TennisScoreValidator {
     }
 
     // Validate winner declaration matches set scores
-    const actualWinner = player1Sets > player2Sets ? 'player1' : 'player2';
-    // Note: winnerId is the participant ID, not 'player1'/'player2'
+    const _actualWinner = player1Sets > player2Sets ? 'player1' : 'player2';
+    // Note: _winnerId is the participant ID, not 'player1'/'player2'
     // We validate that the declared winner has more sets
     if (player1Sets === player2Sets) {
       errors.push('Invalid match result: Both players have equal sets won');
