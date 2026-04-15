@@ -15,8 +15,6 @@ El propósito de este TFG es explorar las capacidades actuales de diferentes mod
 
 ## 🎯 Proyectos
 
-## 🎯 Proyectos
-
 ### 1. TheHangmanGame 🎮
 **Complejidad:** Básica  
 **Tecnologías:** TypeScript, HTML5, CSS3  
