@@ -18,7 +18,7 @@ import {resolve} from 'path';
 export default defineConfig(({mode}) => {
   // Use root path for development, project path for production
   const base = mode === 'production' 
-    ? (process.env.BASE_URL || '/5-TennisTournamentManager/')
+    ? (process.env.BASE_URL || '/TFG-Fabian-Gonzalez-Lence/5-TennisTournamentManager/')
     : '/';
 
   return {
