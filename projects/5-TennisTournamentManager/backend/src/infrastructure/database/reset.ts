@@ -2,7 +2,7 @@
  * Drop and recreate database schema (development only)
  */
 import 'dotenv/config';
-import {AppDataSource} from './data-source.js';
+import {AppDataSource} from './data-source';
 
 async function resetDatabase(): Promise<void> {
   try {

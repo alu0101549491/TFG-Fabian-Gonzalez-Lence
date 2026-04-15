@@ -21,7 +21,7 @@ import swaggerUi from 'swagger-ui-express';
 import routes from './presentation/routes';
 import {errorMiddleware} from './presentation/middleware';
 import {config} from './shared/config';
-import {swaggerSpec} from './shared/config/swagger.config.js';
+import {swaggerSpec} from './shared/config/swagger.config';
 import {staticAssetCache} from './presentation/middlewares/cache.middleware';
 
 /**
