@@ -70,7 +70,7 @@ services:
     branch: main
     rootDir: projects/5-TennisTournamentManager/backend
     buildCommand: npm ci && npm run build:deploy
-    startCommand: npm run db:migrate && npm start
+    startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -82,7 +82,7 @@ services:
       - key: DATABASE_URL
         sync: false  # Set manually: Supabase connection string (Session pooler)
       - key: DB_SYNCHRONIZE
-        value: false
+        value: true  # TypeORM auto-creates tables from entities (no base migration exists)
       - key: DB_LOGGING
         value: false
       - key: DB_SSL
