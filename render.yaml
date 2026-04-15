@@ -19,7 +19,7 @@ services:
     branch: main
     rootDir: projects/4-CartographicProjectManager/backend
     buildCommand: npm ci && npx prisma generate && npm run build && npm run build:seed
-    startCommand: npx prisma migrate deploy && npm run prisma:seed:production && npm start
+    startCommand: npm run prisma:seed:production && npm start
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
