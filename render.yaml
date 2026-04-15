@@ -142,16 +142,10 @@ services:
 
 databases:
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # TennisTournamentManager Database (future deployment)
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # NOTE: CARTO backend now uses Supabase (set DATABASE_URL manually)
-    plan: free  # 256 MB RAM, 1 GB storage, 90 days retention
-    region: frankfurt
-    ipAllowList: []  # Empty = allow from anywhere (needed for Render services)
-
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # TennisTournamentManager Database
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # NOTE: CARTO backend uses Supabase (DATABASE_URL set manually)
+  # Tennis uses Render PostgreSQL
   - name: tennis-db
     databaseName: tennis_tournament_manager
     plan: free
