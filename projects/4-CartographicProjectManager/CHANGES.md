@@ -10,6 +10,63 @@ This document contains all the git changes made to the Cartographic Project Mana
 
 ## Latest Changes (April 15, 2026)
 
+### FIX: Prisma Schema Mapping for Coordinate Fields
+
+**Critical Production Bug Fix - Resolves 500 Internal Server Error**
+
+**Location:** `projects/4-CartographicProjectManager/backend/prisma/schema.prisma`
+
+**Description:**
+Fixed Prisma schema mapping issue causing 500 Internal Server Error on project endpoints in production. The `coordinateX` and `coordinateY` fields were missing `@map` directives, causing Prisma Client to look for camelCase column names (`coordinateX`, `coordinateY`) instead of the snake_case columns that exist in the Supabase database (`coordinate_x`, `coordinate_y`).
+
+**Status:** ✅ **FIXED** | 🔥 **CRITICAL BUG**
+
+---
+
+**Root Cause:**
+```
+PrismaClientKnownRequestError: 
+Invalid `prisma.project.findMany()` invocation:
+The column `projects.coordinateX` does not exist in the current database.
+```
+
+**Problem:**
+- Database columns: `coordinate_x`, `coordinate_y` (snake_case from SQL migration)
+- Prisma schema: `coordinateX`, `coordinateY` without @map directives
+- Prisma Client generated with incorrect column names
+- All project queries failed with "column does not exist"
+
+**Impact:**
+- `GET /api/v1/projects` → 500 error
+- `GET /api/v1/projects/summaries` → 500 error
+- Frontend unable to load projects
+- Dashboard completely broken
+
+**The Fix:**
+```prisma
+// BEFORE:
+coordinateX      Float?
+coordinateY      Float?
+
+// AFTER:
+coordinateX      Float?        @map("coordinate_x")
+coordinateY      Float?        @map("coordinate_y")
+```
+
+**Why @map is Required:**
+- PostgreSQL uses `snake_case` naming: `coordinate_x`, `coordinate_y`
+- TypeScript uses `camelCase` naming: `coordinateX`, `coordinateY`  
+- `@map` directive bridges the gap: `coordinateX Float? @map("coordinate_x")`
+- Without it, Prisma generates SQL with wrong column names
+
+**Deployment Steps:**
+1. Commit and push the schema fix
+2. Render auto-deploys and runs `npx prisma generate` with corrected schema
+3. Backend restarts with properly generated Prisma Client
+4. Project endpoints work correctly
+
+---
+
 ### FIX: Add Missing Admin Seeding Environment Variables Documentation
 
 **CRITICAL:** Admin login was failing because `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` environment variables were not documented as **REQUIRED** in deployment guides.

@@ -160,8 +160,8 @@ model Project {
   clientId         String        @map("client_id")
   creatorId        String?       @map("creator_id")
   type             ProjectType
-  coordinateX      Float?
-  coordinateY      Float?
+  coordinateX      Float?        @map("coordinate_x")
+  coordinateY      Float?        @map("coordinate_y")
   contractDate     DateTime      @map("contract_date")
   deliveryDate     DateTime      @map("delivery_date")
   status           ProjectStatus @default(ACTIVE)
