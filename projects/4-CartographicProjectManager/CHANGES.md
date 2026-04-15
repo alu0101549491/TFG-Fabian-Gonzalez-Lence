@@ -10,6 +10,41 @@ This document contains all the git changes made to the Cartographic Project Mana
 
 ## Latest Changes (April 15, 2026)
 
+### FIX: Add Missing Admin Seeding Environment Variables Documentation
+
+**CRITICAL:** Admin login was failing because `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` environment variables were not documented as **REQUIRED** in deployment guides.
+
+**Location:** 
+- `backend/.env.render.example` - Added admin seeding section
+- `render.yaml` - Already defined but marked as sync:false (manual setup required)
+
+**The Issue:**
+- Users deploying to Render received "Invalid email or password" error
+- Root cause: Admin user was never seeded because `SEED_ADMIN_PASSWORD` was not set
+- Seed script runs but fails silently when env var is missing
+- No admin user exists in database → login fails
+
+**The Fix:**
+- Updated `.env.render.example` to clearly show `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` as REQUIRED
+- Added clear comments about setting strong password
+- Documented in deployment workflow
+
+**Deployment Instructions:**
+1. Go to Render Dashboard → carto-backend → Environment
+2. Add: `SEED_ADMIN_EMAIL=[ADMIN_EMAIL_ADDRESS]`
+3. Add: `SEED_ADMIN_PASSWORD=[SET_A_STRONG_PASSWORD_HERE]`
+4. Manual Deploy → Check logs for "✓ Created admin user"
+5. Login with the credentials you set
+
+**Impact:**
+- 🔧 Fixes: Admin login now works after proper env var setup
+- 📝 Improves: Deployment documentation clarity
+- ✅ Verified: Seed script creates admin user successfully when vars are set
+
+---
+
+## Changes (April 15, 2026)
+
 ### DEPLOYMENT: Full Supabase Integration Complete
 
 **CARTO Backend + Supabase Database + GitHub Pages Frontend - Ready to Deploy**
