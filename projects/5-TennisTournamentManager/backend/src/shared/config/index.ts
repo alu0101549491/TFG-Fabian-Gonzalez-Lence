@@ -49,7 +49,7 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN 
     ? process.env.CORS_ORIGIN.split(',')
     : (process.env.NODE_ENV === 'production' 
-      ? 'https://yourdomain.com' 
+      ? 'https://alu0101549491.github.io' 
       : ['http://localhost:4200', 'http://localhost:4201', 'http://localhost:5173']),
   
   /** Rate limiting configuration */
