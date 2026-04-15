@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Infrastructure: Fix SPA Reload 404 on GitHub Pages (2026-05-30)
+
+**Fix:** Added `public/404.html` SPA redirect trick and a corresponding decoder script in `index.html` so that deep-link reloads work correctly on GitHub Pages.
+
+**Motivation:** GitHub Pages serves static files only. Reloading any route beyond the root (e.g. `/5-TennisTournamentManager/home`) returned a real 404 because no file exists at that path.
+
+**Implementation:**
+
+- ✅ **public/404.html**: Captures the full URL and redirects to `index.html` with the original path encoded as `?p=/path` (`segmentCount = 2` for the two-segment base path `/TFG-Fabian-Gonzalez-Lence/5-TennisTournamentManager`)
+- ✅ **index.html**: Decoder script reads `?p=` query param before Angular bootstraps and calls `history.replaceState` to restore the original URL so Angular Router receives the correct route
+
+---
+
 ### Infrastructure: Move tsx to Runtime Dependencies (2026-04-15)
 
 **Fix:** Moved `tsx` from `devDependencies` to `dependencies` so it's available at runtime on Render.
