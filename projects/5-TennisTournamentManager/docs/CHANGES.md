@@ -8,6 +8,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Bug Fix: Bracket Navigation Using Tournament ID Instead of Bracket ID (2026-04-15)
+
+**Fix:** Fixed 404 errors when navigating to brackets from tournament list and tournament detail pages.
+
+**Problem:** The frontend was incorrectly passing tournament IDs to the `/brackets/:id` route, which expects bracket IDs. This caused the backend to return 404 errors when trying to fetch brackets using tournament IDs (e.g., `/api/brackets/trn_5b36916f` instead of `/api/brackets/bkt_xxxxxx`).
+
+**Root Cause:**
+- `tournament-list.component.ts`: `viewTournament()` method was navigating to `/brackets/:tournamentId`
+- `tournament-detail.component.ts`: `viewBracket()` method was navigating to `/brackets/:tournamentId`
+- Both components were treating tournament IDs as bracket IDs
+
+**Implementation:**
+
+- ✅ **tournament-list.component.ts**:
+  - Added `BracketService` injection
+  - Modified `viewTournament()` to fetch brackets for the tournament before navigation
+  - Now navigates to first bracket ID if brackets exist
+  - Shows user-friendly message if no brackets are available yet
+
+- ✅ **tournament-detail.component.ts**:
+  - Modified `viewBracket()` to fetch brackets for the tournament before navigation
+  - Now navigates to first bracket ID if brackets exist
+  - Shows user-friendly message if no brackets are available yet
+
+**Impact:** Users can now properly navigate to tournament brackets without encountering 404 errors. When brackets don't exist yet, they receive a helpful message instead of a generic error.
+
+---
+
 ### Infrastructure: Fix SPA Reload 404 on GitHub Pages (2026-05-30)
 
 **Fix:** Added `public/404.html` SPA redirect trick and a corresponding decoder script in `index.html` so that deep-link reloads work correctly on GitHub Pages.

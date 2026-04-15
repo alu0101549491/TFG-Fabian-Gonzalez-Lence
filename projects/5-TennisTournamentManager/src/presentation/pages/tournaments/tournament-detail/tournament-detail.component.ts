@@ -423,9 +423,23 @@ export class TournamentDetailComponent implements OnInit {
   /**
    * Navigates to bracket view for this tournament.
    */
-  public viewBracket(): void {
-    if (this.tournamentId) {
-      void this.router.navigate(['/brackets', this.tournamentId]);
+  public async viewBracket(): Promise<void> {
+    if (!this.tournamentId) return;
+
+    try {
+      // Fetch brackets for this tournament
+      const brackets = await this.bracketService.getBracketsByTournament(this.tournamentId);
+      
+      if (brackets.length > 0) {
+        // Navigate to the first bracket
+        void this.router.navigate(['/brackets', brackets[0].id]);
+      } else {
+        // No brackets exist yet - show message
+        alert('No brackets available for this tournament yet. Brackets will be created when the tournament starts.');
+      }
+    } catch (error) {
+      console.error('Failed to load brackets:', error);
+      alert('Failed to load brackets. Please try again.');
     }
   }
 

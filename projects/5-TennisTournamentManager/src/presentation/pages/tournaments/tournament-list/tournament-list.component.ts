@@ -15,7 +15,7 @@ import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Router, RouterModule, ActivatedRoute} from '@angular/router';
 import {FormsModule} from '@angular/forms';
-import {TournamentService} from '@application/services';
+import {TournamentService, BracketService} from '@application/services';
 import {type TournamentDto, type TournamentFilterDto, type PaginationDto} from '@application/dto';
 import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {Surface} from '@domain/enumerations/surface';
@@ -39,6 +39,7 @@ import styles from './tournament-list.component.css?inline';
 export class TournamentListComponent implements OnInit {
   /** Services - inject() must be called before other properties */
   private readonly tournamentService = inject(TournamentService);
+  private readonly bracketService = inject(BracketService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly authStateService = inject(AuthStateService);
@@ -162,9 +163,24 @@ export class TournamentListComponent implements OnInit {
    *
    * @param tournamentId - ID of the tournament
    */
-  public viewTournament(tournamentId: string): void {
+  public async viewTournament(tournamentId: string): Promise<void> {
     if (this.navigationIntent === 'brackets') {
-      void this.router.navigate(['/brackets', tournamentId]);
+      // Fetch brackets for this tournament
+      try {
+        const brackets = await this.bracketService.getBracketsByTournament(tournamentId);
+        
+        if (brackets.length > 0) {
+          // Navigate to the first bracket
+          void this.router.navigate(['/brackets', brackets[0].id]);
+        } else {
+          // No brackets exist yet - navigate to tournament detail and show message
+          alert('No brackets available for this tournament yet. Brackets will be created when the tournament starts.');
+          void this.router.navigate(['/tournaments', tournamentId]);
+        }
+      } catch (error) {
+        console.error('Failed to load brackets:', error);
+        alert('Failed to load brackets. Please try again.');
+      }
     } else if (this.navigationIntent === 'standings') {
       void this.router.navigate(['/standings', tournamentId]);
     } else {
