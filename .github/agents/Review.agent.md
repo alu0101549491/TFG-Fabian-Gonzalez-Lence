@@ -73,3 +73,4 @@ All TypeScript files must include this header comment at the very beginning:
 - Recognition of positive aspects
 
 Focus on substance over style unless style issues are significant. Respect different valid approaches and consider project context.
+Thoroughly investigate the entire codebase if necessary, and carefully evaluate every detail to determine whether it should be mentioned. During the review process, review as many files as your response and context size allow, rather than limiting yourself to reviewing them one by one.
