@@ -88,8 +88,8 @@ export class ScheduleGenerationService {
         const courtOpenMinutes = courtOpenHour * 60 + courtOpenMinute;
         const baseMinutes = startHour * 60 + startMinute;
         
-        // Use the later of the two times
-        if (courtOpenMinutes > baseMinutes) {
+        // Use the later of the two times (>=  instead of > to handle equal times correctly)
+        if (courtOpenMinutes >= baseMinutes) {
           courtStartTime.setHours(courtOpenHour, courtOpenMinute, 0, 0);
         }
       }

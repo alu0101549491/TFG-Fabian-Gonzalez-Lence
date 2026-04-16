@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Bug Fix: Scheduler Not Using Court Opening Time When Equal to Start Time (2026-04-16)
+
+**Fix:** Fixed schedule generation logic to correctly use court opening time when it equals the requested start time.
+
+**Problem:** When court opening time (e.g., 17:00) matched the scheduling start time (17:00), the first match was being scheduled at 18:00 instead of 17:00.
+
+**Root Cause:** In `ScheduleGenerationService.generateSchedule()`, the court availability initialization used a strict comparison (`courtOpenMinutes > baseMinutes`) to determine if the court's opening time should be used. When both times were equal (1020 == 1020), the condition was false and the courtStartTime wasn't explicitly set to the court's opening hours, potentially causing a time offset.
+
+**Implementation:**
+
+- ✅ **Schedule Generation Service** (`backend/src/application/services/schedule-generation.service.ts`):
+  - Changed comparison from `if (courtOpenMinutes > baseMinutes)` to `if (courtOpenMinutes >= baseMinutes)`
+  - Now explicitly sets courtStartTime when opening time equals or exceeds start time
+  - Ensures consistent initialization regardless of whether times are equal
+
+**Impact:**
+- **Correct Scheduling**: Matches now start at court opening time (17:00) when it matches the requested start time
+- **Edge Case Fixed**: Handles equal times correctly without time offset
+- **Consistent Behavior**: Court opening times are always respected in initialization
+
+**Technical Details:**
+```typescript
+// Before: Only set if strictly greater
+if (courtOpenMinutes > baseMinutes) {  // 1020 > 1020 → FALSE
+  courtStartTime.setHours(courtOpenHour, courtOpenMinute, 0, 0);
+}
+
+// After: Set if greater than or equal
+if (courtOpenMinutes >= baseMinutes) {  // 1020 >= 1020 → TRUE
+  courtStartTime.setHours(courtOpenHour, courtOpenMinute, 0, 0);
+}
+```
+
+---
+
 ### Enhancement: Display Registration Dates in Tournament Details (2026-04-16)
 
 **Feature:** Added "Registration Opens" and "Registration Closes" fields to the Tournament Details card.
