@@ -1,0 +1,114 @@
+<div class="container p-lg">
+  <h1 class="mb-lg">
+    @if (isSystemAdmin()) {
+      System Admin Dashboard
+    } @else {
+      Tournament Admin Dashboard
+    }
+  </h1>
+
+  @if (isLoading()) {
+    <div class="text-center p-lg">
+      <p>Loading dashboard...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+
+  <!-- Statistics Cards (System Admin only) -->
+  @if (isSystemAdmin()) {
+    <div class="grid gap-md mb-lg" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+      <div class="card">
+        <div class="card-body text-center">
+          <h3 class="text-3xl font-bold text-primary">{{ totalTournaments() }}</h3>
+          <p class="text-muted">Total Tournaments</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body text-center">
+          <h3 class="text-3xl font-bold text-success">{{ activeTournaments() }}</h3>
+          <p class="text-muted">Active Tournaments</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- System Admin Tools (System Admin only) -->
+  @if (isSystemAdmin()) {
+    <div class="card mb-lg">
+      <div class="card-header">
+        <h3 class="card-title">⚙️ System Admin Tools</h3>
+      </div>
+      <div class="card-body">
+        <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <button class="btn btn-secondary" (click)="manageUsers()">
+            👥 Manage Users
+          </button>
+          <button class="btn btn-warning" (click)="reviewDisputes()">
+            ⚠️ Review All Disputes
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Tournament Admin Tools (Both roles) -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h3 class="card-title">🎾 Tournament Admin Tools</h3>
+    </div>
+    <div class="card-body">
+      <div class="grid gap-md" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <button class="btn btn-primary" (click)="manageTournaments()">
+          🏆 Manage Tournaments
+        </button>
+        <button class="btn btn-primary" (click)="manageOrderOfPlay()">
+          📅 Order of Play
+        </button>
+        @if (isTournamentAdmin()) {
+          <button class="btn btn-warning" (click)="reviewDisputes()">
+            ⚠️ Review Disputes
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Tournaments -->
+  @if (recentTournaments().length > 0) {
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Recent Tournaments</h3>
+      </div>
+      <div class="card-body">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Location</th>
+              <th>Start Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (tournament of recentTournaments(); track tournament.id) {
+              <tr>
+                <td>{{ tournament.name }}</td>
+                <td>{{ tournament.location }}</td>
+                <td>{{ formatDate(tournament.startDate) }}</td>
+                <td>
+                  <span class="badge badge-{{ tournament.status.toLowerCase() }}">
+                    {{ tournament.status | enumFormat }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

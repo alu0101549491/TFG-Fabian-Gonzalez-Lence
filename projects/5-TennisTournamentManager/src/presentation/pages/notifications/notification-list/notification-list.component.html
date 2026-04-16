@@ -1,0 +1,167 @@
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-top">
+      <button
+        class="back-button"
+        (click)="goBack()"
+        type="button"
+        title="Go back">
+        ← Back
+      </button>
+    </div>
+    <h1 class="hero-title">🔔 Notifications</h1>
+    <p class="hero-subtitle">Stay updated with your tournament activities and announcements</p>
+    
+    @if (!isLoading()) {
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-value">{{ notifications().length }}</div>
+          <div class="stat-label">Total Notifications</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">{{ unreadCount }}</div>
+          <div class="stat-label">Unread</div>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading notifications...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (errorMessage()) {
+    <div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <p class="error-message">{{ errorMessage() }}</p>
+    </div>
+  }
+
+  @if (!isLoading() && errorMessage() === null) {
+    <!-- Notifications List -->
+    @if (notifications().length > 0) {
+      <!-- Unread Notifications Section -->
+      @if (unreadNotifications.length > 0) {
+        <div class="notifications-section">
+          <div class="section-title-with-action">
+            <h2 class="section-title">📬 Unread Notifications</h2>
+            <button 
+              class="mark-all-read-button"
+              (click)="markAllAsRead()"
+              type="button">
+              ✓ Mark All as Read
+            </button>
+          </div>
+          <div class="notifications-list">
+            @for (notification of unreadNotifications; track notification.id) {
+              <div 
+                class="notification-card unread clickable"
+                (click)="navigateToOrigin(notification)">
+                <div class="notification-header">
+                  <div class="notification-title-wrapper">
+                    <span class="notification-icon">{{ getNotificationIcon(notification.type) }}</span>
+                    <h3 class="notification-title">{{ notification.title }}</h3>
+                  </div>
+                  <div class="notification-badges">
+                    @if (getTournamentName(notification)) {
+                      <span class="badge badge-tournament">{{ getTournamentName(notification) }}</span>
+                    }
+                    <span class="badge badge-new">New</span>
+                  </div>
+                </div>
+                
+                <p class="notification-message">{{ notification.message }}</p>
+                
+                <div class="notification-footer">
+                  <span class="notification-date">
+                    🕒 {{ formatDate(notification.createdAt) }}
+                  </span>
+                  <span class="notification-type">{{ formatNotificationType(notification.type) }}</span>
+                  <button
+                    class="mark-read-button"
+                    (click)="markAsRead(notification.id, $event)"
+                    type="button"
+                    title="Mark as read">
+                    ✓ Mark as Read
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Read Notifications Section -->
+      @if (readNotifications.length > 0) {
+        <div class="notifications-section">
+          <div class="section-title-with-action">
+            <h2 class="section-title">📭 Read Notifications</h2>
+            <button 
+              class="delete-all-button"
+              (click)="deleteAllRead()"
+              type="button"
+              title="Delete all read notifications">
+              🗑️ Delete All Read
+            </button>
+          </div>
+          <div class="notifications-list">
+            @for (notification of readNotifications; track notification.id) {
+              <div 
+                class="notification-card read clickable"
+                (click)="navigateToOrigin(notification)">
+                <div class="notification-header">
+                  <div class="notification-title-wrapper">
+                    <span class="notification-icon">{{ getNotificationIcon(notification.type) }}</span>
+                    <h3 class="notification-title">{{ notification.title }}</h3>
+                  </div>
+                  <div class="notification-badges">
+                    @if (getTournamentName(notification)) {
+                      <span class="badge badge-tournament">{{ getTournamentName(notification) }}</span>
+                    }
+                  </div>
+                </div>
+                
+                <p class="notification-message">{{ notification.message }}</p>
+                
+                <div class="notification-footer">
+                  <span class="notification-date">
+                    🕒 {{ formatDate(notification.createdAt) }}
+                  </span>
+                  <span class="notification-type">{{ formatNotificationType(notification.type) }}</span>
+                  <button
+                    class="delete-button"
+                    (click)="deleteNotification(notification.id, $event)"
+                    type="button"
+                    title="Delete notification">
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+
+    <!-- Empty State -->
+    @if (notifications().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p class="empty-message">No notifications yet</p>
+        <p class="empty-description">
+          You'll receive notifications here when there are tournament updates, match schedules, or important announcements.
+        </p>
+      </div>
+    }
+  }
+</div>

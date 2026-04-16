@@ -1,0 +1,536 @@
+<!--
+  University of La Laguna
+  School of Engineering and Technology
+  Degree in Computer Engineering
+  Final Degree Project (TFG)
+
+  @author Fabián González Lence <alu0101549491@ull.edu.es>
+  @since April 10, 2026
+  @file presentation/pages/phases/phase-management.component.html
+  @desc Template for phase management admin interface.
+  @see https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager
+-->
+
+<div class="phase-management-container">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Loading tournament data...</p>
+      </div>
+    </div>
+  } @else {
+    @if (error() && !tournament()) {
+      <div class="error-banner">
+        <span class="error-icon">⚠️</span>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    @if (tournament()) {
+      <!-- Hero Section -->
+      <section class="phase-hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <button class="back-btn" [routerLink]="['/tournaments', tournamentId()]">
+            <span>←</span>
+            <span>Back to Tournament</span>
+          </button>
+
+          <div class="phase-header">
+            <h1 class="phase-title">🔗 Phase Management</h1>
+            <p class="phase-subtitle">{{ tournament()!.name }}</p>
+            <span class="location-tag">
+              <span>📍</span>
+              <span>{{ tournament()!.location }}</span>
+            </span>
+          </div>
+
+          <!-- Quick Info -->
+          <div class="hero-stats">
+            <div class="stat-card">
+              <div class="stat-icon">📅</div>
+              <div class="stat-content">
+                <div class="stat-value">{{ formatDate(tournament()!.startDate) }}</div>
+                <div class="stat-label">Start Date</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">🎾</div>
+              <div class="stat-content">
+                <div class="stat-value">Multi-Phase</div>
+                <div class="stat-label">Tournament Type</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Content -->
+      <div class="content-area">
+        <!-- Success/Error Messages -->
+        @if (error()) {
+          <div class="alert alert-error">
+            <strong>Error:</strong> {{ error() }}
+          </div>
+        }
+
+        @if (success()) {
+          <div class="alert alert-success">
+            <strong>Success:</strong> {{ success() }}
+          </div>
+        }
+
+        <!-- Operation Tabs -->
+        <div class="tabs-container">
+          <div class="tabs">
+            <button
+              class="tab"
+              [class.active]="activeTab() === 'link'"
+              (click)="switchTab('link')"
+              type="button"
+            >
+              <span class="tab-icon">🔗</span>
+              <span>Link Phases</span>
+            </button>
+            <button
+              class="tab"
+              [class.active]="activeTab() === 'advance'"
+              (click)="switchTab('advance')"
+              type="button"
+            >
+              <span class="tab-icon">⬆️</span>
+              <span>Advance Qualifiers</span>
+            </button>
+            <button
+              class="tab"
+              [class.active]="activeTab() === 'consolation'"
+              (click)="switchTab('consolation')"
+              type="button"
+            >
+              <span class="tab-icon">🏆</span>
+              <span>Consolation Draw</span>
+            </button>
+            <button
+              class="tab"
+              [class.active]="activeTab() === 'lucky-loser'"
+              (click)="switchTab('lucky-loser')"
+              type="button"
+            >
+              <span class="tab-icon">🍀</span>
+              <span>Lucky Loser</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content-area">
+          <!-- Link Phases Tab -->
+          @if (activeTab() === 'link') {
+            <div class="info-card">
+              <div class="card-header">
+                <h2>🔗 Link Two Phases</h2>
+              </div>
+              <div class="card-body">
+                <div class="help-text">
+                  <p><strong>What this does:</strong> Creates a logical connection between two tournament phases (e.g., qualifying → main draw).</p>
+                  <p><strong>When to use:</strong> After completing a qualifying tournament and you want it to feed into your main draw.</p>
+                  <p><strong>Example:</strong> "US Open Qualifying 2026" → "US Open Main Draw 2026"</p>
+                </div>
+
+                <form (ngSubmit)="linkPhases()" class="operation-form">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="linkSourcePhase" class="form-label">
+                        <span class="label-icon">📤</span>
+                        Source Phase (Where players are coming FROM)
+                      </label>
+                      <select
+                        id="linkSourcePhase"
+                        [(ngModel)]="linkForm().sourcePhaseId"
+                        (ngModelChange)="onSourcePhaseChange($event)"
+                        name="linkSourcePhase"
+                        class="form-input"
+                        required
+                      >
+                        <option value="">-- Select a phase --</option>
+                        @for (option of sourcePhaseOptions(); track option.phaseId) {
+                          <option [value]="option.phaseId">
+                            {{ option.displayLabel }}
+                          </option>
+                        }
+                      </select>
+                      <small class="form-hint">The qualifying round or previous phase</small>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="linkTargetPhase" class="form-label">
+                        <span class="label-icon">📥</span>
+                        Target Phase (Where players are advancing TO)
+                      </label>
+                      <select
+                        id="linkTargetPhase"
+                        [(ngModel)]="linkForm().targetPhaseId"
+                        name="linkTargetPhase"
+                        class="form-input"
+                        required
+                      >
+                        <option value="">-- Select a phase --</option>
+                        @for (option of targetPhaseOptions(); track option.phaseId) {
+                          <option [value]="option.phaseId">
+                            {{ option.displayLabel }}
+                          </option>
+                        }
+                      </select>
+                      <small class="form-hint">The main draw or next phase</small>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    [disabled]="isProcessing() || !linkForm().sourcePhaseId || !linkForm().targetPhaseId"
+                  >
+                    @if (isProcessing()) {
+                      <span>⏳ Linking...</span>
+                    } @else {
+                      <span>🔗 Link Phases</span>
+                    }
+                  </button>
+                </form>
+              </div>
+            </div>
+          }
+
+          <!-- Advance Qualifiers Tab -->
+          @if (activeTab() === 'advance') {
+            <div class="info-card">
+              <div class="card-header">
+                <h2>⬆️ Advance Qualifiers from Round Robin</h2>
+              </div>
+              <div class="card-body">
+                <div class="help-text">
+                  <p><strong>What this does:</strong> Automatically promotes the top N finishers from a completed Round Robin phase.</p>
+                  <p><strong>When to use:</strong> After a qualifying round robin is complete and you want to move the winners into the main draw.</p>
+                  <p><strong>Example:</strong> Take top 4 players from "Qualifying Group A" and register them for "Main Draw - Men's Singles"</p>
+                </div>
+
+                <form (ngSubmit)="advanceQualifiers()" class="operation-form">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="advanceSourcePhase" class="form-label">
+                        <span class="label-icon">📊</span>
+                        Source Phase (Round Robin with completed matches)
+                      </label>
+                      <select
+                        id="advanceSourcePhase"
+                        [(ngModel)]="advanceForm().sourcePhaseId"
+                        name="advanceSourcePhase"
+                        class="form-input"
+                        required
+                      >
+                        <option value="">-- Select a phase --</option>
+                        @for (option of sourcePhaseOptions(); track option.phaseId) {
+                          <option [value]="option.phaseId">
+                            {{ option.displayLabel }}
+                          </option>
+                        }
+                      </select>
+                      <small class="form-hint">Must be a Round Robin phase with final standings</small>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="advanceTargetPhase" class="form-label">
+                        <span class="label-icon">🎯</span>
+                        Target Phase (Where qualifiers will compete)
+                      </label>
+                      <select
+                        id="advanceTargetPhase"
+                        [(ngModel)]="advanceForm().targetPhaseId"
+                        (change)="onAdvanceTargetPhaseChange(advanceForm().targetPhaseId)"
+                        name="advanceTargetPhase"
+                        class="form-input"
+                        required
+                      >
+                        <option value="">-- Select a phase --</option>
+                        @for (option of targetPhaseOptions(); track option.phaseId) {
+                          <option [value]="option.phaseId">
+                            {{ option.displayLabel }}
+                          </option>
+                        }
+                      </select>
+                      <small class="form-hint">The main draw or knockout phase</small>
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="qualifierCount" class="form-label">
+                        <span class="label-icon">🔢</span>
+                        {{ getQualifierLabel() }}
+                      </label>
+                      <input
+                        type="number"
+                        id="qualifierCount"
+                        [(ngModel)]="advanceForm().qualifierCount"
+                        name="qualifierCount"
+                        min="1"
+                        max="64"
+                        class="form-input"
+                        required
+                      />
+                      <small class="form-hint">{{ getQualifierHint() }}</small>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="advanceCategoryId" class="form-label">
+                        <span class="label-icon">🏷️</span>
+                        Category ID
+                      </label>
+                      <input
+                        type="text"
+                        id="advanceCategoryId"
+                        [(ngModel)]="advanceForm().categoryId"
+                        name="advanceCategoryId"
+                        class="form-input"
+                        readonly
+                        placeholder="Auto-filled when target phase selected"
+                      />
+                      <small class="form-hint">Automatically populated from target phase</small>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    [disabled]="isProcessing() || !advanceForm().sourcePhaseId || !advanceForm().targetPhaseId || !advanceForm().categoryId"
+                  >
+                    @if (isProcessing()) {
+                      <span>⏳ Advancing...</span>
+                    } @else {
+                      <span>{{ getQualifierButtonText() }}</span>
+                    }
+                  </button>
+                </form>
+              </div>
+            </div>
+          }
+
+          <!-- Consolation Draw Tab -->
+          @if (activeTab() === 'consolation') {
+            <div class="info-card">
+              <div class="card-header">
+                <h2>🏆 Create Consolation Draw</h2>
+              </div>
+              <div class="card-body">
+                <div class="help-text">
+                  <p><strong>What this does:</strong> Creates a second-chance tournament for players eliminated early from the main draw.</p>
+                  <p><strong>When to use:</strong> After first-round matches are complete and you want to give losers another competitive opportunity.</p>
+                  <p><strong>Example:</strong> Create "Consolation Singles" bracket for all first-round losers from "Main Draw - Men's Singles"</p>
+                </div>
+
+                <form (ngSubmit)="createConsolationDraw()" class="operation-form">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="consolationMainPhase" class="form-label">
+                        <span class="label-icon">🎯</span>
+                        Main Phase (Where losers are coming from)
+                      </label>
+                      <select
+                        id="consolationMainPhase"
+                        [(ngModel)]="consolationForm().mainPhaseId"
+                        (change)="onConsolationMainPhaseChange(consolationForm().mainPhaseId)"
+                        name="consolationMainPhase"
+                        class="form-input"
+                        required
+                      >
+                        <option value="">-- Select a phase --</option>
+                        @for (option of sourcePhaseOptions(); track option.phaseId) {
+                          <option [value]="option.phaseId">
+                            {{ option.displayLabel }}
+                          </option>
+                        }
+                      </select>
+                      <small class="form-hint">The main draw or knockout phase</small>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="consolationCategoryId" class="form-label">
+                        <span class="label-icon">🏷️</span>
+                        Category ID
+                      </label>
+                      <input
+                        type="text"
+                        id="consolationCategoryId"
+                        [(ngModel)]="consolationForm().categoryId"
+                        name="consolationCategoryId"
+                        class="form-input"
+                        readonly
+                        placeholder="Auto-filled when main phase selected"
+                      />
+                      <small class="form-hint">Automatically populated from main phase</small>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="eliminationRound" class="form-label">
+                      <span class="label-icon">🔢</span>
+                      Elimination Round
+                    </label>
+                    <input
+                      type="number"
+                      id="eliminationRound"
+                      [(ngModel)]="consolationForm().eliminationRound"
+                      name="eliminationRound"
+                      min="1"
+                      max="6"
+                      class="form-input"
+                    />
+                    <small class="form-hint">Which round losers enter consolation (1 = R64 losers, 2 = R32 losers, etc.)</small>
+                  </div>
+
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    [disabled]="isProcessing() || !consolationForm().mainPhaseId || !consolationForm().categoryId || consolationForm().consolationPhaseId"
+                  >
+                    @if (isProcessing()) {
+                      <span>⏳ Creating...</span>
+                    } @else {
+                      <span>🏆 Create Consolation Draw</span>
+                    }
+                  </button>
+                </form>
+
+                <!-- Populate Consolation Draw Form (shown after creation) -->
+                @if (consolationForm().consolationPhaseId) {
+                  <div class="form-separator"></div>
+                  <div class="help-text">
+                    <p><strong>✅ Consolation phase created!</strong></p>
+                    <p>Now populate it with losers from completed matches in the main phase.</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn btn-success"
+                    [disabled]="isProcessing()"
+                    (click)="populateConsolationDraw()"
+                  >
+                    @if (isProcessing()) {
+                      <span>⏳ Populating...</span>
+                    } @else {
+                      <span>👥 Populate with Losers</span>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Lucky Loser Tab -->
+          @if (activeTab() === 'lucky-loser') {
+            <div class="info-card">
+              <div class="card-header">
+                <h2>🍀 Promote Lucky Loser</h2>
+              </div>
+              <div class="card-body">
+                <div class="help-text">
+                  <p><strong>What this does:</strong> When a player withdraws before their match, promotes the first alternate ("Lucky Loser") to take their place.</p>
+                  <p><strong>When to use:</strong> After a registered player withdraws due to injury, illness, or personal reasons.</p>
+                  <p><strong>Example:</strong> Roger Federer withdraws from "Main Draw - Men's Singles" → Promote first alternate to Lucky Loser status</p>
+                </div>
+
+                <form (ngSubmit)="promoteLuckyLoser()" class="operation-form">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="luckyLoserPhase" class="form-label">
+                        <span class="label-icon">🎯</span>
+                        Phase (Where the spot opened up)
+                      </label>
+                      <select
+                        id="luckyLoserPhase"
+                        [(ngModel)]="luckyLoserForm().phaseId"
+                        (change)="onLuckyLoserPhaseChange(luckyLoserForm().phaseId)"
+                        name="luckyLoserPhase"
+                        class="form-input"
+                        required
+                      >
+                        <option value="">-- Select a phase --</option>
+                        @for (option of sourcePhaseOptions(); track option.phaseId) {
+                          <option [value]="option.phaseId">
+                            {{ option.displayLabel }}
+                          </option>
+                        }
+                      </select>
+                      <small class="form-hint">The phase where the withdrawal occurred</small>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="withdrawnParticipant" class="form-label">
+                        <span class="label-icon">❌</span>
+                        Withdrawn Player
+                      </label>
+                      <select
+                        id="withdrawnParticipant"
+                        [(ngModel)]="luckyLoserForm().withdrawnParticipantId"
+                        name="withdrawnParticipant"
+                        class="form-input"
+                        [disabled]="!luckyLoserForm().phaseId || withdrawableParticipants().length === 0"
+                        required
+                      >
+                        <option value="">-- Select player --</option>
+                        @for (participant of withdrawableParticipants(); track participant.participantId) {
+                          <option [value]="participant.participantId">
+                            {{ participant.displayLabel }}
+                          </option>
+                        }
+                      </select>
+                      <small class="form-hint">
+                        @if (!luckyLoserForm().phaseId) {
+                          Select a phase first to load available players
+                        } @else if (withdrawableParticipants().length === 0) {
+                          No accepted players found in this category
+                        } @else {
+                          {{ withdrawableParticipants().length }} player(s) available to withdraw
+                        }
+                      </small>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="luckyLoserCategoryId" class="form-label">
+                      <span class="label-icon">🏷️</span>
+                      Category ID
+                    </label>
+                    <input
+                      type="text"
+                      id="luckyLoserCategoryId"
+                      [(ngModel)]="luckyLoserForm().categoryId"
+                      name="luckyLoserCategoryId"
+                      class="form-input"
+                      readonly
+                      placeholder="Auto-filled when phase selected"
+                    />
+                    <small class="form-hint">Automatically populated from phase selection</small>
+                  </div>
+
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    [disabled]="isProcessing() || !luckyLoserForm().withdrawnParticipantId || !luckyLoserForm().phaseId || !luckyLoserForm().categoryId"
+                  >
+                    @if (isProcessing()) {
+                      <span>⏳ Promoting...</span>
+                    } @else {
+                      <span>🍀 Promote Lucky Loser</span>
+                    }
+                  </button>
+                </form>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

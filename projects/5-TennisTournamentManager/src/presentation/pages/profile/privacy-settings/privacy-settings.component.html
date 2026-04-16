@@ -1,0 +1,273 @@
+<div class="privacy-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <button type="button" class="back-button" (click)="goToProfile()" aria-label="Back to profile">
+        <span>← Back to Profile</span>
+      </button>
+      <header class="page-header">
+        <h1 class="page-title">
+          <span class="title-icon">🔒</span>
+          Privacy Settings
+        </h1>
+        <p class="page-subtitle">Configure who can view your personal information</p>
+      </header>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Success Message -->
+    @if (successMessage()) {
+      <div class="success-banner" role="alert">
+        <div class="success-icon">✓</div>
+        <p class="success-message">{{ successMessage() }}</p>
+      </div>
+    }
+
+    <!-- Error Message -->
+    @if (errorMessage()) {
+      <div class="error-container" role="alert">
+        <div class="error-icon">⚠️</div>
+        <p class="error-message">{{ errorMessage() }}</p>
+      </div>
+    }
+
+  <!-- Privacy Settings Form -->
+  <form [formGroup]="privacyForm" (ngSubmit)="savePrivacySettings()" class="privacy-form">
+    
+    <!-- Contact Information Section -->
+    <section class="settings-section">
+      <h2 class="section-title">
+        <span class="section-icon">📧</span>
+        Contact Information
+      </h2>
+      <p class="section-description">
+        Control who can view your contact details
+      </p>
+
+      <div class="setting-item">
+        <label for="email" class="setting-label">
+          Email Address
+          <span class="setting-hint">Who can see your email?</span>
+        </label>
+        <select id="email" formControlName="email" class="setting-select">
+          @for (level of privacyLevels; track level.value) {
+            <option [value]="level.value">{{ level.label }} - {{ level.description }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label for="phone" class="setting-label">
+          Phone Number
+          <span class="setting-hint">Who can see your phone?</span>
+        </label>
+        <select id="phone" formControlName="phone" class="setting-select">
+          @for (level of privacyLevels; track level.value) {
+            <option [value]="level.value">{{ level.label }} - {{ level.description }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label for="telegram" class="setting-label">
+          Telegram Username
+          <span class="setting-hint">Who can see your Telegram?</span>
+        </label>
+        <select id="telegram" formControlName="telegram" class="setting-select">
+          @for (level of privacyLevels; track level.value) {
+            <option [value]="level.value">{{ level.label }} - {{ level.description }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label for="whatsapp" class="setting-label">
+          WhatsApp Number
+          <span class="setting-hint">Who can see your WhatsApp?</span>
+        </label>
+        <select id="whatsapp" formControlName="whatsapp" class="setting-select">
+          @for (level of privacyLevels; track level.value) {
+            <option [value]="level.value">{{ level.label }} - {{ level.description }}</option>
+          }
+        </select>
+      </div>
+    </section>
+
+    <!-- Profile Information Section -->
+    <section class="settings-section">
+      <h2 class="section-title">
+        <span class="section-icon">👤</span>
+        Profile Information
+      </h2>
+      <p class="section-description">
+        Control who can view your public profile details
+      </p>
+
+      <div class="setting-item">
+        <label for="avatar" class="setting-label">
+          Avatar Image
+          <span class="setting-hint">Who can see your profile picture?</span>
+        </label>
+        <select id="avatar" formControlName="avatar" class="setting-select">
+          @for (level of privacyLevels; track level.value) {
+            <option [value]="level.value">{{ level.label }} - {{ level.description }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label for="ranking" class="setting-label">
+          Ranking
+          <span class="setting-hint">Who can see your tennis ranking?</span>
+        </label>
+        <select id="ranking" formControlName="ranking" class="setting-select">
+          @for (level of privacyLevels; track level.value) {
+            <option [value]="level.value">{{ level.label }} - {{ level.description }}</option>
+          }
+        </select>
+      </div>
+    </section>
+
+    <!-- Security & Compliance Section -->
+    <section class="settings-section security-section">
+      <h2 class="section-title">
+        <span class="section-icon">🔐</span>
+        Security & Compliance
+      </h2>
+      <p class="section-description">
+        Sensitive personal data protected for legal compliance (GDPR)
+      </p>
+
+      <div class="setting-item locked-item">
+        <label for="idDocument" class="setting-label">
+          ID Document (DNI/NIE/Passport)
+          <span class="setting-hint">🔒 Locked to Admins Only for data protection</span>
+        </label>
+        <select id="idDocument" formControlName="idDocument" class="setting-select locked-select" disabled>
+          <option [value]="'ADMINS_ONLY'">Admins Only - Locked for security</option>
+        </select>
+        <div class="security-notice">
+          <span class="notice-icon">ℹ️</span>
+          <p class="notice-text">
+            <strong>Security Notice:</strong> ID documents contain highly sensitive personal information and are always restricted to administrators only. This setting cannot be changed to ensure compliance with data protection regulations (GDPR).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tournament Data Section -->
+    <section class="settings-section">
+      <h2 class="section-title">
+        <span class="section-icon">🎾</span>
+        Tournament Data
+      </h2>
+      <p class="section-description">
+        Control who can view your match history and performance statistics
+      </p>
+
+      <div class="setting-item">
+        <label for="history" class="setting-label">
+          Match History
+          <span class="setting-hint">Who can see your past matches?</span>
+        </label>
+        <select id="history" formControlName="history" class="setting-select">
+          @for (level of privacyLevels; track level.value) {
+            <option [value]="level.value">{{ level.label }} - {{ level.description }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label for="statistics" class="setting-label">
+          Statistics
+          <span class="setting-hint">Who can see your performance stats?</span>
+        </label>
+        <select id="statistics" formControlName="statistics" class="setting-select">
+          @for (level of privacyLevels; track level.value) {
+            <option [value]="level.value">{{ level.label }} - {{ level.description }}</option>
+          }
+        </select>
+      </div>
+    </section>
+
+    <!-- Communication Section -->
+    <section class="settings-section">
+      <h2 class="section-title">
+        <span class="section-icon">💬</span>
+        Communication
+      </h2>
+      <p class="section-description">
+        Control how other users can contact you
+      </p>
+
+      <div class="setting-item checkbox-item">
+        <label class="checkbox-label">
+          <input 
+            type="checkbox" 
+            formControlName="allowContact" 
+            class="setting-checkbox"
+          />
+          <span class="checkbox-text">
+            Allow other tournament participants to contact me
+          </span>
+        </label>
+        <p class="checkbox-hint">
+          When enabled, other participants can see your contact information based on your privacy settings above
+        </p>
+      </div>
+    </section>
+
+    <!-- Privacy Level Information -->
+    <aside class="privacy-info">
+      <h3 class="info-title">Privacy Levels Explained</h3>
+      <dl class="info-list">
+        <div class="info-item">
+          <dt class="info-term">🌍 Public</dt>
+          <dd class="info-definition">Anyone can view, including unregistered visitors</dd>
+        </div>
+        <div class="info-item">
+          <dt class="info-term">👥 All Registered Users</dt>
+          <dd class="info-definition">All users with an account can view</dd>
+        </div>
+        <div class="info-item">
+          <dt class="info-term">🎾 Same Tournament</dt>
+          <dd class="info-definition">Only participants in tournaments where you're also registered</dd>
+        </div>
+        <div class="info-item">
+          <dt class="info-term">🛡️ Admins Only</dt>
+          <dd class="info-definition">Most private - only system and tournament administrators</dd>
+        </div>
+      </dl>
+    </aside>
+
+    <!-- Form Actions -->
+    <footer class="form-actions">
+      <button 
+        type="button" 
+        class="btn btn-secondary" 
+        (click)="resetToDefaults()"
+        [disabled]="isLoading()"
+      >
+        Reset to Defaults
+      </button>
+      
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="isLoading()"
+      >
+        @if (isLoading()) {
+          <span class="spinner"></span>
+          <span>Saving...</span>
+        } @else {
+          <span>💾</span>
+          <span>Save Privacy Settings</span>
+        }
+      </button>
+    </footer>
+  </form>
+  </div> <!-- End main-content -->
+</div> <!-- End privacy-container -->
