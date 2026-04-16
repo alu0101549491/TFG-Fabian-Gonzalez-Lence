@@ -260,6 +260,18 @@
                 <span class="info-label">End Date</span>
                 <span class="info-value">{{ formatDate(tournament()!.endDate) }}</span>
               </div>
+              @if (tournament()!.registrationOpenDate) {
+                <div class="info-item">
+                  <span class="info-label">Registration Opens</span>
+                  <span class="info-value">{{ formatDate(tournament()!.registrationOpenDate) }}</span>
+                </div>
+              }
+              @if (tournament()!.registrationCloseDate) {
+                <div class="info-item">
+                  <span class="info-label">Registration Closes</span>
+                  <span class="info-value">{{ formatDate(tournament()!.registrationCloseDate) }}</span>
+                </div>
+              }
               <div class="info-item">
                 <span class="info-label">Max Participants</span>
                 <span class="info-value">{{ tournament()!.maxParticipants }}</span>

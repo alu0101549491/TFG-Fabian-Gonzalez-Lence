@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Enhancement: Display Registration Dates in Tournament Details (2026-04-16)
+
+**Feature:** Added "Registration Opens" and "Registration Closes" fields to the Tournament Details card.
+
+**Motivation:** Users had no way to see when registration opens or closes for a tournament without attempting to register. This information should be prominently displayed in the tournament details for better transparency.
+
+**Implementation:**
+
+- ✅ **Template Update** (`tournament-detail-new.component.html`):
+  - Added "Registration Opens" info-item (conditionally shown if `registrationOpenDate` is set)
+  - Added "Registration Closes" info-item (conditionally shown if `registrationCloseDate` is set)
+  - Positioned between "End Date" and "Max Participants" for logical grouping
+  - Uses existing `formatDate()` method for consistent date formatting
+
+**Impact:**
+- **Better Transparency**: Users immediately see when registration opens and closes
+- **Informed Decisions**: Players can plan ahead and know deadlines without trial-and-error
+- **Reduced Confusion**: Clear visibility of registration windows prevents user errors
+- **Optional Display**: Only shows when dates are configured (doesn't clutter UI for tournaments without registration windows)
+
+**Visual Example:**
+```
+Tournament Details
+├─ Location: Madrid
+├─ Surface: Hard
+├─ Start Date: April 18, 2026
+├─ End Date: April 26, 2026
+├─ Registration Opens: April 1, 2026   ← NEW
+├─ Registration Closes: April 15, 2026 ← NEW
+├─ Max Participants: 8
+└─ Ranking System: Points Based
+```
+
+---
+
 ### Bug Fix: Registration Deadline Incorrectly Enforced During Tournament (2026-04-16)
 
 **Fix:** Fixed logic to not enforce registration deadlines that are set to the same date or after the tournament start date.
