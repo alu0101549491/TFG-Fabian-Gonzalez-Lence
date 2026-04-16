@@ -29,7 +29,9 @@ services:
       - key: API_VERSION
         value: v1
       - key: DATABASE_URL
-        sync: false  # Set manually: Supabase connection pooler URL
+        fromDatabase:
+          name: carto-db
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -60,103 +62,64 @@ services:
         value: 60
 
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # TennisTournamentManager Backend
+  # TennisTournamentManager Backend (READY FOR FUTURE)
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  - type: web
-    name: tennis-backend
-    runtime: node
-    region: frankfurt
-    plan: free
-    branch: main
-    rootDir: projects/5-TennisTournamentManager/backend
-    buildCommand: npm ci && npm run build
-    startCommand: npm run db:migrate && npm start
-    healthCheckPath: /api/health
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 10000
-      - key: API_PREFIX
-        value: /api
-      - key: DATABASE_URL
-        fromDatabase:
-          name: tennis-db
-          property: connectionString
-      - key: DB_SYNCHRONIZE
-        value: false
-      - key: DB_LOGGING
-        value: false
-      - key: DB_SSL
-        value: true
-      - key: JWT_SECRET
-        generateValue: true
-      - key: JWT_REFRESH_SECRET
-        generateValue: true
-      - key: JWT_EXPIRES_IN
-        value: 7d
-      - key: JWT_REFRESH_EXPIRES_IN
-        value: 30d
-      - key: CORS_ORIGIN
-        sync: false  # Set manually: https://your-username.github.io
-      - key: SOCKET_CORS_ORIGIN
-        sync: false  # Set manually: https://your-username.github.io
-      - key: APP_URL
-        sync: false  # Set manually: https://your-username.github.io
-      - key: EMAIL_HOST
-        sync: false  # Set manually: smtp.gmail.com or smtp.sendgrid.net
-      - key: EMAIL_PORT
-        value: 587
-      - key: EMAIL_SECURE
-        value: false
-      - key: EMAIL_USER
-        sync: false  # Set manually
-      - key: EMAIL_PASSWORD
-        sync: false  # Set manually (Gmail App Password or SendGrid API Key)
-      - key: EMAIL_FROM_NAME
-        value: Tennis Tournament Manager
-      - key: EMAIL_FROM_ADDRESS
-        sync: false  # Set manually
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false  # Optional: Set if using Telegram notifications
-      - key: TELEGRAM_ENABLED
-        value: false
-      - key: WEB_PUSH_PUBLIC_KEY
-        sync: false  # Optional: Generate with npx web-push generate-vapid-keys
-      - key: WEB_PUSH_PRIVATE_KEY
-        sync: false  # Optional
-      - key: WEB_PUSH_SUBJECT
-        sync: false  # Optional: mailto:your-email@example.com
-      - key: WEB_PUSH_ENABLED
-        value: false
-      - key: LOG_LEVEL
-        value: info
-      - key: RATE_LIMIT_WINDOW_MS
-        value: 900000
-      - key: RATE_LIMIT_MAX_REQUESTS
-        value: 1000
-      - key: MAX_FILE_SIZE_MB
-        value: 10
-      - key: SESSION_TIMEOUT_MINUTES
-        value: 60
+  # Uncomment when ready to deploy Tennis backend
+  # - type: web
+  #   name: tennis-backend
+  #   runtime: node
+  #   region: frankfurt
+  #   plan: free
+  #   branch: main
+  #   rootDir: projects/5-TennisTournamentManager/backend
+  #   buildCommand: npm ci && npx prisma generate && npm run build
+  #   startCommand: npx prisma migrate deploy && npm start
+  #   healthCheckPath: /api/v1/health
+  #   envVars:
+  #     - key: NODE_ENV
+  #       value: production
+  #     - key: PORT
+  #       value: 10000
+  #     - key: API_VERSION
+  #       value: v1
+  #     - key: DATABASE_URL
+  #       fromDatabase:
+  #         name: tennis-db
+  #         property: connectionString
+  #     - key: JWT_SECRET
+  #       generateValue: true
+  #     - key: JWT_REFRESH_SECRET
+  #       generateValue: true
+  #     - key: JWT_EXPIRES_IN
+  #       value: 7d
+  #     - key: JWT_REFRESH_EXPIRES_IN
+  #       value: 30d
+  #     - key: CORS_ORIGIN
+  #       sync: false  # Set manually: https://your-username.github.io
+  #     - key: SOCKET_CORS_ORIGIN
+  #       sync: false  # Set manually: https://your-username.github.io
+  #     - key: LOG_LEVEL
+  #       value: info
 
 databases:
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # TennisTournamentManager Database (future deployment)
+  # CartographicProjectManager Database
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # NOTE: CARTO backend now uses Supabase (set DATABASE_URL manually)
+  - name: carto-db
+    databaseName: cartographic_manager
     plan: free  # 256 MB RAM, 1 GB storage, 90 days retention
     region: frankfurt
     ipAllowList: []  # Empty = allow from anywhere (needed for Render services)
 
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # TennisTournamentManager Database
+  # TennisTournamentManager Database (READY FOR FUTURE)
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  - name: tennis-db
-    databaseName: tennis_tournament_manager
-    plan: free
-    region: frankfurt
-    ipAllowList: []
+  # Uncomment when ready to deploy Tennis backend
+  # - name: tennis-db
+  #   databaseName: tennis_tournament_manager
+  #   plan: free
+  #   region: frankfurt
+  #   ipAllowList: []
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # DEPLOYMENT NOTES
@@ -166,9 +129,15 @@ databases:
 # This Blueprint manages multiple backends in a single repository.
 # Each service has its own rootDir pointing to its backend folder.
 #
-# CURRENT DEPLOYMENT:
-# - carto-backend + carto-db (CartographicProjectManager)
-# - tennis-backend + tennis-db (TennisTournamentManager)
+# DEPLOYING CARTO ONLY (CURRENT):
+# - Only carto-backend and carto-db will be created
+# - Tennis service is commented out and won't be deployed
+#
+# DEPLOYING BOTH BACKENDS (FUTURE):
+# 1. Uncomment tennis-backend and tennis-db sections above
+# 2. Push to main branch
+# 3. Render will automatically create both services
+# 4. Configure CORS_ORIGIN for tennis-backend in Render Dashboard
 #
 # FREE TIER LIMITS:
 # - Render FREE allows multiple services
@@ -183,26 +152,13 @@ databases:
 # - For production: Upgrade to Starter ($7/month per service)
 #
 # MANUAL ENVIRONMENT VARIABLES (Set in Render Dashboard):
-# 
 # Both backends require:
 # - CORS_ORIGIN (your GitHub Pages URL)
 # - SOCKET_CORS_ORIGIN (your GitHub Pages URL)
 # 
 # Carto backend also requires:
-# - DROPBOX_APP_KEY, DROPBOX_APP_SECRET, DROPBOX_REFRESH_TOKEN
-#   See: projects/4-CartographicProjectManager/backend/RENDER.md
+# - DROPBOX_APP_KEY
+# - DROPBOX_APP_SECRET
+# - DROPBOX_REFRESH_TOKEN
 #
-# Tennis backend also requires:
-# - APP_URL (your GitHub Pages URL)
-# - EMAIL_HOST, EMAIL_USER, EMAIL_PASSWORD, EMAIL_FROM_ADDRESS
-# - Optional: TELEGRAM_BOT_TOKEN, WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY
-#   See: projects/5-TennisTournamentManager/backend/RENDER.md
-#
-# DEPLOYMENT:
-# 1. Push to main branch
-# 2. Render Dashboard → New → Blueprint
-# 3. Select repository → Apply
-# 4. Configure manual environment variables for each service
-#
-# See project-specific RENDER.md files for detailed setup instructions.
-
+# See: projects/4-CartographicProjectManager/backend/RENDER.md
