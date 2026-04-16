@@ -88,23 +88,13 @@ export class ScheduleGenerationService {
         const courtOpenMinutes = courtOpenHour * 60 + courtOpenMinute;
         const baseMinutes = startHour * 60 + startMinute;
         
-        console.log(`[SCHEDULER DEBUG] Court: ${court.name}`);
-        console.log(`[SCHEDULER DEBUG] - Opening: ${court.openingTime}, Closing: ${court.closingTime}`);
-        console.log(`[SCHEDULER DEBUG] - Start time: ${startTime} (${baseMinutes} mins)`);
-        console.log(`[SCHEDULER DEBUG] - Court open: ${court.openingTime} (${courtOpenMinutes} mins)`);
-        console.log(`[SCHEDULER DEBUG] - Comparison: ${courtOpenMinutes} >= ${baseMinutes} = ${courtOpenMinutes >= baseMinutes}`);
-        
         // Use the later of the two times (>=  instead of > to handle equal times correctly)
         if (courtOpenMinutes >= baseMinutes) {
           courtStartTime.setHours(courtOpenHour, courtOpenMinute, 0, 0);
-          console.log(`[SCHEDULER DEBUG] - Court start time set to: ${courtStartTime.toISOString()}`);
-        } else {
-          console.log(`[SCHEDULER DEBUG] - Court start time remains: ${courtStartTime.toISOString()}`);
         }
       }
       
       courtAvailability.set(court.id, courtStartTime);
-      console.log(`[SCHEDULER DEBUG] - Final availability for ${court.name}: ${courtStartTime.toISOString()}`);
     }
 
     // Sort matches by round (earlier rounds first) for logical progression
@@ -452,15 +442,7 @@ export class ScheduleGenerationService {
     const openMinutes = openHour * 60 + openMinute;
     const closeMinutes = closeHour * 60 + closeMinute;
 
-    const result = startMinutes >= openMinutes && endMinutes <= closeMinutes;
-    
-    console.log(`[SCHEDULER DEBUG] isWithinCourtHours for ${court.name}:`);
-    console.log(`[SCHEDULER DEBUG] - Proposed: ${proposedTime.toISOString()}, Duration: ${duration} mins`);
-    console.log(`[SCHEDULER DEBUG] - Match: ${startHour}:${startMinute.toString().padStart(2, '0')} to ${endHour}:${endMinute.toString().padStart(2, '0')}`);
-    console.log(`[SCHEDULER DEBUG] - Court: ${court.openingTime} to ${court.closingTime}`);
-    console.log(`[SCHEDULER DEBUG] - Check: ${startMinutes} >= ${openMinutes} && ${endMinutes} <= ${closeMinutes} = ${result}`);
-
     // Match must start at or after opening time and end at or before closing time
-    return result;
+    return startMinutes >= openMinutes && endMinutes <= closeMinutes;
   }
 }

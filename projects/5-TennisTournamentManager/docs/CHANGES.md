@@ -8,6 +8,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Bug Fix: Match Times Displayed in Wrong Timezone (2026-04-16)
+
+**Fix:** Fixed order-of-play display to show match times in UTC timezone to match backend storage.
+
+**Problem:** Match times were being displayed incorrectly in the order-of-play views. Backend correctly stored matches at 17:00 UTC, but frontend displayed them at 18:00 (or other times depending on user's local timezone).
+
+**Root Cause:** The `formatTime()` and `formatDateTime()` methods in both order-of-play components were using `toLocaleTimeString()` and `toLocaleString()` without specifying a timezone. This caused automatic conversion from UTC (backend storage) to the browser's local timezone (e.g., UTC+1), resulting in incorrect time display.
+
+**Implementation:**
+
+- ✅ **Order of Play View Component** (`src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts`):
+  - Added `timeZone: 'UTC'` option to `formatTime()` method
+  - Ensures match times display in UTC, matching backend storage
+
+- ✅ **Order of Play Admin Component** (`src/presentation/pages/order-of-play/order-of-play-admin/order-of-play-admin.component.ts`):
+  - Added `timeZone: 'UTC'` option to `formatDateTime()` method
+  - Ensures consistent time display in admin view
+
+**Impact:**
+- **Correct Display**: Match times now display as stored (17:00 UTC shows as 17:00)
+- **Consistent Experience**: All users see the same time regardless of their timezone
+- **No Data Changes**: Backend was already working correctly; this was purely a display issue
+
+**Technical Details:**
+```typescript
+// Before: Converted to local timezone
+new Date(timeStr).toLocaleTimeString('en-US', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+// After: Displays in UTC timezone
+new Date(timeStr).toLocaleTimeString('en-US', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+  timeZone: 'UTC',  // ← Forces UTC display
+});
+```
+
+**Discovery:** Issue identified through debug logging which confirmed backend was scheduling correctly at 17:00 UTC, but frontend was displaying in local timezone.
+
+---
+
 ### Bug Fix: Scheduler Not Using Court Opening Time When Equal to Start Time (2026-04-16)
 
 **Fix:** Fixed schedule generation logic to correctly use court opening time when it equals the requested start time.
