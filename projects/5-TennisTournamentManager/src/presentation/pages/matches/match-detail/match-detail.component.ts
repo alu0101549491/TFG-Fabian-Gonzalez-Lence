@@ -684,6 +684,7 @@ await this.loadMatch(this.match()!.id);
     return new Date(date).toLocaleString('en-US', {
       dateStyle: 'full',
       timeStyle: 'short',
+      timeZone: 'UTC',
     });
   }
 

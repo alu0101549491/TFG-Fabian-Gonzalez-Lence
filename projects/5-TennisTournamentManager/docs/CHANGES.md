@@ -60,11 +60,11 @@ const proposedTime = new Date(timeString);  // "2026-04-18T17:00:00Z" → interp
 
 ### Bug Fix: Match Times Displayed in Wrong Timezone (2026-04-16)
 
-**Fix:** Fixed order-of-play display to show match times in UTC timezone to match backend storage.
+**Fix:** Fixed order-of-play, match details, match list, and my matches displays to show match times in UTC timezone to match backend storage.
 
-**Problem:** Match times were being displayed incorrectly in the order-of-play views. Backend correctly stored matches at 17:00 UTC, but frontend displayed them at 18:00 (or other times depending on user's local timezone).
+**Problem:** Match times were being displayed incorrectly across multiple views. Backend correctly stored matches at 17:00 UTC, but frontend displayed them at 18:00 (or other times depending on user's local timezone).
 
-**Root Cause:** The `formatTime()` and `formatDateTime()` methods in both order-of-play components were using `toLocaleTimeString()` and `toLocaleString()` without specifying a timezone. This caused automatic conversion from UTC (backend storage) to the browser's local timezone (e.g., UTC+1), resulting in incorrect time display.
+**Root Cause:** The `formatTime()`, `formatDateTime()`, and `formatDate()` methods across multiple components were using `toLocaleTimeString()` and `toLocaleString()` without specifying a timezone. Additionally, Angular `date` pipes were used without timezone parameter. This caused automatic conversion from UTC (backend storage) to the browser's local timezone (e.g., UTC+1), resulting in incorrect time display.
 
 **Implementation:**
 
@@ -76,27 +76,45 @@ const proposedTime = new Date(timeString);  // "2026-04-18T17:00:00Z" → interp
   - Added `timeZone: 'UTC'` option to `formatDateTime()` method
   - Ensures consistent time display in admin view
 
+- ✅ **Match Detail Component** (`src/presentation/pages/matches/match-detail/match-detail.component.ts`):
+  - Added `timeZone: 'UTC'` option to `formatDate()` method
+  - Match details page now shows correct UTC time
+
+- ✅ **Match List Component** (`src/presentation/pages/matches/match-list/match-list.component.ts`):
+  - Added `timeZone: 'UTC'` option to both `formatDate()` and `formatDateTime()` methods
+  - Match list now displays correct UTC times
+
+- ✅ **My Matches Component** (`src/presentation/pages/matches/my-matches/my-matches.component.html`):
+  - Updated Angular date pipe from `date: 'short'` to `date: 'short' : 'UTC'`
+  - My matches page now shows correct UTC time
+
 **Impact:**
-- **Correct Display**: Match times now display as stored (17:00 UTC shows as 17:00)
+- **Correct Display**: Match times now display as stored (17:00 UTC shows as 17:00) across all views
 - **Consistent Experience**: All users see the same time regardless of their timezone
 - **No Data Changes**: Backend was already working correctly; this was purely a display issue
 
 **Technical Details:**
 ```typescript
-// Before: Converted to local timezone
+// TypeScript - Before: Converted to local timezone
 new Date(timeStr).toLocaleTimeString('en-US', {
   hour: '2-digit',
   minute: '2-digit',
   hour12: false,
 });
 
-// After: Displays in UTC timezone
+// TypeScript - After: Displays in UTC timezone
 new Date(timeStr).toLocaleTimeString('en-US', {
   hour: '2-digit',
   minute: '2-digit',
   hour12: false,
   timeZone: 'UTC',  // ← Forces UTC display
 });
+
+// Angular Template - Before: Used local timezone
+{{ match.scheduledTime | date: 'short' }}
+
+// Angular Template - After: Forces UTC timezone
+{{ match.scheduledTime | date: 'short' : 'UTC' }}
 ```
 
 **Discovery:** Issue identified through debug logging which confirmed backend was scheduling correctly at 17:00 UTC, but frontend was displaying in local timezone.

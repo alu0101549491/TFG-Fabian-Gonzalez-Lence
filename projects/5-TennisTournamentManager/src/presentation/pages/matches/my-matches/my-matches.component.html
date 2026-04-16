@@ -196,7 +196,7 @@
                       <span class="info-icon">📅</span>
                       <div class="info-content">
                         <span class="info-label">Scheduled</span>
-                        <span class="info-value">{{ match.scheduledTime ? (match.scheduledTime | date: 'short') : 'Not scheduled' }}</span>
+                        <span class="info-value">{{ match.scheduledTime ? (match.scheduledTime | date: 'short' : 'UTC') : 'Not scheduled' }}</span>
                       </div>
                     </div>
                     <div class="info-item">
