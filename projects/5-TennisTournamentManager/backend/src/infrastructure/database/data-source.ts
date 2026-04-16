@@ -15,21 +15,32 @@ import {DataSource} from 'typeorm';
 import {config} from '../../shared/config';
 import * as entities from '../../domain/entities';
 
+// Use DATABASE_URL (Supabase/Render) if set, otherwise fall back to individual DB_* vars
+const connectionConfig = process.env.DATABASE_URL
+  ? {
+      url: process.env.DATABASE_URL,
+      ssl: {rejectUnauthorized: false},
+    }
+  : {
+      host: config.db.host,
+      port: config.db.port,
+      username: config.db.username,
+      password: config.db.password,
+      database: config.db.database,
+      ssl: process.env.DB_SSL === 'true' ? {rejectUnauthorized: false} : false,
+    };
+
 /**
  * TypeORM DataSource configuration.
- * Manages database connection and entity metadata.
+ * Supports both DATABASE_URL (Supabase/Render) and individual DB_* environment variables.
  */
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: config.db.host,
-  port: config.db.port,
-  username: config.db.username,
-  password: config.db.password,
-  database: config.db.database,
+  ...connectionConfig,
   synchronize: config.db.synchronize,
   logging: config.db.logging,
   entities: Object.values(entities),
-  migrations: ['src/infrastructure/database/migrations/**/*.ts'],
+  migrations: [],  // DB_SYNCHRONIZE=true handles schema creation; no runtime migration loading
   subscribers: [],
 });
 

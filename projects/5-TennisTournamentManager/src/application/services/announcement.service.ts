@@ -15,6 +15,7 @@ import {Injectable, inject} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {AnnouncementDto, CreateAnnouncementDto} from '../dto';
+import {environment} from '../../environments/environment';
 
 /**
  * Frontend service for managing announcements.
@@ -24,7 +25,7 @@ import {AnnouncementDto, CreateAnnouncementDto} from '../dto';
 })
 export class AnnouncementService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/announcements';
+  private readonly baseUrl = `${environment.apiUrl}/announcements`;
 
   /**
    * Creates a new announcement.

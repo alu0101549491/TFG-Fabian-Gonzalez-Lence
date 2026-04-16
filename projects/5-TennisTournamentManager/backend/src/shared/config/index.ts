@@ -49,7 +49,7 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN 
     ? process.env.CORS_ORIGIN.split(',')
     : (process.env.NODE_ENV === 'production' 
-      ? 'https://yourdomain.com' 
+      ? 'https://alu0101549491.github.io' 
       : ['http://localhost:4200', 'http://localhost:4201', 'http://localhost:5173']),
   
   /** Rate limiting configuration */
@@ -107,16 +107,19 @@ export const config = {
  * Throws an error if any critical configuration is missing.
  */
 export function validateConfig(): void {
-  const requiredVars = [
-    'JWT_SECRET',
-    'DB_HOST',
-    'DB_USERNAME',
-    'DB_PASSWORD',
-    'DB_DATABASE',
-  ];
-  
-  const missing = requiredVars.filter((varName) => !process.env[varName]);
-  
+  const missingJwt = ['JWT_SECRET'].filter((varName) => !process.env[varName]);
+
+  // Accept either DATABASE_URL (Supabase/Render) or individual DB_* vars
+  const hasConnectionUrl = !!process.env.DATABASE_URL;
+  const hasIndividualVars = ['DB_HOST', 'DB_USERNAME', 'DB_PASSWORD', 'DB_DATABASE']
+    .every((varName) => !!process.env[varName]);
+
+  const missing: string[] = [...missingJwt];
+
+  if (!hasConnectionUrl && !hasIndividualVars) {
+    missing.push('DATABASE_URL (or DB_HOST + DB_USERNAME + DB_PASSWORD + DB_DATABASE)');
+  }
+
   if (missing.length > 0) {
     throw new Error(
       `Missing required environment variables: ${missing.join(', ')}. ` +

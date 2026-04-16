@@ -125,11 +125,11 @@ model User {
   id               String    @id @default(uuid())
   username         String    @unique
   email            String    @unique
-  passwordHash     String
+  passwordHash     String    @map("password_hash")
   role             UserRole  @default(CLIENT)
   phone            String?
-  createdAt        DateTime  @default(now())
-  lastLogin        DateTime?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  lastLogin        DateTime? @map("last_login")
   
   // Relations
   clientProjects   Project[]      @relation("ClientProjects")
@@ -157,18 +157,18 @@ model Project {
   code             String        @unique
   name             String
   year             Int
-  clientId         String
-  creatorId        String?
+  clientId         String        @map("client_id")
+  creatorId        String?       @map("creator_id")
   type             ProjectType
-  coordinateX      Float?
-  coordinateY      Float?
-  contractDate     DateTime
-  deliveryDate     DateTime
+  coordinateX      Float?        @map("coordinate_x")
+  coordinateY      Float?        @map("coordinate_y")
+  contractDate     DateTime      @map("contract_date")
+  deliveryDate     DateTime      @map("delivery_date")
   status           ProjectStatus @default(ACTIVE)
-  dropboxFolderId  String
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  finalizedAt      DateTime?
+  dropboxFolderId  String        @map("dropbox_folder_id")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  finalizedAt      DateTime?     @map("finalized_at")
   
   // Relations
   client           User          @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
@@ -195,9 +195,9 @@ model Project {
 
 model ProjectSpecialUser {
   id        String   @id @default(uuid())
-  projectId String
-  userId    String
-  addedAt   DateTime @default(now())
+  projectId String   @map("project_id")
+  userId    String   @map("user_id")
+  addedAt   DateTime @default(now()) @map("added_at")
   
   // Relations
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -215,18 +215,18 @@ model ProjectSpecialUser {
 
 model Task {
   id          String        @id @default(uuid())
-  projectId   String
-  creatorId   String
-  assigneeId  String
+  projectId   String        @map("project_id")
+  creatorId   String        @map("creator_id")
+  assigneeId  String        @map("assignee_id")
   description String
   status      TaskStatus    @default(PENDING)
   priority    TaskPriority  @default(MEDIUM)
-  dueDate     DateTime
+  dueDate     DateTime      @map("due_date")
   comments    String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  completedAt DateTime?
-  confirmedAt DateTime?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  completedAt DateTime?     @map("completed_at")
+  confirmedAt DateTime?     @map("confirmed_at")
   
   // Relations
   project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -250,9 +250,9 @@ model Task {
 
 model TaskFile {
   id       String   @id @default(uuid())
-  taskId   String
-  fileId   String
-  addedAt  DateTime @default(now())
+  taskId   String   @map("task_id")
+  fileId   String   @map("file_id")
+  addedAt  DateTime @default(now()) @map("added_at")
   
   // Relations
   task     Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
@@ -270,12 +270,12 @@ model TaskFile {
 
 model TaskHistory {
   id           String     @id @default(uuid())
-  taskId       String
-  changedBy    String
-  previousStatus TaskStatus?
-  newStatus    TaskStatus
+  taskId       String     @map("task_id")
+  changedBy    String     @map("changed_by")
+  previousStatus TaskStatus? @map("previous_status")
+  newStatus    TaskStatus @map("new_status")
   notes        String?
-  changedAt    DateTime   @default(now())
+  changedAt    DateTime   @default(now()) @map("changed_at")
   
   // Relations
   task         Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
@@ -291,20 +291,20 @@ model TaskHistory {
 
 model Message {
   id           String   @id @default(uuid())
-  projectId    String
-  senderId     String
+  projectId    String   @map("project_id")
+  senderId     String   @map("sender_id")
   content      String
-  sentAt       DateTime @default(now())
+  sentAt       DateTime @default(now()) @map("sent_at")
   /// Denormalized read receipts (user IDs).
   /// Stored as an inline array for simplicity; application code treats this as a set (no duplicates).
   /// If read tracking or message volume grows, consider normalizing to a join table.
-  readByUserIds String[] @default([])
+  readByUserIds String[] @default([]) @map("read_by_user_ids")
 
   /// Denormalized message attachments (file IDs).
   /// Stored as an inline array for simplicity; application code validates that referenced files exist
   /// and belong to the same project, and treats this as a set (no duplicates).
   /// If attachments per message grow, consider normalizing to a join table.
-  fileIds      String[] @default([])
+  fileIds      String[] @default([]) @map("file_ids")
   
   // Relations
   project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -322,14 +322,14 @@ model Message {
 
 model Notification {
   id         String           @id @default(uuid())
-  userId     String
+  userId     String           @map("user_id")
   type       NotificationType
   title      String
   message    String
-  projectId  String?
-  isRead     Boolean          @default(false)
-  createdAt  DateTime         @default(now())
-  readAt     DateTime?
+  projectId  String?          @map("project_id")
+  isRead     Boolean          @default(false) @map("is_read")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  readAt     DateTime?        @map("read_at")
   
   // Relations
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -347,15 +347,15 @@ model Notification {
 
 model File {
   id            String   @id @default(uuid())
-  projectId     String
-  uploadedBy    String
+  projectId     String   @map("project_id")
+  uploadedBy    String   @map("uploaded_by")
   filename      String
-  originalName  String
+  originalName  String   @map("original_name")
   type          FileType
   size          Int
-  mimeType      String
-  dropboxPath   String
-  uploadedAt    DateTime @default(now())
+  mimeType      String   @map("mime_type")
+  dropboxPath   String   @map("dropbox_path")
+  uploadedAt    DateTime @default(now()) @map("uploaded_at")
   
   // Relations
   project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -375,14 +375,14 @@ model File {
 
 model Permission {
   id         String      @id @default(uuid())
-  userId     String
-  projectId  String
+  userId     String      @map("user_id")
+  projectId  String      @map("project_id")
   rights     AccessRight[]
-  grantedAt  DateTime    @default(now())
+  grantedAt  DateTime    @default(now()) @map("granted_at")
 
   /// Attribution user ID (who granted the permission).
   /// Intentionally not a relation to preserve historical auditability even if users are deleted.
-  grantedBy  String
+  grantedBy  String      @map("granted_by")
   
   // Relations
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -402,15 +402,15 @@ model AuditLog {
 
   /// Actor user ID (nullable for system/background actions).
   /// Intentionally not a relation to preserve logs even if users are deleted.
-  userId         String?
+  userId         String?           @map("user_id")
   action         AuditAction
-  resourceType   AuditResourceType
-  resourceId     String?
-  resourceName   String?
-  oldValue       String?
-  newValue       String?
-  ipAddress      String?
-  userAgent      String?
+  resourceType   AuditResourceType @map("resource_type")
+  resourceId     String?           @map("resource_id")
+  resourceName   String?           @map("resource_name")
+  oldValue       String?           @map("old_value")
+  newValue       String?           @map("new_value")
+  ipAddress      String?           @map("ip_address")
+  userAgent      String?           @map("user_agent")
   timestamp      DateTime          @default(now())
   details        String?
   

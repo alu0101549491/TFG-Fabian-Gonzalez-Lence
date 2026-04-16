@@ -35,7 +35,8 @@
    - Name: `carto-backend` (or `carto-backend-gl8l` if already exists)
    - Root Directory: `projects/4-CartographicProjectManager/backend`
    - Build Command: `npm ci && npx prisma generate && npm run build && npm run build:seed`
-   - Start Command: `npx prisma migrate deploy && npm run prisma:seed:production && npm start`
+   - Start Command: `npm run prisma:seed:production && npm start`
+   - **Note:** Database schema is managed by Supabase migrations (already deployed)
    - **Important:** Choose "Manual deploys" to set environment variables first!
 
 3. **Set Environment Variables** in Render Dashboard:

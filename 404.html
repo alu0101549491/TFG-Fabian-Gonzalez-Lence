@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>TFG Projects</title>
+  <script>
+    // GitHub Pages SPA redirect trick.
+    // GitHub Pages serves this file on any 404. The script encodes the
+    // original deep-link path as ?p= and redirects to the project's
+    // index.html, which restores the route via history.replaceState
+    // before the framework boots.
+    (function() {
+      var l = window.location;
+      var parts = l.pathname.split('/').filter(function(p) { return p !== ''; });
+      // parts[0] = repo (TFG-Fabian-Gonzalez-Lence)
+      // parts[1] = project folder
+      // parts[2+] = SPA route
+      var spas = ['3-MiniBalatro', '4-CartographicProjectManager', '5-TennisTournamentManager'];
+      if (parts.length >= 2 && spas.indexOf(parts[1]) !== -1) {
+        var base = '/' + parts[0] + '/' + parts[1] + '/';
+        var subPath = '/' + parts.slice(2).join('/');
+        l.replace(
+          l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          base + '?p=' + subPath.replace(/&/g, '~and~') +
+          (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+        );
+      } else {
+        l.replace(
+          l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          '/' + (parts[0] ? parts[0] + '/' : '')
+        );
+      }
+    })();
+  </script>
+</head>
+<body>Redirecting...</body>
+</html>

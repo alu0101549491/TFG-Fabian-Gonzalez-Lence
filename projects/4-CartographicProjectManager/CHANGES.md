@@ -10,6 +10,98 @@ This document contains all the git changes made to the Cartographic Project Mana
 
 ## Latest Changes (April 15, 2026)
 
+### FIX: Prisma Schema Mapping for Coordinate Fields
+
+**Critical Production Bug Fix - Resolves 500 Internal Server Error**
+
+**Location:** `projects/4-CartographicProjectManager/backend/prisma/schema.prisma`
+
+**Description:**
+Fixed Prisma schema mapping issue causing 500 Internal Server Error on project endpoints in production. The `coordinateX` and `coordinateY` fields were missing `@map` directives, causing Prisma Client to look for camelCase column names (`coordinateX`, `coordinateY`) instead of the snake_case columns that exist in the Supabase database (`coordinate_x`, `coordinate_y`).
+
+**Status:** ✅ **FIXED** | 🔥 **CRITICAL BUG**
+
+---
+
+**Root Cause:**
+```
+PrismaClientKnownRequestError: 
+Invalid `prisma.project.findMany()` invocation:
+The column `projects.coordinateX` does not exist in the current database.
+```
+
+**Problem:**
+- Database columns: `coordinate_x`, `coordinate_y` (snake_case from SQL migration)
+- Prisma schema: `coordinateX`, `coordinateY` without @map directives
+- Prisma Client generated with incorrect column names
+- All project queries failed with "column does not exist"
+
+**Impact:**
+- `GET /api/v1/projects` → 500 error
+- `GET /api/v1/projects/summaries` → 500 error
+- Frontend unable to load projects
+- Dashboard completely broken
+
+**The Fix:**
+```prisma
+// BEFORE:
+coordinateX      Float?
+coordinateY      Float?
+
+// AFTER:
+coordinateX      Float?        @map("coordinate_x")
+coordinateY      Float?        @map("coordinate_y")
+```
+
+**Why @map is Required:**
+- PostgreSQL uses `snake_case` naming: `coordinate_x`, `coordinate_y`
+- TypeScript uses `camelCase` naming: `coordinateX`, `coordinateY`  
+- `@map` directive bridges the gap: `coordinateX Float? @map("coordinate_x")`
+- Without it, Prisma generates SQL with wrong column names
+
+**Deployment Steps:**
+1. Commit and push the schema fix
+2. Render auto-deploys and runs `npx prisma generate` with corrected schema
+3. Backend restarts with properly generated Prisma Client
+4. Project endpoints work correctly
+
+---
+
+### FIX: Add Missing Admin Seeding Environment Variables Documentation
+
+**CRITICAL:** Admin login was failing because `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` environment variables were not documented as **REQUIRED** in deployment guides.
+
+**Location:** 
+- `backend/.env.render.example` - Added admin seeding section
+- `render.yaml` - Already defined but marked as sync:false (manual setup required)
+
+**The Issue:**
+- Users deploying to Render received "Invalid email or password" error
+- Root cause: Admin user was never seeded because `SEED_ADMIN_PASSWORD` was not set
+- Seed script runs but fails silently when env var is missing
+- No admin user exists in database → login fails
+
+**The Fix:**
+- Updated `.env.render.example` to clearly show `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` as REQUIRED
+- Added clear comments about setting strong password
+- Documented in deployment workflow
+
+**Deployment Instructions:**
+1. Go to Render Dashboard → carto-backend → Environment
+2. Add: `SEED_ADMIN_EMAIL=[ADMIN_EMAIL_ADDRESS]`
+3. Add: `SEED_ADMIN_PASSWORD=[SET_A_STRONG_PASSWORD_HERE]`
+4. Manual Deploy → Check logs for "✓ Created admin user"
+5. Login with the credentials you set
+
+**Impact:**
+- 🔧 Fixes: Admin login now works after proper env var setup
+- 📝 Improves: Deployment documentation clarity
+- ✅ Verified: Seed script creates admin user successfully when vars are set
+
+---
+
+## Changes (April 15, 2026)
+
 ### DEPLOYMENT: Full Supabase Integration Complete
 
 **CARTO Backend + Supabase Database + GitHub Pages Frontend - Ready to Deploy**
