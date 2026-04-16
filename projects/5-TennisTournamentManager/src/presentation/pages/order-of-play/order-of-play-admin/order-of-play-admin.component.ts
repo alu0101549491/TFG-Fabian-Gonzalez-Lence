@@ -11,7 +11,7 @@
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-import {Component, OnInit, signal, inject, computed} from '@angular/core';
+import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, RouterModule} from '@angular/router';
 import {FormsModule} from '@angular/forms';
@@ -177,9 +177,19 @@ export class OrderOfPlayAdminComponent implements OnInit {
    */
   public openRescheduleModal(match: ScheduledMatch): void {
     this.selectedMatch.set(match);
+    
+    // Format datetime for datetime-local input using UTC components
+    const date = new Date(match.scheduledTime);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    const formattedTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    
     this.rescheduleForm.set({
       courtId: match.courtId,
-      scheduledTime: new Date(match.scheduledTime).toISOString().slice(0, 16),
+      scheduledTime: formattedTime,
     });
   }
 

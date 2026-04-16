@@ -8,6 +8,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Bug Fix: Reschedule Form Timezone Issues (2026-04-16)
+
+**Fix:** Fixed reschedule modal to correctly handle times in UTC timezone, preventing progressive time shift on each reschedule operation.
+
+**Problem:** When clicking "Reschedule" on a match, the reschedule form showed an incorrect time (e.g., match at 17:00 displayed as 18:00 in form). Saving without changes would shift the match time forward by 1 hour, and repeating this would continue shifting the time progressively.
+
+**Root Causes:**
+
+1. **Frontend:** Form population used local timezone methods (`getHours()`, `getMonth()`, etc.) instead of UTC methods when extracting time components from UTC timestamps. This caused `datetime-local` input to display incorrect times.
+
+2. **Backend:** Reschedule endpoint parsed datetime strings (e.g., "2026-04-18T17:00") using `new Date(scheduledTime)` without timezone indicator, causing JavaScript to interpret as local time rather than UTC.
+
+**Implementation:**
+
+- ✅ **Order of Play View Component** (`src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts`):
+  - Changed from `date.getHours()`, `date.getMonth()`, etc. to `date.getUTCHours()`, `date.getUTCMonth()`, etc.
+  - Ensures form is populated with UTC time components matching backend storage
+
+- ✅ **Order of Play Admin Component** (`src/presentation/pages/order-of-play/order-of-play-admin/order-of-play-admin.component.ts`):
+  - Replaced `.toISOString().slice(0, 16)` approach with explicit UTC component extraction
+  - Uses `getUTCFullYear()`, `getUTCMonth()`, `getUTCDate()`, `getUTCHours()`, `getUTCMinutes()`
+
+- ✅ **Order of Play Controller** (`backend/src/presentation/controllers/order-of-play.controller.ts`):
+  - Added UTC timezone indicator (":00Z") to datetime string before parsing
+  - Ensures `new Date()` interprets time as UTC, not server local time
+  - Reuses parsed date object for OrderOfPlay update to maintain consistency
+
+**Impact:**
+- **Correct Form Display**: Reschedule form now shows the actual scheduled time (17:00 shows as 17:00)
+- **No Progressive Shift**: Saving without changes keeps the same time instead of incrementing by 1 hour
+- **Consistent Timezone Handling**: All datetime operations use UTC consistently across frontend and backend
+
+**Technical Details:**
+```typescript
+// Frontend - Before: Used local timezone methods
+const hours = String(date.getHours()).padStart(2, '0');  // Converts UTC to local!
+
+// Frontend - After: Uses UTC methods
+const hours = String(date.getUTCHours()).padStart(2, '0');  // Stays in UTC
+
+// Backend - Before: Ambiguous timezone parsing
+match.scheduledTime = new Date(scheduledTime);  // "2026-04-18T17:00" → interpreted as local
+
+// Backend - After: Explicit UTC parsing
+const timeString = scheduledTime.endsWith('Z') ? scheduledTime : `${scheduledTime}:00Z`;
+const proposedTime = new Date(timeString);  // "2026-04-18T17:00:00Z" → interpreted as UTC
+```
+
+---
+
 ### Bug Fix: Match Times Displayed in Wrong Timezone (2026-04-16)
 
 **Fix:** Fixed order-of-play display to show match times in UTC timezone to match backend storage.

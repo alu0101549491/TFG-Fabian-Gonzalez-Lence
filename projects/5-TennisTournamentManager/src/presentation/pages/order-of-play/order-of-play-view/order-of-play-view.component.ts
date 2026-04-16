@@ -653,7 +653,7 @@ export class OrderOfPlayViewComponent implements OnInit {
   public openRescheduleModal(match: MatchSchedule): void {
     this.selectedMatch.set(match);
     
-    // Format datetime for datetime-local input (YYYY-MM-DDThh:mm) without timezone conversion
+    // Format datetime for datetime-local input (YYYY-MM-DDThh:mm) using UTC timezone
     // Use match time if available, otherwise use scheduling options start date/time
     let date: Date;
     if (match.time) {
@@ -663,14 +663,15 @@ export class OrderOfPlayViewComponent implements OnInit {
       const opts = this.scheduleOptions();
       date = new Date(opts.startDate);
       const [hours, minutes] = opts.startTime.split(':');
-      date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+      date.setUTCHours(parseInt(hours, 10), parseInt(minutes, 10));
     }
     
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
+    // Use UTC methods to extract components to match backend storage
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
     const formattedTime = `${year}-${month}-${day}T${hours}:${minutes}`;
     
     // Use court name directly as courtId (e.g., "Court 2")

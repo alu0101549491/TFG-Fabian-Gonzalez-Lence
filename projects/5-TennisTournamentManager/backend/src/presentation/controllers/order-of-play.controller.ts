@@ -289,11 +289,15 @@ export class OrderOfPlayController {
       }));
 
       // Check if new slot is available with break time enforcement and court hours (FR5)
+      // Parse scheduledTime as UTC
+      const timeString = scheduledTime.endsWith('Z') ? scheduledTime : `${scheduledTime}:00Z`;
+      const proposedTime = new Date(timeString);
+      
       const isAvailable = this.scheduleService.isTimeSlotAvailable(
         id,
         actualCourtId,
         court, // Pass court entity for operating hours validation
-        new Date(scheduledTime),
+        proposedTime,
         90,
         currentSchedule,
         breakTime // Pass break time for validation
@@ -310,14 +314,14 @@ export class OrderOfPlayController {
       // Update match with court UUID and name
       match.courtId = actualCourtId; // Use the resolved court UUID
       match.courtName = court.name;
-      match.scheduledTime = new Date(scheduledTime);
+      match.scheduledTime = proposedTime; // Use the already-parsed UTC date
       match.status = MatchStatus.SCHEDULED;
       match.updatedAt = new Date();
 
       await matchRepository.save(match);
 
-      // Update OrderOfPlay record
-      const date = new Date(scheduledTime);
+      // Update OrderOfPlay record - use the parsed UTC date
+      const date = new Date(match.scheduledTime);
       date.setHours(0, 0, 0, 0);
 
       const orderOfPlay = await oopRepository.findOne({
@@ -334,7 +338,7 @@ export class OrderOfPlayController {
             matchId: id,
             courtId: actualCourtId, // Use UUID
             courtName: court.name,   // Include court name for display
-            time: new Date(scheduledTime).toISOString(),
+            time: match.scheduledTime.toISOString(), // Use the already-parsed UTC date
             participants: matches[matchIndex].participants,
           };
         } else {
@@ -342,7 +346,7 @@ export class OrderOfPlayController {
             matchId: id,
             courtId: actualCourtId, // Use UUID
             courtName: court.name,   // Include court name for display
-            time: new Date(scheduledTime).toISOString(),
+            time: match.scheduledTime.toISOString(), // Use the already-parsed UTC date
             participants: [],
           });
         }
