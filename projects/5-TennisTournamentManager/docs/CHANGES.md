@@ -8,6 +8,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Bug Fix: Registration Deadline Incorrectly Enforced During Tournament (2026-04-16)
+
+**Fix:** Fixed logic to not enforce registration deadlines that are set to the same date or after the tournament start date.
+
+**Problem:** The registration deadline warning was appearing even when the tournament was still ongoing. If the `registrationCloseDate` was set to the same day as the tournament start date (or after), the system would incorrectly block registrations during the tournament.
+
+**Root Cause:** The `isRegistrationClosed` logic only checked if current date > `registrationCloseDate`, without considering whether the deadline was meaningfully before the tournament start date. This caused issues when:
+- Deadline was set to tournament start date (4/15/2026 = 4/15/2026)
+- Tournament was still ongoing (ends 4/17/2026)
+- User tried to register on 4/16/2026 → incorrectly blocked
+
+**Implementation:**
+
+- ✅ **Updated `isRegistrationClosed` logic** (`tournament-detail.component.ts`):
+  - Now checks if `registrationCloseDate >= tournamentStartDate`
+  - Returns `false` (not closed) if deadline is on or after start date
+  - Only enforces deadline if it's explicitly set AND before the tournament start date
+  - Allows registration during ongoing tournaments when deadline wasn't properly configured
+
+**Impact:**
+- **Fixes False Positives**: Registration warnings no longer appear when deadline equals or exceeds start date
+- **Better Default Behavior**: Tournaments without explicit pre-start deadlines remain open during the event
+- **Preserves Valid Deadlines**: Still correctly enforces deadlines that are genuinely before the tournament
+- **User-Friendly**: Users can register for ongoing tournaments when appropriate
+
+**Technical Details:**
+```typescript
+// Before: Simple date comparison
+return now > deadline;
+
+// After: Validates deadline is meaningfully before tournament
+if (deadline >= startDate) return false; // Don't enforce same-day or future deadlines
+return now > deadline;
+```
+
+---
+
 ### Enhancement: Visual Registration Deadline Indicator (2026-04-16)
 
 **Feature:** Added visual feedback to prevent users from attempting to register after the tournament registration deadline has passed.

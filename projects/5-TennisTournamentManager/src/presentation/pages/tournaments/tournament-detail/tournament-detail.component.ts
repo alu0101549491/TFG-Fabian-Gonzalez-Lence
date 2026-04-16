@@ -201,7 +201,10 @@ export class TournamentDetailComponent implements OnInit {
 
   /**
    * Checks if tournament registration deadline has passed.
-   * Returns true if current date is after registrationCloseDate.
+   * Returns true only if:
+   * 1. registrationCloseDate is explicitly set, AND
+   * 2. Current date is after registrationCloseDate, AND
+   * 3. registrationCloseDate is meaningfully before the tournament start (not same day)
    */
   public isRegistrationClosed = computed(() => {
     const tournament = this.tournament();
@@ -209,6 +212,13 @@ export class TournamentDetailComponent implements OnInit {
     
     const now = new Date();
     const deadline = new Date(tournament.registrationCloseDate);
+    const startDate = new Date(tournament.startDate);
+    
+    // Don't enforce deadline if it's on or after the tournament start date
+    // (this handles cases where deadline wasn't properly configured)
+    if (deadline >= startDate) return false;
+    
+    // Only show as closed if we're past the deadline
     return now > deadline;
   });
 
