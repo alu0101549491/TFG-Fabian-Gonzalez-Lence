@@ -376,6 +376,8 @@ export class TournamentService implements ITournamentService {
       acceptanceType: tournament.acceptanceType,
       rankingSystem: tournament.rankingSystem,
       organizerId: tournament.organizerId,
+      registrationOpenDate: tournament.registrationOpenDate,
+      registrationCloseDate: tournament.registrationCloseDate,
       createdAt: tournament.createdAt,
     };
   }

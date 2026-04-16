@@ -81,6 +81,8 @@ export interface TournamentDto {
   currency: string;
   rankingSystem: RankingSystem;
   organizerId: string;
+  registrationOpenDate: Date | null;
+  registrationCloseDate: Date | null;
   createdAt: Date;
 }
 

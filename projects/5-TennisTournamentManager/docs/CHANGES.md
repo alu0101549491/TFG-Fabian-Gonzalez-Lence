@@ -8,6 +8,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Enhancement: Visual Registration Deadline Indicator (2026-04-16)
+
+**Feature:** Added visual feedback to prevent users from attempting to register after the tournament registration deadline has passed.
+
+**Motivation:** Users were able to click the "Register Now" button even after the registration deadline had passed, receiving a 400 error from the backend without any prior warning. This created a poor user experience.
+
+**Implementation:**
+
+- ✅ **TournamentDto** (`src/application/dto/tournament.dto.ts`):
+  - Added `registrationOpenDate: Date | null` field
+  - Added `registrationCloseDate: Date | null` field
+
+- ✅ **TournamentService** (`src/application/services/tournament.service.ts`):
+  - Updated `mapTournamentToDto()` to include `registrationOpenDate` and `registrationCloseDate` in the response
+
+- ✅ **TournamentDetailComponent** (`tournament-detail.component.ts`):
+  - Added `isRegistrationClosed` computed signal that checks if current date is after `registrationCloseDate`
+  - Added `formatRegistrationDeadline` computed signal for user-friendly date display
+  - Updated `registerForTournament()` method to include client-side validation preventing registration after deadline
+
+- ✅ **Template** (`tournament-detail-new.component.html`):
+  - Added prominent warning box when registration deadline has passed (🚫 icon, red background)
+  - Shows formatted deadline date in warning message
+  - Disables "Register Now" button when deadline has passed
+  - Changes button text to "Registration Closed" when disabled due to deadline
+  - Changed button icon to 🚫 when registration is closed
+
+**Impact:**
+- **Better UX**: Users immediately see if registration is closed before attempting to register
+- **Clear Communication**: Shows exact deadline date that was passed
+- **Prevents Errors**: Button is disabled, preventing API calls that would result in 400 errors
+- **Consistent Behavior**: Client-side and server-side validation both enforce deadline
+- **Visual Hierarchy**: Deadline warning appears above the profile incomplete warning
+
+**Technical Details:**
+- Computed signals automatically react to tournament data changes
+- Date comparison uses proper Date objects for timezone-aware comparison
+- Warning box reuses existing CSS classes with custom color overrides for red theme
+- Button disable logic: `!selectedCategoryId() || !isProfileComplete() || (isDoublesTournament() && !selectedPartner()) || isRegistrationClosed()`
+
+---
+
 ### Bug Fix: Bracket Navigation Using Tournament ID Instead of Bracket ID (2026-04-15)
 
 **Fix:** Fixed 404 errors when navigating to brackets from tournament list and tournament detail pages.

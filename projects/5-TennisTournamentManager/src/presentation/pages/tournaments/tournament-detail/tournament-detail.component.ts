@@ -199,6 +199,33 @@ export class TournamentDetailComponent implements OnInit {
     return user?.idDocument && user.idDocument.trim().length > 0;
   });
 
+  /**
+   * Checks if tournament registration deadline has passed.
+   * Returns true if current date is after registrationCloseDate.
+   */
+  public isRegistrationClosed = computed(() => {
+    const tournament = this.tournament();
+    if (!tournament?.registrationCloseDate) return false;
+    
+    const now = new Date();
+    const deadline = new Date(tournament.registrationCloseDate);
+    return now > deadline;
+  });
+
+  /**
+   * Formats registration deadline for display.
+   */
+  public formatRegistrationDeadline = computed(() => {
+    const tournament = this.tournament();
+    if (!tournament?.registrationCloseDate) return null;
+    
+    return new Date(tournament.registrationCloseDate).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+    });
+  });
+
   /** Categories loading state for refresh */
   public isLoadingCategories = signal(false);
 
@@ -586,6 +613,12 @@ export class TournamentDetailComponent implements OnInit {
     if (!user) {
       // This should not happen as UI hides register button for unauthenticated users
       alert('Please log in first to register for tournaments');
+      return;
+    }
+
+    // Check if registration deadline has passed
+    if (this.isRegistrationClosed()) {
+      alert(`Registration deadline has passed (${this.formatRegistrationDeadline()}). Registrations are no longer accepted.`);
       return;
     }
 

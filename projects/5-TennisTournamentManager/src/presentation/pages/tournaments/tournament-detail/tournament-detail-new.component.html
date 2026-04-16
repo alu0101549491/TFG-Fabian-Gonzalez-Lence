@@ -367,8 +367,19 @@
                         }
                       </div>
                       
+                      <!-- Registration Deadline Warning -->
+                      @if (isRegistrationClosed()) {
+                        <div class="profile-incomplete-warning" style="background-color: #fee; border-color: #fcc;">
+                          <span class="warning-icon">🚫</span>
+                          <div class="warning-content">
+                            <strong>Registration Closed</strong>
+                            <p>The registration deadline was {{ formatRegistrationDeadline() }}. Registrations are no longer accepted for this tournament.</p>
+                          </div>
+                        </div>
+                      }
+
                       <!-- Profile Incomplete Warning (FR9) -->
-                      @if (!isProfileComplete()) {
+                      @if (!isProfileComplete() && !isRegistrationClosed()) {
                         <div class="profile-incomplete-warning">
                           <span class="warning-icon">⚠️</span>
                           <div class="warning-content">
@@ -450,17 +461,21 @@
                       <button 
                         class="register-btn"
                         (click)="registerForTournament()"
-                        [disabled]="!selectedCategoryId() || !isProfileComplete() || (isDoublesTournament() && !selectedPartner())"
+                        [disabled]="!selectedCategoryId() || !isProfileComplete() || (isDoublesTournament() && !selectedPartner()) || isRegistrationClosed()"
                       >
                         <span class="btn-icon">
-                          @if (!isProfileComplete()) {
+                          @if (isRegistrationClosed()) {
+                            🚫
+                          } @else if (!isProfileComplete()) {
                             🔒
                           } @else {
                             🚀
                           }
                         </span>
                         <span>
-                          @if (!isProfileComplete()) {
+                          @if (isRegistrationClosed()) {
+                            Registration Closed
+                          } @else if (!isProfileComplete()) {
                             Complete Profile to Register
                           } @else {
                             Register Now
