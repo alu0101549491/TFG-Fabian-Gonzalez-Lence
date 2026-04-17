@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 18, 2026
- * @file application/dto/statistics.dto.ts
+ * @file src/application/dto/statistics.dto.ts
  * @desc Data transfer objects for statistics-related operations (FR45-FR46)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Surface} from '../../domain/enumerations/surface';

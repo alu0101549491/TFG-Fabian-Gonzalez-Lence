@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 8, 2026
- * @file domain/entities/notification-preferences.entity.ts
+ * @file backend/src/domain/entities/notification-preferences.entity.ts
  * @desc Entity representing user notification preferences for channels and event types.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn} from 'typeorm';

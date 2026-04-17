@@ -9,6 +9,7 @@
  * @file src/application/interfaces/payment-service.interface.ts
  * @desc Payment service interface for tournament registration payment processing
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {InitiatePaymentDto, PaymentDto} from '../dto';

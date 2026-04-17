@@ -10,6 +10,7 @@
  * @desc Web Push notification service for sending browser push notifications.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  * @see {@link https://github.com/web-push-libs/web-push}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import webpush from 'web-push';

@@ -16,6 +16,7 @@ import {Injectable, inject} from '@angular/core';
 import {AxiosClient} from '@infrastructure/http/axios-client';
 import type {TournamentStatisticsDto} from '@application/dto/statistics.dto';
 import type {ExportResultDto} from '@application/dto/export.dto';
+import type {IExportService} from '@application/interfaces/export-service.interface';
 import {ExportFormat} from '@domain/enumerations/export-format';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -43,7 +44,7 @@ import autoTable from 'jspdf-autotable';
  * ```
  */
 @Injectable({providedIn: 'root'})
-export class ExportService {
+export class ExportService implements IExportService {
   /**
    * HTTP client for API calls.
    */
@@ -190,7 +191,7 @@ export class ExportService {
    */
   public async exportTournamentStatistics(
     tournamentStats: TournamentStatisticsDto,
-    format: ExportFormat
+    format: ExportFormat.PDF | ExportFormat.EXCEL,
   ): Promise<ExportResultDto> {
     try {
       if (format === ExportFormat.PDF) {

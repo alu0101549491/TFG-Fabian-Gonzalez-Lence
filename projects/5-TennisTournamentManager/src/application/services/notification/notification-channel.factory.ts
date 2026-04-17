@@ -9,6 +9,7 @@
  * @file src/application/services/notification/notification-channel.factory.ts
  * @desc Factory for creating notification channel adapters (Factory Pattern)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';

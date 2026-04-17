@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 8, 2026
- * @file presentation/components/header/header.component.ts
+ * @file src/presentation/components/header/header.component.ts
  * @desc Application header component with navigation and notification bell.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, inject, HostListener} from '@angular/core';

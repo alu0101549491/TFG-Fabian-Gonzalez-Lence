@@ -19,7 +19,7 @@ if [ -f "$(dirname "$0")/../.env.backup" ]; then
 fi
 
 # Configuration with defaults
-DB_NAME="${DB_NAME:-tennis_tournament_db}"
+DB_NAME="${DB_NAME:-tennis_tournament_manager}"
 DB_USER="${DB_USER:-postgres}"
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-5432}"

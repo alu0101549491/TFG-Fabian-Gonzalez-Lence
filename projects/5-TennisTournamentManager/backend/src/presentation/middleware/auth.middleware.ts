@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/middleware/auth.middleware.ts
+ * @file backend/src/presentation/middleware/auth.middleware.ts
  * @desc JWT authentication middleware for protected routes.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Request, Response, NextFunction} from 'express';

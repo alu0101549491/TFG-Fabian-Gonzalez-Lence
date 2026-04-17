@@ -9,6 +9,7 @@
  * @file src/application/services/ranking.service.ts
  * @desc Ranking service implementation for global participant rankings
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
@@ -16,9 +17,23 @@ import {IRankingService} from '../interfaces/ranking-service.interface';
 import {RankingDto} from '../dto';
 import {PaginatedResponseDto, PaginationDto} from '../dto';
 import {GlobalRankingRepositoryImpl} from '@infrastructure/repositories/global-ranking.repository';
+import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registration.repository';
 import {StandingRepositoryImpl} from '@infrastructure/repositories/standing.repository';
 import {AxiosClient} from '@infrastructure/http/axios-client';
 import {RankingSystem} from '@domain/enumerations/ranking-system';
+import {AcceptanceType} from '@domain/enumerations/acceptance-type';
+import {RegistrationStatus} from '@domain/enumerations/registration-status';
+
+interface RankingApiResponse {
+  id: string;
+  playerId: string;
+  playerName: string;
+  rank: number;
+  points: number;
+  tournamentsPlayed?: number;
+  wins?: number;
+  losses?: number;
+}
 
 /**
  * Ranking service implementation.
@@ -26,8 +41,11 @@ import {RankingSystem} from '@domain/enumerations/ranking-system';
  */
 @Injectable({providedIn: 'root'})
 export class RankingService implements IRankingService {
+  private static readonly POINTS_PER_WIN = 3;
+
   private readonly globalRankingRepository = inject(GlobalRankingRepositoryImpl);
   private readonly _standingRepository = inject(StandingRepositoryImpl);
+  private readonly registrationRepository = inject(RegistrationRepositoryImpl);
   private readonly httpClient = inject(AxiosClient);
   // TODO: inject RankingCalculator
 
@@ -42,27 +60,74 @@ export class RankingService implements IRankingService {
    * @returns Ranking DTO list for the view
    */
   public async getRankingsBySystem(system: RankingSystem): Promise<RankingDto[]> {
-    const response = await this.httpClient.get<Array<{
-      id: string;
-      playerId: string;
-      playerName: string;
-      rank: number;
-      points: number;
-      tournamentsPlayed?: number;
-      wins?: number;
-      losses?: number;
-    }>>('/rankings');
+    const response = await this.httpClient.get<RankingApiResponse[]>('/rankings');
 
-    return response.map((item) => ({
-      id: item.id,
+    if (system === RankingSystem.ELO) {
+      return [...response]
+        .sort((left, right) => left.rank - right.rank)
+        .map((item) => ({
+          id: item.id,
+          participantId: item.playerId,
+          participantName: item.playerName,
+          position: item.rank,
+          totalPoints: item.points,
+          rankingSystem: RankingSystem.ELO,
+          tournamentsPlayed: item.tournamentsPlayed ?? 0,
+          eloRating: item.points,
+          positionChange: 0,
+        }));
+    }
+
+    return this.buildDerivedRankings(response, system);
+  }
+
+  private buildDerivedRankings(
+    response: RankingApiResponse[],
+    system: RankingSystem.POINTS_BASED | RankingSystem.RATIO_BASED,
+  ): RankingDto[] {
+    const derived = response.map((item) => {
+      const matchesPlayed = (item.wins ?? 0) + (item.losses ?? 0);
+      const score = system === RankingSystem.POINTS_BASED
+        ? (item.wins ?? 0) * RankingService.POINTS_PER_WIN + matchesPlayed
+        : (matchesPlayed === 0 ? 0 : Number((((item.wins ?? 0) / matchesPlayed) * 100).toFixed(2)));
+
+      return {
+        item,
+        matchesPlayed,
+        score,
+      };
+    });
+
+    derived.sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+
+      if (right.matchesPlayed !== left.matchesPlayed) {
+        return right.matchesPlayed - left.matchesPlayed;
+      }
+
+      if ((right.item.wins ?? 0) !== (left.item.wins ?? 0)) {
+        return (right.item.wins ?? 0) - (left.item.wins ?? 0);
+      }
+
+      if (right.item.points !== left.item.points) {
+        return right.item.points - left.item.points;
+      }
+
+      return left.item.rank - right.item.rank;
+    });
+
+    return derived.map(({item, score}, index) => ({
+      id: `${item.id}-${system}`,
       participantId: item.playerId,
       participantName: item.playerName,
-      position: item.rank,
-      totalPoints: item.points,
+      position: index + 1,
+      totalPoints: score,
       rankingSystem: system,
       tournamentsPlayed: item.tournamentsPlayed ?? 0,
-      eloRating: system === RankingSystem.ELO ? item.points : null,
-      positionChange: 0,
+      eloRating: null,
+      positionChange: item.rank - (index + 1),
     }));
   }
 
@@ -183,18 +248,39 @@ export class RankingService implements IRankingService {
       throw new Error('Seed count must be greater than 0');
     }
     
-    // Get all standings for the category (from previous tournaments)
-    // In real implementation, this would use global rankings and
-    // filter by participants registered in this category
+    const registrations = await this.registrationRepository.findByCategoryId(categoryId);
+    const eligibleRegistrations = registrations.filter(
+      (registration) => registration.status === RegistrationStatus.ACCEPTED
+        && registration.acceptanceType !== AcceptanceType.ALTERNATE
+        && registration.acceptanceType !== AcceptanceType.WITHDRAWN
+    );
+
+    if (eligibleRegistrations.length === 0) {
+      return [];
+    }
+
     const allRankings = await this.globalRankingRepository.findAll();
-    
-    // Sort by ranking position
-    const sortedRankings = allRankings.sort((a, b) => a.position - b.position);
-    
-    // Take top N participants
-    const seeds = sortedRankings.slice(0, count).map(r => r.participantId);
-    
-    return seeds;
+    const rankingsByParticipant = new Map(
+      allRankings.map((ranking) => [ranking.participantId, ranking])
+    );
+
+    return [...eligibleRegistrations]
+      .sort((left, right) => {
+        const leftRanking = rankingsByParticipant.get(left.participantId);
+        const rightRanking = rankingsByParticipant.get(right.participantId);
+
+        if (left.ranking !== right.ranking) {
+          return (left.ranking ?? Number.MAX_SAFE_INTEGER) - (right.ranking ?? Number.MAX_SAFE_INTEGER);
+        }
+
+        if (leftRanking && rightRanking && leftRanking.position !== rightRanking.position) {
+          return leftRanking.position - rightRanking.position;
+        }
+
+        return left.registeredAt.getTime() - right.registeredAt.getTime();
+      })
+      .slice(0, count)
+      .map((registration) => registration.participantId);
   }
 
   /**
@@ -204,16 +290,20 @@ export class RankingService implements IRankingService {
    * @returns Ranking DTO
    */
   private mapRankingToDto(ranking: any): RankingDto {
+    const previousPosition = typeof ranking.previousPosition === 'number'
+      ? ranking.previousPosition
+      : null;
+
     return {
       id: ranking.id,
       participantId: ranking.participantId,
       participantName: ranking.participantName ?? 'Unknown',
       position: ranking.position,
-      totalPoints: ranking.totalPoints,
-      rankingSystem: ranking.rankingSystem,
+      totalPoints: ranking.points,
+      rankingSystem: ranking.system,
       tournamentsPlayed: ranking.tournamentsPlayed ?? 0,
       eloRating: ranking.eloRating ?? null,
-      positionChange: ranking.positionChange ?? 0,
+      positionChange: previousPosition === null ? 0 : previousPosition - ranking.position,
     };
   }
 }

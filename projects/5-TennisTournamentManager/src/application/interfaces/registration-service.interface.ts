@@ -9,6 +9,7 @@
  * @file src/application/interfaces/registration-service.interface.ts
  * @desc Registration service interface for tournament participant registration management
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {CreateRegistrationDto, RegistrationDto, UpdateRegistrationStatusDto} from '../dto';

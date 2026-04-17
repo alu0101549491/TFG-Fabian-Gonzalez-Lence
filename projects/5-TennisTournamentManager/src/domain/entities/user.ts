@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/user.ts
- * @desc Entity representing a system user. Supports four actor types: System Administrator, Tournament Administrator, Registered Participant, and Public. Core domain entity for authentication, authorization, GDPR compliance, and audit logging.
+ * @file src/domain/entities/user.ts
+ * @desc Entity representing an authenticated system user. Supports the implemented authenticated roles: System Administrator, Tournament Administrator, and Player.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {UserRole} from '../enumerations/user-role';
@@ -60,8 +61,7 @@ export interface UserProps {
  * Users are characterized by their role:
  * - SYSTEM_ADMIN: Full platform control, user management, system configuration.
  * - TOURNAMENT_ADMIN: Tournament lifecycle management, draw generation, scheduling.
- * - PARTICIPANT: Registration, profile management, viewing own results.
- * - PUBLIC: Read-only access to published draws and results.
+ * - PLAYER: Registration, profile management, and own competition activity.
  *
  * This entity encapsulates user identity, authentication data, role-based
  * access control, and GDPR-related consent tracking.
@@ -173,16 +173,12 @@ export class User {
         'bracket:generate',
         'order-of-play:publish',
       ],
-      [UserRole.REGISTERED_PARTICIPANT]: [
+      [UserRole.PLAYER]: [
         'tournament:read',
         'registration:create',
         'match:read',
         'score:submit',
         'profile:update',
-      ],
-      [UserRole.PUBLIC]: [
-        'tournament:read',
-        'match:read',
       ],
     };
 

@@ -9,6 +9,7 @@
  * @file backend/src/domain/entities/push-subscription.entity.ts
  * @desc TypeORM entity representing a user's web push notification subscription.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Entity, Column, PrimaryColumn, CreateDateColumn, ManyToOne, JoinColumn} from 'typeorm';

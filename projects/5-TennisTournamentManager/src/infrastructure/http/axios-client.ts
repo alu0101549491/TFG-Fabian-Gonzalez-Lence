@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file infrastructure/http/axios-client.ts
+ * @file src/infrastructure/http/axios-client.ts
  * @desc HTTP client wrapper using Axios for REST API communication. Handles JWT authentication headers and response unwrapping.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable} from '@angular/core';
@@ -26,6 +27,14 @@ import {API_BASE_URL, JWT_STORAGE_KEY} from '@shared/constants';
 @Injectable({providedIn: 'root'})
 export class AxiosClient {
   private readonly instance: AxiosInstance;
+
+  private static buildAppPath(path: string): string {
+    const normalizedBasePath = import.meta.env.BASE_URL.endsWith('/')
+      ? import.meta.env.BASE_URL
+      : `${import.meta.env.BASE_URL}/`;
+    const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+    return `${normalizedBasePath}${normalizedPath}`;
+  }
 
   constructor() {
     this.instance = axios.create({
@@ -68,11 +77,17 @@ export class AxiosClient {
           const isPublicPage = 
             currentPath.endsWith('/home') ||
             currentPath === '/' ||
+            currentPath === import.meta.env.BASE_URL ||
+            currentPath.includes('/announcements') ||
+            currentPath.includes('/ranking') ||
+            currentPath.includes('/rankings') ||
+            currentPath.includes('/statistics') ||
             currentPath.includes('/tournaments') ||
             currentPath.includes('/brackets') ||
             currentPath.includes('/matches') ||
             currentPath.includes('/standings') ||
-            currentPath.includes('/order-of-play');
+            currentPath.includes('/order-of-play') ||
+            currentPath.includes('/users/');
           
           // Check if this is a mutation (POST/PUT/DELETE) that requires authentication
           const isMutation = ['post', 'put', 'patch', 'delete'].includes(
@@ -100,7 +115,7 @@ export class AxiosClient {
             // Only redirect if not on auth pages or public pages
             // (expired session on protected routes)
             localStorage.removeItem(JWT_STORAGE_KEY);
-            window.location.href = '/login';
+            window.location.assign(AxiosClient.buildAppPath('login'));
           }
         }
         return Promise.reject(error);

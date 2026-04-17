@@ -9,19 +9,7 @@
  * @file tests/application/services/seeding.service.test.ts
  * @desc Unit tests for the SeedingService.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
- */
-
-/**
- * University of La Laguna
- * School of Engineering and Technology
- * Degree in Computer Engineering
- * Final Degree Project (TFG)
- *
- * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since March 17, 2026
- * @file tests/application/services/seeding.service.test.ts
- * @desc Unit tests for the SeedingService.
- * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {SeedingService} from '@application/services/seeding.service';

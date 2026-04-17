@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 5, 2026
- * @file presentation/pages/profile/privacy-settings/privacy-settings.component.ts
+ * @file src/presentation/pages/profile/privacy-settings/privacy-settings.component.ts
  * @desc Privacy settings configuration component implementing FR58-FR60
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 1, 2026
- * @file infrastructure/database/migrations/001-add-performance-indexes.ts
+ * @file backend/src/infrastructure/database/migrations/001-add-performance-indexes.ts
  * @desc Database migration to add indexes for query optimization (NFR21).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner} from 'typeorm';

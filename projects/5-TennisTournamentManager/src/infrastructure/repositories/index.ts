@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file infrastructure/repositories/index.ts
+ * @file src/infrastructure/repositories/index.ts
  * @desc Barrel export for all repository implementations
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export {UserRepositoryImpl} from './user.repository';

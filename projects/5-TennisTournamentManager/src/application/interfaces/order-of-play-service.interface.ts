@@ -9,6 +9,7 @@
  * @file src/application/interfaces/order-of-play-service.interface.ts
  * @desc Order of play service interface for match scheduling and court assignment
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {CreateOrderOfPlayDto, OrderOfPlayDto} from '../dto';

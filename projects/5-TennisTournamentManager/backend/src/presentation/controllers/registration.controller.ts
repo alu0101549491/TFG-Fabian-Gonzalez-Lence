@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/controllers/registration.controller.ts
+ * @file backend/src/presentation/controllers/registration.controller.ts
  * @desc Registration controller handling tournament registrations.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Response, NextFunction} from 'express';
@@ -170,6 +171,23 @@ export class RegistrationController {
         throw new AppError('Participant not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
       console.log('[Registration Controller] Participant found:', participant.username);
+
+      const existingRegistration = await registrationRepository
+        .createQueryBuilder('registration')
+        .where('registration.categoryId = :categoryId', {categoryId})
+        .andWhere('registration.participantId = :participantId', {participantId: actualParticipantId})
+        .andWhere('registration.status NOT IN (:...terminalStatuses)', {
+          terminalStatuses: [RegistrationStatus.CANCELLED, RegistrationStatus.WITHDRAWN],
+        })
+        .getOne();
+
+      if (existingRegistration) {
+        throw new AppError(
+          'Participant already has an active registration for this category',
+          HTTP_STATUS.CONFLICT,
+          ERROR_CODES.ALREADY_EXISTS,
+        );
+      }
       
       // FR12: Count current active registrations for this category.
       // All acceptance types that occupy a draw slot count toward the quota:
@@ -528,7 +546,7 @@ export class RegistrationController {
   public async update(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const {id} = req.params;
-      const {seedNumber} = req.body;
+      const {seedNumber, acceptanceType, partnerId, withdrawalDate} = req.body;
       const currentUser = req.user;
       
       if (!currentUser) {
@@ -537,6 +555,8 @@ export class RegistrationController {
       
       console.log(`📝 Updating registration ${id}:`);
       console.log(`  - New seed number: ${seedNumber}`);
+      console.log(`  - New acceptance type: ${acceptanceType}`);
+      console.log(`  - New partner ID: ${partnerId}`);
       console.log(`  - User: ${currentUser.id} (${currentUser.role})`);
       
       const registrationRepository = AppDataSource.getRepository(Registration);
@@ -579,7 +599,18 @@ export class RegistrationController {
         console.log(`✅ Seed number validation passed`);
       }
       
-      // Update seed number
+      if (acceptanceType !== undefined) {
+        registration.acceptanceType = acceptanceType;
+      }
+
+      if (partnerId !== undefined) {
+        registration.partnerId = partnerId;
+      }
+
+      if (withdrawalDate !== undefined) {
+        registration.withdrawalDate = withdrawalDate ? new Date(withdrawalDate) : null;
+      }
+
       registration.seedNumber = seedNumber;
       const saved = await registrationRepository.save(registration);
       

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 11, 2026
- * @file infrastructure/database/migrations/005-add-ball-provider-to-matches.ts
+ * @file backend/src/infrastructure/database/migrations/005-add-ball-provider-to-matches.ts
  * @desc Database migration to add the ball_provider column to the matches table (FR31).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner} from 'typeorm';

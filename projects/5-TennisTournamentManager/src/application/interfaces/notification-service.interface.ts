@@ -9,6 +9,7 @@
  * @file src/application/interfaces/notification-service.interface.ts
  * @desc Notification service interface for multi-channel notification management
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {SendNotificationDto, NotificationDto} from '../dto';

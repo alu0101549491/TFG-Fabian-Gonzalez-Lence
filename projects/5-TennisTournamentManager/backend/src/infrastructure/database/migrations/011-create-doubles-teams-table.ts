@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 13, 2026
- * @file infrastructure/database/migrations/011-create-doubles-teams-table.ts
+ * @file backend/src/infrastructure/database/migrations/011-create-doubles-teams-table.ts
  * @desc Migration: Create doubles_teams table and add team ID columns to matches and standings.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner} from 'typeorm';

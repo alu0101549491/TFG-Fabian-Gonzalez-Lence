@@ -6,13 +6,13 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 8, 2026
- * @file presentation/components/notification-bell/notification-bell.component.ts
+ * @file src/presentation/components/notification-bell/notification-bell.component.ts
  * @desc Notification bell icon with unread count badge and dropdown preview.
  * @see {@link https://github.com/alu0101549491@ull.edu.es>
  * @since April 8, 2026
- * @file presentation/components/notification-bell/notification-bell.component.ts
  * @desc Notification bell icon with unread count badge and dropdown preview.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, OnDestroy, signal, inject, computed} from '@angular/core';
@@ -396,8 +396,12 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
    * Sets up WebSocket listener for real-time notification updates.
    */
   private setupWebSocketListener(): void {
-    // Connect to WebSocket if not already connected
-    this.wsService.connect();
+    const token = this.authStateService.getToken();
+    if (!token) {
+      return;
+    }
+
+    this.wsService.connect(token);
 
     // Listen for new notifications
     this.wsService.on<NotificationDto>(ServerEvent.NOTIFICATION_NEW, (notification) => {
@@ -512,8 +516,12 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
 
       case NotificationType.ANNOUNCEMENT:
         // Navigate to announcement details or announcements list
+        const metadata = notification.metadata as {announcementId?: string; tournamentId?: string} | null;
         await this.router.navigate(['/announcements'], {
-          queryParams: {id: notification.referenceId},
+          queryParams: {
+            id: metadata?.announcementId ?? notification.referenceId,
+            tournamentId: metadata?.tournamentId ?? undefined,
+          },
         });
         break;
 

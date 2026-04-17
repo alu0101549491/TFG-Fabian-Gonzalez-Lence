@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/global-ranking.ts
+ * @file src/domain/entities/global-ranking.ts
  * @desc Entity representing a participant's position in the global cross-tournament ranking.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {RankingSystem} from '../enumerations/ranking-system';

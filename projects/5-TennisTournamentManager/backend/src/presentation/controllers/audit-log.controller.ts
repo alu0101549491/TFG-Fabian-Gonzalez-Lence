@@ -6,7 +6,7 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 18, 2026
- * @file presentation/controllers/audit-log.controller.ts
+ * @file backend/src/presentation/controllers/audit-log.controller.ts
  * @desc Controller for audit log management endpoints (NFR15)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  * @see {@link https://typescripttutorial.net}

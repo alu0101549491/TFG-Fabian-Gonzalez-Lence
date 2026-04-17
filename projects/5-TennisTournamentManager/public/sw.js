@@ -10,7 +10,7 @@
  * @desc Service worker for Tennis Tournament Manager PWA (NFR8).
  *       Implements a cache-first strategy for static assets (HTML, CSS, fonts)
  *       and a network-first strategy for API calls.
- *       JavaScript files are NOT cached during development to support HMR.
+ *       JavaScript files are skipped only on localhost development to support HMR.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
@@ -27,8 +27,8 @@ const ALL_CACHES = [STATIC_CACHE, API_CACHE];
 
 /** App shell URLs to pre-cache on install. */
 const APP_SHELL_URLS = [
-  '/',
-  '/manifest.webmanifest',
+  self.registration.scope,
+  new URL('manifest.webmanifest', self.registration.scope).toString(),
 ];
 
 // ─── Install ────────────────────────────────────────────────────────────────
@@ -75,9 +75,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip JavaScript files during development (to allow HMR)
-  // In production, these will be served from the server with cache headers
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.ts')) {
+  const isLocalDevelopment = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+
+  // Skip JavaScript files only on local development hosts to allow HMR.
+  if (isLocalDevelopment && (url.pathname.endsWith('.js') || url.pathname.endsWith('.ts'))) {
     return;
   }
 

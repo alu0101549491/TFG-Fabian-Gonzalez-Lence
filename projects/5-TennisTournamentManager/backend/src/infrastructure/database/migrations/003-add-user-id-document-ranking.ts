@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 28, 2026
- * @file infrastructure/database/migrations/003-add-user-id-document-ranking.ts
+ * @file backend/src/infrastructure/database/migrations/003-add-user-id-document-ranking.ts
  * @desc Database migration to add idDocument and ranking fields to users table (v1.44.0, FR9, FR14).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner, TableColumn} from 'typeorm';
@@ -22,7 +23,7 @@ import {MigrationInterface, QueryRunner, TableColumn} from 'typeorm';
  * 
  * **Rationale**:
  * - **FR9**: "Registered users can register for available tournaments providing: 
- *   full name, ID/NIE, category, ranking, contact data"
+
  * - **FR14**: "Participants configure: name, surname, ID/NIE, ranking, phone, email, 
  *   Telegram, WhatsApp, avatar image, privacy preferences"
  * - **FR19**: System uses ranking for automatic seeding in tournament draws

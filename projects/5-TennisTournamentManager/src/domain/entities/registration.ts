@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/registration.ts
+ * @file src/domain/entities/registration.ts
  * @desc Entity representing a participant's registration for a tournament category. Follows the State Pattern for status transitions (RegistrationStatus).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {RegistrationStatus} from '../enumerations/registration-status';

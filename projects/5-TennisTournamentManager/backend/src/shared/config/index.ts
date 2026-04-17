@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file shared/config/index.ts
+ * @file backend/src/shared/config/index.ts
  * @desc Application configuration loader. Reads environment variables and validates required settings for database, JWT, server, and external services.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import dotenv from 'dotenv';
@@ -41,7 +42,7 @@ export const config = {
   jwt: {
     secret: process.env.JWT_SECRET || 'change-this-secret-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '1h',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'change-this-refresh-secret',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || '',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
   
@@ -107,7 +108,7 @@ export const config = {
  * Throws an error if any critical configuration is missing.
  */
 export function validateConfig(): void {
-  const missingJwt = ['JWT_SECRET'].filter((varName) => !process.env[varName]);
+  const missingJwt = ['JWT_SECRET', 'JWT_REFRESH_SECRET'].filter((varName) => !process.env[varName]);
 
   // Accept either DATABASE_URL (Supabase/Render) or individual DB_* vars
   const hasConnectionUrl = !!process.env.DATABASE_URL;

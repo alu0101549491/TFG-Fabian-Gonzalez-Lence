@@ -6,12 +6,14 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file infrastructure/database/data-source.ts
+ * @file backend/src/infrastructure/database/data-source.ts
  * @desc TypeORM DataSource configuration for PostgreSQL database connection.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {DataSource} from 'typeorm';
+import path from 'path';
 import {config} from '../../shared/config';
 import * as entities from '../../domain/entities';
 
@@ -40,7 +42,7 @@ export const AppDataSource = new DataSource({
   synchronize: config.db.synchronize,
   logging: config.db.logging,
   entities: Object.values(entities),
-  migrations: [],  // DB_SYNCHRONIZE=true handles schema creation; no runtime migration loading
+  migrations: [path.join(__dirname, 'migrations/*.{ts,js}')],
   subscribers: [],
 });
 

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file presentation/guards/role.guard.ts
+ * @file src/presentation/guards/role.guard.ts
  * @desc Route guard that enforces role-based access control (NFR13).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {inject} from '@angular/core';
@@ -22,7 +23,7 @@ import {AuthStateService} from '../services/auth-state.service';
  * Usage in route config:
  * ```typescript
  * {
- *   path: 'admin',
+
  *   canActivate: [roleGuard],
  *   data: { roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN'] }
  * }

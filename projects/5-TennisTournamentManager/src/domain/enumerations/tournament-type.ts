@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 20, 2026
- * @file domain/enumerations/tournament-type.ts
+ * @file src/domain/enumerations/tournament-type.ts
  * @desc Enumeration for tournament types (singles or doubles play).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

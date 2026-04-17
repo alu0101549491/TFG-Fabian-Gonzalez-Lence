@@ -9,6 +9,7 @@
  * @file src/application/interfaces/ranking-service.interface.ts
  * @desc Ranking service interface for global participant rankings across tournaments
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {RankingDto} from '../dto';

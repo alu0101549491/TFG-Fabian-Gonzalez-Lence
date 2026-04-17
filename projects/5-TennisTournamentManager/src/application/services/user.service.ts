@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 20, 2026
- * @file application/services/user.service.ts
+ * @file src/application/services/user.service.ts
  * @desc Service for user profile operations.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
@@ -26,7 +27,7 @@ import {environment} from '../../environments/environment';
  * 
  * // Update user profile
  * const updated = await service.updateProfile('usr_123', {
- *   firstName: 'John',
+
  *   lastName: 'Doe'
  * });
  * ```

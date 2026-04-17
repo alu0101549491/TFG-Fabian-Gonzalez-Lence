@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 12, 2026
- * @file infrastructure/database/migrations/010-create-partner-invitations-table.ts
+ * @file backend/src/infrastructure/database/migrations/010-create-partner-invitations-table.ts
  * @desc Database migration to create partner_invitations table for doubles registration workflow
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner, Table, TableForeignKey} from 'typeorm';

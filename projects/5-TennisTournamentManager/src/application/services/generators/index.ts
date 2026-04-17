@@ -9,6 +9,7 @@
  * @file src/application/services/generators/index.ts
  * @desc Barrel file for bracket generators
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export {RoundRobinGenerator} from './round-robin.generator';

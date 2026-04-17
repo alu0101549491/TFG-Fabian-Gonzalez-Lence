@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 20, 2026
- * @file application/dto/category.dto.ts
+ * @file src/application/dto/category.dto.ts
  * @desc Data Transfer Objects for tournament category operations.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

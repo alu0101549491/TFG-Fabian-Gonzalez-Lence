@@ -9,6 +9,7 @@
  * @file tests/application/services/tournament.service.test.ts
  * @desc Unit tests for the TournamentService.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {TournamentService} from '@application/services/tournament.service';

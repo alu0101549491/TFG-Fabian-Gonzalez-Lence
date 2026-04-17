@@ -9,6 +9,7 @@
  * @file tests/mocks/shared-constants.ts
  * @desc Jest-safe shared constants mock for unit tests that import the HTTP client stack.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export const API_BASE_URL = '/api';

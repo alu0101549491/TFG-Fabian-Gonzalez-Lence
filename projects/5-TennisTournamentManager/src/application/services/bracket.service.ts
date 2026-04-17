@@ -9,6 +9,7 @@
  * @file src/application/services/bracket.service.ts
  * @desc Bracket service implementation for tournament bracket generation and management
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
@@ -19,9 +20,23 @@ import {PhaseRepositoryImpl} from '@infrastructure/repositories/phase.repository
 import {RegistrationRepositoryImpl} from '@infrastructure/repositories/registration.repository';
 import {BracketGeneratorFactory} from './bracket-generator.factory';
 import {Bracket} from '@domain/entities/bracket';
+import {BracketType} from '@domain/enumerations/bracket-type';
 import {RegistrationStatus} from '@domain/enumerations/registration-status';
 import {AcceptanceType} from '@domain/enumerations/acceptance-type';
-import {generateId} from '@shared/utils';
+
+/**
+ * Parses the persisted bracket structure when the repository returns it as JSON text.
+ *
+ * @param structure - Serialized bracket structure from the persistence layer
+ * @returns Parsed structure object or `null` when the payload is invalid JSON
+ */
+function parseBracketStructure(structure: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(structure) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Bracket service implementation.
@@ -79,36 +94,20 @@ export class BracketService implements IBracketService {
       throw new Error('At least 2 accepted participants are required to generate a bracket');
     }
     
-    // Calculate total rounds based on bracket type and participant count
-    const participantCount = acceptedRegistrations.length;
-    let totalRounds = 0;
-    
-    switch (data.bracketType) {
-      case 'SINGLE_ELIMINATION':
-        // For single elimination: rounds = log2(nextPowerOf2(participants))
-        totalRounds = Math.ceil(Math.log2(participantCount));
-        break;
-      case 'ROUND_ROBIN':
-        // For round robin: each participant plays all others once
-        // Total rounds = participants - 1 (if even) or participants (if odd)
-        totalRounds = participantCount % 2 === 0 ? participantCount - 1 : participantCount;
-        break;
-      case 'MATCH_PLAY':
-        // For match play: flexible, default to 1 round
-        totalRounds = 1;
-        break;
-      default:
-        totalRounds = 1;
-    }
-    
-    // Prepare bracket data for backend (matching backend entity structure)
+    const generator = this.bracketGeneratorFactory.createGenerator(data.bracketType as BracketType);
+    const generatedBracket = await generator.generate(
+      acceptedRegistrations,
+      data.categoryId,
+      data.tournamentId,
+    );
+
     const bracketData = {
       tournamentId: data.tournamentId,
       categoryId: data.categoryId,
       bracketType: data.bracketType,
-      size: participantCount,
-      totalRounds: totalRounds,
-      structure: null,
+      size: generatedBracket.size,
+      totalRounds: generatedBracket.totalRounds,
+      structure: parseBracketStructure(generatedBracket.structure),
       isPublished: false,
     };
     
@@ -257,7 +256,9 @@ export class BracketService implements IBracketService {
       bracketType: bracket.bracketType,
       size: bracket.size,
       totalRounds: bracket.totalRounds,
-      structure: bracket.structure,
+      structure: typeof bracket.structure === 'string'
+        ? bracket.structure
+        : JSON.stringify(bracket.structure ?? {}),
       isPublished: bracket.isPublished,
       createdAt: bracket.createdAt,
     };

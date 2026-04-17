@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 2, 2026
- * @file application/services/notification.service.ts
+ * @file backend/src/application/services/notification.service.ts
  * @desc Backend notification service for creating and dispatching system notifications.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {AppDataSource} from '../../infrastructure/database/data-source';
@@ -84,14 +85,13 @@ export class NotificationService {
       return null;
     }
 
-    // Check if in-app channel is enabled
-    if (preferences && !preferences.isChannelEnabled(NotificationChannel.IN_APP)) {
-      console.log(`⚠️ In-app notification blocked by user preferences: ${userId}`);
-      return null;
-    }
+    const inAppEnabled = preferences?.isChannelEnabled(NotificationChannel.IN_APP) ?? true;
 
     // Determine which channels will be used
-    const channels: NotificationChannel[] = [NotificationChannel.IN_APP];
+    const channels: NotificationChannel[] = [];
+    if (inAppEnabled) {
+      channels.push(NotificationChannel.IN_APP);
+    }
     const emailEnabled = preferences?.isChannelEnabled(NotificationChannel.EMAIL) || false;
     const telegramEnabled = preferences?.isChannelEnabled(NotificationChannel.TELEGRAM) || false;
     const webPushEnabled = preferences?.isChannelEnabled(NotificationChannel.WEB_PUSH) || false;
@@ -108,29 +108,34 @@ export class NotificationService {
       channels.push(NotificationChannel.WEB_PUSH);
     }
 
-    const notification = notificationRepository.create({
-      id: generateId(ID_PREFIXES.NOTIFICATION),
-      userId,
-      type,
-      channels,
-      title,
-      message,
-      isRead: false,
-      metadata: metadata || null,
-    });
+    let saved: Notification | null = null;
 
-    const saved = await notificationRepository.save(notification);
+    if (inAppEnabled) {
+      const notification = notificationRepository.create({
+        id: generateId(ID_PREFIXES.NOTIFICATION),
+        userId,
+        type,
+        channels,
+        title,
+        message,
+        isRead: false,
+        metadata: metadata || null,
+      });
 
-    // Emit real-time notification via WebSocket
-    emitNotification(userId, {
-      id: saved.id,
-      type: saved.type,
-      title: saved.title,
-      message: saved.message,
-      createdAt: saved.createdAt,
-      isRead: saved.isRead,
-      metadata: saved.metadata,
-    });
+      saved = await notificationRepository.save(notification);
+
+      emitNotification(userId, {
+        id: saved.id,
+        type: saved.type,
+        title: saved.title,
+        message: saved.message,
+        createdAt: saved.createdAt,
+        isRead: saved.isRead,
+        metadata: saved.metadata,
+      });
+    } else {
+      console.log(`⚠️ In-app notification disabled for ${userId}; delivering only external channels`);
+    }
 
     // Send email if enabled in user preferences (Phase 3 - Multi-Channel Delivery)
     if (emailEnabled) {

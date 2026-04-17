@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/match.ts
+ * @file src/domain/entities/match.ts
  * @desc Entity representing a tennis match between two participants. Follows the State Pattern for status transitions (MatchStatus).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MatchStatus} from '../enumerations/match-status';

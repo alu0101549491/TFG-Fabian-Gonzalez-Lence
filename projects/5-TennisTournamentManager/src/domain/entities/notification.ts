@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/notification.ts
+ * @file src/domain/entities/notification.ts
  * @desc Entity representing a notification sent to a user. Dispatched via the Observer Pattern through multiple channels.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {NotificationType} from '../enumerations/notification-type';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file application/dto/announcement.dto.ts
+ * @file src/application/dto/announcement.dto.ts
  * @desc Data transfer objects for announcement-related operations (FR47-FR49)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {AnnouncementType} from '@domain/enumerations/announcement-type';

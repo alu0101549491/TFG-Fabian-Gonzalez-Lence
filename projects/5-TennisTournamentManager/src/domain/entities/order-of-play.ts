@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/order-of-play.ts
+ * @file src/domain/entities/order-of-play.ts
  * @desc Entity representing a scheduled entry in the order of play. Maps matches to courts and time slots.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

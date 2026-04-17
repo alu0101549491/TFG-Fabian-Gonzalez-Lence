@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 12, 2026
- * @file infrastructure/database/migrations/007-add-facility-type-and-regulations-to-tournaments.ts
+ * @file backend/src/infrastructure/database/migrations/007-add-facility-type-and-regulations-to-tournaments.ts
  * @desc Database migration to add facilityType and regulations columns to the tournaments table (FR1, FR8).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner} from 'typeorm';

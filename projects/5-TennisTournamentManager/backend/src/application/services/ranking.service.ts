@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 11, 2026
- * @file application/services/ranking.service.ts
+ * @file backend/src/application/services/ranking.service.ts
  * @desc Backend ranking service: computes global ELO-based player rankings (FR41, FR44).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Repository} from 'typeorm';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/court.ts
+ * @file src/domain/entities/court.ts
  * @desc Entity representing a tennis court at a tournament venue. Courts are assigned to matches in the order of play.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Surface} from '../enumerations/surface';

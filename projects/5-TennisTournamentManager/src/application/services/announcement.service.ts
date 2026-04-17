@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 7, 2026
- * @file application/services/announcement.service.ts
+ * @file src/application/services/announcement.service.ts
  * @desc Frontend service for announcement operations (FR47-FR49).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';

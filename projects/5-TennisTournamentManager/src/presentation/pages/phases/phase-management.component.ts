@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 10, 2026
- * @file presentation/pages/phases/phase-management.component.ts
+ * @file src/presentation/pages/phases/phase-management.component.ts
  * @desc Component for multi-phase tournament management (linking, qualifiers, consolation).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, inject, signal} from '@angular/core';

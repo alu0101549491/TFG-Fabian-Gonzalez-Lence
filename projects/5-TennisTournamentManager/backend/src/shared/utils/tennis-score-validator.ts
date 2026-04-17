@@ -10,6 +10,7 @@
  * @desc Comprehensive tennis score validation utility following ITF/ATP rules
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  * @see {@link https://www.itftennis.com/en/about-us/governance/rules-and-regulations/}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export interface TennisSetScore {
@@ -51,7 +52,7 @@ export interface TennisValidationOptions {
  * @example
  * const validator = new TennisScoreValidator();
  * const result = validator.validateMatch([
- *   { setNumber: 1, player1Games: 6, player2Games: 4 },
+
  *   { setNumber: 2, player1Games: 3, player2Games: 6 },
  *   { setNumber: 3, player1Games: 7, player2Games: 6, player1TiebreakPoints: 7, player2TiebreakPoints: 5 }
  * ], 'player1');

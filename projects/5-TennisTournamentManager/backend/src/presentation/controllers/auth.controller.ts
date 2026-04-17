@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/controllers/auth.controller.ts
+ * @file backend/src/presentation/controllers/auth.controller.ts
  * @desc Authentication controller handling login, register, refresh, logout.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Request, Response, NextFunction} from 'express';
@@ -26,6 +27,18 @@ import {UserRole} from '../../domain/enumerations/user-role';
  * Authentication controller.
  */
 export class AuthController {
+  /**
+   * Builds a signed refresh token for the supplied authenticated user payload.
+   *
+   * @param payload - Minimal identity data embedded in the refresh token
+   * @returns Signed JWT refresh token
+   */
+  private static buildRefreshToken(payload: {id: string; email: string; role: UserRole}): string {
+    return jwt.sign(payload, config.jwt.refreshSecret, {
+      expiresIn: config.jwt.refreshExpiresIn as unknown as number,
+    });
+  }
+
   /**
    * POST /api/auth/login
    * Authenticates user and returns JWT token.
@@ -56,6 +69,11 @@ export class AuthController {
         config.jwt.secret,
         {expiresIn: config.jwt.expiresIn as unknown as number}
       );
+      const refreshToken = AuthController.buildRefreshToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      });
       
       // Update last login
       user.lastLogin = new Date();
@@ -63,6 +81,7 @@ export class AuthController {
       
       res.status(HTTP_STATUS.OK).json({
         token,
+        refreshToken,
         user: {
           id: user.id,
           email: user.email,
@@ -86,7 +105,7 @@ export class AuthController {
    */
   public async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {email, password, firstName, lastName, phone, username, role} = req.body;
+      const {email, password, firstName, lastName, phone, username} = req.body;
       
       const userRepository = AppDataSource.getRepository(User);
       
@@ -107,14 +126,7 @@ export class AuthController {
       // Hash password
       const passwordHash = await bcrypt.hash(password, 12);
       
-      // Validate role (prevent SYSTEM_ADMIN from being set via registration)
-      let userRole = UserRole.PLAYER; // Default to PLAYER
-      if (role && Object.values(UserRole).includes(role)) {
-        // Allow all roles except SYSTEM_ADMIN
-        if (role !== UserRole.SYSTEM_ADMIN) {
-          userRole = role;
-        }
-      }
+      const userRole = UserRole.PLAYER;
       
       // Create user
       const user = userRepository.create({
@@ -139,10 +151,16 @@ export class AuthController {
         config.jwt.secret,
         {expiresIn: config.jwt.expiresIn as unknown as number}
       );
+      const refreshToken = AuthController.buildRefreshToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      });
       
       // Return token and user data
       res.status(HTTP_STATUS.CREATED).json({
         token,
+        refreshToken,
         user: {
           id: user.id,
           email: user.email,
@@ -167,11 +185,15 @@ export class AuthController {
   public async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const {refreshToken} = req.body;
+
+      if (!refreshToken) {
+        throw new AppError('Refresh token is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
+      }
       
       const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret) as {
         id: string;
         email: string;
-        role: string;
+        role: UserRole;
       };
       
       const token = jwt.sign(
@@ -179,9 +201,15 @@ export class AuthController {
         config.jwt.secret,
         {expiresIn: config.jwt.expiresIn as unknown as number}
       );
+      const rotatedRefreshToken = AuthController.buildRefreshToken({
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+      });
       
       res.status(HTTP_STATUS.OK).json({
         token,
+        refreshToken: rotatedRefreshToken,
         expiresIn: 1800,
       });
     } catch (error) {

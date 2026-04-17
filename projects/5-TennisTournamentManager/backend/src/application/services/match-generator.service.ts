@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 21, 2026
- * @file application/services/match-generator.service.ts
+ * @file backend/src/application/services/match-generator.service.ts
  * @desc Service for generating match pairings for different bracket types
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Match} from '../../domain/entities/match.entity';
@@ -340,7 +341,7 @@ export class MatchGeneratorService {
     // Generate pairings
     pairings.push([fixed, rotating[rotating.length - 1]]);
     
-    for (let i = 0; i < rotating.length - 1; i++) {
+    for (let i = 0; i < Math.floor((rotating.length - 1) / 2); i++) {
       pairings.push([rotating[i], rotating[rotating.length - 2 - i]]);
     }
     

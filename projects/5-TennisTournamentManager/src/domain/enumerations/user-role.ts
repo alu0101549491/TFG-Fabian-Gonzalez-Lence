@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/enumerations/user-role.ts
- * @desc Enumeration defining the possible roles a user can have in the Tennis Tournament Manager system. Maps to the four actor types: System Administrator, Tournament Administrator, Registered Participant, and Public.
+ * @file src/domain/enumerations/user-role.ts
+ * @desc Enumeration defining the supported authenticated roles in the Tennis Tournament Manager system.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

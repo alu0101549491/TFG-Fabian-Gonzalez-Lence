@@ -9,6 +9,7 @@
  * @file src/application/services/gdpr.service.ts
  * @desc GDPR service implementation for data protection compliance (NFR14)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {inject, Injectable} from '@angular/core';
@@ -55,7 +56,7 @@ import {
  * 
  * // Export user data
  * const exportResult = await gdprService.exportUserData({
- *   userId: 'user_123',
+
  *   format: 'JSON'
  * });
  * 
@@ -333,7 +334,7 @@ End of GDPR Data Export
         };
       }
 
-      // Perform anonymization
+      // Fail closed until anonymization is fully implemented.
       const anonymizedId = `anon_${Date.now()}`;
       const summary = await this.anonymizeUserData(request.userId, anonymizedId);
 
@@ -375,22 +376,7 @@ End of GDPR Data Export
     paymentsAnonymized: number;
     notificationsDeleted: number;
   }> {
-    // TODO: Implement actual anonymization logic
-    // This would involve:
-    // 1. Update User entity: Replace personal data with anonymized values
-    // 2. Update Registrations: Replace participant data
-    // 3. Update Matches: Keep structure but mark player as anonymized
-    // 4. Delete Notifications: Remove all user notifications
-    // 5. Update Payments: Anonymize payment records
-    // 6. Mark user as deleted (isActive = false)
-
-    // For now, return placeholder counts
-    return {
-      registrationsAnonymized: 0,
-      matchesAnonymized: 0,
-      paymentsAnonymized: 0,
-      notificationsDeleted: 0,
-    };
+    throw new Error('Account deletion is unavailable until GDPR anonymization is fully implemented');
   }
 
   /**

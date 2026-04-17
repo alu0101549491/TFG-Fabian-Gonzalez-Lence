@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/pages/notifications/notification-list/notification-list.component.ts
+ * @file src/presentation/pages/notifications/notification-list/notification-list.component.ts
  * @desc User notification inbox with real-time delivery (NFR5).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';
@@ -214,10 +215,16 @@ export class NotificationListComponent implements OnInit {
       case 'ANNOUNCEMENT':
         // Navigate to announcements page
         if (metadata?.announcementId) {
-          await this.router.navigate(['/announcements']);
+          await this.router.navigate(['/announcements'], {
+            queryParams: {
+              id: metadata.announcementId,
+              tournamentId: metadata.tournamentId,
+            },
+          });
         } else if (metadata?.tournamentId) {
-          // Fallback to tournament announcements
-          await this.router.navigate(['/tournaments', metadata.tournamentId]);
+          await this.router.navigate(['/announcements'], {
+            queryParams: {tournamentId: metadata.tournamentId},
+          });
         } else {
           await this.router.navigate(['/announcements']);
         }

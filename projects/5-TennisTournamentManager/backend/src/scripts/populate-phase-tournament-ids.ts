@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 10, 2026
- * @file scripts/populate-phase-tournament-ids.ts
+ * @file backend/src/scripts/populate-phase-tournament-ids.ts
  * @desc Migration script to populate tournamentId field in existing phases.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {AppDataSource} from '../infrastructure/database/data-source';

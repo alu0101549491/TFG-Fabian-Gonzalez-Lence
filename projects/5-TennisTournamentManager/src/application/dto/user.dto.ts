@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file application/dto/user.dto.ts
+ * @file src/application/dto/user.dto.ts
  * @desc Data transfer objects for user-related operations.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {UserRole} from '@domain/enumerations/user-role';
@@ -46,6 +47,7 @@ export interface UpdateUserDto {
 /** DTO for authentication response. */
 export interface AuthResponseDto {
   token: string;
+  refreshToken?: string;
   user: UserDto;
 }
 

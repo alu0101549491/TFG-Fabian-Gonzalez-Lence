@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file presentation/services/auth-state.service.ts
+ * @file src/presentation/services/auth-state.service.ts
  * @desc Angular injectable service for managing authentication state (JWT token, current user). Enforces 30-minute session timeout (NFR12).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable} from '@angular/core';

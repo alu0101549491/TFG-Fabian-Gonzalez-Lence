@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/enumerations/notification-channel.ts
+ * @file src/domain/enumerations/notification-channel.ts
  * @desc Enumeration defining the delivery channels for notifications (Observer Pattern multichannel dispatch).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

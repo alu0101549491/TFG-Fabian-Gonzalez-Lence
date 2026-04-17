@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/pages/matches/match-detail/match-detail.component.ts
+ * @file src/presentation/pages/matches/match-detail/match-detail.component.ts
  * @desc Match detail view with live scoring and score history.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, computed, inject} from '@angular/core';
@@ -70,6 +71,9 @@ export class MatchDetailComponent implements OnInit {
 
   /** Tournament admin check */
   public canManageMatch = signal(false);
+
+  /** Match participant/admin score-entry check */
+  public canRecordScores = signal(false);
 
   /** Modal states */
   public showScheduleModal = signal(false);
@@ -250,8 +254,12 @@ export class MatchDetailComponent implements OnInit {
     if (!user) {
       console.log('[Match Detail] No user logged in, setting canManageMatch to false');
       this.canManageMatch.set(false);
+      this.canRecordScores.set(false);
       return;
     }
+
+    const canRecordScores = this.isMatchParticipant(user.id, match);
+    this.canRecordScores.set(canRecordScores);
 
     // System admins and tournament admins can manage matches
     if (user.role === UserRole.SYSTEM_ADMIN || user.role === UserRole.TOURNAMENT_ADMIN) {
@@ -291,6 +299,7 @@ export class MatchDetailComponent implements OnInit {
         });
 
         this.canManageMatch.set(canManage);
+        this.canRecordScores.set(true);
       } catch (error) {
         console.error('[Match Detail] Error checking permissions:', error);
         console.error('[Match Detail] Error details:', {
@@ -299,6 +308,7 @@ export class MatchDetailComponent implements OnInit {
           userRole: user.role
         });
         this.canManageMatch.set(false);
+        this.canRecordScores.set(canRecordScores);
       }
     } else {
       console.log('[Match Detail] User role is not SYSTEM_ADMIN or TOURNAMENT_ADMIN:', user.role);
@@ -306,6 +316,28 @@ export class MatchDetailComponent implements OnInit {
     }
     
     console.log('[Match Detail] Final canManageMatch value:', this.canManageMatch());
+  }
+
+  /**
+   * Checks whether the current user is one of the match participants.
+   *
+   * @param userId - User identifier to match
+   * @param match - Match details including singles or doubles participants
+   * @returns True when the user belongs to the match roster
+   */
+  private isMatchParticipant(userId: string, match: MatchDto): boolean {
+    const participantIds = [
+      match.participant1Id,
+      match.participant2Id,
+      match.participant1?.id,
+      match.participant2?.id,
+      match.participant1Team?.player1.id,
+      match.participant1Team?.player2.id,
+      match.participant2Team?.player1.id,
+      match.participant2Team?.player2.id,
+    ];
+
+    return participantIds.some((participantId) => participantId === userId);
   }
 
   // Modal management methods

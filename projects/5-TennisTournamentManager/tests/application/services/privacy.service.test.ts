@@ -9,6 +9,7 @@
  * @file tests/application/services/privacy.service.test.ts
  * @desc Unit tests for PrivacyService - privacy enforcement and field filtering
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {PrivacyService} from '@application/services/privacy.service';

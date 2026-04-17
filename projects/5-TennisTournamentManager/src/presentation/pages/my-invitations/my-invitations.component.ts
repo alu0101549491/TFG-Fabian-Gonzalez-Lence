@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 12, 2026
- * @file presentation/pages/my-invitations/my-invitations.component.ts
+ * @file src/presentation/pages/my-invitations/my-invitations.component.ts
  * @desc Component for viewing and managing partner invitations
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, inject, signal, computed} from '@angular/core';

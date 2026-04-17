@@ -9,6 +9,7 @@
  * @file src/vite-env.d.ts
  * @desc Vite environment type declarations including PWA plugin
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /// <reference types="vite/client" />

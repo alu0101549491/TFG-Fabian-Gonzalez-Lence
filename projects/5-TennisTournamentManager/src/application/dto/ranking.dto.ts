@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file application/dto/ranking.dto.ts
+ * @file src/application/dto/ranking.dto.ts
  * @desc Data transfer objects for global ranking operations.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {RankingSystem} from '@domain/enumerations/ranking-system';

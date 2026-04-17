@@ -9,6 +9,7 @@
  * @file src/application/interfaces/match-service.interface.ts
  * @desc Match service interface for match management and result recording
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {RecordResultDto, MatchDto, UpdateMatchStatusDto} from '../dto';

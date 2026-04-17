@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 19, 2026
- * @file presentation/pages/admin/user-management/user-management.component.ts
+ * @file src/presentation/pages/admin/user-management/user-management.component.ts
  * @desc User management page for system administrators (CRUD operations on users).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject, computed} from '@angular/core';

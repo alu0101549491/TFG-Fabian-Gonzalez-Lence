@@ -6,11 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since 2026-04-14
- * @file infrastructure/database/migrations/009-add-withdrawal-date-and-partner-id-to-registrations.ts
+ * @file backend/src/infrastructure/database/migrations/009-add-withdrawal-date-and-partner-id-to-registrations.ts
  * @desc Database migration to add withdrawalDate and partnerId columns to the registrations table.
- *       withdrawalDate records when a participant formally withdrew (FR13).
- *       partnerId links a doubles registration to the partner user (FR15).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner} from 'typeorm';

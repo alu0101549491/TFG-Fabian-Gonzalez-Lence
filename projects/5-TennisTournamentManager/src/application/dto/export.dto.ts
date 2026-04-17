@@ -21,7 +21,7 @@ import {ExportFormat} from '../../domain/enumerations/export-format';
  * @example
  * ```typescript
  * const request: ExportRequestDto = {
- *   tournamentId: 'tournament-123',
+
  *   format: ExportFormat.ITF_CSV,
  *   includeStatistics: true,
  *   includeMatches: true,

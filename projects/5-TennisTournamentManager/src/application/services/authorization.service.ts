@@ -9,6 +9,7 @@
  * @file src/application/services/authorization.service.ts
  * @desc Authorization service implementation for role-based access control
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
@@ -27,6 +28,10 @@ export class AuthorizationService implements IAuthorizationService {
   private readonly userRepository = inject(UserRepositoryImpl);
   private readonly tournamentRepository = inject(TournamentRepositoryImpl);
   private readonly bracketRepository = inject(BracketRepositoryImpl);
+
+  private static readonly TOURNAMENT_READ_ACTIONS = new Set(['read', 'view']);
+
+  private static readonly TOURNAMENT_MANAGE_ACTIONS = new Set(['create', 'update', 'delete']);
 
   /**
    * Checks whether a user has a specific role.
@@ -79,30 +84,30 @@ export class AuthorizationService implements IAuthorizationService {
       return false;
     }
     
-    // System administrators can do everything
+    const normalizedAction = action.trim().toLowerCase();
+
+    if (AuthorizationService.TOURNAMENT_READ_ACTIONS.has(normalizedAction)) {
+      return true;
+    }
+
+    if (!AuthorizationService.TOURNAMENT_MANAGE_ACTIONS.has(normalizedAction)) {
+      return false;
+    }
+
     if (user.role === UserRole.SYSTEM_ADMIN) {
       return true;
     }
-    
-    // Tournament administrators can manage any tournament
+
+    const tournament = await this.tournamentRepository.findById(resourceId);
+    if (!tournament) {
+      return false;
+    }
+
     if (user.role === UserRole.TOURNAMENT_ADMIN) {
       return true;
     }
-    
-    // Tournament organizers can manage their own tournaments
-    if (this.tournamentRepository) {
-      const tournament = await this.tournamentRepository.findById(resourceId);
-      if (tournament && tournament.organizerId === userId) {
-        return true;
-      }
-    }
-    
-    // Registered participants can view public resources
-    if (action === 'read' || action === 'view') {
-      return true;
-    }
-    
-    return false;
+
+    return tournament.organizerId === userId;
   }
 
   /**

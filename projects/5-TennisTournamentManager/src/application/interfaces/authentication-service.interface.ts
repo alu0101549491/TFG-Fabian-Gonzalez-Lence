@@ -9,6 +9,7 @@
  * @file src/application/interfaces/authentication-service.interface.ts
  * @desc Authentication service interface for user login, registration, and token management
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {LoginDto, RegisterUserDto, AuthResponseDto, UserDto} from '../dto';

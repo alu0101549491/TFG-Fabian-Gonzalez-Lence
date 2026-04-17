@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file shared/utils/id-generator.ts
+ * @file backend/src/shared/utils/id-generator.ts
  * @desc Utility functions for generating unique identifiers with prefixes (e.g., usr_123, trn_456).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {randomBytes} from 'crypto';

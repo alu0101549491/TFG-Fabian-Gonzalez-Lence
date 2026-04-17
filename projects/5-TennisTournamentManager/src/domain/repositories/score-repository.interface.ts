@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/repositories/score-repository.interface.ts
+ * @file src/domain/repositories/score-repository.interface.ts
  * @desc Repository interface for Score entity data access operations
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Score, SetScore} from '../entities/score';

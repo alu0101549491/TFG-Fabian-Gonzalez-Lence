@@ -6,10 +6,11 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since January 16, 2025
- * @file application/services/seeding.service.ts
+ * @file backend/src/application/services/seeding.service.ts
  * @desc Service for managing tournament seeding algorithms following ITF/ATP standards.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  * @see {@link https://www.itftennis.com/en/about-us/governance/rules-and-regulations/}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Registration} from '../../domain/entities/registration.entity';

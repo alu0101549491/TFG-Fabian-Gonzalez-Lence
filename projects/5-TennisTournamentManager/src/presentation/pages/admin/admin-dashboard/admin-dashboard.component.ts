@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts
+ * @file src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts
  * @desc Administrator dashboard for tournament management, user moderation, and system monitoring.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';
@@ -109,8 +110,7 @@ export class AdminDashboardComponent implements OnInit {
    * Navigates to user management.
    */
   public manageUsers(): void {
-    // Would navigate to user management page
-    alert('User management feature coming soon');
+    void this.router.navigate(['/admin/users']);
   }
 
   /**

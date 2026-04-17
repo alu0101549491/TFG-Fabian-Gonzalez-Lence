@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file presentation/guards/auth.guard.ts
+ * @file src/presentation/guards/auth.guard.ts
  * @desc Route guard that protects routes requiring authentication (NFR12).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {inject} from '@angular/core';

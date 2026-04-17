@@ -9,12 +9,25 @@
  * @file src/application/services/authentication.service.ts
  * @desc Authentication service implementation for user authentication and token management
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
 import {IAuthenticationService} from '../interfaces/authentication-service.interface';
 import {RegisterUserDto, AuthResponseDto, UserDto} from '../dto';
 import {AxiosClient} from '@infrastructure/http/axios-client';
+
+/**
+ * Decodes a JWT payload segment encoded with base64url rules.
+ *
+ * @param segment - Encoded JWT segment without URL-unsafe characters
+ * @returns Decoded UTF-8 payload string ready for JSON parsing
+ */
+function decodeBase64UrlSegment(segment: string): string {
+  const normalizedSegment = segment.replace(/-/g, '+').replace(/_/g, '/');
+  const paddingLength = (4 - (normalizedSegment.length % 4)) % 4;
+  return atob(`${normalizedSegment}${'='.repeat(paddingLength)}`);
+}
 
 /**
  * Authentication service implementation.
@@ -91,7 +104,6 @@ export class AuthenticationService implements IAuthenticationService {
         lastName: data.lastName,
         username: data.username,
         phone: data.phone || null,
-        role: data.role,  // Include role selection from registration form
       });
       
       return response;
@@ -132,7 +144,7 @@ export class AuthenticationService implements IAuthenticationService {
       }
       
       // Decode payload to check expiration
-      const payload = JSON.parse(atob(parts[1]));
+      const payload = JSON.parse(decodeBase64UrlSegment(parts[1]));
       if (!payload.exp) {
         return false;
       }

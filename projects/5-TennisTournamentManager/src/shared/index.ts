@@ -9,6 +9,7 @@
  * @file src/shared/index.ts
  * @desc Barrel export for the shared module.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export * from './constants';

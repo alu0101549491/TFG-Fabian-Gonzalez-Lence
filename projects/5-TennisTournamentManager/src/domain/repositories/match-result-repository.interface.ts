@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 18, 2026
- * @file domain/repositories/match-result-repository.interface.ts
+ * @file src/domain/repositories/match-result-repository.interface.ts
  * @desc Repository interface for MatchResult entity data access operations
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MatchResult} from '../entities/match-result';

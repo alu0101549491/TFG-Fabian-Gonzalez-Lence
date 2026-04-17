@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 28, 2026
- * @file infrastructure/database/migrations/004-add-unique-constraint-id-document.ts
+ * @file backend/src/infrastructure/database/migrations/004-add-unique-constraint-id-document.ts
  * @desc Database migration to add unique constraint on users.idDocument (FR9 enhancement).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner} from 'typeorm';
@@ -22,7 +23,7 @@ import {MigrationInterface, QueryRunner} from 'typeorm';
  * 
  * **Rationale**:
  * - **FR9 Enhancement**: ID/NIE documents are personal identification numbers that
- *   should be unique across the system
+
  * - **Data Integrity**: Prevents multiple users from claiming the same ID/NIE
  * - **Real-World Alignment**: In real tennis tournament systems, ID/NIE uniquely
  *   identifies each participant

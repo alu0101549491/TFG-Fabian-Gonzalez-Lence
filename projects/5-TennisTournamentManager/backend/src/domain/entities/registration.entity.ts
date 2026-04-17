@@ -6,12 +6,13 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file domain/entities/registration.entity.ts
+ * @file backend/src/domain/entities/registration.entity.ts
  * @desc TypeORM entity representing a participant's registration to a tournament.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
-import {Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn} from 'typeorm';
+import {Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index} from 'typeorm';
 import {RegistrationStatus} from '../enumerations/registration-status';
 import {AcceptanceType} from '../enumerations/acceptance-type';
 import {User} from './user.entity';
@@ -22,6 +23,10 @@ import {Category} from './category.entity';
  * Registration entity representing a tournament registration.
  */
 @Entity('registrations')
+@Index('idx_registration_active_category_participant_unique', ['categoryId', 'participantId'], {
+  unique: true,
+  where: `status NOT IN ('CANCELLED', 'WITHDRAWN')`,
+})
 export class Registration {
   @PrimaryColumn('varchar', {length: 50})
   public id!: string;

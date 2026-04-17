@@ -9,6 +9,7 @@
  * @file backend/src/application/services/privacy.service.ts
  * @desc Backend privacy service for enforcing user data visibility rules (FR60)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {User} from '../../domain/entities/user.entity';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 12, 2026
- * @file infrastructure/database/migrations/006-add-visual-customization-to-tournaments.ts
+ * @file backend/src/infrastructure/database/migrations/006-add-visual-customization-to-tournaments.ts
  * @desc Database migration to add visual customization columns to tournaments table (NFR18).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner} from 'typeorm';

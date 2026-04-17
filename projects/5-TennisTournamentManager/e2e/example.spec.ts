@@ -9,6 +9,7 @@
  * @file e2e/example.spec.ts
  * @desc Example E2E test — validates that the application loads correctly.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {test, expect} from '@playwright/test';

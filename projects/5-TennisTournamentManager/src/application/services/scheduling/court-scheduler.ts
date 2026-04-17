@@ -9,6 +9,7 @@
  * @file src/application/services/scheduling/court-scheduler.ts
  * @desc Court scheduling service implementing automatic match scheduling algorithm (Strategy Pattern)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable} from '@angular/core';

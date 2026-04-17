@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/pages/announcements/announcement-list/announcement-list.component.ts
+ * @file src/presentation/pages/announcements/announcement-list/announcement-list.component.ts
  * @desc Public announcements board for tournament-wide communications (FR47-FR49).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject, computed} from '@angular/core';
@@ -104,6 +105,9 @@ export class AnnouncementListComponent implements OnInit {
   /** Tournament ID filter */
   public tournamentId = signal<string | null>(null);
 
+  /** Announcement ID to open automatically after loading, if requested. */
+  private announcementId = signal<string | null>(null);
+
   /** Show announcement details modal */
   public showDetailsModal = signal(false);
 
@@ -117,17 +121,11 @@ export class AnnouncementListComponent implements OnInit {
     console.log('AnnouncementList ngOnInit called');
     this.route.queryParamMap.subscribe((params: any) => {
       const tournamentId = params.get('tournamentId');
+      const announcementId = params.get('id');
       console.log('Query params changed, tournamentId:', tournamentId);
-      
-      // Require tournamentId - redirect to tournaments if missing
-      if (!tournamentId) {
-        console.warn('No tournamentId provided, redirecting to tournaments');
-        this.errorMessage.set('Tournament ID is required to view announcements');
-        void this.router.navigate(['/tournaments']);
-        return;
-      }
-      
+
       this.tournamentId.set(tournamentId);
+      this.announcementId.set(announcementId);
       void this.loadAnnouncements();
     });
   }
@@ -150,6 +148,17 @@ export class AnnouncementListComponent implements OnInit {
       const announcements = await this.announcementService.getAll(filters).toPromise();
       console.log('Announcements loaded:', announcements);
       this.allAnnouncements.set(announcements || []);
+
+      const requestedAnnouncementId = this.announcementId();
+      if (requestedAnnouncementId) {
+        const selectedAnnouncement = (announcements || []).find(
+          (announcement) => announcement.id === requestedAnnouncementId
+        );
+
+        if (selectedAnnouncement) {
+          this.openAnnouncementDetails(selectedAnnouncement);
+        }
+      }
     } catch (error) {
       console.error('Error loading announcements:', error);
       const message = error instanceof Error ? error.message : 'Failed to load announcements';

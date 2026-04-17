@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 7, 2026
- * @file application/services/announcement.service.ts
+ * @file backend/src/application/services/announcement.service.ts
  * @desc Service for managing announcements with privacy, scheduling, and notifications (FR47-FR49).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Repository} from 'typeorm';
@@ -22,8 +23,8 @@ import {RegistrationStatus} from '../../domain/enumerations/registration-status'
 import {AuditAction} from '../../domain/enumerations/audit-action';
 import {AuditResourceType} from '../../domain/enumerations/audit-resource-type';
 import {NotificationType} from '../../domain/enumerations/notification-type';
+import {AppError} from '../../shared/errors/app-error';
 import {generateId} from '../../shared/utils/id-generator';
-import {AppError} from '../../presentation/middleware/error.middleware';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 import {NotificationService} from './notification.service';
 import {AuditService} from './audit.service';

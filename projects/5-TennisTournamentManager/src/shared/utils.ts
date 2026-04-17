@@ -9,6 +9,7 @@
  * @file src/shared/utils.ts
  * @desc Shared utility functions used across application layers.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

@@ -9,6 +9,7 @@
  * @file src/application/services/generators/single-elimination.generator.ts
  * @desc Single Elimination (Knockout) bracket generator implementation
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';

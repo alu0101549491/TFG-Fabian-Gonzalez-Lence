@@ -4,66 +4,66 @@
 
 ---
 ## TODO List: Incidents Found
-- [ ] [INC-001] [G1.1 – Frontend Enumerations] [src/domain/enumerations/user-role.ts] — Role enum omits documented referee/public roles
-- [ ] [INC-002] [G1.3 – Frontend Entities] [src/domain/entities/user.ts] — Permission map references non-existent roles
-- [ ] [INC-003] [G2.2 – Backend Entities] [backend/src/domain/entities/registration.entity.ts] — Registration invariant lacks a composite uniqueness guard
-- [ ] [INC-004] [G3.3 – Competition Flow Services] [src/application/services/bracket.service.ts] — Bracket generation bypasses the generator path and saves only a shell
-- [ ] [INC-005] [G3.3 – Competition Flow Services] [src/application/services/phase-progression.service.ts] — Qualifier advancement matches standings by the wrong identifier
-- [ ] [INC-006] [G3.3 – Competition Flow Services] [src/application/services/result-confirmation.service.ts] — Result confirmation skips authorization and state validation
-- [ ] [INC-007] [G3.3 – Competition Flow Services] [src/application/services/order-of-play.service.ts] — Automatic scheduling mixes matches from all tournaments
-- [ ] [INC-008] [G3.4 – Auth, User, Ranking & Privacy Services] [src/application/services/authentication.service.ts] — JWT validation uses raw base64 decoding on base64url payloads
-- [ ] [INC-009] [G3.4 – Auth, User, Ranking & Privacy Services] [src/application/services/authorization.service.ts] — Authorization rules grant blanket access for broad action classes
-- [ ] [INC-010] [G3.4 – Auth, User, Ranking & Privacy Services] [src/application/services/ranking.service.ts] — Ranking DTO mapping reads fields that do not exist on the domain entity
-- [ ] [INC-011] [G3.4 – Auth, User, Ranking & Privacy Services] [src/application/services/ranking.service.ts] — Seed calculation ignores the target category and ranks the whole table
-- [ ] [INC-012] [G3.4 – Auth, User, Ranking & Privacy Services] [src/application/services/gdpr.service.ts] — Account deletion reports success while anonymization remains a placeholder
-- [ ] [INC-013] [G3.5 – Announcements, Notifications & Export Services] [src/application/services/export.service.ts] — Export service contract drifts from its declared DTO-based interface
-- [ ] [INC-014] [G3.6 – Generators, Scheduling & Service Support] [src/application/services/seeding.service.ts] — Seed assignment sorts by current seed instead of participant ranking
-- [ ] [INC-015] [G3.6 – Generators, Scheduling & Service Support] [src/application/services/seeding.service.ts] — Seeding logic writes and reads a non-existent property
-- [ ] [INC-016] [G4.2 – Backend Support & Delivery Services] [backend/src/application/services/notification.service.ts] — External notifications are skipped when in-app delivery is disabled
-- [ ] [INC-017] [G4.2 – Backend Support & Delivery Services] [backend/src/application/services/partner-invitation.service.ts] — Validation paths use an undefined error code symbol
-- [ ] [INC-018] [G4.2 – Backend Support & Delivery Services] [backend/src/application/services/announcement.service.ts] — Application layer imports error types from presentation middleware
-- [ ] [INC-019] [G5.1 – Frontend Repository Implementations] [src/infrastructure/repositories/registration.repository.ts] — Registration update silently narrows persistence to seedNumber only
-- [ ] [INC-020] [G5.2 – Frontend External Integrations] [src/infrastructure/external/export-service.ts] — Export adapter remains a simulation rather than a real infrastructure implementation
-- [ ] [INC-021] [G5.3 – Frontend HTTP & WebSocket Clients] [src/infrastructure/http/axios-client.ts] — Auth redirect bypasses the deployed base path and Angular router
-- [ ] [INC-022] [G5.3 – Frontend HTTP & WebSocket Clients] [src/infrastructure/websocket/websocket.service.ts] — WebSocket service depends on presentation state directly
-- [ ] [INC-023] [G5.3 – Frontend HTTP & WebSocket Clients] [src/infrastructure/websocket/websocket.service.ts] — Anonymous subscriptions can call into an uninitialized socket
-- [ ] [INC-024] [G6.1 – Database Bootstrap, Seeds & Tools] [backend/scripts/init-database.sh] — Bootstrap relies on synchronize and a timed dev-server start instead of migrations
-- [ ] [INC-025] [G6.2 – Database Migrations] [backend/src/infrastructure/database/data-source.ts] — Runtime DataSource does not load any migration classes
-- [ ] [INC-026] [G7.1 – App Shell, Guards, Interceptors & Presentation Services] [src/application/services/session-inactivity.service.ts] — Session timeout uses the wrong token key and redirects to a non-existent login route
-- [ ] [INC-027] [G7.1 – App Shell, Guards, Interceptors & Presentation Services] [src/presentation/interceptors/error.interceptor.ts] — Public feature routes are missing from the 401/403 allowlist
-- [ ] [INC-028] [G7.3 – Notification & Bracket Components] [src/presentation/components/notification-bell/notification-bell.component.ts] — Announcement notifications navigate without the required tournament context
-- [ ] [INC-029] [G8.1 – Admin, Auth, Home & Dashboard Pages] [src/presentation/pages/auth/register/register.component.ts] — Public registration form allows organizer-role self-selection
-- [ ] [INC-030] [G8.1 – Admin, Auth, Home & Dashboard Pages] [src/presentation/pages/dashboard.component.ts] — Admin shortcut points to a route that does not exist
-- [ ] [INC-031] [G8.1 – Admin, Auth, Home & Dashboard Pages] [src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts] — Manage Users action is still a placeholder alert
-- [ ] [INC-032] [G8.2 – Announcement Pages] [src/presentation/pages/announcements/announcement-list/announcement-list.component.ts] — Public announcement list is unusable without a tournamentId query parameter
-- [ ] [INC-033] [G8.2 – Announcement Pages] [src/presentation/app.routes.ts] — Announcement create and edit screens have no auth or role guard
-- [ ] [INC-034] [G8.3 – Match & Bracket Pages] [src/presentation/pages/matches/match-detail/match-detail.component.ts] — Referees cannot access the intended score-entry workflow
-- [ ] [INC-035] [G8.4 – Order of Play, Ranking, Standings & Statistics Pages] [src/application/services/ranking.service.ts] — Non-ELO ranking views relabel the same dataset instead of computing another system
-- [ ] [INC-036] [G8.4 – Order of Play, Ranking, Standings & Statistics Pages] [src/presentation/pages/statistics/statistics-view/statistics-view.component.ts] — Back navigation points to an undefined dashboard route
-- [ ] [INC-037] [G8.5 – Registrations, Notifications, Invitations, Profile & Phase Pages] [src/presentation/pages/notifications/notification-list/notification-list.component.ts] — Inbox announcement notifications navigate to an unroutable destination
-- [ ] [INC-038] [G8.5 – Registrations, Notifications, Invitations, Profile & Phase Pages] [src/presentation/pages/profile/profile-view/profile-view.component.html] — Profile back link points to an undefined dashboard route
-- [ ] [INC-039] [G8.6 – Tournament Management Pages] [src/presentation/app.routes.ts] — Tournament create and edit screens are only login-protected
-- [ ] [INC-040] [G9.1 – Core Tournament, Match & Registration Controllers] [backend/src/presentation/controllers/registration.controller.ts] — Registration creation does not guard against duplicates before save
-- [ ] [INC-041] [G9.2 – Auth, User, Announcement & Notification Controllers] [backend/src/presentation/controllers/auth.controller.ts] — Public registration can create tournament-admin accounts
-- [ ] [INC-042] [G9.2 – Auth, User, Announcement & Notification Controllers] [backend/src/presentation/controllers/auth.controller.ts] — Refresh endpoint exists without a matching refresh-token issuance flow
-- [ ] [INC-043] [G9.3 – Middleware, Upload & Route Wiring] [backend/src/presentation/routes/index.ts] — Auth login route is registered twice and one definition is dead
-- [ ] [INC-044] [G10.1 – Frontend Shared Utilities, Pipes & Environments] [src/shared/constants.ts] — Production fallback hosts diverge between shared constants and environment defaults
-- [ ] [INC-045] [G10.1 – Frontend Shared Utilities, Pipes & Environments] [src/shared/constants.ts] — Shared event names do not match backend-emitted order-of-play events
-- [ ] [INC-046] [G10.3 – Backend Shared Config, Constants & Utilities] [backend/src/shared/config/index.ts] — Refresh secret falls back to a known literal and is not mandatory at startup
-- [ ] [INC-047] [G10.5 – Barrel Exports & Module Indexes] [src/domain/enumerations/index.ts] — Domain enumerations barrel duplicates the same export
-- [ ] [INC-048] [G11.1 – Frontend Application Service Tests] [tests/application/services/authentication.service.test.ts] — Core service test suites are placeholders that do not exercise behavior
-- [ ] [INC-049] [G11.2 – Frontend Domain Entity Tests] [tests/domain/entities/tournament.test.ts] — Domain entity tests are placeholders and do not validate invariants
-- [ ] [INC-050] [G11.3 – Frontend Manual Validators & Mocks] [tests/manual/privacy-configuration-validator.ts] — Manual validator reports success without enforcing failures
-- [ ] [INC-051] [G11.4 – End-to-End Tests] [e2e/doubles-tournament.spec.ts] — E2E cleanup leaves created users and related doubles state behind
-- [ ] [INC-052] [G11.4 – End-to-End Tests] [e2e/doubles-tournament.spec.ts] — E2E suite hardcodes localhost backend seeding endpoints
-- [ ] [INC-053] [G11.5 – Backend Application Tests] [backend/jest.config.js] — Backend coverage thresholds are too low to protect critical workflows
-- [ ] [INC-054] [G12.1 – Root Configuration & Tooling] [vite.config.ts] — Vite/Angular tooling no longer matches the documented plugin-based architecture
-- [ ] [INC-055] [G12.2 – Root Docs, Specifications & Review Inputs] [README.md] — README command table does not match the real package scripts
-- [ ] [INC-056] [G12.3 – Public Assets & PWA Files] [public/sw.js] — Service worker skips JavaScript bundles, so offline boot cannot work reliably
-- [ ] [INC-057] [G12.3 – Public Assets & PWA Files] [public/sw.js] — Precache paths are root-relative and ignore subpath deployment
-- [ ] [INC-058] [G12.4 – Frontend Operational Scripts] [scripts/backup-database.sh] — Backup tooling defaults to a different database name than the backend config
-- [ ] [INC-059] [G12.5 – Backend Configuration & Deployment Notes] [backend/QUICK-START-RENDER.md] — Deployment guide uses the wrong frontend API environment variable name
-- [ ] [INC-060] [G12.6 – Backend Operational Scripts & SQL Utilities] [backend/scripts/check-and-fix-roles.sql] — Repair SQL performs destructive role rewrites and user deletion
+- [x] [INC-001] [G1.1 – Frontend Enumerations] [src/domain/enumerations/user-role.ts] — Role enum omits documented referee/public roles
+- [x] [INC-002] [G1.3 – Frontend Entities] [src/domain/entities/user.ts] — Permission map references non-existent roles
+- [x] [INC-003] [G2.2 – Backend Entities] [backend/src/domain/entities/registration.entity.ts] — Registration invariant lacks a composite uniqueness guard
+- [x] [INC-004] [G3.3 – Competition Flow Services] [src/application/services/bracket.service.ts] — Bracket generation bypasses the generator path and saves only a shell
+- [x] [INC-005] [G3.3 – Competition Flow Services] [src/application/services/phase-progression.service.ts] — Qualifier advancement matches standings by the wrong identifier
+- [x] [INC-006] [G3.3 – Competition Flow Services] [src/application/services/result-confirmation.service.ts] — Result confirmation skips authorization and state validation
+- [x] [INC-007] [G3.3 – Competition Flow Services] [src/application/services/order-of-play.service.ts] — Automatic scheduling mixes matches from all tournaments
+- [x] [INC-008] [G3.4 – Auth, User, Ranking & Privacy Services] [src/application/services/authentication.service.ts] — JWT validation uses raw base64 decoding on base64url payloads
+- [x] [INC-009] [G3.4 – Auth, User, Ranking & Privacy Services] [src/application/services/authorization.service.ts] — Authorization rules grant blanket access for broad action classes
+- [x] [INC-010] [G3.4 – Auth, User, Ranking & Privacy Services] [src/application/services/ranking.service.ts] — Ranking DTO mapping reads fields that do not exist on the domain entity
+- [x] [INC-011] [G3.4 – Auth, User, Ranking & Privacy Services] [src/application/services/ranking.service.ts] — Seed calculation ignores the target category and ranks the whole table
+- [x] [INC-012] [G3.4 – Auth, User, Ranking & Privacy Services] [src/application/services/gdpr.service.ts] — Account deletion reports success while anonymization remains a placeholder
+- [x] [INC-013] [G3.5 – Announcements, Notifications & Export Services] [src/application/services/export.service.ts] — Export service contract drifts from its declared DTO-based interface
+- [x] [INC-014] [G3.6 – Generators, Scheduling & Service Support] [src/application/services/seeding.service.ts] — Seed assignment sorts by current seed instead of participant ranking
+- [x] [INC-015] [G3.6 – Generators, Scheduling & Service Support] [src/application/services/seeding.service.ts] — Seeding logic writes and reads a non-existent property
+- [x] [INC-016] [G4.2 – Backend Support & Delivery Services] [backend/src/application/services/notification.service.ts] — External notifications are skipped when in-app delivery is disabled
+- [x] [INC-017] [G4.2 – Backend Support & Delivery Services] [backend/src/application/services/partner-invitation.service.ts] — Validation paths use an undefined error code symbol
+- [x] [INC-018] [G4.2 – Backend Support & Delivery Services] [backend/src/application/services/announcement.service.ts] — Application layer imports error types from presentation middleware
+- [x] [INC-019] [G5.1 – Frontend Repository Implementations] [src/infrastructure/repositories/registration.repository.ts] — Registration update silently narrows persistence to seedNumber only
+- [x] [INC-020] [G5.2 – Frontend External Integrations] [src/infrastructure/external/export-service.ts] — Export adapter remains a simulation rather than a real infrastructure implementation
+- [x] [INC-021] [G5.3 – Frontend HTTP & WebSocket Clients] [src/infrastructure/http/axios-client.ts] — Auth redirect bypasses the deployed base path and Angular router
+- [x] [INC-022] [G5.3 – Frontend HTTP & WebSocket Clients] [src/infrastructure/websocket/websocket.service.ts] — WebSocket service depends on presentation state directly
+- [x] [INC-023] [G5.3 – Frontend HTTP & WebSocket Clients] [src/infrastructure/websocket/websocket.service.ts] — Anonymous subscriptions can call into an uninitialized socket
+- [x] [INC-024] [G6.1 – Database Bootstrap, Seeds & Tools] [backend/scripts/init-database.sh] — Bootstrap relies on synchronize and a timed dev-server start instead of migrations
+- [x] [INC-025] [G6.2 – Database Migrations] [backend/src/infrastructure/database/data-source.ts] — Runtime DataSource does not load any migration classes
+- [x] [INC-026] [G7.1 – App Shell, Guards, Interceptors & Presentation Services] [src/application/services/session-inactivity.service.ts] — Session timeout uses the wrong token key and redirects to a non-existent login route
+- [x] [INC-027] [G7.1 – App Shell, Guards, Interceptors & Presentation Services] [src/presentation/interceptors/error.interceptor.ts] — Public feature routes are missing from the 401/403 allowlist
+- [x] [INC-028] [G7.3 – Notification & Bracket Components] [src/presentation/components/notification-bell/notification-bell.component.ts] — Announcement notifications navigate without the required tournament context
+- [x] [INC-029] [G8.1 – Admin, Auth, Home & Dashboard Pages] [src/presentation/pages/auth/register/register.component.ts] — Public registration form allows organizer-role self-selection
+- [x] [INC-030] [G8.1 – Admin, Auth, Home & Dashboard Pages] [src/presentation/pages/dashboard.component.ts] — Admin shortcut points to a route that does not exist
+- [x] [INC-031] [G8.1 – Admin, Auth, Home & Dashboard Pages] [src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts] — Manage Users action is still a placeholder alert
+- [x] [INC-032] [G8.2 – Announcement Pages] [src/presentation/pages/announcements/announcement-list/announcement-list.component.ts] — Public announcement list is unusable without a tournamentId query parameter
+- [x] [INC-033] [G8.2 – Announcement Pages] [src/presentation/app.routes.ts] — Announcement create and edit screens have no auth or role guard
+- [x] [INC-034] [G8.3 – Match & Bracket Pages] [src/presentation/pages/matches/match-detail/match-detail.component.ts] — Referees cannot access the intended score-entry workflow
+- [x] [INC-035] [G8.4 – Order of Play, Ranking, Standings & Statistics Pages] [src/application/services/ranking.service.ts] — Non-ELO ranking views relabel the same dataset instead of computing another system
+- [x] [INC-036] [G8.4 – Order of Play, Ranking, Standings & Statistics Pages] [src/presentation/pages/statistics/statistics-view/statistics-view.component.ts] — Back navigation points to an undefined dashboard route
+- [x] [INC-037] [G8.5 – Registrations, Notifications, Invitations, Profile & Phase Pages] [src/presentation/pages/notifications/notification-list/notification-list.component.ts] — Inbox announcement notifications navigate to an unroutable destination
+- [x] [INC-038] [G8.5 – Registrations, Notifications, Invitations, Profile & Phase Pages] [src/presentation/pages/profile/profile-view/profile-view.component.html] — Profile back link points to an undefined dashboard route
+- [x] [INC-039] [G8.6 – Tournament Management Pages] [src/presentation/app.routes.ts] — Tournament create and edit screens are only login-protected
+- [x] [INC-040] [G9.1 – Core Tournament, Match & Registration Controllers] [backend/src/presentation/controllers/registration.controller.ts] — Registration creation does not guard against duplicates before save
+- [x] [INC-041] [G9.2 – Auth, User, Announcement & Notification Controllers] [backend/src/presentation/controllers/auth.controller.ts] — Public registration can create tournament-admin accounts
+- [x] [INC-042] [G9.2 – Auth, User, Announcement & Notification Controllers] [backend/src/presentation/controllers/auth.controller.ts] — Refresh endpoint exists without a matching refresh-token issuance flow
+- [x] [INC-043] [G9.3 – Middleware, Upload & Route Wiring] [backend/src/presentation/routes/index.ts] — Auth login route is registered twice and one definition is dead
+- [x] [INC-044] [G10.1 – Frontend Shared Utilities, Pipes & Environments] [src/shared/constants.ts] — Production fallback hosts diverge between shared constants and environment defaults
+- [x] [INC-045] [G10.1 – Frontend Shared Utilities, Pipes & Environments] [src/shared/constants.ts] — Shared event names do not match backend-emitted order-of-play events
+- [x] [INC-046] [G10.3 – Backend Shared Config, Constants & Utilities] [backend/src/shared/config/index.ts] — Refresh secret falls back to a known literal and is not mandatory at startup
+- [x] [INC-047] [G10.5 – Barrel Exports & Module Indexes] [src/domain/enumerations/index.ts] — Domain enumerations barrel duplicates the same export
+- [x] [INC-048] [G11.1 – Frontend Application Service Tests] [tests/application/services/authentication.service.test.ts] — Core service test suites are placeholders that do not exercise behavior
+- [x] [INC-049] [G11.2 – Frontend Domain Entity Tests] [tests/domain/entities/tournament.test.ts] — Domain entity tests are placeholders and do not validate invariants
+- [x] [INC-050] [G11.3 – Frontend Manual Validators & Mocks] [tests/manual/privacy-configuration-validator.ts] — Manual validator reports success without enforcing failures
+- [x] [INC-051] [G11.4 – End-to-End Tests] [e2e/doubles-tournament.spec.ts] — E2E cleanup leaves created users and related doubles state behind
+- [x] [INC-052] [G11.4 – End-to-End Tests] [e2e/doubles-tournament.spec.ts] — E2E suite hardcodes localhost backend seeding endpoints
+- [x] [INC-053] [G11.5 – Backend Application Tests] [backend/jest.config.js] — Backend coverage thresholds are too low to protect critical workflows
+- [x] [INC-054] [G12.1 – Root Configuration & Tooling] [vite.config.ts] — Vite/Angular tooling no longer matches the documented plugin-based architecture
+- [x] [INC-055] [G12.2 – Root Docs, Specifications & Review Inputs] [README.md] — README command table does not match the real package scripts
+- [x] [INC-056] [G12.3 – Public Assets & PWA Files] [public/sw.js] — Service worker skips JavaScript bundles, so offline boot cannot work reliably
+- [x] [INC-057] [G12.3 – Public Assets & PWA Files] [public/sw.js] — Precache paths are root-relative and ignore subpath deployment
+- [x] [INC-058] [G12.4 – Frontend Operational Scripts] [scripts/backup-database.sh] — Backup tooling defaults to a different database name than the backend config
+- [x] [INC-059] [G12.5 – Backend Configuration & Deployment Notes] [backend/QUICK-START-RENDER.md] — Deployment guide uses the wrong frontend API environment variable name
+- [x] [INC-060] [G12.6 – Backend Operational Scripts & SQL Utilities] [backend/scripts/check-and-fix-roles.sql] — Repair SQL performs destructive role rewrites and user deletion
 
 ---
 ## Group Reviews

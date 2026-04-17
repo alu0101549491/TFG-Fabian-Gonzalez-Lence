@@ -183,7 +183,7 @@
       </div>
 
       <!-- Actions Card (for match management) -->
-      @if (canManageMatch()) {
+      @if (canManageMatch() || canRecordScores()) {
         <div class="card actions-card">
           <div class="card-header">
             <h2 class="card-title">
@@ -193,14 +193,19 @@
           </div>
           <div class="card-body">
             <div class="actions-grid">
+              @if (canManageMatch()) {
               <button class="action-btn schedule" (click)="openScheduleModal()" [disabled]="isSubmitting()">
                 <span>📅</span>
                 <span>Schedule Match</span>
               </button>
+              }
+              @if (canRecordScores()) {
               <button class="action-btn scores" (click)="openScoresModal()" [disabled]="isSubmitting() || (!isDevelopmentMode() && (!match()!.participant1Id || !match()!.participant2Id))">
                 <span>🎾</span>
                 <span>Record Scores</span>
               </button>
+              }
+              @if (canManageMatch()) {
               <button class="action-btn status" (click)="openStatusModal()" [disabled]="isSubmitting()">
                 <span>🔄</span>
                 <span>Update Status</span>
@@ -224,6 +229,7 @@
                 <span>❌</span>
                 <span>Cancel Match</span>
               </button>
+              }
             </div>
             @if (successMessage()) {
               <p class="success-message">

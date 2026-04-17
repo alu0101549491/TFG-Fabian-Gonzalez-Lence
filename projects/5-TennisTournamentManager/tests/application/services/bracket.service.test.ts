@@ -9,6 +9,7 @@
  * @file tests/application/services/bracket.service.test.ts
  * @desc Unit tests for the BracketService.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {BracketService} from '@application/services/bracket.service';

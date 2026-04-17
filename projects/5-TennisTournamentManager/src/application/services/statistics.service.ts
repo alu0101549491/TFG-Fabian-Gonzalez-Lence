@@ -9,6 +9,7 @@
  * @file src/application/services/statistics.service.ts
  * @desc Enhanced statistics service for participant and tournament statistics (FR45-FR46)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';

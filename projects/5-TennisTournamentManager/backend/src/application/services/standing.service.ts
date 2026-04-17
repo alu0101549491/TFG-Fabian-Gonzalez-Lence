@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 11, 2026
- * @file application/services/standing.service.ts
+ * @file backend/src/application/services/standing.service.ts
  * @desc Backend standing service: computes and persists standings from match results (FR39, FR40, FR43).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Repository} from 'typeorm';
@@ -62,7 +63,7 @@ interface TeamStats {
  * - For ROUND_ROBIN brackets: calculates full standings with points, ratios, and tiebreakers.
  * - For SINGLE_ELIMINATION / MATCH_PLAY: standings simply reflect winning/losing records.
  * - This service is triggered automatically after each officially confirmed match result
- *   (FR39, FR40, FR43) so the standings table is always up-to-date on the backend.
+
  */
 export class StandingService {
   private readonly matchRepository: Repository<Match>;

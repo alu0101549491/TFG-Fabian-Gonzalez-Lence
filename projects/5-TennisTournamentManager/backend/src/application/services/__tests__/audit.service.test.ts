@@ -6,8 +6,8 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 18, 2026
- * @file application/services/__tests__/audit.service.test.ts
- * @desc Unit tests for AuditService (NFR22 - 70% coverage requirement)
+ * @file backend/src/application/services/__tests__/audit.service.test.ts
+ * @desc Unit tests for AuditService (NFR22 - 70% coverage requirement).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  * @see {@link https://typescripttutorial.net}
  */
@@ -186,6 +186,31 @@ describe('AuditService', () => {
           action: AuditAction.PASSWORD_CHANGE,
           details: expect.stringContaining('changed password'),
         })
+      );
+    });
+
+    it('supports audit writes without a request object across auth actions', async () => {
+      mockRepository.create.mockImplementation((data) => ({id: 'log-auth-optional', ...data}) as AuditLog);
+      mockRepository.save.mockImplementation(async (log) => log as AuditLog);
+
+      await auditService.logLogout('user-logout', 'logout@example.com');
+      await auditService.logPasswordChange('user-password', 'password@example.com');
+
+      expect(mockRepository.create).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          ipAddress: undefined,
+          userAgent: undefined,
+          action: AuditAction.LOGOUT,
+        }),
+      );
+      expect(mockRepository.create).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          ipAddress: undefined,
+          userAgent: undefined,
+          action: AuditAction.PASSWORD_CHANGE,
+        }),
       );
     });
   });
@@ -426,6 +451,37 @@ describe('AuditService', () => {
         })
       );
     });
+
+    it('supports tournament audit logs without a request object', async () => {
+      mockRepository.create.mockImplementation((data) => ({id: 'log-tournament-optional', ...data}) as AuditLog);
+      mockRepository.save.mockImplementation(async (log) => log as AuditLog);
+
+      await auditService.logTournamentCreation('organizer-optional', 'tournament-optional', 'No Request Open');
+      await auditService.logTournamentStatusChange(
+        'organizer-optional',
+        'tournament-optional',
+        'No Request Open',
+        'REGISTRATION_OPEN',
+        'IN_PROGRESS',
+      );
+
+      expect(mockRepository.create).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          ipAddress: undefined,
+          userAgent: undefined,
+          action: AuditAction.CREATE,
+        }),
+      );
+      expect(mockRepository.create).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          ipAddress: undefined,
+          userAgent: undefined,
+          action: AuditAction.STATUS_CHANGE,
+        }),
+      );
+    });
   });
 
   describe('Bracket, Registration, Permission Logging', () => {
@@ -547,6 +603,32 @@ describe('AuditService', () => {
         })
       );
     });
+
+    it('supports permission and user audit logs without a request object', async () => {
+      mockRepository.create.mockImplementation((data) => ({id: 'log-user-optional', ...data}) as AuditLog);
+      mockRepository.save.mockImplementation(async (log) => log as AuditLog);
+
+      await auditService.logRoleChange('admin-optional', 'user-optional', 'user@example.com', 'PLAYER', 'TOURNAMENT_ADMIN');
+      await auditService.logUserCreation('admin-optional', 'user-created', 'created@example.com', 'PLAYER');
+
+      expect(mockRepository.create).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          ipAddress: undefined,
+          userAgent: undefined,
+          action: AuditAction.ROLE_CHANGE,
+        }),
+      );
+      expect(mockRepository.create).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          ipAddress: undefined,
+          userAgent: undefined,
+          action: AuditAction.CREATE,
+          resourceType: AuditResourceType.USER,
+        }),
+      );
+    });
   });
 
   describe('GDPR and Announcement Logging', () => {
@@ -602,6 +684,45 @@ describe('AuditService', () => {
   });
 
   describe('Query Methods', () => {
+    it('find() - applies all supported filters and pagination when provided', async () => {
+      const filters: AuditLogFilters = {
+        userId: 'user-456',
+        action: AuditAction.UPDATE,
+        resourceType: AuditResourceType.TOURNAMENT,
+        resourceId: 'tournament-123',
+        startDate: new Date('2026-01-01T00:00:00.000Z'),
+        endDate: new Date('2026-01-31T23:59:59.000Z'),
+        limit: 25,
+        offset: 10,
+      };
+
+      const mockQueryBuilder: any = mockRepository.createQueryBuilder();
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      await auditService.find(filters);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.userId = :userId', {
+        userId: 'user-456',
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.action = :action', {
+        action: AuditAction.UPDATE,
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.resourceType = :resourceType', {
+        resourceType: AuditResourceType.TOURNAMENT,
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.resourceId = :resourceId', {
+        resourceId: 'tournament-123',
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.timestamp >= :startDate', {
+        startDate: filters.startDate,
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.timestamp <= :endDate', {
+        endDate: filters.endDate,
+      });
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(25);
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(10);
+    });
+
     it('find() - should query audit logs with filters using query builder', async () => {
       const filters: AuditLogFilters = {
         userId: 'user-123',
@@ -634,6 +755,42 @@ const filters: AuditLogFilters = {};
 
       expect(mockRepository.createQueryBuilder).toHaveBeenCalled();
       expect(result).toEqual([]);
+    });
+
+    it('count() - applies all supported filters before counting', async () => {
+      const filters: AuditLogFilters = {
+        userId: 'user-789',
+        action: AuditAction.RESULT_CONFIRM,
+        resourceType: AuditResourceType.MATCH_RESULT,
+        resourceId: 'result-1',
+        startDate: new Date('2026-02-01T00:00:00.000Z'),
+        endDate: new Date('2026-02-28T23:59:59.000Z'),
+      };
+
+      const mockQueryBuilder: any = mockRepository.createQueryBuilder();
+      mockQueryBuilder.getCount.mockResolvedValue(7);
+
+      const result = await auditService.count(filters);
+
+      expect(result).toBe(7);
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.userId = :userId', {
+        userId: 'user-789',
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.action = :action', {
+        action: AuditAction.RESULT_CONFIRM,
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.resourceType = :resourceType', {
+        resourceType: AuditResourceType.MATCH_RESULT,
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.resourceId = :resourceId', {
+        resourceId: 'result-1',
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.timestamp >= :startDate', {
+        startDate: filters.startDate,
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('audit_log.timestamp <= :endDate', {
+        endDate: filters.endDate,
+      });
     });
 
     it('count() - should count matching audit logs using query builder', async () => {
@@ -719,6 +876,20 @@ const filters: AuditLogFilters = {};
       mockRepository.createQueryBuilder = jest.fn(() => mockDeleteQueryBuilder);
 
       const result = await auditService.deleteOlderThan(cutoffDate);
+
+      expect(result).toBe(0);
+    });
+
+    it('deleteOlderThan() - returns 0 when repository omits affected count', async () => {
+      const mockDeleteQueryBuilder: any = {
+        delete: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({}),
+      };
+
+      mockRepository.createQueryBuilder = jest.fn(() => mockDeleteQueryBuilder);
+
+      const result = await auditService.deleteOlderThan(new Date('2019-01-01'));
 
       expect(result).toBe(0);
     });

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 13, 2026
- * @file domain/entities/doubles-team.entity.ts
+ * @file backend/src/domain/entities/doubles-team.entity.ts
  * @desc TypeORM entity representing a doubles pair that acts as a single bracket slot.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Entity, Column, PrimaryColumn, CreateDateColumn, ManyToOne, JoinColumn} from 'typeorm';

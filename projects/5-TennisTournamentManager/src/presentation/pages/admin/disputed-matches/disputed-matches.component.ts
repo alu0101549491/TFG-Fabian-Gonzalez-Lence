@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 1, 2026
- * @file presentation/pages/admin/disputed-matches/disputed-matches.component.ts
+ * @file src/presentation/pages/admin/disputed-matches/disputed-matches.component.ts
  * @desc Admin component for reviewing and resolving disputed match results (FR27).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 31, 2026
- * @file presentation/pages/matches/my-matches/my-matches.component.ts
+ * @file src/presentation/pages/matches/my-matches/my-matches.component.ts
  * @desc Component for participants to view and submit results for their matches (FR24).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject, computed} from '@angular/core';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 1, 2026
- * @file application/services/cache.service.ts
+ * @file backend/src/application/services/cache.service.ts
  * @desc In-memory cache service for expensive operations (NFR21).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {config} from '../../shared/config';
@@ -47,7 +48,7 @@ interface CacheEntry<T> {
  * 
  * // Get tournaments list with caching
  * const tournaments = cache.getOrSet('tournaments:active', async () => {
- *   return await tournamentRepository.find({ status: 'ACTIVE' });
+
  * }, 600); // Cache for 10 minutes
  * 
  * // Invalidate on update

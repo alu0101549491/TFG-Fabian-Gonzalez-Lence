@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 19, 2026
- * @file application/services/user-management.service.ts
+ * @file src/application/services/user-management.service.ts
  * @desc Service for admin user management operations (CRUD operations on users).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
@@ -36,7 +37,7 @@ import {environment} from '../../environments/environment';
  * 
  * // Create new user
  * const newUser = await service.createUser({
- *   username: 'newuser',
+
  *   email: 'newuser@example.com',
  *   firstName: 'New',
  *   lastName: 'User',

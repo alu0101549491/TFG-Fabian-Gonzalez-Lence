@@ -9,6 +9,7 @@
  * @file src/environments/environment.prod.ts
  * @desc Environment configuration for production mode.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export const environment = {

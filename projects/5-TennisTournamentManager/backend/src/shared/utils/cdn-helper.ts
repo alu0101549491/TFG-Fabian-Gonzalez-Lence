@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 1, 2026
- * @file shared/utils/cdn-helper.ts
+ * @file backend/src/shared/utils/cdn-helper.ts
  * @desc CDN URL helper utilities for static asset serving (NFR21).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {config} from '../config';

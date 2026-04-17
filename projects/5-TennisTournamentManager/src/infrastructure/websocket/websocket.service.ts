@@ -6,14 +6,14 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 8, 2026
- * @file infrastructure/websocket/websocket.service.ts
+ * @file src/infrastructure/websocket/websocket.service.ts
  * @desc Angular service wrapper for WebSocket client with centralized connection management.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject, OnDestroy} from '@angular/core';
 import {SocketClient} from './socket-client';
-import {AuthStateService} from '@presentation/services/auth-state.service';
 
 /**
  * WebSocket service for real-time communication.
@@ -21,29 +21,32 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
  */
 @Injectable({providedIn: 'root'})
 export class WebSocketService implements OnDestroy {
-  private readonly authStateService = inject(AuthStateService);
   private readonly client = new SocketClient();
+  private authToken: string | null = null;
   private connectionAttempted = false;
 
   /**
    * Connects to the WebSocket server with authentication.
-   * Automatically uses the current user's JWT token.
    *
+   * @param token - Optional JWT token to persist for future reconnect attempts
    * @returns True if connection successful or already connected
    */
-  public connect(): boolean {
+  public connect(token?: string): boolean {
     if (this.client.isConnected()) {
       return true;
     }
 
-    const token = this.authStateService.getToken();
-    if (!token) {
+    if (token) {
+      this.authToken = token;
+    }
+
+    if (!this.authToken) {
       console.warn('[WebSocketService] No auth token available, skipping connection');
       return false;
     }
 
     try {
-      this.client.connect(token);
+      this.client.connect(this.authToken);
       this.connectionAttempted = true;
       return true;
     } catch (error) {
@@ -69,7 +72,16 @@ export class WebSocketService implements OnDestroy {
   public on<T>(event: string, callback: (data: T) => void): void {
     // Ensure connected before subscribing
     if (!this.client.isConnected() && !this.connectionAttempted) {
-      this.connect();
+      const connected = this.connect();
+      if (!connected) {
+        console.warn(`[WebSocketService] Skipping subscription for ${event} because the socket is not connected`);
+        return;
+      }
+    }
+
+    if (!this.client.isConnected()) {
+      console.warn(`[WebSocketService] Skipping subscription for ${event} because the socket is not connected`);
+      return;
     }
     this.client.on(event, callback);
   }

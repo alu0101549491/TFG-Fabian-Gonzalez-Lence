@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/controllers/tournament.controller.ts
+ * @file backend/src/presentation/controllers/tournament.controller.ts
  * @desc Tournament controller handling CRUD operations for tournaments.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Response, NextFunction} from 'express';

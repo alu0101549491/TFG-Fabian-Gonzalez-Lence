@@ -66,7 +66,7 @@ export interface PrivacyCheckResult {
  * 
  * // Check if viewer can see owner's email
  * const canSeeEmail = await privacyService.canViewField(
- *   'email',
+
  *   viewer,
  *   owner,
  *   tournamentId

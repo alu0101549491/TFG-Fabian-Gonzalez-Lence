@@ -9,6 +9,7 @@
  * @file tests/domain/entities/match-result.test.ts
  * @desc Unit tests for the MatchResult entity.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MatchResult} from '@domain/entities/match-result';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/announcement.ts
+ * @file src/domain/entities/announcement.ts
  * @desc Entity representing a public announcement published by a tournament administrator (FR47-FR49)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {AnnouncementType} from '../enumerations/announcement-type';
@@ -71,7 +72,7 @@ export interface AnnouncementProps {
  * @example
  * ```typescript
  * const announcement = new Announcement({
- *   id: 'ann_001',
+
  *   tournamentId: 'tourn_001',
  *   authorId: 'admin_001',
  *   type: AnnouncementType.PUBLIC,

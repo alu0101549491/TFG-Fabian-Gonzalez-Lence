@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file presentation/app.routes.ts
+ * @file src/presentation/app.routes.ts
  * @desc Application route definitions. Implements lazy loading for feature modules and route guards for protected areas.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {type Routes} from '@angular/router';
@@ -49,7 +50,8 @@ export const routes: Routes = [
   },
   {
     path: 'tournaments/create',
-    canActivate: [authGuard],
+    canActivate: [authGuard, roleGuard],
+    data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},
     loadComponent: () =>
       import('./pages/tournaments/tournament-create/tournament-create.component').then(
         (m) => m.TournamentCreateComponent,
@@ -57,7 +59,8 @@ export const routes: Routes = [
   },
   {
     path: 'tournaments/:id/edit',
-    canActivate: [authGuard],
+    canActivate: [authGuard, roleGuard],
+    data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},
     loadComponent: () =>
       import('./pages/tournaments/tournament-edit/tournament-edit.component').then(
         (m) => m.TournamentEditComponent,
@@ -159,6 +162,8 @@ export const routes: Routes = [
   },
   {
     path: 'announcements/create',
+    canActivate: [authGuard, roleGuard],
+    data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},
     loadComponent: () =>
       import('./pages/announcements/announcement-create/announcement-create.component').then(
         (m) => m.AnnouncementCreateComponent,
@@ -166,6 +171,8 @@ export const routes: Routes = [
   },
   {
     path: 'announcements/edit/:id',
+    canActivate: [authGuard, roleGuard],
+    data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},
     loadComponent: () =>
       import('./pages/announcements/announcement-edit/announcement-edit.component').then(
         (m) => m.AnnouncementEditComponent,

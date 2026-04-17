@@ -9,6 +9,7 @@
  * @file tests/domain/entities/bracket.test.ts
  * @desc Unit tests for the Bracket entity.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Bracket} from '@domain/entities/bracket';

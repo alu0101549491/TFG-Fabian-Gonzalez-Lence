@@ -9,6 +9,7 @@
  * @file tests/mocks/user.service.ts
  * @desc Jest-safe UserService token stub for unit tests that exercise services using Angular injection.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export class UserService {

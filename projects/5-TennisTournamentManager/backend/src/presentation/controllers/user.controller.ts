@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/controllers/user.controller.ts
+ * @file backend/src/presentation/controllers/user.controller.ts
  * @desc User controller handling user profile operations.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Response, NextFunction} from 'express';
@@ -1003,9 +1004,9 @@ export class UserController {
           categoryId: reg.categoryId,
           categoryName: reg.category?.name,
           status: reg.status,
-          entryType: reg.entryType,
+          acceptanceType: reg.acceptanceType,
           seedNumber: reg.seedNumber,
-          registrationDate: reg.createdAt,
+          registrationDate: reg.registrationDate,
         })),
         matches: matches.map(match => ({
           id: match.id,
@@ -1017,7 +1018,7 @@ export class UserController {
           score: match.score,
           scores: match.scores,
           scheduledTime: match.scheduledTime,
-          completedAt: match.completedAt,
+          completedAt: match.endTime,
         })),
         notifications: notifications.map((notif: any) => ({
           id: notif.id,

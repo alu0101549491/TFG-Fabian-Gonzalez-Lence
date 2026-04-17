@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 8, 2026
- * @file application/services/notification-preferences.service.ts
+ * @file backend/src/application/services/notification-preferences.service.ts
  * @desc Service for managing user notification preferences.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Repository} from 'typeorm';
@@ -16,7 +17,7 @@ import {AppDataSource} from '../../infrastructure/database/data-source';
 import {NotificationPreferences} from '../../domain/entities/notification-preferences.entity';
 import {User} from '../../domain/entities/user.entity';
 import {NotificationPreferencesDto, UpdateNotificationPreferencesDto} from '../dto/notification-preferences.dto';
-import {AppError} from '../../presentation/middleware/error.middleware';
+import {AppError} from '../../shared/errors/app-error';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
 
 /**

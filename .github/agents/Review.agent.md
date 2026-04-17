@@ -74,3 +74,4 @@ All TypeScript files must include this header comment at the very beginning:
 
 Focus on substance over style unless style issues are significant. Respect different valid approaches and consider project context.
 Thoroughly investigate the entire codebase if necessary, and carefully evaluate every detail to determine whether it should be mentioned. During the review process, review as many files as your response and context size allow, rather than limiting yourself to reviewing them one by one.
+MANDATORY: ENSURE EVERYTHING IS PERFECTLY IN LINE WITH THE GOOGLE STYLE GUIDE FOR JAVASCRIPT/TYPESCRIPT, INCLUDING ALL REQUIRED FILE HEADER TEMPLATE DETAILS AND PROPER TYPEDOC/JSDOC DOCUMENTATION.

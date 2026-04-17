@@ -9,6 +9,7 @@
  * @file src/application/services/notification/channels/index.ts
  * @desc Barrel exports for notification channel adapters
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export {InAppChannelAdapter} from './in-app-channel.adapter';

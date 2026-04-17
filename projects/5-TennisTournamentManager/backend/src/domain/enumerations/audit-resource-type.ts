@@ -6,7 +6,7 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 18, 2026
- * @file domain/enumerations/audit-resource-type.ts
+ * @file backend/src/domain/enumerations/audit-resource-type.ts
  * @desc Enumeration of audit log resource types for categorizing logged actions
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  * @see {@link https://typescripttutorial.net}

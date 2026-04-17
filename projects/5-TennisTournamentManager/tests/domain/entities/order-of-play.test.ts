@@ -9,6 +9,7 @@
  * @file tests/domain/entities/order-of-play.test.ts
  * @desc Unit tests for the OrderOfPlay entity.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {OrderOfPlay} from '@domain/entities/order-of-play';

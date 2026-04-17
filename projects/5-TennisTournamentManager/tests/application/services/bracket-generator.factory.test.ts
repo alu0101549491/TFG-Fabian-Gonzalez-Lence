@@ -9,6 +9,7 @@
  * @file tests/application/services/bracket-generator.factory.test.ts
  * @desc Unit tests for the BracketGeneratorFactory.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {BracketGeneratorFactory} from '@application/services/bracket-generator.factory';

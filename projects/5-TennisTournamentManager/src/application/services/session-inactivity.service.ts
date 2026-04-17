@@ -6,13 +6,15 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 11, 2026
- * @file application/services/session-inactivity.service.ts
+ * @file src/application/services/session-inactivity.service.ts
  * @desc Service that implements the 30-minute session inactivity auto-logout (NFR12).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, NgZone, inject} from '@angular/core';
 import {Router} from '@angular/router';
+import {JWT_STORAGE_KEY} from '@shared/constants';
 
 /** Inactivity timeout in milliseconds (30 minutes). */
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
@@ -24,8 +26,6 @@ const CHECK_INTERVAL_MS = 60 * 1000;
 const LAST_ACTIVITY_KEY = 'ttm_last_activity';
 
 /** localStorage key for the user auth token. */
-const AUTH_TOKEN_KEY = 'ttm_token';
-
 /** DOM events considered as user activity. */
 const ACTIVITY_EVENTS: string[] = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
 
@@ -38,7 +38,7 @@ const ACTIVITY_EVENTS: string[] = ['mousemove', 'mousedown', 'keydown', 'touchst
  * - Listens to standard DOM events to reset the inactivity timer.
  * - Performs a periodic check every 60 seconds.
  * - When inactive for >= 30 minutes and the user is authenticated, clears the token
- *   and redirects to the login page.
+
  * - Must be started once at application bootstrap via `AppComponent.ngOnInit()`.
  */
 @Injectable({providedIn: 'root'})
@@ -105,7 +105,7 @@ export class SessionInactivityService {
    * If so, and if the user is authenticated, triggers automatic logout.
    */
   private checkInactivity(): void {
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    const token = localStorage.getItem(JWT_STORAGE_KEY);
     if (!token) return; // User is not logged in — nothing to do
 
     const lastActivity = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) ?? '0', 10);
@@ -124,12 +124,12 @@ export class SessionInactivityService {
     this.stop();
 
     // Clear auth data
-    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(JWT_STORAGE_KEY);
     localStorage.removeItem(LAST_ACTIVITY_KEY);
     sessionStorage.clear();
 
     // Redirect to login with a message
-    this.router.navigate(['/auth/login'], {
+    this.router.navigate(['/login'], {
       queryParams: {reason: 'session_expired'},
     });
   }

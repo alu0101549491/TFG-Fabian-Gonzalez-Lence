@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file infrastructure/repositories/registration.repository.ts
+ * @file src/infrastructure/repositories/registration.repository.ts
  * @desc HTTP-based implementation of IRegistrationRepository using Axios client
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
@@ -69,10 +70,16 @@ export class RegistrationRepositoryImpl implements IRegistrationRepository {
    * @returns Promise resolving to the updated registration
    */
   public async update(registration: Registration): Promise<Registration> {
-    // Backend expects only seedNumber in request body, not full registration object
+    const payload = {
+      seedNumber: registration.seedNumber,
+      acceptanceType: registration.acceptanceType,
+      partnerId: registration.partnerId,
+      withdrawalDate: registration.withdrawalDate,
+    };
+
     const response = await this.httpClient.put<Registration>(
       `/registrations/${registration.id}`, 
-      { seedNumber: registration.seedNumber }
+      payload
     );
     return response;
   }

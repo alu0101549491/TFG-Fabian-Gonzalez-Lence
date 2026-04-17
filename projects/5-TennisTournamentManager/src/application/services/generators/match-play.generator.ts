@@ -9,6 +9,7 @@
  * @file src/application/services/generators/match-play.generator.ts
  * @desc Match Play bracket generator implementation
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable} from '@angular/core';

@@ -6,11 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since 2026-04-12
- * @file infrastructure/database/migrations/008-add-is-guest-to-users.ts
+ * @file backend/src/infrastructure/database/migrations/008-add-is-guest-to-users.ts
  * @desc Database migration to add the isGuest column to the users table (FR10).
- *       Guest users are placeholder accounts created by admins to enroll participants
- *       who do not have a system account. They cannot authenticate.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner} from 'typeorm';

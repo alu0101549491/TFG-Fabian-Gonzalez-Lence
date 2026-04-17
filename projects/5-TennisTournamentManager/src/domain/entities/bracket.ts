@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/bracket.ts
+ * @file src/domain/entities/bracket.ts
  * @desc Entity representing a tournament bracket/draw. Created by the BracketGeneratorFactory (Factory Pattern) based on the selected BracketType.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {BracketType} from '../enumerations/bracket-type';

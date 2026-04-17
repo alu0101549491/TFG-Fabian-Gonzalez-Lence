@@ -6,14 +6,18 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 18, 2026
- * @file application/services/result-confirmation.service.ts
+ * @file src/application/services/result-confirmation.service.ts
  * @desc Service for match result confirmation workflow (FR25-FR27).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
+import {Match} from '@domain/entities/match';
 import {MatchResult} from '@domain/entities/match-result';
 import {ConfirmationStatus} from '@domain/enumerations/confirmation-status';
+import {MatchStatus} from '@domain/enumerations/match-status';
+import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
 import {MatchResultRepositoryImpl} from '@infrastructure/repositories/match-result.repository';
 import {generateId} from '@shared/utils';
 
@@ -77,7 +81,7 @@ export interface AnnulResultDto {
  * Workflow:
  * 1. Participant submits result → PENDING_CONFIRMATION
  * 2. Opponent has 2 options:
- *    a) Confirm → CONFIRMED (final)
+
  *    b) Dispute → DISPUTED (admin review required)
  * 3. Admin can validate/modify/annul at any time
  * 
@@ -88,6 +92,38 @@ export interface AnnulResultDto {
 export class ResultConfirmationService {
   /** Repository for match result persistence */
   private readonly matchResultRepository = inject(MatchResultRepositoryImpl);
+
+  /** Repository for match data required to validate workflow access. */
+  private readonly matchRepository = inject(MatchRepositoryImpl);
+
+  private static readonly RESULT_ELIGIBLE_STATUSES = new Set<MatchStatus>([
+    MatchStatus.IN_PROGRESS,
+    MatchStatus.COMPLETED,
+    MatchStatus.RETIRED,
+    MatchStatus.WALKOVER,
+    MatchStatus.DEFAULT,
+    MatchStatus.DEAD_RUBBER,
+  ]);
+
+  private async getMatchOrThrow(matchId: string): Promise<Match> {
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+    return match;
+  }
+
+  private validateMatchResultWorkflow(match: Match): void {
+    if (!ResultConfirmationService.RESULT_ELIGIBLE_STATUSES.has(match.status)) {
+      throw new Error(`Cannot process result workflow for a match in status ${match.status}`);
+    }
+  }
+
+  private validateParticipantAction(userId: string, match: Match): void {
+    if (userId !== match.player1Id && userId !== match.player2Id) {
+      throw new Error('Only match participants can perform this action');
+    }
+  }
 
   /**
    * Submits a match result by a participant (FR24).
@@ -114,19 +150,13 @@ export class ResultConfirmationService {
       throw new Error('Set scores are required');
     }
 
-    // TODO: Fetch match to validate
-    // const match = await this.matchRepository.findById(data.matchId);
-    // if (!match) throw new Error('Match not found');
+    const match = await this.getMatchOrThrow(data.matchId);
+    this.validateMatchResultWorkflow(match);
+    this.validateParticipantAction(data.submittedBy, match);
 
-    // TODO: Verify user is a participant
-    // if (match.player1Id !== data.submittedBy && match.player2Id !== data.submittedBy) {
-    //   throw new Error('Only match participants can submit results');
-    // }
-
-    // TODO: Check match is completed or in progress
-    // if (match.status !== MatchStatus.COMPLETED && match.status !== MatchStatus.IN_PROGRESS) {
-    //   throw new Error('Can only submit results for completed or in-progress matches');
-    // }
+    if (data.winnerId !== match.player1Id && data.winnerId !== match.player2Id) {
+      throw new Error('Winner must be one of the match participants');
+    }
 
     // Create result entity
     const result = new MatchResult({
@@ -174,17 +204,15 @@ export class ResultConfirmationService {
     const result = await this.matchResultRepository.findById(data.resultId);
     if (!result) throw new Error('Result not found');
 
-    // TODO: Fetch match to verify user is authorized opponent
-    // const match = await this.matchRepository.findById(result.matchId);
-    // if (!match) throw new Error('Match not found');
+    const match = await this.getMatchOrThrow(result.matchId);
+    this.validateMatchResultWorkflow(match);
 
     // Validate business rules
     result.confirm(data.userId);
 
-    // TODO: Check user is authorized (opponent)
-    // if (!result.canBeConfirmedBy(data.userId, match)) {
-    //   throw new Error('User is not authorized to confirm this result');
-    // }
+    if (!result.canBeConfirmedBy(data.userId, match)) {
+      throw new Error('User is not authorized to confirm this result');
+    }
 
     // Update result status
     const updatedResult = new MatchResult({
@@ -232,17 +260,15 @@ export class ResultConfirmationService {
     const result = await this.matchResultRepository.findById(data.resultId);
     if (!result) throw new Error('Result not found');
 
-    // TODO: Fetch match to verify user is authorized opponent
-    // const match = await this.matchRepository.findById(result.matchId);
-    // if (!match) throw new Error('Match not found');
+    const match = await this.getMatchOrThrow(result.matchId);
+    this.validateMatchResultWorkflow(match);
 
     // Validate business rules
     result.dispute(data.userId, data.disputeReason);
 
-    // TODO: Check user is authorized (opponent)
-    // if (!result.canBeDisputedBy(data.userId, match)) {
-    //   throw new Error('User is not authorized to dispute this result');
-    // }
+    if (!result.canBeDisputedBy(data.userId, match)) {
+      throw new Error('User is not authorized to dispute this result');
+    }
 
     // Update result status
     const updatedResult = new MatchResult({

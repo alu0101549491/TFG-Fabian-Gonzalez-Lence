@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file application/dto/notification.dto.ts
+ * @file src/application/dto/notification.dto.ts
  * @desc Data transfer objects for notification-related operations.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {NotificationType} from '@domain/enumerations/notification-type';

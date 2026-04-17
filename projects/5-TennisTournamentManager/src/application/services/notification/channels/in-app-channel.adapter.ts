@@ -9,6 +9,7 @@
  * @file src/application/services/notification/channels/in-app-channel.adapter.ts
  * @desc In-app notification channel adapter (displays in web interface)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable} from '@angular/core';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/pages/auth/login/login.component.ts
+ * @file src/presentation/pages/auth/login/login.component.ts
  * @desc Login page for user authentication (NFR12).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, signal, inject, OnInit} from '@angular/core';

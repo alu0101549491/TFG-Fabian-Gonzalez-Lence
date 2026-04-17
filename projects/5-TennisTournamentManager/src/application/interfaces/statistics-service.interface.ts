@@ -9,6 +9,7 @@
  * @file src/application/interfaces/statistics-service.interface.ts
  * @desc Statistics service interface for participant and tournament statistics (FR45-FR46)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {StatisticsDto, TournamentStatisticsDto} from '../dto';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/pages/ranking/ranking-view/ranking-view.component.ts
+ * @file src/presentation/pages/ranking/ranking-view/ranking-view.component.ts
  * @desc Global ranking table with multi-system support (ELO, points, WTN).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';

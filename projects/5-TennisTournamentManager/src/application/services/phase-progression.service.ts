@@ -9,6 +9,7 @@
  * @file src/application/services/phase-progression.service.ts
  * @desc Service for managing tournament phase progression and qualifier advancement (FR4, FR21, FR22)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
@@ -85,7 +86,7 @@ export interface PromoteLuckyLoserDto {
  *
  * // Advance top 4 from Round Robin to knockout
  * await phaseProgressionService.advanceQualifiers({
- *   sourcePhaseId: 'rr-group-a',
+
  *   targetPhaseId: 'knockout-r16',
  *   qualifierCount: 4,
  *   tournamentId: 'tournament-123',
@@ -214,13 +215,14 @@ export class PhaseProgressionService {
     if (!sourcePhase.isCompleted) {
       throw new Error('Source phase must be completed before advancing qualifiers');
     }
+
+    const sourceBracketId = (sourcePhase as Phase & {bracketId?: string}).bracketId;
+    if (!sourceBracketId || sourceBracketId.trim().length === 0) {
+      throw new Error('Source phase is missing its bracket reference');
+    }
     
-    // Fetch standings for source phase (assuming bracket ID matches phase for Round Robin)
-    // In a real implementation, you would need a way to get the bracket ID from the phase
-    // For now, we'll fetch by phase tournament and filter
-    const allStandings = await this.standingRepository.findAll();
-    const phaseStandings = allStandings
-      .filter(s => s.bracketId === data.sourcePhaseId)
+    // Standings are keyed by bracket ID, not phase ID.
+    const phaseStandings = (await this.standingRepository.findByBracket(sourceBracketId))
       .sort((a, b) => a.position - b.position);
     
     if (phaseStandings.length < data.qualifierCount) {

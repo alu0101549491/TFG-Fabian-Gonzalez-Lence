@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 12, 2026
- * @file application/services/partner-invitation.service.ts
+ * @file backend/src/application/services/partner-invitation.service.ts
  * @desc Business logic for partner invitation system in doubles tournaments
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {AppDataSource} from '../../infrastructure/database/data-source';
@@ -23,7 +24,7 @@ import {UserRole} from '../../domain/enumerations/user-role';
 import {Category} from '../../domain/entities/category.entity';
 import {NotificationService} from './notification.service';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
-import {AppError} from '../../presentation/middleware/error.middleware';
+import {AppError} from '../../shared/errors/app-error';
 import {generateId} from '../../shared/utils/id-generator';
 
 /**
@@ -72,7 +73,7 @@ export class PartnerInvitationService {
   ): Promise<PartnerInvitation> {
     // Validate: Inviter cannot invite themselves
     if (inviterId === inviteeId) {
-      throw new AppError('You cannot invite yourself as a partner', ErrorCode.INVALID_INPUT);
+      throw new AppError('You cannot invite yourself as a partner', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     // Load tournament with category
@@ -82,12 +83,12 @@ export class PartnerInvitationService {
     });
 
     if (!tournament) {
-      throw new AppError('Tournament not found', ErrorCode.NOT_FOUND);
+      throw new AppError('Tournament not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
     }
 
     // Validate: Tournament must be DOUBLES type
     if (tournament.tournamentType !== TournamentType.DOUBLES) {
-      throw new AppError('Partner invitations are only allowed for doubles tournaments', ErrorCode.INVALID_INPUT);
+      throw new AppError('Partner invitations are only allowed for doubles tournaments', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     // Validate category exists in tournament
@@ -96,19 +97,19 @@ export class PartnerInvitationService {
     });
 
     if (!category) {
-      throw new AppError('Category not found in this tournament', ErrorCode.NOT_FOUND);
+      throw new AppError('Category not found in this tournament', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
     }
 
     // Load and validate inviter
     const inviter = await this.userRepository.findOne({where: {id: inviterId}});
     if (!inviter || !inviter.isActive || inviter.role !== UserRole.PLAYER) {
-      throw new AppError('Inviter is not an eligible player', ErrorCode.INVALID_INPUT);
+      throw new AppError('Inviter is not an eligible player', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     // Load and validate invitee
     const invitee = await this.userRepository.findOne({where: {id: inviteeId}});
     if (!invitee || !invitee.isActive || invitee.role !== UserRole.PLAYER) {
-      throw new AppError('Invitee is not an eligible player', ErrorCode.INVALID_INPUT);
+      throw new AppError('Invitee is not an eligible player', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     // Check if inviter already has active invitation or registration
@@ -120,7 +121,7 @@ export class PartnerInvitationService {
     });
 
     if (inviterActiveInvitation) {
-      throw new AppError('You already have a pending invitation for this tournament', ErrorCode.INVALID_INPUT);
+      throw new AppError('You already have a pending invitation for this tournament', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     const inviterRegistration = await this.registrationRepository.findOne({
@@ -132,7 +133,7 @@ export class PartnerInvitationService {
     });
 
     if (inviterRegistration) {
-      throw new AppError('You are already registered for this tournament', ErrorCode.INVALID_INPUT);
+      throw new AppError('You are already registered for this tournament', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     // Check if invitee already has active invitation or registration
@@ -144,7 +145,7 @@ export class PartnerInvitationService {
     });
 
     if (inviteeActiveInvitation) {
-      throw new AppError('This player already has a pending invitation for this tournament', ErrorCode.INVALID_INPUT);
+      throw new AppError('This player already has a pending invitation for this tournament', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     const inviteeRegistration = await this.registrationRepository.findOne({
@@ -156,7 +157,7 @@ export class PartnerInvitationService {
     });
 
     if (inviteeRegistration) {
-      throw new AppError('This player is already registered for this tournament', ErrorCode.INVALID_INPUT);
+      throw new AppError('This player is already registered for this tournament', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     // Create invitation
@@ -203,17 +204,17 @@ export class PartnerInvitationService {
     });
 
     if (!invitation) {
-      throw new AppError('Invitation not found', ErrorCode.NOT_FOUND);
+      throw new AppError('Invitation not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
     }
 
     // Validate: Only invitee can accept
     if (invitation.inviteeId !== inviteeId) {
-      throw new AppError('You are not authorized to accept this invitation', ErrorCode.UNAUTHORIZED);
+      throw new AppError('You are not authorized to accept this invitation', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
     }
 
     // Validate: Invitation must be PENDING
     if (invitation.status !== PartnerInvitationStatus.PENDING) {
-      throw new AppError('This invitation is no longer active', ErrorCode.INVALID_INPUT);
+      throw new AppError('This invitation is no longer active', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     // Double-check neither player has registered since invitation was sent
@@ -225,7 +226,7 @@ export class PartnerInvitationService {
     });
 
     if (existingRegistrations.length > 0) {
-      throw new AppError('One or both players are already registered', ErrorCode.INVALID_INPUT);
+      throw new AppError('One or both players are already registered', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     // Create registrations for both players (PENDING admin approval)
@@ -236,7 +237,6 @@ export class PartnerInvitationService {
       participantId: invitation.inviterId,
       partnerId: invitation.inviteeId,
       status: RegistrationStatus.PENDING,
-      createdAt: new Date(),
     });
 
     const inviteeRegistration = this.registrationRepository.create({
@@ -246,7 +246,6 @@ export class PartnerInvitationService {
       participantId: invitation.inviteeId,
       partnerId: invitation.inviterId,
       status: RegistrationStatus.PENDING,
-      createdAt: new Date(),
     });
 
     await this.registrationRepository.save([inviterRegistration, inviteeRegistration]);
@@ -307,17 +306,17 @@ export class PartnerInvitationService {
     });
 
     if (!invitation) {
-      throw new AppError('Invitation not found', ErrorCode.NOT_FOUND);
+      throw new AppError('Invitation not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
     }
 
     // Validate: Only invitee can decline
     if (invitation.inviteeId !== inviteeId) {
-      throw new AppError('You are not authorized to decline this invitation', ErrorCode.UNAUTHORIZED);
+      throw new AppError('You are not authorized to decline this invitation', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
     }
 
     // Validate: Invitation must be PENDING
     if (invitation.status !== PartnerInvitationStatus.PENDING) {
-      throw new AppError('This invitation is no longer active', ErrorCode.INVALID_INPUT);
+      throw new AppError('This invitation is no longer active', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     // Update invitation
@@ -354,17 +353,17 @@ export class PartnerInvitationService {
     });
 
     if (!invitation) {
-      throw new AppError('Invitation not found', ErrorCode.NOT_FOUND);
+      throw new AppError('Invitation not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
     }
 
     // Validate: Only inviter can cancel
     if (invitation.inviterId !== inviterId) {
-      throw new AppError('You are not authorized to cancel this invitation', ErrorCode.UNAUTHORIZED);
+      throw new AppError('You are not authorized to cancel this invitation', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
     }
 
     // Validate: Invitation must be PENDING
     if (invitation.status !== PartnerInvitationStatus.PENDING) {
-      throw new AppError('This invitation is no longer active', ErrorCode.INVALID_INPUT);
+      throw new AppError('This invitation is no longer active', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
     }
 
     // Update invitation

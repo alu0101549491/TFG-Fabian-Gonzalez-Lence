@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 1, 2026
- * @file presentation/middlewares/upload.middleware.ts
+ * @file backend/src/presentation/middlewares/upload.middleware.ts
  * @desc Multer middleware for handling file uploads with validation.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import multer from 'multer';

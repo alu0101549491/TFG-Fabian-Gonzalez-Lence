@@ -10,6 +10,7 @@
  * @desc Telegram notification service for sending notifications via Telegram Bot API.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  * @see {@link https://core.telegram.org/bots/api}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import TelegramBot from 'node-telegram-bot-api';

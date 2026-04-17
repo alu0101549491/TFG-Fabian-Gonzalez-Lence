@@ -9,6 +9,7 @@
  * @file src/application/services/notification/channels/email-channel.adapter.ts
  * @desc Email notification channel adapter (sends via SMTP/API)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable} from '@angular/core';

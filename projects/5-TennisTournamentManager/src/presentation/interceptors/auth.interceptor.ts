@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file presentation/interceptors/auth.interceptor.ts
+ * @file src/presentation/interceptors/auth.interceptor.ts
  * @desc HTTP interceptor that injects the JWT token into outgoing API requests (NFR12).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {type HttpInterceptorFn} from '@angular/common/http';

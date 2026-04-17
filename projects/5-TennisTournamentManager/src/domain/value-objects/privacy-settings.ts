@@ -32,7 +32,7 @@ import {PrivacyLevel} from '../enumerations/privacy-level';
  * console.log(settings.email); // PrivacyLevel.ADMINS_ONLY
  * 
  * const custom = new PrivacySettings({
- *   email: PrivacyLevel.TOURNAMENT_PARTICIPANTS,
+
  *   phone: PrivacyLevel.ADMINS_ONLY,
  *   avatar: PrivacyLevel.PUBLIC,
  * });
@@ -108,6 +108,8 @@ export class PrivacySettings {
     this.history = props?.history ?? PrivacyLevel.TOURNAMENT_PARTICIPANTS;
     this.statistics = props?.statistics ?? PrivacyLevel.TOURNAMENT_PARTICIPANTS;
     this.allowContact = props?.allowContact ?? true;
+
+    Object.freeze(this);
   }
 
   /**

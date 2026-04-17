@@ -9,6 +9,7 @@
  * @file tests/domain/entities/phase.test.ts
  * @desc Unit tests for the Phase entity.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Phase} from '@domain/entities/phase';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/routes/index.ts
+ * @file backend/src/presentation/routes/index.ts
  * @desc Main router configuration combining all route modules.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Router} from 'express';
@@ -68,7 +69,7 @@ const exportController = new ExportController();
 /**
  * @swagger
  * /auth/login:
- *   post:
+
  *     tags: [Authentication]
  *     summary: User login
  *     description: Authenticate user with email and password, returns JWT tokens
@@ -90,35 +91,6 @@ const exportController = new ExportController();
  *         $ref: '#/components/responses/ValidationError'
  *       401:
  *         description: Invalid credentials
- */
-// Authentication routes
-router.post('/auth/login', authController.login.bind(authController));
-
-/**
- * @swagger
- * /auth/register:
- *   post:
- *     tags: [Authentication]
- *     summary: User registration
- *     description: Create a new user account
- *     security: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/RegisterRequest'
- *     responses:
- *       201:
- *         description: Registration successful
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/AuthResponse'
- *       400:
- *         $ref: '#/components/responses/ValidationError'
- *       409:
- *         description: Email already exists
  */
 // Authentication routes (no caching for auth endpoints)
 router.post('/auth/login', noCache, authController.login.bind(authController));

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/tournament.ts
+ * @file src/domain/entities/tournament.ts
  * @desc Entity representing a tennis tournament. Manages the full tournament lifecycle from creation through registration, draw generation, match play, and completion.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {TournamentStatus} from '../enumerations/tournament-status';

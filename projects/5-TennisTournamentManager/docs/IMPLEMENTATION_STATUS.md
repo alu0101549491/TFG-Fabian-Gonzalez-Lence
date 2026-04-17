@@ -756,8 +756,7 @@ Features that significantly limit functionality but don't completely block opera
 
 ### Technical Debt
 1. Many services have `// TODO:` comments for dependency injection
-2. Frontend components using external templates need conversion (Angular plugin disabled)
-3. Authorization service has role name mismatches (SYSTEM_ADMIN vs SYSTEM_ADMINISTRATOR)
+2. Authorization service has role name mismatches (SYSTEM_ADMIN vs SYSTEM_ADMINISTRATOR)
 
 ### Dependencies
 1. External services needed: Email API, Telegram Bot, Push notification service

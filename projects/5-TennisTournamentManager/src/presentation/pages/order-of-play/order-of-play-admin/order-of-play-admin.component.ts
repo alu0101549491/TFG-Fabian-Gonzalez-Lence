@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 2, 2026
- * @file presentation/pages/order-of-play/order-of-play-admin/order-of-play-admin.component.ts
+ * @file src/presentation/pages/order-of-play/order-of-play-admin/order-of-play-admin.component.ts
  * @desc Admin panel for generating and managing order of play schedules.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';

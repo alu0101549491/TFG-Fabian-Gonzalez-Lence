@@ -6,7 +6,7 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 18, 2026
- * @file application/services/audit.service.ts
+ * @file backend/src/application/services/audit.service.ts
  * @desc Service for centralized audit logging across the application (NFR15)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  * @see {@link https://typescripttutorial.net}

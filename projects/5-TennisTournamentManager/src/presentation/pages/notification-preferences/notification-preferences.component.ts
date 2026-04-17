@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 8, 2026
- * @file presentation/pages/notification-preferences/notification-preferences.component.ts
+ * @file src/presentation/pages/notification-preferences/notification-preferences.component.ts
  * @desc Component for managing user notification preferences.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, inject, signal} from '@angular/core';
@@ -17,6 +18,8 @@ import {FormsModule} from '@angular/forms';
 import {Router} from '@angular/router';
 import {NotificationPreferencesService, NotificationPreferences} from '../../../application/services/notification-preferences.service';
 import {AuthStateService} from '../../services/auth-state.service';
+import templateHtml from './notification-preferences.component.html?raw';
+import componentStyles from './notification-preferences.component.css?inline';
 
 /**
  * Component for notification preferences page.
@@ -26,8 +29,8 @@ import {AuthStateService} from '../../services/auth-state.service';
   selector: 'app-notification-preferences',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './notification-preferences.component.html',
-  styleUrl: './notification-preferences.component.css',
+  template: templateHtml,
+  styles: [componentStyles],
 })
 export class NotificationPreferencesComponent implements OnInit {
   private readonly preferencesService = inject(NotificationPreferencesService);
@@ -174,6 +177,6 @@ export class NotificationPreferencesComponent implements OnInit {
    * Navigates back to previous page.
    */
   protected goBack(): void {
-    this.router.navigate(['/']);
+    void this.router.navigate(['/']);
   }
 }

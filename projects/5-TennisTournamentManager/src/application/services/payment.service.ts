@@ -9,6 +9,7 @@
  * @file src/application/services/payment.service.ts
  * @desc Payment service implementation for tournament registration payment processing
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';

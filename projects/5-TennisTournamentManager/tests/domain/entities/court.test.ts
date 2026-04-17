@@ -9,6 +9,7 @@
  * @file tests/domain/entities/court.test.ts
  * @desc Unit tests for the Court entity.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Court} from '@domain/entities/court';

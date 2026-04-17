@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file infrastructure/websocket/socket-client.ts
+ * @file src/infrastructure/websocket/socket-client.ts
  * @desc WebSocket client using Socket.io-client for real-time synchronization (<5s per NFR5).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {io, type Socket} from 'socket.io-client';

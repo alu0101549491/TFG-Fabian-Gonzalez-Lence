@@ -212,9 +212,9 @@ Test files mirror the `src/` directory structure:
 
 ### ADR-001: Angular with Vite over Angular CLI
 
-**Decision**: Use Angular 19 standalone components with `@analogjs/vite-plugin-angular` instead of the default Angular CLI (Webpack/esbuild).
+**Decision**: Use Angular 19 standalone components with plain Vite and esbuild decorator support instead of the default Angular CLI toolchain.
 
-**Rationale**: Consistency with the TFG project series (all projects use Vite). Faster HMR, simpler configuration, and unified tooling across projects.
+**Rationale**: Consistency with the TFG project series (all projects use Vite), faster iteration, and a simpler runtime path after removing the plugin setup that was serving empty TypeScript files in this repository. Components that need external templates or styles import them explicitly with Vite `?raw` and `?inline` suffixes.
 
 ### ADR-002: Axios over Angular HttpClient for Application/Infrastructure layers
 

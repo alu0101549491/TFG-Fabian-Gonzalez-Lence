@@ -10,6 +10,7 @@
  * @desc Swagger/OpenAPI configuration for REST API documentation (NFR11)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  * @see {@link https://swagger.io/specification/}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import swaggerJsdoc from 'swagger-jsdoc';

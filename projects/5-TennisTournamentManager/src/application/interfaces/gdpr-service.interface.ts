@@ -9,6 +9,7 @@
  * @file src/application/interfaces/gdpr-service.interface.ts
  * @desc GDPR service interface for data protection compliance (NFR14)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {
@@ -35,7 +36,7 @@ import {
  * ```typescript
  * // Export user data
  * const exportResult = await gdprService.exportUserData({
- *   userId: 'user_123',
+
  *   format: 'JSON'
  * });
  * 

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/enumerations/index.ts
+ * @file src/domain/enumerations/index.ts
  * @desc Barrel export for all domain enumerations.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export * from './user-role';
@@ -30,5 +31,4 @@ export * from './sanction-type';
 export * from './ranking-system';
 export * from './gender';
 export * from './age-group';
-export * from './confirmation-status';
 export * from './announcement-type';

@@ -28,7 +28,7 @@
  * @example
  * ```typescript
  * const privacySettings: PrivacySettings = {
- *   email: PrivacyLevel.ADMINS_ONLY,
+
  *   phone: PrivacyLevel.TOURNAMENT_PARTICIPANTS,
  *   avatar: PrivacyLevel.PUBLIC,
  *   ranking: PrivacyLevel.ALL_REGISTERED,

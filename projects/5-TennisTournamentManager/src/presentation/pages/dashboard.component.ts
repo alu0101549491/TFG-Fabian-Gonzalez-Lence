@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 18, 2026
- * @file presentation/pages/dashboard.component.ts
+ * @file src/presentation/pages/dashboard.component.ts
  * @desc User dashboard component with personalized information and quick actions.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, inject, OnInit, signal, computed} from '@angular/core';
@@ -293,7 +294,7 @@ export class DashboardComponent implements OnInit {
    * Navigate to admin dashboard.
    */
   protected goToAdminDashboard(): void {
-    void this.router.navigate(['/admin/dashboard']);
+    void this.router.navigate(['/admin']);
   }
 
   /**

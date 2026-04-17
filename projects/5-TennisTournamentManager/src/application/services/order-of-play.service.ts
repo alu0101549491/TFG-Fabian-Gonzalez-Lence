@@ -9,6 +9,7 @@
  * @file src/application/services/order-of-play.service.ts
  * @desc Order of play service implementation for match scheduling and court assignment
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
@@ -17,6 +18,7 @@ import {CreateOrderOfPlayDto, OrderOfPlayDto} from '../dto';
 import {OrderOfPlayRepositoryImpl} from '@infrastructure/repositories/order-of-play.repository';
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
 import {CourtRepositoryImpl} from '@infrastructure/repositories/court.repository';
+import {BracketRepositoryImpl} from '@infrastructure/repositories/bracket.repository';
 import {NotificationService} from './notification.service';
 import {OrderOfPlay} from '@domain/entities/order-of-play';
 import {generateId} from '@shared/utils';
@@ -32,6 +34,7 @@ export class OrderOfPlayService implements IOrderOfPlayService {
   private readonly orderOfPlayRepository = inject(OrderOfPlayRepositoryImpl);
   private readonly matchRepository = inject(MatchRepositoryImpl);
   private readonly courtRepository = inject(CourtRepositoryImpl);
+  private readonly bracketRepository = inject(BracketRepositoryImpl);
   private readonly _notificationService = inject(NotificationService);
   private readonly courtScheduler = inject(CourtScheduler);
 
@@ -249,10 +252,20 @@ export class OrderOfPlayService implements IOrderOfPlayService {
       throw new Error('No courts available for scheduling');
     }
     
-    // Get unscheduled matches (SCHEDULED status)
+    // Get unscheduled matches for the requested tournament only.
     const allMatches = await this.matchRepository.findAll();
+    const bracketIds = [...new Set(allMatches.map((match) => match.bracketId))];
+    const brackets = await Promise.all(bracketIds.map((bracketId) => this.bracketRepository.findById(bracketId)));
+    const tournamentBracketIds = new Set(
+      brackets
+        .filter((bracket): bracket is NonNullable<typeof bracket> => bracket !== null)
+        .filter((bracket) => bracket.tournamentId === tournamentId)
+        .map((bracket) => bracket.id)
+    );
     const unscheduledMatches = allMatches.filter(
-      m => m.status.toString() === 'SCHEDULED' && !m.scheduledTime
+      (match) => match.status === 'SCHEDULED'
+        && !match.scheduledTime
+        && tournamentBracketIds.has(match.bracketId)
     );
     
     if (unscheduledMatches.length === 0) {

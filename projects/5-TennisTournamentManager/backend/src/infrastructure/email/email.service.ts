@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 9, 2026
- * @file infrastructure/email/email.service.ts
+ * @file backend/src/infrastructure/email/email.service.ts
  * @desc Email service for sending transactional emails via SMTP (supports Gmail, SendGrid, etc.).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import nodemailer from 'nodemailer';

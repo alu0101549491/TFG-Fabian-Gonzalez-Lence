@@ -9,6 +9,7 @@
  * @file src/application/services/notification/channels/web-push-channel.adapter.ts
  * @desc Web Push notification channel adapter (sends via service worker)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable} from '@angular/core';

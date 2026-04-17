@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 20, 2026
- * @file shared/pipes/enum-format.pipe.ts
+ * @file src/shared/pipes/enum-format.pipe.ts
  * @desc Pipe for formatting enum values from UPPER_SNAKE_CASE to human-readable format.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Pipe, PipeTransform} from '@angular/core';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 12, 2026
- * @file presentation/controllers/partner-invitation.controller.ts
+ * @file backend/src/presentation/controllers/partner-invitation.controller.ts
  * @desc HTTP controller for partner invitation endpoints
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Response, NextFunction} from 'express';
@@ -94,11 +95,11 @@ export class PartnerInvitationController {
       const {id} = req.params;
 
       if (!inviteeId) {
-        throw new AppError('User not authenticated', ErrorCode.UNAUTHORIZED);
+        throw new AppError('User not authenticated', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
       }
 
       if (!id) {
-        throw new AppError('Invitation ID is required', ErrorCode.INVALID_INPUT);
+        throw new AppError('Invitation ID is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
       }
 
       const invitation = await this.partnerInvitationService.acceptInvitation(id, inviteeId);
@@ -130,11 +131,11 @@ export class PartnerInvitationController {
       const {id} = req.params;
 
       if (!inviteeId) {
-        throw new AppError('User not authenticated', ErrorCode.UNAUTHORIZED);
+        throw new AppError('User not authenticated', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
       }
 
       if (!id) {
-        throw new AppError('Invitation ID is required', ErrorCode.INVALID_INPUT);
+        throw new AppError('Invitation ID is required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
       }
 
       const invitation = await this.partnerInvitationService.declineInvitation(id, inviteeId);
@@ -198,7 +199,7 @@ export class PartnerInvitationController {
       const userId = req.user?.id;
 
       if (!userId) {
-        throw new AppError('User not authenticated', ErrorCode.UNAUTHORIZED);
+        throw new AppError('User not authenticated', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
       }
 
       const invitations = await this.partnerInvitationService.getMyInvitations(userId);
@@ -226,7 +227,7 @@ export class PartnerInvitationController {
       const userId = req.user?.id;
 
       if (!userId) {
-        throw new AppError('User not authenticated', ErrorCode.UNAUTHORIZED);
+        throw new AppError('User not authenticated', HTTP_STATUS.UNAUTHORIZED, ERROR_CODES.UNAUTHORIZED);
       }
 
       const invitations = await this.partnerInvitationService.getPendingInvitations(userId);

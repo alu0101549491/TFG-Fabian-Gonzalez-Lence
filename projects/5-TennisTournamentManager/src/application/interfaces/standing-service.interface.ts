@@ -9,6 +9,7 @@
  * @file src/application/interfaces/standing-service.interface.ts
  * @desc Standing service interface for bracket standings and rankings
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {StandingDto} from '../dto';

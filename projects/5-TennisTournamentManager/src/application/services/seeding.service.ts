@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file application/services/seeding.service.ts
+ * @file src/application/services/seeding.service.ts
  * @desc Service for tournament seeding - assigns and places seeds strategically in draws (FR19).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
@@ -70,14 +71,16 @@ export class SeedingService {
       throw new Error(`Cannot seed ${numberOfSeeds} participants from ${registrations.length} registrations`);
     }
 
-    // Sort by ranking (assuming lower number = better ranking)
-    // Participants without ranking go to the end
+    // Sort by ranking (lower ranking number = stronger seed).
     const sortedRegistrations = [...registrations].sort((a, b) => {
-      // Handle cases where participants don't have ranking
-      if (!a.seedNumber && !b.seedNumber) return 0;
-      if (!a.seedNumber) return 1;
-      if (!b.seedNumber) return -1;
-      return a.seedNumber - b.seedNumber;
+      const leftRanking = a.ranking ?? Number.MAX_SAFE_INTEGER;
+      const rightRanking = b.ranking ?? Number.MAX_SAFE_INTEGER;
+
+      if (leftRanking !== rightRanking) {
+        return leftRanking - rightRanking;
+      }
+
+      return a.registeredAt.getTime() - b.registeredAt.getTime();
     });
 
     // Assign seed numbers to top participants
@@ -87,7 +90,7 @@ export class SeedingService {
       const registration = sortedRegistrations[i];
       const updatedRegistration = new Registration({
         ...registration,
-        seed: i < numberOfSeeds ? i + 1 : null
+        seedNumber: i < numberOfSeeds ? i + 1 : null
       });
       
       // Update in repository
@@ -124,9 +127,9 @@ export class SeedingService {
 
     // Sort by seed number
     const sorted = [...seededRegistrations].sort((a, b) => {
-      if (a.seed === null) return 1;
-      if (b.seed === null) return -1;
-      return a.seed - b.seed;
+      if (a.seedNumber === null) return 1;
+      if (b.seedNumber === null) return -1;
+      return a.seedNumber - b.seedNumber;
     });
 
     const seededParticipants: SeededParticipant[] = [];
@@ -169,9 +172,9 @@ export class SeedingService {
 
     // Sort by seed number
     const sorted = [...seededRegistrations].sort((a, b) => {
-      if (a.seed === null) return 1;
-      if (b.seed === null) return -1;
-      return a.seed - b.seed;
+      if (a.seedNumber === null) return 1;
+      if (b.seedNumber === null) return -1;
+      return a.seedNumber - b.seedNumber;
     });
 
     const groupAssignments: Array<{
@@ -225,7 +228,7 @@ export class SeedingService {
 
     const updatedRegistration = new Registration({
       ...registration,
-      seed: newSeedNumber
+      seedNumber: newSeedNumber
     });
     return await this.registrationRepository.update(updatedRegistration);
   }

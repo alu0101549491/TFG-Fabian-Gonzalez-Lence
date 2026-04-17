@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
- * @file domain/entities/category.ts
+ * @file src/domain/entities/category.ts
  * @desc Entity representing a tournament category (e.g., Men's Singles, Women's Doubles, U18). Categories subdivide a tournament into distinct competitive divisions.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

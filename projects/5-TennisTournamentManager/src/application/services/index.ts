@@ -9,6 +9,7 @@
  * @file src/application/services/index.ts
  * @desc Barrel export for all application services
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export * from './authentication.service';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 30, 2026
- * @file presentation/pages/registrations/my-registrations/my-registrations.component.ts
+ * @file src/presentation/pages/registrations/my-registrations/my-registrations.component.ts
  * @desc Player's registration management page - view and withdraw from tournaments
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';

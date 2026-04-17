@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 1, 2026
- * @file presentation/middleware/admin.middleware.ts
+ * @file backend/src/presentation/middleware/admin.middleware.ts
  * @desc Authorization middleware for admin-only routes.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Response, NextFunction} from 'express';

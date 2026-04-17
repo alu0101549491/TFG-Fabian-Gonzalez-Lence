@@ -158,7 +158,7 @@ Si usas GitHub Actions para el frontend:
 **GitHub → Settings → Secrets → Actions:**
 
 ```
-VITE_API_URL=https://tennis-backend.onrender.com
+VITE_API_BASE_URL=https://tennis-backend.onrender.com/api
 VITE_SOCKET_URL=https://tennis-backend.onrender.com
 ```
 

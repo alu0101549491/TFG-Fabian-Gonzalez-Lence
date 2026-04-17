@@ -59,7 +59,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architectural docu
 |------------------|-----------------------------------|----------|
 | Language         | TypeScript                        | 5.6.3    |
 | Framework        | Angular (Standalone Components)   | 19.2.0   |
-| Build Tool       | Vite + @analogjs/vite-plugin-angular | 7.3.0 |
+| Build Tool       | Vite + esbuild/raw asset imports  | 7.3.0    |
 | HTTP Client      | Axios                             | 1.7.9    |
 | Real-time        | Socket.io-client                  | 4.8.1    |
 | Unit Testing     | Jest + ts-jest                    | 29.7.0   |
@@ -91,14 +91,18 @@ npm run dev
 | Command                | Description                                  |
 |------------------------|----------------------------------------------|
 | `npm run dev`          | Start Vite development server (port 4200)    |
-| `npm run build`        | Type-check and build for production          |
+| `npm run build`        | Build for production with Vite               |
 | `npm run preview`      | Preview the production build                 |
 | `npm run lint`         | Run ESLint                                   |
 | `npm run lint:fix`     | Run ESLint with auto-fix                     |
 | `npm run test`         | Run Jest test suite                          |
+| `npm run test:watch`   | Run Jest in watch mode                       |
 | `npm run test:coverage`| Run tests with coverage report               |
 | `npm run test:e2e`     | Run Playwright E2E tests                     |
-| `npm run doc`          | Generate TypeDoc documentation               |
+| `npm run test:e2e:ui`  | Open the Playwright UI runner                |
+| `npm run test:e2e:headed` | Run Playwright E2E tests in headed mode   |
+| `npm run test:e2e:report` | Open the Playwright HTML report           |
+| `npm run docs`         | Generate TypeDoc documentation               |
 
 ## Project Structure
 
@@ -185,9 +189,9 @@ e2e/                           # Playwright E2E tests
 | NFR10 | Documentation                     | TypeDoc + docs/ARCHITECTURE.md |
 | NFR11 | Code style                        | Google Style Guide (ESLint)    |
 | NFR12 | Session timeout                   | 30 minutes (JWT)               |
-| NFR13 | Role-based access control         | System Admin, Tournament Admin, Referee, Player, Spectator |
+| NFR13 | Role-based access control         | System Admin, Tournament Admin, Player |
 
 ## Documentation
 
 - [Architecture Guide](docs/ARCHITECTURE.md)
-- API docs: Run `npm run doc` → `docs/` directory
+- API docs: Run `npm run docs` → `docs/` directory

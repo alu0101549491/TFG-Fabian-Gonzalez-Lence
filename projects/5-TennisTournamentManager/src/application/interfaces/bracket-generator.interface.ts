@@ -9,6 +9,7 @@
  * @file src/application/interfaces/bracket-generator.interface.ts
  * @desc Bracket generator interface for implementing different bracket generation strategies
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Bracket} from '@domain/entities/bracket';

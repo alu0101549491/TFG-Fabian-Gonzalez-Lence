@@ -9,6 +9,7 @@
  * @file backend/src/shared/constants/websocket-events.ts
  * @desc WebSocket event type definitions for real-time synchronization (NFR5)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

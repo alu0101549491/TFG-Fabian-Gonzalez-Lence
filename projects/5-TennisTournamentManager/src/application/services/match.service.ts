@@ -9,6 +9,7 @@
  * @file src/application/services/match.service.ts
  * @desc Match service implementation for match management and result recording
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
@@ -16,10 +17,12 @@ import {IMatchService} from '../interfaces/match-service.interface';
 import {RecordResultDto, MatchDto, UpdateMatchStatusDto} from '../dto';
 import {MatchRepositoryImpl} from '@infrastructure/repositories/match.repository';
 import {ScoreRepositoryImpl} from '@infrastructure/repositories/score.repository';
+import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
 import {StandingService} from './standing.service';
 import {NotificationService} from './notification.service';
 import {Match} from '@domain/entities/match';
 import {MatchStatus} from '@domain/enumerations/match-status';
+import {UserRole} from '@domain/enumerations/user-role';
 
 /**
  * Match service implementation.
@@ -31,6 +34,58 @@ export class MatchService implements IMatchService {
   private readonly scoreRepository = inject(ScoreRepositoryImpl);
   private readonly standingService = inject(StandingService);
   private readonly notificationService = inject(NotificationService);
+  private readonly userRepository = inject(UserRepositoryImpl);
+
+  /**
+   * Determines whether the supplied role is allowed to administer any match.
+   *
+   * @param role - User role to evaluate
+   * @returns True when the role has administrative match privileges
+   */
+  private isAdministrativeRole(role: UserRole): boolean {
+    return role === UserRole.SYSTEM_ADMIN || role === UserRole.TOURNAMENT_ADMIN;
+  }
+
+  /**
+   * Checks whether the supplied user is one of the match participants.
+   *
+   * @param match - Match being evaluated
+   * @param userId - User identifier to check
+   * @returns True when the user belongs to either singles slot or doubles team
+   */
+  private isMatchParticipant(match: Match, userId: string): boolean {
+    const participantIds = [
+      match.player1Id,
+      match.player2Id,
+      (match as any).participant1?.id,
+      (match as any).participant2?.id,
+      (match as any).participant1Team?.player1?.id,
+      (match as any).participant1Team?.player2?.id,
+      (match as any).participant2Team?.player1?.id,
+      (match as any).participant2Team?.player2?.id,
+    ];
+
+    return participantIds.some((participantId) => participantId === userId);
+  }
+
+  /**
+   * Verifies that the current actor can record a result for the match.
+   *
+   * @param match - Match being updated
+   * @param userId - Authenticated user identifier
+   */
+  private async ensureCanRecordResult(match: Match, userId: string): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (this.isAdministrativeRole(user.role) || this.isMatchParticipant(match, userId)) {
+      return;
+    }
+
+    throw new Error('Only match participants or tournament administrators can record results');
+  }
 
   /**
    * Preserves backend-specific fields (round, matchNumber, courtName) from source match to target match.
@@ -218,6 +273,8 @@ export class MatchService implements IMatchService {
     if (!match) {
       throw new Error('Match not found');
     }
+
+    await this.ensureCanRecordResult(match, userId);
     
     // Validate winner is one of the participants (handle both singles and doubles)
     const isDoubles = Boolean(match.participant1TeamId || match.participant2TeamId);

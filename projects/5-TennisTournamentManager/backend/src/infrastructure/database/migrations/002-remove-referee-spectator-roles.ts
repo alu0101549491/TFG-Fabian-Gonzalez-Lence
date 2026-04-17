@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 24, 2026
- * @file infrastructure/database/migrations/002-remove-referee-spectator-roles.ts
+ * @file backend/src/infrastructure/database/migrations/002-remove-referee-spectator-roles.ts
  * @desc Database migration to remove REFEREE and SPECTATOR roles from user enum (v1.43.0).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {MigrationInterface, QueryRunner} from 'typeorm';

@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 7, 2026
- * @file presentation/pages/announcements/announcement-edit/announcement-edit.component.ts
+ * @file src/presentation/pages/announcements/announcement-edit/announcement-edit.component.ts
  * @desc Component for editing tournament announcements (FR47-FR49).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';

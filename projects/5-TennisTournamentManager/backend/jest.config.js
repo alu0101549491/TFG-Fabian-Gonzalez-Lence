@@ -36,31 +36,52 @@ export default {
     '**/?(*.)+(spec|test).ts',
   ],
   collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/server.ts',
-    '!src/**/*.interface.ts',
-    '!src/shared/config.ts',
-    '!src/infrastructure/database/migrate.ts',
-    '!src/infrastructure/database/seed.ts',
+    'src/application/services/audit.service.ts',
+    'src/application/services/match-generator.service.ts',
+    'src/application/services/notification.service.ts',
+    'src/application/services/privacy.service.ts',
+    'src/application/services/standing.service.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
-    // NFR22: 70% coverage on critical functions
-    // Apply strict thresholds to critical application services
+    // NFR22: protect named critical backend workflows rather than reporting a misleading
+    // whole-backend percentage over untested wiring and generated persistence layers.
     './src/application/services/audit.service.ts': {
       branches: 70,
       functions: 100,
       lines: 85,
       statements: 85,
     },
-    // Global thresholds relaxed to allow incremental test coverage addition
+    './src/application/services/match-generator.service.ts': {
+      branches: 80,
+      functions: 100,
+      lines: 90,
+      statements: 90,
+    },
+    './src/application/services/notification.service.ts': {
+      branches: 60,
+      functions: 80,
+      lines: 75,
+      statements: 75,
+    },
+    './src/application/services/privacy.service.ts': {
+      branches: 65,
+      functions: 90,
+      lines: 80,
+      statements: 80,
+    },
+    './src/application/services/standing.service.ts': {
+      branches: 35,
+      functions: 80,
+      lines: 75,
+      statements: 75,
+    },
     global: {
-      branches: 20,
-      functions: 20,
-      lines: 10,
-      statements: 10,
+      branches: 65,
+      functions: 85,
+      lines: 80,
+      statements: 80,
     },
   },
   testTimeout: 10000,

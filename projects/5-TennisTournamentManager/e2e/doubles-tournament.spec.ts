@@ -14,10 +14,13 @@
 
 import {expect, request, test, type APIRequestContext, type Browser, type BrowserContext, type Page} from '@playwright/test';
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = process.env.PLAYWRIGHT_API_BASE_URL ?? 'http://localhost:3000';
+const ADMIN_EMAIL = process.env.PLAYWRIGHT_ADMIN_EMAIL ?? 'admin@tennistournament.com';
+const ADMIN_PASSWORD = process.env.PLAYWRIGHT_ADMIN_PASSWORD ?? process.env.PW_E2E_ADMIN_PASSWORD ?? 'admin123';
 const JWT_STORAGE_KEY = 'tennis_jwt_token';
 const USER_STORAGE_KEY = 'app_user';
 
+/** Authenticated user payload returned by the API login and registration flows. */
 interface AuthUser {
   id: string;
   email: string;
@@ -27,11 +30,13 @@ interface AuthUser {
   role: string;
 }
 
+/** Session payload containing the bearer token used by the E2E helpers. */
 interface AuthSession {
   token: string;
   user: AuthUser;
 }
 
+/** Minimal identifiers captured while building one test tournament scenario. */
 interface TournamentSeed {
   tournamentId: string;
   categoryId: string;
@@ -43,6 +48,7 @@ interface TournamentSeed {
   name: string;
 }
 
+/** Shared seeded state used across the doubles workflow scenarios. */
 interface SeedState {
   admin: AuthSession;
   player1: AuthSession;
@@ -55,18 +61,39 @@ interface SeedState {
   pendingInvitationId: string;
 }
 
+/**
+ * Normalizes a relative API path so the helpers always target the backend router prefix.
+ *
+ * @param path - Endpoint path with or without a leading slash
+ * @returns API path rooted under `/api`
+ */
 function withApiPrefix(path: string): string {
   return `/api${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 const createdTournamentIds: string[] = [];
+const createdUserIds: string[] = [];
 let seededState: SeedState;
 
+/**
+ * Parses a JSON HTTP response while tolerating empty bodies from helper endpoints.
+ *
+ * @param response - Playwright API response to parse
+ * @returns Parsed response payload or an empty typed object when no body is present
+ */
 async function parseJson<T>(response: Awaited<ReturnType<APIRequestContext['fetch']>>): Promise<T> {
   const text = await response.text();
   return text ? JSON.parse(text) as T : ({} as T);
 }
 
+/**
+ * Performs an authenticated API GET and rejects unexpected non-success responses.
+ *
+ * @param apiContext - Playwright API request context
+ * @param path - Endpoint path under the API prefix
+ * @param token - Optional bearer token
+ * @returns Parsed JSON response body
+ */
 async function apiGet<T>(
   apiContext: APIRequestContext,
   path: string,
@@ -83,6 +110,16 @@ async function apiGet<T>(
   return parseJson<T>(response);
 }
 
+/**
+ * Performs an authenticated API POST and validates the expected response status.
+ *
+ * @param apiContext - Playwright API request context
+ * @param path - Endpoint path under the API prefix
+ * @param data - Request body to submit
+ * @param token - Optional bearer token
+ * @param expectedStatus - Required HTTP status for success
+ * @returns Parsed JSON response body
+ */
 async function apiPost<T>(
   apiContext: APIRequestContext,
   path: string,
@@ -102,6 +139,16 @@ async function apiPost<T>(
   return parseJson<T>(response);
 }
 
+/**
+ * Performs an authenticated API PUT and validates the expected response status.
+ *
+ * @param apiContext - Playwright API request context
+ * @param path - Endpoint path under the API prefix
+ * @param data - Request body to submit
+ * @param token - Bearer token for the authenticated actor
+ * @param expectedStatus - Required HTTP status for success
+ * @returns Parsed JSON response body
+ */
 async function apiPut<T>(
   apiContext: APIRequestContext,
   path: string,
@@ -121,6 +168,14 @@ async function apiPut<T>(
   return parseJson<T>(response);
 }
 
+/**
+ * Deletes a resource while tolerating already-cleaned records during teardown.
+ *
+ * @param apiContext - Playwright API request context
+ * @param path - Endpoint path under the API prefix
+ * @param token - Bearer token for the authenticated actor
+ * @returns Promise resolved when deletion is accepted or the resource is already gone
+ */
 async function apiDelete(
   apiContext: APIRequestContext,
   path: string,
@@ -135,23 +190,57 @@ async function apiDelete(
   }
 }
 
+/**
+ * Signs in with an existing user account and returns the resulting session.
+ *
+ * @param apiContext - Playwright API request context
+ * @param email - Account email
+ * @param password - Account password
+ * @returns Authenticated session payload
+ */
+async function loginUser(
+  apiContext: APIRequestContext,
+  email: string,
+  password: string,
+): Promise<AuthSession> {
+  return apiPost<AuthSession>(apiContext, '/auth/login', {email, password}, undefined, 200);
+}
+
+/**
+ * Registers a player account dedicated to the current E2E run.
+ *
+ * @param apiContext - Playwright API request context
+ * @param suffix - Unique suffix to isolate account identities per run
+ * @param firstName - Player first name
+ * @param lastName - Player last name
+ * @returns Authenticated session for the newly created player
+ */
 async function registerPlayer(
   apiContext: APIRequestContext,
   suffix: string,
   firstName: string,
   lastName: string,
-  role: 'PLAYER' | 'TOURNAMENT_ADMIN' = 'PLAYER',
 ): Promise<AuthSession> {
-  return apiPost<AuthSession>(apiContext, '/auth/register', {
+  const session = await apiPost<AuthSession>(apiContext, '/auth/register', {
     email: `${suffix}.${firstName.toLowerCase()}@doubles-e2e.test`,
     password: 'Password123!',
     firstName,
     lastName,
     username: `${suffix}_${firstName.toLowerCase()}`,
-    role,
   });
+
+  createdUserIds.push(session.user.id);
+  return session;
 }
 
+/**
+ * Creates and opens a minimal doubles tournament with one playable category.
+ *
+ * @param apiContext - Playwright API request context
+ * @param admin - Authenticated administrator session
+ * @param name - Tournament name
+ * @returns Seed information used by later workflow helpers
+ */
 async function createDoublesTournament(
   apiContext: APIRequestContext,
   admin: AuthSession,
@@ -208,6 +297,15 @@ async function createDoublesTournament(
   };
 }
 
+/**
+ * Creates a court that can be used to schedule the generated doubles match.
+ *
+ * @param apiContext - Playwright API request context
+ * @param admin - Authenticated administrator session
+ * @param tournamentId - Tournament that owns the court
+ * @param name - Court name
+ * @returns Created court identifier
+ */
 async function createCourt(
   apiContext: APIRequestContext,
   admin: AuthSession,
@@ -229,6 +327,15 @@ async function createCourt(
   return court.id;
 }
 
+/**
+ * Sends a doubles partner invitation between two players in the target tournament.
+ *
+ * @param apiContext - Playwright API request context
+ * @param inviter - Inviting player session
+ * @param invitee - Invited player session
+ * @param tournament - Target tournament seed data
+ * @returns Created invitation identifier
+ */
 async function sendInvitation(
   apiContext: APIRequestContext,
   inviter: AuthSession,
@@ -250,6 +357,14 @@ async function sendInvitation(
   return response.invitation.id;
 }
 
+/**
+ * Accepts a previously created doubles partner invitation.
+ *
+ * @param apiContext - Playwright API request context
+ * @param invitee - Invited player session
+ * @param invitationId - Invitation identifier to accept
+ * @returns Promise resolved when the invitation is accepted
+ */
 async function acceptInvitation(
   apiContext: APIRequestContext,
   invitee: AuthSession,
@@ -258,6 +373,14 @@ async function acceptInvitation(
   await apiPost(apiContext, `/partner-invitations/${invitationId}/accept`, {}, invitee.token, 200);
 }
 
+/**
+ * Approves every pending registration for the supplied tournament.
+ *
+ * @param apiContext - Playwright API request context
+ * @param admin - Authenticated administrator session
+ * @param tournamentId - Tournament whose registrations should be accepted
+ * @returns Promise resolved when all registrations have been updated
+ */
 async function approveTournamentRegistrations(
   apiContext: APIRequestContext,
   admin: AuthSession,
@@ -282,6 +405,14 @@ async function approveTournamentRegistrations(
   }
 }
 
+/**
+ * Generates a bracket and captures the single doubles match identifiers used in the tests.
+ *
+ * @param apiContext - Playwright API request context
+ * @param admin - Authenticated administrator session
+ * @param tournament - Target tournament seed data to enrich
+ * @returns Promise resolved when bracket and match identifiers have been stored
+ */
 async function generateBracket(
   apiContext: APIRequestContext,
   admin: AuthSession,
@@ -319,6 +450,15 @@ async function generateBracket(
   tournament.teamBetaId = matches[0].participant2TeamId;
 }
 
+/**
+ * Schedules the generated doubles match on the tournament court.
+ *
+ * @param apiContext - Playwright API request context
+ * @param admin - Authenticated administrator session
+ * @param tournament - Tournament seed with court and match identifiers
+ * @param scheduledTime - ISO date-time assigned to the match
+ * @returns Promise resolved when the match schedule has been updated
+ */
 async function scheduleMatch(
   apiContext: APIRequestContext,
   admin: AuthSession,
@@ -342,6 +482,13 @@ async function scheduleMatch(
   );
 }
 
+/**
+ * Creates a browser context preloaded with the supplied authenticated session.
+ *
+ * @param browser - Playwright browser instance
+ * @param session - Authenticated API session to inject into local storage
+ * @returns Browser context and page ready to use as the authenticated actor
+ */
 async function createAuthenticatedPage(
   browser: Browser,
   session: AuthSession,
@@ -369,7 +516,7 @@ test.describe('Doubles Tournament Workflow', () => {
     const apiContext = await request.newContext({baseURL: API_BASE_URL});
     const suffix = `dbl${Date.now().toString(36)}`;
 
-    const admin = await registerPlayer(apiContext, suffix, 'Terry', 'Tournament', 'TOURNAMENT_ADMIN');
+    const admin = await loginUser(apiContext, ADMIN_EMAIL, ADMIN_PASSWORD);
     const player1 = await registerPlayer(apiContext, suffix, 'Alice', 'Ace');
     const player2 = await registerPlayer(apiContext, suffix, 'Bea', 'Backhand');
     const player3 = await registerPlayer(apiContext, suffix, 'Cara', 'Cross');
@@ -423,6 +570,10 @@ test.describe('Doubles Tournament Workflow', () => {
       if (seededState?.admin) {
         for (const tournamentId of createdTournamentIds.reverse()) {
           await apiDelete(apiContext, `/tournaments/${tournamentId}`, seededState.admin.token);
+        }
+
+        for (const userId of createdUserIds.reverse()) {
+          await apiDelete(apiContext, `/users/${userId}`, seededState.admin.token);
         }
       }
     } finally {

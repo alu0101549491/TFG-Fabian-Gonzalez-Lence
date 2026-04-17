@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 5, 2026
- * @file presentation/pages/users/user-profile-view/user-profile-view.component.ts
+ * @file src/presentation/pages/users/user-profile-view/user-profile-view.component.ts
  * @desc Component for viewing another user's profile with privacy-filtered data.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject, computed} from '@angular/core';

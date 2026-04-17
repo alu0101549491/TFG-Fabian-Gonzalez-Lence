@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 30, 2026
- * @file presentation/components/visual-bracket/visual-bracket.component.ts
+ * @file src/presentation/components/visual-bracket/visual-bracket.component.ts
  * @desc Visual bracket display component for single elimination and round robin brackets.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, Input, signal, computed, inject} from '@angular/core';

@@ -9,6 +9,7 @@
  * @file src/domain/value-objects/index.ts
  * @desc Barrel export for all domain value objects
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 export * from './privacy-settings';

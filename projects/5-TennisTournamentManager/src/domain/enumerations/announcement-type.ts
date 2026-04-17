@@ -9,6 +9,7 @@
  * @file src/domain/enumerations/announcement-type.ts
  * @desc Enumeration for announcement visibility type (FR47)
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /**

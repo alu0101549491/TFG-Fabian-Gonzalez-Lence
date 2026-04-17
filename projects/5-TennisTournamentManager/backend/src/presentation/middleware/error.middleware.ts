@@ -6,28 +6,17 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/middleware/error.middleware.ts
+ * @file backend/src/presentation/middleware/error.middleware.ts
  * @desc Global error handling middleware.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Request, Response, NextFunction} from 'express';
 import {ERROR_CODES, HTTP_STATUS} from '../../shared/constants';
+import {AppError} from '../../shared/errors/app-error';
 
-/**
- * Application error class with status code.
- */
-export class AppError extends Error {
-  public statusCode: number;
-  public errorCode: string;
-  
-  constructor(message: string, statusCode: number, errorCode: string) {
-    super(message);
-    this.statusCode = statusCode;
-    this.errorCode = errorCode;
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
+export {AppError} from '../../shared/errors/app-error';
 
 /**
  * Global error handling middleware.

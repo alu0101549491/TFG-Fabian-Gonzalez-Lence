@@ -9,16 +9,19 @@
  * @file src/shared/constants.ts
  * @desc Application-wide constants used across all layers.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 /** Base URL for the REST API. Uses Vite proxy in dev, full URL in production. */
+const PROD_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://tennis-backend.onrender.com/api';
+
 export const API_BASE_URL = import.meta.env.PROD 
-  ? (import.meta.env.VITE_API_BASE_URL || 'https://tennis-backend.onrender.com/api')  // Production API URL
+  ? PROD_API_BASE_URL  // Production API URL
   : '/api';  // Uses Vite proxy to localhost:3000 in development
 
 /** WebSocket connection URL. */
 export const WS_URL = import.meta.env.PROD
-  ? (import.meta.env.VITE_SOCKET_URL || 'https://tennis-backend.onrender.com')  // Production WebSocket URL
+  ? (import.meta.env.VITE_SOCKET_URL || PROD_API_BASE_URL.replace(/\/api\/?$/, ''))  // Production WebSocket URL
   : 'http://localhost:3000';  // Development WebSocket server
 
 /** JWT token key in local storage. */
@@ -63,7 +66,7 @@ export enum ServerEvent {
   
   // Order of Play Events
   ORDER_OF_PLAY_PUBLISHED = 'order-of-play:published',
-  ORDER_OF_PLAY_UPDATED = 'order-of-play:updated',
+  ORDER_OF_PLAY_UPDATED = 'order-of-play:changed',
   
   // Registration Events
   REGISTRATION_CREATED = 'registration:created',

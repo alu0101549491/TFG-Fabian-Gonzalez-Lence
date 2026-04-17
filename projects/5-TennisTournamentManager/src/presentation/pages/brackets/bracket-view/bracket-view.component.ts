@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/pages/brackets/bracket-view/bracket-view.component.ts
+ * @file src/presentation/pages/brackets/bracket-view/bracket-view.component.ts
  * @desc Interactive bracket visualization (single-elimination, round-robin, group stages).
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, computed, inject} from '@angular/core';

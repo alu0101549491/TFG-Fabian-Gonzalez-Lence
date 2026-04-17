@@ -9,6 +9,7 @@
  * @file src/application/services/tournament.service.ts
  * @desc Tournament service implementation for tournament management operations
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, inject} from '@angular/core';
