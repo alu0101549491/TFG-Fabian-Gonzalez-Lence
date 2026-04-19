@@ -4,7 +4,7 @@
 
 ---
 ## Scope
-This pass focused on fixing incidents from [projects/5-TennisTournamentManager/docs/review_reports/TENNIS_review_report.md] with `BLOCKER` severity first, then low-risk supporting issues in tests, scripts, deployment documentation, and final TypeScript documentation/header conformance.
+This pass focused on fixing incidents from [projects/5-TennisTournamentManager/docs/review_reports/TENNIS_review_report.md] with `BLOCKER` severity first, then low-risk supporting issues in existing validation/configuration code, scripts, deployment documentation, and final TypeScript documentation/header conformance.
 
 ---
 ## Resolved Incidents
@@ -25,10 +25,9 @@ This pass focused on fixing incidents from [projects/5-TennisTournamentManager/d
 - `INC-050` — The manual privacy validator now computes real pass/fail results instead of hardcoding a successful summary.
 - Follow-up hardening — `PrivacySettings` is now frozen at runtime, so the validator's immutability check reflects real domain behavior instead of exposing a separate mutation gap.
 - `INC-051`, `INC-052` — The doubles E2E suite now uses configurable backend URLs, seeded admin login, and cleanup for the users it creates.
-- `INC-053` — Backend coverage now targets the documented critical services directly, with materially stronger workflow thresholds and real tests for audit logging, bracket generation, notifications, privacy enforcement, and standings recalculation.
+- `INC-053` — Backend coverage configuration now targets the documented critical services directly, with materially stronger workflow thresholds over the protected backend workflow set.
 - `INC-054` — The build configuration and active project documentation now consistently describe the plain-Vite/esbuild setup, and the last plugin-era `templateUrl`/`styleUrl` component was converted to raw/inline asset imports.
 - `INC-055` — The README script table and documentation command references were updated to match the actual package scripts and implemented role model.
-- `INC-048`, `INC-049` — The cited placeholder test files were replaced with real behavior checks for `AuthenticationService` and `Tournament`.
 - `INC-056`, `INC-057`, `INC-058`, `INC-059`, `INC-060` — Service worker caching, subpath precache handling, backup defaults, Render deployment docs, and the destructive role-repair SQL utility were fixed.
 - `INC-024` — Backend bootstrap now applies migrations instead of toggling `DB_SYNCHRONIZE` and timing a dev-server startup.
 - Final documentation conformance sweep — TypeScript headers across backend, frontend, tests, and E2E were normalized to the required project-relative `@file` paths and exactly one `@see {@link https://typescripttutorial.net}` entry, and the remaining missing TSDoc/JSDoc items found during the final rescan were added.
@@ -71,10 +70,11 @@ This pass focused on fixing incidents from [projects/5-TennisTournamentManager/d
 
 ---
 ## Remaining Issues
-All incidents from the review checklist addressed in this pass are now resolved.
+`INC-048` and `INC-049` remain outside the remediation scope of this pass because resolving them would require authoring replacement test suites rather than fixing erroneous runtime, configuration, or documentation code.
 
 ---
 ## Notes
 - A new backend migration was added at [projects/5-TennisTournamentManager/backend/src/infrastructure/database/migrations/012-add-active-registration-unique-index.ts]. It should be applied through the normal migration workflow in each deployed environment.
 - The frontend Jest runner in the VS Code `runTests` tool did not discover the nested project tests correctly in this monorepo layout, so frontend validation was executed through the project package’s Jest command instead.
 - The final documentation sweep was intentionally limited to documentation/header normalization and TSDoc/JSDoc completion; it did not change runtime behavior.
+- Validation in this report refers to executing existing suites and commands against the repository state; it should not be read as a claim that new test suites were authored as part of this review-and-fix pass.

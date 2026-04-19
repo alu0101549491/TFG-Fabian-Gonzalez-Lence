@@ -51,8 +51,8 @@
 - [x] [INC-045] [G10.1 – Frontend Shared Utilities, Pipes & Environments] [src/shared/constants.ts] — Shared event names do not match backend-emitted order-of-play events
 - [x] [INC-046] [G10.3 – Backend Shared Config, Constants & Utilities] [backend/src/shared/config/index.ts] — Refresh secret falls back to a known literal and is not mandatory at startup
 - [x] [INC-047] [G10.5 – Barrel Exports & Module Indexes] [src/domain/enumerations/index.ts] — Domain enumerations barrel duplicates the same export
-- [x] [INC-048] [G11.1 – Frontend Application Service Tests] [tests/application/services/authentication.service.test.ts] — Core service test suites are placeholders that do not exercise behavior
-- [x] [INC-049] [G11.2 – Frontend Domain Entity Tests] [tests/domain/entities/tournament.test.ts] — Domain entity tests are placeholders and do not validate invariants
+- [ ] [INC-048] [G11.1 – Frontend Application Service Tests] [tests/application/services/authentication.service.test.ts] — Core service test suites are placeholders that do not exercise behavior
+- [ ] [INC-049] [G11.2 – Frontend Domain Entity Tests] [tests/domain/entities/tournament.test.ts] — Domain entity tests are placeholders and do not validate invariants
 - [x] [INC-050] [G11.3 – Frontend Manual Validators & Mocks] [tests/manual/privacy-configuration-validator.ts] — Manual validator reports success without enforcing failures
 - [x] [INC-051] [G11.4 – End-to-End Tests] [e2e/doubles-tournament.spec.ts] — E2E cleanup leaves created users and related doubles state behind
 - [x] [INC-052] [G11.4 – End-to-End Tests] [e2e/doubles-tournament.spec.ts] — E2E suite hardcodes localhost backend seeding endpoints
