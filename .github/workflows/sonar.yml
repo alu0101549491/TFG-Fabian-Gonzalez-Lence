@@ -1,0 +1,88 @@
+name: SonarCloud Analysis
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  sonar-hangman-game:
+    name: "Sonar — The Hangman Game"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: projects/1-TheHangmanGame
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  sonar-music-web-player:
+    name: "Sonar — Music Web Player"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: projects/2-MusicWebPlayer
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  sonar-mini-balatro:
+    name: "Sonar — Mini Balatro"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: projects/3-MiniBalatro
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  sonar-cartographic-project-manager:
+    name: "Sonar — Cartographic Project Manager"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: projects/4-CartographicProjectManager
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  sonar-tennis-tournament-manager:
+    name: "Sonar — Tennis Tournament Manager"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: projects/5-TennisTournamentManager
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
