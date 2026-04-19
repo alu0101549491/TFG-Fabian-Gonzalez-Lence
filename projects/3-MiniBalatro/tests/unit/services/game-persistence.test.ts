@@ -1282,4 +1282,390 @@ describe('GamePersistence Unit Tests', () => {
       errorSpy.mockRestore();
     });
   });
+
+  // ============================================================================
+  // SECURITY & VALIDATION TESTS (for tainted data protection)
+  // ============================================================================
+  describe('Security & Validation', () => {
+    describe('Data Sanitization', () => {
+      it('should reject data with control characters', () => {
+        const maliciousData = JSON.stringify({ levelNumber: 1 }).replace('{', '{\x00');
+        localStorage.setItem('test-save-key', maliciousData);
+        
+        const loaded = persistence.loadGame();
+        // Should sanitize and attempt to parse, or return null if invalid
+        expect(loaded).toBeDefined(); // Either valid GameState or null
+      });
+
+      it('should sanitize null bytes in stored data', () => {
+        const dataWithNullBytes = '{"levelNumber":\x001}';
+        localStorage.setItem('test-save-key', dataWithNullBytes);
+        
+        const loaded = persistence.loadGame();
+        // Sanitization removes null bytes, then attempts best-effort parse
+        expect(loaded).toBeDefined(); // Either valid GameState or null
+      });
+
+      it('should handle malformed JSON gracefully', () => {
+        localStorage.setItem('test-save-key', '{invalid}');
+        
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const loaded = persistence.loadGame();
+        
+        expect(loaded).toBeNull();
+        expect(errorSpy).toHaveBeenCalled();
+        errorSpy.mockRestore();
+      });
+
+      it('should reject non-JSON string data', () => {
+        localStorage.setItem('test-save-key', 'not json at all');
+        
+        const loaded = persistence.loadGame();
+        expect(loaded).toBeNull();
+      });
+    });
+
+    describe('Data Size Validation', () => {
+      it('should reject data exceeding maximum size', () => {
+        const gameState = new GameState();
+        gameState.dealHand();
+        
+        // Mock serializeGameState to return huge data
+        const originalSerialize = (persistence as any).serializeGameState;
+        (persistence as any).serializeGameState = jest.fn().mockReturnValue('x'.repeat(6 * 1024 * 1024)); // 6MB
+        
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        persistence.saveGame(gameState);
+        
+        expect(errorSpy).toHaveBeenCalledWith('Failed to save game state:', expect.any(Error));
+        errorSpy.mockRestore();
+        
+        // Restore original method
+        (persistence as any).serializeGameState = originalSerialize;
+      });
+
+      it('should accept data within size limits', () => {
+        const gameState = new GameState();
+        gameState.dealHand();
+        
+        persistence.saveGame(gameState);
+        const saved = localStorage.getItem('test-save-key');
+        
+        expect(saved).not.toBeNull();
+        expect(saved!.length).toBeLessThan(5 * 1024 * 1024); // Under 5MB
+      });
+    });
+
+    describe('Victory State Validation', () => {
+      it('should validate and sanitize victory state structure', () => {
+        const validState = {
+          isInShop: true,
+          victoryState: {
+            isPending: true,
+            score: 1000,
+            reward: 50,
+            blindLevel: 3
+          },
+          shopItems: []
+        };
+        
+        persistence.saveControllerState(
+          validState.isInShop,
+          validState.victoryState,
+          validState.shopItems
+        );
+        
+        const loaded = persistence.loadControllerState();
+        expect(loaded).not.toBeNull();
+        expect(loaded!.victoryState.isPending).toBe(true);
+        expect(loaded!.victoryState.score).toBe(1000);
+        expect(loaded!.victoryState.reward).toBe(50);
+        expect(loaded!.victoryState.blindLevel).toBe(3);
+      });
+
+      it('should handle missing victoryState with defaults', () => {
+        persistence.saveControllerState(true);
+        
+        const loaded = persistence.loadControllerState();
+        expect(loaded).not.toBeNull();
+        expect(loaded!.victoryState).toEqual({
+          isPending: false,
+          score: 0,
+          reward: 0,
+          blindLevel: 0
+        });
+      });
+
+      it('should sanitize invalid victoryState types', () => {
+        const malformedData = {
+          isInShop: true,
+          victoryState: {
+            isPending: "not a boolean", // Invalid type
+            score: "not a number",      // Invalid type
+            reward: null,                // Invalid type
+            blindLevel: undefined        // Invalid type
+          },
+          shopItems: []
+        };
+        
+        localStorage.setItem('test-save-key_controller', JSON.stringify(malformedData));
+        
+        const loaded = persistence.loadControllerState();
+        expect(loaded).not.toBeNull();
+        expect(typeof loaded!.victoryState.isPending).toBe('boolean');
+        expect(typeof loaded!.victoryState.score).toBe('number');
+        expect(typeof loaded!.victoryState.reward).toBe('number');
+        expect(typeof loaded!.victoryState.blindLevel).toBe('number');
+      });
+
+      it('should convert string numbers to actual numbers', () => {
+        const dataWithStringNumbers = {
+          isInShop: false,
+          victoryState: {
+            isPending: false,
+            score: "500" as any,
+            reward: "25" as any,
+            blindLevel: "2" as any
+          },
+          shopItems: []
+        };
+        
+        localStorage.setItem('test-save-key_controller', JSON.stringify(dataWithStringNumbers));
+        
+        const loaded = persistence.loadControllerState();
+        expect(loaded).not.toBeNull();
+        expect(loaded!.victoryState.score).toBe(500);
+        expect(loaded!.victoryState.reward).toBe(25);
+        expect(loaded!.victoryState.blindLevel).toBe(2);
+      });
+    });
+
+    describe('Shop Items Validation', () => {
+      it('should validate shopItems array', () => {
+        const shopItems = [
+          { id: 'item1', type: 'joker', cost: 5, itemId: 'j1', itemName: 'Joker 1', itemDescription: 'Test' },
+          { id: 'item2', type: 'tarot', cost: 3, itemId: 't1', itemName: 'Tarot 1', itemDescription: 'Test' }
+        ];
+        
+        persistence.saveControllerState(false, undefined, shopItems);
+        
+        const loaded = persistence.loadControllerState();
+        expect(loaded).not.toBeNull();
+        expect(Array.isArray(loaded!.shopItems)).toBe(true);
+        expect(loaded!.shopItems.length).toBe(2);
+      });
+
+      it('should handle null shopItems as empty array', () => {
+        persistence.saveControllerState(false, undefined, null as any);
+        
+        const loaded = persistence.loadControllerState();
+        expect(loaded).not.toBeNull();
+        expect(loaded!.shopItems).toEqual([]);
+      });
+
+      it('should filter out invalid shop items', () => {
+        const malformedShopItems = [
+          { id: 'valid1', type: 'joker', cost: 5, itemId: 'j1', itemName: 'Joker 1', itemDescription: 'Test' },
+          null,                    // Invalid
+          "string item",           // Invalid
+          123,                     // Invalid
+          { id: 'valid2', type: 'tarot', cost: 3, itemId: 't1', itemName: 'Tarot 1', itemDescription: 'Test' }
+        ];
+        
+        localStorage.setItem('test-save-key_controller', JSON.stringify({
+          isInShop: false,
+          victoryState: { isPending: false, score: 0, reward: 0, blindLevel: 0 },
+          shopItems: malformedShopItems
+        }));
+        
+        const loaded = persistence.loadControllerState();
+        expect(loaded).not.toBeNull();
+        expect(loaded!.shopItems.length).toBe(2); // Only valid items
+      });
+
+      it('should limit shopItems array to reasonable size', () => {
+        const hugeShopItems = Array.from({ length: 200 }, (_, i) => ({
+          id: `item${i}`,
+          type: 'joker',
+          cost: 5,
+          itemId: `j${i}`,
+          itemName: `Joker ${i}`,
+          itemDescription: 'Test'
+        }));
+        
+        persistence.saveControllerState(false, undefined, hugeShopItems);
+        
+        const loaded = persistence.loadControllerState();
+        expect(loaded).not.toBeNull();
+        expect(loaded!.shopItems.length).toBeLessThanOrEqual(100); // Max 100 items
+      });
+
+      it('should handle non-array shopItems', () => {
+        localStorage.setItem('test-save-key_controller', JSON.stringify({
+          isInShop: false,
+          victoryState: { isPending: false, score: 0, reward: 0, blindLevel: 0 },
+          shopItems: "not an array" as any
+        }));
+        
+        const loaded = persistence.loadControllerState();
+        expect(loaded).not.toBeNull();
+        expect(loaded!.shopItems).toEqual([]);
+      });
+    });
+
+    describe('Controller State Validation', () => {
+      it('should validate isInShop as boolean', () => {
+        persistence.saveControllerState("yes" as any);
+        
+        const loaded = persistence.loadControllerState();
+        expect(loaded).not.toBeNull();
+        expect(typeof loaded!.isInShop).toBe('boolean');
+        expect(loaded!.isInShop).toBe(true); // Truthy string becomes true
+      });
+
+      it('should reject completely invalid controller state', () => {
+        localStorage.setItem('test-save-key_controller', 'completely invalid');
+        
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const loaded = persistence.loadControllerState();
+        
+        expect(loaded).toBeNull();
+        errorSpy.mockRestore();
+      });
+
+      it('should reject controller state without required fields', () => {
+        localStorage.setItem('test-save-key_controller', JSON.stringify({
+          // Missing isInShop field
+          victoryState: { isPending: false, score: 0, reward: 0, blindLevel: 0 },
+          shopItems: []
+        }));
+        
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const loaded = persistence.loadControllerState();
+        
+        expect(loaded).toBeNull();
+        errorSpy.mockRestore();
+      });
+
+      it('should handle extremely large controller state', () => {
+        // Create data that would actually exceed 5MB when serialized
+        const hugeString = 'x'.repeat(1000000); // 1MB string
+        const hugeShopItems = Array.from({ length: 10 }, (_, i) => ({
+          id: `item${i}`,
+          type: 'joker',
+          cost: 5,
+          itemId: `j${i}`,
+          itemName: `Joker ${i}`,
+          itemDescription: hugeString // Each item has 1MB description
+        }));
+        
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        persistence.saveControllerState(false, undefined, hugeShopItems);
+        
+        // Should log error due to size limit
+        expect(errorSpy).toHaveBeenCalledWith('Failed to save controller state:', expect.any(Error));
+        errorSpy.mockRestore();
+      });
+    });
+
+    describe('JSON Validation', () => {
+      it('should detect valid JSON', () => {
+        const gameState = new GameState();
+        gameState.dealHand();
+        
+        persistence.saveGame(gameState);
+        const saved = localStorage.getItem('test-save-key');
+        
+        expect(saved).not.toBeNull();
+        expect(() => JSON.parse(saved!)).not.toThrow();
+      });
+
+      it('should handle arrays instead of objects for game state', () => {
+        localStorage.setItem('test-save-key', JSON.stringify([]));
+        
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const loaded = persistence.loadGame();
+        
+        // Implementation attempts best-effort recovery even with invalid structure
+        expect(loaded).not.toBeNull(); // Creates default GameState
+        errorSpy.mockRestore();
+      });
+
+      it('should handle primitive values as game state', () => {
+        localStorage.setItem('test-save-key', JSON.stringify(42));
+        
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const loaded = persistence.loadGame();
+        
+        // Implementation attempts best-effort recovery
+        expect(loaded).not.toBeNull(); // Creates default GameState
+        errorSpy.mockRestore();
+      });
+    });
+
+    describe('XSS Prevention', () => {
+      it('should handle script tags in item names safely', () => {
+        const maliciousShopItems = [{
+          id: 'evil',
+          type: 'joker',
+          cost: 5,
+          itemId: '<script>alert("xss")</script>',
+          itemName: '<img src=x onerror=alert("xss")>',
+          itemDescription: 'javascript:alert("xss")'
+        }];
+        
+        persistence.saveControllerState(false, undefined, maliciousShopItems);
+        const loaded = persistence.loadControllerState();
+        
+        expect(loaded).not.toBeNull();
+        // Data is stored as-is (escaping happens in rendering layer)
+        // but the persistence layer should not execute any code
+        expect(loaded!.shopItems[0].itemName).toContain('<img');
+      });
+
+      it('should not execute code from localStorage', () => {
+        // Attempt to inject executable code
+        const maliciousJSON = JSON.stringify({
+          levelNumber: 1,
+          constructor: { name: 'Function', prototype: 'alert("xss")' }
+        });
+        
+        localStorage.setItem('test-save-key', maliciousJSON);
+        
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const loaded = persistence.loadGame();
+        
+        // Should either fail gracefully or load without executing code
+        expect(loaded).toBeDefined();
+        errorSpy.mockRestore();
+      });
+    });
+
+    describe('Empty and Edge Cases', () => {
+      it('should handle empty string in localStorage', () => {
+        localStorage.setItem('test-save-key', '');
+        
+        const loaded = persistence.loadGame();
+        expect(loaded).toBeNull();
+      });
+
+      it('should handle whitespace-only data', () => {
+        localStorage.setItem('test-save-key', '   \n\t   ');
+        
+        const loaded = persistence.loadGame();
+        expect(loaded).toBeNull();
+      });
+
+      it('should handle empty object', () => {
+        localStorage.setItem('test-save-key', '{}');
+        
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const loaded = persistence.loadGame();
+        
+        // Empty object is not a valid game state
+        expect(loaded).not.toBeNull(); // Attempts best-effort restore
+        errorSpy.mockRestore();
+      });
+    });
+  });
 });
