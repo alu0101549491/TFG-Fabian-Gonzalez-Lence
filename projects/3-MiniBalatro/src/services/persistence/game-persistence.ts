@@ -32,6 +32,7 @@ export class GamePersistence {
   private readonly controllerStateKey: string;
   private itemGenerator: ShopItemGenerator;
   private balancingConfig: BalancingConfig;
+  private readonly MAX_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB limit
 
   /**
    * Creates persistence manager with specified storage key.
@@ -62,6 +63,16 @@ export class GamePersistence {
       }
 
       const serialized = this.serializeGameState(gameState);
+      
+      // Validate serialized data before saving
+      if (!this.isValidJSON(serialized)) {
+        throw new Error('Invalid serialized data');
+      }
+      
+      if (serialized.length > this.MAX_STORAGE_SIZE) {
+        throw new Error('Serialized data exceeds maximum size');
+      }
+      
       localStorage.setItem(this.storageKey, serialized);
       console.log('Game state saved successfully');
     } catch (error) {
@@ -80,7 +91,14 @@ export class GamePersistence {
         return null;
       }
 
-      const gameState = this.deserializeGameState(serialized);
+      // Sanitize and validate data from storage before use
+      const sanitized = this.sanitizeStorageData(serialized);
+      if (!sanitized || !this.isValidJSON(sanitized)) {
+        console.error('Invalid or corrupted save data detected');
+        return null;
+      }
+
+      const gameState = this.deserializeGameState(sanitized);
       console.log('Game state loaded successfully');
       return gameState;
     } catch (error) {
@@ -204,13 +222,25 @@ export class GamePersistence {
     shopItems?: any[]
   ): void {
     try {
+      // Validate inputs before saving
+      const validatedVictoryState = this.validateVictoryState(victoryState);
+      const validatedShopItems = this.validateShopItems(shopItems);
+      
       const controllerState = {
-        isInShop,
-        victoryState: victoryState || { isPending: false, score: 0, reward: 0, blindLevel: 0 },
-        shopItems: shopItems || []
+        isInShop: Boolean(isInShop),
+        victoryState: validatedVictoryState,
+        shopItems: validatedShopItems
       };
-      localStorage.setItem(this.controllerStateKey, JSON.stringify(controllerState));
-      console.log(`Controller state saved: isInShop=${isInShop}, pendingVictory=${victoryState?.isPending || false}, shopItems=${shopItems?.length || 0}`);
+      
+      const serialized = JSON.stringify(controllerState);
+      
+      // Validate serialized data
+      if (serialized.length > this.MAX_STORAGE_SIZE) {
+        throw new Error('Controller state exceeds maximum size');
+      }
+      
+      localStorage.setItem(this.controllerStateKey, serialized);
+      console.log(`Controller state saved: isInShop=${isInShop}, pendingVictory=${validatedVictoryState.isPending}, shopItems=${validatedShopItems.length}`);
     } catch (error) {
       console.error('Failed to save controller state:', error);
     }
@@ -235,11 +265,26 @@ export class GamePersistence {
       if (!serialized) {
         return null;
       }
-      const parsed = JSON.parse(serialized);
+      
+      // Sanitize and validate data from storage
+      const sanitized = this.sanitizeStorageData(serialized);
+      if (!sanitized || !this.isValidJSON(sanitized)) {
+        console.error('Invalid controller state data detected');
+        return null;
+      }
+      
+      const parsed = JSON.parse(sanitized);
+      
+      // Validate parsed data structure
+      if (!this.isValidControllerState(parsed)) {
+        console.error('Controller state structure validation failed');
+        return null;
+      }
+      
       const result = {
-        isInShop: parsed.isInShop || false,
-        victoryState: parsed.victoryState || { isPending: false, score: 0, reward: 0, blindLevel: 0 },
-        shopItems: parsed.shopItems || []
+        isInShop: Boolean(parsed.isInShop),
+        victoryState: this.validateVictoryState(parsed.victoryState),
+        shopItems: this.validateShopItems(parsed.shopItems)
       };
       console.log(`Controller state loaded: isInShop=${result.isInShop}, pendingVictory=${result.victoryState.isPending}, shopItems=${result.shopItems.length}`);
       return result;
@@ -342,8 +387,89 @@ export class GamePersistence {
   }
 
   /**
+   * Validates if a string is valid JSON.
+   * @param data - String to validate
+   * @returns true if valid JSON, false otherwise
+   */
+  private isValidJSON(data: string): boolean {
+    try {
+      JSON.parse(data);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Sanitizes data from storage by removing potentially dangerous content.
+   * @param data - Raw data from storage
+   * @returns Sanitized data
+   */
+  private sanitizeStorageData(data: string): string {
+    if (!data || typeof data !== 'string') {
+      return '';
+    }
+    
+    // Remove any null bytes or control characters that could cause issues
+    return data.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  }
+
+  /**
+   * Validates victory state structure.
+   * @param victoryState - Victory state to validate
+   * @returns Validated victory state
+   */
+  private validateVictoryState(victoryState?: any): {
+    isPending: boolean;
+    score: number;
+    reward: number;
+    blindLevel: number;
+  } {
+    if (!victoryState || typeof victoryState !== 'object') {
+      return { isPending: false, score: 0, reward: 0, blindLevel: 0 };
+    }
+    
+    return {
+      isPending: Boolean(victoryState.isPending),
+      score: Number(victoryState.score) || 0,
+      reward: Number(victoryState.reward) || 0,
+      blindLevel: Number(victoryState.blindLevel) || 0
+    };
+  }
+
+  /**
+   * Validates shop items array.
+   * @param shopItems - Shop items to validate
+   * @returns Validated shop items array
+   */
+  private validateShopItems(shopItems?: any): any[] {
+    if (!Array.isArray(shopItems)) {
+      return [];
+    }
+    
+    // Filter out invalid items and limit array size
+    return shopItems
+      .filter(item => item && typeof item === 'object')
+      .slice(0, 100); // Limit to reasonable number
+  }
+
+  /**
+   * Validates controller state structure.
+   * @param state - State object to validate
+   * @returns true if valid, false otherwise
+   */
+  private isValidControllerState(state: any): boolean {
+    if (!state || typeof state !== 'object') {
+      return false;
+    }
+    
+    // Check required properties exist
+    return 'isInShop' in state;
+  }
+
+  /**
    * Converts JSON string to GameState.
-   * @param data - JSON string
+   * @param data - JSON string (already sanitized)
    * @returns Reconstructed GameState
    * @throws Error if deserialization fails
    */
