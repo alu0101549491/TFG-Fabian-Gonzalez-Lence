@@ -167,8 +167,8 @@ export const VALID_SCORE_SET = {
 /** Default privacy level values used by privacy assertions. */
 export const PRIVACY_LEVELS = {
   public: 'PUBLIC',
-  registeredUsers: 'ALL_REGISTERED_USERS',
-  sameTournament: 'SAME_TOURNAMENT',
+  registeredUsers: 'ALL_REGISTERED',
+  sameTournament: 'TOURNAMENT_PARTICIPANTS',
   adminsOnly: 'ADMINS_ONLY',
 } as const;
 

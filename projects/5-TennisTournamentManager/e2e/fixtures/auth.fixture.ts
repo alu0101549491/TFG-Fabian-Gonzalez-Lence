@@ -12,8 +12,9 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import path from 'node:path';
-import {test as base, type Page} from '@playwright/test';
+import {test as base, type Browser, type BrowserContext, type Page} from '@playwright/test';
+import {ApiHelper, type Credentials} from '../helpers/api.helper';
+import {TEST_USERS} from './test-data';
 
 type AuthFixtures = {
   sysAdminPage: Page;
@@ -23,41 +24,45 @@ type AuthFixtures = {
   publicPage: Page;
 };
 
-const AUTH_DIRECTORY = path.join(process.cwd(), 'e2e', '.auth');
+async function createAuthenticatedPage(
+  browser: Browser,
+  credentials: Credentials,
+): Promise<{context: BrowserContext; page: Page}> {
+  const apiHelper = await ApiHelper.create();
+
+  try {
+    const session = await apiHelper.login(credentials);
+    const context = await browser.newContext({
+      storageState: apiHelper.buildStorageState(session),
+    });
+    const page = await context.newPage();
+    return {context, page};
+  } finally {
+    await apiHelper.dispose();
+  }
+}
 
 /**
  * Extended Playwright fixture set with pre-authenticated contexts.
  */
 export const test = base.extend<AuthFixtures>({
   sysAdminPage: async ({browser}, use) => {
-    const context = await browser.newContext({
-      storageState: path.join(AUTH_DIRECTORY, 'sysadmin.json'),
-    });
-    const page = await context.newPage();
+    const {context, page} = await createAuthenticatedPage(browser, TEST_USERS.sysAdmin);
     await use(page);
     await context.close();
   },
   tournamentAdminPage: async ({browser}, use) => {
-    const context = await browser.newContext({
-      storageState: path.join(AUTH_DIRECTORY, 'tournament-admin.json'),
-    });
-    const page = await context.newPage();
+    const {context, page} = await createAuthenticatedPage(browser, TEST_USERS.tournamentAdmin1);
     await use(page);
     await context.close();
   },
   participantPage: async ({browser}, use) => {
-    const context = await browser.newContext({
-      storageState: path.join(AUTH_DIRECTORY, 'participant1.json'),
-    });
-    const page = await context.newPage();
+    const {context, page} = await createAuthenticatedPage(browser, TEST_USERS.participant1);
     await use(page);
     await context.close();
   },
   secondParticipantPage: async ({browser}, use) => {
-    const context = await browser.newContext({
-      storageState: path.join(AUTH_DIRECTORY, 'participant2.json'),
-    });
-    const page = await context.newPage();
+    const {context, page} = await createAuthenticatedPage(browser, TEST_USERS.participant2);
     await use(page);
     await context.close();
   },

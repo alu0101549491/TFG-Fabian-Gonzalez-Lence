@@ -6,7 +6,7 @@
       "localStorage": [
         {
           "name": "tennis_jwt_token",
-          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl80MWYyMDU1ZCIsImVtYWlsIjoiYWRtaW5AdGVubmlzdG91cm5hbWVudC5jb20iLCJyb2xlIjoiU1lTVEVNX0FETUlOIiwiaWF0IjoxNzc2Njg2Mjg2LCJleHAiOjE3NzY2ODgwODZ9.-iIN0e7rsQwhpAeZtEOe3AaiGf2bZnmkXLeAph7yxyk"
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl80MWYyMDU1ZCIsImVtYWlsIjoiYWRtaW5AdGVubmlzdG91cm5hbWVudC5jb20iLCJyb2xlIjoiU1lTVEVNX0FETUlOIiwiaWF0IjoxNzc2NjkxMTM2LCJleHAiOjE3NzY2OTI5MzZ9.8_rLj9tH6sQ9j1fOmLMReSTbjFgLPusxeRuvxc8L-fw"
         },
         {
           "name": "app_user",

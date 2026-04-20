@@ -14,16 +14,49 @@
 
 import {test, expect} from '../fixtures/auth.fixture';
 import {AnnouncementsPage} from '../fixtures/page-objects/announcements.page';
-import {TEST_TOURNAMENTS} from '../fixtures/test-data';
+import {TEST_USERS} from '../fixtures/test-data';
+import {ApiHelper} from '../helpers/api.helper';
+import {SeedHelper} from '../helpers/seed.helper';
+
+let apiHelper: ApiHelper | undefined;
+let seedHelper: SeedHelper | undefined;
+let adminToken = '';
+let announcementTournamentId = '';
+let seededAnnouncementTitle = '';
 
 test.describe('Announcements - Medium', () => {
+  test.beforeAll(async () => {
+    apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    seedHelper = new SeedHelper(apiHelper, adminSession);
+
+    const tournament = await seedHelper.createTournament(`E2E Announcements ${Date.now()}`);
+    announcementTournamentId = tournament.id;
+    adminToken = adminSession.token;
+    seededAnnouncementTitle = `Seeded Announcement ${Date.now()}`;
+
+    await apiHelper.post('/announcements', {
+      tournamentId: announcementTournamentId,
+      type: 'PUBLIC',
+      title: seededAnnouncementTitle,
+      summary: 'Seeded announcement summary.',
+      longText: 'Seeded announcement content for modal and list coverage.',
+      tags: ['general'],
+    }, adminToken, 201);
+  });
+
+  test.afterAll(async () => {
+    await seedHelper?.cleanAll();
+    await apiHelper?.dispose();
+  });
+
   test('ANN-001 should let admins create a public announcement', async ({tournamentAdminPage}) => {
     const announcementsPage = new AnnouncementsPage(tournamentAdminPage);
     const uniqueTitle = `E2E Announcement ${Date.now()}`;
 
-    await announcementsPage.gotoCreate();
+    await tournamentAdminPage.goto(`/announcements/create?tournamentId=${announcementTournamentId}`);
     await announcementsPage.createAnnouncement({
-      tournamentId: TEST_TOURNAMENTS.openRegistration.id,
+      tournamentId: announcementTournamentId,
       title: uniqueTitle,
       summary: 'Automated announcement summary.',
       longText: 'Automated announcement content for Playwright coverage.',
@@ -49,7 +82,7 @@ test.describe('Announcements - Medium', () => {
   test('ANN-004 should open the announcement details modal', async ({publicPage}) => {
     const announcementsPage = new AnnouncementsPage(publicPage);
     await announcementsPage.goto();
-    await announcementsPage.openFirstAnnouncement();
+    await publicPage.locator('.announcement-card').filter({hasText: seededAnnouncementTitle}).first().click();
 
     await expect(publicPage.locator('.modal-container')).toBeVisible();
   });

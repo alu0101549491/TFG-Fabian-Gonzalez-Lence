@@ -249,14 +249,20 @@ export class SeedHelper {
     tournamentId: string,
     categoryId: string,
     participantCount: number,
+    bracketType: string = 'SINGLE_ELIMINATION',
   ): Promise<string> {
-    const size = Math.pow(2, Math.ceil(Math.log2(Math.max(participantCount, 2))));
-    const totalRounds = Math.log2(size);
+    const normalizedParticipantCount = Math.max(participantCount, 2);
+    const size = bracketType === 'ROUND_ROBIN'
+      ? normalizedParticipantCount
+      : Math.pow(2, Math.ceil(Math.log2(normalizedParticipantCount)));
+    const totalRounds = bracketType === 'ROUND_ROBIN'
+      ? Math.max(normalizedParticipantCount - 1, 1)
+      : Math.log2(size);
 
     const bracket = await this.apiHelper.post<{id: string}>('/brackets', {
       tournamentId,
       categoryId,
-      bracketType: 'SINGLE_ELIMINATION',
+      bracketType,
       size,
       totalRounds,
       structure: null,
@@ -400,10 +406,23 @@ export class SeedHelper {
    */
   public async cleanAll(): Promise<void> {
     for (const tournamentId of [...this.createdTournamentIds].reverse()) {
-      await this.apiHelper.delete(`/tournaments/${tournamentId}`, this.adminSession.token, true);
+      try {
+        await this.apiHelper.delete(`/tournaments/${tournamentId}`, this.adminSession.token, true);
+      } catch (error) {
+        console.warn(`Seed cleanup skipped tournament ${tournamentId}:`, error);
+      }
     }
+
+    if (this.adminSession.user.role !== 'SYSTEM_ADMIN') {
+      return;
+    }
+
     for (const userId of [...this.createdUserIds].reverse()) {
-      await this.apiHelper.delete(`/users/${userId}`, this.adminSession.token, true);
+      try {
+        await this.apiHelper.delete(`/users/${userId}`, this.adminSession.token, true);
+      } catch (error) {
+        console.warn(`Seed cleanup skipped user ${userId}:`, error);
+      }
     }
   }
 }

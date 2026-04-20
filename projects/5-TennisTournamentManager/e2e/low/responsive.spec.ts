@@ -13,9 +13,40 @@
  */
 
 import {test, expect} from '../fixtures/auth.fixture';
-import {TEST_TOURNAMENTS} from '../fixtures/test-data';
+import {TEST_USERS} from '../fixtures/test-data';
+import {ApiHelper} from '../helpers/api.helper';
+import {SeedHelper} from '../helpers/seed.helper';
+
+let apiHelper: ApiHelper | undefined;
+let seedHelper: SeedHelper | undefined;
+let scheduledTournamentId = '';
 
 test.describe('Responsive - Low', () => {
+  test.beforeAll(async () => {
+    apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const participant1 = await apiHelper.login(TEST_USERS.participant1);
+    const participant2 = await apiHelper.login(TEST_USERS.participant2);
+    seedHelper = new SeedHelper(apiHelper, adminSession);
+
+    const fixture = await seedHelper.createSinglesMatchFixture(
+      `E2E Responsive ${Date.now()}`,
+      [participant1.user.id, participant2.user.id],
+      {
+        courtName: 'Responsive Court',
+        scheduledTime: '2026-06-01T10:00:00.000Z',
+        matchStatus: 'SCHEDULED',
+      },
+    );
+
+    scheduledTournamentId = fixture.id;
+  });
+
+  test.afterAll(async () => {
+    await seedHelper?.cleanAll();
+    await apiHelper?.dispose();
+  });
+
   test('RESP-001 should keep the landing and login pages usable on narrow screens', async ({page}) => {
     await page.setViewportSize({width: 375, height: 667});
     await page.goto('/home');
@@ -31,7 +62,7 @@ test.describe('Responsive - Low', () => {
     await publicPage.goto('/tournaments');
     await expect(publicPage.locator('.tournament-card').first()).toBeVisible();
 
-    await publicPage.goto(`/order-of-play/${TEST_TOURNAMENTS.activeKnockout.id}`);
+    await publicPage.goto(`/order-of-play/${scheduledTournamentId}`);
     await expect(publicPage.locator('.main-content').first()).toBeVisible();
   });
 

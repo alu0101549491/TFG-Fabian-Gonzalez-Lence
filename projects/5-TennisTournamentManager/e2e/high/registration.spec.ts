@@ -14,20 +14,46 @@
 
 import {test, expect} from '../fixtures/auth.fixture';
 import {TournamentDetailPage} from '../fixtures/page-objects/tournament-detail.page';
-import {TEST_TOURNAMENTS} from '../fixtures/test-data';
+import {TEST_USERS} from '../fixtures/test-data';
+import {ApiHelper} from '../helpers/api.helper';
+import {SeedHelper} from '../helpers/seed.helper';
+
+let apiHelper: ApiHelper | undefined;
+let seedHelper: SeedHelper | undefined;
+let openTournamentId = '';
 
 test.describe('Registration - High', () => {
+  test.beforeAll(async () => {
+    apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const participantSession = await apiHelper.login(TEST_USERS.participant2);
+    seedHelper = new SeedHelper(apiHelper, adminSession);
+
+    const tournament = await seedHelper.createTournament(`E2E Registration ${Date.now()}`);
+    await seedHelper.updateTournamentStatus(tournament.id, 'REGISTRATION_OPEN');
+
+    const categoryId = await seedHelper.createCategory(tournament.id, 'Mixed Open Singles');
+    await seedHelper.registerParticipant(categoryId, participantSession.user.id);
+
+    openTournamentId = tournament.id;
+  });
+
+  test.afterAll(async () => {
+    await seedHelper?.cleanAll();
+    await apiHelper?.dispose();
+  });
+
   test('REG-001 should expose self-registration controls on open tournaments', async ({participantPage}) => {
     const detailPage = new TournamentDetailPage(participantPage);
-    await detailPage.gotoById(TEST_TOURNAMENTS.openRegistration.id);
+    await detailPage.gotoById(openTournamentId);
 
-    await expect(participantPage.getByText(/categories/i)).toBeVisible();
+    await expect(participantPage.getByRole('heading', {name: /categories/i})).toBeVisible();
     await expect(detailPage.registerButton).toBeVisible();
   });
 
   test('REG-004 should let administrators bulk-approve pending registrations', async ({tournamentAdminPage}) => {
     const detailPage = new TournamentDetailPage(tournamentAdminPage);
-    await detailPage.gotoById(TEST_TOURNAMENTS.openRegistration.id);
+    await detailPage.gotoById(openTournamentId);
 
     const approveAllButton = tournamentAdminPage.getByRole('button', {name: /approve all/i});
     if (await approveAllButton.count() > 0) {
@@ -62,6 +88,6 @@ test.describe('Registration - High', () => {
     test.skip(true, 'Registration payment checkout UI is not implemented in the current frontend.');
 
     const detailPage = new TournamentDetailPage(participantPage);
-    await detailPage.gotoById(TEST_TOURNAMENTS.openRegistration.id);
+    await detailPage.gotoById(openTournamentId);
   });
 });

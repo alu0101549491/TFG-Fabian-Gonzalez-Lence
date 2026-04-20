@@ -69,7 +69,7 @@ export class NotificationsPage extends BasePage {
    * @param channelId - Checkbox id
    */
   public async toggleChannel(channelId: string): Promise<void> {
-    await this.page.locator(`#${channelId}`).click();
+    await this.page.locator(`label[for="${channelId}"]`).first().click();
   }
 
   /**

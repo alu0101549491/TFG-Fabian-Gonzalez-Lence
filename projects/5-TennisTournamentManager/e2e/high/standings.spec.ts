@@ -14,20 +14,120 @@
 
 import {test, expect} from '../fixtures/auth.fixture';
 import {StandingsPage} from '../fixtures/page-objects/standings.page';
-import {TEST_TOURNAMENTS} from '../fixtures/test-data';
+import {ApiHelper} from '../helpers/api.helper';
+import {SeedHelper} from '../helpers/seed.helper';
+
+interface SeededMatchSummary {
+  id: string;
+  player1Id: string;
+  player2Id: string;
+}
+
+function buildWinningScores(winnerId: string, match: SeededMatchSummary): Array<{player1Games: number; player2Games: number}> {
+  const winnerIsPlayer1 = match.player1Id === winnerId;
+
+  return winnerIsPlayer1
+    ? [{player1Games: 6, player2Games: 3}, {player1Games: 6, player2Games: 4}]
+    : [{player1Games: 3, player2Games: 6}, {player1Games: 4, player2Games: 6}];
+}
+
+let apiHelper: ApiHelper | undefined;
+let seedHelper: SeedHelper | undefined;
+let standingsTournamentId = '';
 
 test.describe('Standings - High', () => {
+  test.beforeAll(async () => {
+    apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login({
+      email: 'tournament@tennistournament.com',
+      password: process.env.PLAYWRIGHT_TOURNAMENT_ADMIN_PASSWORD ?? process.env.PW_E2E_TOURNAMENT_ADMIN_PASSWORD ?? 'tourney123',
+    });
+    seedHelper = new SeedHelper(apiHelper, adminSession);
+
+    const suffix = `${Date.now()}`;
+    const players = await Promise.all([
+      seedHelper.createPlayer(`standings-a-${suffix}`),
+      seedHelper.createPlayer(`standings-b-${suffix}`),
+      seedHelper.createPlayer(`standings-c-${suffix}`),
+      seedHelper.createPlayer(`standings-d-${suffix}`),
+    ]);
+
+    const tournament = await seedHelper.createTournament(`E2E Standings ${suffix}`, {
+      maxParticipants: players.length,
+    });
+    const categoryId = await seedHelper.createSizedCategory(tournament.id, 'Mixed Open Round Robin', players.length);
+
+    for (const player of players) {
+      const registrationId = await seedHelper.registerParticipant(categoryId, player.user.id);
+      await seedHelper.approveRegistration(registrationId);
+    }
+
+    const bracketId = await seedHelper.createBracket(tournament.id, categoryId, players.length, 'ROUND_ROBIN');
+    const matches = await seedHelper.getMatchesByBracket(bracketId);
+    const playableMatches = matches
+      .map((match) => {
+        const player1Id = typeof match.player1Id === 'string'
+          ? match.player1Id
+          : typeof match.participant1Id === 'string'
+            ? match.participant1Id
+            : '';
+        const player2Id = typeof match.player2Id === 'string'
+          ? match.player2Id
+          : typeof match.participant2Id === 'string'
+            ? match.participant2Id
+            : '';
+
+        if (typeof match.id !== 'string' || !player1Id || !player2Id) {
+          return null;
+        }
+
+        return {id: match.id, player1Id, player2Id};
+      })
+      .filter((match): match is SeededMatchSummary => match !== null);
+
+    const anchorId = playableMatches[0]?.player1Id;
+    if (!anchorId) {
+      throw new Error('No round-robin matches were generated for standings seeding');
+    }
+
+    const anchorMatches = playableMatches.filter((match) => match.player1Id === anchorId || match.player2Id === anchorId).slice(0, 2);
+    const extraMatch = playableMatches.find((match) => match.player1Id !== anchorId && match.player2Id !== anchorId);
+
+    for (const match of anchorMatches) {
+      await seedHelper.updateMatch(match.id, {
+        status: 'COMPLETED',
+        winnerId: anchorId,
+        scores: buildWinningScores(anchorId, match),
+      });
+    }
+
+    if (extraMatch) {
+      await seedHelper.updateMatch(extraMatch.id, {
+        status: 'COMPLETED',
+        winnerId: extraMatch.player1Id,
+        scores: buildWinningScores(extraMatch.player1Id, extraMatch),
+      });
+    }
+
+    standingsTournamentId = tournament.id;
+  });
+
+  test.afterAll(async () => {
+    await seedHelper?.cleanAll();
+    await apiHelper?.dispose();
+  });
+
   test('STAND-001 should render grouped standings for tournaments with classification data', async ({participantPage}) => {
     const standingsPage = new StandingsPage(participantPage);
-    await standingsPage.gotoForTournament(TEST_TOURNAMENTS.activeRoundRobin.id);
+    await standingsPage.gotoForTournament(standingsTournamentId);
 
-    await expect(participantPage.getByText(/standings/i)).toBeVisible();
+    await expect(participantPage.getByRole('heading', {name: /standings/i})).toBeVisible();
     await expect(participantPage.locator('.standings-card').first()).toBeVisible();
   });
 
   test('STAND-002 should expose updated standings rows after results are confirmed', async ({participantPage}) => {
     const standingsPage = new StandingsPage(participantPage);
-    await standingsPage.gotoForTournament(TEST_TOURNAMENTS.activeRoundRobin.id);
+    await standingsPage.gotoForTournament(standingsTournamentId);
 
     const rows = await standingsPage.getRows();
     expect(rows.length).toBeGreaterThan(0);
@@ -36,17 +136,17 @@ test.describe('Standings - High', () => {
 
   test('STAND-006 should show set and game ratio information for each row', async ({publicPage}) => {
     const standingsPage = new StandingsPage(publicPage);
-    await standingsPage.gotoForTournament(TEST_TOURNAMENTS.activeRoundRobin.id);
+    await standingsPage.gotoForTournament(standingsTournamentId);
 
     const firstRow = publicPage.locator('.standing-row').first();
-    await expect(firstRow).toContainText('/');
-    await expect(firstRow.locator('.stat-diff').first()).toBeVisible();
+    await expect(firstRow.locator('.stat-ratio').first()).toBeVisible();
+    await expect(firstRow.locator('.stat-ratio').nth(1)).toBeVisible();
   });
 
   test('STAND-007 should expose head-to-head and split ratio views', async ({publicPage}) => {
     test.skip(true, 'Dedicated head-to-head and split classification UI is not implemented in the current frontend.');
 
     const standingsPage = new StandingsPage(publicPage);
-    await standingsPage.gotoForTournament(TEST_TOURNAMENTS.activeRoundRobin.id);
+    await standingsPage.gotoForTournament(standingsTournamentId);
   });
 });

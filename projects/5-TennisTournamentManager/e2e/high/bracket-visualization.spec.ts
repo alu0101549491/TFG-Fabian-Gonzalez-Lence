@@ -14,32 +14,53 @@
 
 import {test, expect} from '../fixtures/auth.fixture';
 import {BracketPage} from '../fixtures/page-objects/bracket.page';
-import {TournamentDetailPage} from '../fixtures/page-objects/tournament-detail.page';
-import {TEST_TOURNAMENTS} from '../fixtures/test-data';
+import {TEST_USERS} from '../fixtures/test-data';
+import {ApiHelper} from '../helpers/api.helper';
+import {SeedHelper} from '../helpers/seed.helper';
+
+let apiHelper: ApiHelper | undefined;
+let seedHelper: SeedHelper | undefined;
+let bracketId = '';
 
 test.describe('Bracket Visualization - High', () => {
-  test('DRAW-007 should render the main draw bracket for public users', async ({publicPage}) => {
-    const detailPage = new TournamentDetailPage(publicPage);
-    await detailPage.gotoById(TEST_TOURNAMENTS.activeKnockout.id);
-    await detailPage.openBracket();
+  test.beforeAll(async () => {
+    apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const participant1 = await apiHelper.login(TEST_USERS.participant1);
+    const participant2 = await apiHelper.login(TEST_USERS.participant2);
+    seedHelper = new SeedHelper(apiHelper, adminSession);
 
+    const fixture = await seedHelper.createSinglesMatchFixture(
+      `E2E Bracket ${Date.now()}`,
+      [participant1.user.id, participant2.user.id],
+      {publishBracket: true},
+    );
+
+    bracketId = fixture.bracketId ?? '';
+  });
+
+  test.afterAll(async () => {
+    await seedHelper?.cleanAll();
+    await apiHelper?.dispose();
+  });
+
+  test('DRAW-007 should render the main draw bracket for public users', async ({publicPage}) => {
     const bracketPage = new BracketPage(publicPage);
+    await bracketPage.gotoById(bracketId);
     await bracketPage.expectBracketVisible();
   });
 
   test('EXP-001 should expose a PDF export entry point from the bracket view', async ({tournamentAdminPage}) => {
-    const detailPage = new TournamentDetailPage(tournamentAdminPage);
-    await detailPage.gotoById(TEST_TOURNAMENTS.activeKnockout.id);
-    await detailPage.openBracket();
+    const bracketPage = new BracketPage(tournamentAdminPage);
+    await bracketPage.gotoById(bracketId);
 
     await expect(tournamentAdminPage.getByRole('button', {name: /export pdf/i})).toBeVisible();
   });
 
   test('RESP-003 should keep the bracket page usable on smaller viewports', async ({page}) => {
     await page.setViewportSize({width: 375, height: 812});
-    const detailPage = new TournamentDetailPage(page);
-    await detailPage.gotoById(TEST_TOURNAMENTS.activeKnockout.id);
-    await detailPage.openBracket();
+    const bracketPage = new BracketPage(page);
+    await bracketPage.gotoById(bracketId);
 
     await expect(page.locator('.bracket-content')).toBeVisible();
   });

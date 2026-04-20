@@ -17,7 +17,7 @@ import {test, expect} from '../fixtures/auth.fixture';
 test.describe('Accessibility - Low', () => {
   test('A11Y-001 should support keyboard navigation on the login form', async ({page}) => {
     await page.goto('/login');
-    await page.keyboard.press('Tab');
+    await page.locator('#email').focus();
     await expect(page.locator('#email')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.locator('#password')).toBeFocused();

@@ -233,15 +233,6 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'admin',
-    canActivate: [authGuard, roleGuard],
-    data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},
-    loadComponent: () =>
-      import('./pages/admin/admin-dashboard/admin-dashboard.component').then(
-        (m) => m.AdminDashboardComponent,
-      ),
-  },
-  {
     path: 'admin/users',
     canActivate: [authGuard, roleGuard],
     data: {roles: ['SYSTEM_ADMIN']},
@@ -257,6 +248,15 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/admin/disputed-matches/disputed-matches.component').then(
         (m) => m.DisputedMatchesComponent,
+      ),
+  },
+  {
+    path: 'admin',
+    canActivate: [authGuard, roleGuard],
+    data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},
+    loadComponent: () =>
+      import('./pages/admin/admin-dashboard/admin-dashboard.component').then(
+        (m) => m.AdminDashboardComponent,
       ),
   },
   {

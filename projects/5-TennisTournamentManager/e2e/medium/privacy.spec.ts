@@ -44,6 +44,7 @@ test.describe('Privacy and Profile - Medium', () => {
   });
 
   test('PRIV-003 and PRIV-004 should differentiate public and admin visibility on profile routes', async ({participantPage, publicPage, sysAdminPage}) => {
+    await participantPage.goto('/home');
     const userId = await participantPage.evaluate(() => {
       const raw = window.localStorage.getItem('app_user');
       return raw ? JSON.parse(raw).id : '';
