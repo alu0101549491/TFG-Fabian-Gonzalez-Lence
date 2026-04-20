@@ -39,7 +39,7 @@ En el momento de realización de este trabajo se utilizó principalmente la vers
 Su elección para el rol arquitectónico se fundamentó en tres fortalezas claramente observadas: una \textbf{ventana de contexto amplia} que le permitía procesar diagramas de clases completos y especificaciones de requisitos extensas en una única interacción; una \textbf{notable capacidad para generar documentación técnica detallada} ---incluyendo estructuras de directorios, esqueletos de clases y archivos de configuración--- a partir de descripciones en lenguaje natural; y una \textbf{coherencia arquitectónica} que se mantenía consistente a lo largo de conversaciones largas.\\
 
 La tarea concreta asignada a Claude en cada proyecto consistía en, partiendo de las especificaciones de requisitos y los diagramas de clases y casos de uso generados previamente, generar la estructura completa del proyecto: árbol de directorios, ficheros de configuración (package.json, tsconfig.json, vite.config.ts, eslint.config.mjs, jest.config.js, typedoc.json), esqueletos de clases con sus métodos declarados sin implementar, y documentación base (README, ARCHITECTURE).
-El prompt de arquitectura desarrollado para esta fase y detallado en el Capítulo~\ref{chap:Metodologia} incluye instrucciones precisas sobre la pila tecnológica, los patrones de diseño a aplicar y el formato esperado de los artefactos de salida.
+El prompt de arquitectura desarrollado para esta fase y detallado en el Capítulo~\ref{chap:Metodology} incluye instrucciones precisas sobre la pila tecnológica, los patrones de diseño a aplicar y el formato esperado de los artefactos de salida.
 
 \subsection{Mistral} \label{subsec:mistral}
 
@@ -49,7 +49,7 @@ Su elección inicial respondía a su buena relación entre capacidad de generaci
 
 En la práctica, Mistral demostró ser capaz de producir implementaciones funcionales para módulos de complejidad media siguiendo fielmente los diagramas de clases proporcionados.
 No obstante, a medida que los proyectos escalaron en complejidad, se hicieron evidentes sus limitaciones: la gestión del estado entre módulos interdependientes resultaba inconsistente cuando el contexto superaba ciertos límites, y la generación de código para patrones arquitectónicos avanzados ---como la Clean Architecture con inyección de dependencias--- requería iteraciones numerosas y correcciones manuales significativas.
-Estas limitaciones motivaron el cambio de enfoque metodológico descrito en la Sección~\ref{sec:cambio-enfoque}.
+Estas limitaciones motivaron el cambio de enfoque metodológico descrito en la Sección~\ref{sec:approach-change}.
 
 \subsection{GitHub Copilot} \label{subsec:copilot}
 
@@ -151,9 +151,15 @@ Flujo manual no escalable; desplazado por Copilot agente a partir de P4 \\
 \hline
 \textbf{ChatGPT} &
 Apoyo en especificación de requisitos (diseño previo a codificación) &
-P1--P3 (en pequeños arreglos de diseño) &
+P1--P3 &
 Fluidez en texto técnico; familiaridad con convenciones estándar &
 Pérdida de coherencia en conversaciones largas; utilidad decreciente en proyectos complejos \\
+\hline
+\textbf{Google Gemini} &
+Generación de assets gráficos (producción de recursos visuales) &
+P3 &
+Generación de imágenes visualmente coherentes &
+Uso puntual; no integrado en el flujo formal de desarrollo \\
 \hline
 \textbf{Perplexity} &
 Consulta técnica puntual (exploratoria) &
@@ -166,7 +172,4 @@ No integrado en el flujo formal; descartado tras pruebas iniciales \\
 \label{tab:comparativa-modelos}
 \end{table}
 
-Varios patrones emergen de esta comparativa.
-En primer lugar, ningún modelo resultó adecuado para todas las fases: las fortalezas de Claude en razonamiento arquitectónico lo hacen menos adecuado para la ejecución iterativa de tareas de codificación masiva, mientras que la capacidad operativa de Copilot como agente no sustituye la visión de alto nivel que Claude aporta en la fase de diseño.
-En segundo lugar, la modalidad de acceso condiciona fuertemente la elección: la accesibilidad gratuita de Mistral y Qwen resultó suficiente para los proyectos de menor complejidad, pero la escalabilidad del flujo requirió en los proyectos más complejos adoptar herramientas con integración nativa en el entorno de desarrollo.
-En tercer lugar, el rol de Revisor fue el único que se mantuvo estable ---siempre asignado a GitHub Copilot--- a lo largo de todos los proyectos, lo que refleja que la integración con el sistema de ficheros es especialmente crítica en las tareas de revisión, donde el acceso directo al código es imprescindible para producir informes de calidad.\\
+Varios patrones emergen de esta comparativa. En primer lugar, ningún modelo resultó adecuado para todas las fases: las fortalezas de Claude en razonamiento arquitectónico lo hacen menos adecuado para la ejecución iterativa de tareas de codificación masiva, mientras que la capacidad operativa de Copilot como agente no sustituye la visión de alto nivel que Claude aporta en la fase de diseño. En segundo lugar, la modalidad de acceso condiciona fuertemente la elección: la accesibilidad gratuita de Mistral y Qwen resultó suficiente para los proyectos de menor complejidad, pero la escalabilidad del flujo requirió en los proyectos más complejos adoptar herramientas con integración nativa en el entorno de desarrollo. En tercer lugar, el rol de Revisor fue el único que se mantuvo estable ---siempre asignado a GitHub Copilot--- a lo largo de todos los proyectos, lo que refleja que la integración con el sistema de ficheros es especialmente crítica en las tareas de revisión, donde el acceso directo al código es imprescindible para producir informes de calidad.\\
