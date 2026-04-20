@@ -6,6 +6,12 @@
  
 \documentclass[english,a4paper,12pt,oneside]{extreport}
 %\documentclass[a4paper, twoside, 12pt]{book}
+
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{ragged2e}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+
 \usepackage{acronym}
 \usepackage{listingsutf8}
 \usepackage{listings}
@@ -463,7 +469,7 @@ The objective of this work has been ...
 \include{capitulos/Cap3_Introduccion}
 \include{capitulos/Cap4_Modelos_de_IA}
 \include{capitulos/Cap5_Estado_del_Arte}
-\include{capitulos/Cap6_Planificacion}
+\include{capitulos/Cap6_Metodologia}
 \include{capitulos/Cap7_Diseño}
 \include{capitulos/Cap8_Codificacion}
 \include{capitulos/Cap9_Pruebas}
