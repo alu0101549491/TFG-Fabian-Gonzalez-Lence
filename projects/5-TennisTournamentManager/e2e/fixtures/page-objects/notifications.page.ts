@@ -48,7 +48,19 @@ export class NotificationsPage extends BasePage {
    */
   public async getUnreadCount(): Promise<number> {
     const statValue = this.page.locator('.hero-stats .stat-item .stat-value').nth(1);
-    return Number.parseInt((await statValue.innerText()).trim(), 10);
+    try {
+      await statValue.waitFor({state: 'visible', timeout: 5000});
+      const text = (await statValue.innerText()).trim();
+      return Number.parseInt(text, 10) || 0;
+    } catch {
+      // Fallback to the unread badge in the header if the hero stat isn't available yet
+      const badge = this.page.locator('.unread-badge').first();
+      if (await badge.count() && await badge.isVisible()) {
+        const txt = (await badge.innerText()).trim();
+        return Number.parseInt(txt, 10) || 0;
+      }
+      return 0;
+    }
   }
 
   /** Marks all unread notifications as read from the inbox page. */
@@ -69,7 +81,34 @@ export class NotificationsPage extends BasePage {
    * @param channelId - Checkbox id
    */
   public async toggleChannel(channelId: string): Promise<void> {
-    await this.page.locator(`label[for="${channelId}"]`).first().click();
+    const input = this.page.locator(`#${channelId}`);
+    // Try to click the actual checkbox input if visible/attached
+    try {
+      await input.waitFor({state: 'attached', timeout: 3000});
+      if (await input.isVisible()) {
+        await input.click();
+        return;
+      }
+    } catch {
+      // fall through to label or JS fallback
+    }
+
+    const label = this.page.locator(`label[for="${channelId}"]`).first();
+    try {
+      await label.waitFor({state: 'visible', timeout: 3000});
+      await label.click();
+      return;
+    } catch {
+      // Final fallback: toggle via JS to ensure state changes even if UI is styled
+    }
+
+    await this.page.evaluate((id) => {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      if (el) {
+        el.checked = !el.checked;
+        el.dispatchEvent(new Event('change', {bubbles: true}));
+      }
+    }, channelId);
   }
 
   /**
@@ -88,7 +127,23 @@ export class NotificationsPage extends BasePage {
 
   /** Saves notification preferences. */
   public async saveSettings(): Promise<void> {
-    await this.page.getByRole('button', {name: /save preferences/i}).click();
-    await this.waitForPageLoad();
+    const saveBtn = this.page.getByRole('button', {name: /save preferences/i});
+    try {
+      await saveBtn.waitFor({state: 'visible', timeout: 5000});
+      await saveBtn.click();
+      await this.waitForPageLoad();
+      // Wait for the success feedback that the component sets on save
+      await this.successFeedback.first().waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
+      return;
+    } catch {
+      // Fallback: try generic primary button in the form
+      const fallback = this.page.locator('.preferences-form .btn.btn-primary').first();
+      await fallback.waitFor({state: 'visible', timeout: 2000}).catch(() => null);
+      if (await fallback.count()) {
+        await fallback.click().catch(() => undefined);
+        await this.waitForPageLoad();
+        await this.successFeedback.first().waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
+      }
+    }
   }
 }

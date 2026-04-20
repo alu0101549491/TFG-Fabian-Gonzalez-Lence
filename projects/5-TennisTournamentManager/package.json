@@ -16,7 +16,8 @@
     "test:e2e:report": "playwright show-report",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "db:reset-and-seed": "psql $TEST_DATABASE_URL -f ./scripts/reset-and-seed.sql"
   },
   "keywords": [
     "tennis",

@@ -12,7 +12,8 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {writeFile} from 'node:fs/promises';
+import {writeFile, readdir, readFile} from 'node:fs/promises';
+import path from 'node:path';
 import {type APIRequestContext, request} from '@playwright/test';
 
 /** Minimal authenticated user payload returned by the backend auth endpoints. */
@@ -99,7 +100,82 @@ export class ApiHelper {
    * @returns Auth session returned by the backend
    */
   public async login(credentials: Credentials): Promise<AuthSession> {
+    // First, attempt to reuse any precomputed Playwright storage-state files
+    // created by the global setup. This avoids triggering concurrent /auth/login
+    // requests from parallel workers which can hit backend rate limits.
+    const cached = await this.loadSessionFromAuthFilesByEmail(credentials.email);
+    if (cached) return cached;
+
     return this.post<AuthSession>('/auth/login', credentials, undefined, 200);
+  }
+
+  /**
+   * Attempts to locate a persisted Playwright storage-state file under
+   * `e2e/.auth` matching the supplied email and reconstruct an AuthSession
+   * from its localStorage entries. Returns null when no match is found.
+   */
+  private async loadSessionFromAuthFilesByEmail(email: string): Promise<AuthSession | null> {
+    try {
+      const authDir = path.resolve(process.cwd(), 'e2e', '.auth');
+      const files = await readdir(authDir).catch(() => [] as string[]);
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        const content = await readFile(path.join(authDir, file), 'utf8').catch(() => null);
+        if (!content) continue;
+        let parsed: any;
+        try {
+          parsed = JSON.parse(content);
+        } catch {
+          continue;
+        }
+
+        const origins = Array.isArray(parsed.origins) ? parsed.origins : [];
+        for (const origin of origins) {
+          const localStorage = Array.isArray(origin.localStorage) ? origin.localStorage : [];
+          const appUser = localStorage.find((e: any) => e && e.name === 'app_user');
+          const token = localStorage.find((e: any) => e && e.name === 'tennis_jwt_token');
+            if (appUser && token) {
+              try {
+                const user = JSON.parse(String(appUser.value));
+                const tokenValue = String(token.value);
+
+                // If the token is a JWT, try to decode expiry and avoid returning
+                // expired tokens (adds a small safety margin).
+                const parts = tokenValue.split('.');
+                if (parts.length === 3) {
+                  try {
+                    const payload = parts[1];
+                    let padded = payload.replace(/-/g, '+').replace(/_/g, '/');
+                    while (padded.length % 4) padded += '=';
+                    const decoded = Buffer.from(padded, 'base64').toString('utf8');
+                    const parsed = JSON.parse(decoded);
+                    const exp = parsed.exp as number | undefined;
+                    if (typeof exp === 'number') {
+                      const now = Math.floor(Date.now() / 1000);
+                      // consider token expired if within 15s of expiry
+                      if (exp < now + 15) {
+                        // token is expired or about to expire; skip this file
+                        continue;
+                      }
+                    }
+                  } catch {
+                    // ignore decode errors and proceed
+                  }
+                }
+
+                if (user && user.email === email) {
+                  return {token: tokenValue, user} as AuthSession;
+                }
+              } catch {
+                // continue searching
+              }
+            }
+        }
+      }
+    } catch {
+      // ignore any FS errors and fallback to normal login
+    }
+    return null;
   }
 
   /**
@@ -136,16 +212,35 @@ export class ApiHelper {
     token?: string,
     expectedStatus: number = 201,
   ): Promise<T> {
-    const response = await this.apiContext.post(ApiHelper.withApiPrefix(path), {
-      data: body,
-      headers: token ? {Authorization: `Bearer ${token}`} : undefined,
-    });
+    const maxRetries = 4;
+    const baseDelay = 200; // ms
 
-    if (response.status() !== expectedStatus) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const response = await this.apiContext.post(ApiHelper.withApiPrefix(path), {
+        data: body,
+        headers: token ? {Authorization: `Bearer ${token}`} : undefined,
+      });
+
+      if (response.status() === expectedStatus) {
+        return this.parseJson<T>(response);
+      }
+
+      // Retry on 429 (rate limiting) with exponential backoff
+      if (response.status() === 429 && attempt < maxRetries) {
+        // Add a small random jitter to avoid thundering-herd retries across workers
+        const jitter = Math.floor(Math.random() * baseDelay);
+        const delay = baseDelay * Math.pow(2, attempt) + jitter;
+        // eslint-disable-next-line no-await-in-loop
+        await ApiHelper.sleep(delay);
+        // try again
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
       throw new Error(`POST ${path} failed with ${response.status()}: ${await response.text()}`);
     }
 
-    return this.parseJson<T>(response);
+    throw new Error(`POST ${path} failed after ${maxRetries} retries`);
   }
 
   /**
@@ -238,6 +333,13 @@ export class ApiHelper {
   private async parseJson<T>(response: Awaited<ReturnType<APIRequestContext['fetch']>>): Promise<T> {
     const body = await response.text();
     return body ? JSON.parse(body) as T : ({} as T);
+  }
+
+  /**
+   * Simple sleep helper for retry backoff.
+   */
+  private static sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**

@@ -127,16 +127,30 @@ async function apiPost<T>(
   token?: string,
   expectedStatus: number = 201,
 ): Promise<T> {
-  const response = await apiContext.post(withApiPrefix(path), {
-    data,
-    headers: token ? {Authorization: `Bearer ${token}`} : undefined,
-  });
+  const maxRetries = 4;
+  const baseDelay = 200; // ms
 
-  if (response.status() !== expectedStatus) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await apiContext.post(withApiPrefix(path), {
+      data,
+      headers: token ? {Authorization: `Bearer ${token}`} : undefined,
+    });
+
+    if (response.status() === expectedStatus) {
+      return parseJson<T>(response);
+    }
+
+    if (response.status() === 429 && attempt < maxRetries) {
+      const delay = baseDelay * Math.pow(2, attempt);
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(resolve => setTimeout(resolve, delay));
+      continue;
+    }
+
     throw new Error(`POST ${path} failed with ${response.status()}: ${await response.text()}`);
   }
 
-  return parseJson<T>(response);
+  throw new Error(`POST ${path} failed after ${maxRetries} retries`);
 }
 
 /**
