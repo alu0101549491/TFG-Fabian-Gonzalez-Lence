@@ -1,0 +1,56 @@
+{
+  "playwright.workspaceSettings": {
+    "configs": [
+      {
+        "relativeConfigFile": "projects/4-CartographicProjectManager/playwright.config.ts",
+        "selected": false,
+        "enabled": true,
+        "projects": [
+          {
+            "name": "chromium",
+            "enabled": true
+          },
+          {
+            "name": "firefox",
+            "enabled": true
+          },
+          {
+            "name": "webkit",
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "relativeConfigFile": "projects/5-TennisTournamentManager/playwright.config.ts",
+        "selected": true,
+        "enabled": true,
+        "projects": [
+          {
+            "name": "chromium",
+            "enabled": true
+          },
+          {
+            "name": "firefox",
+            "enabled": true
+          },
+          {
+            "name": "webkit",
+            "enabled": true
+          },
+          {
+            "name": "mobile-chrome",
+            "enabled": true
+          },
+          {
+            "name": "mobile-safari",
+            "enabled": true
+          },
+          {
+            "name": "tablet",
+            "enabled": true
+          }
+        ]
+      }
+    ]
+  }
+}

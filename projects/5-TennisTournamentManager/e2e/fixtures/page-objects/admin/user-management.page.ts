@@ -1,0 +1,87 @@
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since April 20, 2026
+ * @file e2e/fixtures/page-objects/admin/user-management.page.ts
+ * @desc System-admin user-management page object.
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
+ */
+
+import {expect, type Page} from '@playwright/test';
+import {BasePage} from '../base.page';
+
+/** Page object for `/admin/users`. */
+export class UserManagementPage extends BasePage {
+  public readonly url = '/admin/users';
+
+  public constructor(page: Page) {
+    super(page);
+  }
+
+  /** Searches the user table. */
+  public async search(query: string): Promise<void> {
+    await this.page.getByRole('searchbox').fill(query);
+  }
+
+  /**
+   * Filters by role.
+   *
+   * @param roleValue - Raw role enum value
+   */
+  public async filterByRole(roleValue: string): Promise<void> {
+    await this.page.getByLabel(/filter by role/i).selectOption(roleValue);
+  }
+
+  /**
+   * Creates a new user from the modal form.
+   *
+   * @param values - Create-user form values
+   */
+  public async createUser(values: {
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    phone?: string;
+    password: string;
+  }): Promise<void> {
+    await this.page.getByRole('button', {name: /new user/i}).click();
+    await this.page.locator('#username').fill(values.username);
+    await this.page.locator('#email').fill(values.email);
+    await this.page.locator('#firstName').fill(values.firstName);
+    await this.page.locator('#lastName').fill(values.lastName);
+    await this.page.locator('#role').selectOption(values.role);
+    if (values.phone) {
+      await this.page.locator('#phone').fill(values.phone);
+    }
+    await this.page.locator('#password').fill(values.password);
+    await this.page.getByRole('button', {name: /create new user|create user/i}).click();
+    await this.waitForPageLoad();
+  }
+
+  /** Opens the first matching edit action in the user table. */
+  public async editFirstVisibleUser(): Promise<void> {
+    await this.page.getByRole('button', {name: /edit/i}).first().click();
+  }
+
+  /** Deletes the first deletable visible user. */
+  public async deleteFirstVisibleUser(): Promise<void> {
+    await this.page.getByRole('button', {name: /delete/i}).first().click();
+    await this.waitForPageLoad();
+  }
+
+  /**
+   * Asserts that the user list contains a given identifier.
+   *
+   * @param text - Username, name, or email text
+   */
+  public async expectUserVisible(text: string): Promise<void> {
+    await expect(this.page.locator('.users-table').filter({hasText: text})).toBeVisible();
+  }
+}
