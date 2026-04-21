@@ -6,10 +6,9 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since April 12, 2026
- * @file src/infrastructure/services/partner-invitation.service.ts
+ * @file infrastructure/services/partner-invitation.service.ts
  * @desc Frontend service for partner invitation API calls
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
- * @see {@link https://typescripttutorial.net}
  */
 
 import {Injectable, signal, inject} from '@angular/core';
