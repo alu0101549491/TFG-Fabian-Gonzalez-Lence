@@ -6,9 +6,10 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts
+ * @file src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts
  * @desc Tournament detail view with tabs for info, categories, brackets, and order of play.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, HostListener, inject, signal, computed, effect} from '@angular/core';
@@ -197,6 +198,43 @@ export class TournamentDetailComponent implements OnInit {
   public isProfileComplete = computed(() => {
     const user = this.authStateService.getCurrentUser();
     return user?.idDocument && user.idDocument.trim().length > 0;
+  });
+
+  /**
+   * Checks if tournament registration deadline has passed.
+   * Returns true only if:
+   * 1. registrationCloseDate is explicitly set, AND
+   * 2. Current date is after registrationCloseDate, AND
+   * 3. registrationCloseDate is meaningfully before the tournament start (not same day)
+   */
+  public isRegistrationClosed = computed(() => {
+    const tournament = this.tournament();
+    if (!tournament?.registrationCloseDate) return false;
+    
+    const now = new Date();
+    const deadline = new Date(tournament.registrationCloseDate);
+    const startDate = new Date(tournament.startDate);
+    
+    // Don't enforce deadline if it's on or after the tournament start date
+    // (this handles cases where deadline wasn't properly configured)
+    if (deadline >= startDate) return false;
+    
+    // Only show as closed if we're past the deadline
+    return now > deadline;
+  });
+
+  /**
+   * Formats registration deadline for display.
+   */
+  public formatRegistrationDeadline = computed(() => {
+    const tournament = this.tournament();
+    if (!tournament?.registrationCloseDate) return null;
+    
+    return new Date(tournament.registrationCloseDate).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+    });
   });
 
   /** Categories loading state for refresh */
@@ -586,6 +624,12 @@ export class TournamentDetailComponent implements OnInit {
     if (!user) {
       // This should not happen as UI hides register button for unauthenticated users
       alert('Please log in first to register for tournaments');
+      return;
+    }
+
+    // Check if registration deadline has passed
+    if (this.isRegistrationClosed()) {
+      alert(`Registration deadline has passed (${this.formatRegistrationDeadline()}). Registrations are no longer accepted.`);
       return;
     }
 

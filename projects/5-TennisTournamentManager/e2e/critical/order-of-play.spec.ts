@@ -28,24 +28,18 @@ async function createSeedContext(): Promise<{
   participant2Id: string;
 }> {
   const apiHelper = await ApiHelper.create();
-  // Prefer cached persisted sessions from e2e/.auth to avoid concurrent
-  // login storms against the backend. Fall back to performing a login
-  // request only when no valid cached session is available.
-  const adminSession = (await apiHelper.getCachedSession(TEST_USERS.tournamentAdmin1.email)) ??
-    await apiHelper.login({
-      email: TEST_USERS.tournamentAdmin1.email,
-      password: TEST_USERS.tournamentAdmin1.password,
-    });
-  const participant1Session = (await apiHelper.getCachedSession(TEST_USERS.participant1.email)) ??
-    await apiHelper.login({
-      email: TEST_USERS.participant1.email,
-      password: TEST_USERS.participant1.password,
-    });
-  const participant2Session = (await apiHelper.getCachedSession(TEST_USERS.participant2.email)) ??
-    await apiHelper.login({
-      email: TEST_USERS.participant2.email,
-      password: TEST_USERS.participant2.password,
-    });
+  const adminSession = await apiHelper.login({
+    email: TEST_USERS.tournamentAdmin1.email,
+    password: TEST_USERS.tournamentAdmin1.password,
+  });
+  const participant1Session = await apiHelper.login({
+    email: TEST_USERS.participant1.email,
+    password: TEST_USERS.participant1.password,
+  });
+  const participant2Session = await apiHelper.login({
+    email: TEST_USERS.participant2.email,
+    password: TEST_USERS.participant2.password,
+  });
 
   return {
     apiHelper,

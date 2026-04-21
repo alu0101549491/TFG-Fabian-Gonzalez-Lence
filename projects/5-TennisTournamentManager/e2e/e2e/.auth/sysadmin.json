@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:4200",
+      "localStorage": [
+        {
+          "name": "tennis_jwt_token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl80MWYyMDU1ZCIsImVtYWlsIjoiYWRtaW5AdGVubmlzdG91cm5hbWVudC5jb20iLCJyb2xlIjoiU1lTVEVNX0FETUlOIiwiaWF0IjoxNzc2NzAzNjg2LCJleHAiOjE3NzY3MDU0ODZ9.aXC96Z4kL-HuiNSMQ2hwh0XOJ0D5tMvacdYYV3EmwoI"
+        },
+        {
+          "name": "app_user",
+          "value": "{\"id\":\"usr_41f2055d\",\"email\":\"admin@tennistournament.com\",\"username\":\"admin\",\"firstName\":\"System\",\"lastName\":\"Administrator\",\"phone\":\"+34600000001\",\"idDocument\":null,\"ranking\":null,\"role\":\"SYSTEM_ADMIN\"}"
+        }
+      ]
+    }
+  ]
+}

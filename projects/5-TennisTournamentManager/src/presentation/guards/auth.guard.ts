@@ -24,11 +24,7 @@ export const authGuard: CanActivateFn = () => {
   const authState = inject(AuthStateService);
   const router = inject(Router);
 
-  // Require both a valid token and an in-memory current user to consider the
-  // session authenticated. This prevents routes from activating when a token
-  // is present but the application has not hydrated the user (e.g. during
-  // teardown/rehydration races or service-worker-driven re-inserts).
-  if (authState.isAuthenticated() && authState.getCurrentUser()) {
+  if (authState.isAuthenticated()) {
     return true;
   }
 

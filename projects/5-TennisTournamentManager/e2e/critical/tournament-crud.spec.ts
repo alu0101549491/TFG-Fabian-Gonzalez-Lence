@@ -66,8 +66,7 @@ test.describe('Tournament CRUD - Critical', () => {
       createdTournamentId = tournaments.find((tournament) => tournament.name === uniqueName)?.id ?? null;
     } finally {
       if (createdTournamentId) {
-        const adminSession = (await apiHelper.getCachedSession(TEST_USERS.tournamentAdmin1.email)) ??
-          await apiHelper.login(TEST_USERS.tournamentAdmin1);
+        const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
         await apiHelper.delete(`/tournaments/${createdTournamentId}`, adminSession.token, true);
       }
       await apiHelper.dispose();
@@ -76,8 +75,7 @@ test.describe('Tournament CRUD - Critical', () => {
 
   test('TOURN-003 should edit an existing tournament', async ({tournamentAdminPage}) => {
     const apiHelper = await ApiHelper.create();
-    const adminSession = (await apiHelper.getCachedSession(TEST_USERS.tournamentAdmin1.email)) ??
-      await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     const seedHelper = new SeedHelper(apiHelper, adminSession);
     const seeded = await seedHelper.createTournament(`Editable Tournament ${Date.now()}`);
 
@@ -105,8 +103,7 @@ test.describe('Tournament CRUD - Critical', () => {
 
   test('TOURN-006 should filter tournament list without cross-contaminating results', async ({publicPage}) => {
     const apiHelper = await ApiHelper.create();
-    const adminSession = (await apiHelper.getCachedSession(TEST_USERS.tournamentAdmin1.email)) ??
-      await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     const seedHelper = new SeedHelper(apiHelper, adminSession);
     const activeKnockoutName = `Active Knockout Tournament ${Date.now()}`;
     const activeRoundRobinName = `Active Round Robin Tournament ${Date.now()}`;

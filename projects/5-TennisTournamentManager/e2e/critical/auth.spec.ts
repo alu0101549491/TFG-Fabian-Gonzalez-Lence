@@ -16,74 +16,26 @@ import {test, expect} from '../fixtures/auth.fixture';
 import {LoginPage} from '../fixtures/page-objects/login.page';
 import {DashboardPage} from '../fixtures/page-objects/dashboard.page';
 import {TEST_USERS} from '../fixtures/test-data';
-import {ApiHelper} from '../helpers/api.helper';
-import path from 'node:path';
-import {access} from 'node:fs/promises';
 
 test.describe('Authentication - Critical', () => {
-  test('AUTH-001 should login with valid role credentials', async ({browser}) => {
+  test('AUTH-001 should login with valid role credentials', async ({page}) => {
     const cases = [
       TEST_USERS.sysAdmin,
       TEST_USERS.tournamentAdmin1,
       TEST_USERS.participant1,
     ];
 
-    const apiHelper = await ApiHelper.create();
-    try {
-      for (const user of cases) {
-        // Debug hint to identify which user is being validated in CI logs
-        // eslint-disable-next-line no-console
-        console.log('[AUTH-001] verifying user', user.email);
+    for (const user of cases) {
+      const loginPage = new LoginPage(page);
+      await loginPage.goto();
+      await loginPage.login(user.email, user.password);
+      await expect(page).toHaveURL(/\/home$/);
+      await expect(page.locator('header.app-header')).toBeVisible();
+      await expect(page.locator('.user-menu-toggle')).toBeVisible();
 
-        // Prefer precomputed storage-state files under e2e/.auth when available
-        const authDir = path.resolve(process.cwd(), 'e2e', '.auth');
-        const candidate = path.join(authDir, `${user.email.replace(/[@.]/g, '_')}.json`);
-        let contextUserPage: {context: any; page: any} | null = null;
-
-        // Prefer cached storage-state files when available to avoid login storms.
-        const session = (await apiHelper.getCachedSession(user.email)) ?? await apiHelper.login(user);
-        const storageState = apiHelper.buildStorageState(session);
-        const ctx = await browser.newContext({storageState});
-        const pg = await ctx.newPage();
-        // One-time: ensure localStorage keys are present on the created page only.
-        // Using page.evaluate avoids persisting init scripts across navigations/contexts.
-        try {
-          await pg.evaluate((t, u) => {
-            try {
-              window.localStorage.setItem('tennis_jwt_token', t);
-              window.localStorage.setItem('app_user', JSON.stringify(u));
-            } catch {
-              // ignore
-            }
-          }, session.token, session.user);
-        } catch {
-          // ignore evaluation errors
-        }
-        contextUserPage = {context: ctx, page: pg};
-
-        const {context, page} = contextUserPage as {context: any; page: any};
-        try {
-          await page.goto('/home');
-          // Debug: confirm the seeded token exists after navigation
-          try {
-            const tokenPresentAfterNav = await page.evaluate(() => !!localStorage.getItem('tennis_jwt_token')).catch(() => false);
-            // eslint-disable-next-line no-console
-            console.log('[AUTH-001] token present in page after navigation for', user.email, tokenPresentAfterNav);
-          } catch {
-            // ignore
-          }
-          await expect(page).toHaveURL(/\/home$/);
-          await expect(page.locator('header.app-header')).toBeVisible();
-
-          const dashboardPage = new DashboardPage(page);
-          await dashboardPage.logout();
-          await expect(page).toHaveURL(/\/login/);
-        } finally {
-          await context.close();
-        }
-      }
-    } finally {
-      await apiHelper.dispose();
+      const dashboardPage = new DashboardPage(page);
+      await dashboardPage.logout();
+      await expect(page).toHaveURL(/\/login/);
     }
   });
 
@@ -117,12 +69,10 @@ test.describe('Authentication - Critical', () => {
     await dashboardPage.logout();
 
     await expect(participantPage).toHaveURL(/\/login/);
+    expect(await participantPage.evaluate(() => localStorage.getItem('tennis_jwt_token'))).toBeNull();
+    expect(await participantPage.evaluate(() => localStorage.getItem('app_user'))).toBeNull();
 
-    // Some frontend shells reinstate client-side tokens from other sources
-    // (cookies, service workers) during navigation. The important contract is
-    // that protected routes require authentication. Verify the user cannot
-    // access a protected route after logout instead of relying on a strict
-    // localStorage mutation which can be environment-dependent.
+    await participantPage.goBack();
     await participantPage.goto('/profile');
     await expect(participantPage).toHaveURL(/\/login/);
   });

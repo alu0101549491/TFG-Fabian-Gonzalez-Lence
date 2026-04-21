@@ -13,7 +13,6 @@
  */
 
 import {expect, request, test, type APIRequestContext, type Browser, type BrowserContext, type Page} from '@playwright/test';
-import {ApiHelper} from './helpers/api.helper';
 
 const API_BASE_URL = process.env.PLAYWRIGHT_API_BASE_URL ?? 'http://localhost:3000';
 const ADMIN_EMAIL = process.env.PLAYWRIGHT_ADMIN_EMAIL ?? 'admin@tennistournament.com';
@@ -218,12 +217,7 @@ async function loginUser(
   email: string,
   password: string,
 ): Promise<AuthSession> {
-  const helper = await ApiHelper.create();
-  try {
-    return await helper.login({email, password});
-  } finally {
-    await helper.dispose();
-  }
+  return apiPost<AuthSession>(apiContext, '/auth/login', {email, password}, undefined, 200);
 }
 
 /**

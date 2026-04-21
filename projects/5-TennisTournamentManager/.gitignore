@@ -37,4 +37,3 @@ playwright-report/
 test-results/
 .auth/
 e2e/.auth
-e2e/e2e/.auth

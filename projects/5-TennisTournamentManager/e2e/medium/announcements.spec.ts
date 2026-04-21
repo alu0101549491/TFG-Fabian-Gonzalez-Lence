@@ -27,8 +27,7 @@ let seededAnnouncementTitle = '';
 test.describe('Announcements - Medium', () => {
   test.beforeAll(async () => {
     apiHelper = await ApiHelper.create();
-    const adminSession = (await apiHelper.getCachedSession(TEST_USERS.tournamentAdmin1.email)) ??
-      await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     seedHelper = new SeedHelper(apiHelper, adminSession);
 
     const tournament = await seedHelper.createTournament(`E2E Announcements ${Date.now()}`);

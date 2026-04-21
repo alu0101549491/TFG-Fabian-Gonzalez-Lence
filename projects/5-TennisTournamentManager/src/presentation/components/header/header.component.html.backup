@@ -1,0 +1,58 @@
+<header class="app-header">
+  <div class="header-container">
+    <!-- Logo / Brand -->
+    <div class="header-brand">
+      <a routerLink="/home" class="brand-link">
+        <span class="brand-icon">🎾</span>
+        <span class="brand-text">Tennis TM</span>
+      </a>
+    </div>
+
+    <!-- User Actions -->
+    <div class="header-actions">
+      @if (isAuthenticated) {
+        <!-- Notification Bell -->
+        <app-notification-bell></app-notification-bell>
+
+        <!-- User Menu Dropdown -->
+        <div class="dropdown">
+          <button class="user-menu-toggle dropdown-toggle" type="button">
+            <span class="user-avatar">
+              {{ userInitials }}
+            </span>
+            <span class="user-name">{{ username }}</span>
+          </button>
+          <ul class="dropdown-menu">
+            <li>
+              <a routerLink="/profile" class="dropdown-item">
+                👤 My Profile
+              </a>
+            </li>
+            <li>
+              <a routerLink="/privacy" class="dropdown-item">
+                🔒 Privacy Settings
+              </a>
+            </li>
+            <li>
+              <a routerLink="/notifications" class="dropdown-item">
+                🔔 Notifications
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <button class="dropdown-item" (click)="logout()">
+                🚪 Logout
+              </button>
+            </li>
+          </ul>
+        </div>
+      } @else {
+        <!-- Guest Actions -->
+        <div class="header-auth-buttons">
+          <a routerLink="/login" class="btn btn-ghost btn-sm">Login</a>
+          <a routerLink="/register" class="btn btn-primary btn-sm">Sign Up</a>
+        </div>
+      }
+    </div>
+  </div>
+</header>

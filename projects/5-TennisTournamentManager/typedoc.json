@@ -1,0 +1,27 @@
+{
+  "entryPoints": ["./src"],
+  "entryPointStrategy": "expand",
+  "out": "./docs/api",
+  "exclude": ["**/*.test.ts", "**/__tests__/**", "**/__mocks__/**"],
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "excludeInternal": false,
+  "name": "Tennis Tournament Manager - API Documentation",
+  "includeVersion": true,
+  "readme": "./README.md",
+  "plugin": [],
+  "theme": "default",
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Domain",
+    "Application",
+    "Infrastructure",
+    "Presentation",
+    "*"
+  ],
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  }
+}

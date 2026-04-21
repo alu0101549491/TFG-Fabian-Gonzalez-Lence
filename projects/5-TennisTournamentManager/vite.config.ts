@@ -7,12 +7,11 @@
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 16, 2026
  * @file vite.config.ts
- * @desc Vite configuration with Angular support via Analog plugin.
+ * @desc Vite configuration using plain Vite, esbuild decorator support, and raw/inline asset imports for standalone Angular components.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
 import {defineConfig} from 'vite';
-// import angular from '@analogjs/vite-plugin-angular';
 import {resolve} from 'path';
 
 export default defineConfig(({mode}) => {
@@ -22,10 +21,7 @@ export default defineConfig(({mode}) => {
     : '/';
 
   return {
-    plugins: [
-      // Angular plugin disabled - causes empty file serving issue
-      // PhaseManagementComponent uses inline template instead
-    ],
+    plugins: [],
     esbuild: {
       tsconfigRaw: {
         compilerOptions: {
