@@ -6,10 +6,9 @@
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
  * @since March 17, 2026
- * @file src/presentation/pages/tournaments/tournament-list/tournament-list.component.ts
+ * @file presentation/pages/tournaments/tournament-list/tournament-list.component.ts
  * @desc Displays a paginated list of tournaments with filtering and sorting.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
- * @see {@link https://typescripttutorial.net}
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';
