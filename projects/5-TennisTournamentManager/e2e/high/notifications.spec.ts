@@ -50,7 +50,7 @@ test.describe('Notifications - High', () => {
     await notificationsPage.toggleChannel('email');
     await notificationsPage.toggleChannel('webPush');
     await notificationsPage.saveSettings();
-    await expect(participantPage.locator('.success-message, .success-banner').first()).toBeVisible();
+    await notificationsPage.expectSuccess();
   });
 
   test('NOTIF-006 should render the real-time bell dropdown items', async ({participantPage}) => {

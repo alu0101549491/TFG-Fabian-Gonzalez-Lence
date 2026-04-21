@@ -33,6 +33,34 @@ export interface PushSubscriptionData {
  * Handles VAPID authentication, notification formatting, and delivery.
  */
 export class WebPushService {
+  /** Whether the Web Push service is enabled (valid VAPID keys). */
+  private enabled = false;
+
+  /**
+   * Normalize a base64url string and convert to a Buffer. Returns empty buffer on failure.
+   */
+  private base64UrlToBuffer(value: string): Buffer {
+    try {
+      let s = value.replace(/-/g, '+').replace(/_/g, '/');
+      const pad = s.length % 4;
+      if (pad === 2) s += '==';
+      else if (pad === 3) s += '=';
+      else if (pad === 1) return Buffer.alloc(0);
+      return Buffer.from(s, 'base64');
+    } catch {
+      return Buffer.alloc(0);
+    }
+  }
+
+  private isValidPublicKey(key: string): boolean {
+    const buf = this.base64UrlToBuffer(key);
+    return buf.length === 65;
+  }
+
+  private isValidPrivateKey(key: string): boolean {
+    const buf = this.base64UrlToBuffer(key);
+    return buf.length === 32 || buf.length === 48 || buf.length > 0; // be permissive but avoid obvious garbage
+  }
   /**
    * Initializes the web push service with VAPID keys from config.
    * Sets up web-push library with subject and VAPID details.
@@ -50,9 +78,15 @@ export class WebPushService {
   private initializeWebPush(): void {
     try {
       const {publicKey, privateKey} = config.webPush;
-
       if (!publicKey || !privateKey) {
         console.log('⚠️ Web Push VAPID keys not configured - Web Push notifications disabled');
+        this.enabled = false;
+        return;
+      }
+
+      if (!this.isValidPublicKey(publicKey) || !this.isValidPrivateKey(privateKey)) {
+        console.warn('⚠️ Web Push VAPID keys appear invalid or malformed - Web Push disabled');
+        this.enabled = false;
         return;
       }
 
@@ -62,8 +96,10 @@ export class WebPushService {
         privateKey,
       );
 
+      this.enabled = true;
       console.log('✅ Web Push service initialized successfully');
     } catch (error) {
+      this.enabled = false;
       console.error('❌ Failed to initialize Web Push service:', error);
     }
   }
@@ -85,6 +121,11 @@ export class WebPushService {
     message: string,
     metadata?: Record<string, unknown>,
   ): Promise<void> {
+    if (!this.enabled) {
+      console.warn('WebPushService disabled - skipping push send');
+      return;
+    }
+
     try {
       const emoji = this.getNotificationEmoji(type);
       const actionUrl = this.getActionUrl(type, metadata);
@@ -204,14 +245,6 @@ export class WebPushService {
    * @returns True if VAPID keys are configured
    */
   public verifyConfiguration(): boolean {
-    const {publicKey, privateKey} = config.webPush;
-
-    if (!publicKey || !privateKey) {
-      console.log('⚠️ Web Push VAPID keys not configured');
-      return false;
-    }
-
-    console.log('✅ Web Push configuration valid');
-    return true;
+    return this.enabled && !!config.webPush.publicKey && !!config.webPush.privateKey;
   }
 }

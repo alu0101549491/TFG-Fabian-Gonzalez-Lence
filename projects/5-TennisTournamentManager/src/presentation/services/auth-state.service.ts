@@ -42,6 +42,10 @@ export class AuthStateService {
     
     if (userJson) {
       try {
+        // eslint-disable-next-line no-console
+        console.log('[AuthState] restoreUser found user in localStorage');
+      } catch {}
+      try {
         this.currentUser = JSON.parse(userJson);
       } catch (error) {
         console.error('[AuthState] Failed to restore user from localStorage:', error);
@@ -77,6 +81,11 @@ export class AuthStateService {
     // Store user in memory and localStorage
     this.currentUser = user;
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    // Debugging aid for E2E: log that auth was set
+    try {
+      // eslint-disable-next-line no-console
+      console.log('[AuthState] setAuth called, token present:', !!localStorage.getItem(JWT_STORAGE_KEY), 'user:', user?.email);
+    } catch {}
   }
 
   /**
@@ -134,6 +143,11 @@ export class AuthStateService {
    */
   public clearAuth(): void {
     // Remove token from localStorage
+    try {
+      // eslint-disable-next-line no-console
+      console.log('[AuthState] clearAuth called, before:', { token: localStorage.getItem(JWT_STORAGE_KEY), user: localStorage.getItem(USER_STORAGE_KEY) });
+    } catch {}
+
     localStorage.removeItem(JWT_STORAGE_KEY);
     
     // Remove user from localStorage
@@ -141,5 +155,10 @@ export class AuthStateService {
     
     // Clear user from memory
     this.currentUser = null;
+
+    try {
+      // eslint-disable-next-line no-console
+      console.log('[AuthState] clearAuth completed, after:', { token: localStorage.getItem(JWT_STORAGE_KEY), user: localStorage.getItem(USER_STORAGE_KEY) });
+    } catch {}
   }
 }

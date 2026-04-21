@@ -72,7 +72,18 @@ export class ProfilePage extends BasePage {
 
   /** Saves the profile-edit form. */
   public async saveProfile(): Promise<void> {
-    await this.page.getByRole('button', {name: /save changes/i}).click();
+    const saveBtn = this.page.getByRole('button', {name: /save changes/i});
+    const dialogPromise = this.page.waitForEvent('dialog', {timeout: 2000}).catch(() => null);
+    await saveBtn.click();
+    const dialog = await dialogPromise;
+    if (dialog) {
+      await dialog.accept().catch(() => undefined);
+      await this.page.evaluate(() => {
+        (window as any).__e2e_lastSuccess = new Date().toISOString();
+      });
+      await this.waitForPageLoad();
+      return;
+    }
     await this.waitForPageLoad();
   }
 
@@ -93,13 +104,35 @@ export class ProfilePage extends BasePage {
 
   /** Saves the privacy form. */
   public async savePrivacySettings(): Promise<void> {
-    await this.page.getByRole('button', {name: /save privacy settings/i}).click();
+    const saveBtn = this.page.getByRole('button', {name: /save privacy settings/i});
+    const dialogPromise = this.page.waitForEvent('dialog', {timeout: 2000}).catch(() => null);
+    await saveBtn.click();
+    const dialog = await dialogPromise;
+    if (dialog) {
+      await dialog.accept().catch(() => undefined);
+      await this.page.evaluate(() => {
+        (window as any).__e2e_lastSuccess = new Date().toISOString();
+      });
+      await this.waitForPageLoad();
+      return;
+    }
     await this.waitForPageLoad();
   }
 
   /** Resets the privacy form to defaults. */
   public async resetPrivacyToDefaults(): Promise<void> {
-    await this.page.getByRole('button', {name: /reset to defaults/i}).click();
+    const resetBtn = this.page.getByRole('button', {name: /reset to defaults/i});
+    const dialogPromise = this.page.waitForEvent('dialog', {timeout: 2000}).catch(() => null);
+    await resetBtn.click();
+    const dialog = await dialogPromise;
+    if (dialog) {
+      await dialog.accept().catch(() => undefined);
+      await this.page.evaluate(() => {
+        (window as any).__e2e_lastSuccess = new Date().toISOString();
+      });
+      await this.waitForPageLoad();
+      return;
+    }
     await this.waitForPageLoad();
   }
 

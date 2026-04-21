@@ -354,7 +354,15 @@ export class HeaderComponent {
    */
   public logout(): void {
     this.isDropdownOpen = false;
+    try {
+      // eslint-disable-next-line no-console
+      console.log('[Header] logout() invoked');
+    } catch {}
     this.authStateService.clearAuth();
+    try {
+      // eslint-disable-next-line no-console
+      console.log('[Header] logout() completed');
+    } catch {}
     void this.router.navigate(['/login']);
   }
 }

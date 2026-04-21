@@ -12,7 +12,7 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {writeFile, readdir, readFile} from 'node:fs/promises';
+import {writeFile, readdir, readFile, mkdir, access, unlink} from 'node:fs/promises';
 import path from 'node:path';
 import {type APIRequestContext, request} from '@playwright/test';
 
@@ -104,8 +104,102 @@ export class ApiHelper {
     // created by the global setup. This avoids triggering concurrent /auth/login
     // requests from parallel workers which can hit backend rate limits.
     const cached = await this.loadSessionFromAuthFilesByEmail(credentials.email);
-    if (cached) return cached;
+    if (cached) {
+      // eslint-disable-next-line no-console
+      console.log('[ApiHelper] Reusing cached session for', credentials.email);
+      return cached;
+    }
 
+    // Use a filesystem lock to serialize logins for the same email across
+    // test worker processes. This lets one process perform the login and
+    // persist a Playwright storage-state file other processes can reuse.
+    const authDir = path.resolve(process.cwd(), 'e2e', '.auth');
+    const candidate = path.join(authDir, `${credentials.email.replace(/[@.]/g, '_')}.json`);
+    await mkdir(authDir, {recursive: true}).catch(() => undefined);
+
+    const lockPath = `${candidate}.lock`;
+    const waitTimeout = 25_000; // ms
+    const pollInterval = 200; // ms
+
+    // Try to acquire lock atomically
+    let haveLock = false;
+    try {
+      await writeFile(lockPath, String(process.pid), {flag: 'wx'});
+      haveLock = true;
+    } catch {
+      haveLock = false;
+    }
+
+    if (haveLock) {
+      try {
+        const session = await this.post<AuthSession>('/auth/login', credentials, undefined, 200);
+        // eslint-disable-next-line no-console
+        console.log('[ApiHelper] Performed login for', credentials.email);
+        try {
+          const storageState = this.buildStorageState(session);
+          await writeFile(candidate, JSON.stringify(storageState, null, 2), 'utf8');
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn('[ApiHelper] Failed to persist storage-state', err);
+        }
+        return session;
+      } finally {
+        try {
+          await unlink(lockPath);
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // Wait for locker to produce the storage-state file and reuse it
+    const start = Date.now();
+    while (Date.now() - start < waitTimeout) {
+      try {
+        await access(candidate);
+        const cached2 = await this.loadSessionFromAuthFilesByEmail(credentials.email);
+        if (cached2) return cached2;
+      } catch {
+        // Still waiting for locker
+        // eslint-disable-next-line no-await-in-loop
+        await ApiHelper.sleep(pollInterval);
+      }
+    }
+
+    // Timeout: try to acquire lock and perform login ourselves
+    try {
+      await writeFile(lockPath, String(process.pid), {flag: 'wx'});
+      haveLock = true;
+    } catch {
+      haveLock = false;
+    }
+
+    if (haveLock) {
+      try {
+        const session = await this.post<AuthSession>('/auth/login', credentials, undefined, 200);
+        // eslint-disable-next-line no-console
+        console.log('[ApiHelper] Performed login for', credentials.email);
+        try {
+          const storageState = this.buildStorageState(session);
+          await writeFile(candidate, JSON.stringify(storageState, null, 2), 'utf8');
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn('[ApiHelper] Failed to persist storage-state', err);
+        }
+        return session;
+      } finally {
+        try {
+          await unlink(lockPath);
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // As a last resort, attempt the login request directly (this will
+    // re-use the generic POST retry/backoff behavior and may still fail).
+    // eslint-disable-next-line no-console
+    console.log('[ApiHelper] Falling back to direct login for', credentials.email);
     return this.post<AuthSession>('/auth/login', credentials, undefined, 200);
   }
 
@@ -117,6 +211,56 @@ export class ApiHelper {
   private async loadSessionFromAuthFilesByEmail(email: string): Promise<AuthSession | null> {
     try {
       const authDir = path.resolve(process.cwd(), 'e2e', '.auth');
+      // Fast path: check the canonical candidate filename first to avoid
+      // scanning the whole directory in common cases.
+      const candidate = path.join(authDir, `${email.replace(/[@.]/g, '_')}.json`);
+      try {
+        const content = await readFile(candidate, 'utf8').catch(() => null);
+        if (content) {
+          const parsed = JSON.parse(content);
+          const origins = Array.isArray(parsed.origins) ? parsed.origins : [];
+          for (const origin of origins) {
+            const localStorage = Array.isArray(origin.localStorage) ? origin.localStorage : [];
+            const appUser = localStorage.find((e: any) => e && e.name === 'app_user');
+            const token = localStorage.find((e: any) => e && e.name === 'tennis_jwt_token');
+            if (appUser && token) {
+              try {
+                const user = JSON.parse(String(appUser.value));
+                const tokenValue = String(token.value);
+                if (user && user.email === email) {
+                  // quick expiry check
+                  const parts = tokenValue.split('.');
+                  if (parts.length === 3) {
+                    try {
+                      const payload = parts[1];
+                      let padded = payload.replace(/-/g, '+').replace(/_/g, '/');
+                      while (padded.length % 4) padded += '=';
+                      const decoded = Buffer.from(padded, 'base64').toString('utf8');
+                      const parsedPayload = JSON.parse(decoded);
+                      const exp = parsedPayload.exp as number | undefined;
+                      if (typeof exp === 'number') {
+                        const now = Math.floor(Date.now() / 1000);
+                        if (exp < now + 15) {
+                          // expired/near-expiry
+                          return null;
+                        }
+                      }
+                    } catch {
+                      // ignore decode issues
+                    }
+                  }
+                  return {token: tokenValue, user} as AuthSession;
+                }
+              } catch {
+                // ignore parse errors
+              }
+            }
+          }
+        }
+      } catch {
+        // ignore candidate read errors and fall back to scanning directory
+      }
+
       const files = await readdir(authDir).catch(() => [] as string[]);
       for (const file of files) {
         if (!file.endsWith('.json')) continue;
@@ -134,42 +278,42 @@ export class ApiHelper {
           const localStorage = Array.isArray(origin.localStorage) ? origin.localStorage : [];
           const appUser = localStorage.find((e: any) => e && e.name === 'app_user');
           const token = localStorage.find((e: any) => e && e.name === 'tennis_jwt_token');
-            if (appUser && token) {
-              try {
-                const user = JSON.parse(String(appUser.value));
-                const tokenValue = String(token.value);
+          if (appUser && token) {
+            try {
+              const user = JSON.parse(String(appUser.value));
+              const tokenValue = String(token.value);
 
-                // If the token is a JWT, try to decode expiry and avoid returning
-                // expired tokens (adds a small safety margin).
-                const parts = tokenValue.split('.');
-                if (parts.length === 3) {
-                  try {
-                    const payload = parts[1];
-                    let padded = payload.replace(/-/g, '+').replace(/_/g, '/');
-                    while (padded.length % 4) padded += '=';
-                    const decoded = Buffer.from(padded, 'base64').toString('utf8');
-                    const parsed = JSON.parse(decoded);
-                    const exp = parsed.exp as number | undefined;
-                    if (typeof exp === 'number') {
-                      const now = Math.floor(Date.now() / 1000);
-                      // consider token expired if within 15s of expiry
-                      if (exp < now + 15) {
-                        // token is expired or about to expire; skip this file
-                        continue;
-                      }
+              // If the token is a JWT, try to decode expiry and avoid returning
+              // expired tokens (adds a small safety margin).
+              const parts = tokenValue.split('.');
+              if (parts.length === 3) {
+                try {
+                  const payload = parts[1];
+                  let padded = payload.replace(/-/g, '+').replace(/_/g, '/');
+                  while (padded.length % 4) padded += '=';
+                  const decoded = Buffer.from(padded, 'base64').toString('utf8');
+                  const parsed = JSON.parse(decoded);
+                  const exp = parsed.exp as number | undefined;
+                  if (typeof exp === 'number') {
+                    const now = Math.floor(Date.now() / 1000);
+                    // consider token expired if within 15s of expiry
+                    if (exp < now + 15) {
+                      // token is expired or about to expire; skip this file
+                      continue;
                     }
-                  } catch {
-                    // ignore decode errors and proceed
                   }
+                } catch {
+                  // ignore decode errors and proceed
                 }
-
-                if (user && user.email === email) {
-                  return {token: tokenValue, user} as AuthSession;
-                }
-              } catch {
-                // continue searching
               }
+
+              if (user && user.email === email) {
+                return {token: tokenValue, user} as AuthSession;
+              }
+            } catch {
+              // continue searching
             }
+          }
         }
       }
     } catch {
@@ -212,8 +356,8 @@ export class ApiHelper {
     token?: string,
     expectedStatus: number = 201,
   ): Promise<T> {
-    const maxRetries = 4;
-    const baseDelay = 200; // ms
+    const maxRetries = 6;
+    const baseDelay = 500; // ms
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const response = await this.apiContext.post(ApiHelper.withApiPrefix(path), {

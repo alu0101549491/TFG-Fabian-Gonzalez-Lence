@@ -17,7 +17,7 @@ import {test, expect} from '../fixtures/auth.fixture';
 test.describe('Communication - Medium', () => {
   test('COMM-001 should show partner invitation messages in the invitations inbox', async ({participantPage}) => {
     await participantPage.goto('/my-invitations');
-    await expect(participantPage.getByText(/partner invitations/i)).toBeVisible();
+    await expect(participantPage.getByRole('heading', {name: /partner invitations/i})).toBeVisible();
 
     const messageBlock = participantPage.locator('.invitation-message').first();
     if (await messageBlock.count() > 0) {
