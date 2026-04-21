@@ -29,18 +29,21 @@ async function createSeedContext(): Promise<{
   participant1Name: string;
 }> {
   const apiHelper = await ApiHelper.create();
-  const adminSession = await apiHelper.login({
-    email: TEST_USERS.tournamentAdmin1.email,
-    password: TEST_USERS.tournamentAdmin1.password,
-  });
-  const participant1Session = await apiHelper.login({
-    email: TEST_USERS.participant1.email,
-    password: TEST_USERS.participant1.password,
-  });
-  const participant2Session = await apiHelper.login({
-    email: TEST_USERS.participant2.email,
-    password: TEST_USERS.participant2.password,
-  });
+  const adminSession = (await apiHelper.getCachedSession(TEST_USERS.tournamentAdmin1.email)) ??
+    await apiHelper.login({
+      email: TEST_USERS.tournamentAdmin1.email,
+      password: TEST_USERS.tournamentAdmin1.password,
+    });
+  const participant1Session = (await apiHelper.getCachedSession(TEST_USERS.participant1.email)) ??
+    await apiHelper.login({
+      email: TEST_USERS.participant1.email,
+      password: TEST_USERS.participant1.password,
+    });
+  const participant2Session = (await apiHelper.getCachedSession(TEST_USERS.participant2.email)) ??
+    await apiHelper.login({
+      email: TEST_USERS.participant2.email,
+      password: TEST_USERS.participant2.password,
+    });
 
   return {
     apiHelper,

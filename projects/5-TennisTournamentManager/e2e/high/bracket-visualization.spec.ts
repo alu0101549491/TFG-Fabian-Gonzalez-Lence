@@ -25,9 +25,12 @@ let bracketId = '';
 test.describe('Bracket Visualization - High', () => {
   test.beforeAll(async () => {
     apiHelper = await ApiHelper.create();
-    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
-    const participant1 = await apiHelper.login(TEST_USERS.participant1);
-    const participant2 = await apiHelper.login(TEST_USERS.participant2);
+    const adminSession = (await apiHelper.getCachedSession(TEST_USERS.tournamentAdmin1.email)) ??
+      await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const participant1 = (await apiHelper.getCachedSession(TEST_USERS.participant1.email)) ??
+      await apiHelper.login(TEST_USERS.participant1);
+    const participant2 = (await apiHelper.getCachedSession(TEST_USERS.participant2.email)) ??
+      await apiHelper.login(TEST_USERS.participant2);
     seedHelper = new SeedHelper(apiHelper, adminSession);
 
     const fixture = await seedHelper.createSinglesMatchFixture(

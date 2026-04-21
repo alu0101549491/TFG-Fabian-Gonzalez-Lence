@@ -38,12 +38,19 @@ export class AuthStateService {
    * Restores user data from localStorage.
    */
   private restoreUser(): void {
+    // Only restore the in-memory currentUser if a valid token exists.
+    // Prevents rehydration of a stale `app_user` value when the token
+    // has been removed (e.g., during logout). This guards against cases
+    // where some environment or script re-populates `app_user` but the
+    // session token is absent.
+    const token = localStorage.getItem(JWT_STORAGE_KEY);
+    if (!token) return;
+
     const userJson = localStorage.getItem(USER_STORAGE_KEY);
-    
     if (userJson) {
       try {
         // eslint-disable-next-line no-console
-        console.log('[AuthState] restoreUser found user in localStorage');
+        console.log('[AuthState] restoreUser found user in localStorage and token present');
       } catch {}
       try {
         this.currentUser = JSON.parse(userJson);

@@ -29,7 +29,41 @@ export class OrderOfPlayPage extends BasePage {
    * @param tournamentId - Tournament identifier
    */
   public async gotoForTournament(tournamentId: string): Promise<void> {
-    await this.gotoPath(`/order-of-play/${tournamentId}`);
+    const target = `/order-of-play/${tournamentId}`;
+    await this.gotoPath(target);
+
+    // Some browsers or SPA boot sequences may redirect or defer rendering.
+    // If the expected heading is not visible, try a tolerant fallback:
+    // 1) wait briefly for the page to render; 2) click the header/nav link
+    // for Order of Play if available; 3) wait for the URL to match.
+    try {
+      await this.page.getByText(/scheduling management/i).waitFor({state: 'visible', timeout: 5000});
+      return;
+    } catch {
+      // Try a named nav link (accessible) as a fallback
+      try {
+        const nav = this.page.getByRole('link', {name: /order of play|order-of-play/i});
+        if ((await nav.count()) > 0) {
+          await nav.first().click().catch(() => undefined);
+          await this.waitForPageLoad();
+        } else {
+          const alt = this.page.getByText(/order of play/i);
+          if ((await alt.count()) > 0) {
+            await alt.first().click().catch(() => undefined);
+            await this.waitForPageLoad();
+          }
+        }
+      } catch {
+        // ignore fallback click failures
+      }
+
+      // final attempt: wait for the route to update to the target
+      try {
+        await this.page.waitForURL(new RegExp(`${target.replace(/[-\\/]/g, '\\$&')}`), {timeout: 10000});
+      } catch {
+        // leave to caller's assertions to fail with context
+      }
+    }
   }
 
   /**

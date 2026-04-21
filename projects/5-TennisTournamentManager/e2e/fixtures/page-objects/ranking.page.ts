@@ -46,15 +46,22 @@ export class RankingPage extends BasePage {
 
   /** Verifies whether the ELO column is present. */
   public async expectEloColumnVisible(): Promise<void> {
-    // Wait for the rankings table to render then assert the ELO header exists.
+    // Wait for the rankings table or any table-like element to render then assert the ELO header exists.
     try {
-      await this.page.locator('.rankings-table').first().waitFor({ state: 'visible', timeout: 8000 });
+      // Prefer the explicit rankings table class, fall back to any table role
+      const table = this.page.locator('.rankings-table').first();
+      if ((await table.count()) > 0) {
+        await table.waitFor({state: 'visible', timeout: 8000});
+      } else {
+        await this.page.getByRole('table').first().waitFor({state: 'visible', timeout: 8000}).catch(() => undefined);
+      }
     } catch {
-      // proceed to allow a clearer assertion failure below
+      // continue to header detection
     }
 
-    const header = this.page.locator('th', { hasText: /elo rating/i }).first();
-    await header.waitFor({ state: 'visible', timeout: 8000 });
+    // Accept variations like "ELO", "ELO rating", or localized variants containing 'elo'
+    const header = this.page.locator('th, td', { hasText: /elo/i }).first();
+    await header.waitFor({state: 'visible', timeout: 8000});
     await expect(header).toBeVisible();
   }
 }

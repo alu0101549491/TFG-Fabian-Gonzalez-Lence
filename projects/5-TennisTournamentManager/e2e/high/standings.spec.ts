@@ -38,10 +38,11 @@ let standingsTournamentId = '';
 test.describe('Standings - High', () => {
   test.beforeAll(async () => {
     apiHelper = await ApiHelper.create();
-    const adminSession = await apiHelper.login({
-      email: 'tournament@tennistournament.com',
-      password: process.env.PLAYWRIGHT_TOURNAMENT_ADMIN_PASSWORD ?? process.env.PW_E2E_TOURNAMENT_ADMIN_PASSWORD ?? 'tourney123',
-    });
+    const adminSession = (await apiHelper.getCachedSession('tournament@tennistournament.com')) ??
+      await apiHelper.login({
+        email: 'tournament@tennistournament.com',
+        password: process.env.PLAYWRIGHT_TOURNAMENT_ADMIN_PASSWORD ?? process.env.PW_E2E_TOURNAMENT_ADMIN_PASSWORD ?? 'tourney123',
+      });
     seedHelper = new SeedHelper(apiHelper, adminSession);
 
     const suffix = `${Date.now()}`;

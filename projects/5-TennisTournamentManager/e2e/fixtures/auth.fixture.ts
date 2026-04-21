@@ -60,6 +60,8 @@ async function createAuthenticatedPage(
   // Ensure auth directory exists
   await mkdir(path.dirname(candidate), {recursive: true}).catch(() => undefined);
 
+  const appUrl = process.env.BASE_URL ?? process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:4200/5-TennisTournamentManager/';
+
   // Attempt to reuse an existing storage-state if it belongs to the requested
   // credentials and the JWT inside (if present) is not expired.
   try {
@@ -97,10 +99,10 @@ async function createAuthenticatedPage(
       // eslint-disable-next-line no-console
       console.log(`[auth.fixture] Reusing storage-state ${candidate} for ${credentials.email}`);
 
-      if (!tokenValue) {
-        // eslint-disable-next-line no-console
-        console.log(`[auth.fixture] Storage-state ${candidate} has no tennis_jwt_token; will recreate for ${credentials.email}`);
-      } else {
+        if (!tokenValue) {
+          // eslint-disable-next-line no-console
+          console.log(`[auth.fixture] Storage-state ${candidate} has no tennis_jwt_token; will recreate for ${credentials.email}`);
+        } else {
         // If token appears to be a JWT, attempt to decode expiry and skip
         // reuse when the token is expired or about to expire.
         let expired = false;
@@ -122,27 +124,38 @@ async function createAuthenticatedPage(
           }
         }
 
-        if (!expired) {
-          // Token present and not expired — create the context and return it.
-          const context = await browser.newContext({storageState: candidate});
-          // Ensure localStorage is set for the actual origin regardless of storage-state origin mismatch
-          if (tokenValue && parsedUser) {
-            await context.addInitScript({
-              content: `window.localStorage.setItem('tennis_jwt_token', ${JSON.stringify(
-                tokenValue,
-              )}); window.localStorage.setItem('app_user', ${JSON.stringify(JSON.stringify(parsedUser))});`,
-            });
+          if (!expired) {
+            // Token present and not expired — create the context and return it.
+            const context = await browser.newContext({storageState: candidate});
+            const page = await context.newPage();
+            // Navigate to the app origin so localStorage access in the page
+            // reflects the same origin as the stored entries. This makes the
+            // subsequent presence check reliable instead of evaluating on
+            // about:blank which may return false negatives.
+            try {
+              await page.goto(appUrl, {waitUntil: 'domcontentloaded'}).catch(() => undefined);
+            } catch {
+              // ignore navigation failures
+            }
+
+            // Ensure localStorage is set for the actual origin regardless of storage-state origin mismatch.
+            // Use a one-time page evaluate rather than a persistent init script to avoid
+            // re-inserting tokens after an explicit logout.
+            if (tokenValue && parsedUser) {
+              await page.evaluate((t, u) => {
+                try { window.localStorage.setItem('tennis_jwt_token', t); } catch {}
+                try { window.localStorage.setItem('app_user', JSON.stringify(u)); } catch {}
+              }, tokenValue, parsedUser).catch(() => undefined);
+            }
+            try {
+              const present = await page.evaluate(() => !!localStorage.getItem('tennis_jwt_token')).catch(() => false);
+              // eslint-disable-next-line no-console
+              console.log(`[auth.fixture] Returning context for ${credentials.email}; token present: ${present}`);
+            } catch {
+              // ignore
+            }
+            return {context, page};
           }
-          const page = await context.newPage();
-          try {
-            const present = await page.evaluate(() => !!localStorage.getItem('tennis_jwt_token')).catch(() => false);
-            // eslint-disable-next-line no-console
-            console.log(`[auth.fixture] Returning context for ${credentials.email}; token present: ${present}`);
-          } catch {
-            // ignore
-          }
-          return {context, page};
-        }
 
         // eslint-disable-next-line no-console
         console.log(`[auth.fixture] Storage-state ${candidate} contains expired token; will recreate for ${credentials.email}`);
@@ -182,14 +195,18 @@ async function createAuthenticatedPage(
         await writeFile(candidate, JSON.stringify(storageState, null, 2), 'utf8');
 
         const context = await browser.newContext({storageState: candidate});
-        if (session) {
-          await context.addInitScript({
-            content: `window.localStorage.setItem('tennis_jwt_token', ${JSON.stringify(
-              session.token,
-            )}); window.localStorage.setItem('app_user', ${JSON.stringify(JSON.stringify(session.user))});`,
-          });
-        }
         const page = await context.newPage();
+        try {
+          await page.goto(appUrl, {waitUntil: 'domcontentloaded'}).catch(() => undefined);
+        } catch {
+          // ignore navigation failures
+        }
+        if (session) {
+          await page.evaluate((t, u) => {
+            try { window.localStorage.setItem('tennis_jwt_token', t); } catch {}
+            try { window.localStorage.setItem('app_user', JSON.stringify(u)); } catch {}
+          }, session.token, session.user).catch(() => undefined);
+        }
         return {context, page};
       } finally {
         await apiHelper.dispose();
@@ -226,18 +243,23 @@ async function createAuthenticatedPage(
             continue;
           }
 
-          // We have parsed values — create context and inject init script when appropriate
+          // We have parsed values — create context and inject the values on the page
+          // (one-time evaluate) rather than via a persistent init script.
           // eslint-disable-next-line no-console
           console.log(`[auth.fixture] Detected storage-state ${candidate} created by locker`);
           const context = await browser.newContext({storageState: candidate});
-          if (tokenVal) {
-            await context.addInitScript({
-              content: `window.localStorage.setItem('tennis_jwt_token', ${JSON.stringify(
-                tokenVal,
-              )}); window.localStorage.setItem('app_user', ${JSON.stringify(JSON.stringify(userVal))});`,
-            });
-          }
           const page = await context.newPage();
+          try {
+            await page.goto(appUrl, {waitUntil: 'domcontentloaded'}).catch(() => undefined);
+          } catch {
+            // ignore navigation failures
+          }
+          if (tokenVal) {
+            await page.evaluate((t, u) => {
+              try { window.localStorage.setItem('tennis_jwt_token', t); } catch {}
+              try { window.localStorage.setItem('app_user', JSON.stringify(u)); } catch {}
+            }, tokenVal, userVal).catch(() => undefined);
+          }
           try {
             const present = await page.evaluate(() => !!localStorage.getItem('tennis_jwt_token')).catch(() => false);
             // eslint-disable-next-line no-console
@@ -271,14 +293,18 @@ async function createAuthenticatedPage(
         await writeFile(candidate, JSON.stringify(storageState, null, 2), 'utf8');
 
         const context = await browser.newContext({storageState: candidate});
-        if (session) {
-          await context.addInitScript({
-            content: `window.localStorage.setItem('tennis_jwt_token', ${JSON.stringify(
-              session.token,
-            )}); window.localStorage.setItem('app_user', ${JSON.stringify(JSON.stringify(session.user))});`,
-          });
-        }
         const page = await context.newPage();
+        try {
+          await page.goto(appUrl, {waitUntil: 'domcontentloaded'}).catch(() => undefined);
+        } catch {
+          // ignore navigation failures
+        }
+        if (session) {
+          await page.evaluate((t, u) => {
+            try { window.localStorage.setItem('tennis_jwt_token', t); } catch {}
+            try { window.localStorage.setItem('app_user', JSON.stringify(u)); } catch {}
+          }, session.token, session.user).catch(() => undefined);
+        }
         try {
           const present = await page.evaluate(() => !!localStorage.getItem('tennis_jwt_token')).catch(() => false);
           // eslint-disable-next-line no-console

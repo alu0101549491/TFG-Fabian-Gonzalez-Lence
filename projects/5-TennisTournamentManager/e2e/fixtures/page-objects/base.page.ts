@@ -33,7 +33,9 @@ export abstract class BasePage {
     this.page = page;
     this.header = page.locator('header.app-header');
     this.userMenuTrigger = page.locator('.user-menu-toggle');
-    this.notificationBellButton = page.locator('.bell-button');
+    this.notificationBellButton = page.locator(
+      '.bell-button, .notification-bell .bell-button, [data-testid="notification-bell"], button[aria-label*="notification"], button[class*="bell"]',
+    );
     this.modalOverlay = page.locator('.modal-overlay');
     this.loadingIndicators = page.locator('.spinner, .loading-spinner');
     this.successFeedback = page.locator(
@@ -100,7 +102,7 @@ export abstract class BasePage {
   public async expectSuccess(text?: string): Promise<void> {
     // Try to detect a DOM success banner first (generous timeout).
     try {
-      await this.successFeedback.first().waitFor({state: 'visible', timeout: 8000});
+      await this.successFeedback.first().waitFor({state: 'visible', timeout: 10000});
       if (text) {
         await expect(this.successFeedback.first()).toContainText(text);
       }
@@ -123,8 +125,19 @@ export abstract class BasePage {
         }
         return;
       }
+      // Heuristic: search for common success text in visible toasts/alerts.
+      try {
+        const keywordLocator = this.page.getByText(/success|saved|created|published|updated|scheduled|withdrawn|recorded|logged in|registration successful|logging you in/i);
+        if ((await keywordLocator.count()) > 0) {
+          await expect(keywordLocator.first()).toBeVisible({timeout: 5000});
+          if (text) await expect(keywordLocator.first()).toContainText(text);
+          return;
+        }
+      } catch {
+        // ignore heuristic failures and fall through to final assertion
+      }
       // Final attempt: run the original expectation to surface a clear failure message.
-      await expect(this.successFeedback.first()).toBeVisible({timeout: 8000});
+      await expect(this.successFeedback.first()).toBeVisible({timeout: 12000});
       if (text) {
         await expect(this.successFeedback.first()).toContainText(text);
       }

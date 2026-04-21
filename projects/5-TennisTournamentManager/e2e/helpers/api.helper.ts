@@ -118,7 +118,10 @@ export class ApiHelper {
     await mkdir(authDir, {recursive: true}).catch(() => undefined);
 
     const lockPath = `${candidate}.lock`;
-    const waitTimeout = 25_000; // ms
+    // Reduce wait timeout to avoid exceeding Playwright hook timeouts
+    // while still allowing a short window for another worker to produce
+    // the persisted storage-state file.
+    const waitTimeout = 8_000; // ms
     const pollInterval = 200; // ms
 
     // Try to acquire lock atomically
@@ -323,6 +326,14 @@ export class ApiHelper {
   }
 
   /**
+   * Public accessor to check for a cached persisted session for an email.
+   * Returns null when no valid cached session is available.
+   */
+  public async getCachedSession(email: string): Promise<AuthSession | null> {
+    return this.loadSessionFromAuthFilesByEmail(email);
+  }
+
+  /**
    * Performs a typed GET request.
    *
    * @param path - Relative API path
@@ -356,8 +367,10 @@ export class ApiHelper {
     token?: string,
     expectedStatus: number = 201,
   ): Promise<T> {
-    const maxRetries = 6;
-    const baseDelay = 500; // ms
+    // Tighter retry/backoff to keep aggregate waiting under test hook
+    // timeouts while still providing some resilience to 429s.
+    const maxRetries = 4;
+    const baseDelay = 200; // ms
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const response = await this.apiContext.post(ApiHelper.withApiPrefix(path), {

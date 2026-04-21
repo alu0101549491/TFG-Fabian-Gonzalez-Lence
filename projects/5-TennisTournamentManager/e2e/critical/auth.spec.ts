@@ -40,18 +40,25 @@ test.describe('Authentication - Critical', () => {
         const candidate = path.join(authDir, `${user.email.replace(/[@.]/g, '_')}.json`);
         let contextUserPage: {context: any; page: any} | null = null;
 
-        // Use ApiHelper.login to obtain a fresh session (it reuses storage-state
-        // files when valid and performs lock-serialized logins when needed).
-        const session = await apiHelper.login(user);
+        // Prefer cached storage-state files when available to avoid login storms.
+        const session = (await apiHelper.getCachedSession(user.email)) ?? await apiHelper.login(user);
         const storageState = apiHelper.buildStorageState(session);
         const ctx = await browser.newContext({storageState});
-        // Ensure localStorage keys are present regardless of storage-state origin mismatches
-        await ctx.addInitScript({
-          content: `window.localStorage.setItem('tennis_jwt_token', ${JSON.stringify(
-            session.token,
-          )}); window.localStorage.setItem('app_user', ${JSON.stringify(JSON.stringify(session.user))});`,
-        });
         const pg = await ctx.newPage();
+        // One-time: ensure localStorage keys are present on the created page only.
+        // Using page.evaluate avoids persisting init scripts across navigations/contexts.
+        try {
+          await pg.evaluate((t, u) => {
+            try {
+              window.localStorage.setItem('tennis_jwt_token', t);
+              window.localStorage.setItem('app_user', JSON.stringify(u));
+            } catch {
+              // ignore
+            }
+          }, session.token, session.user);
+        } catch {
+          // ignore evaluation errors
+        }
         contextUserPage = {context: ctx, page: pg};
 
         const {context, page} = contextUserPage as {context: any; page: any};
