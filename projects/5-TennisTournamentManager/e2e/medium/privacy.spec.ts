@@ -28,7 +28,8 @@ test.describe('Privacy and Profile - Medium', () => {
       ranking: '123',
     });
     await profilePage.saveProfile();
-    await profilePage.expectSuccess();
+
+    await expect(participantPage.locator('.success-message, .success-banner').first()).toBeVisible();
   });
 
   test('PRIV-002 should save and reset privacy settings', async ({participantPage}) => {
@@ -37,7 +38,8 @@ test.describe('Privacy and Profile - Medium', () => {
     await profilePage.setFieldVisibility('phone', PRIVACY_LEVELS.adminsOnly);
     await profilePage.setFieldVisibility('email', PRIVACY_LEVELS.sameTournament);
     await profilePage.savePrivacySettings();
-    await profilePage.expectSuccess();
+
+    await expect(participantPage.locator('.success-banner, .success-message').first()).toBeVisible();
     await profilePage.resetPrivacyToDefaults();
   });
 

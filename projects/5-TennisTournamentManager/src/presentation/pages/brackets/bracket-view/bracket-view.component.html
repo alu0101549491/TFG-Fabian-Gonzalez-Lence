@@ -1,0 +1,311 @@
+<!-- Bracket View Page - Modern Design -->
+<div class="bracket-container">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading bracket information...</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="error-banner">
+      <span class="error-icon">⚠️</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (tournament()) {
+    <!-- Hero Section -->
+    <section class="bracket-hero">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <button class="back-btn" (click)="goBack()">
+          <span>←</span>
+          <span>Back to Tournament</span>
+        </button>
+
+        <div class="bracket-header">
+          <h1 class="bracket-title">🏆 Tournament Bracket</h1>
+          <p class="bracket-subtitle">{{ tournament()!.name }}</p>
+        </div>
+
+        <!-- Management Actions (for tournament admins) -->
+        @if (canManageTournament() && bracket()) {
+          <div class="management-bar">
+            <button 
+              class="action-btn view-matches" 
+              (click)="viewMatches()"
+            >
+              <span>🎾</span>
+              <span>View Matches</span>
+            </button>
+
+            @if (!bracket()!.isPublished) {
+              <button 
+                class="action-btn publish" 
+                (click)="publishBracket()"
+                [disabled]="isPublishing()"
+              >
+                @if (isPublishing()) {
+                  <span>🔄</span>
+                  <span>Publishing...</span>
+                } @else {
+                  <span>✅</span>
+                  <span>Publish Bracket</span>
+                }
+              </button>
+            }
+
+            @if (!bracket()!.isPublished) {
+              <button 
+                class="action-btn regenerate" 
+                (click)="showRegenerateConfirmation()"
+                [disabled]="isRegenerating()"
+              >
+                @if (isRegenerating()) {
+                  <span>🔄</span>
+                  <span>Regenerating...</span>
+                } @else {
+                  <span>🔄</span>
+                  <span>Regenerate Bracket</span>
+                }
+              </button>
+            }
+
+            @if (bracket()!.isPublished) {
+              <div class="status-badge published">
+                <span>✅</span>
+                <span>Bracket is Published</span>
+              </div>
+            }
+
+            <button 
+              class="action-btn export" 
+              (click)="exportBracketToPDF()"
+              title="Export bracket as PDF"
+            >
+              <span>📄</span>
+              <span>Export PDF</span>
+            </button>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="bracket-content">
+      @if (bracket()) {
+        <!-- Bracket Information Card -->
+        <div class="info-card">
+          <div class="card-header">
+            <h2 class="card-title">Bracket Information</h2>
+            <span class="status-badge" [class.published]="bracket()!.isPublished" [class.draft]="!bracket()!.isPublished">
+              {{ bracket()!.isPublished ? '✅ Published' : '📝 Draft' }}
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="bracket-info-grid">
+              <div class="info-item">
+                <span class="info-label">Bracket Type</span>
+                <span class="info-value">{{ bracket()!.bracketType | enumFormat }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="info-label">Participants</span>
+                <span class="info-value">{{ bracket()!.size }} players</span>
+              </div>
+
+              <div class="info-item">
+                <span class="info-label">Total Rounds</span>
+                <span class="info-value">{{ bracket()!.totalRounds }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="info-label">Created</span>
+                <span class="info-value">{{ formatDate(bracket()!.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Draw Phases -->
+        @if (mainPhases().length > 0) {
+          <h2 class="section-title">
+            <span class="section-icon">📊</span>
+            <span>Main Draw Phases</span>
+          </h2>
+
+          <div class="phases-grid">
+            @for (phase of mainPhases(); track phase.id) {
+              <div class="phase-card">
+                <div class="phase-header">
+                  <h3 class="phase-name">{{ phase.name }}</h3>
+                </div>
+                <div class="phase-body">
+                  <div class="phase-detail">
+                    <span class="phase-label">Order</span>
+                    <span class="phase-value">Round {{ phase.order }}</span>
+                  </div>
+                  <div class="phase-detail">
+                    <span class="phase-label">Matches</span>
+                    <span class="phase-value">{{ phase.matchCount }}</span>
+                  </div>
+                  <div class="phase-detail">
+                    <span class="phase-label">Status</span>
+                    <span class="phase-value">
+                      {{ phase.isCompleted ? '✅ Completed' : '🎾 In Progress' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Main Draw Visual Bracket -->
+        @if (mainMatches().length > 0) {
+          <h2 class="section-title">
+            <span class="section-icon">🏆</span>
+            <span>Main Draw Bracket</span>
+          </h2>
+
+          <div class="visual-bracket-section">
+            <app-visual-bracket 
+              [bracket]="bracket()!" 
+              [matches]="mainMatches()"
+            ></app-visual-bracket>
+          </div>
+        }
+
+        <!-- Consolation Draw Section -->
+        @if (consolationPhases().length > 0) {
+          <div class="consolation-divider"></div>
+
+          <h2 class="section-title consolation-title">
+            <span class="section-icon">🎖️</span>
+            <span>Consolation Draw</span>
+          </h2>
+
+          <div class="phases-grid">
+            @for (phase of consolationPhases(); track phase.id) {
+              <div class="phase-card consolation-phase-card">
+                <div class="phase-header">
+                  <h3 class="phase-name">{{ phase.name }}</h3>
+                </div>
+                <div class="phase-body">
+                  <div class="phase-detail">
+                    <span class="phase-label">Order</span>
+                    <span class="phase-value">Round {{ phase.order }}</span>
+                  </div>
+                  <div class="phase-detail">
+                    <span class="phase-label">Matches</span>
+                    <span class="phase-value">{{ phase.matchCount }}</span>
+                  </div>
+                  <div class="phase-detail">
+                    <span class="phase-label">Status</span>
+                    <span class="phase-value">
+                      {{ phase.isCompleted ? '✅ Completed' : '🎾 In Progress' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          @for (phase of consolationPhases(); track phase.id) {
+            @if (getConsolationMatchesByPhase(phase.id).length > 0) {
+              <h2 class="section-title">
+                <span class="section-icon">🏆</span>
+                <span>{{ phase.name }} Bracket</span>
+              </h2>
+
+              <div class="visual-bracket-section">
+                <app-visual-bracket
+                  [bracket]="bracket()!"
+                  [matches]="getConsolationMatchesByPhase(phase.id)"
+                ></app-visual-bracket>
+              </div>
+            }
+          }
+        }
+      } @else {
+        <!-- No Bracket State -->
+        <div class="empty-state">
+          <div class="empty-icon">🏆</div>
+          <h2 class="empty-title">No Published Brackets Yet</h2>
+          <p class="empty-description">
+            The tournament bracket has not been published yet.
+            @if (canManageTournament()) {
+              <br><br>
+              As a tournament administrator, you can generate and publish a bracket from the tournament detail page.
+            } @else {
+              <br><br>
+              The tournament organizers are still preparing the bracket. Please check back later!
+            }
+          </p>
+          @if (canManageTournament()) {
+            <button class="empty-action" (click)="goBack()">
+              <span>←</span>
+              <span>Go to Tournament Page</span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Regenerate Bracket Confirmation Modal -->
+@if (showRegenerateModal()) {
+  <div class="modal-overlay" (click)="hideRegenerateModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>🔄 Regenerate Bracket</h2>
+        <button class="close-btn" (click)="hideRegenerateModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="warning-message">
+          <span class="warning-icon">⚠️</span>
+          <div class="warning-content">
+            <p class="warning-title">Warning: This will completely reset the bracket</p>
+            <p class="warning-text">
+              Regenerating the bracket will delete ALL matches, scores, and results, then create
+              a new bracket structure using the updated seed numbers. This action cannot be undone.
+            </p>
+          </div>
+        </div>
+
+        @if (hasCompletedMatches()) {
+          <div class="info-message">
+            <span class="info-icon">📊</span>
+            <div class="info-content">
+              <span><strong>Started draw detected:</strong> This bracket has completed matches.</span>
+              <label class="migration-option">
+                <input
+                  type="checkbox"
+                  [checked]="regenerateKeepResults()"
+                  (change)="regenerateKeepResults.set($any($event.target).checked)"
+                />
+                <span>Preserve compatible completed results during regeneration</span>
+              </label>
+              @if (!regenerateKeepResults()) {
+                <span><strong>Warning:</strong> Completed match results will be permanently deleted.</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="hideRegenerateModal()">
+          Cancel
+        </button>
+        <button class="btn-danger" (click)="executeRegenerateBracket()">
+          <span>🔄</span>
+          <span>Regenerate Bracket</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,158 @@
+<div class="order-of-play-admin-container">
+  <h2>Order of Play - Admin Panel</h2>
+
+  <!-- Error/Success Messages -->
+  @if (errorMessage()) {
+    <div class="alert alert-danger">{{ errorMessage() }}</div>
+  }
+  @if (successMessage()) {
+    <div class="alert alert-success">{{ successMessage() }}</div>
+  }
+
+  <!-- Schedule Generation Section -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3>Generate Automatic Schedule</h3>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3">
+          <label>Start Date</label>
+          <input 
+            type="date" 
+            class="form-control" 
+            [(ngModel)]="options().startDate"
+          />
+        </div>
+        <div class="col-md-2">
+          <label>Start Time</label>
+          <input 
+            type="time" 
+            class="form-control" 
+            [(ngModel)]="options().startTime"
+          />
+        </div>
+        <div class="col-md-2">
+          <label>Match Duration (min)</label>
+          <input 
+            type="number" 
+            class="form-control" 
+            [(ngModel)]="options().matchDuration"
+          />
+        </div>
+        <div class="col-md-2">
+          <label>Break Time (min)</label>
+          <input 
+            type="number" 
+            class="form-control" 
+            [(ngModel)]="options().breakTime"
+          />
+        </div>
+        <div class="col-md-3">
+          <label>
+            <input 
+              type="checkbox" 
+              [(ngModel)]="options().simultaneousMatches"
+            />
+            Simultaneous Matches
+          </label>
+        </div>
+      </div>
+      <button 
+        class="btn btn-primary mt-3"
+        (click)="generateSchedule()"
+        [disabled]="isGenerating()"
+      >
+        {{ isGenerating() ? 'Generating...' : 'Generate Schedule' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Current Schedule -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Current Schedule</h3>
+    </div>
+    <div class="card-body">
+      @if (isLoading()) {
+        <p>Loading schedule...</p>
+      } @else if (schedule().length === 0) {
+        <p>No matches scheduled yet. Use the form above to generate a schedule.</p>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Date/Time</th>
+                <th>Court</th>
+                <th>Match</th>
+                <th>Participants</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (match of schedule(); track match.matchId) {
+                <tr>
+                  <td>{{ formatDateTime(match.scheduledTime) }}</td>
+                  <td>{{ match.courtName }}</td>
+                  <td>{{ match.matchId }}</td>
+                  <td>
+                    {{ match.participant1 || 'TBD' }} vs {{ match.participant2 || 'TBD' }}
+                  </td>
+                  <td>
+                    <button 
+                      class="btn btn-sm btn-warning"
+                      (click)="openRescheduleModal(match)"
+                    >
+                      Reschedule
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Reschedule Modal -->
+  @if (selectedMatch()) {
+    <div class="modal-overlay" (click)="closeRescheduleModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5>Reschedule Match</h5>
+            <button (click)="closeRescheduleModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Court ID</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="rescheduleForm().courtId"
+              />
+            </div>
+            <div class="form-group">
+              <label>Scheduled Time</label>
+              <input 
+                type="datetime-local" 
+                class="form-control" 
+                [(ngModel)]="rescheduleForm().scheduledTime"
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" (click)="closeRescheduleModal()">
+              Cancel
+            </button>
+            <button class="btn btn-primary" (click)="saveReschedule()">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

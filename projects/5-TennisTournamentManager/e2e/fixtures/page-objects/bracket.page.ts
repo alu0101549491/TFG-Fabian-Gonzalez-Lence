@@ -34,16 +34,7 @@ export class BracketPage extends BasePage {
 
   /** Verifies that the bracket content is visible. */
   public async expectBracketVisible(): Promise<void> {
-    const locator = this.page.locator('.visual-bracket-section, app-visual-bracket, .phase-card').first();
-    try {
-      await locator.waitFor({state: 'visible', timeout: 10000});
-      await expect(locator).toBeVisible();
-    } catch {
-      // Fallback: try a more generic SVG or canvas element that may render the bracket
-      const svg = this.page.locator('svg').first();
-      await svg.waitFor({state: 'visible', timeout: 5000});
-      await expect(svg).toBeVisible();
-    }
+    await expect(this.page.locator('.visual-bracket-section, app-visual-bracket, .phase-card').first()).toBeVisible();
   }
 
   /** Publishes a draft bracket if the action is available. */

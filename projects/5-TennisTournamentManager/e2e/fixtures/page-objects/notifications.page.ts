@@ -128,38 +128,21 @@ export class NotificationsPage extends BasePage {
   /** Saves notification preferences. */
   public async saveSettings(): Promise<void> {
     const saveBtn = this.page.getByRole('button', {name: /save preferences/i});
-    // Some versions of the app use `alert()` for success feedback instead of a DOM banner.
-    // To be resilient we listen for a dialog while performing the click and accept it if present.
     try {
       await saveBtn.waitFor({state: 'visible', timeout: 5000});
-      const dialogPromise = this.page.waitForEvent('dialog', {timeout: 4000}).catch(() => null);
       await saveBtn.click();
-      const dialog = await dialogPromise;
-      if (dialog) {
-        await dialog.accept().catch(() => undefined);
-      }
-      // Mark success after the user action so higher-level expect helpers can proceed.
-      await this.page.evaluate(() => {
-        (window as any).__e2e_lastSuccess = new Date().toISOString();
-      }).catch(() => undefined);
       await this.waitForPageLoad();
+      // Wait for the success feedback that the component sets on save
+      await this.successFeedback.first().waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
       return;
     } catch {
       // Fallback: try generic primary button in the form
       const fallback = this.page.locator('.preferences-form .btn.btn-primary').first();
-      await fallback.waitFor({state: 'visible', timeout: 3000}).catch(() => null);
+      await fallback.waitFor({state: 'visible', timeout: 2000}).catch(() => null);
       if (await fallback.count()) {
-        const dialogPromise = this.page.waitForEvent('dialog', {timeout: 4000}).catch(() => null);
         await fallback.click().catch(() => undefined);
-        const dialog = await dialogPromise;
-        if (dialog) {
-          await dialog.accept().catch(() => undefined);
-        }
-        await this.page.evaluate(() => {
-          (window as any).__e2e_lastSuccess = new Date().toISOString();
-        }).catch(() => undefined);
         await this.waitForPageLoad();
-        return;
+        await this.successFeedback.first().waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
       }
     }
   }

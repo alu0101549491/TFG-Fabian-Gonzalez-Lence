@@ -69,7 +69,7 @@ const exportController = new ExportController();
 /**
  * @swagger
  * /auth/login:
- *   post:
+
  *     tags: [Authentication]
  *     summary: User login
  *     description: Authenticate user with email and password, returns JWT tokens

@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:4200",
+      "localStorage": [
+        {
+          "name": "tennis_jwt_token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl9mMDhkZGI2MCIsImVtYWlsIjoibWFyaWFAZXhhbXBsZS5jb20iLCJyb2xlIjoiUExBWUVSIiwiaWF0IjoxNzc2NzAzNjg2LCJleHAiOjE3NzY3MDU0ODZ9.SHS0PmV1_Qk9aOJgiBEFR5Kp_zjWM1b9Gh9OSI__e74"
+        },
+        {
+          "name": "app_user",
+          "value": "{\"id\":\"usr_f08ddb60\",\"email\":\"maria@example.com\",\"username\":\"maria_garcia\",\"firstName\":\"Maria\",\"lastName\":\"Garcia\",\"phone\":\"+34600000004\",\"idDocument\":null,\"ranking\":null,\"role\":\"PLAYER\"}"
+        }
+      ]
+    }
+  ]
+}

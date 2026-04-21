@@ -1,0 +1,238 @@
+/**
+ * University of La Laguna
+ * School of Engineering and Technology
+ * Degree in Computer Engineering
+ * Final Degree Project (TFG)
+ *
+ * @author Fabián González Lence <alu0101549491@ull.edu.es>
+ * @since March 16, 2026
+ * @file src/infrastructure/repositories/order-of-play.repository.ts
+ * @desc HTTP-based implementation of IOrderOfPlayRepository using Axios client
+ * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
+ * @see {@link https://typescripttutorial.net}
+ */
+
+import {Injectable, inject} from '@angular/core';
+import {OrderOfPlay} from '@domain/entities/order-of-play';
+import {IOrderOfPlayRepository} from '@domain/repositories/order-of-play.repository.interface';
+import {AxiosClient} from '../http/axios-client';
+
+/**
+ * HTTP-based implementation of IOrderOfPlayRepository.
+ * Communicates with the backend REST API via Axios.
+ */
+@Injectable({providedIn: 'root'})
+export class OrderOfPlayRepositoryImpl implements IOrderOfPlayRepository {
+  /** The HTTP client for making API requests */
+  private readonly httpClient = inject(AxiosClient);
+
+  /**
+   * Finds an order of play by its unique identifier.
+   * @param id - The order of play identifier
+   * @returns Promise resolving to the order of play or null if not found
+   */
+  public async findById(id: string): Promise<OrderOfPlay | null> {
+    try {
+      const response = await this.httpClient.get<OrderOfPlay>(`/order-of-play/${id}`);
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves all orders of play from the system.
+   * @returns Promise resolving to an array of all orders of play
+   */
+  public async findAll(): Promise<OrderOfPlay[]> {
+    const response = await this.httpClient.get<OrderOfPlay[]>('/order-of-play');
+    return response;
+  }
+
+  /**
+   * Persists a new order of play to the database.
+   * @param orderOfPlay - The order of play entity to save
+   * @returns Promise resolving to the saved order of play with assigned ID
+   */
+  public async save(orderOfPlay: OrderOfPlay): Promise<OrderOfPlay> {
+    const response = await this.httpClient.post<OrderOfPlay>('/order-of-play', orderOfPlay);
+    return response;
+  }
+
+  /**
+   * Updates an existing order of play in the database.
+   * @param orderOfPlay - The order of play entity with updated data
+   * @returns Promise resolving to the updated order of play
+   */
+  public async update(orderOfPlay: OrderOfPlay): Promise<OrderOfPlay> {
+    const response = await this.httpClient.put<OrderOfPlay>(`/order-of-play/${orderOfPlay.id}`, orderOfPlay);
+    return response;
+  }
+
+  /**
+   * Removes an order of play from the database.
+   * @param id - The identifier of the order of play to delete
+   * @returns Promise resolving when deletion is complete
+   */
+  public async delete(id: string): Promise<void> {
+    await this.httpClient.delete(`/order-of-play/${id}`);
+  }
+
+  /**
+   * Retrieves all orders of play for a specific tournament.
+   * @param tournamentId - The tournament identifier
+   * @returns Promise resolving to an array of orders of play
+   */
+  public async findByTournamentId(tournamentId: string): Promise<OrderOfPlay[]> {
+    const response = await this.httpClient.get<OrderOfPlay[]>(`/order-of-play?tournamentId=${tournamentId}`);
+    return response;
+  }
+
+  /**
+   * Retrieves all orders of play for a specific court.
+   * @param courtId - The court identifier
+   * @param date - The date to filter by
+   * @returns Promise resolving to an array of orders of play
+   */
+  public async findByCourtId(courtId: string, date: Date): Promise<OrderOfPlay[]> {
+    const dateStr = date.toISOString().split('T')[0];
+    const response = await this.httpClient.get<OrderOfPlay[]>(`/order-of-play?courtId=${courtId}&date=${dateStr}`);
+    return response;
+  }
+
+  /**
+   * Retrieves all orders of play for a specific match.
+   * @param matchId - The match identifier
+   * @returns Promise resolving to an array of orders of play
+   */
+  public async findByMatchId(matchId: string): Promise<OrderOfPlay[]> {
+    const response = await this.httpClient.get<OrderOfPlay[]>(`/order-of-play?matchId=${matchId}`);
+    return response;
+  }
+
+  /**
+   * Generates order of play schedule for a tournament.
+   * @param tournamentId - The tournament identifier
+   * @param date - The schedule date
+   * @param startTime - The start time (HH:mm format)
+   * @param matchDuration - Duration per match in minutes (optional, default 90)
+   * @returns Promise resolving to the generated order of play
+   */
+  public async generateSchedule(
+    tournamentId: string,
+    date: string,
+    startTime: string,
+    matchDuration?: number
+  ): Promise<OrderOfPlay> {
+    const response = await this.httpClient.post<OrderOfPlay>(
+      `/order-of-play/${tournamentId}/generate`,
+      { date, startTime, matchDuration }
+    );
+    return response;
+  }
+
+  /**
+   * Updates an existing order of play schedule.
+   * @param id - The order of play identifier
+   * @param matches - Updated match assignments
+   * @returns Promise resolving to the updated order of play
+   */
+  public async updateSchedule(
+    id: string,
+    matches: Array<{
+      matchId: string;
+      courtId: string;
+      courtName: string;
+      time: string;
+      participants: string[];
+    }>
+  ): Promise<OrderOfPlay> {
+    const response = await this.httpClient.put<OrderOfPlay>(`/order-of-play/${id}`, { matches });
+    return response;
+  }
+
+  /**
+   * Publishes an order of play schedule.
+   * @param id - The order of play identifier
+   * @returns Promise resolving to the published order of play
+   */
+  public async publishSchedule(id: string): Promise<OrderOfPlay> {
+    const response = await this.httpClient.post<OrderOfPlay>(`/order-of-play/${id}/publish`, {});
+    return response;
+  }
+
+  /**
+   * Retrieves order of play for a specific tournament and date.
+   * @param tournamentId - The tournament identifier
+   * @param date - The date to query
+   * @returns Promise resolving to the order of play or null if not found
+   */
+  public async getOrderOfPlayByDate(tournamentId: string, date: Date): Promise<OrderOfPlay | null> {
+    try {
+      const dateStr = date.toISOString().split('T')[0];
+      const response = await this.httpClient.get<OrderOfPlay>(
+        `/order-of-play?tournamentId=${tournamentId}&date=${dateStr}`
+      );
+      return response;
+    } catch (error) {
+      if ((error as {response?: {status?: number}}).response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves all scheduled matches for a tournament.
+   * Returns matches with and without specific time assignments.
+   * @param tournamentId - The tournament identifier
+   * @returns Promise resolving to scheduled matches data
+   */
+  public async getScheduledMatchesForTournament(tournamentId: string): Promise<{
+    scheduledMatches: Array<{
+      matchId: string;
+      courtId: string | null;
+      courtName: string | null;
+      scheduledTime: string | null;
+      participants: string[];
+      participantIds: string[];
+      status: string;
+    }>;
+    awaitingSchedule: Array<{
+      matchId: string;
+      courtId: string | null;
+      courtName: string | null;
+      scheduledTime: string | null;
+      participants: string[];
+      participantIds: string[];
+      status: string;
+    }>;
+    totalCount: number;
+  }> {
+    const response = await this.httpClient.get<{
+      scheduledMatches: Array<{
+        matchId: string;
+        courtId: string | null;
+        courtName: string | null;
+        scheduledTime: string | null;
+        participants: string[];
+        participantIds: string[];
+        status: string;
+      }>;
+      awaitingSchedule: Array<{
+        matchId: string;
+        courtId: string | null;
+        courtName: string | null;
+        scheduledTime: string | null;
+        participants: string[];
+        participantIds: string[];
+        status: string;
+      }>;
+      totalCount: number;
+    }>(`/order-of-play/tournament/${tournamentId}/scheduled-matches`);
+    return response;
+  }
+}

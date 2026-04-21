@@ -25,10 +25,8 @@ let openTournamentId = '';
 test.describe('Registration - High', () => {
   test.beforeAll(async () => {
     apiHelper = await ApiHelper.create();
-    const adminSession = (await apiHelper.getCachedSession(TEST_USERS.tournamentAdmin1.email)) ??
-      await apiHelper.login(TEST_USERS.tournamentAdmin1);
-    const participantSession = (await apiHelper.getCachedSession(TEST_USERS.participant2.email)) ??
-      await apiHelper.login(TEST_USERS.participant2);
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const participantSession = await apiHelper.login(TEST_USERS.participant2);
     seedHelper = new SeedHelper(apiHelper, adminSession);
 
     const tournament = await seedHelper.createTournament(`E2E Registration ${Date.now()}`);

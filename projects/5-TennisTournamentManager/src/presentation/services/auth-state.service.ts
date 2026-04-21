@@ -38,20 +38,9 @@ export class AuthStateService {
    * Restores user data from localStorage.
    */
   private restoreUser(): void {
-    // Only restore the in-memory currentUser if a valid token exists.
-    // Prevents rehydration of a stale `app_user` value when the token
-    // has been removed (e.g., during logout). This guards against cases
-    // where some environment or script re-populates `app_user` but the
-    // session token is absent.
-    const token = localStorage.getItem(JWT_STORAGE_KEY);
-    if (!token) return;
-
     const userJson = localStorage.getItem(USER_STORAGE_KEY);
+    
     if (userJson) {
-      try {
-        // eslint-disable-next-line no-console
-        console.log('[AuthState] restoreUser found user in localStorage and token present');
-      } catch {}
       try {
         this.currentUser = JSON.parse(userJson);
       } catch (error) {
@@ -88,11 +77,6 @@ export class AuthStateService {
     // Store user in memory and localStorage
     this.currentUser = user;
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-    // Debugging aid for E2E: log that auth was set
-    try {
-      // eslint-disable-next-line no-console
-      console.log('[AuthState] setAuth called, token present:', !!localStorage.getItem(JWT_STORAGE_KEY), 'user:', user?.email);
-    } catch {}
   }
 
   /**
@@ -150,11 +134,6 @@ export class AuthStateService {
    */
   public clearAuth(): void {
     // Remove token from localStorage
-    try {
-      // eslint-disable-next-line no-console
-      console.log('[AuthState] clearAuth called, before:', { token: localStorage.getItem(JWT_STORAGE_KEY), user: localStorage.getItem(USER_STORAGE_KEY) });
-    } catch {}
-
     localStorage.removeItem(JWT_STORAGE_KEY);
     
     // Remove user from localStorage
@@ -162,10 +141,5 @@ export class AuthStateService {
     
     // Clear user from memory
     this.currentUser = null;
-
-    try {
-      // eslint-disable-next-line no-console
-      console.log('[AuthState] clearAuth completed, after:', { token: localStorage.getItem(JWT_STORAGE_KEY), user: localStorage.getItem(USER_STORAGE_KEY) });
-    } catch {}
   }
 }

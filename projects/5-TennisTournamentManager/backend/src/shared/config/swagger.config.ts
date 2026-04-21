@@ -360,35 +360,10 @@ and multichannel notifications.
     ],
   },
   // Path to files containing JSDoc comments for API endpoints
-  // Avoid scanning the large `routes/index.ts` file here because some
-  // embedded JSDoc blocks contain complex YAML that can emit noisy
-  // parser errors during test startup. Prefer scanning controllers only
-  // and add route-level docs back once the JSDoc blocks are validated.
-  apis: ['./src/presentation/controllers/**/*.ts'],
+  apis: ['./src/presentation/routes/**/*.ts', './src/presentation/controllers/**/*.ts'],
 };
 
 /**
  * Generate Swagger specification from JSDoc comments
  */
-// Safely generate Swagger specification. Some JSDoc blocks may contain
-// OpenAPI YAML that fails parsing during development; don't let that
-// break server startup — log and fall back to a minimal spec.
-let _swaggerSpec: any;
-try {
-  _swaggerSpec = swaggerJsdoc(swaggerOptions);
-} catch (err) {
-  // eslint-disable-next-line no-console
-  console.warn('Swagger generation failed, falling back to empty spec:', err && err.message ? err.message : err);
-  _swaggerSpec = {
-    openapi: '3.0.0',
-    info: {
-      title: 'Tennis Tournament Manager API (partial)',
-      version: '0.0.0',
-      description: 'Swagger generation failed for some JSDoc comments. See server logs for details.',
-    },
-    paths: {},
-    components: {},
-  };
-}
-
-export const swaggerSpec = _swaggerSpec;
+export const swaggerSpec = swaggerJsdoc(swaggerOptions);
