@@ -19,7 +19,8 @@
     "projects/4-CartographicProjectManager"
   ],
   "dependencies": {
-    "node-telegram-bot-api": "^0.67.0"
+    "node-telegram-bot-api": "^0.67.0",
+    "supabase": "^2.93.0"
   },
   "devDependencies": {
     "@types/node-telegram-bot-api": "^0.64.14"
