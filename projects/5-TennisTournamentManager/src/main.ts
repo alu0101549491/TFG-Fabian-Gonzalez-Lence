@@ -9,7 +9,6 @@
  * @file src/main.ts
  * @desc Application entry point. Bootstraps the Angular application with standalone component architecture.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
- * @see {@link https://typescripttutorial.net}
  */
 
 import './styles/variables.css';
