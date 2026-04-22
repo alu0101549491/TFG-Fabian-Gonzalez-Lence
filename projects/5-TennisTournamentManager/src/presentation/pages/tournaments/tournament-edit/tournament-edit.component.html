@@ -300,12 +300,14 @@
               type="color"
               class="color-input"
               [(ngModel)]="formData.primaryColor"
+              (ngModelChange)="updateColorPreview()"
               name="primaryColor"
             />
             <input
               type="text"
               class="form-input color-hex-input"
               [(ngModel)]="formData.primaryColor"
+              (input)="updateColorPreview()"
               name="primaryColorHex"
               maxlength="7"
               placeholder="#2563eb"
@@ -323,12 +325,14 @@
               type="color"
               class="color-input"
               [(ngModel)]="formData.secondaryColor"
+              (ngModelChange)="updateColorPreview()"
               name="secondaryColor"
             />
             <input
               type="text"
               class="form-input color-hex-input"
               [(ngModel)]="formData.secondaryColor"
+              (input)="updateColorPreview()"
               name="secondaryColorHex"
               maxlength="7"
               placeholder="#10b981"

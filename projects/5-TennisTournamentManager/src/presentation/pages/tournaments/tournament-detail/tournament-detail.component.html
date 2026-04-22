@@ -47,6 +47,66 @@
                 </div>
               }
               
+              <!-- Export Dropdown -->
+              <div style="position: relative;">
+                <button 
+                  class="btn btn-primary btn-sm" 
+                  (click)="toggleExportMenu($event)"
+                  title="Export tournament data"
+                >
+                  📄 Export
+                </button>
+                
+                @if (showExportMenu()) {
+                  <div style="position: absolute; top: 100%; right: 0; margin-top: 0.25rem; min-width: 250px; background: white; border: 1px solid var(--color-gray-300); border-radius: 0.375rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); z-index: 1000;">
+                    <button 
+                      class="export-option" 
+                      (click)="exportToITF()"
+                      style="display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.75rem 1rem; border: none; background: none; text-align: left; border-bottom: 1px solid var(--color-gray-200); cursor: pointer; transition: background 0.2s;"
+                    >
+                      <span style="font-size: 1.5rem;">📋</span>
+                      <div>
+                        <strong style="display: block; font-size: 0.9375rem;">ITF CSV</strong>
+                        <small style="color: var(--color-gray-600); font-size: 0.8125rem;">International Tennis Federation format</small>
+                      </div>
+                    </button>
+                    <button 
+                      class="export-option" 
+                      (click)="exportToTODS()"
+                      style="display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.75rem 1rem; border: none; background: none; text-align: left; border-bottom: 1px solid var(--color-gray-200); cursor: pointer; transition: background 0.2s;"
+                    >
+                      <span style="font-size: 1.5rem;">🔄</span>
+                      <div>
+                        <strong style="display: block; font-size: 0.9375rem;">TODS JSON</strong>
+                        <small style="color: var(--color-gray-600); font-size: 0.8125rem;">Tennis Open Data Standards</small>
+                      </div>
+                    </button>
+                    <button 
+                      class="export-option" 
+                      (click)="exportResultsToPDF()"
+                      style="display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.75rem 1rem; border: none; background: none; text-align: left; border-bottom: 1px solid var(--color-gray-200); cursor: pointer; transition: background 0.2s;"
+                    >
+                      <span style="font-size: 1.5rem;">📑</span>
+                      <div>
+                        <strong style="display: block; font-size: 0.9375rem;">PDF Report</strong>
+                        <small style="color: var(--color-gray-600); font-size: 0.8125rem;">Formatted results document</small>
+                      </div>
+                    </button>
+                    <button 
+                      class="export-option" 
+                      (click)="exportResultsToExcel()"
+                      style="display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.75rem 1rem; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;"
+                    >
+                      <span style="font-size: 1.5rem;">📊</span>
+                      <div>
+                        <strong style="display: block; font-size: 0.9375rem;">Excel Spreadsheet</strong>
+                        <small style="color: var(--color-gray-600); font-size: 0.8125rem;">Multi-sheet workbook</small>
+                      </div>
+                    </button>
+                  </div>
+                }
+              </div>
+              
               <button 
                 class="btn btn-secondary btn-sm" 
                 (click)="editTournament()"

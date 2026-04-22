@@ -326,6 +326,9 @@
                   placeholder="e.g. Wilson, Penn, Dunlop"
                   maxlength="100"
                 />
+                <small style="display: block; margin-top: 0.25rem; color: var(--color-gray-600); font-size: 0.875rem;">
+                  Select who provides balls for THIS match
+                </small>
               </div>            </div>
             <div class="modal-footer">
               <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSubmitting()">
@@ -358,7 +361,7 @@
               }
               
               <div class="form-group">
-                <label for="status">Status</label>
+                <label for="status">Status (hover over options to learn more)</label>
                 <select 
                   id="status" 
                   [(ngModel)]="statusForm.status" 
@@ -366,9 +369,12 @@
                   required
                 >
                   @for (status of availableStatuses; track status) {
-                    <option [value]="status">{{ status | enumFormat }}</option>
+                    <option [value]="status" [title]="getStatusTooltip(status)">{{ status | enumFormat }}</option>
                   }
                 </select>
+                <small style="display: block; margin-top: 0.25rem; color: var(--color-gray-600); font-size: 0.875rem;">
+                  Hover over options to see status descriptions
+                </small>
               </div>
 
               <p class="info-text">

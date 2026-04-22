@@ -97,6 +97,14 @@ export class TournamentEditComponent implements OnInit {
   public readonly tournamentStatuses = Object.values(TournamentStatus);
 
   /**
+   * Triggers change detection for color preview updates.
+   * Called when color inputs change to ensure preview updates immediately.
+   */
+  public updateColorPreview(): void {
+    // This method intentionally empty - just triggers change detection
+  }
+
+  /**
    * Initializes component and loads tournament data.
    */
   public ngOnInit(): void {

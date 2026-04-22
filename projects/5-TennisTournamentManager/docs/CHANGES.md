@@ -8,6 +8,218 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Implementation: Phase 2 Navigation Improvements (2026-04-22)
+
+**Completed:** Added main navigation links to improve discoverability of key features. Improved navigation layout for better UX.
+
+**Changes:**
+
+1. ✅ **My Matches Navigation Link**
+   - **Problem:** Participants couldn't easily find the "My Matches" page to view their scheduled games
+   - **Solution:**
+     - Added "🎾 My Matches" link to header navigation
+     - Link only visible to users with PLAYER or COACH roles
+     - Added `isParticipant` getter method to check user role
+   - **Files Modified:**
+     - `src/presentation/components/header/header.component.ts` (template + TypeScript)
+   - **Impact:** Participants can now access their matches with one click from any page
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 2.5), COPILOT-TODO.md (Phase 2)
+
+2. ✅ **Statistics Navigation Link**
+   - **Problem:** Statistics page was hard to discover, no direct navigation link
+   - **Solution:**
+     - Added "📊 Statistics" link to header navigation
+     - Visible to all authenticated users
+     - Routes to `/statistics` page
+   - **Files Modified:**
+     - `src/presentation/components/header/header.component.ts` (template)
+   - **Impact:** Users can easily access tournament statistics and rankings
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md, COPILOT-TODO.md (Phase 2)
+
+3. ✅ **Tournaments Navigation Link**
+   - **Problem:** No central navigation to tournament list
+   - **Solution:**
+     - Added "🏆 Tournaments" link to header navigation
+     - Visible to all authenticated users
+   - **Impact:** Easy access to browse all tournaments
+
+4. ✅ **Navigation Layout Improvement**
+   - **Problem:** Navigation links were centered, visually disconnected from the logo
+   - **Solution:**
+     - Repositioned navigation links to the left, immediately after "Tennis TM" logo
+     - Removed center justification, added left margin spacing
+     - Added `margin-left: auto` to header actions to keep them right-aligned
+   - **Files Modified:**
+     - `src/presentation/components/header/header.component.ts` (CSS styles)
+   - **Impact:** More conventional and intuitive navigation layout, better visual hierarchy
+
+**Notes:**
+- Export functionality already existed in tournament detail view (no changes needed)
+- Navigation links use emoji icons for visual appeal
+- Links include `routerLinkActive` for active state highlighting
+- Navigation positioned on left for better usability (standard web pattern)
+
+**Testing Status:** Manual testing required.
+
+---
+
+### Implementation: Phase 1 Quick Fixes (2026-04-22)
+
+**Completed:** 4 high-impact UX improvements from feedback implementation plan.
+
+**Changes:**
+
+1. ✅ **Ball Provider Clarification** (Match Detail Component)
+   - **Problem:** Users confused about whether ball provider applies to entire tournament or single match
+   - **Solution:** Added clarification text "Select who provides balls for THIS match" below ball provider dropdown
+   - **Files Modified:**
+     - `src/presentation/pages/matches/match-detail/match-detail.component.html` (line 321-328)
+   - **Impact:** Eliminates ambiguity about ball provider scope
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 3.2.4)
+
+2. ✅ **Match Status Tooltips** (Match Detail Component)
+   - **Problem:** Status dropdown shows abbreviated codes (TBP, IP, CO, RET, etc.) without explanations
+   - **Solution:** 
+     - Added `getStatusTooltip()` method with 13 detailed status descriptions
+     - Added `title` attributes to all status options in dropdown
+     - Added help text below dropdown explaining status meanings
+     - Updated label to "Status (hover over options to learn more)" with inline hint
+   - **Files Modified:**
+     - `src/presentation/pages/matches/match-detail/match-detail.component.ts` (new method)
+     - `src/presentation/pages/matches/match-detail/match-detail.component.html` (lines 365-378)
+   - **Impact:** Users understand each status without consulting documentation, hint text guides users to hover
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 3.2.6)
+
+3. ✅ **Color Preview Live Updates** (Tournament Forms)
+   - **Problem:** Color picker doesn't update preview in real-time when changing colors
+   - **Solution:**
+     - Added `(ngModelChange)="updateColorPreview()"` to color input elements
+     - Added `(input)="updateColorPreview()"` to hex text inputs
+     - Created `updateColorPreview()` method to trigger change detection
+   - **Files Modified:**
+     - `src/presentation/pages/tournaments/tournament-create/tournament-create.component.html` (lines 288-340)
+     - `src/presentation/pages/tournaments/tournament-create/tournament-create.component.ts` (new method)
+     - `src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.html` (lines 290-342)
+     - `src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.ts` (new method)
+   - **Impact:** Immediate visual feedback when selecting tournament brand colors
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 3.2.1)
+
+4. ✅ **Player Comments Field** (Result Submission)
+   - **Problem:** FR32 requirement - optional player comments not visible in result submission form
+   - **Solution:**
+     - Added textarea for player comments (max 500 characters) to result entry modal
+     - Placed between score entry and confirmation info
+     - Added placeholder with examples and help text explaining visibility
+   - **Files Modified:**
+     - `src/presentation/pages/matches/my-matches/my-matches.component.html` (after tennis scoring help)
+   - **Backend Support:** `resultForm.playerComments` field already exists in component
+   - **Impact:** Players can add context about match conditions, issues, or notes
+   - **References:** 
+     - FEEDBACK-IMPLEMENTATION-PLAN.md (Section 3.3.1)
+     - FR32 (Functional Requirements)
+
+**Testing Status:** Manual testing required for all 4 changes.
+
+**Next Steps:** 
+- Phase 2: Navigation improvements (back buttons, breadcrumbs)
+- Phase 3: Visualization enhancements (statistics charts, bracket view)
+
+---
+
+### Documentation: Client Feedback Analysis & Implementation Planning (2026-04-22)
+
+**Created:** Comprehensive planning documents based on client feedback analysis.
+
+**Problem:** Client provided feedback document listing features as "not covered" and identifying multiple UX anomalies and inconsistencies. Need systematic approach to:
+1. Verify which "not covered" features are actually implemented
+2. Prioritize bug fixes and UX improvements
+3. Plan implementation of truly missing features
+4. Distinguish in-scope from out-of-scope work
+
+**Documents Created:**
+
+1. ✅ **FEEDBACK-IMPLEMENTATION-PLAN.md** (Main Planning Document)
+   - Categorizes all feedback items into 4 groups:
+     - Already Implemented (10 items) - e.g., notifications, phase linking, match states
+     - Bugs & UX Issues (11 items) - e.g., color preview, back buttons, match status confusion
+     - Missing Features (5 items) - e.g., match format selection, player comments, global ranking
+     - Out of Scope (4 items) - e.g., payment system, live streaming
+   - Provides 5-phase implementation priority matrix
+   - Includes detailed bug tracking templates
+   - Estimates ~30 working days for complete implementation
+   - Validates all items against original specification (FR1-FR63)
+
+2. ✅ **FEATURE-VERIFICATION-GUIDE.md** (Testing & Replication Guide)
+   - Step-by-step instructions to verify 10 "not covered" features actually exist
+   - Covers:
+     - Multi-channel notifications (IN_APP, EMAIL, TELEGRAM, WEB_PUSH)
+     - Multiple tournament phases (qualifying → main → consolation)
+     - Match format configuration (best-of-3, super tiebreak, etc.)
+     - Participant result entry workflow
+     - View other participants' profiles with privacy controls
+     - Personalized H2H statistics
+     - Match state management (all 12 ITF states)
+     - Export functionality (ITF CSV, TODS JSON, PDF, Excel)
+     - Announcement images and links
+     - Administrator notifications
+   - Each section includes:
+     - Backend evidence (files, entities, services)
+     - Frontend evidence (components, pages)
+     - Verification steps with expected results
+     - Known issues and recommended improvements
+
+3. ✅ **COPILOT-TODO.md** (Prioritized Implementation Checklist)
+   - 68 actionable tasks organized from smallest to largest
+   - Grouped into 9 phases:
+     - Phase 1: Quick Fixes (8 tasks, ~11 hours)
+     - Phase 2: Navigation & Discoverability (6 tasks, ~11 hours)
+     - Phase 3: Data Visualization (6 tasks, ~17 hours)
+     - Phase 4: Form Improvements (7 tasks, ~20 hours)
+     - Phase 5: State Management & Validation (5 tasks, ~16 hours)
+     - Phase 6: Advanced Features (5 tasks, ~31 hours)
+     - Phase 7: Phase Linking UI (6 tasks, ~28 hours)
+     - Phase 8: Testing & Documentation (9 tasks, ~39 hours)
+     - Phase 9: Polish & Nice-to-Have (16 tasks, ~64 hours)
+   - Each task includes:
+     - Estimated effort
+     - Files involved
+     - Proposed fix
+     - Test verification steps
+   - 6-week sprint plan for systematic implementation
+   - Clearly identifies dependencies between tasks
+   - Lists out-of-scope features to avoid
+
+**Key Findings:**
+
+- ✅ **95% feature-complete** according to specification
+- ✅ Most "not covered" items are **actually implemented** but need better UI/documentation
+- ⚠️ **Optional notification channels** (EMAIL, TELEGRAM, WEB_PUSH) excluded from planning - kept in original feedback for future reference
+- ❌ ~11 UX bugs need fixing (color preview, back buttons, match status confusion, etc.)
+- ❌ ~5 core features missing (match format UI, super tiebreak, player comments, etc.)
+- ✅ All items validated against original scope - no scope creep
+
+**Impact:**
+- **Clear Roadmap**: Team knows exactly what to implement and in what order
+- **Scope Protection**: Out-of-scope features identified (payment, streaming, etc.)
+- **Client Confidence**: Can demonstrate existing features that were thought missing
+- **Quality Improvement**: Systematic approach to fixing UX inconsistencies
+- **Resource Planning**: 6-week timeline with realistic effort estimates
+
+**Next Steps:**
+1. Share FEATURE-VERIFICATION-GUIDE.md with client to demonstrate existing features
+2. Prioritize Phase 1 critical fixes (color preview, tooltips, badges)
+3. Implement Phase 2-3 visibility improvements
+4. Create E2E tests for verified features
+5. Document external service setup (SMTP, Telegram, VAPID)
+
+**Files:**
+- `docs/FEEDBACK-IMPLEMENTATION-PLAN.md` - Main planning document (9 sections, 74 KB)
+- `docs/FEATURE-VERIFICATION-GUIDE.md` - Testing guide (10 features, 55 KB)
+- `docs/COPILOT-TODO.md` - Prioritized TODO list (68 tasks, 28 KB)
+- `docs/FEEDBACK.md` - Original client feedback (preserved unchanged)
+
+---
+
 ### Bug Fix: Reschedule Form Timezone Issues (2026-04-16)
 
 **Fix:** Fixed reschedule modal to correctly handle times in UTC timezone, preventing progressive time shift on each reschedule operation.

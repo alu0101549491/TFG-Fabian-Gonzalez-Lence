@@ -37,6 +37,23 @@ import {UserRole} from '@domain/enumerations/user-role';
       </a>
     </div>
 
+    <!-- Main Navigation -->
+    @if (isAuthenticated) {
+      <nav class="header-nav">
+        <a routerLink="/tournaments" routerLinkActive="nav-link-active" class="nav-link">
+          🏆 Tournaments
+        </a>
+        @if (isParticipant) {
+          <a routerLink="/my-matches" routerLinkActive="nav-link-active" class="nav-link">
+            🎾 My Matches
+          </a>
+        }
+        <a routerLink="/statistics" routerLinkActive="nav-link-active" class="nav-link">
+          📊 Statistics
+        </a>
+      </nav>
+    }
+
     <!-- User Actions -->
     <div class="header-actions">
       @if (isAuthenticated) {
@@ -153,9 +170,10 @@ import {UserRole} from '@domain/enumerations/user-role';
 }
 
 .header-nav {
-  flex: 1;
   display: flex;
-  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-left: var(--spacing-xl);
 }
 
 .header-nav .nav {
@@ -186,6 +204,7 @@ import {UserRole} from '@domain/enumerations/user-role';
   align-items: center;
   gap: var(--spacing-md);
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .user-menu-toggle {
@@ -308,6 +327,16 @@ export class HeaderComponent {
   public get isAdmin(): boolean {
     const user = this.authStateService.getCurrentUser();
     return user?.role === UserRole.SYSTEM_ADMIN || user?.role === UserRole.TOURNAMENT_ADMIN;
+  }
+
+  /**
+   * Checks if user is a participant (PLAYER or COACH).
+   *
+   * @returns True if user has participant role
+   */
+  public get isParticipant(): boolean {
+    const user = this.authStateService.getCurrentUser();
+    return user?.role === UserRole.PLAYER || user?.role === UserRole.COACH;
   }
 
   /**

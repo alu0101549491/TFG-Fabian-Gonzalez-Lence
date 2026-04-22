@@ -419,6 +419,23 @@
               </div>
             </div>
 
+            <!-- Player Comments (FR32) -->
+            <div class="form-group">
+              <label for="playerComments">Comments (Optional)</label>
+              <textarea
+                id="playerComments"
+                [(ngModel)]="resultForm().playerComments"
+                name="playerComments"
+                rows="3"
+                maxlength="500"
+                placeholder="Add any comments about this match (e.g., weather conditions, court issues, etc.)"
+                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 0.375rem; font-family: inherit; font-size: 0.875rem;"
+              ></textarea>
+              <small style="display: block; margin-top: 0.25rem; color: var(--color-gray-600); font-size: 0.875rem;">
+                Maximum 500 characters. These comments will be visible to tournament administrators.
+              </small>
+            </div>
+
             @if (errorMessage()) {
               <div class="error-alert">
                 <span>⚠️</span>

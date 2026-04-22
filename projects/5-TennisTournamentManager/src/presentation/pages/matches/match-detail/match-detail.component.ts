@@ -121,6 +121,31 @@ export class MatchDetailComponent implements OnInit {
   /** Submitting state */
   public isSubmitting = signal(false);
 
+  /**
+   * Gets tooltip text explaining each match status.
+   *
+   * @param status - The match status
+   * @returns Tooltip explanation text
+   */
+  public getStatusTooltip(status: MatchStatus): string {
+    const tooltips: Record<MatchStatus, string> = {
+      [MatchStatus.NOT_SCHEDULED]: 'Match created but awaiting schedule details (players, time, court)',
+      [MatchStatus.SCHEDULED]: 'Match fully scheduled and ready to be played (TBP)',
+      [MatchStatus.IN_PROGRESS]: 'Match currently being played (IP)',
+      [MatchStatus.COMPLETED]: 'Match finished with result recorded (CO)',
+      [MatchStatus.SUSPENDED]: 'Match temporarily stopped (weather, light, etc.) (SUS)',
+      [MatchStatus.WALKOVER]: 'Victory awarded due to opponent no-show (WO)',
+      [MatchStatus.RETIRED]: 'Match ended by player retirement during play (RET)',
+      [MatchStatus.ABANDONED]: 'Match abandoned without valid result (ABN)',
+      [MatchStatus.BYE]: 'Automatic advancement without playing (participant has bye)',
+      [MatchStatus.NOT_PLAYED]: 'Match not disputed (NP)',
+      [MatchStatus.CANCELLED]: 'Match cancelled by organization (CAN)',
+      [MatchStatus.DEFAULT]: 'Disciplinary disqualification (DEF)',
+      [MatchStatus.DEAD_RUBBER]: 'Match has no impact on standings (DR)',
+    };
+    return tooltips[status] || '';
+  }
+
   /** Tennis score validator */
   private readonly scoreValidator = new TennisScoreValidator();
 

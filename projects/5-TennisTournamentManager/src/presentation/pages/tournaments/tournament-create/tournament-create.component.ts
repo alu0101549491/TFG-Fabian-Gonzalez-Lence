@@ -90,6 +90,14 @@ export class TournamentCreateComponent {
   public readonly rankingSystems = Object.values(RankingSystem);
 
   /**
+   * Triggers change detection for color preview updates.
+   * Called when color inputs change to ensure preview updates immediately.
+   */
+  public updateColorPreview(): void {
+    // This method intentionally empty - just triggers change detection
+  }
+
+  /**
    * Validates date ranges to ensure logical consistency.
    *
    * @returns Error message if validation fails, null if valid
