@@ -143,6 +143,23 @@ test.describe('Standings - High', () => {
     await expect(firstRow.locator('.stat-ratio').nth(1)).toBeVisible();
   });
 
+  test('STAND-008 should render tournament statistics overview, leaderboards, and admin exports', async ({publicPage, tournamentAdminPage}) => {
+    await publicPage.goto(`/tournaments/${standingsTournamentId}/statistics`);
+    await expect(publicPage.getByRole('heading', {name: /tournament statistics/i})).toBeVisible();
+    await expect(publicPage.locator('.stat-label-large').filter({hasText: /^Participants$/})).toBeVisible();
+    await expect(publicPage.getByRole('heading', {name: /^Tournament Progress$/})).toBeVisible();
+    await expect(publicPage.getByRole('heading', {name: /^Result Distribution$/})).toBeVisible();
+    await expect(publicPage.getByRole('heading', {name: /^Top Performers$/})).toBeVisible();
+    await expect(publicPage.getByRole('heading', {name: /^Most Active Participants$/})).toBeVisible();
+    await expect(publicPage.getByRole('heading', {name: /^Rankings by Category$/})).toBeVisible();
+    await expect(publicPage.getByRole('button', {name: /export as pdf/i})).toHaveCount(0);
+
+    await tournamentAdminPage.goto(`/tournaments/${standingsTournamentId}/statistics`);
+    await expect(tournamentAdminPage.getByText(/export statistics/i)).toBeVisible();
+    await expect(tournamentAdminPage.getByRole('button', {name: /export as pdf/i})).toBeVisible();
+    await expect(tournamentAdminPage.getByRole('button', {name: /export as csv/i})).toBeVisible();
+  });
+
   test('STAND-007 should expose head-to-head and split ratio views', async ({publicPage}) => {
     test.skip(true, 'Dedicated head-to-head and split classification UI is not implemented in the current frontend.');
 

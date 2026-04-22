@@ -1,8 +1,9 @@
 # E2E TEST SCENARIOS
 ## Tennis Tournament Manager (TENNIS)
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Created:** April 20, 2026  
+**Updated:** April 22, 2026  
 **Author:** QA Engineer Agent  
 **Testing Framework:** Playwright  
 **Target Coverage:** 92% of reachable user interactions in the current frontend  
@@ -199,7 +200,11 @@ No `data-testid` attributes were found in the presentation layer. Selector strat
 - At least one published bracket with completed matches.
 - At least one disputed result.
 - At least one pending partner invitation.
+- At least one sent invitation, one received invitation, and one historical invitation state.
 - At least one pending tournament registration and one alternate registration.
+- At least one player profile without `idDocument` to validate registration gating.
+- At least one multi-phase tournament with source and target phases available for link, consolation, and lucky-loser actions.
+- At least one user list containing mixed roles and active/inactive accounts for `/admin/users` filters.
 - At least one notification per major type.
 
 ---
@@ -219,6 +224,7 @@ Legend:
 - `Edit User` -> `/admin/users` edit modal -> Implemented -> `SYS-002`
 - `Delete User` -> `/admin/users` delete action -> Implemented -> `SYS-002`
 - `Assign Roles` -> `/admin/users` role select -> Implemented -> `SYS-002`
+- `Search and Filter Users` -> `/admin/users` search box, role filter, active-only toggle -> Implemented -> `SYS-005`
 - `Manage Permissions` -> `/admin/users` role and active state -> Partial -> `SYS-002`, `ERR-002`
 
 ### 3.2 Tournament Management
@@ -226,6 +232,8 @@ Legend:
 - `Create Tournament` -> `/tournaments/create` -> Implemented -> `TOURN-001`, `TOURN-002`
 - `Configure Tournament` -> `/tournaments/create`, `/tournaments/:id/edit` -> Implemented -> `TOURN-001`, `TOURN-003`
 - `Edit Tournament Details` -> `/tournaments/:id/edit` -> Implemented -> `TOURN-003`
+- `Review Tournament Detail State` -> `/tournaments/:id` status panel, admin controls, and participant registration area -> Implemented -> `TOURN-009`
+- `Manage Tournament Categories` -> `/tournaments/:id` organizer category form and list -> Implemented -> `TOURN-010`
 - `Assign Multiple Administrators` -> no verified UI -> `[PENDING IMPLEMENTATION]` -> `TOURN-008`, `SYS-004`
 - `Define Tournament Rules` -> regulations field on create/edit -> Implemented -> `TOURN-002`, `TOURN-003`
 - `Customize Visual Identity` -> branding fields on create/edit -> Partial -> `TOURN-002`, `SYS-003`
@@ -236,6 +244,8 @@ Legend:
 - `Manage Quotas` -> tournament detail admin registration logic -> Partial -> `REG-002`, `REG-004`, `REG-005`
 - `Manage Substitute Lists` -> alternate/lucky loser flows -> Partial -> `REG-005`
 - `Withdraw from Tournament` -> `/my-registrations`, tournament detail admin withdrawal -> Implemented -> `REG-006`
+- `Review Own Registrations` -> `/my-registrations` cards, status badges, and tournament deep links -> Implemented -> `REG-010`
+- `Manage Partner Invitations` -> `/my-invitations` pending, sent, and past invitation sections -> Implemented -> `REG-011`, `COMM-001`, `COMM-002`
 - `Assign Reserved Spots` -> acceptance types and seed handling exist, no dedicated UI -> Partial -> `REG-007`
 - `Process Registration Payment` -> no verified UI -> `[PENDING IMPLEMENTATION]` -> `REG-009`
 
@@ -244,12 +254,17 @@ Legend:
 - `Generate Bracket` -> tournament detail and bracket pages -> Partial -> `DRAW-001`, `DRAW-002`
 - `Modify Bracket` -> regenerate bracket modal -> Partial -> `DRAW-003`, `DRAW-004`
 - `Link Tournament Phases` -> `/tournaments/:tournamentId/phases` -> Implemented -> `DRAW-005`
+- `Create Consolation Draw` -> `/tournaments/:tournamentId/phases` consolation tab -> Partial -> `DRAW-008`
+- `Promote Lucky Loser` -> `/tournaments/:tournamentId/phases` lucky-loser tab -> Partial -> `DRAW-008`
 - `Set Seeds and Byes` -> service-backed behavior, no dedicated admin seeding screen -> Partial -> `DRAW-006`
 - `Balance Round Robin Groups` -> service-backed behavior, no dedicated preview UI -> Partial -> `DRAW-006`
+- `Manage Compass Draw` -> no verified UI -> `[PENDING IMPLEMENTATION]` -> `DRAW-009`
 - `Migrate Results to New Bracket` -> regenerate with preserve-results option -> Partial -> `DRAW-004`
 
 ### 3.5 Match Management
 
+- `Browse Match List` -> `/matches` grouped cards, status filter, and empty state -> Implemented -> `MATCH-011`
+- `Review Personal Match Queue` -> `/my-matches` uncompleted/completed sections and action states -> Implemented -> `MATCH-012`
 - `Enter Result as Participant` -> `/my-matches` result modal -> Implemented -> `MATCH-003`
 - `Enter Result as Administrator` -> `/matches/:id` score modal -> Implemented -> `MATCH-009`
 - `Confirm Match Result` -> `/my-matches` confirm button -> Implemented -> `MATCH-004`
@@ -270,7 +285,7 @@ Legend:
 ### 3.7 Visualization
 
 - `View Brackets` -> `/brackets/:id` -> Implemented -> `DRAW-007`, `RESP-003`
-- `View Matches` -> `/matches`, `/matches/:id` -> Implemented -> `MATCH-001`, `MATCH-008`
+- `View Matches` -> `/matches`, `/matches/:id` -> Implemented -> `MATCH-001`, `MATCH-008`, `MATCH-011`
 - `View Classification` -> `/standings/:id` -> Implemented -> `STAND-001`
 - `View Points Classification` -> standings and ranking views -> Partial -> `STAND-001`, `RANK-001`
 - `View Ratio Classification` -> no separate ratio UI -> Partial -> `STAND-006`
@@ -281,10 +296,10 @@ Legend:
 ### 3.8 Statistics
 
 - `View Participant Statistics` -> `/statistics` -> Implemented -> `STAND-005`
-- `View Tournament Statistics` -> `/tournaments/:id/statistics` -> Implemented -> `STAND-004`
+- `View Tournament Statistics` -> `/tournaments/:id/statistics` -> Implemented -> `STAND-004`, `STAND-008`
 - `View Result History` -> `/statistics`, `/my-matches` -> Partial -> `STAND-005`
 - `View Matchup History` -> no dedicated head-to-head UI -> `[PENDING IMPLEMENTATION]` -> `STAND-007`
-- `Export Statistics` -> tournament statistics export buttons -> Implemented -> `STAND-004`, `EXP-002`
+- `Export Statistics` -> tournament statistics export buttons -> Implemented -> `STAND-004`, `STAND-008`, `EXP-002`
 
 ### 3.9 Ranking
 
@@ -347,6 +362,7 @@ Legend:
 - `Monitor Performance` -> no verified route -> `[PENDING IMPLEMENTATION]` -> `SYS-003`
 - `Manage Scalability` -> no verified route -> `[PENDING IMPLEMENTATION]` -> `SYS-003`
 - `Integrate External Systems` -> export and ranking services only -> Partial -> `EXP-003`, `SYS-004`
+- `Search and Filter Administrative Data` -> `/admin/users` live search, role select, active-only filter -> Implemented -> `SYS-005`
 - `Update UI` -> all live pages -> Implemented -> `CROSS-002`, `CROSS-005`
 - `Validate Data` -> form validation across auth, tournament, results -> Implemented -> `AUTH-003`, `TOURN-001`, `MATCH-003`
 - `Calculate Score` -> standings/statistics services -> Partial -> `STAND-001`, `STAND-004`
@@ -590,6 +606,24 @@ Legend:
 - **Postconditions:** Notification list is refreshed.
 - **Test Data:** Notification event payload from backend seed/action.
 
+### DASH-005 Player dashboard overview and quick actions
+
+- **Priority:** 🟠 High
+- **Use Case reference:** ViewParticipantStats, ViewMatches, ViewAnnouncements
+- **Actor:** Registered Participant
+- **Implementation status:** Implemented
+- **Preconditions:** Participant account is authenticated.
+- **Test Steps:**
+
+| Step | Action | Expected Result |
+|---|---|---|
+| 1 | Open `/home` as a participant. | Personalized dashboard renders instead of the public landing page. |
+| 2 | Verify welcome text, quick-action buttons, and player stat cards. | Registered tournaments, upcoming matches, wins, and win rate are shown. |
+| 3 | Open `Upcoming Matches`, `My Tournaments`, and `Performance Overview`. | Each panel shows empty or populated states without layout or navigation errors. |
+
+- **Postconditions:** None.
+- **Test Data:** `player1@tennis-test.com` with registrations, statistics, and at least one upcoming match.
+
 ## 4.03 Tournament Management Module
 
 ### TOURN-001 Create tournament with required fields and date validation
@@ -731,6 +765,42 @@ Legend:
 
 - **Postconditions:** Gap recorded.
 - **Test Data:** admin1, admin2.
+
+### TOURN-009 Tournament detail state-driven UI and action visibility
+
+- **Priority:** 🟠 High
+- **Use Case reference:** ConfigureTournament, RegisterParticipant, ViewTournamentStats
+- **Actor:** Public, Participant, Tournament Administrator
+- **Implementation status:** Implemented
+- **Preconditions:** Tournaments exist in `DRAFT`, `REGISTRATION_OPEN`, and `IN_PROGRESS` states.
+- **Test Steps:**
+
+| Step | Action | Expected Result |
+|---|---|---|
+| 1 | Open `/tournaments/:id` for tournaments in different states. | Status badge, status description, and next-step panel reflect the current state. |
+| 2 | Compare public, participant, and admin views. | Registration controls appear only when appropriate and admin edit/delete/status-change controls appear only for organizers. |
+| 3 | Verify related sections such as regulations, categories, and registered-player table. | State-dependent sections render without leaking organizer-only actions. |
+
+- **Postconditions:** None.
+- **Test Data:** T-001, T-002, T-005 across public, player1, and admin1 contexts.
+
+### TOURN-010 Organizer category management from tournament detail
+
+- **Priority:** 🟠 High
+- **Use Case reference:** ConfigureTournament, ValidateData
+- **Actor:** Tournament Administrator
+- **Implementation status:** Implemented
+- **Preconditions:** Organizer can manage an existing tournament.
+- **Test Steps:**
+
+| Step | Action | Expected Result |
+|---|---|---|
+| 1 | Open `/tournaments/:id` as organizer and expand category management. | Add-category form and current category list become visible. |
+| 2 | Submit invalid and valid category data. | Required validation blocks invalid input and a valid category is added to the table. |
+| 3 | Delete an existing category. | Category disappears from the list and related success or error feedback is shown. |
+
+- **Postconditions:** Tournament category configuration changes are persisted.
+- **Test Data:** Admin-owned draft or registration-open tournament.
 
 ## 4.04 Participant Registration Module
 
@@ -890,6 +960,42 @@ Legend:
 - **Postconditions:** Gap recorded.
 - **Test Data:** Tournament with non-zero `registrationFee`.
 
+### REG-010 My registrations status cards, badges, and links
+
+- **Priority:** 🟠 High
+- **Use Case reference:** WithdrawParticipant, AssignReservedSpots
+- **Actor:** Participant
+- **Implementation status:** Implemented
+- **Preconditions:** Participant has registrations in multiple states.
+- **Test Steps:**
+
+| Step | Action | Expected Result |
+|---|---|---|
+| 1 | Open `/my-registrations`. | Registration cards render tournament name, category, registration date, and status badge. |
+| 2 | Verify pending, accepted, alternate, lucky-loser, rejected, and withdrawn helper text where available. | Status-specific explanatory banners match each seeded record. |
+| 3 | Use `View Details` from one card. | Navigation opens the related tournament detail route. |
+
+- **Postconditions:** None.
+- **Test Data:** Mixed registration fixtures for player1 or player6.
+
+### REG-011 Partner invitation inbox sections and lifecycle actions
+
+- **Priority:** 🟠 High
+- **Use Case reference:** ManageQuotas, ChatWithParticipants
+- **Actor:** Participant inviter, Participant invitee
+- **Implementation status:** Implemented
+- **Preconditions:** Pending, sent, and past partner invitations exist.
+- **Test Steps:**
+
+| Step | Action | Expected Result |
+|---|---|---|
+| 1 | Open `/my-invitations` as inviter and invitee. | Pending received, sent, and past invitation sections render when data exists. |
+| 2 | Accept, decline, and cancel invitations from the relevant cards. | Action buttons are shown only in the valid section and status changes move cards between sections. |
+| 3 | Verify tournament links, partner identity, and optional message body. | Invitation metadata remains visible after the action or in historical cards. |
+
+- **Postconditions:** Invitation lifecycle state changes are reflected in the UI.
+- **Test Data:** Doubles invitation set between player1 and player2 with one completed historical invitation.
+
 ## 4.05 Draw Management Module
 
 ### DRAW-001 Bracket generation blocked with fewer than two approved participants
@@ -1013,10 +1119,28 @@ Legend:
 - **Postconditions:** Read-only access confirmed.
 - **Test Data:** Published bracket.
 
-### DRAW-008 Consolation and compass draws `[PENDING IMPLEMENTATION]`
+### DRAW-008 Consolation draw creation and lucky loser promotion
+
+- **Priority:** 🟠 High
+- **Use Case reference:** LinkPhases, GenerateBracket, ManageSubstitutes
+- **Actor:** Tournament Administrator
+- **Implementation status:** Partial
+- **Preconditions:** Multi-phase tournament exists with eligible source and target phases.
+- **Test Steps:**
+
+| Step | Action | Expected Result |
+|---|---|---|
+| 1 | Open `/tournaments/:tournamentId/phases` and switch to `Consolation Draw` and `Lucky Loser` tabs. | Both management tabs are visible in the phase-management UI. |
+| 2 | Configure the source phase, target phase or category, and required participant counts. | Required inputs, helper text, and submit buttons react to valid and invalid selections. |
+| 3 | Submit one consolation or lucky-loser action. | Success or backend validation feedback is shown and the phase-management screen remains stable. |
+
+- **Postconditions:** Consolation or lucky-loser operation is attempted through the visible UI workflow.
+- **Test Data:** Multi-phase tournament with completed qualifying results and eligible lucky-loser candidates.
+
+### DRAW-009 Compass draw management `[PENDING IMPLEMENTATION]`
 
 - **Priority:** 🟡 Medium
-- **Use Case reference:** LinkPhases, GenerateBracket
+- **Use Case reference:** GenerateBracket
 - **Actor:** Tournament Administrator
 - **Implementation status:** `[PENDING IMPLEMENTATION]`
 - **Preconditions:** None.
@@ -1024,8 +1148,8 @@ Legend:
 
 | Step | Action | Expected Result |
 |---|---|---|
-| 1 | Search verified UI for simple, multiple, or compass consolation controls. | No dedicated compass/consolation management UI is present. |
-| 2 | Keep scenario pending until route/component is introduced. | Pending status retained. |
+| 1 | Search verified phase-management and bracket routes for compass-specific controls. | No dedicated compass-draw configuration flow is visible. |
+| 2 | Keep scenario pending until route, modal, or form controls are introduced. | Pending status retained. |
 
 - **Postconditions:** Gap recorded.
 - **Test Data:** None.
@@ -1205,6 +1329,42 @@ Legend:
 
 - **Postconditions:** Supplemental metadata is visible.
 - **Test Data:** Scheduled and disputed matches.
+
+### MATCH-011 Public match list filtering, grouping, and empty state
+
+- **Priority:** 🟠 High
+- **Use Case reference:** ViewMatches
+- **Actor:** Public, Participant
+- **Implementation status:** Implemented
+- **Preconditions:** At least one tournament has matches in multiple phases or statuses.
+- **Test Steps:**
+
+| Step | Action | Expected Result |
+|---|---|---|
+| 1 | Open `/matches`. | Grouped match cards render by tournament, category, and phase. |
+| 2 | Apply the status filter and use `Refresh`. | Only matching groups remain visible and the page reload path preserves stability. |
+| 3 | Open one match card and test a filter with no results. | Clicking navigates to `/matches/:id` and a clean empty state appears when nothing matches. |
+
+- **Postconditions:** None.
+- **Test Data:** Mixed-status match fixtures across at least two groups.
+
+### MATCH-012 My matches sections, action states, and detail navigation
+
+- **Priority:** 🟠 High
+- **Use Case reference:** EnterResultParticipant, ConfirmResult, DisputeResult
+- **Actor:** Participant
+- **Implementation status:** Implemented
+- **Preconditions:** Participant has one pending-confirmation match, one playable match, and one completed match.
+- **Test Steps:**
+
+| Step | Action | Expected Result |
+|---|---|---|
+| 1 | Open `/my-matches`. | Uncompleted and completed sections render only when they contain matches. |
+| 2 | Verify card states for pending confirmation, to-be-played, and completed matches. | Confirm/dispute buttons, enter-result buttons, disabled reasons, and score displays match each state. |
+| 3 | Open `View Details` from one pending or completed card. | User reaches the related match-detail page without losing current-state context. |
+
+- **Postconditions:** None.
+- **Test Data:** Participant fixture with pending-result, scheduled, and completed match states.
 
 ## 4.07 Order of Play Module
 
@@ -1449,6 +1609,24 @@ Legend:
 
 - **Postconditions:** Gap recorded.
 - **Test Data:** Historical matchup fixtures.
+
+### STAND-008 Tournament statistics breakdown, leaderboards, and category cards
+
+- **Priority:** 🟠 High
+- **Use Case reference:** ViewTournamentStats, ExportStatistics
+- **Actor:** Public, Tournament Administrator
+- **Implementation status:** Implemented
+- **Preconditions:** Tournament statistics include top performers, most active participants, or category breakdown data.
+- **Test Steps:**
+
+| Step | Action | Expected Result |
+|---|---|---|
+| 1 | Open `/tournaments/:id/statistics`. | Overview cards show participants, matches, completed matches, pending matches, and completion percentage. |
+| 2 | Verify result-distribution counters and leaderboard tables. | Top performers and most-active participants render with rank styling and tournament stats. |
+| 3 | Inspect category breakdown cards and admin-only export panel. | Category totals appear and export controls remain role-restricted. |
+
+- **Postconditions:** None.
+- **Test Data:** Tournament with rich statistics payload such as T-004.
 
 ## 4.09 Announcement Module
 
@@ -2149,6 +2327,24 @@ Legend:
 
 - **Postconditions:** Gap recorded.
 - **Test Data:** admin1, admin2, ranking file fixture.
+
+### SYS-005 User search, filters, and empty-state behavior
+
+- **Priority:** 🟠 High
+- **Use Case reference:** ManageUsers, ManagePermissions
+- **Actor:** System Administrator
+- **Implementation status:** Implemented
+- **Preconditions:** Mixed user dataset exists across roles and active states.
+- **Test Steps:**
+
+| Step | Action | Expected Result |
+|---|---|---|
+| 1 | Open `/admin/users` and use the search field. | Table narrows by username, email, or name without leaving the page. |
+| 2 | Apply role and `Active only` filters, then clear them. | Filtered counts and rows update correctly and `Clear Filters` resets the table. |
+| 3 | Drive the filters to a no-results combination. | Empty-state messaging appears instead of a broken or stale table. |
+
+- **Postconditions:** None.
+- **Test Data:** sysadmin with players, tournament admins, and inactive users in the dataset.
 
 ---
 

@@ -19,6 +19,7 @@
     "projects/4-CartographicProjectManager"
   ],
   "dependencies": {
+    "@playwright/test": "^1.59.1",
     "node-telegram-bot-api": "^0.67.0",
     "supabase": "^2.93.0"
   },

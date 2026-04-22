@@ -56,6 +56,8 @@ interface StorageState {
  */
 export class ApiHelper {
   private readonly apiContext: APIRequestContext;
+  private static readonly MAX_429_RETRIES = 6;
+  private static readonly BASE_429_DELAY_MS = 250;
 
   public constructor(apiContext: APIRequestContext) {
     this.apiContext = apiContext;
@@ -212,8 +214,7 @@ export class ApiHelper {
     token?: string,
     expectedStatus: number = 201,
   ): Promise<T> {
-    const maxRetries = 4;
-    const baseDelay = 200; // ms
+    const maxRetries = ApiHelper.MAX_429_RETRIES;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const response = await this.apiContext.post(ApiHelper.withApiPrefix(path), {
@@ -227,9 +228,7 @@ export class ApiHelper {
 
       // Retry on 429 (rate limiting) with exponential backoff
       if (response.status() === 429 && attempt < maxRetries) {
-        // Add a small random jitter to avoid thundering-herd retries across workers
-        const jitter = Math.floor(Math.random() * baseDelay);
-        const delay = baseDelay * Math.pow(2, attempt) + jitter;
+        const delay = ApiHelper.getRateLimitDelay(response.headers(), attempt);
         // eslint-disable-next-line no-await-in-loop
         await ApiHelper.sleep(delay);
         // try again
@@ -258,16 +257,30 @@ export class ApiHelper {
     token: string,
     expectedStatus: number = 200,
   ): Promise<T> {
-    const response = await this.apiContext.put(ApiHelper.withApiPrefix(path), {
-      data: body,
-      headers: {Authorization: `Bearer ${token}`},
-    });
+    const maxRetries = ApiHelper.MAX_429_RETRIES;
 
-    if (response.status() !== expectedStatus) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const response = await this.apiContext.put(ApiHelper.withApiPrefix(path), {
+        data: body,
+        headers: {Authorization: `Bearer ${token}`},
+      });
+
+      if (response.status() === expectedStatus) {
+        return this.parseJson<T>(response);
+      }
+
+      if (response.status() === 429 && attempt < maxRetries) {
+        const delay = ApiHelper.getRateLimitDelay(response.headers(), attempt);
+        // eslint-disable-next-line no-await-in-loop
+        await ApiHelper.sleep(delay);
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
       throw new Error(`PUT ${path} failed with ${response.status()}: ${await response.text()}`);
     }
 
-    return this.parseJson<T>(response);
+    throw new Error(`PUT ${path} failed after ${maxRetries} retries`);
   }
 
   /**
@@ -340,6 +353,22 @@ export class ApiHelper {
    */
   private static sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Calculates an exponential backoff delay for 429 responses.
+   * Honors Retry-After when the backend provides it.
+   */
+  private static getRateLimitDelay(headers: Record<string, string>, attempt: number): number {
+    const retryAfterHeader = headers['retry-after'];
+    const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : Number.NaN;
+    if (!Number.isNaN(retryAfterSeconds) && retryAfterSeconds > 0) {
+      return retryAfterSeconds * 1000;
+    }
+
+    const baseDelay = Math.min(ApiHelper.BASE_429_DELAY_MS * Math.pow(2, attempt), 4000);
+    const jitter = Math.floor(Math.random() * ApiHelper.BASE_429_DELAY_MS);
+    return baseDelay + jitter;
   }
 
   /**

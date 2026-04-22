@@ -24,58 +24,63 @@ let bracketId = '';
 let statisticsTournamentId = '';
 
 test.describe('Export - Medium', () => {
-  test.beforeAll(async () => {
-    apiHelper = await ApiHelper.create();
-    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
-    const participant1 = await apiHelper.login(TEST_USERS.participant1);
-    const participant2 = await apiHelper.login(TEST_USERS.participant2);
-    seedHelper = new SeedHelper(apiHelper, adminSession);
+  test.describe('Active Export Scenarios', () => {
+    test.beforeAll(async () => {
+      test.setTimeout(120000);
 
-    const fixture = await seedHelper.createSinglesMatchFixture(
-      `E2E Export ${Date.now()}`,
-      [participant1.user.id, participant2.user.id],
-      {publishBracket: true},
-    );
+      apiHelper = await ApiHelper.create();
+      const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+      const participant1 = await apiHelper.login(TEST_USERS.participant1);
+      const participant2 = await apiHelper.login(TEST_USERS.participant2);
+      seedHelper = new SeedHelper(apiHelper, adminSession);
 
-    if (fixture.matchId && fixture.participantIds?.[0]) {
-      await seedHelper.updateMatch(fixture.matchId, {
-        status: 'COMPLETED',
-        winnerId: fixture.participantIds[0],
-        scores: [{player1Games: 6, player2Games: 3}, {player1Games: 6, player2Games: 4}],
+      const tournament = await seedHelper.createTournament(`E2E Export ${Date.now()}`, {
+        maxParticipants: 8,
       });
-    }
+      const categoryId = await seedHelper.createSizedCategory(tournament.id, 'Export Singles', 8);
+      const registrationIds = [
+        await seedHelper.registerParticipant(categoryId, participant1.user.id),
+        await seedHelper.registerParticipant(categoryId, participant2.user.id),
+      ];
 
-    bracketId = fixture.bracketId ?? '';
-    statisticsTournamentId = fixture.id;
-  });
+      for (const registrationId of registrationIds) {
+        await seedHelper.approveRegistration(registrationId);
+      }
 
-  test.afterAll(async () => {
-    await seedHelper?.cleanAll();
-    await apiHelper?.dispose();
-  });
+      bracketId = await seedHelper.createBracket(tournament.id, categoryId, 2);
+      statisticsTournamentId = tournament.id;
+    });
 
-  test('EXP-001 should expose bracket PDF export', async ({tournamentAdminPage}) => {
-    const bracketPage = new BracketPage(tournamentAdminPage);
-    await bracketPage.gotoById(bracketId);
-    await expect(tournamentAdminPage.getByRole('button', {name: /export pdf/i})).toBeVisible();
-    await bracketPage.expectBracketVisible();
-  });
+    test.afterAll(async () => {
+      await seedHelper?.cleanAll();
+      await apiHelper?.dispose();
+    });
 
-  test('EXP-002 should expose statistics export buttons for admins', async ({tournamentAdminPage}) => {
-    await tournamentAdminPage.goto(`/tournaments/${statisticsTournamentId}/statistics`);
-    await expect(tournamentAdminPage.getByRole('button', {name: /export as pdf/i})).toBeVisible();
-    await expect(tournamentAdminPage.getByRole('button', {name: /export as csv/i})).toBeVisible();
+    test('EXP-001 should expose bracket PDF export', async ({tournamentAdminPage}) => {
+      const bracketPage = new BracketPage(tournamentAdminPage);
+      await bracketPage.gotoById(bracketId);
+      await expect(tournamentAdminPage.getByRole('button', {name: /export pdf/i})).toBeVisible();
+      await bracketPage.expectBracketVisible();
+    });
+
+    test('EXP-002 should expose statistics export buttons for admins', async ({tournamentAdminPage}) => {
+      await tournamentAdminPage.goto(`/tournaments/${statisticsTournamentId}/statistics`);
+      await expect(tournamentAdminPage.getByRole('heading', {name: /tournament statistics/i})).toBeVisible();
+      await expect(tournamentAdminPage.getByRole('heading', {name: /export statistics/i})).toBeVisible();
+      await expect(tournamentAdminPage.getByRole('button', {name: /export as pdf/i})).toBeVisible();
+      await expect(tournamentAdminPage.getByRole('button', {name: /export as csv/i})).toBeVisible();
+    });
   });
 
   test('EXP-003 should expose ITF CSV and TODS exports', async ({tournamentAdminPage}) => {
     test.fixme(true, 'ITF/TODS export services exist, but the active frontend template does not expose stable UI controls for them.');
 
-    await tournamentAdminPage.goto(`/tournaments/${statisticsTournamentId}`);
+    await tournamentAdminPage.goto('/tournaments');
   });
 
   test('EXP-004 should generate documents and certificates', async ({tournamentAdminPage}) => {
     test.skip(true, 'Document and certificate generation UI is not implemented in the current frontend.');
 
-    await tournamentAdminPage.goto(`/tournaments/${statisticsTournamentId}`);
+    await tournamentAdminPage.goto('/tournaments');
   });
 });

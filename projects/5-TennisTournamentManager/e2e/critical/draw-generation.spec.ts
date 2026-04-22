@@ -112,7 +112,28 @@ test.describe('Draw Generation - Critical', () => {
     }
   });
 
-  test('DRAW-008 should cover consolation and compass draw management', async () => {
-    test.skip(true, 'Consolation and compass draw UI is not implemented in the current frontend.');
+  test('DRAW-008 should expose consolation and lucky loser management tabs in phase management', async ({tournamentAdminPage}) => {
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const seedHelper = new SeedHelper(apiHelper, adminSession);
+    const tournament = await seedHelper.createTournament(`DRAW-008 ${Date.now()}`);
+
+    try {
+      await tournamentAdminPage.goto(`/tournaments/${tournament.id}/phases`);
+      await expect(tournamentAdminPage.locator('h1.phase-title')).toHaveText(/phase management/i);
+      await expect(tournamentAdminPage.locator('button.tab', {hasText: /link phases/i})).toBeVisible();
+      await expect(tournamentAdminPage.locator('button.tab', {hasText: /advance qualifiers/i})).toBeVisible();
+
+      await tournamentAdminPage.locator('button.tab', {hasText: /consolation draw/i}).click();
+      await expect(tournamentAdminPage.getByRole('heading', {name: /create consolation draw/i})).toBeVisible();
+      await expect(tournamentAdminPage.getByRole('button', {name: /create consolation draw/i}).last()).toBeDisabled();
+
+      await tournamentAdminPage.locator('button.tab', {hasText: /lucky loser/i}).click();
+      await expect(tournamentAdminPage.getByRole('heading', {name: /promote lucky loser/i})).toBeVisible();
+      await expect(tournamentAdminPage.getByRole('button', {name: /promote lucky loser/i}).last()).toBeDisabled();
+    } finally {
+      await seedHelper.cleanAll();
+      await apiHelper.dispose();
+    }
   });
 });

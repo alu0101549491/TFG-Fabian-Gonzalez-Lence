@@ -77,6 +77,19 @@ test.describe('Authentication - Critical', () => {
     await expect(participantPage).toHaveURL(/\/login/);
   });
 
+  test('DASH-005 should show the player dashboard overview and quick actions', async ({participantPage}) => {
+    const dashboardPage = new DashboardPage(participantPage);
+    await dashboardPage.goto();
+    await dashboardPage.expectParticipantOverview();
+
+    await participantPage.getByRole('button', {name: /my profile/i}).click();
+    await expect(participantPage).toHaveURL(/\/profile$/);
+
+    await participantPage.goto('/home');
+    await participantPage.getByRole('button', {name: /my statistics/i}).click();
+    await expect(participantPage).toHaveURL(/\/statistics$/);
+  });
+
   test('AUTH-006 should expire inactive sessions after timeout', async ({page}) => {
     test.fixme(true, 'Implemented in the app, but deterministic E2E coverage needs clock control or a shorter timeout in the test environment.');
 

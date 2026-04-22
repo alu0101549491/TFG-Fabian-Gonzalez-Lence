@@ -37,6 +37,16 @@ export class UserManagementPage extends BasePage {
     await this.page.getByLabel(/filter by role/i).selectOption(roleValue);
   }
 
+  /** Toggles the active-only checkbox filter. */
+  public async toggleActiveOnly(): Promise<void> {
+    await this.page.getByLabel(/show only active users/i).check();
+  }
+
+  /** Clears all visible user filters. */
+  public async clearFilters(): Promise<void> {
+    await this.page.getByRole('button', {name: /clear filters/i}).click();
+  }
+
   /**
    * Creates a new user from the modal form.
    *
@@ -83,5 +93,10 @@ export class UserManagementPage extends BasePage {
    */
   public async expectUserVisible(text: string): Promise<void> {
     await expect(this.page.locator('.users-table').filter({hasText: text})).toBeVisible();
+  }
+
+  /** Asserts that the page is showing its no-results empty state. */
+  public async expectEmptyState(): Promise<void> {
+    await expect(this.page.getByText(/no users found/i)).toBeVisible();
   }
 }

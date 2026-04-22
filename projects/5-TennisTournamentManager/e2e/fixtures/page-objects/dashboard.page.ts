@@ -41,4 +41,18 @@ export class DashboardPage extends BasePage {
     await expect(this.notificationBellButton).toBeVisible();
     await expect(this.page.getByText(expectedText)).toBeVisible();
   }
+
+  /** Verifies the participant dashboard overview panels and quick actions. */
+  public async expectParticipantOverview(): Promise<void> {
+    await expect(this.page.getByRole('heading', {name: /welcome back/i})).toBeVisible();
+    await expect(this.page.getByRole('button', {name: /browse tournaments/i})).toBeVisible();
+    await expect(this.page.getByRole('button', {name: /my statistics/i})).toBeVisible();
+    await expect(this.page.getByRole('button', {name: /my profile/i})).toBeVisible();
+    await expect(this.page.getByText(/^Registered$/)).toBeVisible();
+    await expect(this.page.getByText(/^Upcoming$/)).toBeVisible();
+    await expect(this.page.getByText(/^Win Rate$/)).toBeVisible();
+    await expect(this.page.getByRole('heading', {name: /upcoming matches/i})).toBeVisible();
+    await expect(this.page.getByRole('heading', {name: /my tournaments/i})).toBeVisible();
+    await expect(this.page.getByRole('heading', {name: /performance overview/i})).toBeVisible();
+  }
 }

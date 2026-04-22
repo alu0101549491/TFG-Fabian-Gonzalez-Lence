@@ -17,6 +17,7 @@ import {ApiHelper} from '../helpers/api.helper';
 import {SeedHelper} from '../helpers/seed.helper';
 import {NEW_TOURNAMENT_DATA, TEST_TOURNAMENTS, TEST_USERS} from '../fixtures/test-data';
 import {TournamentListPage} from '../fixtures/page-objects/tournament-list.page';
+import {TournamentDetailPage} from '../fixtures/page-objects/tournament-detail.page';
 
 type TournamentListResponse = Array<{id: string; name: string}>;
 
@@ -142,6 +143,77 @@ test.describe('Tournament CRUD - Critical', () => {
       await listPage.clearFilters();
       await listPage.applyFilters({search: localTournamentName});
       await listPage.expectTournamentVisible(localTournamentName);
+    } finally {
+      await seedHelper.cleanAll();
+      await apiHelper.dispose();
+    }
+  });
+
+  test('TOURN-009 should render state-driven tournament detail controls for each role', async ({tournamentAdminPage, participantPage, publicPage}) => {
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const seedHelper = new SeedHelper(apiHelper, adminSession);
+    const seeded = await seedHelper.createTournament(`State Detail Tournament ${Date.now()}`);
+    await seedHelper.createCategory(seeded.id, 'State Detail Singles');
+
+    try {
+      const adminDetailPage = new TournamentDetailPage(tournamentAdminPage);
+      await adminDetailPage.gotoById(seeded.id);
+
+      await expect(tournamentAdminPage.getByRole('heading', {name: seeded.name})).toBeVisible();
+      await expect(tournamentAdminPage.locator('.tournament-meta .status-badge')).toContainText(/draft/i);
+      await expect(tournamentAdminPage.locator('.management-bar .action-buttons .action-btn.edit')).toBeVisible();
+      await expect(tournamentAdminPage.locator('.management-bar .action-buttons .action-btn.delete')).toBeVisible();
+      await expect(tournamentAdminPage.getByText(/change status:/i)).toBeVisible();
+      await expect(tournamentAdminPage.getByRole('heading', {name: /^tournament status$/i})).toBeVisible();
+      await expect(tournamentAdminPage.getByRole('heading', {name: /tournament regulations/i})).toBeVisible();
+
+      await seedHelper.updateTournamentStatus(seeded.id, 'REGISTRATION_OPEN');
+
+      const participantDetailPage = new TournamentDetailPage(participantPage);
+      await participantDetailPage.gotoById(seeded.id);
+        await expect(participantPage.locator('.status-card .subtitle')).toHaveText(/registration open/i);
+      await expect(participantPage.getByRole('button', {name: /register now|complete profile to register/i})).toBeVisible();
+      await expect(participantPage.getByText(/select category/i)).toBeVisible();
+      await expect(participantPage.locator('.management-bar .action-buttons .action-btn.edit')).toHaveCount(0);
+
+      await seedHelper.updateTournamentStatus(seeded.id, ['REGISTRATION_CLOSED', 'DRAW_PENDING', 'IN_PROGRESS']);
+
+      await publicPage.goto(`/tournaments/${seeded.id}`);
+        await expect(publicPage.locator('.status-card .subtitle')).toHaveText(/in progress/i);
+      await expect(publicPage.getByRole('heading', {name: /^tournament status$/i})).toBeVisible();
+      await expect(publicPage.getByRole('button', {name: /register|complete profile/i})).toHaveCount(0);
+      await expect(publicPage.locator('.management-bar .action-buttons .action-btn.edit')).toHaveCount(0);
+    } finally {
+      await seedHelper.cleanAll();
+      await apiHelper.dispose();
+    }
+  });
+
+  test('TOURN-010 should let organizers add and delete categories from tournament detail', async ({tournamentAdminPage}) => {
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const seedHelper = new SeedHelper(apiHelper, adminSession);
+    const seeded = await seedHelper.createTournament(`Category Manager Tournament ${Date.now()}`);
+    const categoryName = `E2E Category ${Date.now()}`;
+
+    try {
+      await tournamentAdminPage.goto(`/tournaments/${seeded.id}`);
+      await tournamentAdminPage.getByRole('button', {name: /add category/i}).first().click();
+      await expect(tournamentAdminPage.getByRole('heading', {name: /add new category/i})).toBeVisible();
+
+      await tournamentAdminPage.locator('input[name="categoryName"]').fill(categoryName);
+      await tournamentAdminPage.locator('input[name="maxParticipants"]').fill('8');
+      await tournamentAdminPage.locator('select[name="gender"]').selectOption('OPEN');
+      await tournamentAdminPage.locator('select[name="ageGroup"]').selectOption('OPEN');
+      await tournamentAdminPage.getByRole('button', {name: /add category/i}).last().click();
+
+      const categoryRow = tournamentAdminPage.locator('tbody tr').filter({hasText: categoryName});
+      await expect(categoryRow).toBeVisible();
+
+      await tournamentAdminPage.once('dialog', async (dialog) => dialog.accept());
+      await categoryRow.getByRole('button', {name: /delete/i}).click();
+      await expect(categoryRow).toHaveCount(0);
     } finally {
       await seedHelper.cleanAll();
       await apiHelper.dispose();

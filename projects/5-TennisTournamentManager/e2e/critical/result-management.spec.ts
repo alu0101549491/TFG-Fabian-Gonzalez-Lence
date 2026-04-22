@@ -161,6 +161,90 @@ test.describe('Match and Result Management - Critical', () => {
     }
   });
 
+  test('MATCH-011 should let public users filter grouped match lists and open match details', async ({publicPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-011 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Show Court',
+          scheduledTime: MATCH_SCHEDULED_TIME,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+
+      await publicPage.goto(`/matches?tournamentId=${fixture.id}`);
+  await expect(publicPage.locator('h1.hero-title')).toHaveText(/matches/i);
+      await expect(publicPage.locator('.phase-group').first()).toContainText(fixture.name);
+
+      await publicPage.locator('select').first().selectOption('SCHEDULED');
+      const firstMatchCard = publicPage.locator('.match-card').first();
+      await expect(firstMatchCard).toBeVisible();
+      await firstMatchCard.click();
+      await expect(publicPage).toHaveURL(new RegExp(`/matches/${fixture.matchId}(\\?.*)?$`));
+
+      await publicPage.goto(`/matches?tournamentId=${fixture.id}`);
+      await publicPage.locator('select').first().selectOption('COMPLETED');
+      await expect(publicPage.getByRole('heading', {name: /no matches found/i})).toBeVisible();
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
+
+  test('MATCH-012 should group personal matches into actionable and completed sections', async ({participantPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-012 Scheduled ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Action Court',
+          scheduledTime: MATCH_SCHEDULED_TIME,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+
+      const completedFixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-012 Completed ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Final Court',
+          scheduledTime: MATCH_SCHEDULED_TIME,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+
+      await seedContext.seedHelper.updateMatch(completedFixture.matchId!, {
+        status: 'COMPLETED',
+        winnerId: seedContext.participant1Id,
+        scores: VALID_SCORE_SET.sets.map((set) => ({
+          player1Games: set.p1,
+          player2Games: set.p2,
+        })),
+      });
+
+      await participantPage.goto('/my-matches');
+      await expect(participantPage.getByRole('heading', {name: /my matches/i})).toBeVisible();
+      await expect(participantPage.locator('.uncompleted-section')).toBeVisible();
+      await expect(participantPage.locator('.completed-section')).toBeVisible();
+      await expect(participantPage.locator('.uncompleted-section').getByRole('button', {name: /enter result/i}).first()).toBeVisible();
+      await expect(participantPage.locator('.completed-section .status-badge').first()).toContainText(/completed/i);
+
+      await participantPage.locator('.completed-section').getByRole('button', {name: /view details/i}).first().click();
+      await expect(participantPage).toHaveURL(/\/matches\/.+/);
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
+
   test('MATCH-004 should allow opponent confirmation of pending results', async ({participantPage, secondParticipantPage}) => {
     test.fixme(true, 'Confirmation flow requires a deterministic pending-result fixture owned by both participant storage states.');
 

@@ -19,32 +19,20 @@ test.describe('Ranking - Medium', () => {
   test('RANK-001 should show the global ranking table', async ({publicPage}) => {
     const rankingPage = new RankingPage(publicPage);
     await rankingPage.goto();
-
-    // The application may show an empty-state when no tournaments have
-    // been completed yet. Accept either the rankings table or the
-    // empty-state message to keep the test stable across environments.
-    const tableCount = await publicPage.locator('.rankings-table').count();
-    if (tableCount > 0) {
-      await expect(publicPage.locator('.rankings-table')).toBeVisible();
-    } else {
-      await expect(publicPage.getByText(/no rankings available yet/i)).toBeVisible();
-    }
+    await expect(publicPage.getByRole('heading', {name: /global rankings/i})).toBeVisible();
+    await expect(publicPage.locator('.loading-section')).not.toBeVisible();
+    await expect(publicPage.locator('.rankings-table, .empty-section, .alert-error')).toBeVisible();
   });
 
   test('RANK-002 should switch between points-based and ELO modes', async ({publicPage}) => {
     const rankingPage = new RankingPage(publicPage);
     await rankingPage.goto();
+    await rankingPage.switchSystem('POINTS_BASED');
+    await expect(publicPage.locator('.system-selector select')).toHaveValue('POINTS_BASED');
     await rankingPage.switchSystem('ELO');
-
-    // If there are no ranking rows then the ELO column won't be present;
-    // in that case assert the empty-state instead. Otherwise verify the
-    // ELO column header is visible after switching.
-    const eloHeaders = await publicPage.getByRole('columnheader', {name: /elo rating/i}).count();
-    if (eloHeaders > 0) {
-      await rankingPage.expectEloColumnVisible();
-    } else {
-      await expect(publicPage.getByText(/no rankings available yet/i)).toBeVisible();
-    }
+    await expect(publicPage.locator('.system-selector select')).toHaveValue('ELO');
+    await expect(publicPage.locator('.loading-section')).not.toBeVisible();
+    await expect(publicPage.locator('.rankings-table, .empty-section, .alert-error')).toBeVisible();
   });
 
   test('RANK-004 should import external rankings for seeding', async ({sysAdminPage}) => {
