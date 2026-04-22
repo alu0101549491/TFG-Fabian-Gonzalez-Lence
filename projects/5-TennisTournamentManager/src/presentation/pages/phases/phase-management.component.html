@@ -38,6 +38,13 @@
           </button>
 
           <div class="phase-header">
+            @if (tournamentStateService.currentTournamentLogo(); as logoUrl) {
+              <img 
+                [src]="logoUrl" 
+                [alt]="tournament()!.name + ' logo'" 
+                class="tournament-logo"
+              />
+            }
             <h1 class="phase-title">🔗 Phase Management</h1>
             <p class="phase-subtitle">{{ tournament()!.name }}</p>
             <span class="location-tag">

@@ -17,6 +17,7 @@ import {CommonModule} from '@angular/common';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {StandingService, BracketService, CategoryService, TournamentService} from '@application/services';
 import {type StandingDto, type TournamentDto} from '@application/dto';
+import {TournamentStateService} from '@presentation/services';
 import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './standings-view.component.html?raw';
 import styles from './standings-view.component.css?inline';
@@ -51,6 +52,7 @@ export class StandingsViewComponent implements OnInit {
   private readonly bracketService = inject(BracketService);
   private readonly categoryService = inject(CategoryService);
   private readonly tournamentService = inject(TournamentService);
+  protected readonly tournamentStateService = inject(TournamentStateService);
 
   /** Standings data */
   public standings = signal<StandingDto[]>([]);
@@ -96,6 +98,9 @@ export class StandingsViewComponent implements OnInit {
       // Fetch tournament data
       const tournamentData = await this.tournamentService.getTournamentById(tournamentId);
       this.tournament.set(tournamentData);
+      
+      // Set tournament in global state for logo propagation
+      this.tournamentStateService.setCurrentTournament(tournamentData);
 
       // Fetch standings
       const standings = await this.standingService.getStandingsByTournament(tournamentId);

@@ -12,12 +12,14 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {Component, Input, signal, computed, inject} from '@angular/core';
+import {Component, Input, signal, computed, inject, effect} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {Router} from '@angular/router';
-import {type MatchDto, type BracketDto} from '@application/dto';
+import {Router, RouterModule} from '@angular/router';
+import {type MatchDto, type BracketDto, type RegistrationDto} from '@application/dto';
 import {BracketType} from '@domain/enumerations/bracket-type';
 import {MatchStatus} from '@domain/enumerations/match-status';
+import {AcceptanceType} from '@domain/enumerations/acceptance-type';
+import {RegistrationService} from '@application/services';
 import templateHtml from './visual-bracket.component.html?raw';
 import styles from './visual-bracket.component.css?raw';
 
@@ -36,15 +38,24 @@ interface RoundMatches {
 @Component({
   selector: 'app-visual-bracket',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: templateHtml,
   styles: [styles],
 })
 export class VisualBracketComponent {
   private readonly router = inject(Router);
+  private readonly registrationService = inject(RegistrationService);
 
   /** Bracket configuration */
-  @Input() public bracket!: BracketDto;
+  @Input() public set bracket(value: BracketDto) {
+    this._bracket.set(value);
+  }
+  
+  public get bracket(): BracketDto {
+    return this._bracket()!;
+  }
+  
+  private readonly _bracket = signal<BracketDto | null>(null);
 
   /** Matches in the bracket */
   @Input() public set matches(value: MatchDto[]) {
@@ -52,12 +63,47 @@ export class VisualBracketComponent {
   }
 
   private readonly _matches = signal<MatchDto[]>([]);
+  
+  /** Registration data for acceptance type badges */
+  private readonly _registrations = signal<Map<string, RegistrationDto>>(new Map());
 
   /** Bracket type enum for template */
   public readonly BracketType = BracketType;
 
   /** Match status enum for template */
   public readonly MatchStatus = MatchStatus;
+
+  constructor() {
+    // Load registrations when bracket changes
+    effect(() => {
+      const bracket = this._bracket();
+      if (bracket?.categoryId) {
+        void this.loadRegistrations(bracket.categoryId);
+      }
+    });
+  }
+
+  /**
+   * Loads registration data for acceptance type badges.
+   */
+  private async loadRegistrations(categoryId: string): Promise<void> {
+    try {
+      const registrations = await this.registrationService.getRegistrationsByCategory(categoryId);
+      const registrationMap = new Map<string, RegistrationDto>();
+      
+      for (const reg of registrations) {
+        registrationMap.set(reg.participantId, reg);
+        // For doubles, also map the partner
+        if (reg.partnerId) {
+          registrationMap.set(reg.partnerId, reg);
+        }
+      }
+      
+      this._registrations.set(registrationMap);
+    } catch (error) {
+      console.error('Failed to load registrations for acceptance badges:', error);
+    }
+  }
 
   /**
    * Matches organized by rounds.
@@ -132,6 +178,58 @@ export class VisualBracketComponent {
   }
 
   /**
+   * Gets acceptance type for participant.
+   *
+   * @param match - Match data
+   * @param participantNumber - 1 or 2
+   * @returns Acceptance type or null
+   */
+  public getParticipantAcceptanceType(match: MatchDto, participantNumber: 1 | 2): AcceptanceType | null {
+    const registrations = this._registrations();
+    
+    // For doubles, check team registration (use participant1 as primary)
+    const team = participantNumber === 1 ? match.participant1Team : match.participant2Team;
+    if (team) {
+      const reg = registrations.get(team.player1.id);
+      return reg?.acceptanceType ?? null;
+    }
+    
+    // For singles, check participant registration
+    const participant = participantNumber === 1 ? match.participant1 : match.participant2;
+    if (!participant) return null;
+    
+    const reg = registrations.get(participant.id);
+    return reg?.acceptanceType ?? null;
+  }
+
+  /**
+   * Gets acceptance type badge text for display.
+   * Shows all acceptance types as badges for transparency.
+   *
+   * @param acceptanceType - Acceptance type enum value
+   * @returns Badge text or null
+   */
+  public getAcceptanceTypeBadge(acceptanceType: AcceptanceType | null | undefined): string | null {
+    if (!acceptanceType) return null;
+    
+    // Map acceptance types to badge abbreviations
+    const badges: Record<AcceptanceType, string> = {
+      [AcceptanceType.WILD_CARD]: 'WC',
+      [AcceptanceType.SPECIAL_EXEMPTION]: 'SE',
+      [AcceptanceType.JUNIOR_EXEMPTION]: 'JE',
+      [AcceptanceType.QUALIFIER]: 'Q',
+      [AcceptanceType.LUCKY_LOSER]: 'LL',
+      [AcceptanceType.ALTERNATE]: 'ALT',
+      [AcceptanceType.WITHDRAWN]: 'WD',
+      [AcceptanceType.DIRECT_ACCEPTANCE]: 'DA',
+      [AcceptanceType.ORGANIZER_ACCEPTANCE]: 'OA',
+      [AcceptanceType.SEEDED]: 'S',
+    };
+    
+    return badges[acceptanceType] ?? null;
+  }
+
+  /**
    * Checks if participant (or team in doubles) is the winner.
    *
    * @param match - Match data
@@ -148,6 +246,44 @@ export class VisualBracketComponent {
     // Singles match: check participant winner
     const participantId = participantNumber === 1 ? match.participant1Id : match.participant2Id;
     return Boolean(match.winnerId && participantId && match.winnerId === participantId);
+  }
+
+  /**
+   * Gets participant ID for singles match.
+   *
+   * @param match - Match data
+   * @param participantNumber - 1 or 2
+   * @returns Participant ID or null for BYE
+   */
+  public getParticipantId(match: MatchDto, participantNumber: 1 | 2): string | null {
+    const participant = participantNumber === 1 ? match.participant1 : match.participant2;
+    return participant?.id ?? null;
+  }
+
+  /**
+   * Checks if match is a doubles match.
+   *
+   * @param match - Match data
+   * @returns True if doubles match
+   */
+  public isDoublesMatch(match: MatchDto): boolean {
+    return Boolean(match.participant1TeamId || match.participant2TeamId);
+  }
+
+  /**
+   * Gets team player IDs for doubles match.
+   *
+   * @param match - Match data
+   * @param participantNumber - 1 or 2
+   * @returns Object with player1Id and player2Id, or null if not a doubles match
+   */
+  public getTeamPlayerIds(match: MatchDto, participantNumber: 1 | 2): {player1Id: string; player2Id: string} | null {
+    const team = participantNumber === 1 ? match.participant1Team : match.participant2Team;
+    if (!team) return null;
+    return {
+      player1Id: team.player1.id,
+      player2Id: team.player2.id,
+    };
   }
 
   /**

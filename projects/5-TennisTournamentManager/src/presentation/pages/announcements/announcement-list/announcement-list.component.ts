@@ -17,8 +17,9 @@ import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, RouterModule, Router} from '@angular/router';
 import {AnnouncementService} from '@application/services/announcement.service';
-import {AuthStateService} from '@presentation/services/auth-state.service';
-import {type AnnouncementDto} from '@application/dto';
+import {TournamentService} from '@application/services';
+import {AuthStateService, TournamentStateService} from '@presentation/services';
+import {type AnnouncementDto, type TournamentDto} from '@application/dto';
 import {UserRole} from '@domain/enumerations/user-role';
 import {AnnouncementType} from '@domain/enumerations/announcement-type';
 import templateHtml from './announcement-list.component.html?raw';
@@ -39,7 +40,9 @@ export class AnnouncementListComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly announcementService = inject(AnnouncementService);
+  private readonly tournamentService = inject(TournamentService);
   private readonly authStateService = inject(AuthStateService);
+  protected readonly tournamentStateService = inject(TournamentStateService);
 
   /** All announcements */
   private allAnnouncements = signal<AnnouncementDto[]>([]);
@@ -105,6 +108,9 @@ export class AnnouncementListComponent implements OnInit {
   /** Tournament ID filter */
   public tournamentId = signal<string | null>(null);
 
+  /** Tournament data */
+  public tournament = signal<TournamentDto | null>(null);
+
   /** Announcement ID to open automatically after loading, if requested. */
   private announcementId = signal<string | null>(null);
 
@@ -139,9 +145,25 @@ export class AnnouncementListComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
+      // Load tournament data if tournamentId is present
+      const tournamentId = this.tournamentId();
+      if (tournamentId) {
+        try {
+          const tournamentData = await this.tournamentService.getTournamentById(tournamentId);
+          this.tournament.set(tournamentData);
+          this.tournamentStateService.setCurrentTournament(tournamentData);
+        } catch (tournamentError) {
+          console.warn('Could not load tournament data:', tournamentError);
+          // Continue loading announcements even if tournament load fails
+        }
+      } else {
+        this.tournament.set(null);
+        this.tournamentStateService.clearCurrentTournament();
+      }
+
       const filters: any = {};
-      if (this.tournamentId()) {
-        filters.tournamentId = this.tournamentId();
+      if (tournamentId) {
+        filters.tournamentId = tournamentId;
       }
 
       console.log('Calling announcementService.getAll with filters:', filters);

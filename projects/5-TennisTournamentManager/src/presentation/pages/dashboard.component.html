@@ -64,25 +64,27 @@
           <div class="stat-card matches">
             <div class="stat-icon">🎾</div>
             <div class="stat-content">
-              <div class="stat-value">0</div>
+              <div class="stat-value">{{ activeTournamentsCount() }}</div>
               <div class="stat-label">Active</div>
               <div class="stat-sublabel">Tournaments</div>
             </div>
           </div>
 
-          <div class="stat-card wins">
-            <div class="stat-icon">👥</div>
-            <div class="stat-content">
-              <div class="stat-value">0</div>
-              <div class="stat-label">Total</div>
-              <div class="stat-sublabel">Users</div>
+          @if (isSystemAdmin()) {
+            <div class="stat-card wins">
+              <div class="stat-icon">👥</div>
+              <div class="stat-content">
+                <div class="stat-value">{{ totalUsersCount() }}</div>
+                <div class="stat-label">Total</div>
+                <div class="stat-sublabel">Users</div>
+              </div>
             </div>
-          </div>
+          }
 
           <div class="stat-card percentage">
             <div class="stat-icon">🏆</div>
             <div class="stat-content">
-              <div class="stat-value">0</div>
+              <div class="stat-value">{{ managedTournamentsCount() }}</div>
               <div class="stat-label">Tournaments</div>
               <div class="stat-sublabel">Managed</div>
             </div>

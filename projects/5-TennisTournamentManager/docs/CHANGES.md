@@ -8,6 +8,223 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Implementation: Tournament Logo Display on Subpages (2026-04-22)
+
+**Completed:** Added tournament logo display across all tournament-scoped subpages (brackets, order of play, phase management, standings, announcements) for visual consistency.
+
+**Changes:**
+
+1. ✅ **Tournament State Service for Shared Context**
+   - **Problem:** Tournament logos displayed correctly on tournament detail page but disappeared when navigating to subpages (brackets, matches, phases, standings, announcements)
+   - **Solution:**
+     - Created `TournamentStateService` as an injectable singleton service with `providedIn: 'root'`
+     - Implemented reactive signals pattern: `currentTournament` signal with computed properties for `currentTournamentLogo`, `currentTournamentName`, and `currentTournamentId`
+     - Added `setCurrentTournament(tournament)` and `clearCurrentTournament()` methods for state management
+     - Modified `TournamentDetailComponent` to call `tournamentStateService.setCurrentTournament(tournament)` when loading tournament data in `loadTournament()` method
+     - Updated **5 tournament-scoped subpages** to inject `TournamentStateService` and display logos:
+       1. **Bracket View** - displays logo when viewing tournament brackets
+       2. **Order of Play View** - displays logo when viewing match schedules
+       3. **Phase Management** - displays logo when managing tournament phases
+       4. **Standings View** - displays logo when viewing tournament standings (loads tournament via route params)
+       5. **Announcement List** - displays logo when viewing tournament-specific announcements (loads tournament via query params)
+     - Added logo display in hero sections using `@if (tournamentStateService.currentTournamentLogo(); as logoUrl)` conditional rendering
+     - Styled tournament logos with consistent design: 80px max-height, auto width, centered block display, border-radius 8px, box-shadow, semi-transparent background with backdrop filter blur
+     - For announcements page: Added tournament data loading when `tournamentId` query param is present, with graceful fallback if tournament load fails
+   - **Files Created:**
+     - `src/presentation/services/tournament-state.service.ts` (NEW - manages shared tournament context)
+   - **Files Modified:**
+     - `src/presentation/services/index.ts` (export TournamentStateService)
+     - `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` (inject service, set tournament on load)
+     - `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts` (inject service)
+     - `src/presentation/pages/brackets/bracket-view/bracket-view.component.html` (display logo in hero section)
+     - `src/presentation/pages/brackets/bracket-view/bracket-view.component.css` (add .tournament-logo styles)
+     - `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts` (inject service)
+     - `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.html` (display logo in hero section)
+     - `src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.css` (add .tournament-logo styles)
+     - `src/presentation/pages/phases/phase-management.component.ts` (inject service)
+     - `src/presentation/pages/phases/phase-management.component.html` (display logo in hero section)
+     - `src/presentation/pages/phases/phase-management.component.css` (add .tournament-logo styles)
+     - `src/presentation/pages/standings/standings-view/standings-view.component.ts` (inject service, set tournament on load)
+     - `src/presentation/pages/standings/standings-view/standings-view.component.html` (display logo in hero section)
+     - `src/presentation/pages/standings/standings-view/standings-view.component.css` (add .tournament-logo styles)
+     - `src/presentation/pages/announcements/announcement-list/announcement-list.component.ts` (inject TournamentService and TournamentStateService, load tournament when tournamentId present)
+     - `src/presentation/pages/announcements/announcement-list/announcement-list.component.html` (display logo in hero section, show tournament name)
+     - `src/presentation/pages/announcements/announcement-list/announcement-list.component.css` (add .tournament-logo and .hero-description styles)
+   - **Impact:** Users navigating through tournament subpages now see the tournament logo consistently across all tournament-scoped views (5 pages), improving visual continuity and brand recognition. Non-tournament pages (global match list, player statistics) correctly do not display tournament logos.
+   - **Technical Details:** Uses Angular signals for reactive state management, computed properties for derived data, providedIn: 'root' for singleton service, conditional rendering with Angular @if syntax, graceful fallback handling for optional tournament data
+   - **References:** COPILOT-TODO.md (Phase 3, "Fix tournament logo display on subpages")
+
+### Implementation: Acceptance Type Badges in Bracket Visualization (2026-04-22)
+
+**Completed:** Added acceptance type badges (WC, SE, LL, Q, ALT, WD) to bracket visualization for all bracket types.
+
+**Changes:**
+
+1. ✅ **Acceptance Type Badges in Bracket Display**
+   - **Problem:** Bracket visualization showed seed numbers but not acceptance types (Wild Card, Special Exemption, Lucky Loser, Direct Acceptance, etc.), making it hard to distinguish how players qualified
+   - **Solution:**
+     - Migrated from `ngOnInit` to Angular `effect()` for reactive registration loading when bracket changes
+     - Created `loadRegistrations()` method to fetch registrations via `RegistrationService.getRegistrationsByCategory()`
+     - Built registration lookup map (`Map<participantId, RegistrationDto>`) for O(1) access
+     - Implemented `getParticipantAcceptanceType()` method supporting both singles and doubles matches
+     - Added `getAcceptanceTypeBadge()` method to convert `AcceptanceType` enum to display abbreviations:
+       - **DA** (Direct Acceptance), **WC** (Wild Card), **SE** (Special Exemption), **JE** (Junior Exemption)
+       - **LL** (Lucky Loser), **Q** (Qualifier), **ALT** (Alternate), **WD** (Withdrawn)
+       - **OA** (Organizer Acceptance), **S** (Seeded)
+     - Updated HTML template to display acceptance badges in all 4 participant locations (2 for single elimination, 2 for round robin)
+     - Styled badges with purple gradient background (`#8b5cf6` to `#7c3aed`), rectangular shape, 4px border radius
+     - Winner-specific styling: lighter purple (`#a78bfa` to `#8b5cf6`) when participant wins match
+     - Positioned badges after seed badges with 4px left margin for visual separation
+     - Added comprehensive console logging for debugging registration loading and badge display
+   - **Files Modified:**
+     - `src/presentation/components/visual-bracket/visual-bracket.component.ts` (added RegistrationService injection, effect-based loading, getParticipantAcceptanceType, getAcceptanceTypeBadge methods with all acceptance types)
+     - `src/presentation/components/visual-bracket/visual-bracket.component.html` (added acceptance badge @if blocks in 4 locations)
+     - `src/presentation/components/visual-bracket/visual-bracket.component.css` (added .acceptance-badge and .participant.winner .acceptance-badge styles)
+   - **Impact:** Tournament viewers can now see ALL acceptance types displayed as badges directly in the bracket view; provides complete transparency about how every player qualified
+   - **Technical Details:** Uses Angular signals and effect() for reactive state management, async data loading triggered by bracket changes, TypeScript Map for efficient O(1) lookups, CSS gradients matching project design system
+   - **References:** COPILOT-TODO.md (Phase 3, "Add seed numbers and entry status to bracket display" - seeds were already implemented, this completes the entry status part)
+
+### Implementation: Phase 3 Data Visualization Improvements (2026-04-22)
+
+**Completed:** Enhanced participant list visualization, added compare stats functionality, and fixed dashboard admin counters.
+
+**Changes:**
+
+1. ✅ **Enhanced Participant List Visualization with Status Filtering**
+   - **Problem:** Participant list didn't show clear registration status differentiation or acceptance type badges; no way to filter by status
+   - **Solution:**
+     - Added `participantStatusFilter` signal for status selection (ALL, PENDING, ACCEPTED, REJECTED, WITHDRAWN)
+     - Created `filteredRegisteredPlayers()` computed property for reactive filtering
+     - Added `getAcceptanceTypeBadge()` method returning abbreviated badges (WC, SE, JE, LL, Q, ALT, DA, OA, WD)
+     - Added `getStatusBadgeColor()` method for status-specific colors (#f59e0b pending, #10b981 accepted, #ef4444 rejected, #6b7280 withdrawn)
+     - Implemented filter dropdown in card header showing counts for each status
+     - Enhanced status badges with colored backgrounds and acceptance type badges for accepted players
+     - Special handling for ALTERNATE (orange) and LUCKY_LOSER (purple) status display
+   - **Files Modified:**
+     - `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` (added filtering logic and helper methods)
+     - `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html` (updated header and table)
+   - **Impact:** Tournament admins can now quickly filter participants by status and see entry types at a glance; improves participant management workflow
+   - **Technical Details:** Uses Angular signals and computed properties for reactive filtering without manual change detection
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 3.1), COPILOT-TODO.md (Phase 3, Feature 1)
+
+2. ✅ **Compare Stats Button in User Profiles**
+   - **Problem:** No direct way to view detailed statistics or H2H comparisons from a user's profile page; complex navigation issues with back button
+   - **Solution:**
+     - Added new route `/statistics/:id` in app.routes.ts for viewing another user's statistics
+     - Created `viewStatistics()` method for simple navigation to statistics page
+     - Added prominent "📊 View Statistics" button in hero section with enhanced blue styling
+     - Improved visual separation between button and profile card with increased spacing (2rem)
+     - Simplified back navigation using Location.back() for proper browser history management
+     - Both profile and statistics pages use Location service for consistent back button behavior
+     - Removed complex state management in favor of browser's native history handling
+   - **Files Modified:**
+     - `src/presentation/app.routes.ts` (added statistics/:id route)
+     - `src/presentation/pages/users/user-profile-view/user-profile-view.component.ts` (added Location service, simplified viewStatistics)
+     - `src/presentation/pages/users/user-profile-view/user-profile-view.component.html` (added profile-actions wrapper, view-stats-btn class)
+     - `src/presentation/pages/users/user-profile-view/user-profile-view.component.css` (enhanced spacing with profile-actions container, view-stats-btn styling)
+     - `src/presentation/pages/statistics/statistics-view/statistics-view.component.ts` (simplified goBack using Location.back())
+   - **Impact:** Users can now navigate seamlessly between profiles and statistics with natural browser history behavior; single-click back navigation works correctly
+   - **Technical Details:** Uses Angular Location service for browser history, simplified from complex state tracking to native history management, enhanced CSS spacing (2rem margin-top on profile-actions container)
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 3.4), COPILOT-TODO.md (Phase 3, Feature 4)
+
+3. ✅ **Fixed Dashboard Admin Counter Updates**
+   - **Problem:** Admin dashboard showed hardcoded "0" values for Active Tournaments, Total Users, and Tournaments Managed counters
+   - **Solution:**
+     - Added three new signals: `activeTournamentsCount()`, `totalUsersCount()`, and `managedTournamentsCount()`
+     - Implemented data loading in `loadDashboardData()` for admin users
+     - Active tournaments calculated by filtering tournaments with status IN_PROGRESS, REGISTRATION_OPEN, REGISTRATION_CLOSED, or DRAW_PENDING
+     - **System admins only:** Uses `UserManagementService.getUserStats()` with fallback to `getAllUsers().length` to display total user count
+     - **Total Users card only visible for SYSTEM_ADMIN** (hidden for TOURNAMENT_ADMIN due to API permission restrictions)
+     - Tournament admins: Count tournaments where they are the organizer
+     - System admins: Show all tournaments as "managed" count
+     - Updated HTML template to bind signals instead of hardcoded zeros
+     - **Bug Fix:** Added `await` to `loadUserCount()` call to ensure data loads before rendering
+     - **Bug Fix:** Added fallback mechanism when `/users/stats` endpoint is not available - counts all users instead
+     - **Security Fix:** Prevented 403 errors for TOURNAMENT_ADMIN by restricting Total Users counter to SYSTEM_ADMIN only
+   - **Files Modified:**
+     - `src/presentation/pages/dashboard.component.ts` (added signals, UserManagementService injection, loadUserCount for SYSTEM_ADMIN only, updated loadDashboardData)
+     - `src/presentation/pages/dashboard.component.html` (replaced hardcoded 0s with signal bindings, conditional display for Total Users)
+   - **Impact:** System admin users see accurate, real-time statistics on their dashboard; counters update automatically when data changes; TOURNAMENT_ADMIN users don't encounter permission errors
+   - **Technical Details:** Uses TournamentStatus enum for filtering, async API calls with error handling, computed values based on user role (SYSTEM_ADMIN vs TOURNAMENT_ADMIN), leverages existing UserManagementService infrastructure with graceful fallback, respects API permission boundaries
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 3.2), COPILOT-TODO.md (Phase 3, Feature 3)
+
+### Implementation: View Profile Links in Participant Lists (2026-04-22)
+
+**Completed:** Added clickable profile links to all participant names across tournament, bracket, and match pages.
+
+**Changes:**
+
+1. ✅ **Tournament Detail Participant List Profile Links**
+   - **Problem:** Couldn't access other participants' profiles from the registered players table
+   - **Solution:**
+     - Wrapped participant names in `<a routerLink="/users/{{userId}}">` tags
+     - Added 👤 icon to indicate clickability for singles participants
+     - For doubles pairs, each partner name has an individual profile link
+     - Added "View profile" title tooltip on hover
+   - **Files Modified:**
+     - `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html` (lines 619-637)
+   - **Impact:** Users can now click participant names to view their profiles from the registered players table
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 2.6), COPILOT-TODO.md (Phase 2, Task 4)
+
+2. ✅ **Public Participant List for Non-Admin Users**
+   - **Problem:** Registered players list was only visible to tournament administrators, making it hard for participants and public viewers to see who's competing
+   - **Solution:**
+     - Created `acceptedPlayers()` computed property that filters for accepted, non-alternate, non-withdrawn players
+     - Added separate public participant list visible to all non-admin users (shows when `!canManageTournament()`)
+     - Displays player names with clickable profile links, category, and seed number (if applicable)
+     - Cleaner design without management action buttons
+     - Only displays accepted players (excludes pending, rejected, withdrawn, alternates)
+     - Supports both singles and doubles tournaments with appropriate formatting
+   - **Files Modified:**
+     - `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` (added acceptedPlayers computed property)
+     - `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html` (added public participant list section)
+   - **Impact:** All users (including unauthenticated visitors) can now see who's registered and accepted for a tournament, improving transparency and engagement
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 2.6), user feedback
+
+3. ✅ **Visual Bracket Profile Links**
+   - **Problem:** No way to access participant profiles from bracket visualization
+   - **Solution:**
+     - Added helper methods: `getParticipantId()`, `isDoublesMatch()`, `getTeamPlayerIds()`
+     - Wrapped participant names in profile links for all bracket types (single elimination, round robin, match play)
+     - For doubles matches, split team names and link each partner separately
+     - Handled BYE cases (no link for BYE entries)
+     - Added "View profile" title tooltip
+   - **Files Modified:**
+     - `src/presentation/components/visual-bracket/visual-bracket.component.ts` (added helper methods, imported RouterModule)
+     - `src/presentation/components/visual-bracket/visual-bracket.component.html` (updated all 4 participant display sections)
+   - **Impact:** Users can click participant names in bracket visualizations to view profiles
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 2.6), COPILOT-TODO.md (Phase 2, Task 4)
+
+4. ✅ **My Matches Participant Profile Links**
+   - **Problem:** No profile links for opponents on the My Matches page
+   - **Solution:**
+     - Wrapped participant names in profile links with 👤 icon
+     - Added for both participant 1 and participant 2
+     - Styled to inherit color and remove underline
+     - Added "View profile" title tooltip
+   - **Files Modified:**
+     - `src/presentation/pages/matches/my-matches/my-matches.component.html` (lines 140-193)
+   - **Impact:** Players can now view their opponent's profile directly from their matches list
+   - **References:** FEEDBACK-IMPLEMENTATION-PLAN.md (Section 2.6), COPILOT-TODO.md (Phase 2, Task 4)
+
+**Technical Details:**
+- Used Angular `routerLink` directive for navigation: `[routerLink]="['/users', userId]"`
+- Correct route: `/users/:id` for viewing other users' profiles (public route)
+- Profile privacy settings enforced by UserProfileViewComponent (existing FR19-FR22 implementation)
+- No backend changes required
+- No authentication guard on `/users/:id` route - publicly accessible with privacy filtering
+- Consistent styling: `color: inherit; text-decoration: none; cursor: pointer;`
+- RouterModule already imported in all modified components
+
+**Testing Considerations:**
+- Test with singles and doubles tournaments
+- Verify profile privacy settings are respected
+- Check all bracket types: single elimination, round robin, match play, consolation
+- Verify BYE entries don't have links
+- Test from: tournament detail page, bracket view, my matches page
+
+---
+
 ### Implementation: Phase 2 Navigation Improvements (2026-04-22)
 
 **Completed:** Added main navigation links to improve discoverability of key features. Improved navigation layout for better UX.

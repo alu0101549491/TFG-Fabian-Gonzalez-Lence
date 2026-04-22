@@ -87,4 +87,11 @@ export interface ITournamentService {
    * @returns List of active tournaments
    */
   getActiveTournaments(): Promise<TournamentDto[]>;
+
+  /**
+   * Retrieves all tournaments without pagination.
+   *
+   * @returns List of all tournaments
+   */
+  getAllTournaments(): Promise<TournamentDto[]>;
 }

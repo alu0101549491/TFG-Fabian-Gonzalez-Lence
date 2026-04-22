@@ -13,7 +13,7 @@
  */
 
 import {Component, OnInit, signal, inject} from '@angular/core';
-import {CommonModule} from '@angular/common';
+import {CommonModule, Location} from '@angular/common';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {StatisticsService} from '@application/services';
 import {type StatisticsDto, type HeadToHeadDto, type TeamHeadToHeadDto} from '@application/dto';
@@ -35,6 +35,7 @@ export class StatisticsViewComponent implements OnInit {
   /** Services */
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly statisticsService = inject(StatisticsService);
   private readonly authStateService = inject(AuthStateService);
 
@@ -109,10 +110,11 @@ export class StatisticsViewComponent implements OnInit {
   }
 
   /**
-   * Navigates back to dashboard.
+   * Navigates back to the previous page.
+   * Uses Location.back() to properly maintain browser history without loops.
    */
   public goBack(): void {
-    void this.router.navigate(['/home']);
+    this.location.back();
   }
 
   /**

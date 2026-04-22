@@ -11,8 +11,20 @@
         ← Back
       </button>
     </div>
+    @if (tournamentStateService.currentTournamentLogo(); as logoUrl) {
+      <img 
+        [src]="logoUrl" 
+        [alt]="tournament()?.name + ' logo'" 
+        class="tournament-logo"
+      />
+    }
     <h1 class="hero-title">📢 Announcements</h1>
-    <p class="hero-subtitle">Important updates and tournament information</p>
+    @if (tournament(); as tournamentData) {
+      <p class="hero-subtitle">{{ tournamentData.name }}</p>
+      <p class="hero-description">Important updates and tournament information</p>
+    } @else {
+      <p class="hero-subtitle">Important updates and tournament information</p>
+    }
   </div>
 </section>
 

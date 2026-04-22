@@ -19,7 +19,7 @@ import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {BracketService, TournamentService, MatchService} from '@application/services';
 import {ExportService} from '@application/services/export.service';
 import {type BracketDto, type PhaseDto, type TournamentDto, type MatchDto} from '@application/dto';
-import {AuthStateService} from '@presentation/services/auth-state.service';
+import {AuthStateService, TournamentStateService} from '@presentation/services';
 import {UserRole} from '@domain/enumerations/user-role';
 import {EnumFormatPipe} from '@shared/pipes';
 import {VisualBracketComponent} from '@presentation/components/visual-bracket/visual-bracket.component';
@@ -44,6 +44,7 @@ export class BracketViewComponent implements OnInit {
   private readonly tournamentService = inject(TournamentService);
   private readonly matchService = inject(MatchService);
   private readonly authStateService = inject(AuthStateService);
+  protected readonly tournamentStateService = inject(TournamentStateService);
   private readonly exportService = inject(ExportService);
 
   /** Bracket ID */

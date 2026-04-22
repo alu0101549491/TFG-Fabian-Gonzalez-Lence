@@ -144,7 +144,9 @@
                         <div class="participant-content">
                           <div class="avatar">{{ getInitials(match.participant1.firstName, match.participant1.lastName) }}</div>
                           <div class="participant-details">
-                            <h3 class="participant-name">{{ match.participant1Name }}</h3>
+                            <a [routerLink]="['/users', match.participant1.id]" style="text-decoration: none; color: inherit;" title="View profile">
+                              <h3 class="participant-name">{{ match.participant1Name }} 👤</h3>
+                            </a>
                             @if (match.participant1.email) {
                               <p class="participant-email">{{ match.participant1.email }}</p>
                             }
@@ -172,7 +174,9 @@
                         <div class="participant-content">
                           <div class="avatar">{{ getInitials(match.participant2.firstName, match.participant2.lastName) }}</div>
                           <div class="participant-details">
-                            <h3 class="participant-name">{{ match.participant2Name }}</h3>
+                            <a [routerLink]="['/users', match.participant2.id]" style="text-decoration: none; color: inherit;" title="View profile">
+                              <h3 class="participant-name">{{ match.participant2Name }} 👤</h3>
+                            </a>
                             @if (match.participant2.email) {
                               <p class="participant-email">{{ match.participant2.email }}</p>
                             }

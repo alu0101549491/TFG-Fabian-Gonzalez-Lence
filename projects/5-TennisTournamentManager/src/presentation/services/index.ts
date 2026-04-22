@@ -13,3 +13,4 @@
  */
 
 export * from './auth-state.service';
+export * from './tournament-state.service';

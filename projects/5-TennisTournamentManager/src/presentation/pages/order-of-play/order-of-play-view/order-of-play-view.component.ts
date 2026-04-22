@@ -17,7 +17,7 @@ import {CommonModule, Location} from '@angular/common';
 import {ActivatedRoute, RouterModule} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {OrderOfPlayRepositoryImpl} from '@infrastructure/repositories/order-of-play.repository';
-import {AuthStateService} from '@presentation/services/auth-state.service';
+import {AuthStateService, TournamentStateService} from '@presentation/services';
 import {AxiosClient} from '@infrastructure/http/axios-client';
 import {UserRole} from '@domain/enumerations/user-role';
 import {EnumFormatPipe} from '@shared/pipes/enum-format.pipe';
@@ -49,6 +49,7 @@ export class OrderOfPlayViewComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly orderOfPlayRepository = inject(OrderOfPlayRepositoryImpl);
   private readonly authStateService = inject(AuthStateService);
+  protected readonly tournamentStateService = inject(TournamentStateService);
   private readonly location = inject(Location);
   private readonly http = inject(AxiosClient);
 

@@ -320,6 +320,17 @@ export class TournamentService implements ITournamentService {
   }
 
   /**
+   * Retrieves all tournaments without pagination.
+   * Used for admin dashboard statistics.
+   *
+   * @returns List of all tournaments
+   */
+  public async getAllTournaments(): Promise<TournamentDto[]> {
+    const allTournaments = await this.tournamentRepository.findAll();
+    return allTournaments.map(t => this.mapTournamentToDto(t));
+  }
+
+  /**
    * Finalizes a tournament, marking it as complete.
    *
    * @param id - ID of the tournament to finalize

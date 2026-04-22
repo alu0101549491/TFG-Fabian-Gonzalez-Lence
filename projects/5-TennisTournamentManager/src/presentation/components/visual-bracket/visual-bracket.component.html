@@ -1,6 +1,6 @@
 <!-- Visual Bracket Display -->
 <div class="visual-bracket-container">
-  @if (bracket.bracketType === BracketType.SINGLE_ELIMINATION) {
+  @if (bracket && bracket.bracketType === BracketType.SINGLE_ELIMINATION) {
     <!-- Single Elimination Bracket Tree -->
     <div class="bracket-tree">
       <div class="bracket-rounds">
@@ -35,7 +35,29 @@
                         @if (getParticipantSeed(match, 1)) {
                           <span class="seed-badge">{{ getParticipantSeed(match, 1) }}</span>
                         }
-                        <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                        @if (getAcceptanceTypeBadge(getParticipantAcceptanceType(match, 1)); as badge) {
+                          <span class="acceptance-badge">{{ badge }}</span>
+                        }
+                        @if (isDoublesMatch(match) && getTeamPlayerIds(match, 1); as teamIds) {
+                          <!-- Doubles: show team with profile links -->
+                          <span class="participant-name">
+                            <a [routerLink]="['/users', teamIds.player1Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                              {{ getParticipantName(match, 1).split(' / ')[0] }}
+                            </a>
+                            <span> / </span>
+                            <a [routerLink]="['/users', teamIds.player2Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                              {{ getParticipantName(match, 1).split(' / ')[1] }}
+                            </a>
+                          </span>
+                        } @else if (getParticipantId(match, 1)) {
+                          <!-- Singles: show participant with profile link -->
+                          <a [routerLink]="['/users', getParticipantId(match, 1)]" style="color: inherit; text-decoration: none;" title="View profile" class="participant-name">
+                            {{ getParticipantName(match, 1) }}
+                          </a>
+                        } @else {
+                          <!-- BYE -->
+                          <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                        }
                       </div>
                       @if (isWinner(match, 1)) {
                         <span class="winner-icon">🏆</span>
@@ -57,7 +79,29 @@
                         @if (getParticipantSeed(match, 2)) {
                           <span class="seed-badge">{{ getParticipantSeed(match, 2) }}</span>
                         }
-                        <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                        @if (getAcceptanceTypeBadge(getParticipantAcceptanceType(match, 2)); as badge) {
+                          <span class="acceptance-badge">{{ badge }}</span>
+                        }
+                        @if (isDoublesMatch(match) && getTeamPlayerIds(match, 2); as teamIds) {
+                          <!-- Doubles: show team with profile links -->
+                          <span class="participant-name">
+                            <a [routerLink]="['/users', teamIds.player1Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                              {{ getParticipantName(match, 2).split(' / ')[0] }}
+                            </a>
+                            <span> / </span>
+                            <a [routerLink]="['/users', teamIds.player2Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                              {{ getParticipantName(match, 2).split(' / ')[1] }}
+                            </a>
+                          </span>
+                        } @else if (getParticipantId(match, 2)) {
+                          <!-- Singles: show participant with profile link -->
+                          <a [routerLink]="['/users', getParticipantId(match, 2)]" style="color: inherit; text-decoration: none;" title="View profile" class="participant-name">
+                            {{ getParticipantName(match, 2) }}
+                          </a>
+                        } @else {
+                          <!-- BYE -->
+                          <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                        }
                       </div>
                       @if (isWinner(match, 2)) {
                         <span class="winner-icon">🏆</span>
@@ -78,7 +122,7 @@
         }
       </div>
     </div>
-  } @else if (bracket.bracketType === BracketType.ROUND_ROBIN) {
+  } @else if (bracket && bracket.bracketType === BracketType.ROUND_ROBIN) {
     <!-- Round Robin Groups -->
     <div class="round-robin-bracket">
       @for (roundData of matchesByRound(); track roundData.round) {
@@ -107,7 +151,29 @@
                       @if (getParticipantSeed(match, 1)) {
                         <span class="seed-badge">{{ getParticipantSeed(match, 1) }}</span>
                       }
-                      <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                      @if (getAcceptanceTypeBadge(getParticipantAcceptanceType(match, 1)); as badge) {
+                        <span class="acceptance-badge">{{ badge }}</span>
+                      }
+                      @if (isDoublesMatch(match) && getTeamPlayerIds(match, 1); as teamIds) {
+                        <!-- Doubles: show team with profile links -->
+                        <span class="participant-name">
+                          <a [routerLink]="['/users', teamIds.player1Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                            {{ getParticipantName(match, 1).split(' / ')[0] }}
+                          </a>
+                          <span> / </span>
+                          <a [routerLink]="['/users', teamIds.player2Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                            {{ getParticipantName(match, 1).split(' / ')[1] }}
+                          </a>
+                        </span>
+                      } @else if (getParticipantId(match, 1)) {
+                        <!-- Singles: show participant with profile link -->
+                        <a [routerLink]="['/users', getParticipantId(match, 1)]" style="color: inherit; text-decoration: none;" title="View profile" class="participant-name">
+                          {{ getParticipantName(match, 1) }}
+                        </a>
+                      } @else {
+                        <!-- BYE -->
+                        <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                      }
                     </div>
                     @if (isWinner(match, 1)) {
                       <span class="winner-icon">🏆</span>
@@ -122,7 +188,29 @@
                       @if (getParticipantSeed(match, 2)) {
                         <span class="seed-badge">{{ getParticipantSeed(match, 2) }}</span>
                       }
-                      <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                      @if (getAcceptanceTypeBadge(getParticipantAcceptanceType(match, 2)); as badge) {
+                        <span class="acceptance-badge">{{ badge }}</span>
+                      }
+                      @if (isDoublesMatch(match) && getTeamPlayerIds(match, 2); as teamIds) {
+                        <!-- Doubles: show team with profile links -->
+                        <span class="participant-name">
+                          <a [routerLink]="['/users', teamIds.player1Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                            {{ getParticipantName(match, 2).split(' / ')[0] }}
+                          </a>
+                          <span> / </span>
+                          <a [routerLink]="['/users', teamIds.player2Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                            {{ getParticipantName(match, 2).split(' / ')[1] }}
+                          </a>
+                        </span>
+                      } @else if (getParticipantId(match, 2)) {
+                        <!-- Singles: show participant with profile link -->
+                        <a [routerLink]="['/users', getParticipantId(match, 2)]" style="color: inherit; text-decoration: none;" title="View profile" class="participant-name">
+                          {{ getParticipantName(match, 2) }}
+                        </a>
+                      } @else {
+                        <!-- BYE -->
+                        <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                      }
                     </div>
                     @if (isWinner(match, 2)) {
                       <span class="winner-icon">🏆</span>
@@ -155,7 +243,26 @@
 
               <div class="match-participants">
                 <div class="participant" [class.winner]="isWinner(match, 1)">
-                  <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                  @if (isDoublesMatch(match) && getTeamPlayerIds(match, 1); as teamIds) {
+                    <!-- Doubles: show team with profile links -->
+                    <span class="participant-name">
+                      <a [routerLink]="['/users', teamIds.player1Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                        {{ getParticipantName(match, 1).split(' / ')[0] }}
+                      </a>
+                      <span> / </span>
+                      <a [routerLink]="['/users', teamIds.player2Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                        {{ getParticipantName(match, 1).split(' / ')[1] }}
+                      </a>
+                    </span>
+                  } @else if (getParticipantId(match, 1)) {
+                    <!-- Singles: show participant with profile link -->
+                    <a [routerLink]="['/users', getParticipantId(match, 1)]" style="color: inherit; text-decoration: none;" title="View profile" class="participant-name">
+                      {{ getParticipantName(match, 1) }}
+                    </a>
+                  } @else {
+                    <!-- BYE -->
+                    <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                  }
                   @if (isWinner(match, 1)) {
                     <span class="winner-icon">🏆</span>
                   }
@@ -164,7 +271,26 @@
                 <span class="vs-text">vs</span>
 
                 <div class="participant" [class.winner]="isWinner(match, 2)">
-                  <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                  @if (isDoublesMatch(match) && getTeamPlayerIds(match, 2); as teamIds) {
+                    <!-- Doubles: show team with profile links -->
+                    <span class="participant-name">
+                      <a [routerLink]="['/users', teamIds.player1Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                        {{ getParticipantName(match, 2).split(' / ')[0] }}
+                      </a>
+                      <span> / </span>
+                      <a [routerLink]="['/users', teamIds.player2Id]" style="color: inherit; text-decoration: none;" title="View profile">
+                        {{ getParticipantName(match, 2).split(' / ')[1] }}
+                      </a>
+                    </span>
+                  } @else if (getParticipantId(match, 2)) {
+                    <!-- Singles: show participant with profile link -->
+                    <a [routerLink]="['/users', getParticipantId(match, 2)]" style="color: inherit; text-decoration: none;" title="View profile" class="participant-name">
+                      {{ getParticipantName(match, 2) }}
+                    </a>
+                  } @else {
+                    <!-- BYE -->
+                    <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                  }
                   @if (isWinner(match, 2)) {
                     <span class="winner-icon">🏆</span>
                   }

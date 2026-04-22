@@ -22,7 +22,7 @@ import {ExportService} from '@application/services/export.service';
 import {UserManagementService} from '@application/services/user-management.service';
 import {PartnerInvitationService} from '@infrastructure/services/partner-invitation.service';
 import {type TournamentDto, type RegistrationDto, type CreateCategoryDto, type CategoryDto, type UpdateRegistrationStatusDto, type UserSummaryDto} from '@application/dto';
-import {AuthStateService} from '@presentation/services/auth-state.service';
+import {AuthStateService, TournamentStateService} from '@presentation/services';
 import {UserRepositoryImpl} from '@infrastructure/repositories/user.repository';
 import {type User} from '@domain/entities/user';
 import {UserRole} from '@domain/enumerations/user-role';
@@ -58,6 +58,7 @@ export class TournamentDetailComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly bracketService = inject(BracketService);
   private readonly authStateService = inject(AuthStateService);
+  private readonly tournamentStateService = inject(TournamentStateService);
   private readonly userRepository = inject(UserRepositoryImpl);
   private readonly userManagementService = inject(UserManagementService);
   private readonly exportService = inject(ExportService);
@@ -74,6 +75,42 @@ export class TournamentDetailComponent implements OnInit {
   /** Count of pending registrations */
   public pendingRegistrationsCount = computed(() => {
     return this.registeredPlayers().filter(p => p.registration.status === RegistrationStatus.PENDING).length;
+  });
+
+  /** Count of accepted registrations */
+  public acceptedPlayersCount = computed(() => {
+    return this.registeredPlayers().filter(p => p.registration.status === RegistrationStatus.ACCEPTED).length;
+  });
+
+  /** Count of rejected registrations */
+  public rejectedPlayersCount = computed(() => {
+    return this.registeredPlayers().filter(p => p.registration.status === RegistrationStatus.REJECTED).length;
+  });
+
+  /** Count of withdrawn registrations */
+  public withdrawnPlayersCount = computed(() => {
+    return this.registeredPlayers().filter(p => p.registration.status === RegistrationStatus.WITHDRAWN).length;
+  });
+
+  /** Accepted players for public display (excludes pending, rejected, withdrawn, and alternates) */
+  public acceptedPlayers = computed(() => {
+    return this.registeredPlayers().filter(
+      p => p.registration.status === RegistrationStatus.ACCEPTED
+        && p.registration.acceptanceType !== AcceptanceType.ALTERNATE
+        && p.registration.acceptanceType !== AcceptanceType.WITHDRAWN
+    );
+  });
+
+  /** Participant list filter status */
+  public participantStatusFilter = signal<RegistrationStatus | 'ALL'>('ALL');
+
+  /** Filtered registered players based on status filter */
+  public filteredRegisteredPlayers = computed(() => {
+    const filter = this.participantStatusFilter();
+    if (filter === 'ALL') {
+      return this.registeredPlayers();
+    }
+    return this.registeredPlayers().filter(p => p.registration.status === filter);
   });
 
   /** Selected category ID for registration */
@@ -348,6 +385,9 @@ export class TournamentDetailComponent implements OnInit {
     try {
       const tournament = await this.tournamentService.getTournamentById(this.tournamentId);
       this.tournament.set(tournament);
+      
+      // Set tournament in global state for logo propagation
+      this.tournamentStateService.setCurrentTournament(tournament);
       
       // Initialize category form with tournament's max participants
       this.categoryForm.maxParticipants = tournament.maxParticipants;
@@ -1472,6 +1512,56 @@ export class TournamentDetailComponent implements OnInit {
         && p.registration.acceptanceType !== AcceptanceType.ALTERNATE
         && p.registration.acceptanceType !== AcceptanceType.WITHDRAWN
     ).length;
+  }
+
+  /**
+   * Checks if a category has accepted participants.
+   *
+   * @param categoryId - The category ID
+   * @returns True if category has at least one accepted participant
+   */
+  public hasAcceptedParticipants(categoryId: string): boolean {
+    return this.getAcceptedParticipantCount(categoryId) > 0;
+  }
+
+  /**
+   * Gets acceptance type badge abbreviation for display.
+   *
+   * @param acceptanceType - The acceptance type
+   * @returns Badge abbreviation (WC, SE, LL, etc.)
+   */
+  public getAcceptanceTypeBadge(acceptanceType: AcceptanceType | null | undefined): string | null {
+    if (!acceptanceType) return null;
+    
+    const badges: Record<AcceptanceType, string> = {
+      [AcceptanceType.WILD_CARD]: 'WC',
+      [AcceptanceType.SPECIAL_EXEMPTION]: 'SE',
+      [AcceptanceType.JUNIOR_EXEMPTION]: 'JE',
+      [AcceptanceType.LUCKY_LOSER]: 'LL',
+      [AcceptanceType.QUALIFIER]: 'Q',
+      [AcceptanceType.ALTERNATE]: 'ALT',
+      [AcceptanceType.DIRECT_ACCEPTANCE]: 'DA',
+      [AcceptanceType.ORGANIZER_ACCEPTANCE]: 'OA',
+      [AcceptanceType.WITHDRAWN]: 'WD',
+    };
+    
+    return badges[acceptanceType] || null;
+  }
+
+  /**
+   * Gets status badge color class.
+   *
+   * @param status - Registration status
+   * @returns CSS color class
+   */
+  public getStatusBadgeColor(status: RegistrationStatus): string {
+    const colors: Record<RegistrationStatus, string> = {
+      [RegistrationStatus.PENDING]: '#f59e0b',
+      [RegistrationStatus.ACCEPTED]: '#10b981',
+      [RegistrationStatus.REJECTED]: '#ef4444',
+      [RegistrationStatus.WITHDRAWN]: '#6b7280',
+    };
+    return colors[status] || '#6b7280';
   }
 
   /**

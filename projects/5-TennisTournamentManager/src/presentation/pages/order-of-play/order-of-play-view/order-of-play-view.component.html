@@ -6,6 +6,13 @@
       <div class="hero-top">
         <button class="back-button" (click)="goBack()">← Back</button>
       </div>
+      @if (tournamentStateService.currentTournamentLogo(); as logoUrl) {
+        <img 
+          [src]="logoUrl" 
+          [alt]="'Tournament logo'" 
+          class="tournament-logo"
+        />
+      }
       <h1 class="hero-title">Order of Play 📅</h1>
       <p class="hero-subtitle">View daily match schedules across all courts</p>
     </div>

@@ -22,7 +22,7 @@ import {BracketService} from '../../../application/services/bracket.service';
 import {RegistrationService} from '../../../application/services/registration.service';
 import {PartnerInvitationService} from '../../../infrastructure/services/partner-invitation.service';
 import {type PhaseDto, type TournamentDto, type BracketDto, type RegistrationDto} from '../../../application/dto';
-import {AuthStateService} from '../../services/auth-state.service';
+import {AuthStateService, TournamentStateService} from '@presentation/services';
 import {UserRepositoryImpl} from '../../../infrastructure/repositories/user.repository';
 import templateHtml from './phase-management.component.html?raw';
 import styles from './phase-management.component.css?raw';
@@ -83,6 +83,7 @@ export class PhaseManagementComponent implements OnInit {
   private readonly partnerInvitationService = inject(PartnerInvitationService);
   private readonly userRepository = inject(UserRepositoryImpl);
   private readonly authState = inject(AuthStateService);
+  protected readonly tournamentStateService = inject(TournamentStateService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 

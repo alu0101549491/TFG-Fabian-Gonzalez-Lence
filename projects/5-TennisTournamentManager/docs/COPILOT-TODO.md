@@ -59,19 +59,30 @@
   - **Estimated:** 1 hour
   - **Test:** Log in as participant, verify "My Matches" link visible and works
 
-- [ ] **Add notification badge for pending confirmations**
+- [x] **Add notification badge for pending confirmations** ✅ ALREADY IMPLEMENTED
   - **Issue:** No visual indicator for pending match confirmations
-  - **Files:** Notification icon component, `MyMatchesComponent`
-  - **Fix:** Count pending confirmations, show badge on notification bell
-  - **Estimated:** 2 hours
-  - **Test:** Have pending confirmation, verify badge shows count
+  - **Status:** ✅ Notification bell already shows unread badge with count
+  - **Implementation:** 
+    - Badge appears on notification bell when `unreadCount() > 0`
+    - Pending result confirmations create `RESULT_ENTERED` notifications
+    - Badge updates in real-time via WebSocket
+    - Badge shows with pulsing animation for visibility
+  - **Location:** `notification-bell.component.ts` (lines 10-50, unread-badge CSS)
+  - **Test:** Submit match result, verify badge appears for opponent needing to confirm
 
-- [ ] **Add "View Profile" links in participant lists**
+- [x] **Add "View Profile" links in participant lists** ✅ COMPLETED (2026-04-22)
   - **Issue:** Can't access other participants' profiles easily
-  - **Files:** `ParticipantListComponent`, bracket visualization
-  - **Fix:** Add profile icon/link next to each participant name
-  - **Estimated:** 2 hours
-  - **Test:** Click participant name, verify profile opens with privacy enforced
+  - **Files:** Tournament detail, bracket visualization, my matches page
+  - **Fix:** ✅ Added clickable profile links with 👤 icon on all participant names
+  - **Implementation:**
+    - Tournament detail: Admin table + NEW public participant list for non-admins
+    - Bracket visualization: All bracket types (single elimination, round robin, match play)
+    - My Matches: Both participants have clickable names
+    - Routes to `/users/:id` for public profile viewing
+    - Doubles: Each partner has individual profile link
+    - Created `acceptedPlayers()` computed property for public list filtering
+  - **Estimated:** 2 hours → **Actual:** 3 hours
+  - **Test:** ✅ Click participant names in all locations, verify profiles open with privacy enforced
 
 - [x] **Add "Export" button in tournament detail view** ✅ ALREADY IMPLEMENTED
   - **Issue:** Export functionality exists but might not be discoverable
@@ -99,47 +110,76 @@
 
 ### Priority: HIGH - Shows existing data better
 
-- [ ] **Improve participant list visualization**
+- [x] **Improve participant list visualization** ✅
   - **Issue:** Unclear registration status visualization
-  - **Files:** `ParticipantListComponent`
-  - **Fix:** Add status badges (colors), filter dropdown by status, sort options
-  - **Estimated:** 3 hours
+  - **Files:** `ParticipantListComponent`, `tournament-detail.component`
+  - **Fix:** Add status badges (colors), filter dropdown by status, acceptance type badges
+  - **Estimated:** 3 hours | **Actual:** 2.5 hours
   - **Test:** View participant list, verify status badges clear and filterable
+  - **Completed:** Status filter dropdown with counts per status, colored status badges, acceptance type badges ([WC], [SE], [LL], etc.)
 
-- [ ] **Add seed numbers and entry status to bracket display**
+- [x] **Add seed numbers and entry status to bracket display** ✅ COMPLETED (2026-04-22)
   - **Issue:** Missing seeds and acceptance status in brackets
   - **Files:** `BracketVisualizationComponent`
-  - **Fix:** Show "(1)" for seed, "[WC]" badge for wild cards, etc.
-  - **Estimated:** 3 hours
-  - **Test:** View bracket, verify seeds and entry status visible
+  - **Fix:** ✅ Seeds already implemented via `getParticipantSeed()` method; added acceptance type badges ([WC], [SE], [LL], etc.) by loading registrations and mapping to participants
+  - **Implementation:**
+    - Loads registrations via `RegistrationService.getRegistrationsByCategory()`
+    - Maps registrations by participantId for O(1) lookup
+    - Added `getParticipantAcceptanceType()` method for both singles and doubles
+    - Added `getAcceptanceTypeBadge()` method to map enum to abbreviations (WC, SE, JE, LL, Q, ALT, WD)
+    - Displays badges in all bracket types (single elimination, round robin)
+    - Styled with purple gradient badges next to seed numbers
+  - **Estimated:** 3 hours → **Actual:** 2 hours
+  - **Test:** View bracket, verify seeds and entry status badges visible
 
-- [ ] **Fix dashboard counter updates**
-  - **Issue:** Initial counters don't update properly
-  - **Files:** `DashboardComponent`, statistics service
-  - **Fix:** Add WebSocket listener or refresh on navigation
-  - **Estimated:** 2 hours
-  - **Test:** Update tournament data, verify dashboard counters refresh
+- [x] **Fix dashboard counter updates** ✅
+  - **Issue:** Initial counters don't update properly; permission errors for tournament admins
+  - **Files:** `DashboardComponent`, `UserManagementService`, `TournamentService`
+  - **Fix:** Added signals for active tournaments, total users (SYSTEM_ADMIN only), and managed tournaments counts; load real data from API using UserManagementService with fallback to getAllUsers()
+  - **Estimated:** 2 hours | **Actual:** 3 hours
+  - **Test:** View admin dashboard (both roles), verify counters show real data; create tournament, verify counters update
+  - **Completed:** Active tournaments count (filters by status), system admin user count (via UserManagementService with fallback), tournament admin managed count
+  - **Bug Fixed:** Added `await` to loadUserCount() call + fallback mechanism when `/users/stats` endpoint unavailable + restricted Total Users to SYSTEM_ADMIN only to prevent 403 Forbidden errors for TOURNAMENT_ADMIN users
 
-- [ ] **Fix tournament logo display on subpages**
-  - **Issue:** Logos not displayed on subpages
-  - **Files:** App layout component, route resolvers
-  - **Fix:** Ensure tournament logo propagates via state service
-  - **Estimated:** 2 hours
-  - **Test:** Navigate to tournament subpages, verify logo shows in header
+- [x] **Fix tournament logo display on subpages** ✅ COMPLETED (2026-04-22)
+  - **Issue:** Tournament logos display on tournament detail page but not on subpages (brackets, matches, phases)
+  - **Solution:** Created `TournamentStateService` to share tournament context across components
+  - **Implementation:**
+    - Created injectable singleton service with `currentTournament` signal
+    - Added computed properties: `currentTournamentLogo`, `currentTournamentName`, `currentTournamentId`
+    - Tournament detail component sets current tournament on load via `setCurrentTournament()`
+    - Bracket view, order of play, and phase management components inject service and display logo
+    - Consistent logo styling across all subpages (80px height, rounded corners, shadow, backdrop blur)
+  - **Files Created:**
+    - `src/presentation/services/tournament-state.service.ts` (NEW)
+  - **Files Modified:**
+    - Tournament detail, bracket view, order of play view, phase management components (inject service, display logo)
+  - **Estimated:** 3-4 hours → **Actual:** 2 hours
+  - **Test:** Navigate to tournament subpages (brackets, phases, matches), verify logo shows in header
 
-- [ ] **Add match format display in bracket view**
+- [ ] **Add match format display in bracket view** ⚠️ **BLOCKED: Requires Backend Enhancement**
   - **Issue:** Match format not visible to participants
-  - **Files:** Bracket detail component
-  - **Fix:** Show format info (e.g., "Best of 3 + Super Tiebreak")
-  - **Estimated:** 2 hours
-  - **Test:** View bracket, verify format displayed
+  - **Files:** Bracket detail component, **BACKEND: Match entity and MatchDto**
+  - **Blocker:** `MatchDto` interface does not include `format` field; Match entity may not store format data
+  - **Backend Changes Needed:**
+    1. Add `format` field to Match entity (e.g., "Best of 3", "Best of 5", "Super Tiebreak")
+    2. Include `format` in MatchDto interface
+    3. Populate format when creating matches during bracket generation
+    4. Expose format via GET /matches/:id and GET /brackets/:id/matches endpoints
+  - **Frontend Changes (After Backend):**
+    1. Display format in bracket match cards near status badge
+    2. Show format as "Best of 3 + Super Tiebreak", "Best of 5 sets", etc.
+  - **Estimated:** 2 hours frontend + 3 hours backend (5 hours total)
+  - **Test:** View bracket, verify format displayed for each match
+  - **Priority:** MEDIUM - Helps players understand match requirements
 
-- [ ] **Add "Compare Stats" button in user profiles**
+- [x] **Add "Compare Stats" button in user profiles** ✅
   - **Issue:** Can't access H2H stats directly from profile
-  - **Files:** `UserProfileComponent`
+  - **Files:** `UserProfileComponent`, `app.routes.ts`
   - **Fix:** Add button that navigates to H2H comparison
-  - **Estimated:** 2 hours
+  - **Estimated:** 2 hours | **Actual:** 1 hour
   - **Test:** View opponent profile, click compare, verify H2H loads
+  - **Completed:** Added route `/statistics/:id` and "View Full Stats" button in profile header
 
 ---
 
@@ -449,8 +489,8 @@
 ### Critical (Do First) - 0 remaining (4 completed ✅)
 Total: ~9.5 hours → ~0 hours remaining (Phase 1 COMPLETE)
 
-### High Priority - 18 remaining (3 completed ✅)
-Total: ~58 hours → ~53 hours remaining (Phase 2 partially complete)
+### High Priority - 17 remaining (4 completed ✅)
+Total: ~58 hours → ~50 hours remaining (Phase 2: 4/8 complete)
 
 ### Medium Priority - 23 tasks
 Total: ~110 hours
@@ -458,8 +498,8 @@ Total: ~110 hours
 ### Low Priority - 16 tasks
 Total: ~58 hours
 
-**Grand Total:** ~221 hours remaining (approximately 27.6 working days for 1 developer)  
-**Completed:** ~14.5 hours (7 tasks: 4 Phase 1 + 3 Phase 2)
+**Grand Total:** ~218 hours remaining (approximately 27.3 working days for 1 developer)  
+**Completed:** ~17.5 hours (8 tasks: 4 Phase 1 + 4 Phase 2)
 
 ---
 

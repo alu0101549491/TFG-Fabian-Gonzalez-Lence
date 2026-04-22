@@ -8,6 +8,13 @@
     </button>
 
     <div class="standings-header">
+      @if (tournamentStateService.currentTournamentLogo(); as logoUrl) {
+        <img 
+          [src]="logoUrl" 
+          [alt]="tournament()?.name + ' logo'" 
+          class="tournament-logo"
+        />
+      }
       <h1 class="standings-title">🏅 Standings</h1>
       @if (tournament(); as tournamentData) {
         <p class="standings-subtitle">{{ tournamentData.name }}</p>

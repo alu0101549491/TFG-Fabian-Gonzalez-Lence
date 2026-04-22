@@ -20,11 +20,14 @@ import {AuthStateService} from '@presentation/services/auth-state.service';
 import {RegistrationService} from '@application/services/registration.service';
 import {StatisticsService} from '@application/services/statistics.service';
 import {MatchService} from '@application/services/match.service';
+import {TournamentService} from '@application/services/tournament.service';
+import {UserManagementService} from '@application/services/user-management.service';
 import {PartnerInvitationService} from '@infrastructure/services/partner-invitation.service';
 import {RegistrationDto} from '@application/dto';
 import {StatisticsDto} from '@application/dto/statistics.dto';
 import {MatchDto} from '@application/dto/match.dto';
 import {UserRole} from '@domain/enumerations/user-role';
+import {TournamentStatus} from '@domain/enumerations/tournament-status';
 import {EnumFormatPipe} from '@shared/pipes';
 import {environment} from '../../environments/environment';
 import templateHtml from './dashboard.component.html?raw';
@@ -53,6 +56,8 @@ export class DashboardComponent implements OnInit {
   private readonly registrationService = inject(RegistrationService);
   private readonly statisticsService = inject(StatisticsService);
   private readonly matchService = inject(MatchService);
+  private readonly tournamentService = inject(TournamentService);
+  private readonly userManagementService = inject(UserManagementService);
   private readonly partnerInvitationService = inject(PartnerInvitationService);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
@@ -96,6 +101,11 @@ export class DashboardComponent implements OnInit {
   /** Disputed matches (for admin view) */
   protected readonly disputedMatches = signal<any[]>([]);
 
+  /** Admin dashboard statistics */
+  protected readonly activeTournamentsCount = signal<number>(0);
+  protected readonly totalUsersCount = signal<number>(0);
+  protected readonly managedTournamentsCount = signal<number>(0);
+
   /** Pending partner invitations count */
   protected readonly pendingInvitationsCount = computed(() => 
     this.partnerInvitationService.pendingInvitationsCount()
@@ -133,12 +143,42 @@ export class DashboardComponent implements OnInit {
 
       // Load different data based on user role
       if (this.isAdmin()) {
-        // Admin users: Load disputed matches
-        const disputedResults = await this.loadDisputedMatches().catch((err) => {
-          console.warn('Failed to load disputed matches:', err.message);
-          return [];
-        });
+        // Admin users: Load disputed matches and statistics
+        const [disputedResults, allTournaments] = await Promise.all([
+          this.loadDisputedMatches().catch((err) => {
+            console.warn('Failed to load disputed matches:', err.message);
+            return [];
+          }),
+          this.tournamentService.getAllTournaments().catch((err) => {
+            console.warn('Failed to load tournaments:', err.message);
+            return [];
+          }),
+        ]);
+        
         this.disputedMatches.set(disputedResults);
+        
+        // Calculate active tournaments (IN_PROGRESS, REGISTRATION_OPEN, REGISTRATION_CLOSED, DRAW_PENDING)
+        const activeTournaments = allTournaments.filter(t => 
+          t.status === TournamentStatus.IN_PROGRESS ||
+          t.status === TournamentStatus.REGISTRATION_OPEN ||
+          t.status === TournamentStatus.REGISTRATION_CLOSED ||
+          t.status === TournamentStatus.DRAW_PENDING
+        );
+        this.activeTournamentsCount.set(activeTournaments.length);
+        
+        // For system admins only, load user count (tournament admins don't have permission)
+        if (this.isSystemAdmin()) {
+          await this.loadUserCount();
+        }
+        
+        // For tournament admins, count tournaments they manage (where they are organizer)
+        if (this.isTournamentAdmin()) {
+          const managedCount = allTournaments.filter(t => t.organizerId === user.id).length;
+          this.managedTournamentsCount.set(managedCount);
+        } else if (this.isSystemAdmin()) {
+          // System admins can manage all tournaments
+          this.managedTournamentsCount.set(allTournaments.length);
+        }
       } else {
         // Regular players: Load registrations, stats, matches, and partner invitations
         const [registrations, stats, matches] = await Promise.all([
@@ -281,6 +321,31 @@ export class DashboardComponent implements OnInit {
     ).toPromise();
 
     return response || [];
+  }
+
+  /**
+   * Loads total user count for system admin dashboard only.
+   * Uses UserManagementService to get all users and count them.
+   * Note: This endpoint requires SYSTEM_ADMIN role.
+   */
+  private async loadUserCount(): Promise<void> {
+    try {
+      // Try to get user stats first (if endpoint exists)
+      try {
+        const stats = await this.userManagementService.getUserStats();
+        this.totalUsersCount.set(stats.totalUsers);
+        return;
+      } catch (statsError) {
+        // Stats endpoint not available, try fallback
+      }
+      
+      // Fallback: Get all users and count them
+      const allUsers = await this.userManagementService.getAllUsers();
+      this.totalUsersCount.set(allUsers.length);
+    } catch (error) {
+      console.warn('Failed to load user count:', error);
+      // Keep default value of 0
+    }
   }
 
   /**

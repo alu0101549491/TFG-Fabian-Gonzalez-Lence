@@ -186,6 +186,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'statistics/:id',
+    loadComponent: () =>
+      import('./pages/statistics/statistics-view/statistics-view.component').then(
+        (m) => m.StatisticsViewComponent,
+      ),
+  },
+  {
     path: 'profile',
     canActivate: [authGuard],
     loadComponent: () =>

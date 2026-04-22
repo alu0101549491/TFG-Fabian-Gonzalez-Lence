@@ -25,6 +25,13 @@
         </button>
 
         <div class="bracket-header">
+          @if (tournamentStateService.currentTournamentLogo(); as logoUrl) {
+            <img 
+              [src]="logoUrl" 
+              [alt]="tournament()!.name + ' logo'" 
+              class="tournament-logo"
+            />
+          }
           <h1 class="bracket-title">🏆 Tournament Bracket</h1>
           <p class="bracket-subtitle">{{ tournament()!.name }}</p>
         </div>

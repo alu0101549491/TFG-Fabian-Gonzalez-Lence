@@ -13,7 +13,7 @@
  */
 
 import {Component, OnInit, signal, inject, computed} from '@angular/core';
-import {CommonModule} from '@angular/common';
+import {CommonModule, Location} from '@angular/common';
 import {Router, RouterModule, ActivatedRoute} from '@angular/router';
 import {type UserDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
@@ -50,6 +50,7 @@ export class UserProfileViewComponent implements OnInit {
   private readonly userService = inject(UserService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly location = inject(Location);
 
   /** Profile owner (user being viewed) */
   public user = signal<UserDto | null>(null);
@@ -145,9 +146,10 @@ export class UserProfileViewComponent implements OnInit {
 
   /**
    * Navigates back to previous page.
+   * Uses Angular Location service to maintain proper navigation history.
    */
   public goBack(): void {
-    window.history.back();
+    this.location.back();
   }
 
   /**
@@ -196,5 +198,16 @@ export class UserProfileViewComponent implements OnInit {
       day: 'numeric',
       year: 'numeric'
     });
+  }
+
+  /**
+   * Navigates to full statistics view for this user.
+   * Allows viewing detailed stats including head-to-head data.
+   */
+  public viewStatistics(): void {
+    const userData = this.user();
+    if (!userData) return;
+    
+    void this.router.navigate(['/statistics', userData.id]);
   }
 }

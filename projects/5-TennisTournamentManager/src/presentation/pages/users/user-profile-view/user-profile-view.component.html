@@ -50,11 +50,17 @@
           <span>{{ formatRole(user()!.role) }}</span>
         </div>
         
-        @if (isOwnProfile()) {
-          <button type="button" class="edit-profile-btn" (click)="editProfile()">
-            ✏️ Edit My Profile
-          </button>
-        }
+        <div class="profile-actions">
+          @if (isOwnProfile()) {
+            <button type="button" class="edit-profile-btn" (click)="editProfile()">
+              ✏️ Edit My Profile
+            </button>
+          } @else if (currentUser()) {
+            <button type="button" class="edit-profile-btn view-stats-btn" (click)="viewStatistics()">
+              📊 View Statistics
+            </button>
+          }
+        </div>
       </div>
     </section>
 
@@ -189,11 +195,22 @@
       <!-- Statistics Card -->
       @if (user()!.statistics) {
         <div class="profile-card">
-          <header class="card-header">
+          <header class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h2 class="card-title">
               <span class="card-icon">📊</span>
               Player Statistics
             </h2>
+            @if (!isOwnProfile() && currentUser()) {
+              <button 
+                type="button" 
+                class="compare-stats-btn"
+                (click)="viewStatistics()"
+                title="View detailed statistics for this player"
+                style="padding: 0.5rem 1rem; background-color: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 500; display: flex; align-items: center; gap: 0.5rem;"
+              >
+                📈 View Full Stats
+              </button>
+            }
           </header>
 
           <div class="card-body">

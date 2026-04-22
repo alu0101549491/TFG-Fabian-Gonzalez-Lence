@@ -110,6 +110,120 @@ This document provides step-by-step instructions for manually testing implemente
 
 ---
 
+### Feature 9: Notification Badge (Already Implemented)
+
+**What was verified:** Notification bell already shows unread badge with count for pending confirmations.
+
+**How to test:**
+1. **User A:** Log in as a player and submit a match result
+2. **User B (opponent):** Log in as the opponent
+3. Click the **notification bell icon** in the header (top right)
+4. **Verify:** Badge shows count of unread notifications (e.g., red circle with number)
+5. **Verify:** Badge has pulsing animation for visibility
+6. Open notifications dropdown
+7. **Verify:** You see a "RESULT_ENTERED" notification for the pending confirmation
+8. Mark notification as read or confirm the result
+9. **Verify:** Badge count decreases or disappears
+
+**Expected Result:**
+- Badge appears automatically when unread notifications exist
+- Badge shows accurate count
+- Real-time updates via WebSocket
+- Pulsing animation draws attention
+
+---
+
+### Feature 10: View Profile Links + Public Participant List
+
+**What was changed:** 
+- Added clickable profile links (👤 icon) to all participant names across the app
+- Added public participant list for non-admin users to view accepted players
+- Profile links route to `/users/:id` for public profile viewing with privacy enforcement
+
+**How to test (Tournament Detail - Admin View):**
+1. **Log in as tournament admin/organizer**
+2. Navigate to **Tournaments** → Select any tournament with registered players
+3. Scroll down to the **"👥 Registered Participants"** section
+4. **Verify:** You see the full admin table with action buttons (Approve, Reject, etc.)
+5. Find any **singles participant** name
+6. **Verify:** Name has 👤 icon and is clickable/styled as a link
+7. Click the participant name
+8. **Verify:** You are taken to the user's profile page (`/users/:id`)
+9. **Go back** to tournament detail
+10. Find a **doubles pair** (if tournament has doubles)
+11. **Verify:** Each partner name has individual 👤 icon and is clickable
+12. Click each partner name separately
+13. **Verify:** Each link opens the respective partner's profile
+
+**How to test (Tournament Detail - Public/Player View):**
+1. **Log out or log in as a regular player (non-admin)**
+2. Navigate to **Tournaments** → Select the same tournament
+3. Scroll down to find the participant list
+4. **Verify:** You see a **simpler participant list** labeled **"👥 Registered Players (X)"**
+5. **Verify:** This list shows ONLY accepted players (no pending/rejected)
+6. **Verify:** No action buttons (Approve, Reject, etc.) are visible
+7. **Verify:** Table shows: Player names with 👤 icons, Category, and Seed (if seeded)
+8. Click any participant name
+9. **Verify:** You are taken to the user's profile page
+10. **Verify:** Profile respects privacy settings (may hide some fields)
+11. **Test as unauthenticated user:** Log out completely
+12. Navigate to the tournament as a guest (not logged in)
+13. **Verify:** Public participant list is still visible
+14. Click any participant name
+15. **Verify:** Profile opens with public information only
+
+**How to test (Bracket Visualization):**
+1. Navigate to any tournament with a published bracket
+2. Click **"View Bracket"** or **"🏆 Bracket"** tile
+3. **Verify:** Bracket displays with matches organized by rounds
+4. Find any **singles match** participant name
+5. **Verify:** Participant name is styled as a link (colored, underlined on hover)
+6. Hover over the name
+7. **Verify:** Tooltip shows "View profile"
+8. Click the participant name
+9. **Verify:** Profile page opens
+10. **Go back** to bracket
+11. Find a **doubles match** (if applicable)
+12. **Verify:** Team shown as "Player 1 / Player 2" with each name separately linked
+13. Click each partner name
+14. **Verify:** Each opens the respective profile
+15. **Test all bracket types:** Single Elimination, Round Robin, Match Play, Consolation
+16. **Verify:** Profile links work in all bracket formats
+
+**How to test (My Matches Page):**
+1. **Log in as a player**
+2. Navigate to **"My Matches"** page
+3. Find any match in the list
+4. **Verify:** Both participant names (you and opponent) have 👤 icons
+5. Click your opponent's name
+6. **Verify:** Opponent's profile opens
+7. **Go back** to My Matches
+8. Click your own name
+9. **Verify:** Your profile opens (should redirect to `/profile` or show full profile)
+
+**How to test (Privacy Enforcement):**
+1. View a profile as an **unauthenticated user**
+2. **Verify:** Only public fields visible (name, role, maybe ranking)
+3. Log in as a **regular player** (not admin)
+4. View another player's profile
+5. **Verify:** More fields visible based on privacy settings (e.g., email, phone if allowed)
+6. Log in as a **tournament admin**
+7. View any participant's profile
+8. **Verify:** All available data visible (admin override)
+
+**Expected Result:**
+- All participant names clickable across the app
+- 👤 icon indicates profile link
+- Public participant list visible to everyone
+- Admin list and public list show appropriate content
+- Profile links work in: Tournament detail, Brackets (all types), My Matches
+- Privacy settings enforced per user role
+- Doubles pairs: each partner individually linked
+- BYE entries: not clickable (no profile)
+- Routes to `/users/:id` for other users, `/profile` for self
+
+---
+
 ## Phase 1: Quick Fixes (April 22, 2026)
 
 ### Feature 1: Ball Provider Clarification
@@ -233,6 +347,313 @@ npm run dev
 **Access the application:**
 - Open browser: `http://localhost:5173`
 - Log in with test credentials
+
+---
+
+## Phase 3: Data Visualization Improvements (April 22, 2026)
+
+### Feature 11: Enhanced Participant List with Status Filtering
+
+**What was changed:** Added status filter dropdown, acceptance type badges, and colored status indicators to tournament participant list.
+
+**How to test:**
+1. **Log in as a tournament organizer**
+2. Navigate to **Tournaments** → Select any tournament with participants → **Tournament Detail Page**
+3. Scroll to the **"👥 Registered Participants"** section (admin view)
+4. **Verify the filter dropdown:**
+   - You should see a dropdown labeled **"Filter:"** next to the participant count
+   - The dropdown should show options: **All Status**, **Pending**, **Accepted**, **Rejected**, **Withdrawn**
+   - Each option should show a count in parentheses (e.g., "Accepted (5)")
+5. **Test filtering:**
+   - Select **"Pending"** from the dropdown
+   - **Verify:** Only participants with PENDING status are shown
+   - The header count should update to show filtered count vs total (e.g., "3 / 10")
+   - Select **"Accepted"** from the dropdown
+   - **Verify:** Only accepted participants are shown
+   - Try each filter option and verify correct filtering
+6. **Verify status badges:**
+   - Look at the **Status** column
+   - **Verify:** Status badges have colored backgrounds:
+     - PENDING: Orange (#f59e0b)
+     - ACCEPTED: Green (#10b981)
+     - REJECTED: Red (#ef4444)
+     - WITHDRAWN: Gray (#6b7280)
+     - ALTERNATE: Orange with "Alternate" text
+     - LUCKY_LOSER: Purple with "Lucky Loser" text
+7. **Verify acceptance type badges:**
+   - For accepted players, look for small blue badges next to the status
+   - **Verify:** You see badges like **[WC]**, **[SE]**, **[Q]**, **[LL]**, etc.
+   - Hover over a badge (if tooltip implemented)
+   - **Verify:** The badges correctly indicate:
+     - WC = Wild Card
+     - SE = Special Exemption
+     - JE = Junior Exemption
+     - LL = Lucky Loser
+     - Q = Qualifier
+     - ALT = Alternate
+     - DA = Direct Acceptance
+     - OA = Organizer Acceptance
+     - WD = Withdrawn
+8. **Test empty state:**
+   - Filter by a status with no participants
+   - **Verify:** Message shows "No participants match the selected filter."
+9. **Test with public view:**
+   - Log out or view as a non-admin
+   - **Verify:** Public participant list shows only accepted players (no filter needed)
+
+**Expected Result:**
+- Filter dropdown works smoothly with reactive updates
+- Participant counts accurate for each status
+- Status badges clearly colored and readable
+- Acceptance type badges visible for applicable players
+- Empty state shows when no matches for filter
+- Admin and public views display appropriate information
+
+---
+
+### Feature 12: Compare Stats Button in User Profiles
+
+**What was changed:** Added prominent "📊 View Statistics" button in hero section with enhanced styling and smart back navigation flow.
+
+**How to test:**
+
+**Part 1: Button Visibility and Styling**
+1. **Log in with any account**
+2. Navigate to **Tournaments** → Open any tournament
+3. Click on any participant name to open their profile
+4. **Verify the hero section button:**
+   - Look at the **hero section** (top of page, below the user's name and role)
+   - You should see a prominent **blue button** labeled **"📊 View Statistics"**
+   - The button should have enhanced blue styling (distinct from the white Edit Profile button)
+   - **Verify spacing:** There should be clear visual separation between the hero section and the profile card below
+5. **Test own profile:**
+   - Navigate to your own profile (`/profile` or `/users/your-id`)
+   - **Verify:** The hero section shows **"✏️ Edit My Profile"** instead of the View Statistics button
+6. **Test without login:**
+   - Log out
+   - View a public user profile
+   - **Verify:** Button does NOT appear (requires authentication)
+
+**Part 2: Navigation Flow - Profile to Statistics**
+1. **Log in and navigate to a tournament**
+2. From the tournament participant list, **click any player's name**
+3. On their profile page, **click "📊 View Statistics"**
+4. **Verify:** You are taken to `/statistics/:userId`
+5. **Verify:** The statistics page loads with complete user data
+6. **Click the "Back" button** on the statistics page
+7. **Verify:** You are returned to the **user's profile page** with a single click
+
+**Part 3: Navigation Flow - Profile Back Button**
+1. **Navigate to Tournaments page**
+2. **Click any tournament** to view details
+3. **Click a participant name** from the registered players list
+4. On the profile page, **click the "← Go Back" button** (top left)
+5. **Verify:** You return to the **tournament detail page** with a single click
+6. **Try from a different entry point:**
+   - Navigate to **My Matches**
+   - Click an opponent's name
+   - On their profile, click **"← Go Back"**
+   - **Verify:** You return to the **My Matches page** with a single click
+
+**Part 4: Complex Navigation Flow (Single-Click Navigation)**
+1. **Navigate:** Tournament List → Tournament Detail → Player Profile → View Statistics
+2. **Click "Back"** on statistics page
+3. **Verify:** Single click returns to Player Profile
+4. **Click "← Go Back"** on profile page
+5. **Verify:** Single click returns to Tournament Detail (NOT multiple clicks needed)
+6. **Test complete flow:**
+   - Dashboard → Tournaments → Tournament Detail → Player Profile → Statistics
+   - Back once → Profile
+   - Back once → Tournament Detail
+   - Back once → Tournaments
+   - Back once → Dashboard
+7. **Verify:** Each back button click moves exactly one page back in history
+
+**Expected Result:**
+- Prominent blue "View Statistics" button visible in hero section when viewing other users' profiles
+- Clear visual separation between button and profile card (2rem spacing)
+- Button styled distinctly with enhanced blue color
+- **SINGLE-CLICK NAVIGATION:** Each back button press moves exactly one page back
+- Natural browser history behavior without custom state management
+- No loops, no double-clicking required
+- Navigation state preserved correctly using Angular Location service
+- Button hidden on own profile and when not authenticated
+- All navigation flows work correctly regardless of entry point
+
+---
+
+### Feature 13: Fixed Dashboard Admin Counter Updates
+
+**What was changed:** Replaced hardcoded "0" values in admin dashboard with real-time counters. System admins see 4 stat cards (including Total Users), while tournament admins see only 3 cards (Total Users hidden due to API permissions).
+
+**How to test:**
+
+**Part 1: System Admin Dashboard (4 Cards)**
+1. **Log in as a system admin** (SYSTEM_ADMIN role)
+2. Navigate to the **Dashboard** (home page after login)
+3. **Verify you see 4 statistics cards** at the top:
+   - **Disputed Matches:** Count of matches with disputed results
+   - **Active Tournaments:** Count of tournaments with status IN_PROGRESS, REGISTRATION_OPEN, REGISTRATION_CLOSED, or DRAW_PENDING
+   - **Total Users:** Total number of registered users in the system (ONLY visible to system admins)
+   - **Tournaments Managed:** Total number of all tournaments (system admins can manage all)
+4. **Verify:** All 4 cards show **numbers ≥ 0** (not hardcoded "0")
+5. **Create a new tournament:**
+   - Go to Tournaments → Create Tournament
+   - Fill in required fields and save
+6. **Return to Dashboard**
+7. **Verify:** "Active Tournaments" counter has **increased by 1**
+8. **Verify:** "Tournaments Managed" counter has **increased by 1**
+
+**Part 2: Tournament Admin Dashboard (3 Cards)**
+1. **Log out and log in as a tournament admin** (TOURNAMENT_ADMIN role)
+2. Navigate to the **Dashboard**
+3. **Verify you see only 3 statistics cards:**
+   - **Disputed Matches:** Count of disputed matches
+   - **Active Tournaments:** Count of active tournaments  
+   - **Tournaments Managed:** Count of tournaments **where you are the organizer**
+4. **Important:** Verify the **"Total Users" card is NOT displayed** (hidden due to API permissions)
+5. **Create a new tournament** (you will be set as organizer)
+6. **Return to Dashboard**
+7. **Verify:** "Tournaments Managed" counter has increased by 1
+
+**Part 3: Data Accuracy Test (System Admin)**
+1. **Log in as system admin**
+2. **Create multiple tournaments** with different statuses:
+   - One with status DRAFT
+   - One with status REGISTRATION_OPEN
+   - One with status COMPLETED
+3. **Go to Dashboard**
+4. **Verify:** "Active Tournaments" count only includes REGISTRATION_OPEN tournament (not DRAFT or COMPLETED)
+5. **Verify:** "Tournaments Managed" includes all 3 tournaments
+6. **Verify:** "Total Users" card displays total registered users
+
+**Part 4: Permission & Error Handling**
+1. **Log in as tournament admin**
+2. **Open browser console (F12 → Console tab)**
+3. **Navigate to Dashboard**
+4. **Verify:** Dashboard shows exactly 3 stat cards (no Total Users card visible)
+5. **Verify:** No 403 Forbidden errors in console (Total Users API not called)
+6. **Verify:** No JavaScript errors in console
+7. **Log out and log in as system admin**
+8. **Navigate to Dashboard**
+9. **Verify:** Dashboard shows all 4 stat cards including Total Users
+10. **Verify:** API calls to user endpoints succeed (check Network tab if needed)
+
+**Expected Result:**
+**Expected Result:**
+- **System admins see 4 stat cards:** Disputed Matches, Active Tournaments, Total Users, Tournaments Managed
+- **Tournament admins see 3 stat cards:** Disputed Matches, Active Tournaments, Tournaments Managed (Total Users hidden)
+- All admin dashboard counters show real, accurate data (no hardcoded "0" values)
+- Active Tournaments counts only relevant statuses (IN_PROGRESS, REGISTRATION_OPEN, REGISTRATION_CLOSED, DRAW_PENDING)
+- System admins see total user count from all registered users
+- Tournament admins see only tournaments they organize (not all tournaments)
+- Counters update dynamically when navigating back to dashboard after changes
+- No permission errors (403 Forbidden) in console for tournament admins
+- Error handling prevents crashes if API calls fail
+- Data loads asynchronously without blocking UI
+- Clean visual layout with appropriate spacing between cards
+
+---
+
+### Feature 14: Acceptance Type Badges in Bracket Visualization
+
+**What was changed:** Added acceptance type badges (DA, WC, SE, LL, Q, ALT, WD, OA, S) to bracket visualization showing how each player qualified for the tournament.
+
+**How to test:**
+
+**Part 1: Badge Display in Brackets**
+1. **Log in as any user**
+2. Navigate to **Tournaments** → Select any tournament with an active bracket
+3. Click **"View Bracket"** or navigate to the bracket view
+4. **Verify the bracket displays:**
+   - Participant names with seed numbers (if seeded)
+   - **Purple acceptance badges** next to each participant name
+   - Badges should show abbreviations like **DA**, **WC**, **SE**, **LL**, etc.
+5. **Test all bracket types:**
+   - **Single Elimination:** Check Round 1, Quarter-Finals, Semi-Finals, Finals
+   - **Round Robin:** Check all group matches
+   - **Match Play:** Check open format matches
+6. **Verify badge styling:**
+   - Badges have purple gradient background (`#8b5cf6` to `#7c3aed`)
+   - Rectangular shape with 4px border radius
+   - White text, bold font
+   - Positioned to the right of seed badges (if seed exists)
+
+**Part 2: Acceptance Type Abbreviations**
+1. **Look for different badge types** across multiple participants
+2. **Verify badge meanings:**
+   - **DA** = Direct Acceptance (most common, standard entry)
+   - **WC** = Wild Card (special invitation)
+   - **SE** = Special Exemption
+   - **JE** = Junior Exemption
+   - **LL** = Lucky Loser (lost in qualifying, got into main draw)
+   - **Q** = Qualifier (won through qualifying tournament)
+   - **ALT** = Alternate (backup player)
+   - **WD** = Withdrawn (player withdrew)
+   - **OA** = Organizer Acceptance
+   - **S** = Seeded entry
+
+**Part 3: Winner Styling**
+1. **Find a completed match in the bracket** (status = COMPLETED)
+2. **Verify the winner's row:**
+   - Winner has a trophy icon (🏆)
+   - **Acceptance badge** changes to lighter purple (`#a78bfa` to `#8b5cf6`)
+   - Winner's name and seed badge also have golden styling
+3. **Compare to the loser's row:**
+   - Loser has standard purple acceptance badge
+   - No trophy icon
+
+**Part 4: Doubles Matches**
+1. **If tournament has doubles:** Navigate to a doubles bracket
+2. **Verify doubles teams:**
+   - Team shown as "Player 1 / Player 2"
+   - **Single acceptance badge** for the team (based on primary player)
+   - Badge positioned after team seed number (if applicable)
+3. Click individual player names
+4. **Verify:** Profile links work for both partners
+
+**Part 5: BYE Entries**
+1. **Find matches with BYE entries** (if bracket has odd number of participants)
+2. **Verify BYE rows:**
+   - Display "BYE" text
+   - **NO acceptance badge** (BYE is not a real participant)
+   - No seed number
+   - Grayed out styling
+
+**Part 6: Console Logging (Development Mode)**
+1. **Open browser console** (F12 → Console tab)
+2. **Navigate to any bracket view**
+3. **Look for logs:**
+   - `🔍 Loading registrations for category: xxx`
+   - `✅ Loaded N registrations`
+   - `📋 Registration: userId → ACCEPTANCE_TYPE`
+   - `🎾 Singles - Player Name acceptance: TYPE`
+4. **Verify logs show:**
+   - Registration loading completes successfully
+   - Acceptance types are loaded (not `undefined`)
+   - Each participant has a mapped acceptance type
+
+**Part 7: Edge Cases**
+1. **Test with tournament that has:**
+   - All players with DA (Direct Acceptance) → All show DA badges
+   - Mixed acceptance types → Different badges visible
+   - No registrations yet → No badges display (only names)
+2. **Navigate between different brackets**
+3. **Verify:** Badges update correctly for each bracket
+4. **Test browser refresh**
+5. **Verify:** Badges persist after page reload
+
+**Expected Result:**
+- Acceptance type badges visible for all participants in all bracket types
+- All 10 acceptance types correctly mapped to abbreviations
+- Badges styled with purple gradient, rectangular shape
+- Winner's badges have lighter purple color
+- Doubles teams show single badge for team
+- BYE entries have no badge
+- Badges load asynchronously when bracket loads
+- Console logs confirm registration data loading
+- Badges update when navigating between different brackets
+- DA badges show for standard direct acceptance entries (most common case)
 
 ---
 

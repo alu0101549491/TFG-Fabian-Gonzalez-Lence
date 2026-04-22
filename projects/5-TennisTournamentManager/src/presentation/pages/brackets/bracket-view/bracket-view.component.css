@@ -110,6 +110,19 @@
   margin-bottom: var(--spacing-2xl);
 }
 
+.tournament-logo {
+  max-height: 80px;
+  width: auto;
+  margin: 0 auto var(--spacing-md);
+  display: block;
+  object-fit: contain;
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  padding: var(--spacing-sm);
+  backdrop-filter: blur(10px);
+}
+
 .bracket-title {
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);

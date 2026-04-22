@@ -564,8 +564,28 @@
           <!-- Participant Management (for organizers) -->
           @if (isAuthenticated() && canManageTournament()) {
             <div class="info-card">
-              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>👥 Registered Participants ({{ registeredPlayers().length }})</h2>
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <h2>👥 Registered Participants ({{ filteredRegisteredPlayers().length }} / {{ registeredPlayers().length }})</h2>
+                  
+                  <!-- Status Filter -->
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="statusFilter" style="font-size: 0.875rem; font-weight: 500; color: #666;">Filter:</label>
+                    <select
+                      id="statusFilter"
+                      [(ngModel)]="participantStatusFilter"
+                      name="statusFilter"
+                      style="padding: 0.375rem 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.875rem; cursor: pointer;"
+                    >
+                      <option value="ALL">All Status ({{ registeredPlayers().length }})</option>
+                      <option value="PENDING">Pending ({{ pendingRegistrationsCount() }})</option>
+                      <option value="ACCEPTED">Accepted ({{ acceptedPlayersCount() }})</option>
+                      <option value="REJECTED">Rejected ({{ rejectedPlayersCount() }})</option>
+                      <option value="WITHDRAWN">Withdrawn ({{ withdrawnPlayersCount() }})</option>
+                    </select>
+                  </div>
+                </div>
+                
                 <div style="display: flex; gap: 0.5rem;">
                   @if (pendingRegistrationsCount() > 0) {
                     <button
@@ -596,10 +616,10 @@
                 </div>
               </div>
               
-              @if (registeredPlayers().length === 0) {
+              @if (filteredRegisteredPlayers().length === 0) {
                 <div class="warning-state" style="margin: 1rem;">
                   <span class="warning-icon">ℹ️</span>
-                  <p>No participants registered yet. Share the tournament link with players to start registrations.</p>
+                  <p>No participants match the selected filter.</p>
                 </div>
               } @else {
                 <div style="max-height: 400px; overflow-y: auto;">
@@ -614,7 +634,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      @for (player of registeredPlayers(); track player.registration.id) {
+                      @for (player of filteredRegisteredPlayers(); track player.registration.id) {
                         <tr style="border-bottom: 1px solid #eee;">
                           <td style="padding: 0.75rem;">
                             @if (player.partner) {
@@ -623,15 +643,21 @@
                                 <div style="display: flex; align-items: center; gap: 0.4rem;">
                                   <span style="font-size: 0.8rem; background: #e3f2fd; color: #1976d2; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600;">PAIR</span>
                                 </div>
-                                <strong style="margin-top: 2px;">{{ player.user.username || player.user.firstName + ' ' + player.user.lastName }}</strong>
+                                <a [routerLink]="['/users', player.user.id]" style="margin-top: 2px; color: var(--color-primary); text-decoration: none; font-weight: 600; cursor: pointer;" title="View profile">
+                                  <strong>{{ player.user.username || player.user.firstName + ' ' + player.user.lastName }}</strong> 👤
+                                </a>
                                 <span style="font-size: 0.8rem; color: #888;">{{ player.user.email }}</span>
-                                <strong style="margin-top: 4px;">{{ player.partner.user.username || player.partner.user.firstName + ' ' + player.partner.user.lastName }}</strong>
+                                <a [routerLink]="['/users', player.partner.user.id]" style="margin-top: 4px; color: var(--color-primary); text-decoration: none; font-weight: 600; cursor: pointer;" title="View profile">
+                                  <strong>{{ player.partner.user.username || player.partner.user.firstName + ' ' + player.partner.user.lastName }}</strong> 👤
+                                </a>
                                 <span style="font-size: 0.8rem; color: #888;">{{ player.partner.user.email }}</span>
                               </div>
                             } @else {
                               <!-- Singles: standard display -->
                               <div style="display: flex; flex-direction: column;">
-                                <strong>{{ player.user.username || player.user.firstName + ' ' + player.user.lastName || player.user.email }}</strong>
+                                <a [routerLink]="['/users', player.user.id]" style="color: var(--color-primary); text-decoration: none; font-weight: 600; cursor: pointer;" title="View profile">
+                                  <strong>{{ player.user.username || player.user.firstName + ' ' + player.user.lastName || player.user.email }}</strong> 👤
+                                </a>
                                 <span style="font-size: 0.875rem; color: #666;">{{ player.user.email }}</span>
                               </div>
                             }
@@ -694,19 +720,32 @@
                             }
                           </td>
                           <td style="padding: 0.75rem; text-align: center;">
-                            @if (player.registration.status === 'ACCEPTED' && player.registration.acceptanceType === 'ALTERNATE') {
-                              <span class="status-badge status-alternate" style="background-color: #f59e0b; color: white;">
-                                Alternate
-                              </span>
-                            } @else if (player.registration.status === 'ACCEPTED' && player.registration.acceptanceType === 'LUCKY_LOSER') {
-                              <span class="status-badge status-accepted" style="background-color: #8b5cf6; color: white;">
-                                Lucky Loser
-                              </span>
-                            } @else {
-                              <span class="status-badge status-{{ player.registration.status.toLowerCase() }}">
-                                {{ player.registration.status | enumFormat }}
-                              </span>
-                            }
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
+                              <!-- Main Status Badge -->
+                              @if (player.registration.status === 'ACCEPTED' && player.registration.acceptanceType === 'ALTERNATE') {
+                                <span style="background-color: #f59e0b; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                  Alternate
+                                </span>
+                              } @else if (player.registration.status === 'ACCEPTED' && player.registration.acceptanceType === 'LUCKY_LOSER') {
+                                <span style="background-color: #8b5cf6; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                  Lucky Loser
+                                </span>
+                              } @else {
+                                <span style="background-color: {{ getStatusBadgeColor(player.registration.status) }}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                  {{ player.registration.status | enumFormat }}
+                                </span>
+                              }
+                              
+                              <!-- Acceptance Type Badge (if applicable and not already shown) -->
+                              @if (player.registration.status === 'ACCEPTED' && player.registration.acceptanceType && 
+                                   player.registration.acceptanceType !== 'ALTERNATE' && player.registration.acceptanceType !== 'LUCKY_LOSER') {
+                                @if (getAcceptanceTypeBadge(player.registration.acceptanceType); as badge) {
+                                  <span style="background-color: #3b82f6; color: white; padding: 0.25rem 0.4rem; border-radius: 3px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;" title="{{ player.registration.acceptanceType | enumFormat }}">
+                                    [{{ badge }}]
+                                  </span>
+                                }
+                              }
+                            </div>
                           </td>
                           <td style="padding: 0.75rem; text-align: center;">
                             <div style="display: flex; gap: 0.5rem; justify-content: center;">
@@ -778,6 +817,74 @@
                   </table>
                 </div>
               }
+            </div>
+          }
+
+          <!-- Public Participant List (Visible to Everyone) -->
+          @if (!canManageTournament() && acceptedPlayers().length > 0) {
+            <div class="info-card">
+              <div class="card-header">
+                <h2>👥 Registered Players ({{ acceptedPlayers().length }})</h2>
+              </div>
+              
+              <div style="max-height: 400px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <thead>
+                    <tr style="border-bottom: 2px solid #ddd; background-color: #f5f5f5;">
+                      <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Player</th>
+                      <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Category</th>
+                      @if (acceptedPlayers()[0]?.registration.seedNumber !== null) {
+                        <th style="padding: 0.75rem; text-align: center; font-weight: 600;">Seed</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (player of acceptedPlayers(); track player.registration.id) {
+                      <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 0.75rem;">
+                          @if (player.partner) {
+                            <!-- Doubles pair: show as one combined entry -->
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span style="font-size: 0.8rem; background: #e3f2fd; color: #1976d2; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600;">PAIR</span>
+                              </div>
+                              <a [routerLink]="['/users', player.user.id]" style="color: var(--color-primary); text-decoration: none; font-weight: 600; cursor: pointer;" title="View profile">
+                                <strong>{{ player.user.username || player.user.firstName + ' ' + player.user.lastName }}</strong> 👤
+                              </a>
+                              <a [routerLink]="['/users', player.partner.user.id]" style="color: var(--color-primary); text-decoration: none; font-weight: 600; cursor: pointer;" title="View profile">
+                                <strong>{{ player.partner.user.username || player.partner.user.firstName + ' ' + player.partner.user.lastName }}</strong> 👤
+                              </a>
+                            </div>
+                          } @else {
+                            <!-- Singles: standard display -->
+                            <a [routerLink]="['/users', player.user.id]" style="color: var(--color-primary); text-decoration: none; font-weight: 600; cursor: pointer;" title="View profile">
+                              <strong>{{ player.user.username || player.user.firstName + ' ' + player.user.lastName || player.user.email }}</strong> 👤
+                            </a>
+                          }
+                        </td>
+                        <td style="padding: 0.75rem; text-align: center;">
+                          @if (getCategoryById(player.registration.categoryId); as category) {
+                            <span>{{ category.name }}</span>
+                          } @else {
+                            <span style="color: #999;">N/A</span>
+                          }
+                        </td>
+                        @if (acceptedPlayers()[0]?.registration.seedNumber !== null) {
+                          <td style="padding: 0.75rem; text-align: center;">
+                            @if (player.registration.seedNumber) {
+                              <span class="seed-badge" style="background-color: #fef3c7; color: #92400e; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">
+                                #{{ player.registration.seedNumber }}
+                              </span>
+                            } @else {
+                              <span style="color: #999;">—</span>
+                            }
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
             </div>
           }
 
