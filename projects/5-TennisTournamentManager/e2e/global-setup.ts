@@ -14,6 +14,9 @@
 
 import {mkdir} from 'node:fs/promises';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import {request, type FullConfig} from '@playwright/test';
 import {ApiHelper} from './helpers/api.helper';
 import {TEST_USERS} from './fixtures/test-data';
@@ -24,8 +27,12 @@ import {TEST_USERS} from './fixtures/test-data';
  * @param config - Playwright runtime configuration
  */
 export default async function globalSetup(config: FullConfig): Promise<void> {
-  const projectRoot = config.rootDir;
-  const authDirectory = path.join(projectRoot, 'e2e', '.auth');
+  // Use the directory where this file lives to reliably target `e2e/.auth`.
+  // Using `config.rootDir` could accidentally already contain `e2e` and
+  // produce a nested `e2e/e2e/.auth` path depending on how Playwright
+  // resolves the root in different environments. Derive the auth folder
+  // from this module's dirname to avoid that.
+  const authDirectory = path.join(__dirname, '.auth');
   await mkdir(authDirectory, {recursive: true});
   const apiBaseUrl = ApiHelper.resolveApiBaseUrl();
 
