@@ -21,6 +21,14 @@ export interface GenerateBracketDto {
   categoryId: string;
   bracketType: BracketType;
   matchFormat?: MatchFormat;
+  /** Seeding strategy — how participants are ordered in the draw. */
+  seedingStrategy?: 'NONE' | 'TOP_SEEDED' | 'RANDOM';
+  /** Consolation bracket type (applies to SINGLE_ELIMINATION only). */
+  consolationType?: 'NONE' | 'CONSOLATION' | 'DOUBLE_ELIMINATION';
+  /** Number of players per group (applies to ROUND_ROBIN only). */
+  groupSize?: number;
+  /** How byes are assigned when participant count is not a power of two. */
+  byeAssignment?: 'TOP_SEEDS' | 'RANDOM';
 }
 
 /** DTO for bracket output representation. */

@@ -892,11 +892,16 @@
 }
 
 /* Set Inputs */
+.set-block {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--spacing-md);
+}
+
 .set-row {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
   padding: var(--spacing-md);
   background: var(--color-gray-50);
   border-radius: var(--border-radius-md);
@@ -905,6 +910,11 @@
 
 .set-row:hover {
   background: var(--color-gray-100);
+}
+
+/* When a tiebreak row follows, square off the set-row bottom corners */
+.set-block:has(.tiebreak-row) .set-row {
+  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
 }
 
 .set-row label {
@@ -1000,6 +1010,30 @@
 .add-set-btn:hover {
   background: var(--color-gray-200);
   border-color: var(--color-gray-500);
+}
+
+/* Tiebreak row (shown when set score is 7-6 or 6-7) */
+.tiebreak-row {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: #fef9c3;
+  border: 1px solid #fde68a;
+  border-top: none;
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+}
+
+.tiebreak-sub-label,
+.super-tiebreak-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: #92400e;
+  margin-bottom: var(--spacing-xs);
+}
+
+.super-tiebreak-label {
+  font-size: var(--font-size-base);
+  color: var(--color-primary-dark);
+  margin-bottom: var(--spacing-sm);
 }
 
 /* Buttons */

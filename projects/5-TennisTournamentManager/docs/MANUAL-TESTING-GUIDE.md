@@ -2041,6 +2041,170 @@ npm run dev
 
 ---
 
+## Feature 28: Super Tiebreak Score Entry
+
+**Description:** The score entry modal now handles tiebreak scoring at set level (7-6) and the special Super Tiebreak match format (single tiebreak to 10 points).
+
+### Part 1 — Per-Set Tiebreak Input (7-6 score)
+
+1. As admin, navigate to an active match detail page
+2. Click **Record Scores**
+3. For any set, enter games as **7** (P1) and **6** (P2)
+4. Verify a **"Tiebreak points"** sub-row appears below that set automatically
+5. Enter tiebreak values, e.g., P1 = 9, P2 = 7 (valid) or P1 = 8, P2 = 7 (invalid — "win by 2")
+6. Verify validation errors appear for invalid tiebreak scores
+
+**Expected:** ✅ Tiebreak row appears only when score is 7-6 or 6-7; validation enforces win-by-2
+
+### Part 2 — Super Tiebreak Format Match
+
+1. Find or create a match with format **SUPER_TIEBREAK**
+2. Click **Record Scores**
+3. Verify the modal shows **"Super Tiebreak (first to 10, win by 2)"** instead of regular set inputs
+4. No Add/Remove Set buttons should be visible
+5. Enter P1 = 10, P2 = 8 → submit → expect success
+6. Try P1 = 9, P2 = 8 → expect error "must reach at least 10 points"
+7. Try P1 = 10, P2 = 9 → expect error "must be won by at least 2 points"
+
+**Expected:** ✅ Only tiebreak point inputs shown; validation enforces 10-point minimum and 2-point margin
+
+### Part 3 — Other Formats Still Work
+
+1. Open a match with format **BEST_OF_3_FINAL_SET_TIEBREAK**
+2. Enter scores 6-4, 4-6, 6-4 (no tiebreaks) → verify no tiebreak rows appear
+3. Enter 7-6 in set 3 → verify tiebreak row appears for that set only
+
+**Expected:** ✅ Tiebreak rows only appear on 7-6 sets, not on every set
+
+---
+
+## Feature 29: Improved PDF Export Template
+
+**Description:** The tournament statistics PDF export now uses a professional green/teal color scheme matching the application theme, includes a dark green hero header, repeating page headers on pages 2+, streak direction indicators (up/down), and a Category Breakdown section.
+
+### Part 1 — Generate Statistics PDF
+
+1. Navigate to a tournament with completed matches
+2. Go to the **Statistics** tab (or Statistics page)
+3. Click **Export PDF** (or "Statistics" export)
+4. Open the downloaded PDF
+
+### Part 2 — Verify PDF Contents
+
+- ✅ Header: Dark green background with diagonal teal stripe, tournament name visible
+- ✅ "Generated: [date/time]" visible in header
+- ✅ Overview section shows Participants, Matches, Completion Rate with progress bar
+- ✅ Match Status Distribution table with green header row
+- ✅ Top Performers table with medal emoji rank indicators and streak arrows
+- ✅ Most Active Participants table
+- ✅ Category Breakdown table (if tournament has multiple categories)
+- ✅ Footer on every page: "Tournament Name — Statistics Report | Page X of Y"
+- ✅ On page 2+: compact green header band at top with tournament name and page number
+
+### Part 3 — Multi-Page Verification
+
+1. If the tournament has many participants, scroll to page 2 of the PDF
+2. Verify the compact header band appears at the top of page 2
+
+**Expected:** ✅ PDF has professional green/teal styling; all sections present; repeating header on pages 2+
+
+---
+
+## Feature 30: Advanced Bracket Configuration
+
+**Description:** The bracket generation form now includes an **Advanced Options** collapsible section with: Seeding Strategy (any bracket type), Consolation Bracket + Bye Assignment (Single Elimination only), and Players per Group (Round Robin only).
+
+### Part 1 — Access Advanced Options
+
+1. As admin, navigate to a tournament in DRAW_PENDING status
+2. Click **Generate Bracket / Draw**
+3. In the bracket generation form, look for **"Advanced Options"** at the bottom (collapsible section)
+4. Click it to expand the section
+
+**Expected:** ✅ Advanced Options section expands to show additional controls
+
+### Part 2 — Seeding Strategy
+
+1. In Advanced Options, select **"Top Seeded"** under Seeding Strategy
+2. Verify description text updates to "Registered ranking is used to place top seeds in the draw"
+3. Select **"Random"** → verify text updates
+4. Select **"None"** → verify text updates
+
+**Expected:** ✅ Three seeding strategy options available with descriptive text
+
+### Part 3 — Consolation + Bye Assignment (Single Elimination)
+
+1. Select **SINGLE_ELIMINATION** as Bracket Format
+2. Verify Consolation Bracket options appear: None, Consolation, Double Elimination
+3. Select **"Consolation"** → verify description text
+4. Verify **Bye Assignment** options appear: "Top Seeds get Byes", "Random Byes"
+5. Switch to **ROUND_ROBIN** bracket type
+6. Verify consolation and bye assignment sections **disappear**
+
+**Expected:** ✅ Consolation/bye options only visible for Single Elimination
+
+### Part 4 — Group Size (Round Robin)
+
+1. Select **ROUND_ROBIN** as Bracket Format
+2. Verify **"Players per Group"** options appear: 3, 4, 6, 8
+3. Select 6 → verify description "Each group will contain up to 6 players"
+
+**Expected:** ✅ Group size selector only visible for Round Robin
+
+### Part 5 — Submit with Advanced Options
+
+1. Configure advanced options as desired
+2. Click **Generate Bracket**
+3. Verify bracket generates successfully
+4. Verify form resets advanced options to defaults after success
+
+**Expected:** ✅ Bracket generates with advanced configuration; form resets on success
+
+---
+
+## Feature 31: Global Ranking Update Workflow
+
+**Description:** Administrators now have a **"Recalculate Rankings"** button in the Global Rankings view. It re-sorts all existing global ranking entries by points (descending) and updates each player's position, preserving the old position as `previousPosition` so the up/down change indicators reflect the update.
+
+### Part 1 — Admin Button Visibility
+
+1. Log in as **System Admin** or **Tournament Admin**
+2. Navigate to **Rankings** (global ranking view)
+3. Verify a **"Recalculate Rankings"** button appears above the rankings table
+
+**Expected:** ✅ Button visible only for admins; not visible as regular user
+
+### Part 2 — Recalculate Rankings
+
+1. As admin, click **Recalculate Rankings**
+2. Button should change to "Recalculating..." and be disabled during processing
+3. After completion, verify:
+   - ✅ Green success banner "Rankings recalculated successfully." appears
+   - ✅ Rankings table refreshes
+   - ✅ Players are sorted by points descending
+   - ✅ Success message disappears after ~4 seconds
+
+**Expected:** ✅ Rankings recalculated; positions updated; success feedback shown
+
+### Part 3 — Position Change Indicators
+
+1. After recalculating, look at the **Change** column in the rankings table
+2. Players who moved up should show a positive indicator (e.g., +2)
+3. Players who moved down should show a negative indicator (e.g., -1)
+4. Players who stayed at the same rank should show neutral (—)
+
+**Expected:** ✅ Change indicators reflect the position difference from before recalculation
+
+### Part 4 — Regular User Cannot Recalculate
+
+1. Log out and log in as a regular participant
+2. Navigate to Rankings
+3. Verify the "Recalculate Rankings" button is **not visible**
+
+**Expected:** ✅ Recalculate button hidden for non-admin users
+
+---
+
 ## Reporting Issues
 
 If any feature does not work as described:

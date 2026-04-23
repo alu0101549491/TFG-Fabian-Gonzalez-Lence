@@ -238,394 +238,312 @@ export class ExportService implements IExportService {
 
   /**
    * Generates tournament statistics as PDF document.
-   * 
+   * Uses a professional green/teal color scheme matching the application theme.
+   * Sections: header, overview, match status distribution, top performers,
+   * most active participants, category breakdown, and per-page footer.
+   *
    * @param stats - Tournament statistics data
    * @returns Export result with PDF data
    */
   private generateStatisticsPDF(stats: TournamentStatisticsDto): ExportResultDto {
     const doc = new jsPDF();
-    
-    // Color scheme matching application theme
-    const primaryColor: [number, number, number] = [30, 64, 175]; // #1e40af Royal blue
-    const primaryLight: [number, number, number] = [219, 234, 254]; // #dbeafe Light blue background
-    const accentColor: [number, number, number] = [220, 38, 38]; // #dc2626 Crimson red
-    const accentLight: [number, number, number] = [254, 226, 226]; // #fee2e2 Light red
-    const textColor: [number, number, number] = [55, 65, 81]; // #374151 Dark gray
-    const borderColor: [number, number, number] = [229, 231, 235]; // #e5e7eb Light border
-    const successColor: [number, number, number] = [34, 197, 94]; // #22c55e Green
 
-    // Header background with gradient effect (simulated with rectangle)
-    doc.setFillColor(...primaryLight);
-    doc.rect(0, 0, 210, 45, 'F');
+    // ── Color palette (matches app CSS variables) ──────────────────────────
+    const primaryDark: [number, number, number] = [27, 94, 32];    // #1b5e20
+    const primaryColor: [number, number, number] = [46, 125, 50];  // #2e7d32
+    const secondaryColor: [number, number, number] = [15, 118, 110]; // #0f766e
+    const primaryLight: [number, number, number] = [232, 245, 233]; // #e8f5e9
+    const accentColor: [number, number, number] = [245, 124, 0];   // #f57c00
+    const textColor: [number, number, number] = [55, 65, 81];      // #374151
+    const borderColor: [number, number, number] = [229, 231, 235]; // #e5e7eb
+    const successColor: [number, number, number] = [46, 125, 50];  // #2e7d32
+    const pageWidth = doc.internal.pageSize.width;
 
-    // Title with shadow effect
-    doc.setFontSize(24);
-    doc.setTextColor(0, 0, 0);
+    /** Draws a compact header band used on pages 2+ to identify the document. */
+    const drawPageHeader = (page: number): void => {
+      doc.setFillColor(...primaryDark);
+      doc.rect(0, 0, pageWidth, 12, 'F');
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${stats.tournamentName} — Tournament Statistics`, 14, 8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Page ${page}`, pageWidth - 14, 8, {align: 'right'});
+    };
+
+    // ── Page 1 Hero Header ─────────────────────────────────────────────────
+    // Background rectangle — dark green
+    doc.setFillColor(...primaryDark);
+    doc.rect(0, 0, pageWidth, 48, 'F');
+
+    // Decorative diagonal stripe (teal overlay)
+    doc.setFillColor(...secondaryColor);
+    doc.triangle(pageWidth - 60, 0, pageWidth, 0, pageWidth, 48, 'F');
+
+    // Main title
+    doc.setFontSize(22);
+    doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.text('Tournament Statistics', 105, 22, {align: 'center'});
+    doc.text('Tournament Statistics', 14, 22);
 
-    // Tournament name
-    doc.setFontSize(14);
-    doc.setTextColor(...primaryColor);
+    // Tournament name subtitle
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text(stats.tournamentName, 105, 34, {align: 'center'});
+    doc.setTextColor(200, 230, 201); // Light green text
+    doc.text(stats.tournamentName, 14, 34);
 
-    // Overview section with card-like styling
-    let yPos = 55;
-    
-    // Section header with underline
-    doc.setFontSize(14);
+    // Generated date in header
+    doc.setFontSize(8);
+    doc.setTextColor(178, 223, 185);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 43);
+
+    // ── Overview Section ───────────────────────────────────────────────────
+    let yPos = 58;
+
+    doc.setFontSize(13);
     doc.setTextColor(...primaryColor);
     doc.setFont('helvetica', 'bold');
     doc.text('Overview', 14, yPos);
-    
-    // Decorative underline
     doc.setDrawColor(...primaryColor);
     doc.setLineWidth(0.5);
-    doc.line(14, yPos + 1, 50, yPos + 1);
+    doc.line(14, yPos + 1, 48, yPos + 1);
 
-    // Create card background for overview
-    yPos += 5;
-    doc.setFillColor(250, 250, 250); // Very light gray
+    yPos += 6;
+    doc.setFillColor(250, 253, 250);
     doc.setDrawColor(...borderColor);
-    doc.setLineWidth(0.2);
+    doc.setLineWidth(0.3);
     doc.roundedRect(14, yPos, 182, 40, 2, 2, 'FD');
 
-    // Overview metrics in grid layout
+    // Metrics — row 1
     yPos += 8;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...textColor);
+    const col = [20, 75, 140] as const;
 
-    // Left column
-    doc.text('Total Participants', 20, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...accentColor);
-    doc.setFontSize(16);
-    doc.text(stats.totalParticipants.toString(), 20, yPos + 7);
+    const drawMetric = (x: number, y: number, label: string, value: string, color: [number, number, number]): void => {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...textColor);
+      doc.text(label, x, y);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...color);
+      doc.text(value, x, y + 8);
+    };
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...textColor);
-    doc.text('Total Matches', 20, yPos + 18);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...accentColor);
-    doc.setFontSize(16);
-    doc.text(stats.totalMatches.toString(), 20, yPos + 25);
+    drawMetric(col[0], yPos, 'Total Participants', stats.totalParticipants.toString(), primaryColor);
+    drawMetric(col[1], yPos, 'Total Matches', stats.totalMatches.toString(), primaryColor);
 
-    // Middle column
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...textColor);
-    doc.text('Completed Matches', 75, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...successColor);
-    doc.setFontSize(16);
-    doc.text(stats.completedMatches.toString(), 75, yPos + 7);
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...textColor);
-    doc.text('Pending Matches', 75, yPos + 18);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...textColor);
-    doc.setFontSize(16);
-    doc.text(stats.pendingMatches.toString(), 75, yPos + 25);
-
-    // Right column - Completion rate with circular progress indicator
-    const completionRate = stats.totalMatches > 0 
+    // Completion rate with progress bar
+    const completionRate = stats.totalMatches > 0
       ? ((stats.completedMatches / stats.totalMatches) * 100).toFixed(1)
       : '0';
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(...textColor);
-    doc.text('Completion Rate', 140, yPos);
-    
-    // Large percentage display
-    doc.setFontSize(20);
+    doc.text('Completion Rate', col[2], yPos);
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...primaryColor);
-    doc.text(completionRate + '%', 140, yPos + 10);
-    
-    // Progress bar
-    const barWidth = 50;
-    const barHeight = 6;
-    const barX = 140;
-    const barY = yPos + 14;
-    
-    // Background bar
-    doc.setFillColor(...borderColor);
-    doc.roundedRect(barX, barY, barWidth, barHeight, 2, 2, 'F');
-    
-    // Progress bar fill
-    const fillWidth = (barWidth * parseFloat(completionRate)) / 100;
-    doc.setFillColor(...successColor);
-    doc.roundedRect(barX, barY, fillWidth, barHeight, 2, 2, 'F');
+    doc.text(`${completionRate}%`, col[2], yPos + 8);
 
-    // Match Status Distribution section
-    yPos = 110;
-    
-    // Section header with underline
-    doc.setFontSize(14);
+    // Row 2
+    yPos += 18;
+    drawMetric(col[0], yPos, 'Completed', stats.completedMatches.toString(), successColor);
+    drawMetric(col[1], yPos, 'Pending', stats.pendingMatches.toString(), accentColor);
+
+    // Progress bar
+    const barY = yPos + 2;
+    doc.setFillColor(...borderColor);
+    doc.roundedRect(col[2], barY, 50, 6, 2, 2, 'F');
+    const fill = Math.max(0, Math.min(50, (50 * parseFloat(completionRate)) / 100));
+    doc.setFillColor(...successColor);
+    if (fill > 0) doc.roundedRect(col[2], barY, fill, 6, 2, 2, 'F');
+
+    // ── Match Status Distribution ──────────────────────────────────────────
+    yPos = 115;
+
+    doc.setFontSize(13);
     doc.setTextColor(...primaryColor);
     doc.setFont('helvetica', 'bold');
     doc.text('Match Status Distribution', 14, yPos);
-    
-    // Decorative underline
     doc.setDrawColor(...primaryColor);
     doc.setLineWidth(0.5);
-    doc.line(14, yPos + 1, 80, yPos + 1);
-    
+    doc.line(14, yPos + 1, 82, yPos + 1);
+
     yPos += 5;
     autoTable(doc, {
       startY: yPos,
       head: [['Status', 'Count', 'Percentage']],
       body: [
-        [
-          'Completed', 
-          stats.resultDistribution.completed.toString(),
-          `${stats.totalMatches > 0 ? ((stats.resultDistribution.completed / stats.totalMatches) * 100).toFixed(1) : '0'}%`
-        ],
-        [
-          'Pending', 
-          stats.resultDistribution.pending.toString(),
-          `${stats.totalMatches > 0 ? ((stats.resultDistribution.pending / stats.totalMatches) * 100).toFixed(1) : '0'}%`
-        ],
-        [
-          'In Progress', 
-          stats.resultDistribution.inProgress.toString(),
-          `${stats.totalMatches > 0 ? ((stats.resultDistribution.inProgress / stats.totalMatches) * 100).toFixed(1) : '0'}%`
-        ],
-        [
-          'Cancelled', 
-          stats.resultDistribution.cancelled.toString(),
-          `${stats.totalMatches > 0 ? ((stats.resultDistribution.cancelled / stats.totalMatches) * 100).toFixed(1) : '0'}%`
-        ],
-        [
-          'Walkovers', 
-          stats.resultDistribution.walkovers.toString(),
-          `${stats.totalMatches > 0 ? ((stats.resultDistribution.walkovers / stats.totalMatches) * 100).toFixed(1) : '0'}%`
-        ],
-        [
-          'Retirements', 
-          stats.resultDistribution.retirements.toString(),
-          `${stats.totalMatches > 0 ? ((stats.resultDistribution.retirements / stats.totalMatches) * 100).toFixed(1) : '0'}%`
-        ],
+        ['Completed', stats.resultDistribution.completed.toString(),
+          `${stats.totalMatches > 0 ? ((stats.resultDistribution.completed / stats.totalMatches) * 100).toFixed(1) : '0'}%`],
+        ['Pending', stats.resultDistribution.pending.toString(),
+          `${stats.totalMatches > 0 ? ((stats.resultDistribution.pending / stats.totalMatches) * 100).toFixed(1) : '0'}%`],
+        ['In Progress', stats.resultDistribution.inProgress.toString(),
+          `${stats.totalMatches > 0 ? ((stats.resultDistribution.inProgress / stats.totalMatches) * 100).toFixed(1) : '0'}%`],
+        ['Cancelled', stats.resultDistribution.cancelled.toString(),
+          `${stats.totalMatches > 0 ? ((stats.resultDistribution.cancelled / stats.totalMatches) * 100).toFixed(1) : '0'}%`],
+        ['Walkovers', stats.resultDistribution.walkovers.toString(),
+          `${stats.totalMatches > 0 ? ((stats.resultDistribution.walkovers / stats.totalMatches) * 100).toFixed(1) : '0'}%`],
+        ['Retirements', stats.resultDistribution.retirements.toString(),
+          `${stats.totalMatches > 0 ? ((stats.resultDistribution.retirements / stats.totalMatches) * 100).toFixed(1) : '0'}%`],
       ],
       theme: 'grid',
-      headStyles: {
-        fillColor: primaryColor,
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 10,
-        halign: 'left',
-      },
-      bodyStyles: {
-        fontSize: 9,
-        textColor: textColor,
-      },
-      alternateRowStyles: {
-        fillColor: [249, 250, 251], // Very light gray
-      },
+      headStyles: {fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10},
+      bodyStyles: {fontSize: 9, textColor: textColor},
+      alternateRowStyles: {fillColor: [249, 252, 249]},
       columnStyles: {
         0: {cellWidth: 70},
         1: {cellWidth: 50, halign: 'center'},
-        2: {cellWidth: 52, halign: 'center'},
+        2: {cellWidth: 52, halign: 'center', fontStyle: 'bold'},
       },
       margin: {left: 14, right: 14},
     });
 
-    // Top Performers section
-    yPos = (doc as any).lastAutoTable.finalY + 15;
-    
-    // Check if we need a new page
-    if (yPos > 230) {
-      doc.addPage();
-      yPos = 20;
-    }
-    
-    // Section header with underline
-    doc.setFontSize(14);
+    // ── Top Performers ─────────────────────────────────────────────────────
+    yPos = (doc as any).lastAutoTable.finalY + 14;
+    if (yPos > 230) { doc.addPage(); yPos = 18; }
+
+    doc.setFontSize(13);
     doc.setTextColor(...primaryColor);
     doc.setFont('helvetica', 'bold');
     doc.text('Top Performers', 14, yPos);
-    
-    // Decorative underline
     doc.setDrawColor(...primaryColor);
     doc.setLineWidth(0.5);
-    doc.line(14, yPos + 1, 55, yPos + 1);
+    doc.line(14, yPos + 1, 57, yPos + 1);
 
     yPos += 5;
-    const performersData = stats.topPerformers.map((p, index) => {
-      const streakText = p.currentStreak > 0 ? `+${p.currentStreak}` : p.currentStreak.toString();
-      const rankDisplay = index < 3 ? `#${index + 1}` : `${index + 1}.`;
-      
-      return [
-        rankDisplay,
-        p.participantName,
-        p.wins.toString(),
-        p.losses.toString(),
-        `${p.winPercentage.toFixed(1)}%`,
-        streakText,
-      ];
-    });
-
-    autoTable(doc, {
-      startY: yPos,
-      head: [['#', 'Player', 'W', 'L', 'Win %', 'Streak']],
-      body: performersData,
-      theme: 'grid',
-      headStyles: {
-        fillColor: primaryColor,
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 10,
-        halign: 'center',
-      },
-      bodyStyles: {
-        fontSize: 9,
-        textColor: textColor,
-      },
-      alternateRowStyles: {
-        fillColor: [249, 250, 251],
-      },
-      columnStyles: {
-        0: {cellWidth: 12, halign: 'center', fontStyle: 'bold'},
-        1: {cellWidth: 70, halign: 'left'},
-        2: {cellWidth: 18, halign: 'center'},
-        3: {cellWidth: 18, halign: 'center'},
-        4: {cellWidth: 28, halign: 'center', fontStyle: 'bold', textColor: successColor},
-        5: {cellWidth: 26, halign: 'center'},
-      },
-      margin: {left: 14, right: 14},
-      didParseCell: (data: any) => {
-        // Highlight top 3 performers with special background
-        if (data.section === 'body' && data.row.index < 3) {
-          if (data.column.index === 0) {
-            // Rank column for top 3
-            data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.textColor = [255, 255, 255]; // White text
-            // Gold, Silver, Bronze backgrounds
-            if (data.row.index === 0) {
-              data.cell.styles.fillColor = [255, 215, 0]; // Gold
-            } else if (data.row.index === 1) {
-              data.cell.styles.fillColor = [192, 192, 192]; // Silver
-            } else if (data.row.index === 2) {
-              data.cell.styles.fillColor = [205, 127, 50]; // Bronze
-            }
-          }
-          if (data.column.index === 1) {
-            data.cell.styles.fontStyle = 'bold';
-          }
-        }
-        // Color-code streaks
-        if (data.section === 'body' && data.column.index === 5) {
-          const streakValue = stats.topPerformers[data.row.index]?.currentStreak || 0;
-          if (streakValue > 0) {
-            data.cell.styles.textColor = successColor;
-            data.cell.styles.fontStyle = 'bold';
-          } else if (streakValue < 0) {
-            data.cell.styles.textColor = accentColor;
-          }
-        }
-      },
-    });
-
-    // Most Active Participants section
-    yPos = (doc as any).lastAutoTable.finalY + 15;
-    
-    // Check if we need a new page
-    if (yPos > 230) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Section header with underline
-    doc.setFontSize(14);
-    doc.setTextColor(...primaryColor);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Most Active Participants', 14, yPos);
-    
-    // Decorative underline
-    doc.setDrawColor(...primaryColor);
-    doc.setLineWidth(0.5);
-    doc.line(14, yPos + 1, 75, yPos + 1);
-
-    yPos += 5;
-    const activityData = stats.mostActiveParticipants.map((p, index) => [
-      `${index + 1}.`,
+    const performersData = stats.topPerformers.map((p, i) => [
+      i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? '3rd' : `${i + 1}.`,
       p.participantName,
-      p.matchesPlayed.toString(),
-      p.setsPlayed.toString(),
-      p.gamesPlayed.toString(),
+      p.wins.toString(),
+      p.losses.toString(),
+      `${p.winPercentage.toFixed(1)}%`,
+      p.currentStreak > 0 ? `+${p.currentStreak}` : p.currentStreak < 0 ? `${p.currentStreak}` : '-',
     ]);
 
     autoTable(doc, {
       startY: yPos,
-      head: [['#', 'Player', 'Matches', 'Sets', 'Games']],
-      body: activityData,
+      head: [['Rank', 'Player', 'W', 'L', 'Win %', 'Streak']],
+      body: performersData,
       theme: 'grid',
-      headStyles: {
-        fillColor: primaryColor,
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 10,
-        halign: 'center',
+      headStyles: {fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10, halign: 'center'},
+      bodyStyles: {fontSize: 9, textColor: textColor},
+      alternateRowStyles: {fillColor: [249, 252, 249]},
+      columnStyles: {
+        0: {cellWidth: 18, halign: 'center', fontStyle: 'bold'},
+        1: {cellWidth: 64},
+        2: {cellWidth: 18, halign: 'center'},
+        3: {cellWidth: 18, halign: 'center'},
+        4: {cellWidth: 28, halign: 'center', fontStyle: 'bold'},
+        5: {cellWidth: 26, halign: 'center', fontStyle: 'bold'},
       },
-      bodyStyles: {
-        fontSize: 9,
-        textColor: textColor,
+      margin: {left: 14, right: 14},
+      didParseCell: (data: any) => {
+        if (data.section === 'body' && data.column.index === 4) {
+          data.cell.styles.textColor = successColor;
+        }
+        if (data.section === 'body' && data.column.index === 5) {
+          const streak = stats.topPerformers[data.row.index]?.currentStreak ?? 0;
+          data.cell.styles.textColor = streak > 0 ? successColor : streak < 0 ? accentColor : textColor;
+        }
       },
-      alternateRowStyles: {
-        fillColor: [249, 250, 251],
-      },
+    });
+
+    // ── Most Active Participants ───────────────────────────────────────────
+    yPos = (doc as any).lastAutoTable.finalY + 14;
+    if (yPos > 230) { doc.addPage(); yPos = 18; }
+
+    doc.setFontSize(13);
+    doc.setTextColor(...primaryColor);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Most Active Participants', 14, yPos);
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.5);
+    doc.line(14, yPos + 1, 78, yPos + 1);
+
+    yPos += 5;
+    autoTable(doc, {
+      startY: yPos,
+      head: [['#', 'Player', 'Matches', 'Sets', 'Games']],
+      body: stats.mostActiveParticipants.map((p, i) => [
+        `${i + 1}.`, p.participantName, p.matchesPlayed.toString(), p.setsPlayed.toString(), p.gamesPlayed.toString(),
+      ]),
+      theme: 'grid',
+      headStyles: {fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10, halign: 'center'},
+      bodyStyles: {fontSize: 9, textColor: textColor},
+      alternateRowStyles: {fillColor: [249, 252, 249]},
       columnStyles: {
         0: {cellWidth: 12, halign: 'center', fontStyle: 'bold'},
-        1: {cellWidth: 80, halign: 'left'},
-        2: {cellWidth: 30, halign: 'center', fontStyle: 'bold', textColor: primaryColor},
+        1: {cellWidth: 80},
+        2: {cellWidth: 30, halign: 'center', fontStyle: 'bold'},
         3: {cellWidth: 25, halign: 'center'},
         4: {cellWidth: 25, halign: 'center'},
       },
       margin: {left: 14, right: 14},
     });
 
-    // Add decorative footer section
-    const finalY = (doc as any).lastAutoTable.finalY + 15;
-    
-    // Info box at bottom
-    if (finalY < doc.internal.pageSize.height - 30) {
-      doc.setFillColor(...primaryLight);
+    // ── Category Breakdown ─────────────────────────────────────────────────
+    if (stats.categoryBreakdown && stats.categoryBreakdown.length > 0) {
+      yPos = (doc as any).lastAutoTable.finalY + 14;
+      if (yPos > 230) { doc.addPage(); yPos = 18; }
+
+      doc.setFontSize(13);
+      doc.setTextColor(...primaryColor);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Category Breakdown', 14, yPos);
       doc.setDrawColor(...primaryColor);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(14, finalY, 182, 15, 2, 2, 'FD');
-      
-      doc.setFontSize(8);
-      doc.setTextColor(...textColor);
-      doc.setFont('helvetica', 'italic');
-      doc.text('Note: Statistics calculated based on completed matches only', 20, finalY + 6);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 20, finalY + 11);
+      doc.setLineWidth(0.5);
+      doc.line(14, yPos + 1, 65, yPos + 1);
+
+      yPos += 5;
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Category', 'Participants', 'Total Matches', 'Completed', 'Top Performer']],
+        body: stats.categoryBreakdown.map(c => [
+          c.categoryName,
+          c.totalParticipants.toString(),
+          c.totalMatches.toString(),
+          c.completedMatches.toString(),
+          c.topPerformer ?? '—',
+        ]),
+        theme: 'grid',
+        headStyles: {fillColor: secondaryColor, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10},
+        bodyStyles: {fontSize: 9, textColor: textColor},
+        alternateRowStyles: {fillColor: [240, 253, 250]},
+        columnStyles: {
+          0: {cellWidth: 50, fontStyle: 'bold'},
+          1: {cellWidth: 30, halign: 'center'},
+          2: {cellWidth: 30, halign: 'center'},
+          3: {cellWidth: 30, halign: 'center'},
+          4: {cellWidth: 42},
+        },
+        margin: {left: 14, right: 14},
+      });
     }
 
-    // Footer on all pages
+    // ── Footer on every page ───────────────────────────────────────────────
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      
-      // Footer border line
+
+      // Compact header band on pages 2+
+      if (i > 1) {
+        drawPageHeader(i);
+      }
+
+      // Bottom footer line
       doc.setDrawColor(...borderColor);
       doc.setLineWidth(0.3);
-      doc.line(14, doc.internal.pageSize.height - 15, 196, doc.internal.pageSize.height - 15);
-      
-      // Footer text
-      doc.setFontSize(8);
+      doc.line(14, doc.internal.pageSize.height - 14, pageWidth - 14, doc.internal.pageSize.height - 14);
+
+      doc.setFontSize(7);
       doc.setTextColor(107, 114, 128);
       doc.setFont('helvetica', 'normal');
       doc.text(
-        `Tournament Statistics Report | Page ${i} of ${pageCount}`,
-        105,
-        doc.internal.pageSize.height - 10,
-        {align: 'center'}
+        `${stats.tournamentName} — Statistics Report  |  Page ${i} of ${pageCount}`,
+        pageWidth / 2,
+        doc.internal.pageSize.height - 9,
+        {align: 'center'},
       );
     }
 

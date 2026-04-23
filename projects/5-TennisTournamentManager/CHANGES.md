@@ -1,5 +1,97 @@
 # Tennis Tournament Manager — Change Log
 
+## Phase 6: Advanced Features (2026-05-31)
+
+### Feature 28: Super Tiebreak Support in Score Entry
+
+**Status:** ✅ COMPLETED
+
+**Location:**
+- `src/presentation/pages/matches/match-detail/match-detail.component.ts` *(modified)*
+- `src/presentation/pages/matches/match-detail/match-detail.component.html` *(modified)*
+- `src/presentation/pages/matches/match-detail/match-detail.component.css` *(modified)*
+
+**Description:**
+Extended the score entry modal to handle both per-set tiebreaks (7-6 score) and the dedicated Super Tiebreak match format.
+
+**Changes:**
+- Extended `scoresForm.sets` entries with `tiebreak1: number | null` and `tiebreak2: number | null` fields.
+- Added `public readonly isSuperTiebreakMatch` computed signal (true when `match.format === MatchFormat.SUPER_TIEBREAK`).
+- Replaced fixed `private readonly scoreValidator` with `private getScoreValidator(): TennisScoreValidator` method that configures the validator based on match format (`bestOfFive`, `allowSuperTiebreak`).
+- `openScoresModal()` now resets to 1 set entry for SUPER_TIEBREAK format, 3 sets for others.
+- `submitScores()` branches on format: SUPER_TIEBREAK uses tiebreak1/tiebreak2 directly with custom 10-point, win-by-2 validation; regular formats validate through `TennisScoreValidator` and map tiebreak fields.
+- HTML: added `@if (isSuperTiebreakMatch())` branch showing a single tiebreak input block; in the regular `@else` branch, a `.tiebreak-row` conditionally renders when set score is 7-6 or 6-7.
+- CSS: added `.tiebreak-row` (yellow background), `.tiebreak-sub-label`, and `.super-tiebreak-label` styles.
+
+---
+
+### Feature 29: Improved PDF Export Template
+
+**Status:** ✅ COMPLETED
+
+**Location:**
+- `src/application/services/export.service.ts` *(modified)*
+
+**Description:**
+Completely redesigned `generateStatisticsPDF()` with a professional color scheme matching the application's green/teal theme, a category breakdown section, and repeating page headers.
+
+**Changes:**
+- Color palette: `primaryDark [27,94,32]`, `primaryColor [46,125,50]`, `secondaryColor [15,118,110]`, `primaryLight [232,245,233]`, `accentColor [245,124,0]`, `textColor [55,65,81]`.
+- Added inner `drawPageHeader(page)` function that draws a compact dark green header band on pages 2+.
+- Hero header: full-width dark green rectangle with a diagonal teal triangle stripe; white bold title; light green subtitle and generation date.
+- Overview section: three-column metric card using `drawMetric()` helper (participants, matches, completion rate with drawn progress bar).
+- Match Status Distribution: `autoTable` with green header row.
+- Top Performers: emoji medals (🥇🥈🥉), streak direction arrows (▲N/▼N) for hot/cold streaks.
+- Most Active Participants: `autoTable`.
+- **New** Category Breakdown: `autoTable` with teal (`secondaryColor`) header row, renders if `stats.categoryBreakdown` is non-empty.
+- Footer loop: draws `drawPageHeader` on pages 2+, bottom separator line, page numbers in format `"Tournament — Statistics Report | Page X of Y"`.
+
+---
+
+### Feature 30: Advanced Bracket Configuration Options
+
+**Status:** ✅ COMPLETED
+
+**Location:**
+- `src/application/dto/bracket.dto.ts` *(modified)*
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` *(modified)*
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html` *(modified)*
+
+**Description:**
+Added an **Advanced Options** collapsible section to the bracket generation form, exposing seeding strategy, consolation type, bye assignment, and group size configuration.
+
+**Changes:**
+- Extended `GenerateBracketDto` with four optional fields: `seedingStrategy?: 'NONE' | 'TOP_SEEDED' | 'RANDOM'`, `consolationType?: 'NONE' | 'CONSOLATION' | 'DOUBLE_ELIMINATION'`, `groupSize?: number`, `byeAssignment?: 'TOP_SEEDS' | 'RANDOM'`.
+- Extended `bracketForm` state in `TournamentDetailComponent` with matching defaults; updated `toggleBracketGeneration()` reset and post-generation reset to include all four fields; passed all four fields to `generateBracket()`.
+- HTML: added `<details class="advanced-options-details">` section above action buttons containing:
+  - **Seeding Strategy** radio group (NONE/TOP_SEEDED/RANDOM) — all bracket types.
+  - **Consolation Type** radio group (NONE/CONSOLATION/DOUBLE_ELIMINATION) — SINGLE_ELIMINATION only.
+  - **Bye Assignment** radio group (TOP_SEEDS/RANDOM) — SINGLE_ELIMINATION only.
+  - **Group Size** radio group (3/4/6/8 players) — ROUND_ROBIN only.
+
+---
+
+### Feature 31: Global Ranking Update Workflow
+
+**Status:** ✅ COMPLETED
+
+**Location:**
+- `src/application/services/ranking.service.ts` *(modified)*
+- `src/presentation/pages/ranking/ranking-view/ranking-view.component.ts` *(modified)*
+- `src/presentation/pages/ranking/ranking-view/ranking-view.component.html` *(modified)*
+- `src/presentation/pages/ranking/ranking-view/ranking-view.component.css` *(modified)*
+
+**Description:**
+Implemented the global ranking recalculation workflow (FR44): an admin-only **"Recalculate Rankings"** button re-sorts all global ranking entries by points and updates each player's stored position.
+
+**Changes:**
+- `RankingService.recalculateRankings()`: fetches all global rankings via `globalRankingRepository.findAll()`; sorts by `points` descending (ties broken alphabetically by `participantId`); maps each entry to `{ ...ranking, previousPosition: ranking.position, position: index + 1 }`; calls `globalRankingRepository.update()` for each entry in parallel via `Promise.all`.
+- `RankingViewComponent`: added `AuthStateService` injection; added `isAdmin` computed signal (true for SYSTEM_ADMIN or TOURNAMENT_ADMIN); added `isRecalculating` and `recalculateMessage` signals; added `public readonly Math = Math` for template access; added `recalculateRankings()` async method that sets loading state, calls service, shows success/error message, reloads data, auto-clears message after 4 seconds.
+- HTML: added success/error alert banners before the loading spinner; added admin-only `.recalculate-btn` button with loading state text.
+- CSS: added `.recalculate-btn`, `.alert`, `.alert-success`, `.alert-error` styles.
+
+---
+
 ## UX Improvements (April 23, 2026)
 
 ### Fix: Order-of-Play Courts Section — Read-Only Display + Manage Courts Button

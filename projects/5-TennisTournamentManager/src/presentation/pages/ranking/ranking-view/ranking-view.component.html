@@ -25,8 +25,27 @@
 
   <!-- Main Content -->
   <div class="main-content">
+    @if (recalculateMessage()) {
+      <div class="alert alert-success" style="margin-bottom: var(--spacing-lg);">✅ {{ recalculateMessage() }}</div>
+    }
     @if (errorMessage()) {
       <div class="alert alert-error" style="margin-bottom: var(--spacing-lg);">{{ errorMessage() }}</div>
+    }
+
+    @if (isAdmin()) {
+      <div class="admin-actions" style="display: flex; justify-content: flex-end; margin-bottom: var(--spacing-md);">
+        <button
+          class="recalculate-btn"
+          (click)="recalculateRankings()"
+          [disabled]="isRecalculating() || isLoading()"
+        >
+          @if (isRecalculating()) {
+            🔄 Recalculating...
+          } @else {
+            🔄 Recalculate Rankings
+          }
+        </button>
+      </div>
     }
 
     @if (isLoading()) {

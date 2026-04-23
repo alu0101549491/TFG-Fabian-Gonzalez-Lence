@@ -189,16 +189,30 @@ export class RankingService implements IRankingService {
   }
 
   /**
-   * Recalculates all global rankings based on tournament results.
+   * Recalculates all global rankings based on current ELO/points data.
+   * Fetches existing global rankings, re-sorts by points, and updates each
+   * entry's `position` (preserving the old position as `previousPosition`).
+   *
+   * @returns Promise that resolves when all rankings have been updated
    */
   public async recalculateRankings(): Promise<void> {
-    // In real implementation, fetch all standings and use RankingCalculator 
-    // to compute points based on tournament results, wins, and ranking system
-    // For now, this is a placeholder
-    
-    // Example: const allStandings = await this.standingRepository.findAll();
-    // Process standings and update rankings
-    // await this.globalRankingRepository.updateAll(calculatedRankings);
+    const allRankings = await this.globalRankingRepository.findAll();
+    if (allRankings.length === 0) return;
+
+    // Sort descending by points (then by id for stable ordering)
+    const sorted = [...allRankings].sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      return (a.participantId ?? '').localeCompare(b.participantId ?? '');
+    });
+
+    // Update each ranking with new position and previous position
+    const updates = sorted.map((ranking, index) => ({
+      ...ranking,
+      previousPosition: ranking.position,
+      position: index + 1,
+    }));
+
+    await Promise.all(updates.map(r => this.globalRankingRepository.update(r as any)));
   }
 
   /**

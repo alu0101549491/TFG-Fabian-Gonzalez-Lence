@@ -520,35 +520,89 @@
 
               <div class="form-group">
                 <label>Sets</label>
-                @for (set of scoresForm.sets; track $index) {
-                  <div class="set-input" [class.set-row]="true">
-                    <label>Set {{ $index + 1 }}</label>
+                @if (isSuperTiebreakMatch()) {
+                  <!-- Super Tiebreak Format: single tiebreak to 10 points, no traditional sets -->
+                  <div class="set-input">
+                    <label class="super-tiebreak-label">🏆 Super Tiebreak (first to 10, win by 2)</label>
                     <div class="score-inputs">
                       <input 
                         type="number" 
-                        [(ngModel)]="set.participant1Score" 
-                        [name]="'set' + $index + 'p1'"
+                        [(ngModel)]="scoresForm.sets[0].tiebreak1" 
+                        name="superTbP1"
                         min="0" 
-                        max="7"
-                        placeholder="P1"
+                        max="99"
+                        placeholder="P1 pts"
                       />
                       <span class="vs-text">-</span>
                       <input 
                         type="number" 
-                        [(ngModel)]="set.participant2Score" 
-                        [name]="'set' + $index + 'p2'"
+                        [(ngModel)]="scoresForm.sets[0].tiebreak2" 
+                        name="superTbP2"
                         min="0" 
-                        max="7"
-                        placeholder="P2"
+                        max="99"
+                        placeholder="P2 pts"
                       />
-                      @if (scoresForm.sets.length > 1) {
-                        <button type="button" class="remove-set-btn" (click)="removeSet($index)">×</button>
-                      }
                     </div>
                   </div>
-                }
-                @if (scoresForm.sets.length < 5) {
-                  <button type="button" class="add-set-btn" (click)="addSet()">+ Add Set</button>
+                } @else {
+                  <!-- Regular sets with optional tiebreak row when score is 7-6 -->
+                  @for (set of scoresForm.sets; track $index) {
+                    <div class="set-block">
+                      <div class="set-input set-row">
+                        <label>Set {{ $index + 1 }}</label>
+                        <div class="score-inputs">
+                          <input 
+                            type="number" 
+                            [(ngModel)]="set.participant1Score" 
+                            [name]="'set' + $index + 'p1'"
+                            min="0" 
+                            max="7"
+                            placeholder="P1"
+                          />
+                          <span class="vs-text">-</span>
+                          <input 
+                            type="number" 
+                            [(ngModel)]="set.participant2Score" 
+                            [name]="'set' + $index + 'p2'"
+                            min="0" 
+                            max="7"
+                            placeholder="P2"
+                          />
+                          @if (scoresForm.sets.length > 1) {
+                            <button type="button" class="remove-set-btn" (click)="removeSet($index)">×</button>
+                          }
+                        </div>
+                      </div>
+                      @if ((set.participant1Score === 7 && set.participant2Score === 6) ||
+                           (set.participant1Score === 6 && set.participant2Score === 7)) {
+                        <div class="tiebreak-row">
+                          <label class="tiebreak-sub-label">Tiebreak points</label>
+                          <div class="score-inputs">
+                            <input 
+                              type="number" 
+                              [(ngModel)]="set.tiebreak1" 
+                              [name]="'tb' + $index + 'p1'"
+                              min="0" 
+                              max="99"
+                              placeholder="P1 TB"
+                            />
+                            <span class="vs-text">-</span>
+                            <input 
+                              type="number" 
+                              [(ngModel)]="set.tiebreak2" 
+                              [name]="'tb' + $index + 'p2'"
+                              min="0" 
+                              max="99"
+                              placeholder="P2 TB"
+                            />
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (scoresForm.sets.length < 5) {
+                    <button type="button" class="add-set-btn" (click)="addSet()">+ Add Set</button>
+                  }
                 }
               </div>
 

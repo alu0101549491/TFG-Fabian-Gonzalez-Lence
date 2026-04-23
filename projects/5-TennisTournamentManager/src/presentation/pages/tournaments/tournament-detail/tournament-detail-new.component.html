@@ -1155,6 +1155,109 @@
                       </div>
                     </div>
 
+                    <!-- Advanced Options -->
+                    <details class="advanced-options-details">
+                      <summary style="cursor: pointer; font-weight: 500; color: var(--color-primary, #2e7d32); padding: 0.5rem 0; margin-bottom: 0.75rem; list-style: none; display: flex; align-items: center; gap: 0.5rem;">
+                        ⚙️ Advanced Options
+                      </summary>
+
+                      <!-- Seeding Strategy (all bracket types) -->
+                      <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">
+                          Seeding Strategy
+                        </label>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                          @for (opt of [{ value: 'NONE', label: 'None' }, { value: 'TOP_SEEDED', label: 'Top Seeded' }, { value: 'RANDOM', label: 'Random' }]; track opt.value) {
+                            <label style="display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; border: 1.5px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 0.875rem;"
+                              [style.border-color]="bracketForm.seedingStrategy === opt.value ? 'var(--color-primary, #2e7d32)' : '#ddd'"
+                              [style.background-color]="bracketForm.seedingStrategy === opt.value ? '#f0fdf4' : 'transparent'">
+                              <input type="radio" [(ngModel)]="bracketForm.seedingStrategy" [value]="opt.value" name="seedingStrategy" />
+                              {{ opt.label }}
+                            </label>
+                          }
+                        </div>
+                        <p style="font-size: 0.8rem; color: #6b7280; margin: 0.25rem 0 0 0;">
+                          @if (bracketForm.seedingStrategy === 'TOP_SEEDED') {
+                            Registered ranking is used to place top seeds in the draw.
+                          } @else if (bracketForm.seedingStrategy === 'RANDOM') {
+                            Participants are placed in the draw at random.
+                          } @else {
+                            No seeding applied; participants placed in registration order.
+                          }
+                        </p>
+                      </div>
+
+                      <!-- Consolation Type (SINGLE_ELIMINATION only) -->
+                      @if (bracketForm.bracketType === 'SINGLE_ELIMINATION') {
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                          <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">
+                            Consolation Bracket
+                          </label>
+                          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            @for (opt of [{ value: 'NONE', label: 'None' }, { value: 'CONSOLATION', label: 'Consolation' }, { value: 'DOUBLE_ELIMINATION', label: 'Double Elimination' }]; track opt.value) {
+                              <label style="display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; border: 1.5px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 0.875rem;"
+                                [style.border-color]="bracketForm.consolationType === opt.value ? 'var(--color-primary, #2e7d32)' : '#ddd'"
+                                [style.background-color]="bracketForm.consolationType === opt.value ? '#f0fdf4' : 'transparent'">
+                                <input type="radio" [(ngModel)]="bracketForm.consolationType" [value]="opt.value" name="consolationType" />
+                                {{ opt.label }}
+                              </label>
+                            }
+                          </div>
+                          <p style="font-size: 0.8rem; color: #6b7280; margin: 0.25rem 0 0 0;">
+                            @if (bracketForm.consolationType === 'CONSOLATION') {
+                              Players losing in the first round compete in a consolation bracket.
+                            } @else if (bracketForm.consolationType === 'DOUBLE_ELIMINATION') {
+                              Players can lose once and continue in the losers' bracket.
+                            } @else {
+                              No consolation bracket; eliminated players exit the tournament.
+                            }
+                          </p>
+                        </div>
+
+                        <!-- Bye Assignment (SINGLE_ELIMINATION) -->
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                          <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">
+                            Bye Assignment
+                          </label>
+                          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            @for (opt of [{ value: 'TOP_SEEDS', label: 'Top Seeds get Byes' }, { value: 'RANDOM', label: 'Random Byes' }]; track opt.value) {
+                              <label style="display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; border: 1.5px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 0.875rem;"
+                                [style.border-color]="bracketForm.byeAssignment === opt.value ? 'var(--color-primary, #2e7d32)' : '#ddd'"
+                                [style.background-color]="bracketForm.byeAssignment === opt.value ? '#f0fdf4' : 'transparent'">
+                                <input type="radio" [(ngModel)]="bracketForm.byeAssignment" [value]="opt.value" name="byeAssignment" />
+                                {{ opt.label }}
+                              </label>
+                            }
+                          </div>
+                          <p style="font-size: 0.8rem; color: #6b7280; margin: 0.25rem 0 0 0;">
+                            Applies when the number of participants is not a power of two.
+                          </p>
+                        </div>
+                      }
+
+                      <!-- Group Size (ROUND_ROBIN only) -->
+                      @if (bracketForm.bracketType === 'ROUND_ROBIN') {
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                          <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">
+                            Players per Group
+                          </label>
+                          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            @for (size of [3, 4, 6, 8]; track size) {
+                              <label style="display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; border: 1.5px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 0.875rem;"
+                                [style.border-color]="bracketForm.groupSize === size ? 'var(--color-primary, #2e7d32)' : '#ddd'"
+                                [style.background-color]="bracketForm.groupSize === size ? '#f0fdf4' : 'transparent'">
+                                <input type="radio" [(ngModel)]="bracketForm.groupSize" [value]="size" name="groupSize" />
+                                {{ size }}
+                              </label>
+                            }
+                          </div>
+                          <p style="font-size: 0.8rem; color: #6b7280; margin: 0.25rem 0 0 0;">
+                            Each group will contain up to {{ bracketForm.groupSize }} players playing each other.
+                          </p>
+                        </div>
+                      }
+                    </details>
+
                     <!-- Action Buttons -->
                     <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
                       <button 

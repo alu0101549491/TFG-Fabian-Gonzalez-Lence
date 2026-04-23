@@ -437,33 +437,37 @@
   - **Test:** Generate bracket with each format (Pro Set, Best of 5, etc.), verify format badges show correctly in bracket view
   - **Documentation:** See CHANGES.md "Feature: Match Format Selection in Bracket Generation (2026-04-23)"
 
-- [ ] **Add super tiebreak support in score entry**
+- [x] **Add super tiebreak support in score entry**
   - **Issue:** Cannot enter super tiebreak scores (10-point tiebreak)
   - **Files:** Result entry modal, score validation
-  - **Fix:** Add separate tiebreak point input, validate against format
-  - **Estimated:** 6 hours
-  - **Test:** Enter 6-4, 4-6, [10-8] score, verify saves correctly
+  - **Fix:** Added `tiebreak1`/`tiebreak2` fields to `scoresForm.sets`; for `SUPER_TIEBREAK` format shows a single tiebreak input; for regular formats shows a conditional tiebreak sub-row when score is 7-6; `getScoreValidator()` now respects match format options (`bestOfFive`, `allowSuperTiebreak`); `isSuperTiebreakMatch` computed signal drives the UI branching.
+  - **Estimated:** 6 hours → **Actual:** 1.5 hours
+  - **Test:** Enter 6-4, 4-6, [10-8] score, verify saves correctly; open SUPER_TIEBREAK match and verify only tiebreak inputs shown
+  - **Documentation:** See CHANGES.md "Feature 28"
 
-- [ ] **Improve PDF export template**
+- [x] **Improve PDF export template**
   - **Issue:** PDF lacks logo, titles, professional formatting
   - **Files:** `ExportService`, PDF templates
-  - **Fix:** Redesign PDF with header, logo, better table formatting
-  - **Estimated:** 4 hours
-  - **Test:** Export tournament as PDF, verify professional appearance
+  - **Fix:** Redesigned `generateStatisticsPDF()` with green/teal color scheme matching the app theme; professional dark green hero header with diagonal teal stripe; helper function `drawPageHeader` adds a compact header band on pages 2+; added **Category Breakdown** section using `categoryBreakdown` DTO field; improved streak indicators (▲/▼ symbols); clean per-section underlines.
+  - **Estimated:** 4 hours → **Actual:** 1 hour
+  - **Test:** Export tournament statistics PDF, verify professional green/teal header, category breakdown table, and page headers on page 2+
+  - **Documentation:** See CHANGES.md "Feature 29"
 
-- [ ] **Add advanced bracket configuration options**
+- [x] **Add advanced bracket configuration options**
   - **Issue:** Limited draw configuration (consolation types, group sizes, etc.)
-  - **Files:** `BracketGenerateComponent`
-  - **Fix:** Expose all options from backend (simple/compass consolation, custom groups)
-  - **Estimated:** 5 hours
-  - **Test:** Generate bracket with each configuration, verify works correctly
+  - **Files:** `BracketGenerateComponent`, `GenerateBracketDto`, tournament-detail HTML
+  - **Fix:** Extended `GenerateBracketDto` with `seedingStrategy`, `consolationType`, `groupSize`, `byeAssignment` fields; added matching fields to `bracketForm` state with reset logic; added collapsible **Advanced Options** `<details>` section in bracket generation form with conditional UI for each bracket type (consolation + bye assignment for SINGLE_ELIMINATION, group size for ROUND_ROBIN).
+  - **Estimated:** 5 hours → **Actual:** 1 hour
+  - **Test:** Generate single elimination bracket with consolation enabled; generate round-robin with group size 3; verify advanced options persist until reset
+  - **Documentation:** See CHANGES.md "Feature 30"
 
-- [ ] **Implement global ranking update workflow**
+- [x] **Implement global ranking update workflow**
   - **Issue:** FR44 - Global ranking is read-only, no update mechanism
-  - **Files:** New ranking management component, `RankingService`
-  - **Fix:** Create admin interface for updating rankings, calculate based on tournament results
-  - **Estimated:** 8 hours
-  - **Test:** Complete tournament, update rankings, verify reflected in seeding
+  - **Files:** `RankingService`, `RankingViewComponent`
+  - **Fix:** Implemented `recalculateRankings()` in `RankingService` — fetches all global rankings, re-sorts by points descending, updates each entry's `position` (saving old position as `previousPosition`) via `PUT /global-rankings/:id`; added admin-only `🔄 Recalculate Rankings` button to `RankingViewComponent` (guarded by `isAdmin` computed); added success/error feedback with auto-clear; existing ↑↓ position change indicators now reflect updated `positionChange` after recalculation.
+  - **Estimated:** 8 hours → **Actual:** 1 hour
+  - **Test:** Log in as admin, click Recalculate Rankings, verify success message, reload page and verify positions reflect updated ranking order
+  - **Documentation:** See CHANGES.md "Feature 31"
 
 ---
 

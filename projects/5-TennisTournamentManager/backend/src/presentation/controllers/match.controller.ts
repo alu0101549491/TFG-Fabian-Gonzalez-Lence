@@ -30,6 +30,7 @@ import {StandingService} from '../../application/services/standing.service';
 import {User} from '../../domain/entities/user.entity';
 import {Bracket} from '../../domain/entities/bracket.entity';
 import {TennisScoreValidator, TennisSetScore} from '../../shared/utils/tennis-score-validator';
+import {MatchFormat} from '../../domain/enumerations/match-format';
 
 /**
  * Match controller.
@@ -471,6 +472,11 @@ export class MatchController {
         throw new AppError('winnerId and scores array are required', HTTP_STATUS.BAD_REQUEST, ERROR_CODES.INVALID_INPUT);
       }
 
+      // Look up the match to determine its format for format-aware validation
+      const matchRepository = AppDataSource.getRepository(Match);
+      const matchForFormat = await matchRepository.findOne({where: {id}});
+      const matchFormat = matchForFormat?.format ?? MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK;
+
       // Convert scores to TennisSetScore format for validation
       const tennisScores: TennisSetScore[] = scores.map((score: any) => ({
         setNumber: score.setNumber,
@@ -480,18 +486,52 @@ export class MatchController {
         player2TiebreakPoints: score.player2TiebreakPoints,
       }));
 
-      // Validate tennis scoring rules
-      const validation = this.scoreValidator.validateMatch(tennisScores, winnerId);
-      if (!validation.isValid) {
-        throw new AppError(
-          `Invalid tennis score: ${validation.errors.join('; ')}`,
-          HTTP_STATUS.BAD_REQUEST,
-          ERROR_CODES.INVALID_INPUT
-        );
+      if (matchFormat === MatchFormat.SUPER_TIEBREAK) {
+        // Super tiebreak: single set, scored entirely as tiebreak points (first to 10, win by 2)
+        if (tennisScores.length !== 1) {
+          throw new AppError(
+            'Super tiebreak match must have exactly one set score',
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.INVALID_INPUT
+          );
+        }
+        const tb = tennisScores[0];
+        const p1 = tb.player1TiebreakPoints ?? 0;
+        const p2 = tb.player2TiebreakPoints ?? 0;
+        const tbMax = Math.max(p1, p2);
+        const tbMin = Math.min(p1, p2);
+        const superTbErrors: string[] = [];
+        if (tbMax < 10) {
+          superTbErrors.push('Super tiebreak winner must reach at least 10 points');
+        }
+        if (tbMax - tbMin < 2) {
+          superTbErrors.push('Super tiebreak must be won by at least 2 points');
+        }
+        if (superTbErrors.length > 0) {
+          throw new AppError(
+            `Invalid super tiebreak score: ${superTbErrors.join('; ')}`,
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.INVALID_INPUT
+          );
+        }
+      } else {
+        // Standard format: validate tennis scoring rules
+        const bestOfFive = matchFormat === MatchFormat.BEST_OF_5_FINAL_SET_TIEBREAK ||
+                           matchFormat === MatchFormat.BEST_OF_5_ADVANTAGE;
+        const allowSuperTiebreak = matchFormat === MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK ||
+                                   matchFormat === MatchFormat.BEST_OF_5_FINAL_SET_TIEBREAK;
+        const formatValidator = new TennisScoreValidator({bestOfFive, requireTiebreakAt6All: true, allowSuperTiebreak});
+        const validation = formatValidator.validateMatch(tennisScores, winnerId);
+        if (!validation.isValid) {
+          throw new AppError(
+            `Invalid tennis score: ${validation.errors.join('; ')}`,
+            HTTP_STATUS.BAD_REQUEST,
+            ERROR_CODES.INVALID_INPUT
+          );
+        }
       }
 
       const scoreRepository = AppDataSource.getRepository(Score);
-      const matchRepository = AppDataSource.getRepository(Match);
       
       // Delete existing scores for this match to prevent duplicates (allow score updates)
       await scoreRepository.delete({matchId: id});

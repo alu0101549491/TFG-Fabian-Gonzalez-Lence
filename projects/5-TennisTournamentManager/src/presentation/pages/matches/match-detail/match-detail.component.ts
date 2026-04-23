@@ -21,6 +21,7 @@ import {type MatchDto} from '@application/dto';
 import {MatchStatus} from '@domain/enumerations/match-status';
 import {Match} from '@domain/entities/match';
 import {UserRole} from '@domain/enumerations/user-role';
+import {MatchFormat} from '@domain/enumerations/match-format';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {EnumFormatPipe} from '@shared/pipes';
 import {TennisScoreValidator, type TennisSetScore} from '@shared/utils/tennis-score-validator';
@@ -102,10 +103,13 @@ export class MatchDetailComponent implements OnInit {
 
   public scoresForm = {
     winnerId: '',
-    sets: [] as { participant1Score: number; participant2Score: number }[],
+    sets: [] as { participant1Score: number; participant2Score: number; tiebreak1: number | null; tiebreak2: number | null }[],
     isRetirement: false,
     retiredParticipantId: '',
   };
+
+  /** Whether the current match uses the super tiebreak format (single tiebreak to 10). */
+  public readonly isSuperTiebreakMatch = computed(() => this.match()?.format === MatchFormat.SUPER_TIEBREAK);
 
   public cancelForm = {
     reason: '',
@@ -183,8 +187,21 @@ export class MatchDetailComponent implements OnInit {
     return [MatchStatus.WALKOVER, MatchStatus.RETIRED, MatchStatus.DEFAULT].includes(status);
   }
 
-  /** Tennis score validator */
-  private readonly scoreValidator = new TennisScoreValidator();
+  /**
+   * Creates a TennisScoreValidator configured for the current match format.
+   *
+   * @returns Configured validator instance
+   */
+  private getScoreValidator(): TennisScoreValidator {
+    const fmt = this.match()?.format as MatchFormat | undefined;
+    return new TennisScoreValidator({
+      bestOfFive: fmt === MatchFormat.BEST_OF_5_FINAL_SET_TIEBREAK || fmt === MatchFormat.BEST_OF_5_ADVANTAGE,
+      allowSuperTiebreak: fmt === MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK ||
+        fmt === MatchFormat.BEST_OF_5_FINAL_SET_TIEBREAK ||
+        fmt === MatchFormat.SHORT_SETS ||
+        fmt === MatchFormat.FAST4,
+    });
+  }
 
   /** Validation errors for score form */
   public scoreValidationErrors = signal<string[]>([]);
@@ -249,9 +266,9 @@ export class MatchDetailComponent implements OnInit {
 
     // Add some default sets for scoring form
     this.scoresForm.sets = [
-      { participant1Score: 0, participant2Score: 0 },
-      { participant1Score: 0, participant2Score: 0 },
-      { participant1Score: 0, participant2Score: 0 },
+      { participant1Score: 0, participant2Score: 0, tiebreak1: null, tiebreak2: null },
+      { participant1Score: 0, participant2Score: 0, tiebreak1: null, tiebreak2: null },
+      { participant1Score: 0, participant2Score: 0, tiebreak1: null, tiebreak2: null },
     ];
   }
 
@@ -469,7 +486,7 @@ export class MatchDetailComponent implements OnInit {
   }
 
   /**
-   * Opens the record scores modal.
+   * Opens the record scores modal, resetting the sets form to match the current match format.
    */
   public openScoresModal(): void {
     const m = this.match();
@@ -480,7 +497,21 @@ export class MatchDetailComponent implements OnInit {
     } else if (m?.participant1?.id) {
       this.scoresForm.winnerId = m.participant1.id;
     }
-    
+
+    // Reset sets based on format
+    if (this.isSuperTiebreakMatch()) {
+      this.scoresForm.sets = [
+        { participant1Score: 0, participant2Score: 0, tiebreak1: null, tiebreak2: null },
+      ];
+    } else {
+      this.scoresForm.sets = [
+        { participant1Score: 0, participant2Score: 0, tiebreak1: null, tiebreak2: null },
+        { participant1Score: 0, participant2Score: 0, tiebreak1: null, tiebreak2: null },
+        { participant1Score: 0, participant2Score: 0, tiebreak1: null, tiebreak2: null },
+      ];
+    }
+
+    this.scoreValidationErrors.set([]);
     this.showScoresModal.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
@@ -664,35 +695,64 @@ export class MatchDetailComponent implements OnInit {
         isRetirement: this.scoresForm.isRetirement,
       });
 
-      // Filter out empty sets and transform to SetScore format
-      const validSets = this.scoresForm.sets
-        .filter(set => set.participant1Score > 0 || set.participant2Score > 0)
-        .map((set, index) => ({
-          setNumber: index + 1,
-          participant1Games: set.participant1Score,
-          participant2Games: set.participant2Score,
-          tiebreakParticipant1: null,
-          tiebreakParticipant2: null,
-        }));
+      const isSuperTiebreak = this.isSuperTiebreakMatch();
+
+      // Build valid sets array based on match format
+      let validSets: { setNumber: number; participant1Games: number; participant2Games: number; tiebreakParticipant1: number | null; tiebreakParticipant2: number | null }[];
+
+      if (isSuperTiebreak) {
+        // Super tiebreak format: single tiebreak with point inputs
+        const tb1 = this.scoresForm.sets[0]?.tiebreak1 ?? 0;
+        const tb2 = this.scoresForm.sets[0]?.tiebreak2 ?? 0;
+        if (tb1 === 0 && tb2 === 0) {
+          throw new Error('Please enter super tiebreak points for both players');
+        }
+        const tbMax = Math.max(tb1, tb2);
+        const tbMin = Math.min(tb1, tb2);
+        if (tbMax < 10) {
+          throw new Error('Super tiebreak winner must reach at least 10 points');
+        }
+        if (tbMax - tbMin < 2) {
+          throw new Error('Super tiebreak must be won by at least 2 points');
+        }
+        const p1Wins = tb1 > tb2;
+        validSets = [{
+          setNumber: 1,
+          participant1Games: p1Wins ? 1 : 0,
+          participant2Games: p1Wins ? 0 : 1,
+          tiebreakParticipant1: tb1,
+          tiebreakParticipant2: tb2,
+        }];
+      } else {
+        // Regular sets with optional per-set tiebreak
+        validSets = this.scoresForm.sets
+          .filter(set => set.participant1Score > 0 || set.participant2Score > 0)
+          .map((set, index) => ({
+            setNumber: index + 1,
+            participant1Games: set.participant1Score,
+            participant2Games: set.participant2Score,
+            tiebreakParticipant1: set.tiebreak1 ?? null,
+            tiebreakParticipant2: set.tiebreak2 ?? null,
+          }));
+
+        if (validSets.length === 0) {
+          throw new Error('Please enter at least one set score');
+        }
+
+        // Validate tennis scoring rules
+        const validation = this.getScoreValidator().validateMatch(validSets);
+        console.log('[Match Detail] Score validation result:', validation);
+        if (!validation.isValid) {
+          this.scoreValidationErrors.set(validation.errors);
+          this.errorMessage.set('Invalid tennis score. Please check the errors below and correct the scores.');
+          return;
+        }
+      }
 
       console.log('[Match Detail] validSets after filtering:', validSets);
 
-      if (validSets.length === 0) {
-        throw new Error('Please enter at least one set score');
-      }
-
       if (!this.scoresForm.winnerId) {
         throw new Error('Please select a winner');
-      }
-
-      // Validate tennis scoring rules
-      const validation = this.scoreValidator.validateMatch(validSets);
-      console.log('[Match Detail] Score validation result:', validation);
-      
-      if (!validation.isValid) {
-        this.scoreValidationErrors.set(validation.errors);
-        this.errorMessage.set('Invalid tennis score. Please check the errors below and correct the scores.');
-        return;
       }
 
       console.log('[Match Detail] Calling matchService.recordResult with:', {
@@ -822,7 +882,7 @@ await this.loadMatch(this.match()!.id);
    */
   public addSet(): void {
     if (this.scoresForm.sets.length < 5) {
-      this.scoresForm.sets.push({ participant1Score: 0, participant2Score: 0 });
+      this.scoresForm.sets.push({ participant1Score: 0, participant2Score: 0, tiebreak1: null, tiebreak2: null });
     }
   }
 

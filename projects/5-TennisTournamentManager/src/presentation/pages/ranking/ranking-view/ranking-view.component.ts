@@ -12,13 +12,15 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {Component, OnInit, signal, inject} from '@angular/core';
+import {Component, OnInit, signal, computed, inject} from '@angular/core';
 import {CommonModule, Location} from '@angular/common';
 import {RouterModule} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {RankingService} from '@application/services';
 import {type RankingDto} from '@application/dto';
 import {RankingSystem, getRankingSystemDisplayName} from '@domain/enumerations/ranking-system';
+import {UserRole} from '@domain/enumerations/user-role';
+import {AuthStateService} from '@presentation/services/auth-state.service';
 import templateHtml from './ranking-view.component.html?raw';
 import componentStyles from './ranking-view.component.css?inline';
 
@@ -35,6 +37,7 @@ import componentStyles from './ranking-view.component.css?inline';
 export class RankingViewComponent implements OnInit {
   /** Services */
   private readonly rankingService = inject(RankingService);
+  private readonly authStateService = inject(AuthStateService);
   private readonly location = inject(Location);
 
   /** Rankings data */
@@ -42,6 +45,12 @@ export class RankingViewComponent implements OnInit {
 
   /** Loading state */
   public isLoading = signal(false);
+
+  /** Whether a recalculation is in progress */
+  public isRecalculating = signal(false);
+
+  /** Success message for recalculation */
+  public recalculateMessage = signal<string | null>(null);
 
   /** Error message */
   public errorMessage = signal<string | null>(null);
@@ -51,6 +60,15 @@ export class RankingViewComponent implements OnInit {
 
   /** Available ranking systems */
   public readonly systems = Object.values(RankingSystem);
+
+  /** Whether the current user is an admin. */
+  public readonly isAdmin = computed(() => {
+    const user = this.authStateService.getCurrentUser();
+    return user?.role === UserRole.SYSTEM_ADMIN || user?.role === UserRole.TOURNAMENT_ADMIN;
+  });
+
+  /** Math reference for template usage. */
+  public readonly Math = Math;
 
   /**
    * Gets the display name for a ranking system.
@@ -92,6 +110,30 @@ export class RankingViewComponent implements OnInit {
    */
   public changeSystem(): void {
     void this.loadRankings();
+  }
+
+  /**
+   * Triggers a global ranking recalculation (admin-only).
+   * Re-sorts all global rankings by points and updates their positions.
+   */
+  public async recalculateRankings(): Promise<void> {
+    if (!this.isAdmin()) return;
+    this.isRecalculating.set(true);
+    this.recalculateMessage.set(null);
+    this.errorMessage.set(null);
+
+    try {
+      await this.rankingService.recalculateRankings();
+      this.recalculateMessage.set('Rankings recalculated successfully.');
+      await this.loadRankings();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to recalculate rankings';
+      this.errorMessage.set(message);
+    } finally {
+      this.isRecalculating.set(false);
+      // Auto-clear the success message
+      setTimeout(() => this.recalculateMessage.set(null), 4000);
+    }
   }
 
   /**

@@ -347,6 +347,10 @@ export class TournamentDetailComponent implements OnInit {
     categoryId: '',
     bracketType: BracketType.SINGLE_ELIMINATION,
     matchFormat: MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK,
+    seedingStrategy: 'NONE' as 'NONE' | 'TOP_SEEDED' | 'RANDOM',
+    consolationType: 'NONE' as 'NONE' | 'CONSOLATION' | 'DOUBLE_ELIMINATION',
+    groupSize: 4 as number,
+    byeAssignment: 'TOP_SEEDS' as 'TOP_SEEDS' | 'RANDOM',
   };
 
   /** Show bracket generation section */
@@ -1612,6 +1616,10 @@ export class TournamentDetailComponent implements OnInit {
       this.bracketForm.categoryId = '';
       this.bracketForm.bracketType = BracketType.SINGLE_ELIMINATION;
       this.bracketForm.matchFormat = MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK;
+      this.bracketForm.seedingStrategy = 'NONE';
+      this.bracketForm.consolationType = 'NONE';
+      this.bracketForm.groupSize = 4;
+      this.bracketForm.byeAssignment = 'TOP_SEEDS';
     }
   }
 
@@ -1822,6 +1830,10 @@ export class TournamentDetailComponent implements OnInit {
           categoryId: this.bracketForm.categoryId,
           bracketType: this.bracketForm.bracketType,
           matchFormat: this.bracketForm.matchFormat,
+          seedingStrategy: this.bracketForm.seedingStrategy,
+          consolationType: this.bracketForm.consolationType,
+          groupSize: this.bracketForm.groupSize,
+          byeAssignment: this.bracketForm.byeAssignment,
         },
         currentUser.id
       );
@@ -1831,7 +1843,11 @@ export class TournamentDetailComponent implements OnInit {
       this.bracketForm.categoryId = '';
       this.bracketForm.bracketType = BracketType.SINGLE_ELIMINATION;
       this.bracketForm.matchFormat = MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK;
-      
+      this.bracketForm.seedingStrategy = 'NONE';
+      this.bracketForm.consolationType = 'NONE';
+      this.bracketForm.groupSize = 4;
+      this.bracketForm.byeAssignment = 'TOP_SEEDS';
+
       // Navigate to the newly created bracket to show it with the correct format
       void this.router.navigate(['/brackets', newBracket.id]);
     } catch (error) {
