@@ -99,6 +99,74 @@
       </div>
     </div>
 
+    <!-- Media & Links Section -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">🖼️</div>
+        <h2 class="section-title">Media & Links</h2>
+      </div>
+      
+      <div class="form-grid">
+        <!-- Image Upload -->
+        <div class="form-group full-width">
+          <label class="form-label" for="imageFile">Image <span class="hint">(optional, max 5MB)</span></label>
+          <input
+            id="imageFile"
+            type="file"
+            class="form-input"
+            accept="image/*"
+            (change)="onImageSelect($event)"
+          />
+          <small class="form-hint">Supported formats: JPG, PNG, GIF, WebP</small>
+          
+          <!-- Image Preview -->
+          @if (imagePreview()) {
+            <div class="image-preview-container">
+              <img [src]="imagePreview()" alt="Preview" class="image-preview" />
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                (click)="clearImage()"
+              >
+                Remove Image
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- External Link -->
+        <div class="form-group full-width">
+          <label class="form-label" for="externalLink">External Link <span class="hint">(optional)</span></label>
+          <input
+            id="externalLink"
+            type="url"
+            class="form-input"
+            [value]="formData().externalLink || ''"
+            (input)="onLinkUrlChange($event)"
+            placeholder="https://example.com"
+          />
+          <small class="form-hint">Add a link for users to learn more or take action</small>
+        </div>
+
+        <!-- Link Text (only show if link URL is provided) -->
+        @if (formData().externalLink && formData().externalLink.trim()) {
+          <div class="form-group full-width">
+            <label class="form-label" for="linkText">Link Button Text <span class="hint">(optional)</span></label>
+            <input
+              id="linkText"
+              type="text"
+              class="form-input"
+              [value]="linkText()"
+              (input)="updateLinkText($any($event.target).value)"
+              placeholder="Learn More"
+              maxlength="50"
+            />
+            <small class="form-hint">Customize the text shown on the link button (default: "Learn More")</small>
+          </div>
+        }
+      </div>
+    </div>
+
     <!-- Settings Section -->
     <div class="form-section">
       <div class="section-header">

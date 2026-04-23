@@ -38,25 +38,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
    - **Result**: Proper winner recording for non-completion scenarios, enables accurate bracket advancement
    - **Bug Fixed**: Winner now persists correctly to database and updates standings (see detailed bug fix section below)
 
-**Time Spent:** ~4.5 hours (estimated 3-7 hours total for first 4 tasks, including bug fix)
+5. ✅ **Default Category Creation** - Auto-creates default "Open" category when tournament has no categories
+   - **Issue**: Cannot add participants to tournaments without categories; admins had to manually create categories first
+   - **Solution**: System automatically creates default "Open" category (gender: OPEN, age: OPEN) when loading tournament categories if none exist
+   - **Trigger**: Automatic on tournament detail page load when admin views tournament with 0 categories
+   - **Settings**: maxParticipants inherited from tournament settings, fully editable after creation
+   - **Impact**: Eliminates setup friction; participants can register immediately after tournament creation
 
-**Files Modified:**
-- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` - Added edit modal state, methods, and acceptance type labels
-- `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html` - Replaced inline editing with Edit button, added unified edit modal
-- `src/presentation/pages/matches/match-detail/match-detail.component.ts` - Added winner selection logic and validation
-- `src/presentation/pages/matches/match-detail/match-detail.component.html` - Added conditional winner dropdown
-- `src/application/dto/match.dto.ts` - Added `winnerId` field to `UpdateMatchStatusDto`
-- `src/application/services/match.service.ts` - Updated `updateStatus()` to handle winner and update standings
-- `src/presentation/pages/matches/match-list/match-list.component.ts` - Added `formatScore()` method for better score display
-- `src/presentation/pages/matches/match-list/match-list.component.html` - Updated score display to use `formatScore()` method
+6. ✅ **Image Upload for Announcements** - Add images to tournament announcements with preview
+   - **Issue**: Announcements were text-only, limiting visual communication effectiveness
+   - **Solution**: Added image upload field with live preview in announcement creation form
+   - **Features**: File type validation (JPG, PNG, GIF, WebP), size limit (5MB), preview before submission, remove image option
+   - **Display**: Images show in announcement cards and full-size in details modal
+   - **Note**: Currently stores as data URL; production should use CDN/cloud storage
+
+7. ✅ **External Link Button for Announcements** - Add clickable links with custom button text
+   - **Issue**: No way to link announcements to external resources (registration forms, rules documents, live streams)
+   - **Solution**: Added external link URL and custom button text fields
+   - **Features**: 
+     - Link URL field with validation
+     - Optional custom button text (defaults to "Learn More")
+     - Displays as prominent button in announcement details modal
+     - Opens in new tab with security attributes (noopener noreferrer)
+   - **Backend**: Added `linkText` column to announcements table
+   - **Impact**: Announcements can now drive traffic to external resources with clear calls-to-action
+
+**Time Spent:** ~11 hours total for Phase 4 (estimated 10-14 hours)
+
+**All Phase 4 Files Modified:**
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` - Edit modal, default category creation
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html` - Unified edit modal UI
+- `src/presentation/pages/matches/match-detail/match-detail.component.ts` - Winner selection logic
+- `src/presentation/pages/matches/match-detail/match-detail.component.html` - Winner dropdown UI
+- `src/presentation/pages/matches/match-list/match-list.component.ts` - Score formatting
+- `src/presentation/pages/matches/match-list/match-list.component.html` - Score display
+- `src/presentation/pages/announcements/announcement-create/announcement-create.component.ts` - Image upload and link text
+- `src/presentation/pages/announcements/announcement-create/announcement-create.component.html` - Image/link fields UI
+- `src/presentation/pages/announcements/announcement-create/announcement-create.component.css` - Image preview styles
+- `src/presentation/pages/announcements/announcement-list/announcement-list.component.html` - Image and link button display
+- `src/presentation/pages/announcements/announcement-list/announcement-list.component.css` - Image and button styles
+- `src/application/dto/match.dto.ts` - Added winnerId to UpdateMatchStatusDto
+- `src/application/dto/announcement.dto.ts` - Added linkText field
+- `src/application/services/match.service.ts` - Winner persistence logic
+- `backend/src/domain/entities/announcement.entity.ts` - Added linkText column
+
+**Phase 4 Complete!** 7/7 tasks finished (100%)
 
 **Bug Fixes:**
-- ✅ Fixed winner not being saved when updating match status to WO/RET/DEF (added `winnerId` to DTO, updated service to persist winner and update standings)
+- ✅ Fixed winner not being saved when updating match status to WO/RET/DEF
+- ✅ Fixed match list showing "Not started" for WALKOVER matches (now shows "—")
 
 **Next Phase 4 Tasks:**
-- [ ] Add default category creation
-- [ ] Add image upload to announcement form
-- [ ] Add link fields to announcement form
+- All Phase 4 tasks completed! 🎉
+
+---
 
 ---
 

@@ -77,6 +77,9 @@ export class Announcement {
   @Column('varchar', {length: 500, nullable: true})
   public externalLink!: string | null;
 
+  @Column('varchar', {length: 50, nullable: true})
+  public linkText!: string | null;
+
   @Column('simple-array', {nullable: true})
   public tags!: string[] | null;
 

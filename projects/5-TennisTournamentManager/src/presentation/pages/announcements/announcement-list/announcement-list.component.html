@@ -245,6 +245,17 @@
           </div>
         }
 
+        <!-- Image -->
+        @if (selectedAnnouncement()!.imageUrl) {
+          <div class="modal-image">
+            <img 
+              [src]="selectedAnnouncement()!.imageUrl" 
+              [alt]="selectedAnnouncement()!.title"
+              class="announcement-image"
+            />
+          </div>
+        }
+
         <!-- Full Content -->
         @if ((selectedAnnouncement()!.longText && selectedAnnouncement()!.longText.trim()) || 
              (selectedAnnouncement()!.content && selectedAnnouncement()!.content.trim())) {
@@ -268,16 +279,18 @@
           </div>
         }
 
-        <!-- External Link -->
+        <!-- External Link Button -->
         @if (selectedAnnouncement()!.externalLink) {
-          <div class="modal-link">
+          <div class="modal-link-button">
             <a
-              class="external-link-full"
+              class="btn-link"
               [href]="selectedAnnouncement()!.externalLink"
               target="_blank"
               rel="noopener noreferrer"
             >
-              🔗 {{ selectedAnnouncement()!.externalLink }}
+              <span>🔗</span>
+              <span>{{ selectedAnnouncement()!.linkText || 'Learn More' }}</span>
+              <span>→</span>
             </a>
           </div>
         }

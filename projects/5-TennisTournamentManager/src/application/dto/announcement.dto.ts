@@ -45,6 +45,9 @@ export interface CreateAnnouncementDto {
   /** Optional external link */
   externalLink?: string;
   
+  /** Optional link button text (default: "Learn More") */
+  linkText?: string;
+  
   /** Tags for categorization (FR48) */
   tags?: string[];
   
@@ -73,6 +76,7 @@ export interface AnnouncementDto {
   content: string; // Legacy field
   imageUrl: string | null;
   externalLink: string | null;
+  linkText: string | null;
   tags: string[];
   isPublished: boolean;
   isPinned: boolean;

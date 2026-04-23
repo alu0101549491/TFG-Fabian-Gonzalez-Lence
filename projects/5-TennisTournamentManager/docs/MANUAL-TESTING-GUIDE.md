@@ -1249,6 +1249,308 @@ npm run dev
 
 ---
 
+### Feature 19: Default Category Creation
+
+**What was changed:**
+- System automatically creates default "Open" category when loading tournament with 0 categories
+- Eliminates manual category setup step before participant registration
+- Only triggers for administrators viewing tournament detail page
+
+**Issue (Before):**
+- Couldn't register participants without manually creating categories first
+- Extra friction in tournament setup workflow
+- Confusing error messages when trying to register without categories
+
+**After:**
+- Default category auto-created on demand when admin views tournament with no categories
+- Category settings: name="Open", gender=OPEN, ageGroup=OPEN, maxParticipants from tournament
+- Console logs inform admin of auto-creation
+- Fully editable after creation (can rename, adjust settings, or delete)
+
+**How to test:**
+
+1. **Setup:**
+   - Log in as system admin or tournament admin
+   - Create a NEW tournament (don't add any categories)
+   - Complete tournament creation
+
+2. **Test Auto-Creation:**
+   - Navigate to tournament detail page
+   - **Verify:** Page loads successfully
+   - Open browser console (F12 → Console tab)
+   - **Verify:** Console shows: "⚠️ No categories found. Creating default 'Open' category..."
+   - **Verify:** Console shows: "✅ Default category created: [category object]"
+
+3. **Verify Category in UI:**
+   - Look at "Categories" section on tournament detail page
+   - **Verify:** One category listed named "Open"
+   - **Verify:** Category shows: Gender: OPEN, Age Group: OPEN
+   - **Verify:** maxParticipants matches tournament's maxParticipants setting
+
+4. **Test Participant Registration:**
+   - Open tournament for registration
+   - Register a participant (as player or add external participant as admin)
+   - Select the "Open" category
+   - **Verify:** Registration succeeds
+   - **Verify:** Participant appears in participant list
+
+5. **Test Category Editability:**
+   - As admin, click "Edit" on the default category (if edit UI exists)
+   - OR use "Add Category" to create additional categories
+   - **Verify:** Default category is fully editable like any other category
+
+6. **Test Multiple Page Loads:**
+   - Refresh tournament detail page
+   - **Verify:** Default category still exists (not recreated)
+   - **Verify:** Console does NOT show creation message (category already exists)
+
+7. **Test Non-Admin User:**
+   - Log in as regular player/participant
+   - View same tournament
+   - **Verify:** No default category created (only admins trigger creation)
+   - **Verify:** Existing default category is visible
+
+8. **Test Tournament with Existing Categories:**
+   - Navigate to a tournament that already has categories
+   - **Verify:** No default category created
+   - **Verify:** Existing categories shown normally
+
+**Expected Result:**
+- ✅ Default category auto-created only when admin views tournament with 0 categories
+- ✅ Category settings appropriate for general use (Open/Open)
+- ✅ Console logs inform admin of action
+- ✅ Participants can register immediately after category creation
+- ✅ Category is editable/deletable like manual categories
+- ✅ No duplicate creation on page refresh
+- ✅ Non-admins don't trigger creation
+
+---
+
+### Feature 20: Image Upload for Announcements
+
+**What was changed:**
+- Added image upload field to announcement creation/edit forms
+- Image preview displays before submission
+- Uploaded images shown in announcement cards and details modal
+
+**Issue (Before):**
+- Announcements were text-only
+- Limited visual communication effectiveness
+- No way to share tournament graphics, schedules, sponsor logos
+
+**After:**
+- File upload input with validation (image types, 5MB max)
+- Live preview shows selected image before submission
+- Remove image button for easy changes
+- Images display full-width in announcement details modal
+- Note: Currently uses data URLs; production should use CDN/cloud storage
+
+**How to test:**
+
+1. **Setup:**
+   - Log in as tournament admin
+   - Navigate to tournament detail page
+   - Click "Create Announcement" button
+
+2. **Test Image Upload Field:**
+   - Scroll to "Media & Links" section
+   - **Verify:** "Image" field present with file input
+   - **Verify:** Label shows: "Image (optional, max 5MB)"
+   - **Verify:** Help text: "Supported formats: JPG, PNG, GIF, WebP"
+   - **Verify:** File input accepts image files
+
+3. **Test Valid Image Upload:**
+   - Click "Choose File" button
+   - Select a valid image file (JPG/PNG, < 5MB)
+   - **Verify:** Image preview appears below file input
+   - **Verify:** Preview shows correct image
+   - **Verify:** "Remove Image" button appears
+
+4. **Test Image Preview Sizing:**
+   - Upload various image sizes (portrait, landscape, square)
+   - **Verify:** Preview contained within reasonable dimensions
+   - **Verify:** Image not stretched or distorted
+   - **Verify:** Preview has rounded corners and shadow
+
+5. **Test Remove Image:**
+   - Upload an image
+   - Click "Remove Image" button
+   - **Verify:** Preview disappears
+   - **Verify:** File input resets (no filename shown)
+   - **Verify:** Can upload different image
+
+6. **Test Invalid File Type:**
+   - Try uploading a non-image file (PDF, TXT, etc.)
+   - **Verify:** Error message appears: "Please select a valid image file"
+   - **Verify:** No preview shown
+   - **Verify:** Image not uploaded
+
+7. **Test File Size Limit:**
+   - Try uploading image > 5MB
+   - **Verify:** Error message: "Image size must be less than 5MB"
+   - **Verify:** No preview shown
+   - **Verify:** Image not uploaded
+
+8. **Test Announcement Submission with Image:**
+   - Fill announcement title and content
+   - Upload an image
+   - Click "Create Announcement"
+   - **Verify:** Success message appears
+   - **Verify:** Redirected to announcements list
+
+9. **Test Image Display in List:**
+   - View announcements list
+   - Find created announcement
+   - **Verify:** Announcement card may show image thumbnail (depends on list design)
+
+10. **Test Image Display in Modal:**
+    - Click announcement to open details modal
+    - **Verify:** Image displays in modal body
+    - **Verify:** Image full-width, max-height 400px
+    - **Verify:** Image has rounded corners and shadow
+    - **Verify:** Image doesn't overflow modal
+
+11. **Test Announcement Without Image:**
+    - Create announcement without uploading image
+    - **Verify:** Announcement creates successfully
+    - **Verify:** No broken image placeholders in display
+
+**Expected Result:**
+- ✅ Image upload field present in creation form
+- ✅ File type validation prevents non-images
+- ✅ Size validation prevents oversized files
+- ✅ Live preview shows selected image
+- ✅ Remove button clears image
+- ✅ Images display correctly in announcement modal
+- ✅ Works with all supported formats (JPG, PNG, GIF, WebP)
+- ✅ Announcements without images still work
+
+---
+
+### Feature 21: External Link Button for Announcements
+
+**What was changed:**
+- Added external link URL and custom button text fields
+- Link displays as prominent call-to-action button in announcement details
+- Opens in new tab with security attributes
+
+**Issue (Before):**
+- No way to link announcements to external resources
+- Couldn't drive traffic to registration forms, rule documents, live streams
+- Plain text URLs looked unprofessional
+
+**After:**
+- externalLink field (URL input with validation)
+- linkText field (custom button label, defaults to "Learn More")
+- Link button styled as primary CTA with gradient and hover effects
+- Backend database includes linkText column for persistence
+
+**How to test:**
+
+1. **Setup:**
+   - Log in as tournament admin
+   - Navigate to tournament detail page
+   - Click "Create Announcement"
+
+2. **Test Link Fields Presence:**
+   - Scroll to "Media & Links" section
+   - **Verify:** "External Link" field present (type=url)
+   - **Verify:** Label: "External Link (optional)"
+   - **Verify:** Placeholder: "https://example.com"
+   - **Verify:** Help text: "Add a link for users to learn more or take action"
+
+3. **Test Link Text Field Conditional Display:**
+   - With External Link field empty
+   - **Verify:** "Link Button Text" field NOT visible
+   - Type a URL in External Link field
+   - **Verify:** "Link Button Text" field appears below
+   - **Verify:** Label: "Link Button Text (optional)"
+   - **Verify:** Placeholder: "Learn More"
+   - **Verify:** Help text: "Customize the text shown on the link button..."
+
+4. **Test Link Without Custom Text:**
+   - Enter URL: "https://example.com/rules"
+   - Leave Link Button Text empty
+   - Fill title and content fields
+   - Click "Create Announcement"
+   - Open announcement details modal
+   - **Verify:** Link button appears with text "Learn More"
+
+5. **Test Link With Custom Text:**
+   - Create new announcement
+   - Enter URL: "https://youtube.com/tournament-stream"
+   - Enter Link Button Text: "Watch Live Stream"
+   - Submit announcement
+   - Open details modal
+   - **Verify:** Button shows "Watch Live Stream" (not "Learn More")
+
+6. **Test Link Button Styling:**
+   - View announcement with link in modal
+   - **Verify:** Button has gradient blue background
+   - **Verify:** White text color
+   - **Verify:** Icon 🔗 before text
+   - **Verify:** Arrow → after text
+   - **Verify:** Centered in modal
+   - Hover over button
+   - **Verify:** Button raises slightly (transform effect)
+   - **Verify:** Shadow intensifies on hover
+
+7. **Test Link Opens in New Tab:**
+   - Click link button in announcement modal
+   - **Verify:** Link opens in NEW tab/window
+   - **Verify:** Original announcement modal stays open
+   - Check new tab's HTML (inspect element)
+   - **Verify:** Link has target="_blank"
+   - **Verify:** Link has rel="noopener noreferrer" (security)
+
+8. **Test URL Validation:**
+   - Try entering invalid URL: "not-a-url"
+   - Try submitting
+   - **Verify:** Browser shows URL validation error
+   - Enter valid URL: "https://example.com"
+   - **Verify:** Validation passes
+
+9. **Test Link Text Length Limit:**
+   - Enter very long custom text (> 50 chars)
+   - **Verify:** Input truncates at 50 characters
+   - **Verify:** Remaining text not accepted
+
+10. **Test Announcement Without Link:**
+    - Create announcement
+    - Leave External Link field empty
+    - Submit announcement
+    - Open details modal
+    - **Verify:** No link button appears
+    - **Verify:** No broken/empty button elements
+
+11. **Test Link Persistence:**
+    - Create announcement with link and custom text
+    - Close and reopen details modal
+    - **Verify:** Link button still shows with correct text
+    - Refresh page
+    - **Verify:** Link persists after page reload
+
+12. **Test Edit Announcement with Link:**
+    - Edit existing announcement with link
+    - Change link text
+    - Save changes
+    - **Verify:** Updated link text displays
+
+**Expected Result:**
+- ✅ External link field present with URL validation
+- ✅ Link text field appears conditionally when URL entered
+- ✅ Default text "Learn More" used if custom text empty
+- ✅ Link button styled prominently as CTA
+- ✅ Button includes icons (🔗 and →)
+- ✅ Hover effects enhance interactivity
+- ✅ Links open in new tab with security attributes
+- ✅ Custom text limited to 50 characters
+- ✅ Announcements without links work normally
+- ✅ Links persist across page reloads
+- ✅ Backend stores linkText in database
+
+---
+
 ## Reporting Issues
 
 If any feature does not work as described:

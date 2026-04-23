@@ -73,6 +73,12 @@ export class AnnouncementCreateComponent implements OnInit {
   /** Custom tag input */
   public customTag = signal('');
 
+  /** Image preview URL */
+  public imagePreview = signal<string | null>(null);
+
+  /** Link text for external link */
+  public linkText = signal('');
+
   /** Loading state */
   public isSubmitting = signal(false);
 
@@ -180,6 +186,7 @@ export class AnnouncementCreateComponent implements OnInit {
       const payload: CreateAnnouncementDto = {
         ...data,
         tags: this.selectedTags(),
+        linkText: this.linkText() || undefined,
       };
 
       console.log('Creating announcement with payload:', payload);
@@ -261,6 +268,78 @@ export class AnnouncementCreateComponent implements OnInit {
    */
   public getExpirationDate(): string {
     return this.formatDateForInput(this.formData().expirationDate);
+  }
+
+  /**
+   * Handles image file selection and preview.
+   *
+   * @param event - File input change event
+   */
+  public onImageSelect(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    
+    if (!file) {
+      this.imagePreview.set(null);
+      this.updateField('imageUrl', '');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      this.errorMessage.set('Please select a valid image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      this.errorMessage.set('Image size must be less than 5MB');
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      this.imagePreview.set(dataUrl);
+      // In a real implementation, you would upload to a server/CDN
+      // For now, we'll store the data URL (not recommended for production)
+      this.updateField('imageUrl', dataUrl);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /**
+   * Clears selected image.
+   */
+  public clearImage(): void {
+    this.imagePreview.set(null);
+    this.updateField('imageUrl', '');
+    // Reset file input
+    const fileInput = document.getElementById('imageFile') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
+
+  /**
+   * Handles external link URL change.
+   *
+   * @param event - Input event
+   */
+  public onLinkUrlChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.updateField('externalLink', value);
+  }
+
+  /**
+   * Updates link text.
+   *
+   * @param text - Link display text
+   */
+  public updateLinkText(text: string): void {
+    this.linkText.set(text);
   }
 
   /**

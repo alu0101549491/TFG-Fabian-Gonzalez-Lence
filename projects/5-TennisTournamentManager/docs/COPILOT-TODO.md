@@ -226,9 +226,10 @@
 
 ---
 
-## Phase 4: Form Improvements (3-5 hours each) 📝
+## Phase 4: Form Improvements ✅ COMPLETE (3-5 hours each) 📝
 
 ### Priority: MEDIUM - Better data entry
+### Status: **7/7 tasks completed (100%)** - ~11 hours total
 
 - [x] **Consolidate participant edit into single form** ✅ COMPLETED (2026-04-23)
   - **Issue:** Multiple windows make editing confusing
@@ -275,12 +276,19 @@
   - **Estimated:** 3 hours → **Actual:** 1.5 hours (feature) + 0.5 hours (bug fix) = 2 hours total
   - **Test:** Mark match as RETIRED, verify winner selection required and persists correctly
 
-- [ ] **Add default category creation**
+- [x] **Add default category creation** ✅ COMPLETED (2026-04-23)
   - **Issue:** Can't add external participants if no categories exist
-  - **Files:** `ParticipantService`, category management
-  - **Fix:** Create default "Open" category automatically, add validation
-  - **Estimated:** 2 hours
-  - **Test:** Create tournament without categories, add participant, verify works
+  - **Files:** TournamentDetailComponent, CategoryService
+  - **Fix:** ✅ Auto-creates default "Open" category when loading tournament with 0 categories
+  - **Implementation:**
+    - Modified `loadCategories()` method to check if categories array is empty
+    - Automatically creates default category with: name="Open", gender=OPEN, ageGroup=OPEN, maxParticipants from tournament
+    - Only triggers for admins viewing tournament
+    - Console logs inform admin of auto-creation
+    - Falls back gracefully if creation fails
+    - Eliminates manual category setup step for simple tournaments
+  - **Estimated:** 2 hours → **Actual:** 1.5 hours
+  - **Test:** Create tournament, don't add categories, view tournament detail as admin, verify "Open" category auto-created
 
 - [x] **Add full acceptance status dropdown** ✅ COMPLETED (2026-04-23)
   - **Issue:** Can only change status to accepted/rejected, not WC, SE, LL, etc.
@@ -295,19 +303,36 @@
   - **Estimated:** 2 hours → **Actual:** Included in task 1 (same implementation)
   - **Test:** Change participant status to WC, SE, LL, verify all options work
 
-- [ ] **Add image upload to announcement form**
+- [x] **Add image upload to announcement form** ✅ COMPLETED (2026-04-23)
   - **Issue:** Can't add images to announcements
-  - **Files:** `AnnouncementCreateComponent`
-  - **Fix:** Add file upload field with preview, store URL in imageUrl field
-  - **Estimated:** 4 hours
-  - **Test:** Create announcement with image, verify displays correctly
+  - **Files:** AnnouncementCreateComponent, AnnouncementListComponent, announcement.dto, announcement.entity
+  - **Fix:** ✅ Added file upload field with preview, stores URL in imageUrl field
+  - **Implementation:**
+    - Added image file input with accept="image/*"
+    - Created `onImageSelect()` method with validation (file type, 5MB max size)
+    - Image preview component with remove button
+    - Stores as data URL (Note: production should use CDN/cloud storage)
+    - Updated announcement display to show images in modal
+    - Added CSS styles for image preview container and announcement image display
+    - Images display full-width in announcement details modal with max-height 400px
+  - **Estimated:** 4 hours → **Actual:** 3 hours
+  - **Test:** Create announcement with image, verify preview shows, submit, verify displays correctly in list and modal
 
-- [ ] **Add link fields to announcement form**
+- [x] **Add link fields to announcement form** ✅ COMPLETED (2026-04-23)
   - **Issue:** Can't add external links to announcements
-  - **Files:** `AnnouncementCreateComponent`, display component
-  - **Fix:** Add linkUrl and linkText fields, show as button in display
-  - **Estimated:** 2 hours
-  - **Test:** Create announcement with link, verify "Learn More" button appears
+  - **Files:** AnnouncementCreateComponent, AnnouncementListComponent, announcement.dto, announcement.entity (backend)
+  - **Fix:** ✅ Added externalLink (URL) and linkText (button label) fields, shows as button in display
+  - **Implementation:**
+    - Added externalLink input field (type="url") with placeholder
+    - Added conditional linkText input (only shows when externalLink has value)
+    - Default button text: "Learn More" if linkText not provided
+    - Backend: Added `linkText` column (VARCHAR(50), nullable) to announcements table
+    - Frontend DTO: Added linkText to CreateAnnouncementDto and AnnouncementDto
+    - Updated announcement display with prominent link button
+    - Button styled as primary CTA with gradient background, hover effects
+    - Opens in new tab with security attributes (target="_blank" rel="noopener noreferrer")
+  - **Estimated:** 2 hours → **Actual:** 2.5 hours
+  - **Test:** Create announcement with link and custom text, verify "Learn More" button appears with correct text
 
 ---
 
