@@ -1184,6 +1184,40 @@
                       </div>
                     </div>
 
+                    <!-- Match Format Selection -->
+                    <div class="form-group">
+                      <label class="form-label" style="display: block; margin-bottom: 0.75rem; font-weight: 500;">
+                        Match Format <span style="color: red;">*</span>
+                      </label>
+                      
+                      <div style="display: grid; gap: 0.75rem;">
+                        @for (format of matchFormats; track format) {
+                          <label 
+                            style="display: flex; align-items: start; padding: 1rem; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                            [style.border-color]="bracketForm.matchFormat === format ? 'var(--primary-color, #4a90e2)' : '#ddd'"
+                            [style.background-color]="bracketForm.matchFormat === format ? 'rgba(var(--primary-rgb, 74, 144, 226), 0.05)' : 'transparent'"
+                          >
+                            <input
+                              type="radio"
+                              [(ngModel)]="bracketForm.matchFormat"
+                              [value]="format"
+                              name="matchFormat"
+                              required
+                              style="margin-right: 0.75rem; margin-top: 0.25rem;"
+                            />
+                            <div>
+                              <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                {{ getMatchFormatInfo(format).label }}
+                              </div>
+                              <div style="font-size: 0.875rem; color: #666;">
+                                {{ getMatchFormatInfo(format).description }}
+                              </div>
+                            </div>
+                          </label>
+                        }
+                      </div>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
                       <button 

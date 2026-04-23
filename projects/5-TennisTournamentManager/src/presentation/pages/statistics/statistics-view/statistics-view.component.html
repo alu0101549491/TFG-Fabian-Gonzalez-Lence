@@ -9,9 +9,19 @@
       </button>
 
       <div class="statistics-header">
+        @if (tournamentStateService.currentTournamentLogo(); as logoUrl) {
+          <img 
+            [src]="logoUrl" 
+            [alt]="tournament()?.name + ' logo'" 
+            class="tournament-logo"
+          />
+        }
         <h1 class="statistics-title">📊 Player Statistics</h1>
+        @if (tournament(); as tournamentData) {
+          <p class="statistics-subtitle">{{ tournamentData.name }}</p>
+        }
         @if (statistics() && statistics()!.participantName) {
-          <p class="statistics-subtitle">{{ statistics()!.participantName }}</p>
+          <p class="statistics-description">{{ statistics()!.participantName }}</p>
         }
       </div>
     </div>

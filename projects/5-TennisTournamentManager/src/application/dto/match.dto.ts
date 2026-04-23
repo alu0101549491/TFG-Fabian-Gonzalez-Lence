@@ -58,6 +58,7 @@ export interface MatchDto {
   winnerId: string | null;
   winnerTeamId?: string | null;
   status: MatchStatus;
+  format?: string;
   scheduledTime: Date | null;
   startTime: Date | null;
   endTime: Date | null;

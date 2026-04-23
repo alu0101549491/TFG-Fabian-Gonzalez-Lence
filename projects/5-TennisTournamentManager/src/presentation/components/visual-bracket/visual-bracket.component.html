@@ -114,6 +114,9 @@
                     <span class="status-badge status-{{ match.status.toLowerCase() }}">
                       {{ match.status }}
                     </span>
+                    <span class="format-badge">
+                      {{ getMatchFormatDisplay(match.format) }}
+                    </span>
                   </div>
                 </div>
               }
@@ -139,9 +142,14 @@
               >
                 <div class="match-header">
                   <span class="match-number">Match {{ match.matchNumber }}</span>
-                  <span class="status-badge status-{{ match.status.toLowerCase() }}">
-                    {{ match.status }}
-                  </span>
+                  <div class="match-badges">
+                    <span class="status-badge status-{{ match.status.toLowerCase() }}">
+                      {{ match.status }}
+                    </span>
+                    <span class="format-badge">
+                      {{ getMatchFormatDisplay(match.format) }}
+                    </span>
+                  </div>
                 </div>
 
                 <div class="match-participants">

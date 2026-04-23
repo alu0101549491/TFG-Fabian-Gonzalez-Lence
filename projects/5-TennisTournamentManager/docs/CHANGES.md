@@ -8,28 +8,440 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### 🎉 Phase 3 Completion (2026-04-23)
+
+**Phase 3 Goals:** Polish, UI improvements, and bracket visualization enhancements
+
+**Completed Features:**
+1. ✅ **Seed Numbers & Entry Status in Brackets** - Players see their seedings (#1-8) and acceptance type badges (DA, WC, SE, LL, Q, ALT, etc.)
+2. ✅ **Tournament Logo Display on Subpages** - Tournament logos now appear on 7 pages (brackets, matches, phases, standings, announcements, order of play, statistics) when viewing tournament-specific data
+3. ✅ **Match Format Selection & Display** - Organizers can select match format during bracket generation (Pro Set, Best of 3/5, Short Sets, Fast4, Super Tiebreak); format badges display on all matches
+
+**Bug Fixes:**
+- ✅ Fixed match format not applying to generated brackets (required 5 layers of fixes: service → DTO → repository → entity → display)
+- ✅ Fixed bracket regeneration foreign key constraint (delete scores before matches)
+- ✅ Fixed score display not updating (clear stale score strings)
+- ✅ Fixed authentication guard for match actions
+
+**Total Time:** ~15 hours (estimated 12-15 hours)
+
+**Documentation Updated:**
+- COPILOT-TODO.md: All Phase 3 items marked complete
+- MANUAL-TESTING-GUIDE.md: Feature 15 updated with match format selection testing steps
+- CHANGES.md: Detailed bug fixes and implementation notes
+
+---
+
+### Bug Fix: Match Format Not Applied to Generated Brackets (2026-04-23)
+
+**Issue:** When selecting a match format (e.g., "Pro Set") during bracket generation, all matches still show "Best of 3 (Super TB)" instead of the selected format.
+
+**Root Cause:** The `BracketService.generateBracket()` method was not including the `matchFormat` field when sending bracket data to the backend. The `bracketData` object only included `tournamentId`, `categoryId`, `bracketType`, `size`, `totalRounds`, `structure`, and `isPublished`, but was missing `matchFormat` from the input `data` parameter.
+
+**Result:** The backend received `undefined` for matchFormat, so the conditional `if (matchFormat)` failed, and matches were saved with the database default value (`BEST_OF_3_FINAL_SET_TIEBREAK`).
+
+**Solution:** Added `matchFormat: data.matchFormat` to the bracketData object in `bracket.service.ts`.
+
+**Changes:**
+
+- **File:** `src/application/services/bracket.service.ts`
+- Added `matchFormat: data.matchFormat` to the `bracketData` object in the `generateBracket()` method
+- Now properly passes the selected match format from component → service → repository → backend
+
+**Impact:**
+
+- ✅ Match format selection now works correctly
+- ✅ Pro Set, Best of 5, and all other formats now apply to generated brackets
+- ✅ Backend logs confirm format application: `🎾 Applying match format PRO_SET to 28 singles matches`
+- ✅ Frontend automatically navigates to the bracket view after generation to display the correct formats
+
+**Testing Notes:**
+- After generating a bracket, the UI automatically navigates to the bracket view page showing all matches with the selected format badges.
+- The frontend `MatchProps` interface was updated to include the `format` field.
+
+---
+- ✅ Format badges in bracket view display the correct selected format
+
+**Testing:**
+
+1. Create a tournament and add participants
+2. Click "Generate Bracket"
+3. Select category and bracket type
+4. **Select "Pro Set"** as the match format
+5. Generate bracket
+6. **Verify:** All matches show "Pro Set" badge (not "Best of 3")
+7. Try other formats - all should work correctly now
+
+**Files Modified:**
+
+- `src/application/services/bracket.service.ts` (added `matchFormat` to `bracketData` object)
+- `src/domain/entities/match.ts` (added `format` field to `MatchProps` interface, Match class properties, and constructor)
+- `src/application/services/match.service.ts` (added `format` field to match DTO mapping in `mapMatchToDto()`)
+- `src/infrastructure/repositories/match.repository.ts` (added `format` field mapping in `mapBackendToMatch()`)
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` (navigate to bracket view after generation)
+
+---
+
+### Bug Fix: Bracket Regeneration Foreign Key Constraint (2026-04-23)
+
+**Issue:** When trying to regenerate a bracket (delete old unpublished bracket and create new one), the operation fails with foreign key constraint violation error:
+
+```
+Failed to delete existing bracket: update or delete on table "matches" violates foreign key constraint "FK_9012285dd168d361368836fa967" on table "scores"
+```
+
+**Root Cause:** The bracket regeneration code deletes matches before deleting their associated Score entities. The Score table has a foreign key constraint to Match, so the database prevents deleting matches that have scores referencing them.
+
+**Previous Deletion Order (INCORRECT):**
+1. Delete matches (FAILS if scores exist)
+2. Delete phases
+3. Delete bracket
+
+**Solution:** Delete scores BEFORE deleting matches to respect foreign key constraints.
+
+**Correct Deletion Order:**
+1. Find all matches in the bracket
+2. Delete all scores for those matches (foreign key satisfied)
+3. Delete matches (now safe)
+4. Delete phases
+5. Delete bracket
+
+**Changes:**
+
+- **File:** `backend/src/presentation/controllers/bracket.controller.ts`
+- Added `scoreRepository` initialization in `create()` method
+- Modified unpublished bracket deletion logic:
+  - Step 1: Find all matches with `matchRepository.find({where: {bracketId}})`
+  - Step 2: Delete scores with `scoreRepository.delete({matchId: In(matchIds)})`
+  - Step 3-5: Delete matches, phases, bracket (existing logic)
+- Added console logging for each deletion step to track progress
+
+**Impact:**
+
+- ✅ Bracket regeneration now works when matches have recorded scores
+- ✅ Administrators can regenerate brackets after test matches with scores
+- ✅ No data orphaning - all related data properly deleted
+- ✅ Respects database foreign key constraints
+
+**Testing:**
+
+1. Create a tournament and generate a bracket
+2. Record scores for some matches in the bracket
+3. Try to regenerate the bracket (was failing before)
+4. **Verify:** Bracket regenerates successfully without foreign key errors
+5. **Verify:** Console logs show: "Found N matches", "Deleted N scores", "Deleted N matches"
+
+**Files Modified:**
+
+- `backend/src/presentation/controllers/bracket.controller.ts` (add scoreRepository, fix deletion order)
+
+---
+
+### Feature: Match Format Selection in Bracket Generation (2026-04-23)
+
+**Implemented:** Added match format selection dropdown during bracket generation, allowing tournament administrators to specify the match rules (Best of 3, Best of 5, etc.) for all matches in a bracket.
+
+**Problem:** Previously, match format badges were displayed in brackets but always showed the default "Best of 3 (Super TB)". There was no way for administrators to choose different match formats during bracket creation. The backend supported the format field but the UI didn't expose it.
+
+**Solution:** Added comprehensive match format selection to the bracket generation workflow.
+
+**Changes:**
+
+1. ✅ **Frontend DTO Update**
+   - **File:** `src/application/dto/bracket.dto.ts`
+   - Added `matchFormat?: MatchFormat` field to `GenerateBracketDto` interface
+   - Optional field maintains backward compatibility
+   - Imports MatchFormat enum from domain enumerations
+
+2. ✅ **Component Form State**
+   - **File:** `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts`
+   - Added `matchFormat` field to `bracketForm` with default value `BEST_OF_3_FINAL_SET_TIEBREAK`
+   - Added `matchFormats` readonly array with all available formats (8 options)
+   - Imported `MatchFormat` enum from domain enumerations
+   - Reset matchFormat to default when form is hidden or submitted
+
+3. ✅ **Match Format Display Helper**
+   - **File:** `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts`
+   - Added `getMatchFormatInfo(format: MatchFormat)` method
+   - Returns object with `{label: string; description: string}` for each format
+   - Labels: "Best of 3 (Super Tiebreak)", "Best of 5", "Pro Set", "Fast4", etc.
+   - Descriptions explain rules: "First to win 2 sets. If 1-1, play 10-point super tiebreak..."
+
+4. ✅ **HTML Form UI**
+   - **File:** `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html`
+   - Added "Match Format" section after "Bracket Format" section
+   - Radio button group with all 8 match formats
+   - Each option shows label and description
+   - Styled with border highlight when selected (matches bracket type styling)
+   - Required field (cannot generate bracket without selecting format)
+
+5. ✅ **Backend Controller Integration**
+   - **File:** `backend/src/presentation/controllers/bracket.controller.ts`
+   - Modified `create()` method to extract `matchFormat` from `req.body`
+   - Added console log when format is specified: `🎾 Match format specified: ${matchFormat}`
+   - Apply format to all generated doubles matches (after team ID post-processing)
+   - Apply format to all generated singles matches (after match generation)
+   - Separate logging for doubles and singles: `🎾 Applied match format ${matchFormat} to ${N} matches`
+
+**Match Format Options (8 total):**
+
+1. **Best of 3 (Super Tiebreak)** *(DEFAULT)* - First to win 2 sets, 10-point tiebreak if 1-1
+2. **Best of 3 (Advantage Final Set)** - First to win 2 sets, full third set if 1-1
+3. **Best of 5 (Super Tiebreak)** - First to win 3 sets, 10-point tiebreak if 2-2 (modern Grand Slams)
+4. **Best of 5 (Advantage Final Set)** - First to win 3 sets, full fifth set if 2-2 (traditional)
+5. **Pro Set** - Single set to 8 games with tiebreak at 7-7
+6. **Short Sets** - Best of 3 short sets (first to 4 games per set)
+7. **Fast4** - Fast4 format with no-ad scoring
+8. **Super Tiebreak Only** - Single 10-point tiebreak (entire match)
+
+**User Workflow:**
+
+1. Navigate to tournament detail page as administrator
+2. Click "➕ Generate Bracket" button
+3. Select category from dropdown
+4. Select bracket format (Single Elimination, Round Robin, or Match Play)
+5. **NEW:** Select match format from radio button group
+6. Click "🏆 Generate Bracket" button
+7. All matches in the generated bracket will use the selected format
+8. Format badges appear in bracket visualization with the selected format
+
+**Impact:**
+
+- ✅ Administrators can now choose match format during bracket creation
+- ✅ All matches in a bracket use the same format (consistency)
+- ✅ Format choice is persistent (saved to database with each match)
+- ✅ Default format remains "Best of 3 (Super TB)" for simplicity
+- ✅ Works for both singles and doubles brackets
+- ✅ Format badges in bracket view now show the correct format chosen by admin
+- ✅ Participants can see the match rules before playing
+
+**Technical Details:**
+
+- Match format is applied to all matches in the bracket after generation
+- Format field uses enum type in database (MatchFormat)
+- Each match independently stores its format (allows future per-match customization)
+- Backend validates format enum value (rejects invalid formats)
+- Frontend provides clear descriptions for each format to help admins choose
+
+**Testing:**
+
+1. Create a new tournament with at least one category
+2. Approve participant registrations
+3. Click "Generate Bracket"
+4. Select category and bracket type
+5. Try each match format option - verify radio buttons work
+6. Generate bracket with "Pro Set" format
+7. View bracket - verify all matches show "Pro Set" badge
+8. Generate another bracket with "Best of 5" format
+9. View bracket - verify all matches show "Best of 5" badge
+10. Check match detail pages - format should be visible (if displayed)
+
+**Files Modified:**
+
+- `src/application/dto/bracket.dto.ts` (add matchFormat to GenerateBracketDto)
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` (imports, form field, array, helper method, resets)
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html` (add match format selection UI)
+- `backend/src/presentation/controllers/bracket.controller.ts` (extract format, apply to matches)
+
+**References:**
+
+- COPILOT-TODO.md (Phase 6, "Implement match format selection in tournament creation")
+- Related Feature: "Match Format Display in Bracket View" (implemented 2026-04-22)
+
+---
+
+### Bug Fix: Score Display Not Updating After Recording (2026-04-23)
+
+**Issue:** When recording new match scores (e.g., 6-0, 6-0), the scores were being saved to the database correctly, but the old scores continued to display on the match detail page. The score display never updated to show the newly recorded scores.
+
+**Root Cause:** The Match entity has two score sources:
+1. `score` string field (from dispute resolution or old manual entry) - **PRIORITY 1**
+2. `scores` array (Score entities from score recording) - **PRIORITY 2**
+
+When recording new scores:
+- ✅ New Score entities were saved correctly to the database
+- ❌ The old `score` string field was NOT cleared
+- ❌ The `formatMatchScores()` method prioritizes the score string, so it kept showing the old score
+
+**Solution:** Clear the `match.score` field when recording new scores to ensure Score entities take precedence.
+
+**Changes:**
+
+1. **Frontend Match Service** (`src/application/services/match.service.ts`):
+   - Modified `recordResult()` method to set `score: null` in match update
+   - Added comment explaining why this is necessary
+   - Ensures Score entities will be formatted and displayed after recording
+
+2. **Backend Match Controller** (`backend/src/presentation/controllers/match.controller.ts`):
+   - Modified `submitScore()` endpoint to clear `match.score` after saving Score entities
+   - Added `matchRepository.update(id, {score: null})` after score save
+   - Ensures backend clears old score string when new scores are recorded
+
+**Impact:** 
+- Score updates now display correctly immediately after recording
+- Fixes issue where 6-0, 6-0 scores were saved but displayed as old 2-6, 6-3, 3-6
+- Maintains two-tier priority system: dispute resolution scores (string) take precedence when present, Score entities used otherwise
+- After this fix, newly recorded scores will always display correctly
+
+**Testing:**
+1. Record match scores (e.g., 6-0, 6-0)
+2. Check console logs - should see `[MatchService] No scores found` or `[MatchService] Formatting scores from Score entities`
+3. Verify scores display correctly on match detail page
+4. Update scores again - should see updated scores immediately
+
+**Files Modified:**
+- `src/application/services/match.service.ts` (add `score: null` in recordResult)
+- `backend/src/presentation/controllers/match.controller.ts` (add score field clear in submitScore)
+
+### Debugging Enhancement: Score Submission Logging (2026-04-23)
+
+**Issue:** User reported that score updates (6-0, 6-0) weren't being displayed after submission, with no visible error messages.
+
+**Solution:** Added comprehensive console logging throughout score submission and formatting workflow to help diagnose issues.
+
+**Changes:**
+- Added console.log statements in `submitScores()` method:
+  - Log raw form data (sets, winnerId, isRetirement) when submission starts
+  - Log filtered validSets array after empty set removal
+  - Log score validation result (isValid, errors)
+  - Log API call parameters before calling matchService.recordResult
+  - Log successful completion and match reload
+  - Log any errors with full error object
+- Added console.log statements in `formatMatchScores()` method:
+  - Log match object details (matchId, score string, scores array)
+  - Log which score source is being used (score string vs scores array)
+  - Log Score entity details before formatting
+  - Log final formatted score string
+- Console logs prefixed with `[Match Detail]` and `[MatchService]` for easy filtering
+- Enables debugging of: form binding issues, validation problems, API errors, reload failures, score formatting issues
+
+**Diagnosis Flow:**
+1. `submitScores()` logs show scores ARE being saved successfully (status changes SCHEDULED → COMPLETED)
+2. Need to check `formatMatchScores()` logs to see if scores are being retrieved and formatted
+3. If scores array is empty, backend issue; if scores exist but not formatted, frontend parsing issue
+
+**Impact:** Administrators and developers can now open browser console (F12) and see detailed information about score submission and display process, making it easier to diagnose why scores aren't appearing on screen.
+
+**Files Modified:**
+- `src/presentation/pages/matches/match-detail/match-detail.component.ts` (add console.log in submitScores)
+- `src/application/services/match.service.ts` (add console.log in formatMatchScores)
+
+**Usage:** 
+1. Open browser console (F12)
+2. Navigate to match detail page
+3. Click "Record Scores" button
+4. Enter scores (e.g., 6-0, 6-0) and select winner
+5. Click submit
+6. Check console for `[Match Detail]` logs to see submission flow
+7. Check console for `[MatchService]` logs to see score formatting
+8. Report logs showing where the issue occurs
+
+**Next Steps:** Once user provides formatMatchScores logs, we can identify if scores are missing from backend response or if there's a formatting/display issue.
+
+### Security Fix: Match Actions Authentication Guard (2026-04-23)
+
+**Issue:** Match Actions section could remain visible after logout if the page was loaded while authenticated. This occurred because permission signals retained their values even after authentication state changed.
+
+**Solution:** Added reactive authentication signal that's checked on component initialization and updated during permission checks.
+
+**Changes:**
+- Added `isAuthenticated` signal (initialized to `false`) to track authentication state reactively
+- Updated `ngOnInit()` to set authentication status immediately on component load
+- Updated `checkPermissions()` method to set authentication signal alongside permission signals
+- Template condition `@if (isAuthenticated() && (canManageMatch() || canRecordScores()))` now uses reactive signal
+- Ensures Match Actions are only visible when user is actively logged in AND has appropriate permissions
+- Prevents stale permission signals from showing actions to logged-out users
+
+**Technical Details:**
+- Using Angular signals for reactive state management ensures immediate UI updates when authentication state changes
+- Signal is set in three places: component initialization, successful permission check, and failed authentication check
+- All three permission signals (`isAuthenticated`, `canManageMatch`, `canRecordScores`) work together to control Match Actions visibility
+
+**Impact:** Match Actions now correctly hide immediately when user logs out or when page loads without authentication. Closes security gap where administrative buttons could appear visible (though non-functional) to unauthenticated users.
+
+**Files Modified:**
+- `src/presentation/pages/matches/match-detail/match-detail.component.ts` (add isAuthenticated signal, update ngOnInit and checkPermissions)
+- Template already uses signal syntax correctly with `isAuthenticated()` call
+
+**Testing:** Hard refresh browser (Ctrl+Shift+R) after logging out to verify Match Actions section does not appear.
+
+### Implementation: Match Format Display in Bracket View (2026-04-22)
+
+**Completed:** Added match format display to bracket visualization showing players the type of match (Best of 3, Best of 5, etc.).
+
+**Changes:**
+
+1. ✅ **Match Format Enumeration and Entity**
+   - **Problem:** Match format information was not stored in the database and could not be displayed to participants
+   - **Solution:**
+     - Created `MatchFormat` enum with 8 common tennis formats:
+       - `BEST_OF_3_FINAL_SET_TIEBREAK` - Best of 3 sets with super tiebreak (most common)
+       - `BEST_OF_3_ADVANTAGE` - Best of 3 sets with advantage final set
+       - `BEST_OF_5_FINAL_SET_TIEBREAK` - Best of 5 sets with super tiebreak (Grand Slams 2019+)
+       - `BEST_OF_5_ADVANTAGE` - Best of 5 sets with advantage final set (traditional)
+       - `PRO_SET` - First to 8 games with tiebreak at 7-7
+       - `SHORT_SETS` - Best of 3 short sets (4 games per set)
+       - `FAST4` - Fast4 format with no-ad scoring
+       - `SUPER_TIEBREAK` - Single super tiebreak to 10 points
+     - Added `format` field to Match entity as enum column with default value `BEST_OF_3_FINAL_SET_TIEBREAK`
+     - Added `format` field to MatchDto interface for frontend consumption
+     - Exported MatchFormat from both backend and frontend enumerations
+   - **Files Created:**
+     - `backend/src/domain/enumerations/match-format.ts` (NEW - backend enum)
+     - `src/domain/enumerations/match-format.ts` (NEW - frontend enum)
+   - **Files Modified:**
+     - `backend/src/domain/enumerations/index.ts` (export MatchFormat)
+     - `backend/src/domain/entities/match.entity.ts` (add format column)
+     - `src/domain/enumerations/index.ts` (export MatchFormat)
+     - `src/application/dto/match.dto.ts` (add format field)
+
+2. ✅ **Match Format Display in Bracket Visualization**
+   - **Problem:** Players could not see what format their matches would use
+   - **Solution:**
+     - Added `getMatchFormatDisplay()` method to convert enum values to human-readable labels:
+       - "Best of 3 (Super TB)" for BEST_OF_3_FINAL_SET_TIEBREAK
+       - "Best of 3" for BEST_OF_3_ADVANTAGE
+       - "Best of 5 (Super TB)" for BEST_OF_5_FINAL_SET_TIEBREAK
+       - "Best of 5" for BEST_OF_5_ADVANTAGE
+       - "Pro Set", "Short Sets", "Fast4", "Super Tiebreak" for other formats
+     - Added format badge display in both single elimination and round robin bracket views
+     - Positioned format badge next to status badge for clear visibility
+     - Styled format badge with gray gradient background and border to distinguish from status
+   - **Files Modified:**
+     - `src/presentation/components/visual-bracket/visual-bracket.component.ts` (add getMatchFormatDisplay method)
+     - `src/presentation/components/visual-bracket/visual-bracket.component.html` (display format badge in both bracket types)
+     - `src/presentation/components/visual-bracket/visual-bracket.component.css` (add .format-badge and .match-badges styles)
+   - **Impact:** Players can now see the match format for every match in the bracket, helping them understand the match requirements (number of sets, tiebreak rules)
+   - **Technical Details:** Uses enum mapping for display labels, CSS flexbox for badge layout, default format ensures backward compatibility with existing matches
+   - **Testing Guide:** See MANUAL-TESTING-GUIDE.md Feature 15 for comprehensive testing instructions
+   - **Format Clarification:** "Best of 3" means match RULES (first to win 2 sets), not final score; a 6-0, 6-0 result is correctly labeled "Best of 3" because the player won 2 sets in straight games
+   - **Note:** Existing matches without format will default to "Best of 3" display; database migration will be needed to set default format value
+   - **References:** COPILOT-TODO.md (Phase 3, "Add match format display in bracket view")
+
 ### Implementation: Tournament Logo Display on Subpages (2026-04-22)
 
-**Completed:** Added tournament logo display across all tournament-scoped subpages (brackets, order of play, phase management, standings, announcements) for visual consistency.
+**Completed:** Added tournament logo display across all tournament-scoped pages and context-aware pages (brackets, order of play, phase management, standings, announcements, matches, statistics) for visual consistency.
 
 **Changes:**
 
 1. ✅ **Tournament State Service for Shared Context**
-   - **Problem:** Tournament logos displayed correctly on tournament detail page but disappeared when navigating to subpages (brackets, matches, phases, standings, announcements)
+   - **Problem:** Tournament logos displayed correctly on tournament detail page but disappeared when navigating to subpages (brackets, matches, phases, standings, announcements, statistics)
    - **Solution:**
      - Created `TournamentStateService` as an injectable singleton service with `providedIn: 'root'`
      - Implemented reactive signals pattern: `currentTournament` signal with computed properties for `currentTournamentLogo`, `currentTournamentName`, and `currentTournamentId`
      - Added `setCurrentTournament(tournament)` and `clearCurrentTournament()` methods for state management
      - Modified `TournamentDetailComponent` to call `tournamentStateService.setCurrentTournament(tournament)` when loading tournament data in `loadTournament()` method
-     - Updated **5 tournament-scoped subpages** to inject `TournamentStateService` and display logos:
+     - Updated **7 pages** to inject `TournamentStateService` and display logos:
        1. **Bracket View** - displays logo when viewing tournament brackets
        2. **Order of Play View** - displays logo when viewing match schedules
        3. **Phase Management** - displays logo when managing tournament phases
        4. **Standings View** - displays logo when viewing tournament standings (loads tournament via route params)
-       5. **Announcement List** - displays logo when viewing tournament-specific announcements (loads tournament via query params)
+       5. **Announcement List** - displays logo when viewing tournament-specific announcements (loads tournament via query params: `?tournamentId=xxx`)
+       6. **Match List** - displays logo when filtering matches by tournament (loads tournament via query params: `?tournamentId=xxx`), but NOT when viewing global match list
+       7. **Statistics View** - displays logo when filtering statistics by tournament (loads tournament via query params: `?tournamentId=xxx`), but NOT when viewing global player statistics
      - Added logo display in hero sections using `@if (tournamentStateService.currentTournamentLogo(); as logoUrl)` conditional rendering
      - Styled tournament logos with consistent design: 80px max-height, auto width, centered block display, border-radius 8px, box-shadow, semi-transparent background with backdrop filter blur
-     - For announcements page: Added tournament data loading when `tournamentId` query param is present, with graceful fallback if tournament load fails
+     - For context-aware pages (announcements, matches, statistics): Added tournament data loading when `tournamentId` query param is present, with graceful fallback if tournament load fails; clears tournament state when no tournamentId present
    - **Files Created:**
      - `src/presentation/services/tournament-state.service.ts` (NEW - manages shared tournament context)
    - **Files Modified:**
@@ -47,12 +459,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
      - `src/presentation/pages/standings/standings-view/standings-view.component.ts` (inject service, set tournament on load)
      - `src/presentation/pages/standings/standings-view/standings-view.component.html` (display logo in hero section)
      - `src/presentation/pages/standings/standings-view/standings-view.component.css` (add .tournament-logo styles)
-     - `src/presentation/pages/announcements/announcement-list/announcement-list.component.ts` (inject TournamentService and TournamentStateService, load tournament when tournamentId present)
+     - `src/presentation/pages/announcements/announcement-list/announcement-list.component.ts` (inject TournamentService and TournamentStateService, load tournament when tournamentId query param present)
      - `src/presentation/pages/announcements/announcement-list/announcement-list.component.html` (display logo in hero section, show tournament name)
      - `src/presentation/pages/announcements/announcement-list/announcement-list.component.css` (add .tournament-logo and .hero-description styles)
-   - **Impact:** Users navigating through tournament subpages now see the tournament logo consistently across all tournament-scoped views (5 pages), improving visual continuity and brand recognition. Non-tournament pages (global match list, player statistics) correctly do not display tournament logos.
-   - **Technical Details:** Uses Angular signals for reactive state management, computed properties for derived data, providedIn: 'root' for singleton service, conditional rendering with Angular @if syntax, graceful fallback handling for optional tournament data
-   - **References:** COPILOT-TODO.md (Phase 3, "Fix tournament logo display on subpages")
+     - `src/presentation/pages/matches/match-list/match-list.component.ts` (inject TournamentStateService, set tournament when filtering by tournamentId query param)
+     - `src/presentation/pages/matches/match-list/match-list.component.html` (display logo in hero section when tournament filter active, show tournament name)
+     - `src/presentation/pages/matches/match-list/match-list.component.css` (add .tournament-logo and .hero-description styles)
+     - `src/presentation/pages/statistics/statistics-view/statistics-view.component.ts` (inject TournamentService and TournamentStateService, load tournament when tournamentId query param present)
+     - `src/presentation/pages/statistics/statistics-view/statistics-view.component.html` (display logo in hero section when tournament filter active, show tournament name)
+     - `src/presentation/pages/statistics/statistics-view/statistics-view.component.css` (add .tournament-logo and .statistics-description styles)
+   - **Impact:** Users navigating through tournament-specific pages now see the tournament logo consistently across all tournament-scoped views (5 always-tournament pages + 2 conditionally-tournament pages when filtered = 7 total). Pages correctly show logos only when viewing tournament-specific data (e.g., `/matches?tournamentId=xxx` shows logo, `/matches` does not).
+   - **Technical Details:** Uses Angular signals for reactive state management, computed properties for derived data, providedIn: 'root' for singleton service, conditional rendering with Angular @if syntax, graceful fallback handling for optional tournament data, query parameter detection for context-aware logo display
+   - **References:** COPILOT-TODO.md (Phase 3, "Fix tournament logo display on subpages"), FEEDBACK.md ("Logos are not displayed on subpages")
 
 ### Implementation: Acceptance Type Badges in Bracket Visualization (2026-04-22)
 

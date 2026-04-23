@@ -183,7 +183,7 @@
       </div>
 
       <!-- Actions Card (for match management) -->
-      @if (canManageMatch() || canRecordScores()) {
+      @if (isAuthenticated() && (canManageMatch() || canRecordScores())) {
         <div class="card actions-card">
           <div class="card-header">
             <h2 class="card-title">

@@ -15,9 +15,9 @@
 import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule, Location} from '@angular/common';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
-import {StatisticsService} from '@application/services';
-import {type StatisticsDto, type HeadToHeadDto, type TeamHeadToHeadDto} from '@application/dto';
-import {AuthStateService} from '@presentation/services/auth-state.service';
+import {StatisticsService, TournamentService} from '@application/services';
+import {type StatisticsDto, type HeadToHeadDto, type TeamHeadToHeadDto, type TournamentDto} from '@application/dto';
+import {AuthStateService, TournamentStateService} from '@presentation/services';
 import templateHtml from './statistics-view.component.html?raw';
 import stylesCss from './statistics-view.component.css?inline';
 
@@ -37,7 +37,9 @@ export class StatisticsViewComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly statisticsService = inject(StatisticsService);
+  private readonly tournamentService = inject(TournamentService);
   private readonly authStateService = inject(AuthStateService);
+  protected readonly tournamentStateService = inject(TournamentStateService);
 
   /** Statistics data */
   public statistics = signal<StatisticsDto | null>(null);
@@ -47,6 +49,12 @@ export class StatisticsViewComponent implements OnInit {
 
   /** Error message */
   public errorMessage = signal<string | null>(null);
+
+  /** Tournament ID filter (from query params) */
+  private tournamentId = signal<string | null>(null);
+
+  /** Tournament data (when filtered by tournament) */
+  public tournament = signal<TournamentDto | null>(null);
 
   /** Expose Object.keys to template for surface performance iteration */
   public readonly Object = Object;
@@ -85,6 +93,26 @@ export class StatisticsViewComponent implements OnInit {
       if (participantId) {
         this.currentParticipantId = participantId;
         void this.loadStatistics(participantId);
+      }
+    });
+
+    // Listen to query params for tournamentId
+    this.route.queryParamMap.subscribe(async params => {
+      const tournamentId = params.get('tournamentId');
+      this.tournamentId.set(tournamentId);
+      
+      if (tournamentId) {
+        try {
+          const tournamentData = await this.tournamentService.getTournamentById(tournamentId);
+          this.tournament.set(tournamentData);
+          this.tournamentStateService.setCurrentTournament(tournamentData);
+        } catch (error) {
+          console.warn('Could not load tournament data:', error);
+          this.tournament.set(null);
+        }
+      } else {
+        this.tournament.set(null);
+        this.tournamentStateService.clearCurrentTournament();
       }
     });
   }

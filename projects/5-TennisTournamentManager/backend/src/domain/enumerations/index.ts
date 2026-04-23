@@ -18,6 +18,7 @@ export {TournamentType} from './tournament-type';
 export {Surface} from './surface';
 export {FacilityType} from './facility-type';
 export {MatchStatus} from './match-status';
+export {MatchFormat} from './match-format';
 export {BracketType} from './bracket-type';
 export {AcceptanceType} from './acceptance-type';
 export {RegistrationStatus} from './registration-status';

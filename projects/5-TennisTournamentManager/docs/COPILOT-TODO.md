@@ -142,36 +142,79 @@
   - **Bug Fixed:** Added `await` to loadUserCount() call + fallback mechanism when `/users/stats` endpoint unavailable + restricted Total Users to SYSTEM_ADMIN only to prevent 403 Forbidden errors for TOURNAMENT_ADMIN users
 
 - [x] **Fix tournament logo display on subpages** ✅ COMPLETED (2026-04-22)
-  - **Issue:** Tournament logos display on tournament detail page but not on subpages (brackets, matches, phases)
+  - **Issue:** Tournament logos display on tournament detail page but not on subpages (brackets, matches, phases, standings, announcements, statistics)
   - **Solution:** Created `TournamentStateService` to share tournament context across components
   - **Implementation:**
     - Created injectable singleton service with `currentTournament` signal
     - Added computed properties: `currentTournamentLogo`, `currentTournamentName`, `currentTournamentId`
     - Tournament detail component sets current tournament on load via `setCurrentTournament()`
-    - Bracket view, order of play, and phase management components inject service and display logo
-    - Consistent logo styling across all subpages (80px height, rounded corners, shadow, backdrop blur)
+    - **7 pages** now display tournament logos when appropriate:
+      1. Bracket view (always tournament-scoped)
+      2. Order of play (always tournament-scoped)
+      3. Phase management (always tournament-scoped)
+      4. Standings view (always tournament-scoped)
+      5. Announcements list (when `?tournamentId=xxx` query param present)
+      6. Match list (when `?tournamentId=xxx` query param present)
+      7. Statistics view (when `?tournamentId=xxx` query param present)
+    - Context-aware pages (announcements, matches, statistics) check for `tournamentId` query parameter
+    - Logo displays ONLY when viewing tournament-specific data (e.g., `/matches?tournamentId=xxx` shows logo, `/matches` does not)
+    - Consistent logo styling across all pages (80px height, rounded corners, shadow, backdrop blur)
   - **Files Created:**
     - `src/presentation/services/tournament-state.service.ts` (NEW)
   - **Files Modified:**
-    - Tournament detail, bracket view, order of play view, phase management components (inject service, display logo)
-  - **Estimated:** 3-4 hours → **Actual:** 2 hours
-  - **Test:** Navigate to tournament subpages (brackets, phases, matches), verify logo shows in header
+    - Tournament detail, bracket view, order of play view, phase management, standings view, announcement list, match list, statistics view (inject service, display logo)
+  - **Estimated:** 3-4 hours → **Actual:** 3 hours
+  - **Test:** Navigate to tournament subpages, verify logo shows; navigate to global pages (matches, statistics without tournamentId), verify logo does NOT show
 
-- [ ] **Add match format display in bracket view** ⚠️ **BLOCKED: Requires Backend Enhancement**
-  - **Issue:** Match format not visible to participants
-  - **Files:** Bracket detail component, **BACKEND: Match entity and MatchDto**
-  - **Blocker:** `MatchDto` interface does not include `format` field; Match entity may not store format data
-  - **Backend Changes Needed:**
-    1. Add `format` field to Match entity (e.g., "Best of 3", "Best of 5", "Super Tiebreak")
-    2. Include `format` in MatchDto interface
-    3. Populate format when creating matches during bracket generation
-    4. Expose format via GET /matches/:id and GET /brackets/:id/matches endpoints
-  - **Frontend Changes (After Backend):**
-    1. Display format in bracket match cards near status badge
-    2. Show format as "Best of 3 + Super Tiebreak", "Best of 5 sets", etc.
-  - **Estimated:** 2 hours frontend + 3 hours backend (5 hours total)
-  - **Test:** View bracket, verify format displayed for each match
-  - **Priority:** MEDIUM - Helps players understand match requirements
+- [x] **Add match format display in bracket view** ✅ COMPLETED (2026-04-23)
+  - **Issue:** Match format not visible to participants and not selectable during bracket generation
+  - **Solution:** Created MatchFormat enum (backend + frontend), added format selection UI, and implemented end-to-end format application
+  - **Implementation:**
+    - Created `MatchFormat` enum with 8 formats: BEST_OF_3_FINAL_SET_TIEBREAK, BEST_OF_3_ADVANTAGE, BEST_OF_5_FINAL_SET_TIEBREAK, BEST_OF_5_ADVANTAGE, PRO_SET, SHORT_SETS, FAST4, SUPER_TIEBREAK
+    - Added `format` enum column to Match entity with default value `BEST_OF_3_FINAL_SET_TIEBREAK`
+    - Added `format` field to MatchDto interface and all mapping layers
+    - **Match Format Selection UI:**
+      - Added `matchFormat` field to bracket generation form with default BEST_OF_3_FINAL_SET_TIEBREAK
+      - Created radio button group with all 8 format options
+      - Added `getMatchFormatInfo()` method to provide labels and descriptions for each format
+      - Reset matchFormat to default after successful generation
+    - **Backend Processing:**
+      - Modified `generateBracket()` to accept and apply `matchFormat` parameter
+      - Backend applies format to ALL generated matches (singles and doubles)
+      - Added console logs: "🎾 Match format specified: [FORMAT]" and "🎾 Applying match format [FORMAT] to X matches"
+      - Format persisted in database matches_format column
+    - **Frontend Data Flow:**
+      - BracketService passes matchFormat to backend API
+      - MatchRepository maps format field from backend responses
+      - Match entity includes format property
+      - MatchService maps format to DTO for display
+    - **Display:**
+      - Created `getMatchFormatDisplay()` method to convert enum to human-readable labels (e.g., "Pro Set", "Best of 3 (Super TB)")
+      - Display format badge next to status badge in both single elimination and round robin brackets
+      - Styled with gray gradient badge to distinguish from status
+      - Auto-navigate to bracket view after generation to show new format
+  - **Files Created:**
+    - `backend/src/domain/enumerations/match-format.ts` (NEW)
+    - `src/domain/enumerations/match-format.ts` (NEW)
+  - **Files Modified:**
+    - Backend: Match entity, enumerations index, bracket controller (format extraction and application)
+    - Frontend: 
+      - MatchDto, enumerations index
+      - Tournament detail component (selection UI, navigation)
+      - BracketService (pass matchFormat to backend)
+      - MatchService (map format in DTOs)
+      - MatchRepository (map format from backend)
+      - Match entity (format property and constructor)
+      - Visual bracket component (display format badges)
+  - **Estimated:** 2 hours frontend + 3 hours backend (5 hours total) → **Actual:** 6 hours (with debugging)
+  - **Test:** Generate bracket with "Pro Set", verify all matches display "Pro Set" badge (not "Best of 3")
+  - **Bug Fixes:** 
+    - Added matchFormat to bracketData object in BracketService
+    - Added format field mapping in MatchService.mapMatchToDto()
+    - Added format field mapping in MatchRepository.mapBackendToMatch()
+    - Added format property to Match entity class
+    - Auto-navigation to bracket view after generation
+  - **Note:** Database migration needed to add format column; existing matches will use default format
 
 - [x] **Add "Compare Stats" button in user profiles** ✅
   - **Issue:** Can't access H2H stats directly from profile
@@ -283,12 +326,24 @@
 
 ### Priority: MEDIUM - Complete missing functionality
 
-- [ ] **Implement match format selection in tournament creation**
+- [x] **Implement match format selection in tournament creation** ✅ COMPLETED (2026-04-23)
   - **Issue:** Backend supports formats but UI doesn't expose it
-  - **Files:** `TournamentCreateComponent`, `BracketGenerateComponent`
-  - **Fix:** Add match format dropdown (Best of 3, Best of 5, Super Tiebreak, etc.)
-  - **Estimated:** 4 hours
-  - **Test:** Create tournament with each format, verify propagates to matches
+  - **Solution:** Added match format dropdown in bracket generation form with all 8 format options
+  - **Implementation:**
+    - Added `matchFormat` field to `GenerateBracketDto` interface (optional, backward compatible)
+    - Added `matchFormat` to bracket form state with default `BEST_OF_3_FINAL_SET_TIEBREAK`
+    - Created `getMatchFormatInfo()` helper method returning label and description for each format
+    - Added match format radio button group in HTML after bracket type selection
+    - Modified backend controller to extract `matchFormat` from request and apply to all generated matches
+    - Works for both singles and doubles brackets
+  - **Files Modified:** 
+    - `src/application/dto/bracket.dto.ts` (add matchFormat field)
+    - `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` (imports, form, helper, resets)
+    - `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html` (UI dropdown)
+    - `backend/src/presentation/controllers/bracket.controller.ts` (apply format to matches)
+  - **Estimated:** 4 hours → **Actual:** 2 hours
+  - **Test:** Generate bracket with each format (Pro Set, Best of 5, etc.), verify format badges show correctly in bracket view
+  - **Documentation:** See CHANGES.md "Feature: Match Format Selection in Bracket Generation (2026-04-23)"
 
 - [ ] **Add super tiebreak support in score entry**
   - **Issue:** Cannot enter super tiebreak scores (10-point tiebreak)

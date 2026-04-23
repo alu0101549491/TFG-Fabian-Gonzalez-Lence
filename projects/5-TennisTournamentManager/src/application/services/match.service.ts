@@ -124,8 +124,18 @@ export class MatchService implements IMatchService {
    */
   private formatMatchScores(match: any): string {
     try {
+      console.log('[MatchService] formatMatchScores() called with match:', {
+        matchId: match.id,
+        hasScoreString: !!match.score,
+        scoreString: match.score,
+        hasScoresArray: !!match.scores,
+        scoresArrayLength: match.scores?.length,
+        scoresArray: match.scores,
+      });
+
       // PRIORITY 1: Check if match has a score string field (from dispute resolution)
       if (match.score && typeof match.score === 'string' && match.score.trim().length > 0) {
+        console.log('[MatchService] Using score string:', match.score);
         return match.score;
       }
 
@@ -133,8 +143,11 @@ export class MatchService implements IMatchService {
       const scores = match.scores;
       
       if (!scores || scores.length === 0) {
+        console.log('[MatchService] No scores found, returning empty string');
         return '';
       }
+      
+      console.log('[MatchService] Formatting scores from Score entities:', scores);
       
       // Convert backend Score entities to SetScore format
       const setScores = scores.map((score: any) => ({
@@ -146,7 +159,7 @@ export class MatchService implements IMatchService {
       })).sort((a: any, b: any) => a.setNumber - b.setNumber);
       
       // Format as "6-4, 3-6, 7-6(5)"
-      return setScores.map((set: any) => {
+      const formattedScore = setScores.map((set: any) => {
         let setStr = `${set.participant1Games}-${set.participant2Games}`;
         if (set.tiebreakParticipant1 !== null && set.tiebreakParticipant1 !== undefined) {
           const tbWinner = set.participant1Games > set.participant2Games ? set.tiebreakParticipant1 : set.tiebreakParticipant2;
@@ -154,8 +167,11 @@ export class MatchService implements IMatchService {
         }
         return setStr;
       }).join(', ');
+      
+      console.log('[MatchService] Formatted score:', formattedScore);
+      return formattedScore;
     } catch (error) {
-      console.error('Error formatting match scores:', error);
+      console.error('[MatchService] Error formatting match scores:', error);
       return '';
     }
   }
@@ -299,11 +315,13 @@ export class MatchService implements IMatchService {
     
     // Update match with result
     // For doubles matches, set winnerTeamId instead of winnerId
+    // IMPORTANT: Clear the old score string so Score entities take precedence
     const matchUpdateProps: any = {
       ...match,
       status: data.isRetirement ? MatchStatus.RETIRED : MatchStatus.COMPLETED,
       completedAt: new Date(),
       updatedAt: new Date(),
+      score: null,  // Clear old score string to prioritize Score entities
     };
     
     if (isDoubles) {
@@ -1115,6 +1133,7 @@ export class MatchService implements IMatchService {
       participant1TeamId: (match as any).participant1TeamId ?? null,
       participant2TeamId: (match as any).participant2TeamId ?? null,
       winnerTeamId: (match as any).winnerTeamId ?? null,
+      format: (match as any).format ?? null,  // Match format (rules)
       // Map participant User objects from backend relations
       participant1: (match as any).participant1 ? {
         id: (match as any).participant1.id,

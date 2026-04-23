@@ -57,10 +57,14 @@ export class BracketController {
       const matchRepository = AppDataSource.getRepository(Match);
       const phaseRepository = AppDataSource.getRepository(Phase);
       const registrationRepository = AppDataSource.getRepository(Registration);
+      const scoreRepository = AppDataSource.getRepository(Score);
       
-      const {categoryId} = req.body;
+      const {categoryId, matchFormat} = req.body;
       
       console.log(`📋 Creating bracket for category ${categoryId}...`);
+      if (matchFormat) {
+        console.log(`🎾 Match format specified: ${matchFormat}`);
+      }
       
       // Check for existing brackets in this category
       const existingBrackets = await bracketRepository.find({
@@ -86,15 +90,30 @@ export class BracketController {
           console.log(`🗑️ Deleting unpublished bracket ${oldBracket.id}...`);
           
           try {
-            // Delete matches first (foreign key constraint)
+            // Step 1: Find all matches for this bracket
+            const matchesInBracket = await matchRepository.find({
+              where: {bracketId: oldBracket.id},
+            });
+            console.log(`  Found ${matchesInBracket.length} matches in bracket`);
+            
+            // Step 2: Delete all scores for these matches (foreign key constraint)
+            if (matchesInBracket.length > 0) {
+              const matchIds = matchesInBracket.map(m => m.id);
+              const scoreDeleteResult = await scoreRepository.delete({
+                matchId: In(matchIds),
+              });
+              console.log(`  Deleted ${scoreDeleteResult.affected || 0} scores`);
+            }
+            
+            // Step 3: Delete matches
             const matchDeleteResult = await matchRepository.delete({bracketId: oldBracket.id});
             console.log(`  Deleted ${matchDeleteResult.affected || 0} matches`);
             
-            // Delete phases
+            // Step 4: Delete phases
             const phaseDeleteResult = await phaseRepository.delete({bracketId: oldBracket.id});
             console.log(`  Deleted ${phaseDeleteResult.affected || 0} phases`);
             
-            // Delete bracket
+            // Step 5: Delete bracket
             const bracketDeleteResult = await bracketRepository.delete(oldBracket.id);
             console.log(`  Deleted ${bracketDeleteResult.affected || 0} bracket(s)`);
             
@@ -246,6 +265,14 @@ export class BracketController {
               match.winnerTeamId = match.winnerId;
               match.winnerId = null;
             }
+            // Apply match format if specified
+            if (matchFormat) {
+              match.format = matchFormat;
+            }
+          }
+          
+          if (matchFormat) {
+            console.log(`🎾 Applied match format ${matchFormat} to ${matches.length} doubles matches`);
           }
 
           console.log(`💾 Saving ${phases.length} phases...`);
@@ -297,6 +324,14 @@ export class BracketController {
             participantIds,
             savedBracket.totalRounds,
           );
+
+          // Apply match format if specified
+          if (matchFormat) {
+            console.log(`🎾 Applying match format ${matchFormat} to ${matches.length} singles matches`);
+            for (const match of matches) {
+              match.format = matchFormat;
+            }
+          }
 
           console.log(`💾 Saving ${phases.length} phases...`);
           await phaseRepository.save(phases);

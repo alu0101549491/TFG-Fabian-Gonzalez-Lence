@@ -21,6 +21,7 @@ export * from './registration-status';
 export * from './acceptance-type';
 export * from './bracket-type';
 export * from './match-status';
+export * from './match-format';
 export * from './privacy-level';
 export * from './confirmation-status';
 export * from './export-format';

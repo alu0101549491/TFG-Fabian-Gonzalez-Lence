@@ -33,6 +33,7 @@ import {AcceptanceType} from '@domain/enumerations/acceptance-type';
 import {Gender} from '@domain/enumerations/gender';
 import {AgeGroup} from '@domain/enumerations/age-group';
 import {BracketType} from '@domain/enumerations/bracket-type';
+import {MatchFormat} from '@domain/enumerations';
 import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './tournament-detail-new.component.html?raw';
 import styles from './tournament-detail-new.component.css?raw';
@@ -284,6 +285,7 @@ export class TournamentDetailComponent implements OnInit {
   public bracketForm = {
     categoryId: '',
     bracketType: BracketType.SINGLE_ELIMINATION,
+    matchFormat: MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK,
   };
 
   /** Show bracket generation section */
@@ -291,6 +293,9 @@ export class TournamentDetailComponent implements OnInit {
 
   /** Available bracket types */
   public readonly bracketTypes = Object.values(BracketType);
+
+  /** Available match formats */
+  public readonly matchFormats = Object.values(MatchFormat);
 
   /** Bracket generation state */
   public isGeneratingBracket = signal(false);
@@ -1495,6 +1500,7 @@ export class TournamentDetailComponent implements OnInit {
     if (!this.showBracketGeneration()) {
       this.bracketForm.categoryId = '';
       this.bracketForm.bracketType = BracketType.SINGLE_ELIMINATION;
+      this.bracketForm.matchFormat = MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK;
     }
   }
 
@@ -1588,6 +1594,59 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   /**
+   * Gets human-readable display info for match format.
+   *
+   * @param format - The match format enum value
+   * @returns Object with label and description
+   */
+  public getMatchFormatInfo(format: MatchFormat): {label: string; description: string} {
+    switch (format) {
+      case MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK:
+        return {
+          label: 'Best of 3 (Super Tiebreak)',
+          description: 'First to win 2 sets. If 1-1, play 10-point super tiebreak instead of a third set.',
+        };
+      case MatchFormat.BEST_OF_3_ADVANTAGE:
+        return {
+          label: 'Best of 3 (Advantage Final Set)',
+          description: 'First to win 2 sets. If 1-1, play full advantage third set (win by 2 games).',
+        };
+      case MatchFormat.BEST_OF_5_FINAL_SET_TIEBREAK:
+        return {
+          label: 'Best of 5 (Super Tiebreak)',
+          description: 'First to win 3 sets. If 2-2, play 10-point super tiebreak (modern Grand Slams).',
+        };
+      case MatchFormat.BEST_OF_5_ADVANTAGE:
+        return {
+          label: 'Best of 5 (Advantage Final Set)',
+          description: 'First to win 3 sets. If 2-2, play full advantage fifth set (traditional format).',
+        };
+      case MatchFormat.PRO_SET:
+        return {
+          label: 'Pro Set',
+          description: 'Single set to 8 games with tiebreak at 7-7. Fast format for practice matches.',
+        };
+      case MatchFormat.SHORT_SETS:
+        return {
+          label: 'Short Sets',
+          description: 'Best of 3 short sets (first to 4 games per set). Quick format for juniors.',
+        };
+      case MatchFormat.FAST4:
+        return {
+          label: 'Fast4',
+          description: 'Fast4 format with no-ad scoring, first to 4 games. Very fast matches.',
+        };
+      case MatchFormat.SUPER_TIEBREAK:
+        return {
+          label: 'Super Tiebreak Only',
+          description: 'Single 10-point tiebreak (entire match). Fastest possible format.',
+        };
+      default:
+        return {label: format, description: 'Custom match format'};
+    }
+  }
+
+  /**
    * Generates a bracket for the selected category.
    * Requires tournament administrator permissions.
    */
@@ -1646,11 +1705,12 @@ export class TournamentDetailComponent implements OnInit {
     this.isGeneratingBracket.set(true);
 
     try {
-      await this.bracketService.generateBracket(
+      const newBracket = await this.bracketService.generateBracket(
         {
           tournamentId: this.tournamentId,
           categoryId: this.bracketForm.categoryId,
           bracketType: this.bracketForm.bracketType,
+          matchFormat: this.bracketForm.matchFormat,
         },
         currentUser.id
       );
@@ -1659,6 +1719,10 @@ export class TournamentDetailComponent implements OnInit {
       this.showBracketGeneration.set(false);
       this.bracketForm.categoryId = '';
       this.bracketForm.bracketType = BracketType.SINGLE_ELIMINATION;
+      this.bracketForm.matchFormat = MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK;
+      
+      // Navigate to the newly created bracket to show it with the correct format
+      void this.router.navigate(['/brackets', newBracket.id]);
     } catch (error) {
       // Extract error message from server response
       let message = 'Failed to generate bracket';

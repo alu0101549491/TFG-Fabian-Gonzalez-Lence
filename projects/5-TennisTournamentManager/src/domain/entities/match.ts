@@ -65,6 +65,8 @@ export interface MatchProps {
   suspensionReason?: string | null;
   /** Ball provider/brand for this match (e.g., "Wilson", "Penn", "Dunlop"). */
   ballProvider?: string | null;
+  /** Match format (rules for sets/games). */
+  format?: string | null;
   /** ID of the first doubles team (for doubles matches only). */
   participant1TeamId?: string | null;
   /** ID of the second doubles team (for doubles matches only). */
@@ -114,6 +116,8 @@ export class Match {
   public readonly suspensionReason?: string | null;
   /** Ball provider/brand for this match. */
   public readonly ballProvider?: string | null;
+  /** Match format (rules for sets/games). */
+  public readonly format?: string | null;
   /** ID of the first doubles team (for doubles matches only). */
   public readonly participant1TeamId?: string | null;
   /** ID of the second doubles team (for doubles matches only). */
@@ -140,6 +144,7 @@ export class Match {
     this.score = props.score ?? null;
     this.suspensionReason = props.suspensionReason ?? null;
     this.ballProvider = props.ballProvider ?? null;
+    this.format = props.format ?? null;
     this.participant1TeamId = props.participant1TeamId ?? null;
     this.participant2TeamId = props.participant2TeamId ?? null;
     this.winnerTeamId = props.winnerTeamId ?? null;

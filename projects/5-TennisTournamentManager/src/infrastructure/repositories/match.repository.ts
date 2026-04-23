@@ -68,6 +68,7 @@ export class MatchRepositoryImpl implements IMatchRepository {
       score: response.score ?? null,  // Include score string (from dispute resolution)
       suspensionReason: response.suspensionReason ?? null,  // Include suspension reason
       ballProvider: response.ballProvider ?? null,  // Include ball provider (FR31)
+      format: response.format ?? null,  // Include match format (rules)
       participant1TeamId: response.participant1TeamId ?? null,  // Include team IDs for doubles
       participant2TeamId: response.participant2TeamId ?? null,
       winnerTeamId: response.winnerTeamId ?? null,

@@ -13,12 +13,14 @@
  */
 
 import {BracketType} from '@domain/enumerations/bracket-type';
+import {MatchFormat} from '@domain/enumerations';
 
 /** DTO for generating a bracket. */
 export interface GenerateBracketDto {
   tournamentId: string;
   categoryId: string;
   bracketType: BracketType;
+  matchFormat?: MatchFormat;
 }
 
 /** DTO for bracket output representation. */

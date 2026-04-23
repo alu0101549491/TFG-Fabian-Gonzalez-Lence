@@ -18,6 +18,7 @@ import {Router, RouterModule, ActivatedRoute} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {MatchService, BracketService, UserService, TournamentService, CategoryService} from '@application/services';
 import {type MatchDto, type PhaseDto, type UserDto, type BracketDto, type TournamentDto, type CategoryDto} from '@application/dto';
+import {TournamentStateService} from '@presentation/services';
 import {MatchStatus} from '@domain/enumerations/match-status';
 import {EnumFormatPipe} from '@shared/pipes';
 import templateHtml from './match-list.component.html?raw';
@@ -54,6 +55,7 @@ export class MatchListComponent implements OnInit {
   private readonly userService = inject(UserService);
   private readonly tournamentService = inject(TournamentService);
   private readonly categoryService = inject(CategoryService);
+  protected readonly tournamentStateService = inject(TournamentStateService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -111,6 +113,9 @@ export class MatchListComponent implements OnInit {
 
   /** Tournament ID filter */
   public tournamentId: string | null = null;
+
+  /** Tournament data (when filtered by tournament) */
+  public tournament = signal<TournamentDto | null>(null);
 
   /** Bracket ID filter */
   public bracketId: string | null = null;
@@ -240,9 +245,21 @@ export class MatchListComponent implements OnInit {
         try {
           const tournament = await this.tournamentService.getTournamentById(tournamentId);
           tournamentsMap.set(tournamentId, tournament);
+          
+          // If filtering by this specific tournament, set it in state for logo display
+          if (tournamentId === this.tournamentId) {
+            this.tournament.set(tournament);
+            this.tournamentStateService.setCurrentTournament(tournament);
+          }
         } catch (error) {
           console.warn(`Failed to fetch tournament ${tournamentId}:`, error);
         }
+      }
+      
+      // If no tournamentId filter, clear the tournament state
+      if (!this.tournamentId) {
+        this.tournament.set(null);
+        this.tournamentStateService.clearCurrentTournament();
       }
 
       for (const categoryId of categoryIds) {

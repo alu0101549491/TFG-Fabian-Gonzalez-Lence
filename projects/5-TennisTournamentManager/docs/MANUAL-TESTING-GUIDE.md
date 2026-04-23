@@ -657,6 +657,177 @@ npm run dev
 
 ---
 
+### Feature 15: Match Format Display in Bracket Visualization
+
+**What was changed:** Added match format badges to bracket visualization showing the rules for each match (Best of 3, Best of 5, etc.). This helps players understand how many sets they need to win and what tiebreak rules apply.
+
+**How to test:**
+
+**Part 1: Basic Format Badge Display**
+1. **Log in as any user**
+2. Navigate to **Tournaments** → Select any tournament with an active bracket
+3. Click **"View Bracket"** or navigate to the bracket view
+4. **Verify each match card displays:**
+   - Status badge (SCHEDULED, COMPLETED, etc.) on the left
+   - **Format badge** on the right showing format like "Best of 3 (Super TB)"
+   - Format badge has gray gradient background (distinguishes from status)
+5. **Test all bracket types:**
+   - **Single Elimination:** Check matches in all rounds
+   - **Round Robin:** Check group matches
+   - **Match Play:** Check open format matches
+6. **Verify format badge styling:**
+   - Gray gradient background (`#f3f4f6` to `#e5e7eb`)
+   - Border: 1px solid `#d1d5db`
+   - Smaller font size than status badge (0.7rem vs 0.75rem)
+   - Positioned to the right of status badge with 0.5rem gap
+
+**Part 2: Understanding Match Format Labels**
+1. **Look at format badges across multiple matches**
+2. **Verify format meanings:**
+   - **"Best of 3 (Super TB)"** = First to win 2 sets; if 1-1, play 10-point super tiebreak
+   - **"Best of 3"** = First to win 2 sets; if 1-1, play full advantage final set
+   - **"Best of 5 (Super TB)"** = First to win 3 sets; if 2-2, play super tiebreak (modern Grand Slams)
+   - **"Best of 5"** = First to win 3 sets; if 2-2, play advantage final set (traditional)
+   - **"Pro Set"** = First to 8 games (single set), tiebreak at 7-7
+   - **"Short Sets"** = Best of 3 short sets (first to 4 games per set)
+   - **"Fast4"** = Fast4 format with no-ad scoring
+   - **"Super Tiebreak"** = Single 10-point tiebreak only (entire match)
+
+**Part 3: Format vs Final Score Examples**
+1. **Find a completed match showing "Best of 3"**
+2. **Check the final scores** - they can be:
+   - `6-0, 6-0` (2-0 in sets - straight sets victory)
+   - `6-4, 6-3` (2-0 in sets - straight sets win)
+   - `6-4, 3-6, 6-2` (2-1 in sets - went to 3 sets)
+   - `7-6, 6-7, 7-5` (2-1 in sets - three-set thriller)
+3. **Understand:** "Best of 3" means match RULES, not the final score
+4. **Verify:** A 6-0, 6-0 match correctly shows "Best of 3" (not an error)
+
+**Part 4: Single Elimination Bracket**
+1. **Navigate to a single elimination bracket**
+2. **Check Early Round matches:**
+   - Verify format badge appears next to status
+   - Format should be consistent across same-round matches
+3. **Check Finals:**
+   - Finals might have different format (e.g., Best of 5 for men's finals)
+   - Verify format badge reflects the actual match rules
+4. **Scroll through all rounds**
+5. **Verify:** Format badges visible on ALL match cards (even TBD/BYE matches)
+
+**Part 5: Round Robin Bracket**
+1. **Navigate to a round robin tournament**
+2. **Check group matches:**
+   - Each match card has a header with match number and status
+   - **Format badge** appears in the header next to status
+   - All group matches typically have same format
+3. **Click on individual match cards**
+4. **Verify:** Format badge appears consistently on match detail pages
+
+**Part 6: Match Detail Page**
+1. **Click any match card** to open match detail page
+2. **Verify Match Information section:**
+   - Shows: Scheduled Time, Court, Round, Match Number, Ball Provider
+   - **Check if format is also shown here** (may be added in Match Information)
+3. **Return to bracket view**
+4. **Verify:** Format badge remains consistent between bracket and detail views
+
+**Part 7: Default Format for Existing Matches**
+1. **Check older matches** (created before April 22, 2026)
+2. **Verify:** All show **"Best of 3 (Super TB)"** as default format
+3. **This is correct:** Existing matches use default format until manually updated
+4. **Understand:** New tournaments can specify custom formats during creation
+
+**Part 8: Format Badge Positioning**
+1. **Look at match cards with different statuses:**
+   - SCHEDULED matches (blue badge)
+   - IN_PROGRESS matches (yellow badge)
+   - COMPLETED matches (green badge)
+2. **Verify format badge always:**
+   - Appears to the RIGHT of status badge
+   - Has consistent spacing (0.5rem gap)
+   - Aligns horizontally with status badge
+   - Uses flexbox layout with gap property
+
+**Part 9: Responsive Design**
+1. **Resize browser window** to different widths:
+   - Desktop (1920px)
+   - Tablet (768px)
+   - Mobile (375px)
+2. **Verify format badges:**
+   - Wrap to new line on small screens if needed
+   - Remain readable at all sizes
+   - Don't overflow or get cut off
+   - Maintain proper spacing from status badge
+
+**Part 10: Console Logging (Development Mode)**
+1. **Open browser console** (F12 → Console tab)
+2. **Navigate to any bracket view**
+3. **Trigger a score update** (if you're a tournament admin)
+4. **Look for logs:**
+   - `[MatchService] formatMatchScores() called with match: {...}`
+   - Match object should show `format` field
+5. **Verify:** Format field is populated (not null/undefined)
+
+**Part 11: Edge Cases**
+1. **Test with matches that have:**
+   - No format set (null) → Should default to "Best of 3"
+   - Invalid format enum → Should display raw enum value
+   - Format that doesn't match actual score → Still displays format correctly
+2. **Navigate between different tournaments**
+3. **Verify:** Format badges update correctly for each tournament
+4. **Test browser refresh**
+5. **Verify:** Format badges persist after page reload
+
+**Part 12: Match Format Selection During Bracket Generation** ✅ IMPLEMENTED (2026-04-23)
+1. **Log in as tournament organizer**
+2. **Navigate to your tournament** → Click **"Generate Bracket"**
+3. **Verify bracket generation form shows:**
+   - Category dropdown
+   - Bracket type selection (Single Elimination, Round Robin, etc.)
+   - **Match Format selection** with 8 radio button options:
+     - Best of 3 (Super Tiebreak) - Default
+     - Best of 3 (Advantage Final Set)
+     - Best of 5 (Super Tiebreak)
+     - Best of 5 (Advantage Final Set)
+     - Pro Set
+     - Short Sets
+     - Fast4
+     - Super Tiebreak
+4. **Select "Pro Set"** and click **"Generate Bracket"**
+5. **Verify:**
+   - Browser automatically navigates to bracket view
+   - **ALL match cards show "Pro Set" badge** (not "Best of 3")
+6. **Generate another bracket** with different format (e.g., "Best of 5 (Super TB)")
+7. **Verify:** All matches in new bracket show selected format
+8. **Check backend console logs:**
+   - Should show: `🎾 Match format specified: PRO_SET`
+   - Should show: `🎾 Applying match format PRO_SET to X matches`
+9. **Test format descriptions:**
+   - Each radio option shows descriptive text explaining the format
+   - Text helps organizers choose appropriate format for their event
+10. **Regenerate bracket:**
+    - Generate bracket with "Pro Set"
+    - Generate again (replaces previous) with "Short Sets"
+    - Verify new bracket shows "Short Sets" for all matches
+11. **Test all 8 formats:**
+    - Generate brackets with each format option
+    - Verify correct format badge appears on all matches
+    - Verify format persists after page refresh
+
+**Expected Result:**
+- Format badge visible on all match cards in all bracket types
+- Badge shows human-readable format label (not enum value)
+- Gray gradient styling distinguishes from status badge
+- Badge positioned to the right of status badge
+- **Organizers can select match format during bracket generation**
+- **Selected format applies to ALL matches in the bracket**
+- Default "Best of 3 (Super TB)" used if organizer doesn't change selection
+- Badge helps players understand match rules before playing
+- Format labels accurately describe the match rules (sets to win, tiebreak rules)
+- 6-0, 6-0 score correctly shows selected format (e.g., "Pro Set" or "Best of 3")
+
+---
+
 ## Reporting Issues
 
 If any feature does not work as described:

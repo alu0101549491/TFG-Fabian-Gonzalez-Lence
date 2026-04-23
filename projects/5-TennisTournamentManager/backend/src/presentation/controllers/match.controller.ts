@@ -491,6 +491,7 @@ export class MatchController {
       }
 
       const scoreRepository = AppDataSource.getRepository(Score);
+      const matchRepository = AppDataSource.getRepository(Match);
       
       // Delete existing scores for this match to prevent duplicates (allow score updates)
       await scoreRepository.delete({matchId: id});
@@ -511,6 +512,9 @@ export class MatchController {
         const saved = await scoreRepository.save(scoreEntity);
         savedScores.push(saved);
       }
+      
+      // Clear the old score string field so Score entities take precedence
+      await matchRepository.update(id, {score: null});
       
       res.status(HTTP_STATUS.CREATED).json({
         scores: savedScores,

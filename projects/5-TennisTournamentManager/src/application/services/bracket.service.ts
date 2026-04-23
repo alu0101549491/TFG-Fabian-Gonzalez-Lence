@@ -105,6 +105,7 @@ export class BracketService implements IBracketService {
       tournamentId: data.tournamentId,
       categoryId: data.categoryId,
       bracketType: data.bracketType,
+      matchFormat: data.matchFormat,
       size: generatedBracket.size,
       totalRounds: generatedBracket.totalRounds,
       structure: parseBracketStructure(generatedBracket.structure),

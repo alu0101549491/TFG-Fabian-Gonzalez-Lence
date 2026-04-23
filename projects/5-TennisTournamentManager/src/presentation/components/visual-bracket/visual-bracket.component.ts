@@ -230,6 +230,29 @@ export class VisualBracketComponent {
   }
 
   /**
+   * Gets human-readable format text for match display.
+   *
+   * @param format - Match format enum value
+   * @returns Format display text
+   */
+  public getMatchFormatDisplay(format: string | null | undefined): string {
+    if (!format) return 'Best of 3';
+    
+    const formatLabels: Record<string, string> = {
+      'BEST_OF_3_FINAL_SET_TIEBREAK': 'Best of 3 (Super TB)',
+      'BEST_OF_3_ADVANTAGE': 'Best of 3',
+      'BEST_OF_5_FINAL_SET_TIEBREAK': 'Best of 5 (Super TB)',
+      'BEST_OF_5_ADVANTAGE': 'Best of 5',
+      'PRO_SET': 'Pro Set',
+      'SHORT_SETS': 'Short Sets',
+      'FAST4': 'Fast4',
+      'SUPER_TIEBREAK': 'Super Tiebreak',
+    };
+    
+    return formatLabels[format] ?? format;
+  }
+
+  /**
    * Checks if participant (or team in doubles) is the winner.
    *
    * @param match - Match data

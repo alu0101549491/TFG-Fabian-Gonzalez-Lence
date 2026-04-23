@@ -14,6 +14,7 @@
 
 import {Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn} from 'typeorm';
 import {MatchStatus} from '../enumerations/match-status';
+import {MatchFormat} from '../enumerations/match-format';
 import {Bracket} from './bracket.entity';
 import {Phase} from './phase.entity';
 import {Court} from './court.entity';
@@ -80,6 +81,13 @@ export class Match {
 
   @Column('varchar', {length: 100, nullable: true})
   public ballProvider!: string | null;
+
+  @Column({
+    type: 'enum',
+    enum: MatchFormat,
+    default: MatchFormat.BEST_OF_3_FINAL_SET_TIEBREAK,
+  })
+  public format!: MatchFormat;
 
   @CreateDateColumn()
   public createdAt!: Date;

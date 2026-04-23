@@ -75,6 +75,9 @@ export class MatchDetailComponent implements OnInit {
   /** Match participant/admin score-entry check */
   public canRecordScores = signal(false);
 
+  /** Authentication status - updated on init */
+  public isAuthenticated = signal(false);
+
   /** Modal states */
   public showScheduleModal = signal(false);
   public showStatusModal = signal(false);
@@ -195,6 +198,9 @@ export class MatchDetailComponent implements OnInit {
    * Initializes component and loads match data.
    */
   public ngOnInit(): void {
+    // Check authentication status on init
+    this.isAuthenticated.set(this.authStateService.getCurrentUser() !== null);
+    
     // Get tournamentId from query params for back navigation
     this.route.queryParamMap.subscribe(params => {
       this.tournamentId = params.get('tournamentId');
@@ -277,11 +283,15 @@ export class MatchDetailComponent implements OnInit {
     } : 'null (not logged in)');
     
     if (!user) {
-      console.log('[Match Detail] No user logged in, setting canManageMatch to false');
+      console.log('[Match Detail] No user logged in, setting all permissions to false');
+      this.isAuthenticated.set(false);
       this.canManageMatch.set(false);
       this.canRecordScores.set(false);
       return;
     }
+
+    // User is authenticated
+    this.isAuthenticated.set(true);
 
     const canRecordScores = this.isMatchParticipant(user.id, match);
     this.canRecordScores.set(canRecordScores);
@@ -572,6 +582,12 @@ export class MatchDetailComponent implements OnInit {
       const user = this.authStateService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
+      console.log('[Match Detail] submitScores() called with form data:', {
+        rawSets: this.scoresForm.sets,
+        winnerId: this.scoresForm.winnerId,
+        isRetirement: this.scoresForm.isRetirement,
+      });
+
       // Filter out empty sets and transform to SetScore format
       const validSets = this.scoresForm.sets
         .filter(set => set.participant1Score > 0 || set.participant2Score > 0)
@@ -583,6 +599,8 @@ export class MatchDetailComponent implements OnInit {
           tiebreakParticipant2: null,
         }));
 
+      console.log('[Match Detail] validSets after filtering:', validSets);
+
       if (validSets.length === 0) {
         throw new Error('Please enter at least one set score');
       }
@@ -593,11 +611,21 @@ export class MatchDetailComponent implements OnInit {
 
       // Validate tennis scoring rules
       const validation = this.scoreValidator.validateMatch(validSets);
+      console.log('[Match Detail] Score validation result:', validation);
+      
       if (!validation.isValid) {
         this.scoreValidationErrors.set(validation.errors);
         this.errorMessage.set('Invalid tennis score. Please check the errors below and correct the scores.');
         return;
       }
+
+      console.log('[Match Detail] Calling matchService.recordResult with:', {
+        matchId: this.match()!.id,
+        winnerId: this.scoresForm.winnerId,
+        sets: validSets,
+        isRetirement: this.scoresForm.isRetirement,
+        userId: user.id,
+      });
 
       await this.matchService.recordResult(
         {
@@ -610,11 +638,14 @@ export class MatchDetailComponent implements OnInit {
         user.id
       );
 
+      console.log('[Match Detail] recordResult completed successfully');
       this.successMessage.set('Match result recorded successfully');
       this.closeModals();
       await this.loadMatch(this.match()!.id);
+      console.log('[Match Detail] Match reloaded after score submission');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to record scores';
+      console.error('[Match Detail] submitScores() error:', error);
       this.errorMessage.set(message);
     } finally {
       this.isSubmitting.set(false);
