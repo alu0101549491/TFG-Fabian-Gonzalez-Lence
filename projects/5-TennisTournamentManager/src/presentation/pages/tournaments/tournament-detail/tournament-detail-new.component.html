@@ -670,54 +670,16 @@
                             }
                           </td>
                           <td style="padding: 0.75rem; text-align: center;">
-                            @if (isEditingSeed(player.registration.id)) {
-                              <!-- Editing mode -->
-                              <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                                <input 
-                                  type="number" 
-                                  [(ngModel)]="tempSeedNumber"
-                                  min="1"
-                                  step="1"
-                                  placeholder="Seed #"
-                                  style="width: 80px; padding: 0.25rem 0.5rem; border: 2px solid #4CAF50; border-radius: 4px; text-align: center;"
-                                />
-                                <button 
-                                  (click)="saveSeedNumber(player.registration.id)"
-                                  style="padding: 0.25rem 0.5rem; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
-                                  title="Save seed number"
-                                >
-                                  ✓
-                                </button>
-                                <button 
-                                  (click)="cancelEditingSeed()"
-                                  style="padding: 0.25rem 0.5rem; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
-                                  title="Cancel"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            } @else {
-                              <!-- Display mode -->
-                              <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                                @if (player.registration.seedNumber) {
-                                  <span class="seed-badge-table">
-                                    <span class="seed-icon">🏆</span>
-                                    <span>Seed #{{ player.registration.seedNumber }}</span>
-                                  </span>
-                                } @else {
-                                  <span style="color: #999; font-size: 0.875rem;">—</span>
-                                }
-                                @if (canManageTournament()) {
-                                  <button 
-                                    (click)="startEditingSeed(player.registration.id, player.registration.seedNumber)"
-                                    style="padding: 0.25rem 0.5rem; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;"
-                                    title="Edit seed number"
-                                  >
-                                    ✏️
-                                  </button>
-                                }
-                              </div>
-                            }
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                              @if (player.registration.seedNumber) {
+                                <span class="seed-badge-table">
+                                  <span class="seed-icon">🏆</span>
+                                  <span>Seed #{{ player.registration.seedNumber }}</span>
+                                </span>
+                              } @else {
+                                <span style="color: #999; font-size: 0.875rem;">—</span>
+                              }
+                            </div>
                           </td>
                           <td style="padding: 0.75rem; text-align: center;">
                             <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
@@ -749,65 +711,28 @@
                           </td>
                           <td style="padding: 0.75rem; text-align: center;">
                             <div style="display: flex; gap: 0.5rem; justify-content: center;">
-                              @if (player.registration.status === 'PENDING') {
-                                @if (isCategoryFull(player.registration.categoryId)) {
-                                  <!-- Category is FULL - show Set as Alternate button -->
-                                  <button
-                                    class="action-btn"
-                                    (click)="setAsAlternate(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email, player.partner?.registration?.id)"
-                                    style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                                    title="Set as alternate (waiting list)"
-                                  >
-                                    ⏳ Set as Alternate
-                                  </button>
-                                } @else {
-                                  <!-- Category has spots available - show Approve button -->
-                                  <button
-                                    class="action-btn"
-                                    (click)="approveRegistration(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email, player.partner?.registration?.id)"
-                                    style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                                    title="Approve registration"
-                                  >
-                                    ✓ Approve
-                                  </button>
-                                }
+                              @if (canManageTournament()) {
+                                <!-- Single Edit Button -->
                                 <button
                                   class="action-btn"
-                                  (click)="rejectRegistration(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email, player.partner?.registration?.id)"
-                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                                  title="Reject registration"
+                                  (click)="openEditParticipantModal(player)"
+                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 0.25rem;"
+                                  title="Edit participant details"
                                 >
-                                  ✕ Reject
+                                  ✏️ Edit
                                 </button>
-                              } @else if (player.registration.status === 'ACCEPTED') {
-                                <!-- Show Promote button for alternates when spots are available -->
-                                @if (player.registration.acceptanceType === 'ALTERNATE' && !isCategoryFull(player.registration.categoryId)) {
+                                
+                                <!-- Delete Button (only for rejected/withdrawn) -->
+                                @if (player.registration.status === 'REJECTED' || player.registration.status === 'WITHDRAWN') {
                                   <button
-                                    class="action-btn"
-                                    (click)="promoteFromAlternate(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
-                                    style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #8b5cf6; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                                    title="Promote to main draw (lucky loser)"
+                                    class="action-btn delete"
+                                    (click)="deleteParticipant(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
+                                    style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                                    title="Permanently delete this registration"
                                   >
-                                    ⬆️ Promote
+                                    🗑️ Delete
                                   </button>
                                 }
-                                <button
-                                  class="action-btn delete"
-                                  (click)="removeParticipant(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
-                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem;"
-                                  title="Remove participant"
-                                >
-                                  🗑️ Remove
-                                </button>
-                              } @else if (player.registration.status === 'REJECTED' || player.registration.status === 'WITHDRAWN') {
-                                <button
-                                  class="action-btn delete"
-                                  (click)="deleteParticipant(player.registration.id, player.user.username || (player.user.firstName + ' ' + player.user.lastName) || player.user.email)"
-                                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background-color: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                                  title="Permanently delete this registration"
-                                >
-                                  🗑️ Delete
-                                </button>
                               }
                             </div>
                           </td>
@@ -1500,6 +1425,125 @@
         </form>
         }
 
+      </div>
+    </div>
+  }
+
+  <!-- Edit Participant Modal -->
+  @if (showEditParticipantModal()) {
+    <div class="modal-overlay" (click)="closeEditParticipantModal()" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+      <div class="modal-content" (click)="$event.stopPropagation()" style="background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+        <div style="padding: 2rem; border-bottom: 1px solid #eee;">
+          <h2 style="margin: 0; font-size: 1.5rem; color: #1f2937;">✏️ Edit Participant</h2>
+          <p style="margin: 0.5rem 0 0 0; color: #6b7280;">{{ editParticipantForm.participantName }}</p>
+        </div>
+
+        <form (ngSubmit)="saveEditParticipant()" style="padding: 2rem;">
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Category -->
+            <div>
+              <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                Category <span style="color: red;">*</span>
+              </label>
+              <select
+                [(ngModel)]="editParticipantForm.categoryId"
+                name="categoryId"
+                required
+                style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem;"
+              >
+                <option value="">-- Select Category --</option>
+                @for (category of categories(); track category.id) {
+                  <option [value]="category.id">{{ category.name }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Seed Number -->
+            <div>
+              <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                Seed Number
+              </label>
+              <input
+                type="number"
+                [(ngModel)]="editParticipantForm.seedNumber"
+                name="seedNumber"
+                min="1"
+                step="1"
+                placeholder="Leave empty for unseeded"
+                style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem;"
+              />
+              <small style="display: block; margin-top: 0.25rem; color: #6b7280;">
+                Enter a positive integer for seeded players. Leave empty for unseeded players.
+              </small>
+            </div>
+
+            <!-- Registration Status -->
+            <div>
+              <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                Registration Status <span style="color: red;">*</span>
+              </label>
+              <select
+                [(ngModel)]="editParticipantForm.status"
+                name="status"
+                required
+                style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem;"
+              >
+                @for (status of registrationStatuses; track status) {
+                  <option [value]="status">{{ status | enumFormat }}</option>
+                }
+              </select>
+              <small style="display: block; margin-top: 0.25rem; color: #6b7280;">
+                <strong>PENDING:</strong> Awaiting approval | <strong>ACCEPTED:</strong> Approved and in draw | 
+                <strong>REJECTED:</strong> Not approved | <strong>WITHDRAWN:</strong> Participant withdrew
+              </small>
+            </div>
+
+            <!-- Acceptance Type -->
+            <div>
+              <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                Acceptance Type <span style="color: red;">*</span>
+              </label>
+              <select
+                [(ngModel)]="editParticipantForm.acceptanceType"
+                name="acceptanceType"
+                required
+                style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem;"
+              >
+                @for (type of acceptanceTypes; track type) {
+                  <option [value]="type">{{ getAcceptanceTypeLabel(type) }}</option>
+                }
+              </select>
+              <small style="display: block; margin-top: 0.25rem; color: #6b7280;">
+                Determines how the participant entered the tournament (e.g., Wild Card, Qualifier, etc.)
+              </small>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
+            <button
+              type="submit"
+              [disabled]="isUpdatingParticipant()"
+              style="flex: 1; padding: 0.75rem; background-color: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
+              [style.opacity]="isUpdatingParticipant() ? '0.5' : '1'"
+              [style.cursor]="isUpdatingParticipant() ? 'not-allowed' : 'pointer'"
+            >
+              @if (isUpdatingParticipant()) {
+                <span>🔄 Saving...</span>
+              } @else {
+                <span>💾 Save Changes</span>
+              }
+            </button>
+            <button
+              type="button"
+              (click)="closeEditParticipantModal()"
+              [disabled]="isUpdatingParticipant()"
+              style="padding: 0.75rem 1.5rem; background-color: #e5e7eb; color: #374151; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   }

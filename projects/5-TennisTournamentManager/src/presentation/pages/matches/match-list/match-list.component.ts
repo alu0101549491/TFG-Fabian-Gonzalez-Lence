@@ -377,6 +377,34 @@ export class MatchListComponent implements OnInit {
   }
 
   /**
+   * Formats score display based on match status.
+   * For non-completion statuses (WO/RET/DEF/etc), returns appropriate text instead of "Not started".
+   *
+   * @param match - Match to format score for
+   * @returns Formatted score string
+   */
+  public formatScore(match: EnhancedMatch): string {
+    // If match has a score, display it
+    if (match.score) return match.score;
+
+    // For non-completion statuses, show dash instead of "Not started"
+    const nonCompletionStatuses = [
+      MatchStatus.WALKOVER,
+      MatchStatus.RETIRED,
+      MatchStatus.DEFAULT,
+      MatchStatus.ABANDONED,
+      MatchStatus.CANCELLED,
+    ];
+
+    if (nonCompletionStatuses.includes(match.status)) {
+      return '—'; // Em dash (no score for these statuses)
+    }
+
+    // For other statuses (NOT_SCHEDULED, SCHEDULED, IN_PROGRESS, SUSPENDED)
+    return 'Not started';
+  }
+
+  /**
    * Navigates back to the tournament page if filtered by tournament, otherwise to home.
    */
   public goBack(): void {

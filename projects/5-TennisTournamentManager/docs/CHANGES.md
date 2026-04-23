@@ -8,6 +8,264 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### 🎉 Phase 4 Progress (2026-04-23)
+
+**Phase 4 Goals:** Form improvements and better data entry UX
+
+**Completed Features:**
+1. ✅ **Unified Participant Edit Modal** - Replaced scattered inline editing (seeds) and multiple action buttons (Approve, Reject, Set as Alternate, Promote, Remove) with single "Edit" button
+   - **Single Modal**: Edit seed number, registration status, acceptance type, and category in one place
+   - **Full Acceptance Type Support**: All 9 acceptance types now accessible via dropdown (WILD_CARD, SPECIAL_EXEMPTION, JUNIOR_EXEMPTION, QUALIFIER, ORGANIZER_ACCEPTANCE, DIRECT_ACCEPTANCE, LUCKY_LOSER, ALTERNATE, WITHDRAWN)
+   - **Simplified Table**: Cleaner participant table with just "Edit" and "Delete" buttons
+   - **Better UX**: No more confusion about which button to click; all participant editing consolidated in one form
+
+2. ✅ **Full Acceptance Status Dropdown** - Organizers can now set all 9 acceptance types directly
+   - **Before**: Only 3 acceptance types accessible (DIRECT_ACCEPTANCE via Approve, ALTERNATE via Set as Alternate, LUCKY_LOSER via Promote)
+   - **After**: All 9 types available in dropdown with labels (e.g., "Wild Card (WC)", "Special Exemption (SE)", "Qualifier (Q)")
+   - **Impact**: Organizers can properly classify participants for tournament draws (e.g., wild cards, junior exemptions, qualifiers)
+
+3. ✅ **Match Status Validation (SCHEDULED requires time)** - Prevents marking matches as SCHEDULED without date/time
+   - **Issue**: Organizers could set match status to SCHEDULED without assigning a scheduled time, causing data inconsistency
+   - **Solution**: Added validation in match status update to require scheduledTime when setting status to SCHEDULED
+   - **UI Warning**: Yellow warning box appears in status modal when attempting to select SCHEDULED without a scheduled time
+   - **Error Message**: Clear error message guides user to schedule the match first before marking as SCHEDULED
+
+4. ✅ **Winner Selection for WO/RET/DEF Statuses** - Specify winner when marking matches with non-completion statuses
+   - **Issue**: When marking matches as WALKOVER (WO), RETIRED (RET), or DEFAULT (DEF), system didn't capture which participant won
+   - **Solution**: Added winner dropdown that appears when these statuses are selected
+   - **Statuses Covered**: WALKOVER (opponent no-show), RETIRED (player retired during match), DEFAULT (disciplinary disqualification)
+   - **Validation**: Cannot submit without selecting a winner for these statuses
+   - **Result**: Proper winner recording for non-completion scenarios, enables accurate bracket advancement
+   - **Bug Fixed**: Winner now persists correctly to database and updates standings (see detailed bug fix section below)
+
+**Time Spent:** ~4.5 hours (estimated 3-7 hours total for first 4 tasks, including bug fix)
+
+**Files Modified:**
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts` - Added edit modal state, methods, and acceptance type labels
+- `src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html` - Replaced inline editing with Edit button, added unified edit modal
+- `src/presentation/pages/matches/match-detail/match-detail.component.ts` - Added winner selection logic and validation
+- `src/presentation/pages/matches/match-detail/match-detail.component.html` - Added conditional winner dropdown
+- `src/application/dto/match.dto.ts` - Added `winnerId` field to `UpdateMatchStatusDto`
+- `src/application/services/match.service.ts` - Updated `updateStatus()` to handle winner and update standings
+- `src/presentation/pages/matches/match-list/match-list.component.ts` - Added `formatScore()` method for better score display
+- `src/presentation/pages/matches/match-list/match-list.component.html` - Updated score display to use `formatScore()` method
+
+**Bug Fixes:**
+- ✅ Fixed winner not being saved when updating match status to WO/RET/DEF (added `winnerId` to DTO, updated service to persist winner and update standings)
+
+**Next Phase 4 Tasks:**
+- [ ] Add default category creation
+- [ ] Add image upload to announcement form
+- [ ] Add link fields to announcement form
+
+---
+
+### Bug Fix: Winner Selection Not Persisting for WO/RET/DEF Statuses (2026-04-23)
+
+**Issue:** After selecting a winner for WALKOVER, RETIRED, or DEFAULT statuses, the winner badge did not appear on the match detail page, and the winner was not reflected in brackets or match lists.
+
+**Root Cause:** The `UpdateMatchStatusDto` interface was missing the `winnerId` field, and the `updateStatus()` method in `MatchService` was not processing or saving the `winnerId` when updating match status.
+
+**Symptoms:**
+- Winner dropdown appeared and allowed selection (frontend)
+- Form submitted successfully without errors
+- Winner badge did not appear on match detail page
+- Winner not set in database (winnerId remained null)
+- Brackets could not advance winner to next round
+- Statistics did not count the match result
+
+**Solution:**
+
+1. **Added `winnerId` to UpdateMatchStatusDto** (`match.dto.ts`):
+   ```typescript
+   export interface UpdateMatchStatusDto {
+     matchId: string;
+     status: MatchStatus;
+     winnerId?: string; // NEW: Optional winner ID for WO/RET/DEF
+   }
+   ```
+
+2. **Updated `updateStatus()` method** (`match.service.ts`):
+   - Include `winnerId` from DTO when creating updated match
+   - Set `completedAt` timestamp when winner is provided
+   - Call `standingService.updateStandings()` when winner is set
+   - Preserve existing winnerId if new one not provided
+
+**Testing:**
+- Set match status to WALKOVER with winner → verify winner badge appears
+- Check bracket visualization → verify winner advances to next round
+- Check match list → verify winner indicated
+- Check tournament statistics → verify match counted in win/loss records
+- Test with RETIRED and DEFAULT statuses → verify same behavior
+
+**Impact:**
+- ✅ Winner now persists to database
+- ✅ Winner badge displays correctly on match detail page
+- ✅ Brackets can advance winners properly
+- ✅ Statistics accurately count match results
+- ✅ Complete match records for non-completion statuses
+
+**Related UX Improvement:** Fixed match list score display for non-completion statuses. WALKOVER, RETIRED, DEFAULT, ABANDONED, and CANCELLED matches now show "—" (em dash) instead of "Not started" since these matches don't have traditional scores. This makes it clearer that these matches were decided without playing a full match.
+
+---
+
+### Feature: Winner Selection for WO/RET/DEF Statuses (2026-04-23)
+
+**Issue:** When marking matches with non-completion statuses (WALKOVER, RETIRED, DEFAULT), the system didn't capture which participant won, leading to:
+- Incomplete match records (status set but no winner)
+- Broken bracket advancement (can't advance to next round without winner)
+- Missing tournament statistics (can't calculate win/loss records correctly)
+- Confusion about match outcomes
+
+**Solution:** Added winner selection dropdown that appears when these statuses are selected.
+
+**Statuses Requiring Winner:**
+1. **WALKOVER (WO)**: Victory awarded due to opponent no-show
+2. **RETIRED (RET)**: Match ended by player retirement during play
+3. **DEFAULT (DEF)**: Disciplinary disqualification
+
+**Implementation:**
+
+1. **TypeScript Changes** (match-detail.component.ts):
+   - Added `winnerId` field to `statusForm` object
+   - Created `statusRequiresWinner(status)` method to check if status needs winner
+   - Updated `submitStatus()` validation to require winnerId for WO/RET/DEF
+   - Updated `openStatusModal()` to reset winnerId when opening modal
+   - Error message: "Cannot mark match as {STATUS} without selecting a winner. Please select which participant won."
+
+2. **HTML Changes** (match-detail.component.html):
+   - Conditional winner dropdown appears when statusRequiresWinner() returns true
+   - Dropdown shows both participants with their display names
+   - Required field indicator (red asterisk)
+   - Help text: "Required for Walkover, Retired, and Default statuses"
+   - Winner dropdown positioned between status dropdown and validation warnings
+
+3. **API Integration**:
+   - `updateStatus()` call now includes `winnerId` field when applicable
+   - Backend receives winnerId and updates match winner accordingly
+   - Match advancement logic can now process WO/RET/DEF matches correctly
+
+**User Flow:**
+- **Before**: Select WALKOVER status → Submit → Match status changed but no winner → Bracket can't advance
+- **After**: Select WALKOVER status → Winner dropdown appears → Select winner → Submit → Match status AND winner recorded → Bracket advances winner correctly
+
+**Benefits:**
+- ✅ Complete match records for all status types
+- ✅ Proper bracket advancement for non-completion scenarios
+- ✅ Accurate tournament statistics (win/loss counts)
+- ✅ Clear validation guides user to select winner
+- ✅ Conditional UI (dropdown only appears when needed)
+- ✅ Supports singles and doubles matches
+
+**Testing:**
+- Mark match as WALKOVER without selecting winner → verify error
+- Select winner, submit → verify status and winner saved
+- Verify winner advances in bracket visualization
+- Test with RETIRED and DEFAULT statuses
+- Verify dropdown doesn't appear for other statuses (COMPLETED, IN_PROGRESS, etc.)
+
+---
+
+### Feature: Match Status Validation - SCHEDULED Requires Time (2026-04-23)
+
+**Issue:** Organizers could mark a match as SCHEDULED without assigning a date and time, leading to:
+- Data inconsistency (SCHEDULED status but no scheduledTime)
+- Confusion about when matches should be played
+- Broken assumptions in bracket/order of play views
+
+**Solution:** Added validation to prevent setting status to SCHEDULED without a scheduled time.
+
+**Implementation:**
+1. **Validation Logic** (match-detail.component.ts, submitStatus method):
+   - Check if selected status is SCHEDULED
+   - Verify match has scheduledTime property set
+   - Throw error if SCHEDULED but no time: "Cannot mark match as SCHEDULED without a scheduled date and time. Please schedule the match first using the 'Schedule Match' button."
+
+2. **UI Warning** (match-detail.component.html):
+   - Yellow warning box appears when user selects SCHEDULED in dropdown
+   - Only shows if match does not have scheduledTime
+   - Contains icon (⚠️), bold heading, and explanatory text
+   - Warns user to schedule match first before marking as SCHEDULED
+
+**User Flow:**
+- **Before**: Organizer could set status to SCHEDULED → match marked as scheduled but no time → confusion
+- **After**: Organizer tries to set status to SCHEDULED → warning appears → error on submit → organizer clicks "Schedule Match" button first → sets date/time/court → then can mark as SCHEDULED
+
+**Benefits:**
+- ✅ Data consistency: SCHEDULED status always has scheduledTime
+- ✅ Clear error messages guide users to correct workflow
+- ✅ Prevents confusion in order of play and bracket views
+- ✅ Enforces proper match scheduling workflow
+
+**Testing:**
+- Try to set unscheduled match to SCHEDULED status → verify error shown
+- Schedule a match first, then set to SCHEDULED → verify succeeds
+- Warning box appears when SCHEDULED selected without time
+
+---
+
+### Feature: Unified Participant Edit Modal (2026-04-23)
+
+**Issue:** Participant editing was confusing due to multiple windows and scattered controls:
+- Seed numbers: inline editing in table with separate Edit/Save/Cancel buttons
+- Status changes: 6 different action buttons depending on current state (Approve, Reject, Set as Alternate, Promote, Remove, Delete)
+- Acceptance type: only 3 out of 9 types accessible through workflow buttons
+- No way to change category after registration
+- Difficult to predict which actions were available
+
+**Solution:** Created unified "Edit Participant" modal that consolidates all participant editing into one form.
+
+**Modal Features:**
+- **Seed Number**: Number input (optional, positive integer)
+- **Registration Status**: Dropdown with all 4 statuses (PENDING, ACCEPTED, REJECTED, WITHDRAWN)
+- **Acceptance Type**: Dropdown with all 9 types:
+  - Organizer Acceptance (OA)
+  - Direct Acceptance (DA)
+  - Special Exemption (SE)
+  - Junior Exemption (JE)
+  - Qualifier (Q)
+  - Lucky Loser (LL)
+  - Wild Card (WC)
+  - Alternate (ALT)
+  - Withdrawn (WD)
+- **Category**: Dropdown to reassign participant to different category
+- **Help Text**: Contextual descriptions for each field
+
+**Implementation Details:**
+- Added `showEditParticipantModal` signal to control modal visibility
+- Added `editParticipantForm` state object with registrationId, seedNumber, status, acceptanceType, categoryId
+- Added `isUpdatingParticipant` signal for loading state
+- Created `openEditParticipantModal(player)` method to populate form
+- Created `closeEditParticipantModal()` method to reset state
+- Created `saveEditParticipant()` async method to update:
+  1. Seed number via `registrationService.updateSeedNumber()`
+  2. Status and acceptance type via `registrationService.updateRegistrationStatus()`
+  3. Reload player list to reflect changes
+- Created `getAcceptanceTypeLabel(type)` helper for human-readable labels
+
+**UI Changes:**
+- Removed inline seed editing (input field + Save/Cancel buttons)
+- Replaced 6 conditional action buttons with single "Edit" button
+- Kept "Delete" button only for REJECTED/WITHDRAWN registrations
+- Modal uses modern styling with rounded corners, shadows, and responsive layout
+
+**Benefits:**
+- ✅ All participant fields editable in one place
+- ✅ No more hunting for the right button
+- ✅ Full control over acceptance types (previously limited to 3)
+- ✅ Can change participant category post-registration
+- ✅ Cleaner, less cluttered table interface
+- ✅ Consistent editing experience
+
+**Testing:**
+- Edit participant with different statuses (PENDING, ACCEPTED, REJECTED)
+- Change acceptance type to WILD_CARD, verify badge displays correctly
+- Update seed number, verify appears in table
+- Change status from ACCEPTED to WITHDRAWN, verify status badge updates
+- Verify modal closes on Cancel and after successful save
+
+---
+
 ### 🎉 Phase 3 Completion (2026-04-23)
 
 **Phase 3 Goals:** Polish, UI improvements, and bracket visualization enhancements

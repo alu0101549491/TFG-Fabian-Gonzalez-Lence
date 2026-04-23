@@ -377,6 +377,51 @@
                 </small>
               </div>
 
+              <!-- Winner Selection (for WO/RET/DEF statuses) -->
+              @if (statusRequiresWinner(statusForm.status)) {
+                <div class="form-group" style="margin-top: 1rem;">
+                  <label for="winnerId" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                    Winner <span style="color: red;">*</span>
+                  </label>
+                  <select 
+                    id="winnerId" 
+                    [(ngModel)]="statusForm.winnerId" 
+                    name="winnerId"
+                    required
+                    style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem;"
+                  >
+                    <option value="">-- Select Winner --</option>
+                    @if (match()!.participant1Id) {
+                      <option [value]="match()!.participant1Id">
+                        {{ getParticipantDisplayName(1) }}
+                      </option>
+                    }
+                    @if (match()!.participant2Id) {
+                      <option [value]="match()!.participant2Id">
+                        {{ getParticipantDisplayName(2) }}
+                      </option>
+                    }
+                  </select>
+                  <small style="display: block; margin-top: 0.25rem; color: var(--color-gray-600); font-size: 0.875rem;">
+                    Required for Walkover, Retired, and Default statuses
+                  </small>
+                </div>
+              }
+
+              @if (statusForm.status === 'SCHEDULED' && !match()?.scheduledTime) {
+                <div class="warning-box" style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 4px;">
+                  <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                    <span style="font-size: 1.25rem;">⚠️</span>
+                    <div style="flex: 1;">
+                      <strong style="color: #856404;">Validation Required</strong>
+                      <p style="margin: 0.25rem 0 0 0; color: #856404; font-size: 0.875rem;">
+                        This match does not have a scheduled date and time. You must schedule the match first using the "Schedule Match" button before marking it as SCHEDULED.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              }
+
               <p class="info-text">
                 <span>ℹ️</span>
                 <span>Note: Changing status will update the match immediately.</span>

@@ -81,4 +81,5 @@ export interface MatchDto {
 export interface UpdateMatchStatusDto {
   matchId: string;
   status: MatchStatus;
+  winnerId?: string;
 }

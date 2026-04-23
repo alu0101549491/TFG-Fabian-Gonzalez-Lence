@@ -828,6 +828,427 @@ npm run dev
 
 ---
 
+## Phase 4: Form Improvements (April 23, 2026)
+
+### Feature 16: Unified Participant Edit Modal
+
+**What was changed:** 
+- Replaced inline seed editing and 6 separate action buttons with single "Edit" button
+- Created unified edit modal with all participant fields (seed, status, acceptance type, category)
+- All 9 acceptance types now accessible via dropdown (previously only 3)
+
+**Before:**
+- Seed numbers: inline editing with separate Edit/Save/Cancel buttons
+- Status changes: 6 different action buttons (Approve, Reject, Set as Alternate, Promote, Remove, Delete)
+- Only 3 acceptance types accessible: DIRECT_ACCEPTANCE (via Approve), ALTERNATE (via Set as Alternate), LUCKY_LOSER (via Promote)
+- No way to change category after registration
+- Confusing which button to use
+
+**After:**
+- Single "Edit" button opens unified modal
+- All fields editable in one place: seed number, status (4 options), acceptance type (9 options), category
+- Cleaner table with just "Edit" and "Delete" buttons
+
+**How to test:**
+
+1. **Setup:**
+   - Log in as tournament organizer
+   - Navigate to a tournament with registered participants
+   - Go to "Participants" section in tournament detail
+
+2. **Verify New UI:**
+   - Look at participant table
+   - **Verify:** No inline seed editing (no Edit button next to seed numbers)
+   - **Verify:** Action column shows only "Edit" button (and "Delete" for rejected/withdrawn)
+   - **Verify:** No Approve/Reject/Set as Alternate/Promote/Remove buttons
+
+3. **Open Edit Modal:**
+   - Click "Edit" button for any participant
+   - **Verify:** Modal opens with title "✏️ Edit Participant"
+   - **Verify:** Modal shows participant name below title
+   - **Verify:** Modal contains 4 fields:
+     - Category dropdown (required)
+     - Seed Number input (optional, number)
+     - Registration Status dropdown (required)
+     - Acceptance Type dropdown (required)
+
+4. **Test Seed Number Editing:**
+   - Enter seed number "5"
+   - Click "Save Changes"
+   - **Verify:** Modal closes
+   - **Verify:** Participant table shows "Seed #5" with 🏆 icon
+   - Edit same participant again
+   - Clear seed number (leave empty)
+   - Save
+   - **Verify:** Seed column shows "—" (unseeded)
+
+5. **Test Registration Status Change:**
+   - Edit a PENDING participant
+   - Change status to "ACCEPTED"
+   - Save
+   - **Verify:** Status badge shows "Accepted" (green)
+   - Edit again, change to "REJECTED"
+   - Save
+   - **Verify:** Status badge shows "Rejected" (red)
+
+6. **Test All 9 Acceptance Types:**
+   - Edit an ACCEPTED participant
+   - Open the "Acceptance Type" dropdown
+   - **Verify:** Dropdown shows all 9 options:
+     - Organizer Acceptance (OA)
+     - Direct Acceptance (DA)
+     - Special Exemption (SE)
+     - Junior Exemption (JE)
+     - Qualifier (Q)
+     - Lucky Loser (LL)
+     - Wild Card (WC)
+     - Alternate (ALT)
+     - Withdrawn (WD)
+   - Select "Wild Card (WC)"
+   - Save
+   - **Verify:** Status column shows acceptance type badge [WC] in blue
+
+7. **Test Category Change:**
+   - Edit a participant
+   - Change category to a different category
+   - Save
+   - **Verify:** Category column updates to show new category
+
+8. **Test Modal Cancel:**
+   - Edit a participant
+   - Change multiple fields
+   - Click "Cancel"
+   - **Verify:** Modal closes without saving changes
+   - **Verify:** Participant data unchanged
+
+9. **Test Validation:**
+   - Edit a participant
+   - Enter seed number "-5" (negative)
+   - Try to save
+   - **Verify:** Error alert: "Seed number must be a positive integer"
+   - Enter seed number "3.5" (decimal)
+   - Try to save
+   - **Verify:** Error alert shown
+
+10. **Test Loading State:**
+    - Edit a participant
+    - Make changes and click "Save Changes"
+    - **Verify:** Button shows "🔄 Saving..." while processing
+    - **Verify:** Button is disabled during save
+    - **Verify:** Modal closes after successful save
+
+11. **Test Delete Button:**
+    - Find a REJECTED or WITHDRAWN participant
+    - **Verify:** "Delete" button appears next to "Edit" button
+    - Find a PENDING or ACCEPTED participant
+    - **Verify:** No "Delete" button (only "Edit")
+
+12. **Test All Acceptance Type Badges:**
+    - Create/edit participants with each acceptance type
+    - **Verify badge displays:**
+      - WILD_CARD → [WC]
+      - SPECIAL_EXEMPTION → [SE]
+      - JUNIOR_EXEMPTION → [JE]
+      - QUALIFIER → [Q]
+      - ORGANIZER_ACCEPTANCE → [OA]
+      - DIRECT_ACCEPTANCE → [DA]
+      - LUCKY_LOSER → [LL] (displayed as "Lucky Loser" badge)
+      - ALTERNATE → [ALT] (displayed as "Alternate" badge)
+      - WITHDRAWN → [WD]
+
+13. **Test Form Help Text:**
+    - Open edit modal
+    - **Verify:** Seed Number field shows help text: "Enter a positive integer for seeded players. Leave empty for unseeded players."
+    - **Verify:** Registration Status shows help text explaining each status
+    - **Verify:** Acceptance Type shows help text explaining its purpose
+
+14. **Test Workflow Comparison:**
+    - **Old workflow** (before): To set participant as Wild Card
+      1. Click "Approve" (sets as DIRECT_ACCEPTANCE only)
+      2. Cannot change to WILD_CARD through UI
+      3. Must use API or delete and re-add
+    - **New workflow** (now): To set participant as Wild Card
+      1. Click "Edit"
+      2. Select "ACCEPTED" status
+      3. Select "Wild Card (WC)" acceptance type
+      4. Click "Save Changes"
+      5. Done! Badge shows [WC]
+
+**Expected Result:**
+- ✅ Single "Edit" button replaces 6+ action buttons
+- ✅ All participant fields editable in one modal
+- ✅ All 9 acceptance types accessible (not just 3)
+- ✅ Category can be changed after registration
+- ✅ Seed number can be set/cleared easily
+- ✅ Status and acceptance type fully controllable
+- ✅ Modal validates seed number (positive integer)
+- ✅ Loading state shown during save
+- ✅ Help text explains each field
+- ✅ Cleaner, less cluttered table interface
+- ✅ Consistent editing experience for all participants
+- ✅ Changes reflect immediately in table after save
+
+---
+
+### Feature 17: Match Status Validation (SCHEDULED requires time)
+
+**What was changed:** 
+- Added validation to prevent marking matches as SCHEDULED without a scheduled date/time
+- Yellow warning box appears in status modal when attempting to select SCHEDULED without time
+- Clear error message guides user to schedule match first
+
+**Issue (Before):**
+- Organizers could set match status to SCHEDULED without assigning a date/time
+- Led to data inconsistency (SCHEDULED status but no scheduledTime)
+- Caused confusion about when matches should be played
+- Order of play showed "Not scheduled" for SCHEDULED matches
+
+**After:**
+- Validation prevents SCHEDULED status without time
+- Warning box appears when SCHEDULED selected
+- Error message shown on submit attempt
+- User guided to use "Schedule Match" button first
+
+**How to test:**
+
+1. **Setup:**
+   - Log in as tournament organizer or admin
+   - Navigate to a match detail page (from order of play or match list)
+   - Ensure match does NOT have a scheduled time (shows "Not scheduled")
+
+2. **Test Warning Box:**
+   - Click "Update Status" button
+   - In the status dropdown, select "SCHEDULED"
+   - **Verify:** Yellow warning box appears below dropdown
+   - **Verify:** Warning contains:
+     - ⚠️ icon
+     - "Validation Required" heading in bold
+     - Explanatory text: "This match does not have a scheduled date and time. You must schedule the match first..."
+
+3. **Test Validation Error:**
+   - Keep status as "SCHEDULED"
+   - Click "Update Status" button to submit
+   - **Verify:** Error alert appears at top of modal
+   - **Verify:** Error message: "Cannot mark match as SCHEDULED without a scheduled date and time. Please schedule the match first using the 'Schedule Match' button."
+   - **Verify:** Status not changed (still shows original status)
+
+4. **Test Correct Workflow:**
+   - Close the status modal
+   - Click "Schedule Match" button
+   - Fill in date, time, and court
+   - Click "Schedule Match"
+   - **Verify:** Match scheduled successfully
+   - **Verify:** Match detail shows scheduled date/time
+   - Now click "Update Status"
+   - Select "SCHEDULED"
+   - **Verify:** No warning box appears (match has time)
+   - Click "Update Status"
+   - **Verify:** Status updates successfully to SCHEDULED
+   - **Verify:** No error shown
+
+5. **Test Already Scheduled Match:**
+   - Find a match that already has a scheduled time
+   - Click "Update Status"
+   - Select "SCHEDULED"
+   - **Verify:** No warning box appears
+   - Click "Update Status"
+   - **Verify:** Status updates successfully
+
+6. **Test Other Status Changes:**
+   - Try changing to other statuses (NOT_SCHEDULED, IN_PROGRESS, COMPLETED, etc.)
+   - **Verify:** No warnings or errors for non-SCHEDULED statuses
+   - **Verify:** Status changes succeed regardless of scheduledTime
+
+7. **Test Warning Box Appearance:**
+   - Open status modal for unscheduled match
+   - Select different statuses and watch warning box
+   - **Verify:** Warning only appears when SCHEDULED selected
+   - **Verify:** Warning disappears when other status selected
+   - Select SCHEDULED again
+   - **Verify:** Warning reappears
+
+**Expected Result:**
+- ✅ Cannot set SCHEDULED status without date/time
+- ✅ Yellow warning box appears when SCHEDULED selected (unscheduled match)
+- ✅ Clear error message on submit attempt
+- ✅ User guided to schedule match first
+- ✅ After scheduling, SCHEDULED status succeeds
+- ✅ Data consistency maintained (SCHEDULED always has time)
+- ✅ No warnings for other status changes
+- ✅ Warning box appears/disappears based on selected status
+
+---
+
+### Feature 18: Winner Selection for WO/RET/DEF Statuses
+
+**What was changed:**
+- Added winner dropdown in match status update modal
+- Dropdown appears when WALKOVER, RETIRED, or DEFAULT status is selected
+- Validation prevents submission without winner selection for these statuses
+
+**Issue (Before):**
+- Marking match as WALKOVER, RETIRED, or DEFAULT didn't record which participant won
+- Incomplete match records (status set but no winner)
+- Bracket advancement broken (can't advance to next round without winner)
+- Missing statistics (can't calculate win/loss correctly)
+
+**After:**
+- Winner dropdown appears for WO/RET/DEF statuses
+- Required validation ensures winner selected
+- Complete match records with status AND winner
+- Proper bracket advancement works
+- Accurate tournament statistics
+
+**How to test:**
+
+1. **Setup:**
+   - Log in as tournament organizer or admin
+   - Navigate to a match detail page
+   - Ensure match has both participants assigned
+
+2. **Test Winner Dropdown Appearance:**
+   - Click "Update Status" button
+   - Select "WALKOVER" in status dropdown
+   - **Verify:** Winner dropdown appears below status dropdown
+   - **Verify:** Dropdown labeled "Winner" with red asterisk (required)
+   - **Verify:** Dropdown shows "-- Select Winner --" as first option
+   - **Verify:** Dropdown shows both participant names
+   - **Verify:** Help text: "Required for Walkover, Retired, and Default statuses"
+
+3. **Test All 3 Statuses:**
+   - Select "WALKOVER" → **Verify:** Winner dropdown appears
+   - Select "RETIRED" → **Verify:** Winner dropdown appears
+   - Select "DEFAULT" → **Verify:** Winner dropdown appears
+   - Select "COMPLETED" → **Verify:** Winner dropdown does NOT appear
+   - Select "IN_PROGRESS" → **Verify:** Winner dropdown does NOT appear
+   - Select "SCHEDULED" → **Verify:** Winner dropdown does NOT appear
+
+4. **Test Validation Error (no winner):**
+   - Select "WALKOVER" status
+   - Leave winner dropdown at "-- Select Winner --"
+   - Click "Update Status" button
+   - **Verify:** Error alert appears at top of modal
+   - **Verify:** Error message: "Cannot mark match as WALKOVER without selecting a winner. Please select which participant won."
+   - **Verify:** Status NOT changed (modal stays open)
+
+5. **Test Successful Submit with Winner:**
+   - Select "WALKOVER" status
+   - Select first participant as winner from dropdown
+   - Click "Update Status"
+   - **Verify:** Success message: "Match status updated successfully"
+   - **Verify:** Modal closes
+   - **Verify:** Match detail page shows status as "Walkover"
+   - **Verify:** Winner is displayed/recorded correctly
+
+6. **Test RETIRED Status:**
+   - Click "Update Status"
+   - Select "RETIRED" status
+   - Select second participant as winner
+   - Click "Update Status"
+   - **Verify:** Status updated to "Retired"
+   - **Verify:** Winner recorded correctly
+
+7. **Test DEFAULT Status:**
+   - Click "Update Status"
+   - Select "DEFAULT" status
+   - Try to submit without winner → **Verify:** Error shown
+   - Select winner, submit → **Verify:** Success
+
+8. **Test Doubles Match:**
+   - Navigate to a doubles match (if available)
+   - Click "Update Status"
+   - Select "WALKOVER"
+   - **Verify:** Dropdown shows team names (e.g., "Player A / Player B")
+   - Select winning team
+   - Submit → **Verify:** Success
+
+9. **Test Winner Dropdown Reset:**
+   - Open status modal
+   - Select "WALKOVER"
+   - Select a winner
+   - Close modal (Cancel button)
+   - Reopen status modal
+   - Select "WALKOVER" again
+   - **Verify:** Winner dropdown reset to "-- Select Winner --" (not previous selection)
+
+10. **Test Status Change (from WO to other):**
+    - Set match to WALKOVER with winner
+    - Click "Update Status"
+    - Change status to "IN_PROGRESS"
+    - **Verify:** Winner dropdown disappears
+    - Submit → **Verify:** Status changes successfully
+
+**CRITICAL: Test Winner Persistence (Bug Fix Verification):**
+
+11. **Test Winner Badge Display:**
+    - Set match status to WALKOVER
+    - Select Participant 1 as winner
+    - Click "Update Status"
+    - **Verify:** Success message appears
+    - **Verify:** Modal closes
+    - **Verify:** Winner badge (👑 Winner) appears on Participant 1's box
+    - **Verify:** Winner badge does NOT appear on Participant 2's box
+
+12. **Test Winner in Bracket View:**
+    - After setting WALKOVER with winner
+    - Navigate to tournament's bracket view
+    - Find the match in the bracket
+    - **Verify:** Winner is indicated in bracket (styling/icon)
+    - **Verify:** Winner advances to next round (if not finals)
+    - **Verify:** Next round shows correct participant
+
+13. **Test Winner in Match List:**
+    - Navigate to tournament's match list
+    - Find the match
+    - **Verify:** Winner column shows correct participant name
+    - **Verify:** Match status shows "Walkover"
+
+14. **Test Tournament Statistics:**
+    - Navigate to tournament statistics/standings page
+    - Find both participants
+    - **Verify:** Winner has +1 win count
+    - **Verify:** Loser has +1 loss count
+    - **Verify:** Win/loss records updated correctly
+
+15. **Test Winner Persistence After Reload:**
+    - Set match to WALKOVER with winner
+    - Verify winner badge appears
+    - Refresh the page (F5)
+    - **Verify:** Winner badge still appears after reload
+    - **Verify:** Match status still shows "Walkover"
+    - **Verify:** All winner indicators persist
+
+16. **Test Different Status Types:**
+    - Test WALKOVER → **Verify winner persists**
+    - Reset match, test RETIRED → **Verify winner persists**
+    - Reset match, test DEFAULT → **Verify winner persists**
+    - All three should show winner badge and update standings
+
+11. **Test Bracket Advancement:**
+    - Mark a bracket match as WALKOVER with winner selected
+    - Navigate to bracket visualization
+    - **Verify:** Winner advances to next round
+    - **Verify:** Winner name appears in next match slot
+
+12. **Test Error Messages for All Statuses:**
+    - WALKOVER: "Cannot mark match as WALKOVER without selecting a winner..."
+    - RETIRED: "Cannot mark match as RETIRED without selecting a winner..."
+    - DEFAULT: "Cannot mark match as DEFAULT without selecting a winner..."
+
+**Expected Result:**
+- ✅ Winner dropdown appears ONLY for WO/RET/DEF statuses
+- ✅ Dropdown shows both participants correctly
+- ✅ Required validation prevents submission without winner
+- ✅ Clear error messages guide user
+- ✅ Winner recorded in database after successful submit
+- ✅ Bracket advancement works with recorded winner
+- ✅ Tournament statistics include these matches correctly
+- ✅ Doubles teams displayed properly in dropdown
+- ✅ Winner dropdown resets when modal reopened
+- ✅ Works for all three statuses (WO, RET, DEF)
+
+---
+
 ## Reporting Issues
 
 If any feature does not work as described:

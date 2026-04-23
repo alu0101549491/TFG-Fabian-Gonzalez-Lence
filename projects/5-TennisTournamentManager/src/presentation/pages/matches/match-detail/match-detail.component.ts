@@ -96,6 +96,7 @@ export class MatchDetailComponent implements OnInit {
 
   public statusForm = {
     status: MatchStatus.SCHEDULED,
+    winnerId: '',
   };
 
   public scoresForm = {
@@ -147,6 +148,17 @@ export class MatchDetailComponent implements OnInit {
       [MatchStatus.DEAD_RUBBER]: 'Match has no impact on standings (DR)',
     };
     return tooltips[status] || '';
+  }
+
+  /**
+   * Checks if the selected status requires winner selection.
+   * Statuses requiring winner: WALKOVER, RETIRED, DEFAULT.
+   *
+   * @param status - The match status to check
+   * @returns True if winner selection is required
+   */
+  public statusRequiresWinner(status: MatchStatus): boolean {
+    return [MatchStatus.WALKOVER, MatchStatus.RETIRED, MatchStatus.DEFAULT].includes(status);
   }
 
   /** Tennis score validator */
@@ -418,6 +430,8 @@ export class MatchDetailComponent implements OnInit {
     this.showStatusModal.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
+    // Reset winner selection
+    this.statusForm.winnerId = '';
   }
 
   /**
@@ -549,10 +563,27 @@ export class MatchDetailComponent implements OnInit {
       const user = this.authStateService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
+      // Validation: SCHEDULED status requires scheduledTime
+      if (this.statusForm.status === MatchStatus.SCHEDULED) {
+        const match = this.match();
+        if (!match?.scheduledTime) {
+          throw new Error('Cannot mark match as SCHEDULED without a scheduled date and time. Please schedule the match first using the "Schedule Match" button.');
+        }
+      }
+
+      // Validation: WO/RET/DEF statuses require winner selection
+      if (this.statusRequiresWinner(this.statusForm.status)) {
+        if (!this.statusForm.winnerId) {
+          throw new Error(`Cannot mark match as ${this.statusForm.status} without selecting a winner. Please select which participant won.`);
+        }
+      }
+
+      // Update status (and winner if applicable)
       await this.matchService.updateStatus(
         {
           matchId: this.match()!.id,
           status: this.statusForm.status,
+          winnerId: this.statusForm.winnerId || undefined,
         },
         user.id
       );

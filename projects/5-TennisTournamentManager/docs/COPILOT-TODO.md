@@ -230,26 +230,50 @@
 
 ### Priority: MEDIUM - Better data entry
 
-- [ ] **Consolidate participant edit into single form**
+- [x] **Consolidate participant edit into single form** ✅ COMPLETED (2026-04-23)
   - **Issue:** Multiple windows make editing confusing
-  - **Files:** Participant edit modal/page
-  - **Fix:** Use tabbed interface if needed, avoid multiple dialogs
-  - **Estimated:** 3 hours
+  - **Files:** Tournament detail component
+  - **Fix:** ✅ Created unified "Edit Participant" modal with all fields (seed, status, acceptance type, category)
+  - **Implementation:**
+    - Replaced inline seed editing with single "Edit" button
+    - Replaced 6 conditional action buttons (Approve, Reject, Set as Alternate, Promote, Remove, Delete) with single "Edit" button
+    - Created modal with 4 editable fields: seed number, registration status (4 options), acceptance type (9 options), category
+    - Added `openEditParticipantModal()`, `closeEditParticipantModal()`, `saveEditParticipant()` methods
+    - Modal saves via `updateSeedNumber()` and `updateRegistrationStatus()` API calls
+    - Cleaner table UI with just "Edit" and "Delete" buttons
+  - **Estimated:** 3 hours → **Actual:** 2 hours
   - **Test:** Edit participant, verify all fields accessible in one place
 
-- [ ] **Add validation for scheduled matches (must have time)**
+- [x] **Add validation for scheduled matches (must have time)** ✅ COMPLETED (2026-04-23)
   - **Issue:** Can mark as SCHEDULED without assigned time
-  - **Files:** Match service, scheduling component
-  - **Fix:** Validate date/time required when status = SCHEDULED
-  - **Estimated:** 2 hours
+  - **Files:** Match detail component
+  - **Fix:** ✅ Added validation in `submitStatus()` method to check scheduledTime when status is SCHEDULED
+  - **Implementation:**
+    - Validates match has scheduledTime before allowing SCHEDULED status
+    - Error message: "Cannot mark match as SCHEDULED without a scheduled date and time. Please schedule the match first using the 'Schedule Match' button."
+    - Added yellow warning box in status modal that appears when SCHEDULED selected without time
+    - Warning contains icon, heading, and explanatory text guiding user to schedule first
+    - Prevents data inconsistency (SCHEDULED status with no time)
+  - **Estimated:** 2 hours → **Actual:** 1 hour
   - **Test:** Try to schedule match without time, verify error shown
 
-- [ ] **Add winner selection for WO/RET/DEF statuses**
+- [x] **Add winner selection for WO/RET/DEF statuses** ✅ COMPLETED (2026-04-23)
   - **Issue:** WO and RET don't specify which player won
-  - **Files:** Match status update component
-  - **Fix:** Show winner dropdown when status is RET/WO/DEF
-  - **Estimated:** 3 hours
-  - **Test:** Mark match as RETIRED, verify winner selection required
+  - **Files:** Match detail component, match service, match DTO
+  - **Fix:** ✅ Added winner dropdown that appears when WO/RET/DEF status selected
+  - **Implementation:**
+    - Added `winnerId` field to statusForm
+    - Created `statusRequiresWinner(status)` method checking for WALKOVER, RETIRED, DEFAULT
+    - Winner dropdown conditionally appears in status modal when these statuses selected
+    - Dropdown shows both participants with display names (supports singles and doubles)
+    - Validation error if status submitted without winner: "Cannot mark match as {STATUS} without selecting a winner"
+    - Help text: "Required for Walkover, Retired, and Default statuses"
+    - `submitStatus()` includes winnerId in API call when applicable
+    - **BUG FIX**: Added `winnerId` field to `UpdateMatchStatusDto` interface
+    - **BUG FIX**: Updated `updateStatus()` method to persist winnerId and update standings
+    - Enables proper bracket advancement for non-completion statuses
+  - **Estimated:** 3 hours → **Actual:** 1.5 hours (feature) + 0.5 hours (bug fix) = 2 hours total
+  - **Test:** Mark match as RETIRED, verify winner selection required and persists correctly
 
 - [ ] **Add default category creation**
   - **Issue:** Can't add external participants if no categories exist
@@ -258,11 +282,17 @@
   - **Estimated:** 2 hours
   - **Test:** Create tournament without categories, add participant, verify works
 
-- [ ] **Add full acceptance status dropdown**
+- [x] **Add full acceptance status dropdown** ✅ COMPLETED (2026-04-23)
   - **Issue:** Can only change status to accepted/rejected, not WC, SE, LL, etc.
-  - **Files:** `RegistrationService`, status update UI
-  - **Fix:** Replace accept/reject buttons with dropdown of all 9 types
-  - **Estimated:** 2 hours
+  - **Files:** Tournament detail component
+  - **Fix:** ✅ Integrated with unified edit modal; dropdown shows all 9 acceptance types
+  - **Implementation:**
+    - Added `acceptanceTypes` array with all 9 enum values
+    - Created `getAcceptanceTypeLabel()` method for human-readable labels with abbreviations
+    - Dropdown options: ORGANIZER_ACCEPTANCE (OA), DIRECT_ACCEPTANCE (DA), SPECIAL_EXEMPTION (SE), JUNIOR_EXEMPTION (JE), QUALIFIER (Q), LUCKY_LOSER (LL), WILD_CARD (WC), ALTERNATE (ALT), WITHDRAWN (WD)
+    - Previously only 3 types accessible (DA, ALT, LL) through separate buttons
+    - Now all 9 types accessible in single dropdown
+  - **Estimated:** 2 hours → **Actual:** Included in task 1 (same implementation)
   - **Test:** Change participant status to WC, SE, LL, verify all options work
 
 - [ ] **Add image upload to announcement form**

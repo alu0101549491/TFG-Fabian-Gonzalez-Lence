@@ -382,18 +382,28 @@ export class MatchService implements IMatchService {
       throw new Error('Match not found');
     }
     
-    // Update match status
+    // Update match status and winner (if provided for WO/RET/DEF)
     const updatedMatch = this.preserveBackendFields(
       match,
       new Match({
         ...match,
         status: data.status,
+        winnerId: data.winnerId || match.winnerId,
         startedAt: data.status === MatchStatus.IN_PROGRESS && !match.startedAt ? new Date() : match.startedAt,
+        completedAt: data.winnerId ? new Date() : match.completedAt,
         updatedAt: new Date(),
       })
     );
     
     const savedMatch = await this.matchRepository.update(updatedMatch);
+    
+    // Update standings if winner was set
+    if (data.winnerId) {
+      await this.standingService.updateStandings(match.bracketId, {
+        matchId: data.matchId,
+        winnerId: data.winnerId,
+      });
+    }
     
     const score = this.formatMatchScores(savedMatch);
     return this.mapMatchToDto(savedMatch, score);

@@ -362,6 +362,28 @@ export class TournamentDetailComponent implements OnInit {
   /** Temporary seed number value during editing */
   public tempSeedNumber = signal<number | null>(null);
 
+  /** Edit Participant Modal State */
+  public showEditParticipantModal = signal(false);
+
+  /** Edit participant form data */
+  public editParticipantForm = {
+    registrationId: '',
+    participantName: '',
+    seedNumber: null as number | null,
+    status: RegistrationStatus.PENDING,
+    acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE,
+    categoryId: '',
+  };
+
+  /** Flag indicating if participant is being updated */
+  public isUpdatingParticipant = signal(false);
+
+  /** Available registration statuses for editing */
+  public readonly registrationStatuses = Object.values(RegistrationStatus);
+
+  /** Available acceptance types for editing */
+  public readonly acceptanceTypes = Object.values(AcceptanceType);
+
   /**
    * Initializes component and loads tournament data.
    */
@@ -2140,6 +2162,128 @@ export class TournamentDetailComponent implements OnInit {
    */
   public isEditingSeed(registrationId: string): boolean {
     return this.editingSeedRegistrationId() === registrationId;
+  }
+
+  /**
+   * Opens the edit participant modal with the given registration data.
+   *
+   * @param player - The player data with registration information
+   */
+  public openEditParticipantModal(player: {user: User; registration: RegistrationDto; partner?: {user: User; registration: RegistrationDto} | null}): void {
+    this.editParticipantForm = {
+      registrationId: player.registration.id,
+      participantName: `${player.user.firstName} ${player.user.lastName}`,
+      seedNumber: player.registration.seedNumber,
+      status: player.registration.status,
+      acceptanceType: player.registration.acceptanceType || AcceptanceType.DIRECT_ACCEPTANCE,
+      categoryId: player.registration.categoryId,
+    };
+    this.showEditParticipantModal.set(true);
+  }
+
+  /**
+   * Closes the edit participant modal and resets form data.
+   */
+  public closeEditParticipantModal(): void {
+    this.showEditParticipantModal.set(false);
+    this.editParticipantForm = {
+      registrationId: '',
+      participantName: '',
+      seedNumber: null,
+      status: RegistrationStatus.PENDING,
+      acceptanceType: AcceptanceType.DIRECT_ACCEPTANCE,
+      categoryId: '',
+    };
+  }
+
+  /**
+   * Saves the updated participant information.
+   * Updates seed number, status, acceptance type, and category.
+   */
+  public async saveEditParticipant(): Promise<void> {
+    const currentUser = this.authStateService.getCurrentUser();
+    if (!currentUser) {
+      alert('You must be logged in to edit participants');
+      return;
+    }
+
+    const {registrationId, seedNumber, status, acceptanceType, categoryId} = this.editParticipantForm;
+
+    // Validate seed number
+    if (seedNumber !== null && (seedNumber < 1 || !Number.isInteger(seedNumber))) {
+      alert('Seed number must be a positive integer');
+      return;
+    }
+
+    this.isUpdatingParticipant.set(true);
+
+    try {
+      console.log(`🔄 Updating participant registration ${registrationId}`);
+      console.log(`   Seed: ${seedNumber}, Status: ${status}, Type: ${acceptanceType}, Category: ${categoryId}`);
+
+      // Update seed number
+      if (seedNumber !== null) {
+        await this.registrationService.updateSeedNumber(registrationId, seedNumber, currentUser.id);
+        console.log('✅ Seed number updated');
+      }
+
+      // Update status and acceptance type
+      const updateDto: UpdateRegistrationStatusDto = {
+        registrationId,
+        status,
+        acceptanceType,
+      };
+      await this.registrationService.updateStatus(updateDto, currentUser.id);
+      console.log('✅ Status and acceptance type updated');
+
+      // Reload players to reflect changes
+      await this.loadPlayers();
+      console.log('✅ Player list reloaded');
+
+      // Close modal
+      this.closeEditParticipantModal();
+
+      alert('Participant updated successfully!');
+    } catch (error) {
+      let message = 'Failed to update participant.';
+
+      if (error && typeof error === 'object') {
+        const axiosError = error as {response?: {data?: {message?: string; error?: string}}};
+        if (axiosError.response?.data?.message) {
+          message = axiosError.response.data.message;
+        } else if (axiosError.response?.data?.error) {
+          message = axiosError.response.data.error;
+        } else if (error instanceof Error) {
+          message = error.message;
+        }
+      }
+
+      console.error('❌ Update participant error:', error);
+      alert(`Error: ${message}`);
+    } finally {
+      this.isUpdatingParticipant.set(false);
+    }
+  }
+
+  /**
+   * Gets a human-readable label for an acceptance type.
+   *
+   * @param type - The acceptance type enum value
+   * @returns A human-readable label
+   */
+  public getAcceptanceTypeLabel(type: AcceptanceType): string {
+    const labels: Record<AcceptanceType, string> = {
+      [AcceptanceType.ORGANIZER_ACCEPTANCE]: 'Organizer Acceptance (OA)',
+      [AcceptanceType.DIRECT_ACCEPTANCE]: 'Direct Acceptance (DA)',
+      [AcceptanceType.SPECIAL_EXEMPTION]: 'Special Exemption (SE)',
+      [AcceptanceType.JUNIOR_EXEMPTION]: 'Junior Exemption (JE)',
+      [AcceptanceType.QUALIFIER]: 'Qualifier (Q)',
+      [AcceptanceType.LUCKY_LOSER]: 'Lucky Loser (LL)',
+      [AcceptanceType.WILD_CARD]: 'Wild Card (WC)',
+      [AcceptanceType.ALTERNATE]: 'Alternate (ALT)',
+      [AcceptanceType.WITHDRAWN]: 'Withdrawn (WD)',
+    };
+    return labels[type] || type;
   }
 }
 
