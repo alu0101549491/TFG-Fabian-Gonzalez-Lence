@@ -363,3 +363,31 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* BYE and TBD Labels */
+.bye-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #10b981;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.bye-icon {
+  font-size: 1.125rem;
+}
+
+.tbd-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #9ca3af;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.tbd-icon {
+  font-size: 1.125rem;
+  opacity: 0.7;
+}

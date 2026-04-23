@@ -22,6 +22,7 @@ import {Registration} from '../../domain/entities/registration.entity';
 import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
 import {Tournament} from '../../domain/entities/tournament.entity';
 import {Score} from '../../domain/entities/score.entity';
+import {MatchResult} from '../../domain/entities/match-result.entity';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
@@ -419,6 +420,15 @@ export class BracketController {
           .where('matchId IN (:...matchIds)', {matchIds})
           .execute();
         console.log(`  Deleted ${scoreDeleteResult.affected || 0} scores`);
+
+        // Delete match results before deleting matches (foreign key constraint)
+        const matchResultRepository = AppDataSource.getRepository(MatchResult);
+        const matchResultDeleteResult = await matchResultRepository
+          .createQueryBuilder()
+          .delete()
+          .where('matchId IN (:...matchIds)', {matchIds})
+          .execute();
+        console.log(`  Deleted ${matchResultDeleteResult.affected || 0} match results`);
       }
 
       const matchDeleteResult = await matchRepository.delete({bracketId: id});
@@ -625,8 +635,25 @@ export class BracketController {
       }
 
       console.log(`💾 Saving ${phases.length} phases and ${matches.length} matches...`);
+      console.log(`🐛 DEBUG: Matches BEFORE save:`, matches.map(m => ({
+        matchNumber: m.matchNumber,
+        participant1Id: m.participant1Id,
+        participant2Id: m.participant2Id,
+        participant2IdType: typeof m.participant2Id,
+        participant2IdValue: m.participant2Id,
+        status: m.status
+      })));
       await phaseRepository.save(phases);
-      await matchRepository.save(matches);
+      const savedMatches = await matchRepository.save(matches);
+      console.log(`🐛 DEBUG: Matches AFTER save:`, savedMatches.map(m => ({
+        id: m.id,
+        matchNumber: m.matchNumber,
+        participant1Id: m.participant1Id,
+        participant2Id: m.participant2Id,
+        participant2IdType: typeof m.participant2Id,
+        participant2IdValue: m.participant2Id,
+        status: m.status
+      })));
 
       if (scoresToSave.length > 0) {
         console.log(`💾 Saving ${scoresToSave.length} migrated score rows...`);

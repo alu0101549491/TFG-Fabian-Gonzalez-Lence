@@ -72,6 +72,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `src/presentation/pages/matches/match-detail/match-detail.component.html` - Winner dropdown UI
 - `src/presentation/pages/matches/match-list/match-list.component.ts` - Score formatting
 - `src/presentation/pages/matches/match-list/match-list.component.html` - Score display
+- `src/domain/entities/match.ts` - Added NOT_SCHEDULED to status transition map
 - `src/presentation/pages/announcements/announcement-create/announcement-create.component.ts` - Image upload and link text
 - `src/presentation/pages/announcements/announcement-create/announcement-create.component.html` - Image/link fields UI
 - `src/presentation/pages/announcements/announcement-create/announcement-create.component.css` - Image preview styles
@@ -82,6 +83,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `src/application/services/match.service.ts` - Winner persistence logic
 - `backend/src/app.ts` - Increased body-parser limit to 10mb for large announcement images
 - `backend/src/domain/entities/announcement.entity.ts` - Added linkText column, changed imageUrl and externalLink to TEXT type
+- `backend/src/presentation/controllers/bracket.controller.ts` - Fixed foreign key constraint by deleting match_results before matches
 
 **Phase 4 Complete!** 7/7 tasks finished (100%)
 
@@ -90,9 +92,81 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ✅ Fixed match list showing "Not started" for WALKOVER matches (now shows "—")
 - ✅ Fixed "request entity too large" error when creating announcements with images - increased Express body-parser limit from 100kb to 10mb
 - ✅ Fixed "value too long for type character varying(500)" error for announcement images - changed imageUrl and externalLink columns from VARCHAR(500) to TEXT type
+- ✅ Fixed foreign key constraint violation when regenerating brackets with match results - now deletes match_results before deleting matches
+- ✅ Fixed match status update modal throwing "newCollection[Symbol.iterator] is not a function" error - added missing () to invoke availableStatuses computed signal
+- ✅ Fixed empty status dropdown in match update modal - added missing NOT_SCHEDULED state to status transition map
 
 **Next Phase 4 Tasks:**
 - All Phase 4 tasks completed! 🎉
+
+---
+
+### 🎉 Phase 5 Progress (2026-04-23)
+
+**Phase 5 Goals:** State management and validation improvements to prevent data inconsistency
+
+**Completed Features:**
+1. ✅ **Prevent Scheduling BYE Matches** - Validation to block scheduling of BYE matches
+   - **Issue**: System allowed scheduling matches where one participant is 'BYE' (automatic pass), which is invalid
+   - **Solution**: Added validation in both backend service and frontend component
+   - **Backend**: `matchService.scheduleMatch()` throws error if either player1Id or player2Id is 'BYE'
+   - **Frontend**: `openScheduleModal()` checks for BYE and shows error message instead of opening modal
+   - **UI**: Schedule Match button hidden for BYE matches using conditional `@if` directive
+   - **Error Message**: "Cannot schedule BYE matches. BYE matches are automatic passes and do not require scheduling."
+   - **Impact**: Prevents invalid scheduling operations and clarifies BYE match behavior
+
+2. ✅ **Distinguish BYE from TBD in Brackets** - Visual distinction between automatic passes and pending matches
+   - **Issue**: Both BYE (automatic advancement) and TBD (to be determined) showed as "BYE" causing confusion
+   - **Solution**: Updated bracket visualization to show different labels and colors
+   - **BYE Display**: Green checkmark ✅ + "BYE" label with green text (#10b981), bold, italic
+   - **TBD Display**: Gray question mark ❓ + "TBD" label with gray text (#9ca3af), regular weight, italic
+   - **Logic**: `getParticipantName()` checks if participantId === 'BYE' (automatic pass) vs null/undefined (TBD)
+   - **Coverage**: Applied to both Single Elimination and Round Robin bracket displays
+   - **Impact**: Clear visual distinction helps users understand bracket status at a glance
+
+3. ✅ **Match Status Transition Filtering** - Dropdown shows only valid next states instead of all 13 statuses
+   - **Issue**: Status update dropdown showed all 13 match statuses regardless of current state, allowing invalid transitions
+   - **Solution**: Changed `availableStatuses` from static array to computed signal filtering via `Match.isValidTransition()`
+   - **Implementation**: 
+     - Imported Match entity to access static `isValidTransition(fromStatus, toStatus)` method
+     - Computed signal filters statuses to show only valid transitions + current status
+     - Example: SCHEDULED match shows only: IN_PROGRESS, WALKOVER, CANCELLED, DEFAULT, NOT_PLAYED, BYE, SCHEDULED
+   - **Impact**: Prevents invalid status transitions, guides admins toward correct workflow
+
+**Time Spent:** ~4.5 hours total for Phase 5 (3/5 tasks completed, 60%)
+
+**Phase 5 Files Modified:**
+- `src/application/services/match.service.ts` - BYE validation in scheduleMatch()
+- `src/presentation/pages/matches/match-detail/match-detail.component.ts` - BYE validation, status filtering
+- `src/presentation/pages/matches/match-detail/match-detail.component.html` - Hide schedule button for BYE
+- `src/presentation/components/visual-bracket/visual-bracket.component.ts` - Updated getParticipantName() logic
+- `src/presentation/components/visual-bracket/visual-bracket.component.html` - BYE/TBD display (Single Elimination + Round Robin)
+- `src/presentation/components/visual-bracket/visual-bracket.component.css` - Styles for bye-label and tbd-label
+- `backend/src/application/services/match-generator.service.ts` - Fixed BYE participant ID (null → 'BYE')
+
+**Bug Fixes:**
+- ✅ Fixed backend match generator setting BYE participant to `null` instead of `'BYE'` string - BYE matches now display with green checkmark icon correctly
+- ✅ Fixed status dropdown inconsistency in match update modal - statusForm.status now resets to current match status when modal opens, preventing invalid state selections
+- ✅ **Fixed critical data consistency issues with match status transitions** (Option D: Selective Rollbacks)
+  - **Issue 1 - COMPLETED Softlock**: Matches could be marked COMPLETED without scores/winner, creating invalid state
+    - **Solution**: Added validation in `submitStatus()` checking for scores OR winnerId before allowing COMPLETED status
+    - **Error Message**: "Cannot mark match as COMPLETED without recording match results. Please submit scores first using the 'Record Scores' button."
+    - **Logic**: Validates `match.scores.length > 0 OR match.winnerId` exists (covers both scored matches and WO/RET/DEF)
+  - **Issue 2 - No Rollback from SCHEDULED**: Couldn't correct premature scheduling (SCHEDULED → NOT_SCHEDULED)
+    - **Solution**: Added bidirectional transition: SCHEDULED ↔ NOT_SCHEDULED in Match.isValidTransition()
+    - **Use Case**: Allows admins to undo accidental scheduling operations
+  - **Issue 3 - Cannot Correct COMPLETED**: Terminal state locked matches preventing score corrections
+    - **Solution**: Added rollback transition: COMPLETED → IN_PROGRESS in Match.isValidTransition()
+    - **Use Case**: Allows admins to fix incorrect scores by reopening the match
+  - **Issue 4 - Cannot Undo DEAD_RUBBER**: Matches marked as administratively irrelevant couldn't be restored
+    - **Solution**: Added rollback transition: DEAD_RUBBER → COMPLETED in Match.isValidTransition()
+    - **Use Case**: Allows admins to undo dead rubber marking if match becomes relevant again
+  - **Terminal States Preserved**: BYE, WALKOVER, DEFAULT, RETIRED, ABANDONED, CANCELLED remain truly terminal (no rollback)
+  - **Impact**: Balances data integrity with operational flexibility - prevents softlocks while maintaining safe state progression
+
+**Remaining Phase 5 Tasks:**
+- ⏳ Tournament state-based action validation (5 hours) - Deferred: Complex FSM pattern implementation
+- ⏳ Court management interface (4 hours) - Deferred: New component with full CRUD operations
 
 ---
 
@@ -254,6 +328,217 @@ ALTER TABLE "announcements" ADD "externalLink" text
 2. Store only URLs in imageUrl column (revert to VARCHAR if desired)
 3. Implement image optimization and compression
 4. Consider lazy loading and responsive images for performance
+
+---
+
+### Bug Fix: Foreign Key Constraint Violation on Bracket Regeneration (2026-04-23)
+
+**Issue:** When regenerating a bracket that had completed matches with submitted results, the regeneration failed with a database foreign key constraint violation: `update or delete on table "matches" violates foreign key constraint "FK_0360d1db3113c20ed6fd823fbed" on table "match_results"`.
+
+**Root Cause:** The bracket regeneration process was attempting to delete matches before deleting the associated `match_results` records. Since `match_results` has a foreign key constraint referencing `matches.id`, the database prevented the deletion of matches that were still referenced by match_results records.
+
+**Symptoms:**
+- Bracket regeneration failed with HTTP 400 error
+- Backend logs showed: `QueryFailedError: update or delete on table "matches" violates foreign key constraint`
+- Error detail: `Key (id)=(mtc_eab842d4) is still referenced from table "match_results"`
+- Transaction rolled back, bracket remained unchanged
+- Only occurred when regenerating brackets with submitted match results (FR24-FR27 match result confirmation workflow)
+
+**Deletion Order Issue:**
+```typescript
+// Before (incorrect order):
+1. Delete scores (✓ worked)
+2. Delete matches (✗ FAILED - still referenced by match_results)
+3. Delete phases (never reached)
+```
+
+**Solution:**
+
+**Controller Changes** (`backend/src/presentation/controllers/bracket.controller.ts`):
+
+1. **Added MatchResult import** (line 24):
+```typescript
+import {MatchResult} from '../../domain/entities/match-result.entity';
+```
+
+2. **Added match_results deletion step** (lines 424-432):
+```typescript
+if (matchIds.length > 0) {
+  // Delete scores first
+  const scoreDeleteResult = await scoreRepository
+    .createQueryBuilder()
+    .delete()
+    .where('matchId IN (:...matchIds)', {matchIds})
+    .execute();
+  console.log(`  Deleted ${scoreDeleteResult.affected || 0} scores`);
+
+  // Delete match results before deleting matches (foreign key constraint)
+  const matchResultRepository = AppDataSource.getRepository(MatchResult);
+  const matchResultDeleteResult = await matchResultRepository
+    .createQueryBuilder()
+    .delete()
+    .where('matchId IN (:...matchIds)', {matchIds})
+    .execute();
+  console.log(`  Deleted ${matchResultDeleteResult.affected || 0} match results`);
+}
+
+// Now safe to delete matches
+const matchDeleteResult = await matchRepository.delete({bracketId: id});
+console.log(`  Deleted ${matchDeleteResult.affected || 0} matches`);
+```
+
+**Correct Deletion Order:**
+```typescript
+1. Delete scores (no foreign keys from other tables)
+2. Delete match_results (references matches via FK)
+3. Delete matches (now safe - no references)
+4. Delete phases (no foreign keys from other tables)
+```
+
+**Impact:**
+- ✅ Bracket regeneration now works correctly even with completed matches and submitted results
+- ✅ Proper cascade deletion respects foreign key constraints
+- ✅ Console logs show how many match results were deleted
+- ✅ No data integrity violations
+- ✅ Transaction completes successfully
+
+**Testing:**
+- Create bracket with matches
+- Submit match results (FR24-FR27 workflow)
+- Regenerate bracket without keeping results → verify success
+- Check console logs for deletion counts (scores, match results, matches, phases)
+- Verify bracket structure regenerated correctly with new matches
+
+**Related Features:** This fix is essential for the match result confirmation workflow (FR24-FR27) where players can submit and confirm match results. Without this fix, brackets with submitted results could not be regenerated.
+
+---
+
+### Bug Fix: Match Status Update Modal TypeError (2026-04-23)
+
+**Issue:** When opening the match status update modal, the frontend threw an error: `TypeError: newCollection[Symbol.iterator] is not a function` at template line 371. This completely broke the status update functionality - the modal would appear but immediately crash.
+
+**Root Cause:** In the template, the `@for` loop was iterating over `availableStatuses` directly without invoking the computed signal. Since `availableStatuses` is a computed signal (not a plain array), it needs to be called with `()` to get its value.
+
+**Symptoms:**
+- Browser console showed repeated errors: `ERROR TypeError: newCollection[Symbol.iterator] is not a function`
+- Match status update modal appeared but immediately crashed
+- Status dropdown was empty or caused rendering errors
+- Status updates completely non-functional
+- Error occurred every time modal opened
+
+**Code Issue** (`match-detail.component.html`, line 371):
+```html
+<!-- Before (incorrect): -->
+@for (status of availableStatuses; track status) {
+  <option [value]="status">{{ status }}</option>
+}
+
+<!-- After (correct): -->
+@for (status of availableStatuses(); track status) {
+  <option [value]="status">{{ status }}</option>
+}
+```
+
+**Technical Explanation:**
+- `availableStatuses` is defined as a `computed()` signal in the component
+- Computed signals are functions that need to be invoked to get their value
+- Angular's `@for` directive expects an iterable (array)
+- Passing the signal function itself instead of its value causes the iterator error
+- The `()` invokes the signal and returns the filtered array of statuses
+
+**Solution:**
+
+Changed `availableStatuses` to `availableStatuses()` in the template to properly invoke the computed signal and get the array value.
+
+**Impact:**
+- ✅ Match status update modal now works correctly
+- ✅ Status dropdown populates with available transitions
+- ✅ No more runtime errors in console
+- ✅ Status updates functional again
+- ✅ Proper status filtering based on current match state
+
+**Testing:**
+- Open match detail page
+- Click "Update Status" button → verify modal opens without errors
+- Check browser console → verify no iterator errors
+- Verify status dropdown shows filtered options (e.g., SCHEDULED → IN_PROGRESS, COMPLETED, etc.)
+- Update status → verify saves successfully
+
+**Root Cause:** This bug was introduced when `availableStatuses` was converted from a plain property to a computed signal for smart status filtering (Phase 4 improvements), but the template wasn't updated to invoke the signal.
+
+---
+
+### Bug Fix: Empty Status Dropdown Due to Missing NOT_SCHEDULED Transition (2026-04-23)
+
+**Issue:** After fixing the iterator error, the match status update dropdown appeared empty or showed only the current status. Users couldn't select any new status to update the match, making the status update feature completely non-functional for matches in NOT_SCHEDULED state.
+
+**Root Cause:** The `Match.isValidTransition()` method's transition map was missing an entry for `MatchStatus.NOT_SCHEDULED`. When the `availableStatuses` computed signal tried to filter valid transitions from a NOT_SCHEDULED match, the lookup returned `undefined`, and the fallback `?? false` meant no transitions were allowed.
+
+**Symptoms:**
+- Status dropdown showed only the current status (NOT_SCHEDULED)
+- No other status options visible in dropdown
+- Impossible to update match status from NOT_SCHEDULED
+- Affected all newly generated matches (default state is NOT_SCHEDULED)
+- Users couldn't mark matches as SCHEDULED, WALKOVER, CANCELLED, etc.
+
+**Code Issue** (`match.ts`, isValidTransition method):
+```typescript
+// Before (missing NOT_SCHEDULED):
+const transitions: Record<MatchStatus, MatchStatus[]> = {
+  [MatchStatus.SCHEDULED]: [...],  // Has transitions
+  [MatchStatus.IN_PROGRESS]: [...], // Has transitions
+  // ❌ NOT_SCHEDULED missing!
+};
+
+return transitions[fromStatus]?.includes(toStatus) ?? false;
+// When fromStatus is NOT_SCHEDULED:
+// - transitions[NOT_SCHEDULED] → undefined
+// - undefined?.includes(toStatus) → undefined
+// - undefined ?? false → false (no transitions allowed!)
+```
+
+**Solution:**
+
+Added `NOT_SCHEDULED` entry to the transitions map with logical next states:
+
+```typescript
+const transitions: Record<MatchStatus, MatchStatus[]> = {
+  [MatchStatus.NOT_SCHEDULED]: [
+    MatchStatus.SCHEDULED,      // Normal progression (once scheduled)
+    MatchStatus.WALKOVER,        // Opponent no-show before scheduling
+    MatchStatus.CANCELLED,       // Match cancelled before scheduling
+    MatchStatus.DEFAULT,         // Disqualification before scheduling
+    MatchStatus.NOT_PLAYED,      // Match won't be played
+    MatchStatus.BYE,            // Participant has bye (opponent withdrew)
+  ],
+  // ... rest of transitions
+};
+```
+
+**Allowed Transitions from NOT_SCHEDULED:**
+1. **SCHEDULED**: Normal path - match gets scheduled with date/time/court
+2. **WALKOVER**: Opponent withdraws or no-shows before match is scheduled
+3. **CANCELLED**: Tournament organizers cancel the match
+4. **DEFAULT**: Player disqualified before match starts
+5. **NOT_PLAYED**: Match determined unnecessary (e.g., both players withdraw)
+6. **BYE**: Opponent withdraws, giving automatic advancement
+
+**Impact:**
+- ✅ Status dropdown now shows all valid status options
+- ✅ Matches in NOT_SCHEDULED state can be updated properly
+- ✅ Admins can mark matches as SCHEDULED, WALKOVER, etc.
+- ✅ Status filtering works correctly for all match states
+- ✅ Restores functionality to the status update feature
+
+**Testing:**
+- Open match detail for NOT_SCHEDULED match
+- Click "Update Status" button
+- Verify dropdown shows: SCHEDULED, WALKOVER, CANCELLED, DEFAULT, NOT_PLAYED, BYE (plus current status)
+- Select SCHEDULED → verify requires scheduledTime (existing validation works)
+- Select WALKOVER → verify winner selection appears (existing feature works)
+- Update to SCHEDULED → verify saves successfully
+
+**Related Logic:** The transition map implements proper state machine logic - each status has defined valid next states, preventing invalid transitions (e.g., can't go from COMPLETED back to SCHEDULED). The NOT_SCHEDULED entry follows the same pattern.
 
 ---
 

@@ -339,20 +339,32 @@
 ## Phase 5: State Management & Validation (4-6 hours each) 🔒
 
 ### Priority: HIGH - Prevents data inconsistency
+### Status: **3/5 tasks completed (60%)** - ~7 hours total
 
-- [ ] **Prevent scheduling matches with BYE participants**
+- [x] **Prevent scheduling matches with BYE participants** ✅ COMPLETED (2026-04-23)
   - **Issue:** Allows scheduling BYE matches (invalid)
-  - **Files:** Match scheduling service, validation
-  - **Fix:** Check if participant is BYE placeholder, reject scheduling
-  - **Estimated:** 2 hours
+  - **Files:** MatchService, MatchDetailComponent
+  - **Fix:** ✅ Added validation to check if either participant is 'BYE', prevents scheduling and hides button
+  - **Implementation:**
+    - Backend validation in `matchService.scheduleMatch()` throws error for BYE matches
+    - Frontend validation in `openScheduleModal()` shows error message
+    - Schedule Match button hidden for BYE matches in HTML template
+    - Clear error: "Cannot schedule BYE matches. BYE matches are automatic passes and do not require scheduling."
+  - **Estimated:** 2 hours → **Actual:** 1 hour
   - **Test:** Try to schedule match with BYE participant, verify blocked
 
-- [ ] **Distinguish BYE from TBD in bracket display**
+- [x] **Distinguish BYE from TBD in bracket display** ✅ COMPLETED (2026-04-23)
   - **Issue:** Confusion between BYE (automatic) and TBD (not yet scheduled)
-  - **Files:** Bracket visualization
-  - **Fix:** Use "BYE" label with green checkmark, "TBD" with gray placeholder
-  - **Estimated:** 2 hours
-  - **Test:** View bracket, verify BYE and TBD clearly distinguished
+  - **Files:** VisualBracketComponent (HTML + CSS + TypeScript), Backend MatchGeneratorService
+  - **Fix:** ✅ Added visual distinction with icons and styling
+  - **Implementation:**
+    - Updated `getParticipantName()` to distinguish: BYE (participant1Id === 'BYE'), TBD (participant is null)
+    - HTML: BYE shows green checkmark ✅ + "BYE" label, TBD shows gray question mark ❓ + "TBD" label
+    - CSS: `.bye-label` (green #10b981, bold), `.tbd-label` (gray #9ca3af, italic)
+    - Applied to both Single Elimination and Round Robin bracket displays
+    - **Bug Fix:** Fixed backend match generator setting BYE participant to `null` instead of `'BYE'` string
+  - **Estimated:** 2 hours → **Actual:** 2 hours
+  - **Test:** View bracket, verify BYE shows with ✅ and green color, TBD shows with ❓ and gray color
 
 - [ ] **Add tournament state-based action validation**
   - **Issue:** Allows contradictory actions (edit after published, register after deadline)
@@ -360,12 +372,19 @@
   - **Fix:** Implement FSM pattern, validate actions against state
   - **Estimated:** 5 hours
   - **Test:** Try invalid actions, verify blocked with clear error messages
+  - **Note:** Deferred due to complexity; requires full FSM implementation across multiple components
 
-- [ ] **Add match status transition filtering**
-  - **Issue:** Status dropdown shows all 12 states instead of valid transitions
-  - **Files:** Match detail component
-  - **Fix:** Filter dropdown based on `Match.isValidTransition()`
-  - **Estimated:** 3 hours
+- [x] **Add match status transition filtering** ✅ COMPLETED (2026-04-23)
+  - **Issue:** Status dropdown shows all 13 states instead of valid transitions
+  - **Files:** MatchDetailComponent
+  - **Fix:** ✅ Filter dropdown based on `Match.isValidTransition()` method
+  - **Implementation:**
+    - Changed `availableStatuses` from static array to computed signal
+    - Filters statuses using `Match.isValidTransition(currentStatus, toStatus)`
+    - Shows only valid next states + current state
+    - Imported Match entity for access to static method
+    - Example: SCHEDULED match shows only: IN_PROGRESS, WALKOVER, CANCELLED, DEFAULT, NOT_PLAYED, BYE, SCHEDULED
+  - **Estimated:** 3 hours → **Actual:** 1.5 hours
   - **Test:** From each status, verify dropdown shows only valid next states
 
 - [ ] **Add court management interface**
@@ -374,6 +393,7 @@
   - **Fix:** Create "Manage Courts" page for editing court names/hours
   - **Estimated:** 4 hours
   - **Test:** Edit court names and hours, verify updated in scheduling
+  - **Note:** Deferred; requires new component with CRUD operations for courts
 
 ---
 

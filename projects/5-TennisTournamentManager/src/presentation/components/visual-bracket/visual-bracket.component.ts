@@ -148,6 +148,26 @@ export class VisualBracketComponent {
    * @returns Participant display name
    */
   public getParticipantName(match: MatchDto, participantNumber: 1 | 2): string {
+    const participantId = participantNumber === 1 ? match.participant1Id : match.participant2Id;
+    
+    console.log(`🐛 DEBUG getParticipantName:`, {
+      matchId: match.id,
+      matchNumber: match.matchNumber,
+      participantNumber,
+      participantId,
+      participantIdType: typeof participantId,
+      participantIdValue: participantId,
+      matchStatus: match.status,
+      isBYEMatch: match.status === 'BYE',
+      isNull: participantId === null,
+      isUndefined: participantId === undefined
+    });
+    
+    // Check for BYE match: status is BYE and this slot is empty (null participant)
+    if (match.status === 'BYE' && !participantId) {
+      return 'BYE';
+    }
+    
     // Doubles match: show "FirstName LastName / FirstName LastName" with full names
     const team = participantNumber === 1 ? match.participant1Team : match.participant2Team;
     if (team) {
@@ -155,8 +175,10 @@ export class VisualBracketComponent {
     }
 
     const participant = participantNumber === 1 ? match.participant1 : match.participant2;
-    if (!participant) {
-      return 'BYE';
+    
+    // Check for TBD (to be determined - participant not yet known)
+    if (!participant || !participantId) {
+      return 'TBD';
     }
     
     // Singles: use full name

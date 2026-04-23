@@ -193,7 +193,7 @@
           </div>
           <div class="card-body">
             <div class="actions-grid">
-              @if (canManageMatch()) {
+              @if (canManageMatch() && match()!.status !== 'BYE') {
               <button class="action-btn schedule" (click)="openScheduleModal()" [disabled]="isSubmitting()">
                 <span>📅</span>
                 <span>Schedule Match</span>
@@ -368,7 +368,7 @@
                   name="status"
                   required
                 >
-                  @for (status of availableStatuses; track status) {
+                  @for (status of availableStatuses(); track status) {
                     <option [value]="status" [title]="getStatusTooltip(status)">{{ status | enumFormat }}</option>
                   }
                 </select>

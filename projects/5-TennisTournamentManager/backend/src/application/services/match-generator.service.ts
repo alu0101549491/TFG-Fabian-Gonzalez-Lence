@@ -89,7 +89,10 @@ export class MatchGeneratorService {
   ): MatchGenerationResult {
     const matches: Match[] = [];
     const phases: Phase[] = [];
-    const playerCount = participantIds.length;
+    
+    // Filter out nulls to get actual participant count (nulls represent empty bracket positions)
+    const actualParticipants = participantIds.filter((id) => id !== null);
+    const playerCount = actualParticipants.length;
     
     // Calculate bracket size (next power of 2)
     const bracketSize = Math.pow(2, totalRounds);
@@ -112,8 +115,8 @@ export class MatchGeneratorService {
     
     // Generate Round 1 matches
     const round1MatchCount = Math.pow(2, totalRounds - 1);
-    const playersWithByes = participantIds.slice(0, byeCount);
-    const playersWithoutByes = participantIds.slice(byeCount);
+    const playersWithByes = actualParticipants.slice(0, byeCount);
+    const playersWithoutByes = actualParticipants.slice(byeCount);
     
     let matchNumber = 1;
     let playerIndex = 0;
@@ -130,7 +133,7 @@ export class MatchGeneratorService {
       if (i < byeCount) {
         // This match is a bye - winner advances automatically
         match.participant1Id = playersWithByes[i];
-        match.participant2Id = null;
+        match.participant2Id = null;  // NULL for BYE (DB constraint requires null or valid user ID)
         match.winnerId = playersWithByes[i];
         match.status = MatchStatus.BYE;
       } else {

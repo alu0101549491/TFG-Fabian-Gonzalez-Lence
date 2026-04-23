@@ -19,6 +19,7 @@ import {FormsModule} from '@angular/forms';
 import {MatchService, BracketService, TournamentService} from '@application/services';
 import {type MatchDto} from '@application/dto';
 import {MatchStatus} from '@domain/enumerations/match-status';
+import {Match} from '@domain/entities/match';
 import {UserRole} from '@domain/enumerations/user-role';
 import {AuthStateService} from '@presentation/services/auth-state.service';
 import {EnumFormatPipe} from '@shared/pipes';
@@ -119,8 +120,29 @@ export class MatchDetailComponent implements OnInit {
     scheduledTime: '',
   };
 
-  /** Available statuses */
-  public readonly availableStatuses = Object.values(MatchStatus);
+  /** 
+   * Available statuses based on valid transitions from current match status.
+   * Filters to show only valid next states instead of all 13 statuses.
+   */
+  public availableStatuses = computed(() => {
+    const match = this.match();
+    if (!match) return Object.values(MatchStatus);
+    
+    const currentStatus = match.status;
+    const allStatuses = Object.values(MatchStatus);
+    
+    // Filter to only show statuses that are valid transitions from current status
+    const filteredStatuses = allStatuses.filter(status => 
+      Match.isValidTransition(currentStatus, status) || status === currentStatus
+    );
+    
+    // Defensive check: ensure current status is always included
+    if (!filteredStatuses.includes(currentStatus)) {
+      filteredStatuses.unshift(currentStatus);
+    }
+    
+    return filteredStatuses;
+  });
 
   /** Submitting state */
   public isSubmitting = signal(false);
@@ -393,6 +415,14 @@ export class MatchDetailComponent implements OnInit {
    * Opens the schedule match modal and loads available courts.
    */
   public async openScheduleModal(): Promise<void> {
+    const match = this.match();
+    
+    // Validate: Cannot schedule BYE matches
+    if (match && match.status === MatchStatus.BYE) {
+      this.errorMessage.set('Cannot schedule BYE matches. BYE matches are automatic passes and do not require scheduling.');
+      return;
+    }
+    
     this.showScheduleModal.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
@@ -430,7 +460,11 @@ export class MatchDetailComponent implements OnInit {
     this.showStatusModal.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
-    // Reset winner selection
+    // Reset form to current match status
+    const currentMatch = this.match();
+    if (currentMatch) {
+      this.statusForm.status = currentMatch.status;
+    }
     this.statusForm.winnerId = '';
   }
 
@@ -575,6 +609,17 @@ export class MatchDetailComponent implements OnInit {
       if (this.statusRequiresWinner(this.statusForm.status)) {
         if (!this.statusForm.winnerId) {
           throw new Error(`Cannot mark match as ${this.statusForm.status} without selecting a winner. Please select which participant won.`);
+        }
+      }
+
+      // Validation: COMPLETED status requires scores or winner
+      if (this.statusForm.status === MatchStatus.COMPLETED) {
+        const match = this.match();
+        const hasScores = match?.scores && match.scores.length > 0;
+        const hasWinner = match?.winnerId;
+        
+        if (!hasScores && !hasWinner) {
+          throw new Error('Cannot mark match as COMPLETED without recording match results. Please submit scores first using the "Record Scores" button.');
         }
       }
 

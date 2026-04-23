@@ -445,7 +445,16 @@ export class Match {
    */
   public static isValidTransition(fromStatus: MatchStatus, toStatus: MatchStatus): boolean {
     const transitions: Record<MatchStatus, MatchStatus[]> = {
+      [MatchStatus.NOT_SCHEDULED]: [
+        MatchStatus.SCHEDULED,
+        MatchStatus.WALKOVER,
+        MatchStatus.CANCELLED,
+        MatchStatus.DEFAULT,
+        MatchStatus.NOT_PLAYED,
+        MatchStatus.BYE,
+      ],
       [MatchStatus.SCHEDULED]: [
+        MatchStatus.NOT_SCHEDULED, // Rollback: allows correcting premature scheduling
         MatchStatus.IN_PROGRESS,
         MatchStatus.WALKOVER,
         MatchStatus.CANCELLED,
@@ -466,6 +475,7 @@ export class Match {
         MatchStatus.CANCELLED,
       ],
       [MatchStatus.COMPLETED]: [
+        MatchStatus.IN_PROGRESS, // Rollback: allows correcting scores/results
         MatchStatus.DEAD_RUBBER,
       ],
       // Final states (no transitions allowed)
@@ -476,7 +486,9 @@ export class Match {
       [MatchStatus.NOT_PLAYED]: [],
       [MatchStatus.CANCELLED]: [],
       [MatchStatus.DEFAULT]: [],
-      [MatchStatus.DEAD_RUBBER]: [],
+      [MatchStatus.DEAD_RUBBER]: [
+        MatchStatus.COMPLETED, // Rollback: allows undoing dead rubber marking
+      ],
     };
 
     return transitions[fromStatus]?.includes(toStatus) ?? false;

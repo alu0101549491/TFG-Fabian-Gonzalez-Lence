@@ -55,8 +55,18 @@
                             {{ getParticipantName(match, 1) }}
                           </a>
                         } @else {
-                          <!-- BYE -->
-                          <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                          <!-- BYE or TBD -->
+                          @if (getParticipantName(match, 1) === 'BYE') {
+                            <span class="participant-name bye-label">
+                              <span class="bye-icon">✅</span>
+                              BYE
+                            </span>
+                          } @else {
+                            <span class="participant-name tbd-label">
+                              <span class="tbd-icon">❓</span>
+                              TBD
+                            </span>
+                          }
                         }
                       </div>
                       @if (isWinner(match, 1)) {
@@ -99,8 +109,18 @@
                             {{ getParticipantName(match, 2) }}
                           </a>
                         } @else {
-                          <!-- BYE -->
-                          <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                          <!-- BYE or TBD -->
+                          @if (getParticipantName(match, 2) === 'BYE') {
+                            <span class="participant-name bye-label">
+                              <span class="bye-icon">✅</span>
+                              BYE
+                            </span>
+                          } @else {
+                            <span class="participant-name tbd-label">
+                              <span class="tbd-icon">❓</span>
+                              TBD
+                            </span>
+                          }
                         }
                       </div>
                       @if (isWinner(match, 2)) {
@@ -268,8 +288,18 @@
                       {{ getParticipantName(match, 1) }}
                     </a>
                   } @else {
-                    <!-- BYE -->
-                    <span class="participant-name">{{ getParticipantName(match, 1) }}</span>
+                    <!-- BYE or TBD -->
+                    @if (getParticipantName(match, 1) === 'BYE') {
+                      <span class="participant-name bye-label">
+                        <span class="bye-icon">✅</span>
+                        BYE
+                      </span>
+                    } @else {
+                      <span class="participant-name tbd-label">
+                        <span class="tbd-icon">❓</span>
+                        TBD
+                      </span>
+                    }
                   }
                   @if (isWinner(match, 1)) {
                     <span class="winner-icon">🏆</span>
@@ -296,8 +326,19 @@
                       {{ getParticipantName(match, 2) }}
                     </a>
                   } @else {
-                    <!-- BYE -->
-                    <span class="participant-name">{{ getParticipantName(match, 2) }}</span>
+                    <!-- BYE or TBD -->
+                    @if (getParticipantName(match, 2) === 'BYE') {
+                      <span class="participant-name bye-label">
+                        <span class="bye-icon">✅</span>
+                        BYE
+                      </span>
+                    } @else {
+                      <span class="participant-name tbd-label">
+                        <span class="tbd-icon">❓</span>
+                        TBD
+                      </span>
+                    }
+
                   }
                   @if (isWinner(match, 2)) {
                     <span class="winner-icon">🏆</span>

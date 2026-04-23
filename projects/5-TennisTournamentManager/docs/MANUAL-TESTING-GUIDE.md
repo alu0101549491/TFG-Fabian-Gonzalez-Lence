@@ -1551,6 +1551,136 @@ npm run dev
 
 ---
 
+## Phase 5: State Management & Validation (April 23, 2026)
+
+### Feature 22: Prevent Scheduling BYE Matches
+
+**What was changed:**  
+- Added validation to prevent scheduling matches where one participant is 'BYE'
+- BYE matches are automatic passes and don't require scheduling
+
+**How to test:**
+
+1. **Setup:** Generate a bracket with BYE matches
+   - Create tournament with non-power-of-2 participants (e.g., 6 players → 8-player bracket with 2 BYEs)
+   - Generate Single Elimination bracket
+   - Navigate to bracket view
+1
+2. **Test BYE Match in Bracket:**
+   - Find a match with "BYE" participant (green ✅ icon + "BYE" label)
+   - Click on the match to open match detail page
+   - **Verify:** "Schedule Match" button is NOT visible in Match Actions section
+
+3. **Test Direct Navigation:**
+   - Copy match ID from URL
+   - As admin, try to open schedule modal
+   - **Verify:** Error message appears: "Cannot schedule BYE matches. BYE matches are automatic passes and do not require scheduling."
+
+4. **Test Backend Validation:**
+   - Attempt API call to schedule BYE match (if testing programmatically)
+   - **Verify:** API returns error with same message
+
+**Expected Result:**
+- ✅ Schedule Match button hidden for BYE matches
+- ✅ Error message shown if scheduling attempted
+- ✅ Backend validation prevents scheduling via API
+- ✅ Clear explanation of BYE behavior
+
+---
+
+### Feature 23: Distinguish BYE from TBD in Brackets
+
+**What was changed:**  
+- Visual distinction between BYE (automatic pass) and TBD (to be determined)
+- BYE: Green checkmark ✅ + bold green text
+- TBD: Gray question mark ❓ + italic gray text
+
+**How to test:**
+
+1. **Setup:** Create bracket with both BYE and TBD participants
+   - Tournament with non-power-of-2 participants for BYEs
+   - Generate bracket → View bracket
+
+2. **Test BYE Display (Single Elimination):**
+   - Find first-round match with BYE participant
+   - **Verify:** Shows green checkmark ✅ icon
+   - **Verify:** Shows "BYE" label in green color (#10b981)
+   - **Verify:** Text is bold and italic
+   - **Verify:** Winner already determined (opponent advanced)
+
+3. **Test TBD Display (Single Elimination):**
+   - Find second-round match (before first round complete)
+   - **Verify:** Empty participant slots show gray question mark ❓ icon
+   - **Verify:** Shows "TBD" label in gray color (#9ca3af)
+   - **Verify:** Text is regular weight and italic
+   - **Verify:** No winner determined yet
+
+4. **Test Round Robin Display:**
+   - Generate Round Robin bracket
+   - **Verify:** BYE and TBD labels appear correctly in match cards
+   - **Verify:** Same styling and icons as Single Elimination
+
+5. **Test First Round Completion:**
+   - Complete a first-round match
+   - View second-round bracket
+   - **Verify:** Winner appears in second round (replaces TBD)
+   - **Verify:** Loser's slot remains TBD (if applicable)
+
+**Expected Result:**
+- ✅ BYE shows with green ✅ icon, green bold text
+- ✅ TBD shows with gray ❓ icon, gray italic text
+- ✅ Clear visual distinction between states
+- ✅ Works in Single Elimination and Round Robin
+- ✅ Updates when matches complete
+
+---
+
+### Feature 24: Match Status Transition Filtering
+
+**What was changed:**  
+- Status update dropdown now shows only valid next states instead of all 13 statuses
+- Filters based on current match status using `Match.isValidTransition()` logic
+
+**How to test:**
+
+1. **Test SCHEDULED Match:**
+   - Create and schedule a match (status: SCHEDULED)
+   - Open match detail → Click "Update Status"
+   - **Verify:** Dropdown shows ONLY: SCHEDULED, IN_PROGRESS, WALKOVER, CANCELLED, DEFAULT, NOT_PLAYED, BYE
+   - **Verify:** Does NOT show: COMPLETED, RETIRED, SUSPENDED, ABANDONED, DEAD_RUBBER
+
+2. **Test IN_PROGRESS Match:**
+   - Set match to IN_PROGRESS
+   - Open status modal
+   - **Verify:** Dropdown shows ONLY: IN_PROGRESS, COMPLETED, RETIRED, SUSPENDED, ABANDONED, DEFAULT
+   - **Verify:** Does NOT show: SCHEDULED, WALKOVER, CANCELLED, BYE, NOT_PLAYED, DEAD_RUBBER
+
+3. **Test SUSPENDED Match:**
+   - Set match to SUSPENDED
+   - Open status modal
+   - **Verify:** Dropdown shows ONLY: SUSPENDED, IN_PROGRESS, ABANDONED, CANCELLED
+   - **Verify:** Does NOT show: COMPLETED, RETIRED, etc.
+
+4. **Test COMPLETED Match:**
+   - Complete a match with result
+   - Open status modal
+   - **Verify:** Dropdown shows ONLY: COMPLETED, DEAD_RUBBER
+   - **Verify:** Cannot transition to other states (COMPLETED is mostly terminal)
+
+5. **Test Terminal States:**
+   - Set match to RETIRED, WALKOVER, ABANDONED, BYE, NOT_PLAYED, CANCELLED, DEFAULT, or DEAD_RUBBER
+   - Open status modal
+   - **Verify:** Dropdown shows only the current status (no transitions allowed)
+
+**Expected Result:**
+- ✅ Dropdown filtered to valid next states
+- ✅ Current status always included in list
+- ✅ Invalid transitions not shown
+- ✅ Prevents accidental invalid status changes
+- ✅ Guides admin through proper match workflow
+
+---
+
 ## Reporting Issues
 
 If any feature does not work as described:
@@ -1565,6 +1695,6 @@ If any feature does not work as described:
 
 ## Next Testing Phases
 
-**Phase 2:** Navigation improvements (back buttons, breadcrumbs)  
-**Phase 3:** Visualization enhancements (statistics charts, bracket view)  
-**Phase 4:** Advanced features (match formats, global ranking, profile viewing)
+**Phase 5 Remaining:** Tournament state validation, Court management interface  
+**Phase 6:** Advanced features (super tiebreak, PDF templates, bracket config)  
+**Phase 7:** Phase linking UI (create phases, link, advance qualifiers)

@@ -495,6 +495,11 @@ export class MatchService implements IMatchService {
       throw new Error('Match not found');
     }
     
+    // Validate: Cannot schedule matches with BYE participants
+    if (match.status === MatchStatus.BYE) {
+      throw new Error('Cannot schedule BYE matches. BYE matches are automatic passes and do not require scheduling.');
+    }
+    
     // Update match with schedule
     const scheduledMatch = this.preserveBackendFields(
       match,
