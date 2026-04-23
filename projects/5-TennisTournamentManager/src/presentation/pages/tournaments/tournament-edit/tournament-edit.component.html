@@ -1,3 +1,21 @@
+<!-- Locked Tournament Modal -->
+@if (showLockedModal()) {
+  <div class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-icon">🔒</div>
+      <h2 class="modal-title">Tournament Locked</h2>
+      <p class="modal-message">
+        This tournament cannot be edited in its current status:
+        <strong>{{ lockedTournamentStatus() | enumFormat }}</strong>.
+      </p>
+      <p class="modal-hint">Only tournaments in DRAFT, REGISTRATION OPEN, or REGISTRATION CLOSED status can be edited.</p>
+      <button class="modal-btn" (click)="goBackToTournament()">
+        ← Back to Tournament
+      </button>
+    </div>
+  </div>
+}
+
 <!-- Hero Section -->
 <section class="hero-section">
   <div class="hero-overlay"></div>

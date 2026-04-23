@@ -1635,42 +1635,175 @@ npm run dev
 
 ---
 
-### Feature 24: Match Status Transition Filtering
+### Feature 24: Match Status Transition Filtering + Validation (Option D)
 
 **What was changed:**  
 - Status update dropdown now shows only valid next states instead of all 13 statuses
 - Filters based on current match status using `Match.isValidTransition()` logic
+- **NEW: COMPLETED Validation** - Cannot mark match as COMPLETED without recording scores or winner
+- **NEW: Selective Rollbacks** - Allows correcting mistakes while preserving data integrity:
+  - SCHEDULED ↔ NOT_SCHEDULED (bidirectional - undo accidental scheduling)
+  - COMPLETED → IN_PROGRESS (correction - reopen completed match)
+  - DEAD_RUBBER → COMPLETED (tournament relevance changed)
+- Terminal states remain locked: BYE, WALKOVER, DEFAULT, RETIRED, ABANDONED, CANCELLED, NOT_PLAYED
 
 **How to test:**
 
-1. **Test SCHEDULED Match:**
-   - Create and schedule a match (status: SCHEDULED)
-   - Open match detail → Click "Update Status"
-   - **Verify:** Dropdown shows ONLY: SCHEDULED, IN_PROGRESS, WALKOVER, CANCELLED, DEFAULT, NOT_PLAYED, BYE
-   - **Verify:** Does NOT show: COMPLETED, RETIRED, SUSPENDED, ABANDONED, DEAD_RUBBER
+**Part 1: Basic Transition Filtering**
 
-2. **Test IN_PROGRESS Match:**
+1. **Test NOT_SCHEDULED Match:**
+   - Create a new match (default status: NOT_SCHEDULED)
+   - Open match detail → Click "Update Status"
+   - **Verify:** Dropdown shows: NOT_SCHEDULED, SCHEDULED, WALKOVER, CANCELLED, DEFAULT, NOT_PLAYED, BYE
+   - **Verify:** Does NOT show: IN_PROGRESS, COMPLETED, RETIRED, SUSPENDED, ABANDONED, DEAD_RUBBER
+
+2. **Test SCHEDULED Match:**
+   - Schedule a match (status: SCHEDULED)
+   - Open status modal
+   - **Verify:** Dropdown shows: **NOT_SCHEDULED** (rollback), SCHEDULED, IN_PROGRESS, WALKOVER, CANCELLED, DEFAULT, NOT_PLAYED, BYE
+   - **Verify:** Does NOT show: COMPLETED, RETIRED, SUSPENDED, ABANDONED, DEAD_RUBBER
+   - **Note:** NOT_SCHEDULED is included (rollback capability)
+
+3. **Test IN_PROGRESS Match:**
    - Set match to IN_PROGRESS
    - Open status modal
-   - **Verify:** Dropdown shows ONLY: IN_PROGRESS, COMPLETED, RETIRED, SUSPENDED, ABANDONED, DEFAULT
-   - **Verify:** Does NOT show: SCHEDULED, WALKOVER, CANCELLED, BYE, NOT_PLAYED, DEAD_RUBBER
+   - **Verify:** Dropdown shows: IN_PROGRESS, COMPLETED, RETIRED, SUSPENDED, ABANDONED, CANCELLED
+   - **Verify:** Does NOT show: NOT_SCHEDULED, SCHEDULED, WALKOVER, DEFAULT, BYE, NOT_PLAYED, DEAD_RUBBER
 
-3. **Test SUSPENDED Match:**
+4. **Test SUSPENDED Match:**
    - Set match to SUSPENDED
    - Open status modal
-   - **Verify:** Dropdown shows ONLY: SUSPENDED, IN_PROGRESS, ABANDONED, CANCELLED
+   - **Verify:** Dropdown shows: SUSPENDED, IN_PROGRESS, ABANDONED, CANCELLED
    - **Verify:** Does NOT show: COMPLETED, RETIRED, etc.
 
-4. **Test COMPLETED Match:**
-   - Complete a match with result
+5. **Test COMPLETED Match:**
+   - Complete a match with scores (e.g., 6-4, 6-2)
    - Open status modal
-   - **Verify:** Dropdown shows ONLY: COMPLETED, DEAD_RUBBER
-   - **Verify:** Cannot transition to other states (COMPLETED is mostly terminal)
+   - **Verify:** Dropdown shows: **IN_PROGRESS** (rollback), COMPLETED, DEAD_RUBBER
+   - **Verify:** Does NOT show: NOT_SCHEDULED, SCHEDULED, WALKOVER, etc.
+   - **Note:** IN_PROGRESS is included (rollback capability for corrections)
 
-5. **Test Terminal States:**
-   - Set match to RETIRED, WALKOVER, ABANDONED, BYE, NOT_PLAYED, CANCELLED, DEFAULT, or DEAD_RUBBER
+6. **Test DEAD_RUBBER Match:**
+   - Set match to DEAD_RUBBER
    - Open status modal
-   - **Verify:** Dropdown shows only the current status (no transitions allowed)
+   - **Verify:** Dropdown shows: **COMPLETED** (rollback), DEAD_RUBBER
+   - **Note:** COMPLETED is included (match became relevant again)
+
+7. **Test Terminal States (No Rollbacks):**
+   - Set match to RETIRED, WALKOVER, ABANDONED, BYE, NOT_PLAYED, CANCELLED, or DEFAULT
+   - Open status modal
+   - **Verify:** Dropdown shows ONLY the current status (no transitions allowed)
+   - **Verify:** These are truly terminal states - cannot be changed once set
+
+**Part 2: COMPLETED Validation Testing**
+
+8. **Test COMPLETED Without Scores (Should Fail):**
+   - Create a match with participants assigned
+   - Do NOT record any scores (scores array empty)
+   - Open status modal
+   - Select "COMPLETED" status
+   - Click "Update Status"
+   - **Verify:** Error message appears: "Cannot mark match as COMPLETED without recording match results. Please submit scores first using the 'Record Scores' button."
+   - **Verify:** Status does NOT change to COMPLETED
+   - **Verify:** Match remains in original status
+
+9. **Test COMPLETED With Scores (Should Succeed):**
+   - Same match, click "Record Scores" button
+   - Enter scores (e.g., Set 1: 6-4, Set 2: 6-3)
+   - Submit scores successfully
+   - Open status modal
+   - Select "COMPLETED" status
+   - Click "Update Status"
+   - **Verify:** Status updates successfully to COMPLETED
+   - **Verify:** No error message shown
+
+10. **Test COMPLETED With Winner (WO/RET/DEF - Should Succeed):**
+    - Mark match as WALKOVER with winner selected
+    - Later, open status modal
+    - Change status to COMPLETED (dropdown includes this)
+    - **Verify:** Status updates successfully (winner exists, no scores needed)
+
+**Part 3: Rollback Testing**
+
+11. **Test SCHEDULED → NOT_SCHEDULED Rollback:**
+    - Create and schedule a match (status: SCHEDULED)
+    - Open status modal
+    - Select "NOT_SCHEDULED" from dropdown
+    - Click "Update Status"
+    - **Verify:** Status changes to NOT_SCHEDULED
+    - **Verify:** Success message shown
+    - **Use Case:** Correcting accidental/premature scheduling
+
+12. **Test NOT_SCHEDULED → SCHEDULED (Forward Again):**
+    - From previous test (status: NOT_SCHEDULED)
+    - Schedule the match again
+    - Select "SCHEDULED" from dropdown
+    - **Verify:** Status changes back to SCHEDULED
+    - **Verify:** Bidirectional rollback works
+
+13. **Test COMPLETED → IN_PROGRESS Rollback:**
+    - Complete a match with scores (status: COMPLETED)
+    - Open status modal
+    - Select "IN_PROGRESS" from dropdown
+    - Click "Update Status"
+    - **Verify:** Status changes to IN_PROGRESS
+    - **Verify:** Scores remain in database (not deleted)
+    - **Use Case:** Need to correct/adjust scores or match outcome
+
+14. **Test IN_PROGRESS → COMPLETED (Forward Again):**
+    - From previous test (status: IN_PROGRESS)
+    - Adjust scores if needed
+    - Select "COMPLETED" from dropdown
+    - **Verify:** Status changes back to COMPLETED
+    - **Verify:** Can complete match again after rollback
+
+15. **Test DEAD_RUBBER → COMPLETED Rollback:**
+    - Mark a match as DEAD_RUBBER
+    - Open status modal
+    - Select "COMPLETED" from dropdown
+    - Click "Update Status"
+    - **Verify:** Status changes to COMPLETED
+    - **Use Case:** Match became relevant to tournament standings again
+
+**Part 4: Terminal State Validation**
+
+16. **Test Terminal States Cannot Rollback:**
+    - Set match to WALKOVER
+    - Open status modal
+    - **Verify:** Dropdown shows ONLY "WALKOVER" (no other options)
+    - Try setting to RETIRED
+    - Open status modal
+    - **Verify:** Dropdown shows ONLY "RETIRED" (no other options)
+    - Repeat for: ABANDONED, BYE, NOT_PLAYED, CANCELLED, DEFAULT
+    - **Verify:** All terminal states locked (cannot change or rollback)
+
+**Part 5: Error Message Testing**
+
+17. **Test SCHEDULED Validation (Without Time):**
+    - Find match without scheduled time (scheduledTime = null)
+    - Open status modal
+    - Select "SCHEDULED"
+    - **Verify:** Yellow warning box appears with text: "This match does not have a scheduled date and time..."
+    - Click "Update Status"
+    - **Verify:** Error message: "Cannot mark match as SCHEDULED without a scheduled date and time..."
+
+18. **Test Winner Required Validation (WO/RET/DEF):**
+    - Open status modal
+    - Select "WALKOVER"
+    - Leave winner dropdown at "-- Select Winner --"
+    - Click "Update Status"
+    - **Verify:** Error message: "Cannot mark match as WALKOVER without selecting a winner..."
+    - Repeat for RETIRED and DEFAULT statuses
+
+**Expected Result:**
+- ✅ Dropdown filtered to valid next states based on current status
+- ✅ Current status always included in dropdown
+- ✅ Selective rollbacks work (NOT_SCHEDULED↔SCHEDULED, COMPLETED→IN_PROGRESS, DEAD_RUBBER→COMPLETED)
+- ✅ COMPLETED validation prevents softlock (requires scores OR winner)
+- ✅ Terminal states truly locked (no transitions allowed)
+- ✅ Clear error messages guide users
+- ✅ Validation prevents data inconsistency
+- ✅ Workflow balances flexibility with data integrity
 
 **Expected Result:**
 - ✅ Dropdown filtered to valid next states
@@ -1678,6 +1811,233 @@ npm run dev
 - ✅ Invalid transitions not shown
 - ✅ Prevents accidental invalid status changes
 - ✅ Guides admin through proper match workflow
+
+---
+
+### Feature 25: Tournament State-Based Action Validation
+
+**What was changed:**  
+- Tournament detail page now gates UI actions based on tournament status
+- Edit button is disabled (with tooltip) for locked statuses (DRAW_PENDING, IN_PROGRESS, FINALIZED, CANCELLED)
+- Navigating directly to the edit URL for a locked tournament redirects back to detail with an error
+- "Add Category" button disabled/labeled when status is not DRAFT or REGISTRATION_OPEN
+- Bracket generation section hidden when status is not REGISTRATION_CLOSED or DRAW_PENDING
+
+**How to test:**
+
+**Part 1: Edit Button State**
+
+1. **DRAFT / REGISTRATION_OPEN / REGISTRATION_CLOSED tournament:**
+   - Navigate to tournament detail as admin
+   - **Verify:** "✏️ Edit Details" button is **enabled** and clickable
+
+2. **DRAW_PENDING / IN_PROGRESS / FINALIZED / CANCELLED tournament:**
+   - Navigate to tournament detail
+   - **Verify:** "✏️ Edit Details" button is **disabled** and shows tooltip "Cannot edit tournament in [STATUS] status"
+
+**Part 2: Direct URL Edit Redirect**
+
+3. **Navigate directly to edit URL of a locked tournament:**
+   - Copy the edit URL: `/tournaments/:id/edit`
+   - Paste in browser with a DRAW_PENDING / IN_PROGRESS tournament
+   - **Verify:** Redirected back to tournament detail page
+   - **Verify:** Error message displayed: "Cannot edit tournament in [STATUS] status."
+
+**Part 3: Category Management**
+
+4. **DRAFT or REGISTRATION_OPEN tournament:**
+   - Navigate to Categories section in tournament detail
+   - **Verify:** "➕ Add Category" button is **enabled** and clickable
+
+5. **REGISTRATION_CLOSED / DRAW_PENDING / IN_PROGRESS / FINALIZED / CANCELLED tournament:**
+   - Navigate to Categories section
+   - **Verify:** "Add Category" button is **disabled** or shows label "Category Management Locked"
+
+**Part 4: Bracket Generation**
+
+6. **REGISTRATION_OPEN or DRAFT tournament:**
+   - Navigate to tournament detail
+   - **Verify:** Bracket generation section is **NOT visible**
+
+7. **REGISTRATION_CLOSED or DRAW_PENDING tournament:**
+   - Navigate to tournament detail as admin with at least one category
+   - **Verify:** Bracket generation section **IS visible**
+   - **Verify:** Can generate bracket normally
+
+**Expected Result:**
+- ✅ Edit button disabled with tooltip for locked statuses
+- ✅ Direct navigation to edit URL of locked tournament redirects with error
+- ✅ Add Category button disabled after REGISTRATION_OPEN
+- ✅ Bracket generation section only visible in correct states
+- ✅ Error messages are clear and actionable
+
+---
+
+### Feature 26: Court Management Interface
+
+**What was changed:**  
+- New "Manage Courts" page at `/tournaments/:tournamentId/courts`
+- Accessible via "🏟️ Manage Courts" tile in tournament detail Quick Actions (admin only)
+- Full CRUD: add courts, edit name/hours inline, delete with confirmation
+
+**How to test:**
+
+**Part 1: Navigation**
+
+1. **Navigate to Court Management:**
+   - Log in as TOURNAMENT_ADMIN or SYSTEM_ADMIN
+   - Navigate to any tournament detail page
+   - Scroll to Quick Actions section
+   - **Verify:** "🏟️ Manage Courts" tile is visible
+   - Click the tile
+   - **Verify:** Navigates to `/tournaments/:tournamentId/courts`
+   - **Verify:** Page header shows "Manage Courts" with tournament context
+
+2. **Non-admin access (negative test):**
+   - Log in as PLAYER or COACH
+   - Navigate to the tournament detail page
+   - **Verify:** "Manage Courts" tile is NOT visible in Quick Actions
+   - Try navigating directly to `/tournaments/:id/courts`
+   - **Verify:** Redirected (roleGuard active)
+
+**Part 2: Add Court**
+
+3. **Add court with name only:**
+   - On the Manage Courts page, fill in "Court Name" field (e.g., "Court 1")
+   - Leave Opening Time and Closing Time blank
+   - Click "Add Court"
+   - **Verify:** New court appears in the list with name "Court 1"
+   - **Verify:** No opening/closing time shown (dashes)
+
+4. **Add court with full details:**
+   - Fill in name "Centre Court", opening time "08:00", closing time "20:00"
+   - Click "Add Court"
+   - **Verify:** Court appears with name and hours displayed
+
+5. **Add court without name (validation):**
+   - Leave Court Name empty
+   - Click "Add Court"
+   - **Verify:** Form does not submit (HTML required validation)
+
+**Part 3: Edit Court**
+
+6. **Edit court name:**
+   - Find any court in the list, click "✏️ Edit"
+   - **Verify:** Row switches to edit mode with inputs
+   - Change the name to "Court A"
+   - Click "💾 Save"
+   - **Verify:** Row returns to display mode with new name "Court A"
+
+7. **Edit court hours:**
+   - Click "✏️ Edit" on a court
+   - Set Opening Time to "09:00" and Closing Time to "21:00"
+   - Click "💾 Save"
+   - **Verify:** Updated hours displayed in the table
+
+8. **Cancel edit:**
+   - Click "✏️ Edit" on a court
+   - Change the name to something else
+   - Click "✖ Cancel"
+   - **Verify:** Original values restored, no changes saved
+
+**Part 4: Delete Court**
+
+9. **Delete a court:**
+   - Click "🗑️ Delete" on any court
+   - **Verify:** Browser confirmation dialog appears
+   - Confirm the deletion
+   - **Verify:** Court removed from the list
+
+10. **Cancel deletion:**
+    - Click "🗑️ Delete"
+    - In the confirmation dialog, click Cancel
+    - **Verify:** Court NOT removed from the list
+
+**Part 5: Back Navigation**
+
+11. **Back button:**
+    - On the Manage Courts page, click "← Back"
+    - **Verify:** Returns to tournament detail page for the same tournament
+
+**Expected Result:**
+- ✅ Manage Courts tile visible to admins in Quick Actions
+- ✅ Non-admins cannot access court management
+- ✅ Add court with name (required) and optional hours
+- ✅ Edit court inline with Save/Cancel
+- ✅ Delete court with confirmation
+- ✅ Back button navigates to correct tournament detail
+- ✅ Courts updated immediately in the list after each operation
+
+---
+
+### Feature 27: Order-of-Play Courts Panel — Read-Only + Manage Courts Button
+
+**What was changed:**
+- The courts panel in the order-of-play view is now **read-only**: court names, surface, hours, and availability are shown but cannot be edited or deleted from this page.
+- The "\u2795 Add" button has been replaced with a "\ud83c\udfdf\ufe0f Manage Courts" button (admins only) that navigates to the dedicated court management page.
+- The component now loads the tournament data on init, so the button correctly reflects the tournament context even when accessed directly via URL.
+
+**How to test:**
+
+**Part 1: Courts Panel — Display Only**
+
+1. **Log in as TOURNAMENT_ADMIN or SYSTEM_ADMIN**
+2. Navigate to **Tournaments** → Select any tournament → **Order of Play** tab
+3. Look at the **"\ud83c\udfbe Courts"** panel on the left side
+4. **Verify:** Each court row shows name, surface icon, opening/closing hours (if set), and availability
+5. **Verify:** There are **no Edit (✎) or Delete (\ud83d\uddd1\ufe0f) buttons** on any court row
+6. **Verify:** Clicking on a court row does **not** activate an inline edit mode (no text input appears)
+
+**Part 2: Manage Courts Button (Admin)**
+
+7. **Still logged in as admin**, look at the top-right of the Courts panel header
+8. **Verify:** A "\ud83c\udfdf\ufe0f Manage Courts" button is visible
+9. Click the button
+10. **Verify:** You are navigated to the Court Management page (`/tournaments/:id/courts`)
+11. Make a change (e.g., rename a court) on the Court Management page
+12. Navigate back to the Order of Play view (browser back or nav link)
+13. **Verify:** The updated court name is reflected in the courts panel
+
+**Part 3: Button Accessibility Across Statuses**
+
+14. **Test with DRAFT tournament:**
+    - Navigate to Order of Play for a DRAFT tournament (as admin)
+    - **Verify:** "\ud83c\udfdf\ufe0f Manage Courts" button is **enabled** and clickable
+
+15. **Test with REGISTRATION_OPEN tournament:**
+    - **Verify:** Button is **enabled**
+
+16. **Test with REGISTRATION_CLOSED tournament:**
+    - **Verify:** Button is **enabled**
+
+17. **Test with DRAW_PENDING tournament:**
+    - **Verify:** Button is **enabled** (matches the tournament detail page behavior)
+
+18. **Test with IN_PROGRESS or FINALIZED tournament:**
+    - Navigate to Order of Play for a live/completed tournament
+    - **Verify:** Button is **enabled** (no status restriction — consistent with tournament detail page)
+
+**Part 4: Non-Admin Users**
+
+19. **Log in as PLAYER or COACH**
+20. Navigate to the Order of Play view for any tournament
+21. **Verify:** The "\ud83c\udfdf\ufe0f Manage Courts" button is **NOT visible**
+22. **Verify:** Courts are still shown in read-only display
+
+**Part 5: Empty State**
+
+23. Navigate to Order of Play for a tournament with **no courts yet**
+24. **Verify:** Courts panel shows the empty state message
+25. **Verify (as admin):** Message includes "Use 'Manage Courts' to add one"
+26. **Verify (as non-admin):** Generic empty message displayed
+
+**Expected Result:**
+- \u2705 Courts panel is read-only (no edit/delete buttons)
+- \u2705 "\ud83c\udfdf\ufe0f Manage Courts" button visible to admins, hidden from players/coaches
+- \u2705 Button enabled for all tournament statuses (matches tournament detail page behavior)
+- \u2705 Button navigates to `/tournaments/:id/courts`
+- \u2705 Court changes made on management page are reflected when returning to order-of-play
+- \u2705 Empty state shows appropriate message per role
 
 ---
 
@@ -1695,6 +2055,6 @@ If any feature does not work as described:
 
 ## Next Testing Phases
 
-**Phase 5 Remaining:** Tournament state validation, Court management interface  
+**Phase 5:** ✅ ALL 5 FEATURES COMPLETE  
 **Phase 6:** Advanced features (super tiebreak, PDF templates, bracket config)  
 **Phase 7:** Phase linking UI (create phases, link, advance qualifiers)

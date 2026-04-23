@@ -380,6 +380,16 @@
   box-shadow: 0 4px 10px rgba(46, 125, 50, 0.4);
 }
 
+.btn-add-small:disabled,
+.btn-add-small.btn-disabled {
+  background: #9ca3af;
+  color: #fff;
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+  transform: none;
+}
+
 /* Compact Court List */
 .compact-court-list {
   display: flex;

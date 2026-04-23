@@ -81,6 +81,12 @@ export class TournamentEditComponent implements OnInit {
   /** Error message */
   public errorMessage = signal<string | null>(null);
 
+  /** Whether to show the locked-tournament modal */
+  public showLockedModal = signal(false);
+
+  /** Status of the locked tournament, displayed in the modal */
+  public lockedTournamentStatus = signal<string>('');
+
   /** Available surfaces */
   public readonly surfaces = Object.values(Surface);
 
@@ -118,6 +124,7 @@ export class TournamentEditComponent implements OnInit {
 
   /**
    * Loads tournament data for editing.
+   * Redirects back to the detail page if the tournament is in a locked state.
    */
   private async loadTournament(): Promise<void> {
     if (!this.tournamentId) return;
@@ -127,6 +134,19 @@ export class TournamentEditComponent implements OnInit {
 
     try {
       const tournament = await this.tournamentService.getTournamentById(this.tournamentId);
+
+      // Guard: show locked modal if the tournament is not editable
+      const editableStatuses: TournamentStatus[] = [
+        TournamentStatus.DRAFT,
+        TournamentStatus.REGISTRATION_OPEN,
+        TournamentStatus.REGISTRATION_CLOSED,
+      ];
+      if (!editableStatuses.includes(tournament.status as TournamentStatus)) {
+        this.lockedTournamentStatus.set(tournament.status);
+        this.showLockedModal.set(true);
+        this.isLoading.set(false);
+        return;
+      }
       
       // Convert Date objects to ISO string format for date inputs
       this.formData = {
@@ -153,6 +173,14 @@ export class TournamentEditComponent implements OnInit {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  /**
+   * Navigates back to the tournament detail page.
+   * Called from the locked-tournament modal.
+   */
+  public goBackToTournament(): void {
+    void this.router.navigate(['/tournaments', this.tournamentId]);
   }
 
   /**

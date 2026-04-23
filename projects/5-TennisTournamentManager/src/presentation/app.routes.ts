@@ -90,6 +90,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'tournaments/:tournamentId/courts',
+    canActivate: [authGuard, roleGuard],
+    data: {roles: ['SYSTEM_ADMIN', 'TOURNAMENT_ADMIN']},
+    loadComponent: () =>
+      import('./pages/courts/court-management/court-management.component').then(
+        (m) => m.CourtManagementComponent,
+      ),
+  },
+  {
     path: 'brackets/:id',
     loadComponent: () =>
       import('./pages/brackets/bracket-view/bracket-view.component').then(

@@ -14,9 +14,10 @@
 
 import {Component, OnInit, signal, inject, computed} from '@angular/core';
 import {CommonModule, Location} from '@angular/common';
-import {ActivatedRoute, RouterModule} from '@angular/router';
+import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {OrderOfPlayRepositoryImpl} from '@infrastructure/repositories/order-of-play.repository';
+import {TournamentService} from '@application/services/tournament.service';
 import {AuthStateService, TournamentStateService} from '@presentation/services';
 import {AxiosClient} from '@infrastructure/http/axios-client';
 import {UserRole} from '@domain/enumerations/user-role';
@@ -47,7 +48,9 @@ interface MatchSchedule {
 export class OrderOfPlayViewComponent implements OnInit {
   /** Services */
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly orderOfPlayRepository = inject(OrderOfPlayRepositoryImpl);
+  private readonly tournamentService = inject(TournamentService);
   private readonly authStateService = inject(AuthStateService);
   protected readonly tournamentStateService = inject(TournamentStateService);
   private readonly location = inject(Location);
@@ -83,6 +86,22 @@ export class OrderOfPlayViewComponent implements OnInit {
     if (!user) return false;
     return user.role === UserRole.SYSTEM_ADMIN || user.role === UserRole.TOURNAMENT_ADMIN;
   });
+
+  /**
+   * Whether the current admin can manage courts (navigate to court management page).
+   * Courts can be managed by admins regardless of tournament status,
+   * matching the behaviour of the tournament detail page.
+   */
+  public canManageCourts = computed(() => {
+    return this.tournamentStateService.currentTournament() !== null;
+  });
+
+  /**
+   * Navigates to the court management page for the current tournament.
+   */
+  public navigateToCourtManagement(): void {
+    void this.router.navigate(['/tournaments', this.tournamentId(), 'courts']);
+  }
 
   /** Admin: Schedule generation options */
   public scheduleOptions = signal({
@@ -252,10 +271,27 @@ export class OrderOfPlayViewComponent implements OnInit {
       const tournamentId = params.get('id');
       if (tournamentId) {
         this.tournamentId.set(tournamentId);
+        void this.loadTournamentState(tournamentId);
         void this.loadOrderOfPlay();
         void this.loadCourts();
       }
     });
+  }
+
+  /**
+   * Loads the tournament data and populates the shared tournament state service.
+   * This ensures that computed signals depending on tournament status work correctly
+   * even when navigating directly to this page.
+   *
+   * @param tournamentId - The tournament ID to load
+   */
+  private async loadTournamentState(tournamentId: string): Promise<void> {
+    try {
+      const tournament = await this.tournamentService.getTournamentById(tournamentId);
+      this.tournamentStateService.setCurrentTournament(tournament);
+    } catch (error) {
+      console.error('Failed to load tournament state:', error);
+    }
   }
 
   /**

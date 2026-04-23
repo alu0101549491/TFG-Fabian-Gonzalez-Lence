@@ -1,0 +1,293 @@
+<!--
+  University of La Laguna
+  School of Engineering and Technology
+  Degree in Computer Engineering
+  Final Degree Project (TFG)
+
+  @author Fabián González Lence <alu0101549491@ull.edu.es>
+  @since April 23, 2026
+  @file presentation/pages/courts/court-management/court-management.component.html
+  @desc Template for the court management admin interface.
+  @see https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager
+-->
+
+<div class="court-management-container">
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Loading court data...</p>
+      </div>
+    </div>
+  } @else {
+
+    @if (error() && !tournament()) {
+      <div class="error-banner">
+        <span class="error-icon">⚠️</span>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    @if (tournament()) {
+      <!-- Hero Section -->
+      <section class="court-hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <button class="back-btn" (click)="goBack()">
+            <span>←</span>
+            <span>Back to Tournament</span>
+          </button>
+
+          <div class="court-header">
+            @if (tournamentStateService.currentTournamentLogo(); as logoUrl) {
+              <img
+                [src]="logoUrl"
+                [alt]="tournament()!.name + ' logo'"
+                class="tournament-logo"
+              />
+            }
+            <h1 class="court-title">🎾 Court Management</h1>
+            <p class="court-subtitle">{{ tournament()!.name }}</p>
+            <span class="location-tag">📍 {{ tournament()!.location }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Content -->
+      <div class="court-content">
+
+        <!-- Status Messages -->
+        @if (successMessage()) {
+          <div class="success-banner">
+            <span class="success-icon">✅</span>
+            <span>{{ successMessage() }}</span>
+          </div>
+        }
+        @if (error()) {
+          <div class="error-banner">
+            <span class="error-icon">⚠️</span>
+            <span>{{ error() }}</span>
+          </div>
+        }
+
+        <!-- Header with Add Button -->
+        <div class="section-header">
+          <div class="section-title-group">
+            <h2 class="section-title">Courts</h2>
+            <span class="court-count-badge">{{ courtCount() }} court{{ courtCount() !== 1 ? 's' : '' }}</span>
+          </div>
+          <button class="btn-primary" (click)="toggleAddForm()" [disabled]="isSubmitting()">
+            @if (showAddForm()) {
+              ✕ Cancel
+            } @else {
+              ＋ Add Court
+            }
+          </button>
+        </div>
+
+        <!-- Add Court Form -->
+        @if (showAddForm()) {
+          <div class="form-card">
+            <h3 class="form-title">➕ Add New Court</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="newCourtName">Court Name <span class="required">*</span></label>
+                <input
+                  id="newCourtName"
+                  type="text"
+                  class="form-input"
+                  [(ngModel)]="addCourtForm.name"
+                  placeholder="e.g., Centre Court, Court 1"
+                  maxlength="100"
+                  [disabled]="isSubmitting()"
+                />
+                <span class="form-hint">Name must be unique within the tournament.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="newOpeningTime">Opening Time</label>
+                <input
+                  id="newOpeningTime"
+                  type="time"
+                  class="form-input"
+                  [(ngModel)]="addCourtForm.openingTime"
+                  [disabled]="isSubmitting()"
+                />
+                <span class="form-hint">Leave blank if the court has no fixed hours.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="newClosingTime">Closing Time</label>
+                <input
+                  id="newClosingTime"
+                  type="time"
+                  class="form-input"
+                  [(ngModel)]="addCourtForm.closingTime"
+                  [disabled]="isSubmitting()"
+                />
+                <span class="form-hint">Must be after the opening time.</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" (click)="submitAddCourt()" [disabled]="isSubmitting()">
+                @if (isSubmitting()) {
+                  <span class="spinner-small"></span> Saving...
+                } @else {
+                  ✓ Save Court
+                }
+              </button>
+              <button class="btn-secondary" (click)="toggleAddForm()" [disabled]="isSubmitting()">
+                Cancel
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Courts Table -->
+        @if (courts().length === 0) {
+          <div class="empty-state">
+            <div class="empty-icon">🏟️</div>
+            <h3>No Courts Yet</h3>
+            <p>Add courts to enable match scheduling for this tournament.</p>
+            <button class="btn-primary" (click)="toggleAddForm()">
+              ＋ Add First Court
+            </button>
+          </div>
+        } @else {
+          <div class="courts-table-wrapper">
+            <table class="courts-table">
+              <thead>
+                <tr>
+                  <th>Court Name</th>
+                  <th>Surface</th>
+                  <th>Opening Time</th>
+                  <th>Closing Time</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (court of courts(); track court.id) {
+                  @if (editingCourtId() === court.id) {
+                    <!-- Edit Row -->
+                    <tr class="edit-row">
+                      <td>
+                        <input
+                          type="text"
+                          class="form-input inline-input"
+                          [(ngModel)]="getEditForm(court.id).name"
+                          placeholder="Court name"
+                          maxlength="100"
+                          [disabled]="isSubmitting()"
+                        />
+                      </td>
+                      <td>
+                        <span class="surface-badge">{{ court.surface | enumFormat }}</span>
+                      </td>
+                      <td>
+                        <input
+                          type="time"
+                          class="form-input inline-input"
+                          [(ngModel)]="getEditForm(court.id).openingTime"
+                          [disabled]="isSubmitting()"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="time"
+                          class="form-input inline-input"
+                          [(ngModel)]="getEditForm(court.id).closingTime"
+                          [disabled]="isSubmitting()"
+                        />
+                      </td>
+                      <td>
+                        <span class="status-badge available">Available</span>
+                      </td>
+                      <td class="actions-cell">
+                        <button
+                          class="btn-sm btn-success"
+                          (click)="submitEditCourt(court)"
+                          [disabled]="isSubmitting()"
+                          title="Save changes"
+                        >
+                          @if (isSubmitting()) {
+                            <span class="spinner-small"></span>
+                          } @else {
+                            ✓ Save
+                          }
+                        </button>
+                        <button
+                          class="btn-sm btn-cancel"
+                          (click)="cancelEditing(court.id)"
+                          [disabled]="isSubmitting()"
+                          title="Cancel editing"
+                        >
+                          ✕ Cancel
+                        </button>
+                      </td>
+                    </tr>
+                  } @else {
+                    <!-- View Row -->
+                    <tr>
+                      <td class="court-name">
+                        <span class="court-icon">🎾</span>
+                        {{ court.name }}
+                      </td>
+                      <td>
+                        <span class="surface-badge">{{ court.surface | enumFormat }}</span>
+                      </td>
+                      <td class="time-cell">{{ formatTime(court.openingTime) }}</td>
+                      <td class="time-cell">{{ formatTime(court.closingTime) }}</td>
+                      <td>
+                        @if (court.isAvailable) {
+                          <span class="status-badge available">✓ Available</span>
+                        } @else {
+                          <span class="status-badge unavailable">✗ Unavailable</span>
+                        }
+                      </td>
+                      <td class="actions-cell">
+                        <button
+                          class="btn-sm btn-edit"
+                          (click)="startEditing(court)"
+                          [disabled]="editingCourtId() !== null || isSubmitting()"
+                          title="Edit court"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          class="btn-sm btn-delete"
+                          (click)="deleteCourt(court)"
+                          [disabled]="editingCourtId() !== null || isSubmitting()"
+                          title="Delete court"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <!-- Info Card -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="info-icon">ℹ️</span>
+            <h3>About Court Management</h3>
+          </div>
+          <ul class="info-list">
+            <li>Courts are used for match scheduling in the Order of Play.</li>
+            <li>The <strong>surface type</strong> is inherited from the tournament's configured surface.</li>
+            <li>Setting <strong>opening and closing times</strong> helps the scheduler avoid conflicts.</li>
+            <li>Deleting a court will not affect already-scheduled matches that reference it.</li>
+          </ul>
+        </div>
+
+      </div><!-- /court-content -->
+    }
+  }
+
+</div>

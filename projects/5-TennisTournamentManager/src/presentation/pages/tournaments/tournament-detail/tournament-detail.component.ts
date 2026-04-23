@@ -16,7 +16,6 @@ import {Component, OnInit, HostListener, inject, signal, computed, effect} from 
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
-import {combineLatest} from 'rxjs';
 import {TournamentService, RegistrationService, CategoryService, BracketService} from '@application/services';
 import {ExportService} from '@application/services/export.service';
 import {UserManagementService} from '@application/services/user-management.service';
@@ -244,10 +243,16 @@ export class TournamentDetailComponent implements OnInit {
    * 1. registrationCloseDate is explicitly set, AND
    * 2. Current date is after registrationCloseDate, AND
    * 3. registrationCloseDate is meaningfully before the tournament start (not same day)
+   * Also returns true when the tournament status is not REGISTRATION_OPEN.
    */
   public isRegistrationClosed = computed(() => {
     const tournament = this.tournament();
-    if (!tournament?.registrationCloseDate) return false;
+    if (!tournament) return true;
+
+    // Registration is closed if the tournament status is not REGISTRATION_OPEN
+    if (tournament.status !== TournamentStatus.REGISTRATION_OPEN) return true;
+
+    if (!tournament.registrationCloseDate) return false;
     
     const now = new Date();
     const deadline = new Date(tournament.registrationCloseDate);
@@ -259,6 +264,62 @@ export class TournamentDetailComponent implements OnInit {
     
     // Only show as closed if we're past the deadline
     return now > deadline;
+  });
+
+  /**
+   * Checks whether tournament details can still be edited.
+   *
+   * Editing is only allowed while the tournament is in a preparatory state:
+   * DRAFT, REGISTRATION_OPEN, or REGISTRATION_CLOSED.
+   * Once the draw is generated or the event is underway, the core details are locked.
+   *
+   * @returns True if the tournament can still be edited
+   */
+  public canEditTournamentDetails = computed(() => {
+    const tournament = this.tournament();
+    if (!tournament) return false;
+    const editableStatuses: TournamentStatus[] = [
+      TournamentStatus.DRAFT,
+      TournamentStatus.REGISTRATION_OPEN,
+      TournamentStatus.REGISTRATION_CLOSED,
+    ];
+    return editableStatuses.includes(tournament.status as TournamentStatus);
+  });
+
+  /**
+   * Checks whether brackets can be generated for this tournament.
+   *
+   * Bracket generation requires that registration has closed and the draw
+   * is either pending or has not yet been fully generated.
+   *
+   * @returns True if bracket generation is allowed
+   */
+  public canGenerateBrackets = computed(() => {
+    const tournament = this.tournament();
+    if (!tournament) return false;
+    const bracketStatuses: TournamentStatus[] = [
+      TournamentStatus.REGISTRATION_CLOSED,
+      TournamentStatus.DRAW_PENDING,
+    ];
+    return bracketStatuses.includes(tournament.status as TournamentStatus);
+  });
+
+  /**
+   * Checks whether new categories can be added to this tournament.
+   *
+   * Categories can only be added before registration opens or while it is open.
+   * After registration closes, the category structure is locked.
+   *
+   * @returns True if categories can be added
+   */
+  public canAddCategories = computed(() => {
+    const tournament = this.tournament();
+    if (!tournament) return false;
+    const addCategoryStatuses: TournamentStatus[] = [
+      TournamentStatus.DRAFT,
+      TournamentStatus.REGISTRATION_OPEN,
+    ];
+    return addCategoryStatuses.includes(tournament.status as TournamentStatus);
   });
 
   /**
@@ -388,11 +449,7 @@ export class TournamentDetailComponent implements OnInit {
    * Initializes component and loads tournament data.
    */
   public ngOnInit(): void {
-    // Combine both paramMap and queryParamMap to reload on any change
-    combineLatest([
-      this.route.paramMap,
-      this.route.queryParamMap
-    ]).subscribe(([params]) => {
+    this.route.paramMap.subscribe(params => {
       this.tournamentId = params.get('id');
       if (this.tournamentId) {
         void this.loadTournament();
@@ -676,6 +733,15 @@ export class TournamentDetailComponent implements OnInit {
   public managePhases(): void {
     if (this.tournamentId) {
       void this.router.navigate(['/tournaments', this.tournamentId, 'phases']);
+    }
+  }
+
+  /**
+   * Navigates to the court management page for this tournament (admin only).
+   */
+  public manageCourts(): void {
+    if (this.tournamentId) {
+      void this.router.navigate(['/tournaments', this.tournamentId, 'courts']);
     }
   }
 

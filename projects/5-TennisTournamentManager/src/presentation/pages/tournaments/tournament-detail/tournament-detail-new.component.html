@@ -98,7 +98,7 @@
                 <span>📢</span>
                 <span>Manage Announcements</span>
               </button>
-              <button class="action-btn edit" (click)="editTournament()">
+              <button class="action-btn edit" (click)="editTournament()" [disabled]="!canEditTournamentDetails()" [title]="canEditTournamentDetails() ? 'Edit tournament details' : 'Tournament cannot be edited in its current status'">
                 <span>✏️</span>
                 <span>Edit</span>
               </button>
@@ -232,6 +232,14 @@
                   <div class="tile-content">
                     <h4>Phase Management</h4>
                     <p>Link phases & qualifiers</p>
+                  </div>
+                </button>
+
+                <button class="action-tile" (click)="manageCourts()">
+                  <span class="tile-icon">🏟️</span>
+                  <div class="tile-content">
+                    <h4>Manage Courts</h4>
+                    <p>Add & edit tournament courts</p>
                   </div>
                 </button>
               }
@@ -818,13 +826,17 @@
             <div class="info-card">
               <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2>⚙️ Category Management</h2>
-                <button 
-                  class="action-btn" 
-                  (click)="toggleCategoryManagement()"
-                  style="padding: 0.5rem 1rem; font-size: 0.875rem;"
-                >
-                  {{ showCategoryManagement() ? '✕ Close' : '➕ Add Category' }}
-                </button>
+                @if (canAddCategories()) {
+                  <button 
+                    class="action-btn" 
+                    (click)="toggleCategoryManagement()"
+                    style="padding: 0.5rem 1rem; font-size: 0.875rem;"
+                  >
+                    {{ showCategoryManagement() ? '✕ Close' : '➕ Add Category' }}
+                  </button>
+                } @else {
+                  <span style="font-size: 0.8rem; color: #94a3b8; font-style: italic;">Categories locked after registration closes</span>
+                }
               </div>
 
               @if (categories().length === 0) {
@@ -972,8 +984,8 @@
             </div>
           }
 
-          <!-- Bracket Generation (Organizers Only) -->
-          @if (isAuthenticated() && canManageTournament() && categories().length > 0) {
+          <!-- Bracket Generation (Organizers Only, status-gated) -->
+          @if (isAuthenticated() && canManageTournament() && categories().length > 0 && canGenerateBrackets()) {
             <div class="info-card">
               <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2>🏆 Bracket Generation</h2>
