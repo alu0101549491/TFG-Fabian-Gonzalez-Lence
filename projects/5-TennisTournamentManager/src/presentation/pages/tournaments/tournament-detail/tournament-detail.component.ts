@@ -1090,7 +1090,7 @@ export class TournamentDetailComponent implements OnInit {
 
   /**
    * Loads tournament categories from the API.
-   * Auto-creates a default "Open" category if none exist.
+   * Auto-creates a default "Open (Default Category)" if none exist.
    */
   private async loadCategories(): Promise<void> {
     if (!this.tournamentId) return;
@@ -1099,12 +1099,15 @@ export class TournamentDetailComponent implements OnInit {
       let categories = await this.categoryService.getCategoriesByTournament(this.tournamentId);
       
       // Auto-create default category if none exist (to allow participant registration)
-      if (categories.length === 0 && this.isAdmin()) {
-        console.log('⚠️  No categories found. Creating default "Open" category...');
+      const currentUser = this.authStateService.getCurrentUser();
+      const isAdmin = currentUser?.role === UserRole.SYSTEM_ADMIN || currentUser?.role === UserRole.TOURNAMENT_ADMIN;
+      
+      if (categories.length === 0 && isAdmin) {
+        console.log('⚠️  No categories found. Creating default "Open (Default Category)"...');
         try {
           const defaultCategory = await this.categoryService.createCategory({
             tournamentId: this.tournamentId,
-            name: 'Open',
+            name: 'Open (Default Category)',
             gender: Gender.OPEN,
             ageGroup: AgeGroup.OPEN,
             maxParticipants: this.tournament()?.maxParticipants || 32,

@@ -279,16 +279,16 @@
 - [x] **Add default category creation** ✅ COMPLETED (2026-04-23)
   - **Issue:** Can't add external participants if no categories exist
   - **Files:** TournamentDetailComponent, CategoryService
-  - **Fix:** ✅ Auto-creates default "Open" category when loading tournament with 0 categories
+  - **Fix:** ✅ Auto-creates default "Open (Default Category)" when loading tournament with 0 categories
   - **Implementation:**
     - Modified `loadCategories()` method to check if categories array is empty
-    - Automatically creates default category with: name="Open", gender=OPEN, ageGroup=OPEN, maxParticipants from tournament
+    - Automatically creates default category with: name="Open (Default Category)", gender=OPEN, ageGroup=OPEN, maxParticipants from tournament
     - Only triggers for admins viewing tournament
     - Console logs inform admin of auto-creation
     - Falls back gracefully if creation fails
     - Eliminates manual category setup step for simple tournaments
   - **Estimated:** 2 hours → **Actual:** 1.5 hours
-  - **Test:** Create tournament, don't add categories, view tournament detail as admin, verify "Open" category auto-created
+  - **Test:** Create tournament, don't add categories, view tournament detail as admin, verify "Open (Default Category)" auto-created
 
 - [x] **Add full acceptance status dropdown** ✅ COMPLETED (2026-04-23)
   - **Issue:** Can only change status to accepted/rejected, not WC, SE, LL, etc.

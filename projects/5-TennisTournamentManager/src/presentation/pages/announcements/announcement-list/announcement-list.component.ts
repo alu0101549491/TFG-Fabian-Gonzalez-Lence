@@ -231,9 +231,16 @@ export class AnnouncementListComponent implements OnInit {
 
   /**
    * Navigates back to previous page.
+   * If viewing tournament-specific announcements, navigate to tournament details.
+   * Otherwise, navigate to home.
    */
   public goBack(): void {
-    void this.router.navigate(['/']);
+    const tournamentId = this.tournamentId();
+    if (tournamentId) {
+      void this.router.navigate(['/tournaments', tournamentId]);
+    } else {
+      void this.router.navigate(['/']);
+    }
   }
 
   /**

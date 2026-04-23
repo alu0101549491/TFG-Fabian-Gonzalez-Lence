@@ -48,9 +48,9 @@ export function createApp(): Application {
   // Request logging
   app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
   
-  // Body parsing middleware
-  app.use(express.json());
-  app.use(express.urlencoded({extended: true}));
+  // Body parsing middleware - increased limit for announcements with images/long content
+  app.use(express.json({limit: '10mb'}));
+  app.use(express.urlencoded({extended: true, limit: '10mb'}));
   
   // Rate limiting
   const limiter = rateLimit({

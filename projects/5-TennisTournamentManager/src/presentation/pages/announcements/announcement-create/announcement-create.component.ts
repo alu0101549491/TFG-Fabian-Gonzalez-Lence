@@ -94,6 +94,9 @@ export class AnnouncementCreateComponent implements OnInit {
   /** Loading tournaments */
   public isLoadingTournaments = signal(false);
 
+  /** Whether the tournament dropdown should be locked (when coming from a specific tournament) */
+  public isTournamentLocked = signal(false);
+
   /**
    * Initializes component.
    */
@@ -108,8 +111,35 @@ export class AnnouncementCreateComponent implements OnInit {
       return;
     }
     
-    this.formData.update(data => ({...data, tournamentId}));
+    this.isTournamentLocked.set(true); // Lock dropdown since we came from a specific tournament
+    
+    // Load the specific tournament first for display and to ensure it's in the list
+    await this.loadSpecificTournament(tournamentId);
+    
+    // Then load all available tournaments
     await this.loadTournaments();
+    
+    // Set the tournament ID in form data after loading tournaments
+    this.formData.update(data => ({...data, tournamentId}));
+  }
+
+  /**
+   * Loads specific tournament details for display.
+   */
+  private async loadSpecificTournament(tournamentId: string): Promise<void> {
+    try {
+      const tournament = await this.tournamentService.getTournamentById(tournamentId);
+      this.tournamentName.set(tournament.name);
+      
+      // Ensure this tournament is in the tournaments list
+      this.tournaments.update(list => {
+        const exists = list.some(t => t.id === tournamentId);
+        return exists ? list : [tournament, ...list];
+      });
+    } catch (error) {
+      console.error('Error loading tournament:', error);
+      this.errorMessage.set('Failed to load tournament details');
+    }
   }
 
   /**
@@ -356,6 +386,13 @@ export class AnnouncementCreateComponent implements OnInit {
    * Navigates back to announcements list.
    */
   public goBack(): void {
-    void this.router.navigate(['/announcements']);
+    const tournamentId = this.formData().tournamentId;
+    if (tournamentId) {
+      void this.router.navigate(['/announcements'], {
+        queryParams: {tournamentId},
+      });
+    } else {
+      void this.router.navigate(['/announcements']);
+    }
   }
 }

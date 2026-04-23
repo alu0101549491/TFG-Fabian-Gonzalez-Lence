@@ -1252,7 +1252,7 @@ npm run dev
 ### Feature 19: Default Category Creation
 
 **What was changed:**
-- System automatically creates default "Open" category when loading tournament with 0 categories
+- System automatically creates default "Open (Default Category)" when loading tournament with 0 categories
 - Eliminates manual category setup step before participant registration
 - Only triggers for administrators viewing tournament detail page
 
@@ -1263,7 +1263,7 @@ npm run dev
 
 **After:**
 - Default category auto-created on demand when admin views tournament with no categories
-- Category settings: name="Open", gender=OPEN, ageGroup=OPEN, maxParticipants from tournament
+- Category settings: name="Open (Default Category)", gender=OPEN, ageGroup=OPEN, maxParticipants from tournament
 - Console logs inform admin of auto-creation
 - Fully editable after creation (can rename, adjust settings, or delete)
 
@@ -1278,19 +1278,19 @@ npm run dev
    - Navigate to tournament detail page
    - **Verify:** Page loads successfully
    - Open browser console (F12 → Console tab)
-   - **Verify:** Console shows: "⚠️ No categories found. Creating default 'Open' category..."
+   - **Verify:** Console shows: "⚠️ No categories found. Creating default 'Open (Default Category)'..."
    - **Verify:** Console shows: "✅ Default category created: [category object]"
 
 3. **Verify Category in UI:**
    - Look at "Categories" section on tournament detail page
-   - **Verify:** One category listed named "Open"
+   - **Verify:** One category listed named "Open (Default Category)"
    - **Verify:** Category shows: Gender: OPEN, Age Group: OPEN
    - **Verify:** maxParticipants matches tournament's maxParticipants setting
 
 4. **Test Participant Registration:**
    - Open tournament for registration
    - Register a participant (as player or add external participant as admin)
-   - Select the "Open" category
+   - Select the "Open (Default Category)" category
    - **Verify:** Registration succeeds
    - **Verify:** Participant appears in participant list
 

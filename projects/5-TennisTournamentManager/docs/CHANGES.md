@@ -38,9 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
    - **Result**: Proper winner recording for non-completion scenarios, enables accurate bracket advancement
    - **Bug Fixed**: Winner now persists correctly to database and updates standings (see detailed bug fix section below)
 
-5. ✅ **Default Category Creation** - Auto-creates default "Open" category when tournament has no categories
+5. ✅ **Default Category Creation** - Auto-creates default "Open (Default Category)" when tournament has no categories
    - **Issue**: Cannot add participants to tournaments without categories; admins had to manually create categories first
-   - **Solution**: System automatically creates default "Open" category (gender: OPEN, age: OPEN) when loading tournament categories if none exist
+   - **Solution**: System automatically creates default "Open (Default Category)" (gender: OPEN, age: OPEN) when loading tournament categories if none exist
    - **Trigger**: Automatic on tournament detail page load when admin views tournament with 0 categories
    - **Settings**: maxParticipants inherited from tournament settings, fully editable after creation
    - **Impact**: Eliminates setup friction; participants can register immediately after tournament creation
@@ -80,13 +80,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `src/application/dto/match.dto.ts` - Added winnerId to UpdateMatchStatusDto
 - `src/application/dto/announcement.dto.ts` - Added linkText field
 - `src/application/services/match.service.ts` - Winner persistence logic
-- `backend/src/domain/entities/announcement.entity.ts` - Added linkText column
+- `backend/src/app.ts` - Increased body-parser limit to 10mb for large announcement images
+- `backend/src/domain/entities/announcement.entity.ts` - Added linkText column, changed imageUrl and externalLink to TEXT type
 
 **Phase 4 Complete!** 7/7 tasks finished (100%)
 
 **Bug Fixes:**
 - ✅ Fixed winner not being saved when updating match status to WO/RET/DEF
 - ✅ Fixed match list showing "Not started" for WALKOVER matches (now shows "—")
+- ✅ Fixed "request entity too large" error when creating announcements with images - increased Express body-parser limit from 100kb to 10mb
+- ✅ Fixed "value too long for type character varying(500)" error for announcement images - changed imageUrl and externalLink columns from VARCHAR(500) to TEXT type
 
 **Next Phase 4 Tasks:**
 - All Phase 4 tasks completed! 🎉
@@ -141,6 +144,116 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ✅ Complete match records for non-completion statuses
 
 **Related UX Improvement:** Fixed match list score display for non-completion statuses. WALKOVER, RETIRED, DEFAULT, ABANDONED, and CANCELLED matches now show "—" (em dash) instead of "Not started" since these matches don't have traditional scores. This makes it clearer that these matches were decided without playing a full match.
+
+---
+
+### Bug Fix: Request Entity Too Large Error for Announcement Images (2026-04-23)
+
+**Issue:** When creating announcements with images (especially base64-encoded images), users received HTTP 500 error: "request entity too large". The backend was rejecting POST requests to `/api/announcements` when the payload exceeded the default Express body-parser limit.
+
+**Root Cause:** Express's `body-parser` middleware has a default size limit of 100kb for JSON and URL-encoded request bodies. Base64-encoded images are approximately 33% larger than their original binary size, so even a modest 160kb image becomes ~218kb when base64-encoded, exceeding the limit.
+
+**Symptoms:**
+- Form submission appeared to work (no client-side errors)
+- Browser console showed: `POST http://localhost:4200/api/announcements 400 (Bad Request)` (changed from 500 after database fix)
+- Backend logs showed: `PayloadTooLargeError: request entity too large`
+- Announcement was not created
+- Small text-only announcements worked fine
+
+**Solution:**
+
+**Backend Changes** (`backend/src/app.ts`, lines 54-55):
+```typescript
+// Before:
+app.use(express.json());
+app.use(express.urlencoded({extended: true}));
+
+// After:
+app.use(express.json({limit: '10mb'}));
+app.use(express.urlencoded({extended: true, limit: '10mb'}));
+```
+
+**Impact:**
+- ✅ Increased request size limit from 100kb to 10mb
+- ✅ Supports base64-encoded images up to ~7.5mb original size
+- ✅ Announcements with images now submit successfully
+- ✅ Both JSON and URL-encoded requests supported
+
+**Testing:**
+- Create announcement with 160kb image → verify successful submission
+- Create announcement with 5mb image → verify successful submission
+- Verify announcement displays correctly with image
+- Check backend logs for no "request entity too large" errors
+
+**Production Considerations:** While 10mb limit works for development with base64 encoding, production should migrate to proper image storage (CDN, cloud storage like AWS S3, Cloudinary) to avoid database bloat and improve performance.
+
+---
+
+### Bug Fix: Database Column Too Small for Base64 Images (2026-04-23)
+
+**Issue:** After fixing the request size limit, creating announcements with images still failed with database error: "value too long for type character varying(500)". The database columns `imageUrl` and `externalLink` in the `announcements` table were limited to 500 characters, insufficient for base64-encoded images.
+
+**Root Cause:** The `Announcement` entity defined `imageUrl` and `externalLink` as `VARCHAR(500)`. A base64-encoded 160kb image produces a data URL string of ~218,000 characters, far exceeding the 500-character limit.
+
+**Symptoms:**
+- Backend received request successfully (10mb limit fix worked)
+- Backend logs showed: `error: value too long for type character varying(500)`
+- Transaction rolled back (ROLLBACK)
+- Browser console showed: `POST http://localhost:4200/api/announcements 400 (Bad Request)`
+- Announcement was not created
+- Data URL visible in backend logs (truncated base64 string)
+
+**Solution:**
+
+**Entity Changes** (`backend/src/domain/entities/announcement.entity.ts`, lines 74-78):
+```typescript
+// Before:
+@Column('varchar', {length: 500, nullable: true})
+public imageUrl!: string | null;
+
+@Column('varchar', {length: 500, nullable: true})
+public externalLink!: string | null;
+
+// After:
+@Column('text', {nullable: true})
+public imageUrl!: string | null;
+
+@Column('text', {nullable: true})
+public externalLink!: string | null;
+```
+
+**Database Migration:**
+TypeORM's synchronize feature automatically applied the schema changes on backend restart:
+```sql
+ALTER TABLE "announcements" DROP COLUMN "imageUrl"
+ALTER TABLE "announcements" ADD "imageUrl" text
+ALTER TABLE "announcements" DROP COLUMN "externalLink"
+ALTER TABLE "announcements" ADD "externalLink" text
+```
+
+**Impact:**
+- ✅ Changed column type from `VARCHAR(500)` to `TEXT` (unlimited length)
+- ✅ Supports base64-encoded images of any reasonable size
+- ✅ Also fixes potential issues with very long external URLs
+- ✅ No data loss (columns dropped and recreated, but announcements table was empty in development)
+
+**Testing:**
+- Create announcement with 160kb image → verify successful creation
+- Verify image displays correctly in announcement card
+- Verify image displays correctly in announcement detail modal
+- Check database that imageUrl contains full base64 data URL
+- Create announcement with long external link (500+ chars) → verify works
+
+**Migration Notes:** 
+- Development: Automatic synchronization applied changes on restart
+- Production: Manual migration required before deployment (see migration script above)
+- Data preservation: Backup announcements before migration if production data exists
+
+**Production Considerations:** While TEXT columns work for development, production should:
+1. Migrate to external image storage (CDN, S3, Cloudinary)
+2. Store only URLs in imageUrl column (revert to VARCHAR if desired)
+3. Implement image optimization and compression
+4. Consider lazy loading and responsive images for performance
 
 ---
 

@@ -71,10 +71,10 @@ export class Announcement {
   @Column('text', {nullable: true})
   public content!: string | null;
 
-  @Column('varchar', {length: 500, nullable: true})
+  @Column('text', {nullable: true})
   public imageUrl!: string | null;
 
-  @Column('varchar', {length: 500, nullable: true})
+  @Column('text', {nullable: true})
   public externalLink!: string | null;
 
   @Column('varchar', {length: 50, nullable: true})

@@ -21,7 +21,15 @@ export default defineConfig(({mode}) => {
     : '/';
 
   return {
-    plugins: [],
+    plugins: [
+      // Plugin to replace %BASE_URL% placeholders in HTML with actual base path
+      {
+        name: 'html-transform',
+        transformIndexHtml(html) {
+          return html.replace(/%BASE_URL%/g, base);
+        },
+      },
+    ],
     esbuild: {
       tsconfigRaw: {
         compilerOptions: {
