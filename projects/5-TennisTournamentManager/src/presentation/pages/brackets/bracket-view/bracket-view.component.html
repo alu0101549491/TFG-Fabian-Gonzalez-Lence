@@ -194,15 +194,15 @@
           </h2>
 
           <div class="phases-grid">
-            @for (phase of consolationPhases(); track phase.id) {
+            @for (phase of consolationPhases(); track phase.id; let i = $index) {
               <div class="phase-card consolation-phase-card">
                 <div class="phase-header">
                   <h3 class="phase-name">{{ phase.name }}</h3>
                 </div>
                 <div class="phase-body">
                   <div class="phase-detail">
-                    <span class="phase-label">Order</span>
-                    <span class="phase-value">Round {{ phase.order }}</span>
+                    <span class="phase-label">Phase</span>
+                    <span class="phase-value">Consolation #{{ i + 1 }}</span>
                   </div>
                   <div class="phase-detail">
                     <span class="phase-label">Matches</span>

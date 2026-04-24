@@ -125,14 +125,19 @@ export class VisualBracketComponent {
     const rounds: RoundMatches[] = [];
     const sortedRounds = Array.from(roundMap.keys()).sort((a, b) => a - b);
 
-    for (const round of sortedRounds) {
+    for (let i = 0; i < sortedRounds.length; i++) {
+      const round = sortedRounds[i];
+      // Use 1-based rank (position in sorted order) rather than raw round number
+      // so that consolation rounds (101, 102, 103...) receive the same friendly
+      // names (Quarter-Finals, Semi-Finals, Final) as equivalent main-draw rounds.
+      const roundRank = i + 1;
       const roundMatches = roundMap.get(round)!;
       // Sort matches within round by match number
       roundMatches.sort((a, b) => a.matchNumber - b.matchNumber);
 
       rounds.push({
         round,
-        roundName: this.getRoundName(round, sortedRounds.length),
+        roundName: this.getRoundName(roundRank, sortedRounds.length),
         matches: roundMatches,
       });
     }

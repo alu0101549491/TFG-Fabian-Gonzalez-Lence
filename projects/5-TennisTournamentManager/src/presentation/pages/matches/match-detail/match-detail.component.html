@@ -369,7 +369,7 @@
                   required
                 >
                   @for (status of availableStatuses(); track status) {
-                    <option [value]="status" [title]="getStatusTooltip(status)">{{ status | enumFormat }}</option>
+                    <option value="{{ status }}" [title]="getStatusTooltip(status)">{{ status | enumFormat }}</option>
                   }
                 </select>
                 <small style="display: block; margin-top: 0.25rem; color: var(--color-gray-600); font-size: 0.875rem;">

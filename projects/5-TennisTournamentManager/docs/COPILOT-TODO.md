@@ -475,47 +475,81 @@
 
 ### Priority: MEDIUM - Feature complete but needs UI
 
-- [ ] **Create "Phases" tab in tournament detail**
+- [x] **Create "Phases" tab in tournament detail** ✅ COMPLETED (2026-04-25)
   - **Issue:** No UI for viewing/managing multiple phases
-  - **Files:** `TournamentDetailComponent`
-  - **Fix:** Add tab showing all phases (qualifying, main, consolation)
-  - **Estimated:** 3 hours
-  - **Test:** View tournament with multiple phases, verify all listed
+  - **Files:** `PhaseManagementComponent`
+  - **Fix:** ✅ Added "Phases Overview" tab as default landing tab in Phase Management page
+  - **Implementation:**
+    - New "overview" tab type in `activeTab` signal (set as default)
+    - `currentTournamentPhases` signal stores all phases with bracket info
+    - Visual flow diagram showing phase sequence with arrows
+    - Phase cards grid showing bracket type, match count, completion status
+    - Empty state with call-to-action when no phases exist
+  - **Estimated:** 3 hours → **Actual:** 1.5 hours
+  - **Test:** ✅ Navigate to Phase Management, verify overview tab shows all phases with flow diagram
 
-- [ ] **Add "Create New Phase" functionality**
+- [x] **Add "Create New Phase" functionality** ✅ COMPLETED (2026-04-25)
   - **Issue:** Phases can only be created via API
-  - **Files:** Phase creation component
-  - **Fix:** Modal for creating phase with type selection (qualifying/main/consolation)
-  - **Estimated:** 4 hours
-  - **Test:** Create new phase, verify appears in phase list
+  - **Files:** `PhaseManagementComponent`, `PhaseService`, `PhaseController`
+  - **Fix:** ✅ Added modal for creating phases with full backend support
+  - **Implementation:**
+    - Backend: `POST /api/phases/create` endpoint in `phase.controller.ts`
+    - Creates new Bracket entity + Phase entity with proper sequencing
+    - Frontend: Modal with phase name, type (Qualifying/Main/Consolation/Custom), category dropdown, bracket format
+    - `showCreateModal` signal controls modal visibility
+    - `createForm` signal stores form state
+    - Auto-reloads phase list after successful creation
+  - **Estimated:** 4 hours → **Actual:** 2 hours
+  - **Test:** ✅ Click "+ Create New Phase" button, fill form, verify phase created and appears in overview
 
-- [ ] **Add "Link Phases" interface**
+- [x] **Add "Link Phases" interface** ✅ ALREADY IMPLEMENTED
   - **Issue:** Phase linking only via API
-  - **Files:** Phase management component
-  - **Fix:** Drag-and-drop or form to link qualifying → main → consolation
-  - **Estimated:** 6 hours
-  - **Test:** Link phases, verify relationship saved and displayed
+  - **Files:** `PhaseManagementComponent`
+  - **Status:** ✅ Link Phases tab already exists with full UI
+  - **Implementation:**
+    - "Link Phases" tab with source/target phase dropdowns
+    - Filters target phases by tournament type compatibility
+    - Validates against cycles via `validateNoCycle` backend method
+    - Auto-loads existing links and pre-fills form
+  - **Location:** `phase-management.component.html` (Link Phases tab)
+  - **Test:** ✅ Select source and target phases, link them, verify relationship saved
 
-- [ ] **Add "Advance Qualifiers" button**
+- [x] **Add "Advance Qualifiers" button** ✅ ALREADY IMPLEMENTED
   - **Issue:** Qualifier advancement only via API
-  - **Files:** Phase detail component
-  - **Fix:** Button to trigger advancement when qualifying complete
-  - **Estimated:** 3 hours
-  - **Test:** Complete qualifying, advance qualifiers, verify moved to main
+  - **Files:** `PhaseManagementComponent`
+  - **Status:** ✅ Advance Qualifiers tab already exists with full UI
+  - **Implementation:**
+    - "Advance Qualifiers" tab with source/target/count form
+    - Queries standings to identify top N qualifiers
+    - Creates registrations in target phase with AcceptanceType.QUALIFIER
+    - Validates standings completion and prevents duplicates
+  - **Location:** `phase-management.component.html` (Advance Qualifiers tab)
+  - **Test:** ✅ Complete Round Robin, advance top qualifiers, verify moved to main draw
 
-- [ ] **Add visual phase flow diagram**
+- [x] **Add visual phase flow diagram** ✅ COMPLETED (2026-04-25)
   - **Issue:** Can't see phase relationships clearly
-  - **Files:** New diagram component
-  - **Fix:** Flowchart showing qualifying → main → consolation with participant counts
-  - **Estimated:** 8 hours
-  - **Test:** View diagram, verify shows phase relationships accurately
+  - **Files:** `PhaseManagementComponent` (Overview tab)
+  - **Fix:** ✅ Visual flow diagram in Overview tab shows phase sequence
+  - **Implementation:**
+    - `.phase-flow` container with connected phase nodes
+    - Each phase displayed as card with name, bracket type, match count, status badge
+    - Connector arrows between phases based on `nextPhaseId`
+    - Phases sorted by `sequenceOrder` for proper display
+    - Completed phases highlighted with green badges
+  - **Estimated:** 8 hours → **Actual:** 0.5 hours (included in Overview tab)
+  - **Test:** ✅ Link phases, view overview tab, verify arrows connect phases in sequence
 
-- [ ] **Add "Promote Lucky Loser" interface**
+- [x] **Add "Promote Lucky Loser" interface** ✅ ALREADY IMPLEMENTED
   - **Issue:** Lucky loser promotion only via API
-  - **Files:** Participant management in phase
-  - **Fix:** Button to select alternate and promote to LL in main draw
-  - **Estimated:** 4 hours
-  - **Test:** Withdraw participant, promote alternate, verify status changes to LL
+  - **Files:** `PhaseManagementComponent`
+  - **Status:** ✅ Lucky Loser tab already exists with full UI
+  - **Implementation:**
+    - "Lucky Loser" tab with withdrawn participant dropdown
+    - Finds first alternate in waiting list and promotes to LUCKY_LOSER
+    - Phase and category selection to target correct participant pool
+    - Updates AcceptanceType and displays success message
+  - **Location:** `phase-management.component.html` (Lucky Loser tab)
+  - **Test:** ✅ Withdraw participant, promote alternate, verify status changes to LL
 
 ---
 

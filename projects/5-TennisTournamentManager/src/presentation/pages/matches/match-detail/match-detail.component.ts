@@ -474,15 +474,16 @@ export class MatchDetailComponent implements OnInit {
    * Opens the update status modal.
    */
   public openStatusModal(): void {
-    this.showStatusModal.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
-    // Reset form to current match status
+    // Reset form to current match status BEFORE showing the modal so
+    // Angular renders with the correct initial value on the first pass.
     const currentMatch = this.match();
     if (currentMatch) {
       this.statusForm.status = currentMatch.status;
     }
     this.statusForm.winnerId = '';
+    this.showStatusModal.set(true);
   }
 
   /**

@@ -2303,6 +2303,81 @@ router.post('/phases/promote-lucky-loser', authMiddleware, roleMiddleware([UserR
 
 /**
  * @swagger
+ * /phases/create:
+ *   post:
+ *     tags: [Phases]
+ *     summary: Create a new tournament phase
+ *     description: Creates a new empty bracket and phase for a tournament. Use to add qualifying, main, or custom phases. Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - tournamentId
+ *               - categoryId
+ *               - phaseName
+ *             properties:
+ *               tournamentId:
+ *                 type: string
+ *                 description: Tournament ID
+ *               categoryId:
+ *                 type: string
+ *                 description: Category ID
+ *               phaseName:
+ *                 type: string
+ *                 description: Name of the new phase
+ *               phaseType:
+ *                 type: string
+ *                 enum: [QUALIFYING, MAIN, CONSOLATION, CUSTOM]
+ *                 description: Type of phase
+ *               bracketType:
+ *                 type: string
+ *                 enum: [SINGLE_ELIMINATION, ROUND_ROBIN, MATCH_PLAY]
+ *                 description: Bracket format for the phase
+ *     responses:
+ *       201:
+ *         description: Phase created successfully
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: Tournament not found
+ */
+router.post('/phases/create', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), phaseController.createPhase.bind(phaseController));
+
+/**
+ * @swagger
+ * /phases/{id}:
+ *   delete:
+ *     tags: [Phases]
+ *     summary: Delete a custom phase
+ *     description: Delete a phase and its associated bracket. Only CUSTOM phases can be deleted; auto-generated phases (MAIN, QUALIFYING, CONSOLATION) are protected. Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Phase ID
+ *     responses:
+ *       200:
+ *         description: Phase deleted successfully
+ *       400:
+ *         description: Invalid input or phase is linked by other phases
+ *       403:
+ *         description: Cannot delete auto-generated phases
+ *       404:
+ *         description: Phase not found
+ */
+router.delete('/phases/:id', authMiddleware, roleMiddleware([UserRole.SYSTEM_ADMIN, UserRole.TOURNAMENT_ADMIN]), phaseController.deletePhase.bind(phaseController));
+
+/**
+ * @swagger
  * /standings:
  *   get:
  *     tags: [Standings]

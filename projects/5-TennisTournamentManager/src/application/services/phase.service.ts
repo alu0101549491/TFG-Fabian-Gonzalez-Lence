@@ -353,4 +353,98 @@ export class PhaseService {
       this.loading.set(false);
     }
   }
+
+  /**
+   * Create a new tournament phase with an associated empty bracket.
+   *
+   * Creates an empty bracket and a phase within it, ready to receive participants
+   * and have matches generated. Use to set up qualifying rounds or additional draws.
+   *
+   * @param data - Phase creation parameters
+   * @returns Promise resolving to created bracket and phase
+   * @throws Error if tournament or category not found
+   *
+   * @example
+   * ```typescript
+   * await phaseService.createPhase({
+   *   tournamentId: 'trn_123',
+   *   categoryId: 'cat_456',
+   *   phaseName: 'Qualifying Round',
+   *   phaseType: 'QUALIFYING',
+   *   bracketType: 'ROUND_ROBIN',
+   * });
+   * ```
+   */
+  public async createPhase(data: {
+    tournamentId: string;
+    categoryId: string;
+    phaseName: string;
+    phaseType?: 'QUALIFYING' | 'MAIN' | 'CONSOLATION' | 'CUSTOM';
+    bracketType?: 'SINGLE_ELIMINATION' | 'ROUND_ROBIN' | 'MATCH_PLAY';
+  }): Promise<{
+    message: string;
+    bracket: any;
+    phase: PhaseDto;
+  }> {
+    this.loading.set(true);
+    this.error.set(null);
+
+    try {
+      const result = await this.http
+        .post<{message: string; bracket: any; phase: PhaseDto}>(`${this.apiUrl}/create`, data)
+        .toPromise();
+
+      if (!result) {
+        throw new Error('Failed to create phase');
+      }
+
+      return result;
+    } catch (error: any) {
+      const errorMessage = error?.error?.message || 'Failed to create phase';
+      this.error.set(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /**
+   * Delete a custom phase and its associated bracket.
+   * Only CUSTOM phases can be deleted; auto-generated phases (MAIN, QUALIFYING, CONSOLATION) are protected.
+   *
+   * @param phaseId - ID of the phase to delete
+   * @returns Promise resolving to deletion confirmation
+   * @throws Error if phase is not CUSTOM type or is linked by other phases
+   *
+   * @example
+   * ```typescript
+   * await phaseService.deletePhase('phs_123');
+   * ```
+   */
+  public async deletePhase(phaseId: string): Promise<{
+    message: string;
+    deletedPhaseId: string;
+    deletedBracket: boolean;
+  }> {
+    this.loading.set(true);
+    this.error.set(null);
+
+    try {
+      const result = await this.http
+        .delete<{message: string; deletedPhaseId: string; deletedBracket: boolean}>(`${this.apiUrl}/${phaseId}`)
+        .toPromise();
+
+      if (!result) {
+        throw new Error('Failed to delete phase');
+      }
+
+      return result;
+    } catch (error: any) {
+      const errorMessage = error?.error?.message || 'Failed to delete phase';
+      this.error.set(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      this.loading.set(false);
+    }
+  }
 }

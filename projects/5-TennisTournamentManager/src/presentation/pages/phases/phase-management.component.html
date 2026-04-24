@@ -93,6 +93,15 @@
           <div class="tabs">
             <button
               class="tab"
+              [class.active]="activeTab() === 'overview'"
+              (click)="switchTab('overview')"
+              type="button"
+            >
+              <span class="tab-icon">📋</span>
+              <span>Phases Overview</span>
+            </button>
+            <button
+              class="tab"
               [class.active]="activeTab() === 'link'"
               (click)="switchTab('link')"
               type="button"
@@ -132,6 +141,209 @@
 
         <!-- Tab Content -->
         <div class="tab-content-area">
+          <!-- Phases Overview Tab -->
+          @if (activeTab() === 'overview') {
+            <div class="info-card">
+              <div class="card-header overview-header">
+                <h2>📋 Phases Overview</h2>
+                <button class="btn btn-primary" type="button" (click)="openCreateModal()">
+                  + Create New Phase
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="overview-phases">
+                  @if (currentTournamentPhases().length === 0) {
+                    <div class="empty-state">
+                      <p class="empty-icon">🔮</p>
+                      <p class="empty-title">No phases defined yet</p>
+                      <p class="empty-subtitle">Click "Create New Phase" to set up qualifying rounds, main draws, or custom phases.</p>
+                    </div>
+                  }
+                  @if (currentTournamentPhases().length > 0) {
+                    <!-- Phase Flow Diagram (5-col grid: consolation ← main → qualifying) -->
+                    <div class="phase-flow-grid" [class.with-qualifying]="qualifyingPhases().length > 0">
+                      <!-- Column header labels -->
+                      <div class="column-label consolation-label">🔄 Consolation Draw</div>
+                      <div></div>
+                      <div class="column-label main-label">🏆 Main Draw</div>
+                      @if (qualifyingPhases().length > 0) {
+                        <div></div>
+                        <div class="column-label qualifying-label">📋 Qualifying</div>
+                      }
+
+                      @for (row of diagramRows(); track $index; let i = $index; let last = $last) {
+                        <!-- Col 1: Consolation phase node -->
+                        <div class="phase-grid-node-cell">
+                          @if (row.pair && row.pair.consolation) {
+                            <div class="phase-node phase-node-consolation" [class.phase-node-completed]="row.pair.consolation.isCompleted">
+                              <div class="phase-node-header">
+                                <span class="phase-node-name">{{ row.pair.consolation.phaseName }}</span>
+                                @if (row.pair.consolation.isCompleted) {
+                                  <span class="phase-badge completed-badge">✅ Completed</span>
+                                }
+                                @if (!row.pair.consolation.isCompleted) {
+                                  <span class="phase-badge active-badge">⏳ Active</span>
+                                }
+                              </div>
+                              <div class="phase-node-details">
+                                <span class="detail-chip">🎾 {{ getBracketTypeLabel(row.pair.consolation.bracketType) }}</span>
+                                <span class="detail-chip">📁 {{ row.pair.consolation.bracketName }}</span>
+                                <span class="detail-chip">🎯 {{ row.pair.consolation.matchCount }} matches</span>
+                              </div>
+                            </div>
+                          }
+                        </div>
+
+                        <!-- Col 2: Consolation ← arrow -->
+                        <div class="phase-grid-arrow-cell">
+                          @if (row.pair && row.pair.consolation) {
+                            <div class="phase-h-connector">
+                              <div class="h-connector-arrowhead">◀</div>
+                              <div class="h-connector-line"></div>
+                            </div>
+                          }
+                        </div>
+
+                        <!-- Col 3: Main draw phase node -->
+                        <div class="phase-grid-node-cell">
+                          @if (row.pair) {
+                            <div class="phase-node" [class.phase-node-completed]="row.pair.main.isCompleted">
+                              <div class="phase-node-header">
+                                <span class="phase-node-name">{{ row.pair.main.phaseName }}</span>
+                                @if (row.pair.main.isCompleted) {
+                                  <span class="phase-badge completed-badge">✅ Completed</span>
+                                }
+                                @if (!row.pair.main.isCompleted) {
+                                  <span class="phase-badge active-badge">⏳ Active</span>
+                                }
+                              </div>
+                              <div class="phase-node-details">
+                                <span class="detail-chip">🎾 {{ getBracketTypeLabel(row.pair.main.bracketType) }}</span>
+                                <span class="detail-chip">📁 {{ row.pair.main.bracketName }}</span>
+                                <span class="detail-chip">🎯 {{ row.pair.main.matchCount }} matches</span>
+                              </div>
+                            </div>
+                          }
+                        </div>
+
+                        <!-- Cols 4 & 5: Qualifying arrow + node (only if qualifying exists) -->
+                        @if (qualifyingPhases().length > 0) {
+                          <!-- Col 4: Qualifying ← arrow (only at row 0, connecting last qual → first main) -->
+                          <div class="phase-grid-arrow-cell">
+                            @if (i === 0 && row.qual) {
+                              <div class="phase-h-connector phase-h-connector-qualifying">
+                                <div class="h-connector-arrowhead h-connector-arrowhead-qualifying">◀</div>
+                                <div class="h-connector-line h-connector-line-qualifying"></div>
+                              </div>
+                            }
+                          </div>
+
+                          <!-- Col 5: Qualifying phase node -->
+                          <div class="phase-grid-node-cell">
+                            @if (row.qual) {
+                              <div class="phase-node phase-node-qualifying" [class.phase-node-completed]="row.qual.isCompleted">
+                                <div class="phase-node-header">
+                                  <span class="phase-node-name">{{ row.qual.phaseName }}</span>
+                                  @if (row.qual.isCompleted) {
+                                    <span class="phase-badge completed-badge">✅ Completed</span>
+                                  }
+                                  @if (!row.qual.isCompleted) {
+                                    <span class="phase-badge active-badge">⏳ Active</span>
+                                  }
+                                </div>
+                                <div class="phase-node-details">
+                                  <span class="detail-chip">🎾 {{ getBracketTypeLabel(row.qual.bracketType) }}</span>
+                                  <span class="detail-chip">📁 {{ row.qual.bracketName }}</span>
+                                  <span class="detail-chip">🎯 {{ row.qual.matchCount }} matches</span>
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        }
+
+                        <!-- Connector rows between data rows -->
+                        @if (!last) {
+                          <!-- Col 1: no consolation connectors -->
+                          <div class="phase-grid-vconn-cell"></div>
+                          <!-- Col 2: empty -->
+                          <div></div>
+                          <!-- Col 3: Main draw ↓ connector -->
+                          <div class="phase-grid-vconn-cell">
+                            @if (row.pair && diagramRows()[i + 1].pair) {
+                              <div class="flow-connector">
+                                <div class="connector-line"></div>
+                                <div class="connector-arrow">▼</div>
+                              </div>
+                            }
+                          </div>
+                          <!-- Cols 4 & 5: Qualifying connectors (▲ = flow goes upward: round1→final at top) -->
+                          @if (qualifyingPhases().length > 0) {
+                            <div></div>
+                            <div class="phase-grid-vconn-cell">
+                              @if (row.qual && diagramRows()[i + 1].qual) {
+                                <div class="flow-connector flow-connector-qualifying">
+                                  <div class="connector-arrow connector-arrow-qualifying">▲</div>
+                                  <div class="connector-line connector-line-qualifying"></div>
+                                </div>
+                              }
+                            </div>
+                          }
+                        }
+                      }
+                    </div>
+
+                    <!-- Phase Cards Grid -->
+                    <h3 class="section-title">All Phases</h3>
+                    <div class="phase-cards-grid">
+                      @for (phase of currentTournamentPhases(); track phase.phaseId; let i = $index) {
+                        <div class="phase-card" 
+                             [class.phase-card-completed]="phase.isCompleted"
+                             [class.phase-card-main]="phase.phaseType === 'MAIN'"
+                             [class.phase-card-consolation]="phase.phaseType === 'CONSOLATION'"
+                             [class.phase-card-qualifying]="phase.phaseType === 'QUALIFYING'">
+                          <div class="phase-card-index">{{ i + 1 }}</div>
+                          <div class="phase-card-content">
+                            <div class="phase-card-top">
+                              <span class="phase-card-name">{{ phase.phaseName }}</span>
+                              <div class="phase-card-actions">
+                                <span class="phase-card-status" [class.status-done]="phase.isCompleted">
+                                  {{ phase.isCompleted ? '✅ Done' : '⏳ Active' }}
+                                </span>
+                                @if (canDeletePhase(phase.isAutoGenerated)) {
+                                  <button 
+                                    class="delete-phase-btn" 
+                                    type="button"
+                                    (click)="deletePhase(phase.phaseId, phase.phaseName)"
+                                    [disabled]="isProcessing()"
+                                    title="Delete this manually created phase"
+                                  >
+                                    🗑️
+                                  </button>
+                                }
+                              </div>
+                            </div>
+                            <div class="phase-card-meta">
+                              <span class="meta-item">{{ getBracketTypeLabel(phase.bracketType) }}</span>
+                              <span class="meta-divider">·</span>
+                              <span class="meta-item">{{ phase.matchCount }} matches</span>
+                            </div>
+                            <div class="phase-card-bracket">{{ phase.bracketName }}</div>
+                            @if (phase.nextPhaseId) {
+                              <div class="phase-card-next">
+                                <span class="next-label">↳ Next:</span>
+                                <span class="next-name">{{ getPhaseNameById(phase.nextPhaseId) }}</span>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
           <!-- Link Phases Tab -->
           @if (activeTab() === 'link') {
             <div class="info-card">
@@ -539,5 +751,95 @@
         </div>
       </div>
     }
+  }
+
+  <!-- Create Phase Modal -->
+  @if (showCreateModal()) {
+    <div class="modal-backdrop" (click)="closeCreateModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">+ Create New Phase</h2>
+          <button class="modal-close-btn" type="button" (click)="closeCreateModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <form class="create-phase-form" (ngSubmit)="submitCreatePhase()">
+            <!-- Phase Name -->
+            <div class="form-group">
+              <label class="form-label" for="phaseName">Phase Name <span class="required">*</span></label>
+              <input
+                id="phaseName"
+                type="text"
+                class="form-control"
+                placeholder="e.g. Qualifying Round A"
+                [value]="createForm().phaseName"
+                (input)="onCreateFormPhaseName($any($event.target).value)"
+                required
+              />
+            </div>
+
+            <!-- Phase Type -->
+            <div class="form-group">
+              <label class="form-label" for="phaseType">Phase Type</label>
+              <select
+                id="phaseType"
+                class="form-control"
+                [value]="createForm().phaseType"
+                (change)="onCreateFormPhaseType($any($event.target).value)"
+              >
+                <option value="QUALIFYING">Qualifying</option>
+                <option value="MAIN">Main Draw</option>
+                <option value="CONSOLATION">Consolation</option>
+                <option value="CUSTOM">Custom</option>
+              </select>
+            </div>
+
+            <!-- Category -->
+            <div class="form-group">
+              <label class="form-label" for="categoryId">Category <span class="required">*</span></label>
+              <select
+                id="categoryId"
+                class="form-control"
+                [value]="createForm().categoryId"
+                (change)="onCreateFormCategoryId($any($event.target).value)"
+              >
+                <option value="" disabled>Select a category</option>
+                @for (cat of tournamentCategories(); track cat.id) {
+                  <option [value]="cat.id">{{ cat.name }}</option>
+                }
+              </select>
+              @if (tournamentCategories().length === 0) {
+                <p class="field-hint">No categories found for this tournament.</p>
+              }
+            </div>
+
+            <!-- Bracket Type -->
+            <div class="form-group">
+              <label class="form-label" for="bracketType">Bracket Format</label>
+              <select
+                id="bracketType"
+                class="form-control"
+                [value]="createForm().bracketType"
+                (change)="onCreateFormBracketType($any($event.target).value)"
+              >
+                <option value="SINGLE_ELIMINATION">Single Elimination</option>
+                <option value="ROUND_ROBIN">Round Robin</option>
+                <option value="MATCH_PLAY">Match Play</option>
+              </select>
+            </div>
+
+            <div class="modal-actions">
+              <button class="btn btn-secondary" type="button" (click)="closeCreateModal()">Cancel</button>
+              <button class="btn btn-primary" type="submit" [disabled]="isLoading()">
+                @if (isLoading()) {
+                  <span>⏳ Creating...</span>
+                } @else {
+                  <span>✅ Create Phase</span>
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   }
 </div>

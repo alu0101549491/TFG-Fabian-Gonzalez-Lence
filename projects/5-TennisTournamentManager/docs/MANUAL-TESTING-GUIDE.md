@@ -2205,6 +2205,145 @@ npm run dev
 
 ---
 
+## Phase 7: Phase Linking UI (April 25, 2026)
+
+### Feature: Phases Overview Tab
+
+**What was changed:** Added "Phases Overview" tab as the default landing page in Phase Management with visual flow diagram showing all tournament phases and their relationships.
+
+**How to test:**
+1. **Log in as tournament admin**
+2. Navigate to any tournament detail page
+3. Click the **"🔗 Phase Management"** quick action tile
+4. **Verify:** You land on the **"Phases Overview"** tab by default (not "Link Phases")
+5. If the tournament has phases:
+   - **Verify:** Visual flow diagram shows phase nodes connected by arrows
+   - **Verify:** Each phase node displays: name, bracket type, match count, completion status
+   - **Verify:** Completed phases have green "✅ Completed" badges
+   - **Verify:** Active phases have blue "⏳ Active" badges
+   - **Verify:** Arrows point from source phase to `nextPhaseId` target phase
+   - **Verify:** Below diagram, phase cards grid shows all phases with metadata
+6. If the tournament has no phases:
+   - **Verify:** Empty state appears with message "No phases defined yet"
+   - **Verify:** Call-to-action text suggests clicking "Create New Phase"
+
+**Expected Result:**
+- Overview tab is first tab and default active
+- Visual flow diagram clearly shows phase sequence
+- Phase nodes show all relevant info (bracket type, matches, status)
+- Empty state appears when no phases exist
+
+---
+
+### Feature: Create New Phase Workflow
+
+**What was changed:** Added "+ Create New Phase" button and modal in Phase Management allowing admins to create qualifying, main, consolation, or custom phases directly from the UI.
+
+**How to test:**
+1. **Log in as tournament admin**
+2. Navigate to Phase Management page
+3. Ensure you're on the **"Phases Overview"** tab
+4. Click the **"+ Create New Phase"** button (top-right of Overview card header)
+5. **Verify:** Modal appears with title "+ Create New Phase"
+6. **Fill out the form:**
+   - **Phase Name:** Enter "Test Qualifying Round" (required field)
+   - **Phase Type:** Select "Qualifying" from dropdown
+   - **Category:** Select a category from dropdown (auto-populated from tournament)
+   - **Bracket Format:** Select "Round Robin"
+7. Click **"✅ Create Phase"** button
+8. **Verify:** Success message appears: "Phase 'Test Qualifying Round' created successfully"
+9. **Verify:** Modal closes automatically
+10. **Verify:** New phase appears in the Overview tab flow diagram and cards grid
+11. **Test validation:** Click "+ Create New Phase" again
+12. Leave phase name empty and click "✅ Create Phase"
+13. **Verify:** Error message: "Phase name is required."
+14. **Test category validation:** Deselect category (if possible) and submit
+15. **Verify:** Error message: "Please select a category."
+16. Click **"Cancel"** button
+17. **Verify:** Modal closes without creating phase
+
+**Expected Result:**
+- Modal opens with all form fields
+- Category dropdown populated from tournament categories
+- Validation prevents submission without required fields
+- Success creates phase and refreshes overview
+- Cancel closes modal without action
+
+---
+
+### Feature: Phase Flow Diagram Visual Connections
+
+**What was changed:** Visual representation of phase relationships showing how qualifying phases link to main draws and consolation draws.
+
+**How to test (requires existing linked phases):**
+1. **Set up test data:**
+   - Create two phases: "Qualifying" and "Main Draw"
+   - Go to "Link Phases" tab
+   - Link "Qualifying" → "Main Draw"
+2. **Return to "Phases Overview" tab**
+3. **Verify:** Qualifying phase node appears above Main Draw node
+4. **Verify:** Arrow/connector line appears between Qualifying and Main Draw
+5. **Verify:** Qualifying node shows "→ Main Draw" in its bottom section
+6. **Verify:** Phases are ordered by `sequenceOrder` (Qualifying first, Main Draw second)
+7. **Create a consolation draw** (use "Consolation Draw" tab)
+8. **Return to Overview**
+9. **Verify:** Consolation phase appears in the flow
+10. **Verify:** If consolation is linked, arrow shows the connection
+
+**Expected Result:**
+- Phases display in sequential order
+- Arrows visually connect phases based on `nextPhaseId`
+- Phase names shown in "next phase" labels
+- Flow diagram updates after linking phases
+
+---
+
+### Feature: Backend Create Phase Endpoint
+
+**Technical validation (optional - for developers):**
+
+**What was changed:** Added `POST /api/phases/create` endpoint to backend supporting phase creation with automatic bracket generation.
+
+**How to test (via API):**
+1. **Open Postman or similar API client**
+2. **Create POST request to:** `http://localhost:3000/api/phases/create`
+3. **Add Authorization header:** `Bearer <admin_token>`
+4. **Set request body (JSON):**
+   ```json
+   {
+     "tournamentId": "trn_xxx",
+     "categoryId": "cat_xxx",
+     "phaseName": "API Test Phase",
+     "phaseType": "CUSTOM",
+     "bracketType": "SINGLE_ELIMINATION"
+   }
+   ```
+5. **Send request**
+6. **Verify response (201 Created):**
+   ```json
+   {
+     "message": "Phase 'API Test Phase' created successfully",
+     "bracket": { ... },
+     "phase": { ... }
+   }
+   ```
+7. **Verify database:** Check that bracket and phase records were created
+8. **Test validation:** Send request with missing `phaseName`
+9. **Verify response (400 Bad Request):**
+   ```json
+   {
+     "message": "tournamentId, categoryId, and phaseName are required"
+   }
+   ```
+
+**Expected Result:**
+- Endpoint creates both Bracket and Phase entities
+- New phase receives `sequenceOrder = maxExisting + 10`
+- Validation enforces required fields
+- Returns 201 status with created entities
+
+---
+
 ## Reporting Issues
 
 If any feature does not work as described:
@@ -2220,5 +2359,6 @@ If any feature does not work as described:
 ## Next Testing Phases
 
 **Phase 5:** ✅ ALL 5 FEATURES COMPLETE  
-**Phase 6:** Advanced features (super tiebreak, PDF templates, bracket config)  
-**Phase 7:** Phase linking UI (create phases, link, advance qualifiers)
+**Phase 6:** ✅ 1/5 FEATURES COMPLETE (Global ranking recalculation) — Remaining: super tiebreak, PDF templates, bracket config, player comments  
+**Phase 7:** ✅ ALL 6 FEATURES COMPLETE (Phases overview, create phase, link phases, advance qualifiers, visual diagram, lucky loser)  
+**Phase 8:** Testing & documentation (E2E tests, user guides, training videos)

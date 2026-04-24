@@ -490,3 +490,648 @@
     width: 100%;
   }
 }
+
+/* ============================================================
+   Overview Tab
+   ============================================================ */
+
+.overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.empty-subtitle {
+  font-size: 0.95rem;
+}
+
+/* Overview wrapper */
+.overview-phases {
+  padding: 0.25rem 0;
+}
+
+/* ── Phase Flow Diagram (grid: consolation ◄── main) ────── */
+.phase-flow-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  padding: 1.5rem 0 2rem;
+}
+
+.phase-flow-grid.with-qualifying {
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+}
+
+.column-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.3rem 1rem;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+  justify-self: center;
+  align-self: center;
+}
+
+.main-label {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.consolation-label {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.qualifying-label {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.phase-grid-node-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0 0.75rem;
+}
+
+.phase-grid-node-cell .phase-node {
+  width: 100%;
+}
+
+.phase-grid-arrow-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  padding: 0;
+}
+
+.phase-h-connector {
+  display: flex;
+  align-items: center;
+  color: #2563eb;
+}
+
+.phase-h-connector-qualifying {
+  color: #16a34a;
+}
+
+.h-connector-arrowhead {
+  font-size: 0.95rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.h-connector-arrowhead-qualifying {
+  color: #16a34a;
+}
+
+.h-connector-line {
+  width: 2.5rem;
+  height: 2px;
+  background: #2563eb;
+  flex-shrink: 0;
+  margin-left: -3px;
+}
+
+.h-connector-line-qualifying {
+  background: #16a34a;
+}
+
+.phase-grid-vconn-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+.phase-flow-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 560px;
+}
+
+.phase-node {
+  width: 100%;
+  border: 2px solid #2563eb;
+  border-radius: 12px;
+  background: #eff6ff;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.phase-node-completed {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.phase-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.phase-node-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1e3a5f;
+}
+
+.phase-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.completed-badge {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.active-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.phase-node-details {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.detail-chip {
+  font-size: 0.8rem;
+  color: #374151;
+  background: rgba(37, 99, 235, 0.07);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  white-space: nowrap;
+}
+
+.phase-node-completed .detail-chip {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.phase-node-next {
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  color: #4b5563;
+  font-style: italic;
+}
+
+.phase-node-consolation {
+  border-color: #d97706;
+  background: #fffbeb;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.1);
+}
+
+.phase-node-consolation .detail-chip {
+  background: rgba(217, 119, 6, 0.08);
+}
+
+.phase-node-consolation.phase-node-completed {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.phase-node-qualifying {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.1);
+}
+
+.phase-node-qualifying .detail-chip {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.phase-node-qualifying.phase-node-completed {
+  border-color: #16a34a;
+  background: #dcfce7;
+}
+
+.flow-connector-consolation {
+  color: #d97706;
+}
+
+.connector-line-consolation {
+  background: #d97706;
+}
+
+.flow-connector-qualifying {
+  color: #16a34a;
+}
+
+.connector-line-qualifying {
+  background: #16a34a;
+}
+
+.connector-arrow-qualifying {
+  margin-top: 0;
+  margin-bottom: -3px;
+}
+
+.flow-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #2563eb;
+}
+
+.connector-line {
+  width: 2px;
+  height: 28px;
+  background: #2563eb;
+}
+
+.connector-arrow {
+  font-size: 0.95rem;
+  line-height: 1;
+  margin-top: -3px;
+}
+
+/* ── Section title between flow & cards ─────────────────── */
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e3a5f;
+  margin: 0.5rem 0 1rem;
+}
+
+/* ── Phase Cards Grid ───────────────────────────────────── */
+.phase-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.phase-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: #ffffff;
+  display: flex;
+  gap: 0.875rem;
+  align-items: flex-start;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.phase-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.09);
+  border-color: #93c5fd;
+}
+
+.phase-card-completed {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.phase-card-index {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phase-card-completed .phase-card-index {
+  background: #16a34a;
+}
+
+.phase-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.phase-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.phase-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.phase-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.phase-card-status {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.phase-card-status.status-done {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.delete-phase-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: var(--color-white);
+  border: 2px solid #991b1b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.delete-phase-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.4);
+}
+
+.delete-phase-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.delete-phase-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  border-color: #6b7280;
+}
+
+.phase-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.2rem;
+}
+
+.meta-item {
+  white-space: nowrap;
+}
+
+.meta-divider {
+  color: #d1d5db;
+}
+
+.phase-card-bracket {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin-bottom: 0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phase-card-next {
+  font-size: 0.8rem;
+  color: #4b5563;
+  margin-top: 0.25rem;
+}
+
+.next-label {
+  color: #9ca3af;
+  margin-right: 0.2rem;
+}
+
+.next-name {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+/* Phase type color coding (matching diagram colors) */
+.phase-card-main {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.phase-card-main:hover {
+  border-color: #60a5fa;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.15);
+}
+
+.phase-card-main .phase-card-index {
+  background: #2563eb;
+}
+
+.phase-card-consolation {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.phase-card-consolation:hover {
+  border-color: #fbbf24;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+}
+
+.phase-card-consolation .phase-card-index {
+  background: #f59e0b;
+}
+
+.phase-card-qualifying {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.phase-card-qualifying:hover {
+  border-color: #4ade80;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.15);
+}
+
+.phase-card-qualifying .phase-card-index {
+  background: #22c55e;
+}
+
+/* Completed state overrides for colored cards */
+.phase-card-completed.phase-card-main,
+.phase-card-completed.phase-card-consolation,
+.phase-card-completed.phase-card-qualifying {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.phase-card-completed .phase-card-index {
+  background: #16a34a;
+}
+
+/* ============================================================
+   Create Phase Modal
+   ============================================================ */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-panel {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.modal-close-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.create-phase-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #374151;
+  margin-bottom: 0.35rem;
+}
+
+.required {
+  color: #ef4444;
+}
+
+.form-control {
+  width: 100%;
+  height: auto;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  background: #fff;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.field-hint {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
