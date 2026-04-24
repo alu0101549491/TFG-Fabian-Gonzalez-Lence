@@ -62,15 +62,16 @@ export class BracketViewComponent implements OnInit {
   /** Bracket matches */
   public matches = signal<MatchDto[]>([]);
 
-  /** Main draw phases (order < 100) */
+  /** Main draw phases (order < 100, excluding qualifying) */
   public mainPhases = computed(() => 
-    this.phases().filter(p => p.order < 100)
+    this.phases().filter(p => p.order < 100 && p.phaseType !== 'QUALIFYING')
   );
 
-  /** Main draw matches (round < 100) */
-  public mainMatches = computed(() => 
-    this.matches().filter(m => m.round < 100)
-  );
+  /** Main draw matches (round < 100, excluding qualifying) */
+  public mainMatches = computed(() => {
+    const qualPhaseIds = new Set(this.qualifyingPhases().map(p => p.id));
+    return this.matches().filter(m => m.round < 100 && !qualPhaseIds.has(m.phaseId));
+  });
 
   /** Consolation phases (order >= 100) */
   public consolationPhases = computed(() => 
@@ -82,6 +83,17 @@ export class BracketViewComponent implements OnInit {
     this.matches().filter(m => m.round >= 100)
   );
 
+  /** Qualifying phases (phaseType === 'QUALIFYING') */
+  public qualifyingPhases = computed(() => 
+    this.phases().filter(p => p.phaseType === 'QUALIFYING')
+  );
+
+  /** Qualifying matches (from qualifying phases) */
+  public qualifyingMatches = computed(() => {
+    const qualPhaseIds = new Set(this.qualifyingPhases().map(p => p.id));
+    return this.matches().filter(m => qualPhaseIds.has(m.phaseId));
+  });
+
   /**
    * Returns the matches that belong to a specific consolation phase.
    *
@@ -90,6 +102,16 @@ export class BracketViewComponent implements OnInit {
    */
   public getConsolationMatchesByPhase(phaseId: string): MatchDto[] {
     return this.consolationMatches().filter(m => m.phaseId === phaseId);
+  }
+
+  /**
+   * Returns the matches that belong to a specific qualifying phase.
+   *
+   * @param phaseId - Qualifying phase identifier
+   * @returns Matches scoped to the provided phase
+   */
+  public getQualifyingMatchesByPhase(phaseId: string): MatchDto[] {
+    return this.qualifyingMatches().filter(m => m.phaseId === phaseId);
   }
 
   /** Loading state */
@@ -137,16 +159,25 @@ export class BracketViewComponent implements OnInit {
       const bracket = await this.bracketService.getBracketById(bracketId);
       this.bracket.set(bracket);
 
-      // Load tournament, phases, and matches in parallel
-      const [tournament, phases, matches] = await Promise.all([
-        this.tournamentService.getTournamentById(bracket.tournamentId),
-        this.bracketService.getPhases(bracket.id),
-        this.matchService.getMatchesByBracket(bracket.id),
-      ]);
-      
+      // Load tournament
+      const tournament = await this.tournamentService.getTournamentById(bracket.tournamentId);
       this.tournament.set(tournament);
-      this.phases.set(phases);
-      this.matches.set(matches);
+
+      // Load ALL brackets from the tournament to include qualifying/consolation brackets
+      const allBrackets = await this.bracketService.getBracketsByTournament(bracket.tournamentId);
+
+      // Load phases from ALL brackets (main, qualifying, consolation)
+      const allPhasesPromises = allBrackets.map(b => this.bracketService.getPhases(b.id));
+      const phasesArrays = await Promise.all(allPhasesPromises);
+      const allPhases = phasesArrays.flat();
+
+      // Load matches from ALL brackets
+      const allMatchesPromises = allBrackets.map(b => this.matchService.getMatchesByBracket(b.id));
+      const matchesArrays = await Promise.all(allMatchesPromises);
+      const allMatches = matchesArrays.flat();
+
+      this.phases.set(allPhases);
+      this.matches.set(allMatches);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load data';
       this.errorMessage.set(message);

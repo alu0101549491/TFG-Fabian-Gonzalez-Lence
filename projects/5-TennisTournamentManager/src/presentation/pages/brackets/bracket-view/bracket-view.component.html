@@ -184,6 +184,57 @@
           </div>
         }
 
+        <!-- Qualifying Draw Section -->
+        @if (qualifyingPhases().length > 0) {
+          <div class="qualifying-divider"></div>
+          
+          <h2 class="section-title qualifying-title">
+            <span class="section-icon">📋</span>
+            <span>Qualifying Draw</span>
+          </h2>
+
+          <div class="phases-grid">
+            @for (phase of qualifyingPhases(); track phase.id; let i = $index) {
+              <div class="phase-card qualifying-phase-card">
+                <div class="phase-header">
+                  <h3 class="phase-name">{{ phase.name }}</h3>
+                </div>
+                <div class="phase-body">
+                  <div class="phase-detail">
+                    <span class="phase-label">Phase</span>
+                    <span class="phase-value">Qualifying #{{ i + 1 }}</span>
+                  </div>
+                  <div class="phase-detail">
+                    <span class="phase-label">Matches</span>
+                    <span class="phase-value">{{ phase.matchCount }}</span>
+                  </div>
+                  <div class="phase-detail">
+                    <span class="phase-label">Status</span>
+                    <span class="phase-value">
+                      {{ phase.isCompleted ? '✅ Completed' : '🎾 In Progress' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Qualifying Visual Bracket (unified) -->
+          @if (qualifyingMatches().length > 0) {
+            <h2 class="section-title">
+              <span class="section-icon">🏆</span>
+              <span>Qualifying Bracket</span>
+            </h2>
+
+            <div class="visual-bracket-section">
+              <app-visual-bracket
+                [bracket]="bracket()!"
+                [matches]="qualifyingMatches()"
+              ></app-visual-bracket>
+            </div>
+          }
+        }
+
         <!-- Consolation Draw Section -->
         @if (consolationPhases().length > 0) {
           <div class="consolation-divider"></div>
@@ -219,20 +270,19 @@
             }
           </div>
 
-          @for (phase of consolationPhases(); track phase.id) {
-            @if (getConsolationMatchesByPhase(phase.id).length > 0) {
-              <h2 class="section-title">
-                <span class="section-icon">🏆</span>
-                <span>{{ phase.name }} Bracket</span>
-              </h2>
+          <!-- Consolation Visual Bracket (unified) -->
+          @if (consolationMatches().length > 0) {
+            <h2 class="section-title">
+              <span class="section-icon">🏆</span>
+              <span>Consolation Bracket</span>
+            </h2>
 
-              <div class="visual-bracket-section">
-                <app-visual-bracket
-                  [bracket]="bracket()!"
-                  [matches]="getConsolationMatchesByPhase(phase.id)"
-                ></app-visual-bracket>
-              </div>
-            }
+            <div class="visual-bracket-section">
+              <app-visual-bracket
+                [bracket]="bracket()!"
+                [matches]="consolationMatches()"
+              ></app-visual-bracket>
+            </div>
           }
         }
       } @else {

@@ -16,6 +16,7 @@ import {Response, NextFunction} from 'express';
 import {Not, In} from 'typeorm';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Bracket} from '../../domain/entities/bracket.entity';
+import {Category} from '../../domain/entities/category.entity';
 import {Match} from '../../domain/entities/match.entity';
 import {Phase} from '../../domain/entities/phase.entity';
 import {Registration} from '../../domain/entities/registration.entity';
@@ -140,6 +141,17 @@ export class BracketController {
       const savedBracket = await bracketRepository.save(bracket) as unknown as Bracket;
       console.log(`✅ Bracket ${savedBracket.id} saved successfully`);
       
+      // Load category to determine phase type
+      const categoryRepository = AppDataSource.getRepository(Category);
+      const category = await categoryRepository.findOne({where: {id: savedBracket.categoryId}});
+      if (!category) {
+        throw new AppError(`Category not found: ${savedBracket.categoryId}`, HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Determine phase type based on category name (qualifying categories contain "Qualifying")
+      const phaseType = category.name.toLowerCase().includes('qualifying') ? 'QUALIFYING' : 'MAIN';
+      console.log(`🏷️  Category: "${category.name}" → Phase type: ${phaseType}`);
+      
       // Determine if this bracket belongs to a doubles tournament
       const tournamentRepository = AppDataSource.getRepository(Tournament);
       const doublesTeamRepository = AppDataSource.getRepository(DoublesTeam);
@@ -221,7 +233,17 @@ export class BracketController {
           const bracketSize = Math.pow(2, Math.ceil(Math.log2(teamCount)));
           
           // Recalculate totalRounds based on actual team count (after DoublesTeam fallback)
-          const correctTotalRounds = Math.log2(bracketSize);
+          let correctTotalRounds = Math.log2(bracketSize);
+          
+          // For QUALIFYING brackets: stop early to produce multiple qualifiers
+          // Standard: produce bracketSize/4 qualifiers (e.g., 16 players → 4 qualifiers, 32 players → 8 qualifiers)
+          if (phaseType === 'QUALIFYING') {
+            // Reduce by 2 rounds: instead of going to 1 winner, stop at quarter-finals
+            // This produces bracketSize/4 qualifiers (e.g., 16→4, 32→8)
+            correctTotalRounds = Math.max(1, correctTotalRounds - 2);
+            console.log(`🎯 Qualifying bracket: adjusted totalRounds to ${correctTotalRounds} (will produce ${Math.pow(2, correctTotalRounds)} qualifiers from ${bracketSize} players)`);
+          }
+          
           if (savedBracket.totalRounds !== correctTotalRounds) {
             console.log(`⚠️ Correcting totalRounds from ${savedBracket.totalRounds} to ${correctTotalRounds} for ${teamCount} teams`);
             savedBracket.totalRounds = correctTotalRounds;
@@ -250,6 +272,7 @@ export class BracketController {
             savedBracket.bracketType,
             teamIds as string[],
             correctTotalRounds,
+            phaseType,
           );
 
           // Post-process: move teamIds from participant1Id → participant1TeamId and clear participant1Id
@@ -302,12 +325,30 @@ export class BracketController {
           const participantCount = registrations.length;
           const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantCount)));
 
+          // Recalculate totalRounds based on participant count
+          let correctTotalRounds = Math.log2(bracketSize);
+          
+          // For QUALIFYING brackets: stop early to produce multiple qualifiers
+          // Standard: produce bracketSize/4 qualifiers (e.g., 16 players → 4 qualifiers, 32 players → 8 qualifiers)
+          if (phaseType === 'QUALIFYING') {
+            // Reduce by 2 rounds: instead of going to 1 winner, stop at quarter-finals
+            // This produces bracketSize/4 qualifiers (e.g., 16→4, 32→8)
+            correctTotalRounds = Math.max(1, correctTotalRounds - 2);
+            console.log(`🎯 Qualifying bracket: adjusted totalRounds to ${correctTotalRounds} (will produce ${Math.pow(2, correctTotalRounds)} qualifiers from ${bracketSize} players)`);
+          }
+          
+          if (savedBracket.totalRounds !== correctTotalRounds) {
+            console.log(`⚠️ Correcting totalRounds from ${savedBracket.totalRounds} to ${correctTotalRounds} for ${participantCount} participants`);
+            savedBracket.totalRounds = correctTotalRounds;
+            await bracketRepository.save(savedBracket);
+          }
+
           const {participantIds, seededParticipants} = SeedingService.seedBracket(
             registrations,
             bracketSize,
           );
 
-          console.log(`🎾 Generating seeded bracket: ${registrations.length} participants, bracket size ${bracketSize}`);
+          console.log(`🎾 Generating seeded bracket: ${registrations.length} participants, bracket size ${bracketSize}, totalRounds ${correctTotalRounds}`);
           console.log(`🏆 Seeding:`, seededParticipants.map(p => `Seed #${p.seedNumber} (Ranking: ${p.ranking ?? 'N/A'})`));
 
           for (const seededParticipant of seededParticipants) {
@@ -323,7 +364,8 @@ export class BracketController {
             savedBracket.tournamentId,
             savedBracket.bracketType,
             participantIds,
-            savedBracket.totalRounds,
+            correctTotalRounds,
+            phaseType,
           );
 
           // Apply match format if specified
@@ -377,6 +419,17 @@ export class BracketController {
       if (!bracket) {
         throw new AppError('Bracket not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
       }
+
+      // Load category to determine phase type
+      const categoryRepository = AppDataSource.getRepository(Category);
+      const category = await categoryRepository.findOne({where: {id: bracket.categoryId}});
+      if (!category) {
+        throw new AppError(`Category not found: ${bracket.categoryId}`, HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+      }
+      
+      // Determine phase type based on category name
+      const phaseType = category.name.toLowerCase().includes('qualifying') ? 'QUALIFYING' : 'MAIN';
+      console.log(`🏷️  Category: "${category.name}" → Phase type: ${phaseType}`);
 
       // Published brackets can only be regenerated when explicitly preserving results.
       if (bracket.isPublished && !keepResults) {
@@ -527,7 +580,14 @@ export class BracketController {
         const bracketSize = Math.pow(2, Math.ceil(Math.log2(teamCount)));
         
         // Recalculate totalRounds based on actual team count (after DoublesTeam fallback)
-        const correctTotalRounds = Math.log2(bracketSize);
+        let correctTotalRounds = Math.log2(bracketSize);
+        
+        // For QUALIFYING brackets: stop early to produce multiple qualifiers
+        if (phaseType === 'QUALIFYING') {
+          correctTotalRounds = Math.max(1, correctTotalRounds - 2);
+          console.log(`🎯 Qualifying bracket: adjusted totalRounds to ${correctTotalRounds} (will produce ${Math.pow(2, correctTotalRounds)} qualifiers from ${bracketSize} players)`);
+        }
+        
         if (bracket.totalRounds !== correctTotalRounds) {
           console.log(`⚠️ Correcting totalRounds from ${bracket.totalRounds} to ${correctTotalRounds} for ${teamCount} teams`);
           bracket.totalRounds = correctTotalRounds;
@@ -545,6 +605,7 @@ export class BracketController {
           bracket.bracketType,
           teamIds as string[],
           correctTotalRounds,
+          phaseType,
         );
 
         // Post-process: move teamIds from participant columns to team columns
@@ -591,6 +652,21 @@ export class BracketController {
         const participantCount = registrations.length;
         const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantCount)));
 
+        // Recalculate totalRounds based on participant count
+        let correctTotalRounds = Math.log2(bracketSize);
+        
+        // For QUALIFYING brackets: stop early to produce multiple qualifiers
+        if (phaseType === 'QUALIFYING') {
+          correctTotalRounds = Math.max(1, correctTotalRounds - 2);
+          console.log(`🎯 Qualifying bracket: adjusted totalRounds to ${correctTotalRounds} (will produce ${Math.pow(2, correctTotalRounds)} qualifiers from ${bracketSize} players)`);
+        }
+        
+        if (bracket.totalRounds !== correctTotalRounds) {
+          console.log(`⚠️ Correcting totalRounds from ${bracket.totalRounds} to ${correctTotalRounds} for ${participantCount} participants`);
+          bracket.totalRounds = correctTotalRounds;
+          await bracketRepository.save(bracket);
+        }
+
         const {participantIds, seededParticipants} = SeedingService.seedBracket(
           registrations,
           bracketSize,
@@ -610,7 +686,8 @@ export class BracketController {
           bracket.tournamentId,
           bracket.bracketType,
           participantIds,
-          bracket.totalRounds,
+          correctTotalRounds,
+          phaseType,
         );
       }
 

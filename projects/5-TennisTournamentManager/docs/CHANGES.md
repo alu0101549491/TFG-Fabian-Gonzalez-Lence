@@ -8,6 +8,194 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### ✨ New Features (2026-04-24)
+
+**Added: Automatic Qualifier Advancement to Main Draw**
+- **Feature**: When qualifying bracket matches are completed, winners are automatically registered in the main draw category
+- **How It Works**:
+  1. When the final round of a qualifying bracket is completed (all final matches won)
+  2. System detects it's a QUALIFYING phase (checks `phaseType`)
+  3. Finds the main draw category by removing " - Qualifying" suffix from category name
+  4. Automatically registers all final-round winners in the main draw with `acceptanceType: QUALIFIER`
+  5. Winners appear in main draw registration list ready for bracket generation
+- **Implementation**:
+  - **Backend Changes** (`backend/src/presentation/controllers/match.controller.ts`):
+    - Added `checkAndAdvanceQualifiers()` method called when final matches complete
+    - Detects qualifying brackets by checking phase.phaseType === 'QUALIFYING'
+    - Finds main draw category by name matching
+    - Creates QUALIFIER registrations for all final-round winners
+    - Handles both singles and doubles categories
+    - Includes robust error handling (doesn't break match completion if advancement fails)
+    - Console logging shows qualifier advancement progress
+- **Example Flow**:
+  1. **16-player qualifying**: Quarterfinals complete → 4 winners auto-registered in main draw
+  2. **32-player qualifying**: Quarterfinals complete → 8 winners auto-registered in main draw  
+  3. **64-player qualifying**: Round of 16 complete → 16 winners auto-registered in main draw
+- **Benefits**:
+  - No manual registration needed for qualifiers
+  - Matches real tournament workflow
+  - Qualifiers clearly marked with QUALIFIER acceptance type
+  - Ready for main draw bracket generation immediately
+- **Impact**: Complete qualifying→main draw advancement automation matching professional tournament structure
+
+**Fixed: Qualifying Bracket Structure & Phase Naming**
+- **Issue**: Qualifying brackets went all the way to a single winner (like a full tournament) instead of producing multiple qualifiers for main draw advancement
+- **Root Cause**: Three problems:
+  1. **Incorrect Round Count**: `totalRounds` calculation didn't account for qualifying brackets needing to stop early
+  2. **Wrong Phase Names**: Phase naming based on "rounds remaining" instead of actual participant count, causing incorrect names for truncated brackets
+  3. **Match Generation Bug**: Match generator calculated bracket size from `totalRounds` instead of actual participant count, causing only 4 players to be seeded into a 16-player bracket
+- **Solution**:
+  - **Backend Changes** (`backend/src/presentation/controllers/bracket.controller.ts`):
+    - Added qualifying bracket logic to reduce `totalRounds` by 2 for QUALIFYING phases
+    - Applied to 4 locations: doubles create, singles create, doubles regenerate, singles regenerate
+    - Formula: `correctTotalRounds = Math.max(1, Math.log2(bracketSize) - 2)`
+    - Console logging shows adjusted rounds and qualifier count
+  - **Backend Changes** (`backend/src/application/services/match-generator.service.ts`):
+    - Updated `getSingleEliminationPhaseNames()` to accept `bracketSize` parameter
+    - Changed naming logic from "rounds remaining" to "players in round"
+    - Now correctly names phases based on actual participant count
+    - Example: 16-player qualifying with 2 rounds → "Round of 16" then "Quarterfinals" (not "Semifinals" then "Final")
+    - **Critical Fix**: Changed bracket size calculation from `Math.pow(2, totalRounds)` to `participantIds.length`
+    - **Critical Fix**: Changed phase match count calculation from `Math.pow(2, totalRounds - round)` to `bracketSize / Math.pow(2, round)`
+    - **Critical Fix**: Changed round 1 match count from `Math.pow(2, totalRounds - 1)` to `bracketSize / 2`
+    - These fixes ensure match generation uses actual participant array length instead of deriving from reduced totalRounds
+- **Examples**:
+  - **16-player qualifying**: 4 rounds → 2 rounds, produces 4 qualifiers at Quarterfinals
+    - Creates 8 matches in Round of 16, 4 matches in Quarterfinals (total: 12 matches)
+  - **32-player qualifying**: 5 rounds → 3 rounds, produces 8 qualifiers at Quarterfinals
+    - Creates 16 matches in Round of 32, 8 matches in Round of 16, 4 matches in Quarterfinals (total: 28 matches)
+  - **64-player qualifying**: 6 rounds → 4 rounds, produces 16 qualifiers at Round of 16
+    - Creates 32 matches in Round of 64, 16 matches in Round of 32, 8 matches in Round of 16, 4 matches in Quarterfinals (total: 60 matches)
+- **Professional Standard**: Follows ATP/WTA/ITF standard where qualifying produces bracketSize/4 qualifiers
+- **Impact**: Qualifying brackets now match real tournament structure, producing correct number of qualifiers for main draw advancement
+
+**Added: Automatic Qualifying Category Creation**
+- **Feature**: When creating a QUALIFYING phase, system automatically creates a separate qualifying category with its own participant pool
+- **Implementation**:
+  - **Backend Changes**:
+    - `backend/src/presentation/controllers/phase.controller.ts`:
+      - Modified `createPhase()` endpoint to detect `phaseType === 'QUALIFYING'`
+      - Automatically creates new category named "{Source Category Name} - Qualifying"
+      - Qualifying category uses same gender/ageGroup as source but doubles maxParticipants
+      - Reuses existing qualifying category if one already exists for the tournament
+      - Links qualifying bracket to the auto-created qualifying category
+    - Added `Category` entity import to phase controller
+- **How It Works**:
+  1. User creates qualifying phase via "Create New Phase" (selects source category + phaseType='QUALIFYING')
+  2. Backend checks if qualifying category exists (e.g., "Men's Singles - Qualifying")
+  3. If not exists, creates qualifying category with 2x participant capacity
+  4. Qualifying bracket links to separate qualifying category
+  5. Users register participants to qualifying category (separate from main draw)
+  6. Generate qualifying bracket with qualifying participants
+  7. Advance winners to main draw category with QUALIFIER acceptance type
+- **Example**:
+  - Main Draw Category: "Men's Singles" (32 spots)
+  - Auto-Created: "Men's Singles - Qualifying" (64 spots)
+  - Qualifying winners (e.g., top 4) advance to main draw
+- **Benefits**:
+  - Separate participant pools for qualifying vs main draw (matches real tournament structure)
+  - No participant overlap between qualifying and main draw registration
+  - Proper tournament workflow: Qualifying → Winners advance → Main Draw
+  - Qualifying capacity automatically scaled (2x main draw size)
+- **Impact**: Qualifying phases now work like real tennis tournaments with separate entry lists
+
+**Fixed: Qualifying Phases Appearing in Main Draw Section**
+- **Issue**: When generating qualifying brackets, phases were created with `phaseType='MAIN'` instead of `'QUALIFYING'`, causing them to appear mixed with main draw phases
+- **Root Cause**: Match generator didn't know which category type it was generating for
+- **Solution**:
+  - **Backend Changes**:
+    - `backend/src/application/services/match-generator.service.ts`:
+      - Added `phaseType` parameter to `generateMatches()` method (defaults to 'MAIN')
+      - Updated `generateSingleElimination()`, `generateRoundRobin()`, `generateMatchPlay()` to accept and use phaseType
+      - Phases now created with correct phaseType based on bracket context
+    - `backend/src/presentation/controllers/bracket.controller.ts`:
+      - Added `Category` entity import
+      - Load category before generating matches in both `create()` and `regenerate()` endpoints
+      - Detect qualifying categories by checking if name contains "qualifying" (case-insensitive)
+      - Pass correct phaseType to match generator (QUALIFYING for qualifying categories, MAIN for others)
+  - **Database Fix**: Created SQL update to fix existing qualifying phases
+- **Impact**: Qualifying and main draw brackets now properly separated in bracket view
+
+**Fixed: Frontend Mapper Missing phaseType Field**
+- **Issue**: Even with correct database values and backend API, qualifying phases still appeared mixed with main draw phases in the bracket view
+- **Root Cause**: `mapPhaseToDto()` method in `src/application/services/bracket.service.ts` was not including `phaseType` and `isAutoGenerated` fields when mapping Phase entities to DTOs
+- **Solution**: 
+  - Updated `mapPhaseToDto()` to include both fields:
+    ```typescript
+    phaseType: phase.phaseType ?? 'MAIN',
+    isAutoGenerated: phase.isAutoGenerated ?? false,
+    ```
+- **Impact**: Frontend now receives complete phase data and correctly filters qualifying phases into separate section
+
+**Fixed: Unified Bracket Views for All Draw Types**
+- **Issue**: Qualifying and consolation phases were each rendering individual bracket sections (one per phase), creating visual clutter
+- **Solution**: 
+  - Updated `bracket-view.component.html` to show unified brackets for all draw types:
+    - **Qualifying Draw**: Single "Qualifying Bracket" showing all qualifying matches
+    - **Main Draw**: Single "Main Draw Bracket" showing all main draw matches (already correct)
+    - **Consolation Draw**: Single "Consolation Bracket" showing all consolation matches
+  - Removed per-phase bracket loops, keeping only the phase cards grid for metadata
+- **Impact**: Cleaner UI with consistent bracket presentation across all draw types
+
+**Added: Populate Qualifying Script**
+- **Feature**: Command-line script to populate qualifying categories with test players
+- **Implementation**:
+  - **File**: `backend/scripts/populate-qualifying.ts`
+  - **Usage**: `npx tsx scripts/populate-qualifying.ts <TOURNAMENT_ID>`
+  - **Functionality**:
+    - Takes tournament ID as command-line argument
+    - Finds qualifying category (searches for category name containing "Qualifying")
+    - Creates 16 test players (rankings 33-48)
+    - Registers players to qualifying category
+    - Accepts all registrations
+    - Assigns seed numbers based on ranking
+    - Opens tournament registration if needed
+- **Test Data**: Creates diverse international players (Marco Rossi, Lucas Silva, Yuki Tanaka, etc.)
+- **Benefits**:
+  - Quickly populate qualifying draws for testing
+  - No manual player registration needed
+  - Automatic seeding based on rankings
+  - Clear console output with progress indicators
+
+**Added: Qualifying Bracket View**
+- **Feature**: Qualifying phases now display in their own separate section with visual bracket view, independent from main draw
+- **Implementation**:
+  - **Frontend Changes**:
+    - `src/presentation/pages/brackets/bracket-view/bracket-view.component.ts`:
+      - Modified `loadData()` to load phases and matches from **ALL brackets in the tournament**, not just the current bracket
+      - This allows qualifying brackets (which are separate brackets) to display alongside the main bracket
+      - Added `qualifyingPhases` computed signal filtering phases by `phaseType === 'QUALIFYING'`
+      - Modified `mainPhases` to **exclude** qualifying phases (filters: `order < 100 && phaseType !== 'QUALIFYING'`)
+      - Modified `mainMatches` to **exclude** qualifying matches using phase ID filtering
+      - Added `qualifyingMatches` computed signal to get all matches from qualifying phases
+      - Added `getQualifyingMatchesByPhase(phaseId)` method for phase-specific match filtering
+    - `src/presentation/pages/brackets/bracket-view/bracket-view.component.html`:
+      - Added qualifying section BEFORE main draw with phase cards and visual brackets
+      - Qualifying section displayed only when qualifying phases exist
+      - Added qualifying divider with green styling separating it from main draw
+    - `src/presentation/pages/brackets/bracket-view/bracket-view.component.css`:
+      - Added green-themed styles for qualifying section (`.qualifying-divider`, `.qualifying-title`, `.qualifying-phase-card`)
+      - Color scheme: Green gradients (#22c55e, #16a34a) matching phase management color coding
+- **How It Works**:
+  1. **Create Qualifying Phase**: In Phase Management, use "Create New Phase"
+     - Select source category (e.g., "Men's Singles")
+     - Set phaseType='QUALIFYING'
+     - System auto-creates "Men's Singles - Qualifying" category
+  2. **Register Qualifying Participants**: In Tournament Detail, register players to the auto-created qualifying category
+  3. **Generate Qualifying Matches**: Navigate to qualifying bracket view and click "Generate Bracket"
+  4. **Play Qualifying**: Complete qualifying matches
+  5. **(Optional) Link Phases**: Use Phase Management to link qualifying → main draw
+  6. **Advance Winners**: Top qualifiers advance to main draw category with QUALIFIER acceptance type
+- **Display Structure**: Three separate sections:
+  - 📋 **Qualifying Draw** (green) - Pre-tournament qualification rounds
+  - 🏆 **Main Draw** (blue) - Primary competition bracket
+  - 🎖️ **Consolation Draw** (orange) - Eliminated players' bracket
+- **Visual Design**: Green color coding consistent with phase management UI
+- **Architecture**: Qualifying phases exist as separate brackets (like consolation), all loaded together in bracket view
+- **Impact**: Tournament organizers can now visualize and manage qualifying rounds just like main and consolation draws, supporting full qualifying → main draw → consolation tournament structure
+
+---
+
 ### 🎨 UI Improvements (2026-04-24)
 
 **Enhanced: Color-coded phase cards in All Phases section**

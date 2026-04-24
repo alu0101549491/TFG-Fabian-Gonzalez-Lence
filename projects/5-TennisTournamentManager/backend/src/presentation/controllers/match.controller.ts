@@ -20,6 +20,8 @@ import {Registration} from '../../domain/entities/registration.entity';
 import {DoublesTeam} from '../../domain/entities/doubles-team.entity';
 import {MatchResult, ConfirmationStatus} from '../../domain/entities/match-result.entity';
 import {MatchStatus} from '../../domain/enumerations/match-status';
+import {RegistrationStatus} from '../../domain/enumerations/registration-status';
+import {AcceptanceType} from '../../domain/enumerations/acceptance-type';
 import {AuthRequest} from '../middleware/auth.middleware';
 import {generateId} from '../../shared/utils/id-generator';
 import {HTTP_STATUS, ERROR_CODES} from '../../shared/constants';
@@ -29,6 +31,8 @@ import {PrivacyService} from '../../application/services/privacy.service';
 import {StandingService} from '../../application/services/standing.service';
 import {User} from '../../domain/entities/user.entity';
 import {Bracket} from '../../domain/entities/bracket.entity';
+import {Phase} from '../../domain/entities/phase.entity';
+import {Category} from '../../domain/entities/category.entity';
 import {TennisScoreValidator, TennisSetScore} from '../../shared/utils/tennis-score-validator';
 import {MatchFormat} from '../../domain/enumerations/match-format';
 
@@ -419,7 +423,8 @@ export class MatchController {
     });
 
     if (nextRoundMatches.length === 0) {
-      // This was the final match
+      // This was the final match - check if it's a qualifying bracket
+      await this.checkAndAdvanceQualifiers(match);
       return;
     }
 
@@ -456,6 +461,120 @@ export class MatchController {
     console.log(
       `✅ Advanced winner ${match.winnerId} from Match ${match.matchNumber} (Round ${match.round}) to Match ${nextMatch.matchNumber} (Round ${nextMatch.round})`
     );
+  }
+
+  /**
+   * Checks if qualifying bracket is complete and advances qualifiers to main draw.
+   * Called when the final match of a bracket has no next round.
+   *
+   * @param match - The final match of the bracket
+   */
+  private async checkAndAdvanceQualifiers(match: Match): Promise<void> {
+    try {
+      const phaseRepository = AppDataSource.getRepository(Phase);
+      const categoryRepository = AppDataSource.getRepository(Category);
+      const registrationRepository = AppDataSource.getRepository(Registration);
+
+      // Get the phase for this match to check if it's QUALIFYING
+      const phase = await phaseRepository.findOne({
+        where: {id: match.phaseId},
+        relations: ['bracket', 'bracket.category'],
+      });
+
+      if (!phase || phase.phaseType !== 'QUALIFYING') {
+        return; // Not a qualifying bracket
+      }
+
+      console.log(`🎾 Qualifying bracket final match completed. Checking for qualifiers...`);
+
+      // Get the qualifying category
+      const qualifyingCategory = phase.bracket.category;
+      if (!qualifyingCategory) {
+        console.error('Could not find qualifying category for bracket');
+        return;
+      }
+
+      // Find main draw category by removing " - Qualifying" suffix
+      const mainDrawCategoryName = qualifyingCategory.name.replace(/ - Qualifying$/i, '');
+      const mainDrawCategory = await categoryRepository.findOne({
+        where: {
+          tournamentId: qualifyingCategory.tournamentId,
+          name: mainDrawCategoryName,
+        },
+      });
+
+      if (!mainDrawCategory) {
+        console.error(`Could not find main draw category "${mainDrawCategoryName}" for tournament`);
+        return;
+      }
+
+      // Get all completed final round matches (the last round produces the qualifiers)
+      const matchRepository = AppDataSource.getRepository(Match);
+      const finalRoundMatches = await matchRepository.find({
+        where: {
+          bracketId: match.bracketId,
+          round: match.round,
+          status: MatchStatus.COMPLETED,
+        },
+      });
+
+      // Collect all winners (singles or doubles)
+      const qualifierIds: string[] = [];
+      for (const finalMatch of finalRoundMatches) {
+        if (finalMatch.participant1TeamId || finalMatch.participant2TeamId) {
+          // Doubles: winners are teams
+          if (finalMatch.winnerTeamId) {
+            qualifierIds.push(finalMatch.winnerTeamId);
+          }
+        } else {
+          // Singles: winners are individual players
+          if (finalMatch.winnerId) {
+            qualifierIds.push(finalMatch.winnerId);
+          }
+        }
+      }
+
+      console.log(`✨ Found ${qualifierIds.length} qualifiers: ${qualifierIds.join(', ')}`);
+
+      // Register each qualifier in the main draw category
+      const isDoublesCategory = qualifyingCategory.name.toLowerCase().includes('doubles');
+      for (const qualifierId of qualifierIds) {
+        // Check if already registered
+        const existingReg = await registrationRepository.findOne({
+          where: {
+            categoryId: mainDrawCategory.id,
+            participantId: qualifierId,
+          },
+        });
+
+        if (existingReg) {
+          console.log(`⚠️ Qualifier ${qualifierId} already registered in main draw`);
+          continue;
+        }
+
+        // Create new registration with QUALIFIER acceptance type
+        const registration = new Registration();
+        registration.id = generateId('reg');
+        registration.categoryId = mainDrawCategory.id;
+        registration.tournamentId = qualifyingCategory.tournamentId;
+        registration.participantId = qualifierId;
+        registration.status = RegistrationStatus.ACCEPTED;
+        registration.acceptanceType = AcceptanceType.QUALIFIER;
+        registration.seedNumber = null; // Seed will be assigned when main draw bracket is generated
+        registration.partnerId = null;
+        registration.withdrawalDate = null;
+        registration.registrationDate = new Date();
+        registration.updatedAt = new Date();
+
+        await registrationRepository.save(registration);
+        console.log(`✅ Registered qualifier ${qualifierId} in main draw category "${mainDrawCategory.name}"`);
+      }
+
+      console.log(`🎉 Successfully advanced ${qualifierIds.length} qualifiers to main draw!`);
+    } catch (error) {
+      console.error('Error advancing qualifiers to main draw:', error);
+      // Don't throw - this is a background process, shouldn't break match completion
+    }
   }
   
   /**

@@ -1,7 +1,10 @@
 /**
  * Script to generate random match results for a Round Robin tournament
  * Also assigns courts and schedules to matches
- * Usage: npx tsx scripts/generate-match-results.ts <tournamentId>
+ * Usage: npx tsx scripts/generate-match-results.ts <tournamentId> [bracketType]
+ * 
+ * @param tournamentId - Required: ID of the tournament
+ * @param bracketType - Optional: Filter by bracket type (MAIN, QUALIFYING, CONSOLATION)
  */
 
 const RESULTS_API_URL = 'http://localhost:3000/api';
@@ -19,6 +22,25 @@ interface Tournament {
   endDate: string;
 }
 
+interface Bracket {
+  id: string;
+  categoryId: string;
+  bracketType: 'SINGLE_ELIMINATION' | 'ROUND_ROBIN' | 'DOUBLE_ELIMINATION';
+}
+
+interface Category {
+  id: string;
+  name: string;
+  phaseType?: 'MAIN' | 'QUALIFYING' | 'CONSOLATION';
+}
+
+interface Phase {
+  id: string;
+  bracketId: string;
+  phaseNumber: number;
+  phaseName: string;
+}
+
 interface Court {
   id: string;
   name: string;
@@ -30,6 +52,7 @@ interface Match {
   id: string;
   matchNumber: number;
   round: number;
+  phaseId: string;
   participant1Id: string | null;
   participant2Id: string | null;
   participant1?: { firstName: string; lastName: string };
@@ -202,14 +225,20 @@ function generateSchedules(
  */
 async function main(): Promise<void> {
   const tournamentId = process.argv[2];
+  const bracketTypeFilter = process.argv[3]?.toUpperCase() as 'MAIN' | 'QUALIFYING' | 'CONSOLATION' | undefined;
 
   if (!tournamentId) {
     console.error('❌ Please provide a tournament ID');
-    console.error('Usage: npx tsx scripts/generate-match-results.ts <tournamentId>');
+    console.error('Usage: npx tsx scripts/generate-match-results.ts <tournamentId> [bracketType]');
+    console.error('       bracketType: MAIN | QUALIFYING | CONSOLATION (optional)');
     process.exit(1);
   }
 
-  console.log(`🎾 Generating random match results for tournament: ${tournamentId}\n`);
+  console.log(`🎾 Generating random match results for tournament: ${tournamentId}`);
+  if (bracketTypeFilter) {
+    console.log(`📋 Filtering by bracket type: ${bracketTypeFilter}`);
+  }
+  console.log('');
 
   try {
     // Step 1: Login as tournament admin
@@ -236,8 +265,65 @@ async function main(): Promise<void> {
       console.log('');
     }
 
-    // Step 4: Fetch all matches for the tournament
-    console.log('📝 Step 4: Fetching matches for tournament...');
+    // Step 4: Fetch categories and brackets to filter by phase type
+    let targetPhaseIds: string[] | null = null;
+    if (bracketTypeFilter) {
+      console.log(`📝 Step 4: Fetching categories and brackets to filter by ${bracketTypeFilter}...`);
+      
+      // Fetch categories
+      const categories: Category[] = await apiRequest(`/categories?tournamentId=${tournamentId}`, 'GET', null, token);
+      
+      // Filter categories by phase type or name
+      const filteredCategories = categories.filter(cat => {
+        // Check phaseType field if available
+        if (cat.phaseType) {
+          return cat.phaseType === bracketTypeFilter;
+        }
+        // Fallback: check name for " - Qualifying" or " - Consolation" suffix
+        if (bracketTypeFilter === 'QUALIFYING' && cat.name.includes('- Qualifying')) {
+          return true;
+        }
+        if (bracketTypeFilter === 'CONSOLATION' && cat.name.includes('- Consolation')) {
+          return true;
+        }
+        if (bracketTypeFilter === 'MAIN' && !cat.name.includes('- Qualifying') && !cat.name.includes('- Consolation')) {
+          return true;
+        }
+        return false;
+      });
+      
+      if (filteredCategories.length === 0) {
+        console.error(`❌ No ${bracketTypeFilter} categories found for this tournament`);
+        process.exit(1);
+      }
+
+      console.log(`✅ Found ${filteredCategories.length} ${bracketTypeFilter} categor${filteredCategories.length === 1 ? 'y' : 'ies'}`);
+      filteredCategories.forEach(cat => console.log(`   - ${cat.name} (${cat.id})`));
+      console.log('');
+
+      // Fetch brackets for these categories
+      const brackets: Bracket[] = await apiRequest(`/brackets?tournamentId=${tournamentId}`, 'GET', null, token);
+      const categoryIds = filteredCategories.map(c => c.id);
+      const filteredBrackets = brackets.filter(b => categoryIds.includes(b.categoryId));
+
+      console.log('📝 Step 5: Fetching phases for filtered brackets...');
+      const bracketIds = filteredBrackets.map(b => b.id);
+      
+      // Fetch phases for each bracket
+      const allFilteredPhases: Phase[] = [];
+      for (const bracketId of bracketIds) {
+        const phases: Phase[] = await apiRequest(`/phases?bracketId=${bracketId}`, 'GET', null, token);
+        allFilteredPhases.push(...phases);
+      }
+      
+      targetPhaseIds = allFilteredPhases.map(p => p.id);
+      
+      console.log(`✅ Found ${allFilteredPhases.length} phase(s) in ${bracketTypeFilter} bracket(s)\n`);
+    }
+
+    // Step 5/6: Fetch all matches for the tournament
+    const stepNumber = bracketTypeFilter ? 6 : 4;
+    console.log(`📝 Step ${stepNumber}: Fetching matches for tournament...`);
     const matches: Match[] = await apiRequest(`/matches?tournamentId=${tournamentId}`, 'GET', null, token);
     
     if (!matches || matches.length === 0) {
@@ -245,10 +331,18 @@ async function main(): Promise<void> {
       process.exit(1);
     }
 
-    console.log(`✅ Found ${matches.length} matches\n`);
+    console.log(`✅ Found ${matches.length} total matches\n`);
 
-    // Step 5: Filter matches that need results
-    const matchesNeedingResults = matches.filter(
+    // Filter matches by bracket type if specified
+    let matchesToProcess = matches;
+    if (targetPhaseIds) {
+      matchesToProcess = matches.filter(m => targetPhaseIds!.includes(m.phaseId));
+      console.log(`📋 Filtered to ${matchesToProcess.length} matches in ${bracketTypeFilter} bracket(s)\n`);
+    }
+
+    // Step 6/7: Filter matches that need results
+    const nextStepNumber = bracketTypeFilter ? 7 : 5;
+    const matchesNeedingResults = matchesToProcess.filter(
       (match) => 
         match.participant1Id && 
         match.participant2Id && 
@@ -264,8 +358,8 @@ async function main(): Promise<void> {
       return;
     }
 
-    // Step 6: Generate schedules for matches
-    console.log('📝 Step 5: Generating schedules and court assignments...');
+    // Step 7/8: Generate schedules for matches
+    console.log(`📝 Step ${nextStepNumber}: Generating schedules and court assignments...`);
     const schedules = generateSchedules(
       matchesNeedingResults.length,
       tournament.startDate,
@@ -274,8 +368,9 @@ async function main(): Promise<void> {
     );
     console.log('✅ Schedules generated\n');
 
-    // Step 7: Update matches with schedules and courts, then generate results
-    console.log('📝 Step 6: Assigning schedules and generating results...\n');
+    // Step 8/9: Update matches with schedules and courts, then generate results
+    const finalStepNumber = bracketTypeFilter ? 8 : 6;
+    console.log(`📝 Step ${finalStepNumber}: Assigning schedules and generating results...\n`);
     
     let successCount = 0;
     let errorCount = 0;

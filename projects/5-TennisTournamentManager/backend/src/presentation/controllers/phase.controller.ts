@@ -15,6 +15,7 @@
 import {Response, NextFunction} from 'express';
 import {AppDataSource} from '../../infrastructure/database/data-source';
 import {Bracket} from '../../domain/entities/bracket.entity';
+import {Category} from '../../domain/entities/category.entity';
 import {Phase} from '../../domain/entities/phase.entity';
 import {Match} from '../../domain/entities/match.entity';
 import {Registration} from '../../domain/entities/registration.entity';
@@ -874,6 +875,15 @@ export class PhaseController {
     try {
       const {tournamentId, categoryId, phaseName, phaseType, bracketType} = req.body;
 
+      // DEBUG: Log incoming request data
+      console.log('🔍 CREATE PHASE REQUEST:', {
+        tournamentId,
+        categoryId,
+        phaseName,
+        phaseType,
+        bracketType,
+      });
+
       // Validate required fields
       if (!tournamentId || !categoryId || !phaseName) {
         throw new AppError(
@@ -905,6 +915,51 @@ export class PhaseController {
 
       const bracketRepository = AppDataSource.getRepository(Bracket);
       const phaseRepository = AppDataSource.getRepository(Phase);
+      const categoryRepository = AppDataSource.getRepository(Category);
+
+      // If creating a QUALIFYING phase, automatically create a separate qualifying category
+      let effectiveCategoryId = categoryId;
+      console.log(`🔍 Checking phaseType: "${phaseType}" (type: ${typeof phaseType}), equals 'QUALIFYING'? ${phaseType === 'QUALIFYING'}`);
+      
+      if (phaseType === 'QUALIFYING') {
+        console.log('✅ QUALIFYING phase detected - starting auto-category creation...');
+        // Get the source category to derive qualifying category properties
+        const sourceCategory = await categoryRepository.findOne({where: {id: categoryId}});
+        if (!sourceCategory) {
+          throw new AppError(`Source category not found: ${categoryId}`, HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+        }
+
+        // Check if qualifying category already exists for this tournament
+        const qualifyingCategoryName = `${sourceCategory.name} - Qualifying`;
+        console.log(`🔍 Looking for existing qualifying category: "${qualifyingCategoryName}"`);
+        const existingQualifyingCategory = await categoryRepository.findOne({
+          where: {
+            tournamentId,
+            name: qualifyingCategoryName,
+          },
+        });
+
+        if (existingQualifyingCategory) {
+          // Use existing qualifying category
+          effectiveCategoryId = existingQualifyingCategory.id;
+          console.log(`✅ Using existing qualifying category: ${qualifyingCategoryName} (${effectiveCategoryId})`);
+        } else {
+          // Create new qualifying category with doubled maxParticipants (typical qualifying structure)
+          const qualifyingCategory = categoryRepository.create({
+            id: generateId('cat'),
+            tournamentId,
+            name: qualifyingCategoryName,
+            gender: sourceCategory.gender,
+            ageGroup: sourceCategory.ageGroup,
+            maxParticipants: sourceCategory.maxParticipants * 2, // Qualifying typically has more spots
+          });
+          await categoryRepository.save(qualifyingCategory);
+          effectiveCategoryId = qualifyingCategory.id;
+          console.log(`✅ Auto-created qualifying category: ${qualifyingCategoryName} (${effectiveCategoryId})`);
+        }
+      } else {
+        console.log(`ℹ️  Non-QUALIFYING phase (type: "${phaseType}") - no auto-category creation`);
+      }
 
       // Determine sequenceOrder: place new phase after all existing phases in this tournament
       const existingPhases = await phaseRepository
@@ -917,11 +972,11 @@ export class PhaseController {
       const maxSequenceOrder = existingPhases.length > 0 ? existingPhases[0].sequenceOrder : 0;
       const newSequenceOrder = maxSequenceOrder + 10;
 
-      // Create a new empty bracket for this phase
+      // Create a new empty bracket for this phase (using qualifying category if applicable)
       const newBracket = bracketRepository.create({
         id: generateId('bkt'),
         tournamentId,
-        categoryId,
+        categoryId: effectiveCategoryId,
         bracketType: resolvedBracketType,
         size: 0,
         totalRounds: 1,
