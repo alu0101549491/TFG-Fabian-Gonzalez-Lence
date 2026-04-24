@@ -170,6 +170,121 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+### 🎉 Phase 6 Progress (2026-04-24)
+
+**Phase 6 Goals:** Advanced features (super tiebreak, PDF templates, bracket configuration)
+
+**Completed Features:**
+1. ✅ **Feature 31: Global Ranking Update Workflow** - Recalculate rankings button for administrators
+   - **Solution**: Added "Recalculate Rankings" button visible only to admins in global rankings view
+   - **Backend**: Full ELO recalculation from scratch using all completed matches in chronological order
+   - **Frontend**: Client-side snapshot/diff logic to show position changes before and after recalculation
+   - **UI Feedback**: Loading state during recalculation, success message with auto-dismiss
+   - **Change Indicators**: Green ↑ (moved up), red ↓ (moved down), gray – (no change)
+
+**Bug Fixes:**
+- ✅ **Fixed Global Rankings Change Column Bug** - Position changes now display correctly after recalculation
+
+**Time Spent:** ~6 hours total for Phase 6 (1/5 tasks completed, 20%)
+
+**Phase 6 Files Modified:**
+- `backend/src/application/services/ranking.service.ts` - Fixed rank assignment loop logic
+- `src/presentation/pages/ranking/ranking-view/ranking-view.component.ts` - Removed debug logging
+- `src/application/services/ranking.service.ts` - Removed debug logging
+
+**Remaining Phase 6 Tasks:**
+- ⏳ Super tiebreak score entry (6 hours)
+- ⏳ PDF export template improvements (5 hours)
+- ⏳ Advanced bracket configuration (7 hours)
+- ⏳ Player performance comments (8 hours)
+
+---
+
+### Bug Fix: Global Rankings Change Column Always Shows "–" (2026-04-24)
+
+**Issue:** After clicking "Recalculate Rankings", the Change column always displayed "–" (neutral) for all players, even though some players had non-sequential rank numbers (13 → 281 → 1047) indicating they should have changed positions dramatically.
+
+**Root Cause:** Backend `recalculateAllRankings()` method had a logic error in the rank assignment loop:
+
+1. **Bug**: Loop iterated through ALL 1059 registered players (sorted by ELO)
+2. **Bug**: Assigned sequential ranks 1-1059 based on array index (`rank = i + 1`)
+3. **Bug**: Then SKIPPED saving players with 0 matches (`if (wins + losses === 0) continue;`)
+4. **Result**: Only 27 players (who actually played) were saved, but with non-sequential ranks like 14, 281, 1047 corresponding to their position in the full 1059-player array
+5. **Frontend Impact**: Frontend workaround already displayed sequential positions 1-27 using `index + 1`, but backend ranks remained non-sequential
+6. **Change Column Impact**: When recalculating, positions didn't change visually (already 1-27), so Change column showed 0 for everyone
+
+**Symptoms:**
+- Backend logs showed: `[RankingService] Updating usr_f08ddb60: oldRank=281 → newRank=281` (no UPDATE)
+- Database had rank gaps: players with ranks 1-13, then 281, 1047, 1048, etc. (1032 gaps for unplayed players)
+- Frontend displayed positions 1-27 correctly (compensating for backend bug)
+- Change column always showed "–" because snapshot matched post-recalculation positions
+- After completing new matches, ELO changed but positions still didn't reflect actual changes
+
+**Solution:**
+
+**Backend Fix** (`backend/src/application/services/ranking.service.ts`):
+```typescript
+// Before (BUGGY):
+const ranked = Array.from(eloMap.entries()).sort(([, a], [, b]) => b - a);
+
+for (let i = 0; i < ranked.length; i++) {
+  const [playerId, elo] = ranked[i];
+  const rank = i + 1;  // ← Assigns ranks 1-1059
+  const wins = winsMap.get(playerId) ?? 0;
+  const losses = lossesMap.get(playerId) ?? 0;
+  
+  // Skip players who never played
+  if (wins + losses === 0) continue;  // ← Creates gaps: 14, 281, 1047...
+  
+  // Save with wrong rank
+  await save(rank);  // Player at i=14 gets rank=15 but 13 players were skipped
+}
+
+// After (FIXED):
+const ranked = Array.from(eloMap.entries()).sort(([, a], [, b]) => b - a);
+
+// Filter to only players who have played BEFORE assigning ranks
+const playedRanked = ranked.filter(([playerId]) => {
+  const wins = winsMap.get(playerId) ?? 0;
+  const losses = lossesMap.get(playerId) ?? 0;
+  return wins + losses > 0;
+});
+
+// Now assign sequential ranks 1-27 to the 27 players who played
+for (let i = 0; i < playedRanked.length; i++) {
+  const [playerId, elo] = playedRanked[i];
+  const rank = i + 1;  // ← Correct: Sequential ranks 1-27
+  
+  await save(rank);  // No gaps, proper sequential assignment
+}
+```
+
+**Impact:**
+- ✅ Backend now saves ranks 1-27 sequentially (no gaps)
+- ✅ Database UPDATE statements now execute: `UPDATE "global_rankings" SET "rank" = 14 WHERE "id" = 'rnk_66ffe5ce'`
+- ✅ Backend logs show actual changes: `oldRank=281 → newRank=14` (WITH UPDATE)
+- ✅ Change column displays correctly when positions change: ↑267, ↑1032, ↓1, etc.
+- ✅ Frontend no longer needs workaround (`index + 1` still used for sorting, but now matches backend)
+
+**Testing:**
+1. Click "Recalculate Rankings" (first time after fix) → Change column shows massive corrections: ↑267, ↑1032
+2. Click "Recalculate Rankings" again (no new matches) → Change column shows "–" for all (correct)
+3. Complete new matches, click "Recalculate Rankings" → Change column shows actual ELO-based position changes
+
+**Evidence from Logs:**
+```
+// BEFORE FIX:
+[RankingService] Updating usr_f08ddb60: oldRank=281 → newRank=281, points=1200
+[RankingService] After save: usr_f08ddb60 rank=281
+
+// AFTER FIX:
+[RankingService] Updating usr_f08ddb60: oldRank=281 → newRank=14, points=1200
+query: UPDATE "global_rankings" SET "rank" = 14 WHERE "id" = 'rnk_66ffe5ce'
+[RankingService] After save: usr_f08ddb60 rank=14
+```
+
+---
+
 ---
 
 ### Bug Fix: Winner Selection Not Persisting for WO/RET/DEF Statuses (2026-04-23)

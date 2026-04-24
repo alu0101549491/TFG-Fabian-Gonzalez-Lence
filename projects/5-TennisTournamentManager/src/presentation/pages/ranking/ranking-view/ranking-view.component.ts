@@ -98,6 +98,7 @@ export class RankingViewComponent implements OnInit {
       const rankings = await this.rankingService.getRankingsBySystem(this.selectedSystem);
       this.rankings.set(rankings);
     } catch (error) {
+      console.error('[Rankings] loadRankings() caught error:', error);
       const message = error instanceof Error ? error.message : 'Failed to load rankings';
       this.errorMessage.set(message);
     } finally {
@@ -118,6 +119,14 @@ export class RankingViewComponent implements OnInit {
    */
   public async recalculateRankings(): Promise<void> {
     if (!this.isAdmin()) return;
+
+    // Snapshot current positions before recalculating so the Change column
+    // reflects movement from this specific recalculation.
+    const snapshot = new Map<string, number>();
+    for (const ranking of this.rankings()) {
+      snapshot.set(ranking.participantId, ranking.position);
+    }
+
     this.isRecalculating.set(true);
     this.recalculateMessage.set(null);
     this.errorMessage.set(null);
@@ -126,6 +135,16 @@ export class RankingViewComponent implements OnInit {
       await this.rankingService.recalculateRankings();
       this.recalculateMessage.set('Rankings recalculated successfully.');
       await this.loadRankings();
+
+      // Apply position change relative to the pre-recalculation snapshot.
+      this.rankings.update(current =>
+        current.map(r => ({
+          ...r,
+          positionChange: snapshot.has(r.participantId)
+            ? snapshot.get(r.participantId)! - r.position
+            : 0,
+        })),
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to recalculate rankings';
       this.errorMessage.set(message);

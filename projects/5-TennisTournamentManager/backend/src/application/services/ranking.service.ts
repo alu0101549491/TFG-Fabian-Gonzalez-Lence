@@ -148,16 +148,20 @@ export class RankingService {
     // Sort players by ELO descending to assign ranks
     const ranked = Array.from(eloMap.entries()).sort(([, a], [, b]) => b - a);
 
+    // Filter to only players who have played BEFORE assigning ranks
+    const playedRanked = ranked.filter(([playerId]) => {
+      const wins = winsMap.get(playerId) ?? 0;
+      const losses = lossesMap.get(playerId) ?? 0;
+      return wins + losses > 0;
+    });
+
     // Upsert global_rankings table
-    for (let i = 0; i < ranked.length; i++) {
-      const [playerId, elo] = ranked[i];
+    for (let i = 0; i < playedRanked.length; i++) {
+      const [playerId, elo] = playedRanked[i];
       const rank = i + 1;
       const wins = winsMap.get(playerId) ?? 0;
       const losses = lossesMap.get(playerId) ?? 0;
       const tournamentsPlayed = tournamentsMap.get(playerId)?.size ?? 0;
-
-      // Skip players who have never played
-      if (wins + losses === 0) continue;
 
       const existing = await this.rankingRepository.findOne({where: {playerId}});
 
@@ -181,7 +185,5 @@ export class RankingService {
         await this.rankingRepository.save(newRanking);
       }
     }
-
-    console.log(`✅ [RankingService] ELO rankings recalculated for ${ranked.length} players`);
   }
 }

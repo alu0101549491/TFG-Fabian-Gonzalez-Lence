@@ -65,11 +65,11 @@ export class RankingService implements IRankingService {
     if (system === RankingSystem.ELO) {
       return [...response]
         .sort((left, right) => left.rank - right.rank)
-        .map((item) => ({
+        .map((item, index) => ({
           id: item.id,
           participantId: item.playerId,
           participantName: item.playerName,
-          position: item.rank,
+          position: index + 1,
           totalPoints: item.points,
           rankingSystem: RankingSystem.ELO,
           tournamentsPlayed: item.tournamentsPlayed ?? 0,
@@ -189,30 +189,14 @@ export class RankingService implements IRankingService {
   }
 
   /**
-   * Recalculates all global rankings based on current ELO/points data.
-   * Fetches existing global rankings, re-sorts by points, and updates each
-   * entry's `position` (preserving the old position as `previousPosition`).
+   * Recalculates all global rankings by calling the backend recalculate endpoint.
+   * The backend recomputes ELO rankings from all historical match results and
+   * persists the updated positions to the `global_rankings` table.
    *
-   * @returns Promise that resolves when all rankings have been updated
+   * @returns Promise that resolves when recalculation has completed
    */
   public async recalculateRankings(): Promise<void> {
-    const allRankings = await this.globalRankingRepository.findAll();
-    if (allRankings.length === 0) return;
-
-    // Sort descending by points (then by id for stable ordering)
-    const sorted = [...allRankings].sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      return (a.participantId ?? '').localeCompare(b.participantId ?? '');
-    });
-
-    // Update each ranking with new position and previous position
-    const updates = sorted.map((ranking, index) => ({
-      ...ranking,
-      previousPosition: ranking.position,
-      position: index + 1,
-    }));
-
-    await Promise.all(updates.map(r => this.globalRankingRepository.update(r as any)));
+    await this.httpClient.post<{message: string}>('/rankings/recalculate', {});
   }
 
   /**
