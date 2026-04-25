@@ -222,6 +222,25 @@ async function createAuthenticatedPage(
       }
     }
   }
+
+  // Fallback: the candidate file existed but the storage-state was stale,
+  // mismatched to a different user, or contained an expired JWT token.
+  // Delete the stale file and perform a fresh API login to create a valid session.
+  // eslint-disable-next-line no-console
+  console.log(`[auth.fixture] Storage-state ${candidate} is stale/invalid; performing fresh login for ${credentials.email}`);
+  await unlink(candidate).catch(() => undefined);
+  await mkdir(path.dirname(candidate), {recursive: true});
+  const freshApiHelper = await ApiHelper.create();
+  try {
+    const freshSession = await freshApiHelper.login(credentials);
+    const freshStorageState = freshApiHelper.buildStorageState(freshSession);
+    await writeFile(candidate, JSON.stringify(freshStorageState, null, 2), 'utf8');
+    const context = await browser.newContext({storageState: candidate});
+    const page = await context.newPage();
+    return {context, page};
+  } finally {
+    await freshApiHelper.dispose();
+  }
 }
 
 /**

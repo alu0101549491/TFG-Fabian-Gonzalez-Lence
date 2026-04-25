@@ -12,6 +12,7 @@
  * @see {@link https://typescripttutorial.net}
  */
 
+import {type Page} from '@playwright/test';
 import {test, expect} from '../fixtures/auth.fixture';
 import {TEST_USERS, VALID_SCORE_SET} from '../fixtures/test-data';
 import {MatchDetailPage} from '../fixtures/page-objects/match-detail.page';
@@ -24,9 +25,12 @@ const SEEDED_TOURNAMENT_STATUSES = ['REGISTRATION_OPEN', 'REGISTRATION_CLOSED', 
 async function createSeedContext(): Promise<{
   apiHelper: ApiHelper;
   seedHelper: SeedHelper;
+  adminToken: string;
   participant1Id: string;
   participant2Id: string;
   participant1Name: string;
+  participant1Token: string;
+  participant2Token: string;
 }> {
   const apiHelper = await ApiHelper.create();
   const adminSession = await apiHelper.login({
@@ -45,10 +49,32 @@ async function createSeedContext(): Promise<{
   return {
     apiHelper,
     seedHelper: new SeedHelper(apiHelper, adminSession),
+    adminToken: adminSession.token,
     participant1Id: participant1Session.user.id,
     participant2Id: participant2Session.user.id,
     participant1Name: `${participant1Session.user.firstName} ${participant1Session.user.lastName}`,
+    participant1Token: participant1Session.token,
+    participant2Token: participant2Session.token,
   };
+}
+
+/**
+ * Opens the My Matches page and retries when the UI surfaces a transient load error.
+ *
+ * @param page - Authenticated participant page
+ */
+async function gotoMyMatchesWithRetry(page: Page): Promise<void> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.goto('/my-matches');
+    await expect(page.getByRole('heading', {name: /my matches/i})).toBeVisible();
+
+    const loadError = page.getByText(/failed to load matches\. please try again\./i);
+    if (!await loadError.isVisible().catch(() => false)) {
+      return;
+    }
+  }
+
+  await expect(page.getByText(/failed to load matches\. please try again\./i)).toBeHidden();
 }
 
 test.describe('Match and Result Management - Critical', () => {
@@ -245,16 +271,403 @@ test.describe('Match and Result Management - Critical', () => {
     }
   });
 
-  test('MATCH-004 should allow opponent confirmation of pending results', async ({participantPage, secondParticipantPage}) => {
-    test.fixme(true, 'Confirmation flow requires a deterministic pending-result fixture owned by both participant storage states.');
+  test('MATCH-013 should let participants submit results with optional comments', async ({participantPage}) => {
+    const seedContext = await createSeedContext();
 
-    await participantPage.goto('/my-matches');
-    await secondParticipantPage.goto('/my-matches');
+    try {
+      const commentText = 'Windy conditions on court three during the second set.';
+      const courtName = `Comments Court ${Date.now()}`;
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-013 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName,
+          scheduledTime: MATCH_SCHEDULED_TIME,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+
+      await participantPage.addInitScript(() => {
+        window.alert = () => undefined;
+      });
+      await gotoMyMatchesWithRetry(participantPage);
+
+      const matchCard = participantPage.locator('.match-card').filter({hasText: courtName}).first();
+      await expect(matchCard.getByRole('button', {name: /enter result/i})).toBeVisible();
+
+      await matchCard.getByRole('button', {name: /enter result/i}).click();
+      const resultModal = participantPage.locator('.modal-content').filter({
+        has: participantPage.getByRole('heading', {name: /enter match result/i}),
+      });
+      await expect(resultModal.getByRole('heading', {name: /enter match result/i})).toBeVisible();
+      await participantPage.locator('input[name="winnerId"]').first().check();
+      await resultModal.locator('.set-row').nth(0).locator('input').nth(0).fill('6');
+      await resultModal.locator('.set-row').nth(0).locator('input').nth(1).fill('3');
+      await resultModal.locator('.set-row').nth(1).locator('input').nth(0).fill('6');
+      await resultModal.locator('.set-row').nth(1).locator('input').nth(1).fill('4');
+      await resultModal.locator('#playerComments').fill(commentText);
+      await resultModal.getByRole('button', {name: /submit result/i}).click();
+
+      const participantMatches = await seedContext.apiHelper.get<Array<{
+        id: string;
+        pendingResult?: {
+          confirmationStatus: string;
+          playerComments?: string | null;
+          setScores: string[];
+        } | null;
+      }>>(
+        `/matches?participantId=${seedContext.participant1Id}`,
+        seedContext.participant1Token,
+      );
+      const updatedMatch = participantMatches.find((match) => match.id === fixture.matchId);
+      expect(updatedMatch?.pendingResult?.confirmationStatus).toBe('PENDING_CONFIRMATION');
+      expect(updatedMatch?.pendingResult?.playerComments).toBe(commentText);
+      expect(updatedMatch?.pendingResult?.setScores).toEqual(['6-3', '6-4']);
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
+
+  test('MATCH-004 should allow opponent confirmation of pending results', async ({secondParticipantPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const pendingScoreSummary = '6-1, 3-6, 7-5';
+      const fixture = await seedContext.seedHelper.createPendingResultFixture(
+        `MATCH-004 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Pending Result Court',
+          submitterToken: seedContext.participant1Token,
+          winnerId: seedContext.participant1Id,
+          setScores: ['6-1', '3-6', '7-5'],
+          playerComments: 'Pending confirmation seeded by Playwright',
+        },
+      );
+
+      await secondParticipantPage.addInitScript(() => {
+        window.confirm = () => true;
+        window.alert = () => undefined;
+      });
+      await gotoMyMatchesWithRetry(secondParticipantPage);
+      const opponentPendingCard = secondParticipantPage.locator('.pending-card').filter({hasText: pendingScoreSummary}).first();
+      await expect(opponentPendingCard).toContainText(/action required/i);
+      await expect(opponentPendingCard.getByRole('button', {name: /confirm result/i})).toBeVisible();
+      await expect(opponentPendingCard.getByRole('button', {name: /dispute result/i})).toBeVisible();
+
+      await opponentPendingCard.getByRole('button', {name: /confirm result/i}).click();
+
+      await expect(secondParticipantPage.locator('.pending-card').filter({hasText: pendingScoreSummary})).toHaveCount(0);
+      await expect(secondParticipantPage.locator('.completed-section')).toBeVisible();
+
+      const participantMatches = await seedContext.apiHelper.get<Array<{
+        id: string;
+        status: string;
+        winnerId: string | null;
+      }>>(
+        `/matches?participantId=${seedContext.participant2Id}`,
+        seedContext.participant2Token,
+      );
+      const updatedMatch = participantMatches.find((match) => match.id === fixture.matchId);
+      expect(updatedMatch).toBeDefined();
+      expect(updatedMatch?.status).toBe('COMPLETED');
+      expect(updatedMatch?.winnerId).toBe(seedContext.participant1Id);
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
   });
 
   test('MATCH-005 should let an opponent dispute a pending result', async ({secondParticipantPage}) => {
-    test.fixme(true, 'Dispute flow requires a deterministic pending-result fixture in the current test environment.');
+    const seedContext = await createSeedContext();
 
-    await secondParticipantPage.goto('/my-matches');
+    try {
+      const pendingScoreSummary = '7-5, 4-6, 6-3';
+      const fixture = await seedContext.seedHelper.createPendingResultFixture(
+        `MATCH-005 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Dispute Result Court',
+          submitterToken: seedContext.participant1Token,
+          winnerId: seedContext.participant1Id,
+          setScores: ['7-5', '4-6', '6-3'],
+          playerComments: 'Dispute workflow seeded by Playwright',
+        },
+      );
+
+      await gotoMyMatchesWithRetry(secondParticipantPage);
+      const opponentPendingCard = secondParticipantPage.locator('.pending-card').filter({hasText: pendingScoreSummary}).first();
+      await expect(opponentPendingCard.getByRole('button', {name: /dispute result/i})).toBeVisible();
+
+      await opponentPendingCard.getByRole('button', {name: /dispute result/i}).click();
+      await expect(secondParticipantPage.getByRole('heading', {name: /dispute match result/i})).toBeVisible();
+      await secondParticipantPage.locator('#disputeReason').fill('The submitted tiebreak scores do not match the played sets.');
+
+      const [successDialog] = await Promise.all([
+        secondParticipantPage.waitForEvent('dialog'),
+        secondParticipantPage.getByRole('button', {name: /submit dispute/i}).click(),
+      ]);
+      await expect(successDialog.message()).toContain('Result disputed successfully.');
+      await successDialog.accept();
+
+      await expect(secondParticipantPage.locator('.pending-card').filter({hasText: pendingScoreSummary})).toHaveCount(0);
+
+      const disputedMatches = await seedContext.apiHelper.get<Array<{matchId: string}>>(
+        '/admin/matches/disputed',
+        seedContext.adminToken,
+      );
+      expect(disputedMatches.some((match) => match.matchId === fixture.matchId)).toBeTruthy();
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
+
+  test('MATCH-014 should let admins record super tiebreak scores on supported matches', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-014 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Super Tiebreak Court',
+          scheduledTime: MATCH_SCHEDULED_TIME,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+      await seedContext.seedHelper.updateMatch(fixture.matchId!, {
+        format: 'SUPER_TIEBREAK',
+      });
+
+      const matchPage = new MatchDetailPage(tournamentAdminPage);
+      await matchPage.gotoById(fixture.matchId!);
+      await expect(tournamentAdminPage.getByText(/super tiebreak/i)).toBeVisible();
+      await matchPage.recordSuperTiebreak(seedContext.participant1Name, {
+        participant1: 10,
+        participant2: 8,
+      });
+
+      await matchPage.expectStatus(/completed/i);
+      await expect(tournamentAdminPage.getByText(/1-0\(10\)/i)).toBeVisible();
+
+      const participantMatches = await seedContext.apiHelper.get<Array<{
+        id: string;
+        status: string;
+        scores?: Array<{
+          player1TiebreakPoints: number | null;
+          player2TiebreakPoints: number | null;
+        }>;
+      }>>(
+        `/matches?participantId=${seedContext.participant1Id}`,
+        seedContext.participant1Token,
+      );
+      const updatedMatch = participantMatches.find((match) => match.id === fixture.matchId);
+      expect(updatedMatch?.status).toBe('COMPLETED');
+      expect(updatedMatch?.scores?.[0]?.player1TiebreakPoints).toBe(10);
+      expect(updatedMatch?.scores?.[0]?.player2TiebreakPoints).toBe(8);
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
+
+  test('MATCH-015 should block marking unscheduled matches as scheduled before assigning date and time', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-015 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+        },
+      );
+
+      const matchPage = new MatchDetailPage(tournamentAdminPage);
+      await matchPage.gotoById(fixture.matchId!);
+      await matchPage.openStatusModal();
+      await matchPage.selectStatus('SCHEDULED');
+
+      const statusModal = matchPage.getStatusModal();
+      await expect(statusModal.locator('.warning-box')).toContainText(/schedule the match first/i);
+
+      await matchPage.submitStatusModal();
+      await expect(statusModal.locator('.error-alert')).toContainText(/cannot mark match as scheduled without a scheduled date and time/i);
+
+      const matchDetails = await seedContext.apiHelper.get<{status: string}>(
+        `/matches/${fixture.matchId}`,
+        seedContext.adminToken,
+      );
+      expect(matchDetails.status).toBe('NOT_SCHEDULED');
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
+
+  test('MATCH-016 should require winner selection for walkover status updates', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-016 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Walkover Court',
+          scheduledTime: MATCH_SCHEDULED_TIME,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+
+      const matchPage = new MatchDetailPage(tournamentAdminPage);
+      await matchPage.gotoById(fixture.matchId!);
+      await matchPage.openStatusModal();
+      await matchPage.selectStatus('WALKOVER');
+
+      const statusModal = matchPage.getStatusModal();
+      await expect(statusModal.locator('#winnerId')).toBeVisible();
+      await expect(statusModal).toContainText(/required for walkover, retired, and default statuses/i);
+
+      await matchPage.submitStatusModal();
+      await expect(statusModal.locator('.error-alert')).toContainText(/cannot mark match as walkover without selecting a winner/i);
+
+      await matchPage.selectStatusWinner(seedContext.participant1Name);
+      await matchPage.submitStatusModal();
+      await matchPage.expectStatus(/walkover|wo/i);
+
+      const matchDetails = await seedContext.apiHelper.get<{status: string; winnerId: string | null}>(
+        `/matches/${fixture.matchId}`,
+        seedContext.adminToken,
+      );
+      expect(matchDetails.status).toBe('WALKOVER');
+      expect(matchDetails.winnerId).toBe(seedContext.participant1Id);
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
+
+  test('MATCH-017 should expose only valid next statuses for scheduled matches', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-017 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Transition Court',
+          scheduledTime: MATCH_SCHEDULED_TIME,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+
+      const matchPage = new MatchDetailPage(tournamentAdminPage);
+      await matchPage.gotoById(fixture.matchId!);
+      await matchPage.openStatusModal();
+
+      const optionValues = await matchPage.getStatusModal().locator('#status option').evaluateAll((options) =>
+        options.map((option) => (option as HTMLOptionElement).value),
+      );
+
+      expect(optionValues).toEqual(expect.arrayContaining([
+        'SCHEDULED',
+        'NOT_SCHEDULED',
+        'IN_PROGRESS',
+        'WALKOVER',
+        'CANCELLED',
+        'DEFAULT',
+        'NOT_PLAYED',
+        'BYE',
+      ]));
+      expect(optionValues).not.toContain('COMPLETED');
+      expect(optionValues).not.toContain('RETIRED');
+      expect(optionValues).not.toContain('ABANDONED');
+      expect(optionValues).not.toContain('DEAD_RUBBER');
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
+
+  test('MATCH-018 should block scheduling and expose no forward status transitions for bye matches', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-018 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Bye Court',
+          scheduledTime: MATCH_SCHEDULED_TIME,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+      await seedContext.seedHelper.updateMatch(fixture.matchId!, {
+        status: 'BYE',
+      });
+
+      const matchPage = new MatchDetailPage(tournamentAdminPage);
+      await matchPage.gotoById(fixture.matchId!);
+
+      await matchPage.expectStatus(/bye/i);
+      await expect(tournamentAdminPage.getByRole('button', {name: /schedule match/i})).toHaveCount(0);
+
+      await matchPage.openStatusModal();
+      const optionValues = await matchPage.getStatusModal().locator('#status option').evaluateAll((options) =>
+        options.map((option) => (option as HTMLOptionElement).value),
+      );
+      expect(optionValues).toEqual(['BYE']);
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
+
+  test('MATCH-019 should show status guidance and ball-provider clarification on match detail', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-019 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Tooltip Court',
+          scheduledTime: MATCH_SCHEDULED_TIME,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+
+      const matchPage = new MatchDetailPage(tournamentAdminPage);
+      await matchPage.gotoById(fixture.matchId!);
+      await matchPage.openStatusModal();
+
+      const statusModal = matchPage.getStatusModal();
+      await expect(statusModal).toContainText(/hover over options to see status descriptions/i);
+      await expect(statusModal.locator('#status option[value="SCHEDULED"]')).toHaveAttribute(
+        'title',
+        /ready to be played/i,
+      );
+      await expect(statusModal.locator('#status option[value="WALKOVER"]')).toHaveAttribute(
+        'title',
+        /opponent no-show/i,
+      );
+
+      await tournamentAdminPage.locator('.modal-header .close-btn').click();
+      await tournamentAdminPage.getByRole('button', {name: /schedule match/i}).click();
+      await expect(tournamentAdminPage.getByText(/select who provides balls for this match/i)).toBeVisible();
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
   });
 });

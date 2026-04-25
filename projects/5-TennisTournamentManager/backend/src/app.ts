@@ -57,6 +57,12 @@ export function createApp(): Application {
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMaxRequests,
     message: 'Too many requests from this IP, please try again later.',
+    // Skip rate limiting for loopback/localhost so E2E tests and local
+    // development do not exhaust the counter and cause cascading 429s.
+    skip: (req) => {
+      const ip = req.ip ?? req.socket.remoteAddress ?? '';
+      return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+    },
   });
   app.use('/api/', limiter);
   

@@ -17,6 +17,7 @@ import {CommonModule, Location} from '@angular/common';
 import {Router, RouterModule, ActivatedRoute} from '@angular/router';
 import {type UserDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
+import {TournamentStateService} from '@presentation/services';
 import {UserService} from '@application/services';
 import {UserRole} from '@domain/enumerations/user-role';
 import templateHtml from './user-profile-view.component.html?raw';
@@ -51,6 +52,7 @@ export class UserProfileViewComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly location = inject(Location);
+  private readonly tournamentStateService = inject(TournamentStateService);
 
   /** Profile owner (user being viewed) */
   public user = signal<UserDto | null>(null);
@@ -207,7 +209,10 @@ export class UserProfileViewComponent implements OnInit {
   public viewStatistics(): void {
     const userData = this.user();
     if (!userData) return;
-    
-    void this.router.navigate(['/statistics', userData.id]);
+
+    const tournamentId = this.tournamentStateService.currentTournament()?.id;
+    void this.router.navigate(['/statistics', userData.id], {
+      queryParams: tournamentId ? {tournamentId} : undefined,
+    });
   }
 }

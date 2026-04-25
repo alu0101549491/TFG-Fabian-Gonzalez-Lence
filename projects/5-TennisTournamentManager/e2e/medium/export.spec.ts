@@ -13,6 +13,7 @@
  */
 
 import {test, expect} from '../fixtures/auth.fixture';
+import {readFile} from 'node:fs/promises';
 import {BracketPage} from '../fixtures/page-objects/bracket.page';
 import {TEST_USERS} from '../fixtures/test-data';
 import {ApiHelper} from '../helpers/api.helper';
@@ -22,6 +23,8 @@ let apiHelper: ApiHelper | undefined;
 let seedHelper: SeedHelper | undefined;
 let bracketId = '';
 let statisticsTournamentId = '';
+let statisticsCategoryName = '';
+let tournamentLogoUrl = '';
 
 test.describe('Export - Medium', () => {
   test.describe('Active Export Scenarios', () => {
@@ -34,10 +37,13 @@ test.describe('Export - Medium', () => {
       const participant2 = await apiHelper.login(TEST_USERS.participant2);
       seedHelper = new SeedHelper(apiHelper, adminSession);
 
+      tournamentLogoUrl = 'https://example.com/e2e-export-logo.png';
       const tournament = await seedHelper.createTournament(`E2E Export ${Date.now()}`, {
         maxParticipants: 8,
+        logoUrl: tournamentLogoUrl,
       });
-      const categoryId = await seedHelper.createSizedCategory(tournament.id, 'Export Singles', 8);
+      statisticsCategoryName = 'Export Singles';
+      const categoryId = await seedHelper.createSizedCategory(tournament.id, statisticsCategoryName, 8);
       const registrationIds = [
         await seedHelper.registerParticipant(categoryId, participant1.user.id),
         await seedHelper.registerParticipant(categoryId, participant2.user.id),
@@ -69,6 +75,38 @@ test.describe('Export - Medium', () => {
       await expect(tournamentAdminPage.getByRole('heading', {name: /export statistics/i})).toBeVisible();
       await expect(tournamentAdminPage.getByRole('button', {name: /export as pdf/i})).toBeVisible();
       await expect(tournamentAdminPage.getByRole('button', {name: /export as csv/i})).toBeVisible();
+    });
+
+    test('FDBK-EXP-001 should export tournament statistics PDF with the improved template content', async ({tournamentAdminPage}) => {
+      await tournamentAdminPage.goto(`/tournaments/${statisticsTournamentId}/statistics`);
+      await expect(tournamentAdminPage.getByRole('heading', {name: /tournament statistics/i})).toBeVisible();
+      await expect(tournamentAdminPage.getByRole('heading', {name: /export statistics/i})).toBeVisible();
+
+      const downloadPromise = tournamentAdminPage.waitForEvent('download');
+      await tournamentAdminPage.getByRole('button', {name: /export as pdf/i}).click();
+      const download = await downloadPromise;
+
+      expect(download.suggestedFilename()).toMatch(new RegExp(`Tournament_Statistics_${statisticsTournamentId}_.*\\.pdf$`));
+      const downloadPath = await download.path();
+      expect(downloadPath).not.toBeNull();
+      const pdfBuffer = await readFile(downloadPath!);
+      const pdfText = pdfBuffer.toString('latin1');
+
+      expect(pdfText).toContain('Tournament Statistics');
+      expect(pdfText).toContain('Match Status Distribution');
+      expect(pdfText).toContain('Category Breakdown');
+      expect(pdfText).toContain(statisticsCategoryName);
+    });
+
+    test('FDBK-TOURN-006 should show the tournament logo only on scoped matches routes', async ({publicPage}) => {
+      await publicPage.goto(`/matches?tournamentId=${statisticsTournamentId}`);
+      await expect(publicPage.getByText(/loading matches/i)).toHaveCount(0);
+      const scopedLogo = publicPage.locator('.tournament-logo');
+      await expect(scopedLogo).toBeVisible();
+      await expect(scopedLogo).toHaveAttribute('src', /e2e-export-logo\.png/);
+
+      await publicPage.goto('/matches');
+      await expect(publicPage.locator('.tournament-logo')).toHaveCount(0);
     });
   });
 

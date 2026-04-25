@@ -25,7 +25,22 @@ export class NotificationsPage extends BasePage {
 
   /** Opens the notification preferences page. */
   public async gotoSettings(): Promise<void> {
-    await this.gotoPath('/notification-preferences');
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await this.gotoPath('/notification-preferences');
+
+      const hasTransientError = await this.errorFeedback
+        .filter({hasText: /failed to load notification preferences|request failed with status code 429|too many requests/i})
+        .first()
+        .isVisible()
+        .catch(() => false);
+
+      if (!hasTransientError) {
+        return;
+      }
+
+      await this.page.reload({waitUntil: 'domcontentloaded'});
+      await this.waitForPageLoad();
+    }
   }
 
   /**
@@ -131,9 +146,11 @@ export class NotificationsPage extends BasePage {
     try {
       await saveBtn.waitFor({state: 'visible', timeout: 5000});
       await saveBtn.click();
+      // Check for success feedback BEFORE waitForPageLoad because the component
+      // auto-dismisses the success message after 3 seconds and waitForPageLoad
+      // can trigger a page reload (on 429) that clears the transient message.
+      await this.successFeedback.first().waitFor({state: 'visible', timeout: 6000});
       await this.waitForPageLoad();
-      // Wait for the success feedback that the component sets on save
-      await this.successFeedback.first().waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
       return;
     } catch {
       // Fallback: try generic primary button in the form

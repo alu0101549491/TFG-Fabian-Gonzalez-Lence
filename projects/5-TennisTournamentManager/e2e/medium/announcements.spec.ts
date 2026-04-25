@@ -13,16 +13,22 @@
  */
 
 import {test, expect} from '../fixtures/auth.fixture';
+import path from 'node:path';
 import {AnnouncementsPage} from '../fixtures/page-objects/announcements.page';
 import {TEST_USERS} from '../fixtures/test-data';
 import {ApiHelper} from '../helpers/api.helper';
 import {SeedHelper} from '../helpers/seed.helper';
+
+const ANNOUNCEMENT_IMAGE_FIXTURE = path.join(
+  new URL('../../public/icons/icon-192.png', import.meta.url).pathname,
+);
 
 let apiHelper: ApiHelper | undefined;
 let seedHelper: SeedHelper | undefined;
 let adminToken = '';
 let announcementTournamentId = '';
 let seededAnnouncementTitle = '';
+let announcementTournamentLogo = '';
 
 test.describe('Announcements - Medium', () => {
   test.beforeAll(async () => {
@@ -32,7 +38,10 @@ test.describe('Announcements - Medium', () => {
     const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     seedHelper = new SeedHelper(apiHelper, adminSession);
 
-    const tournament = await seedHelper.createTournament(`E2E Announcements ${Date.now()}`);
+    announcementTournamentLogo = 'https://example.com/e2e-announcements-logo.png';
+    const tournament = await seedHelper.createTournament(`E2E Announcements ${Date.now()}`, {
+      logoUrl: announcementTournamentLogo,
+    });
     announcementTournamentId = tournament.id;
     adminToken = adminSession.token;
     seededAnnouncementTitle = `Seeded Announcement ${Date.now()}`;
@@ -88,6 +97,55 @@ test.describe('Announcements - Medium', () => {
     await publicPage.locator('.announcement-card').filter({hasText: seededAnnouncementTitle}).first().click();
 
     await expect(publicPage.locator('.modal-container')).toBeVisible();
+  });
+
+  test('FDBK-CONTENT-001 should create an announcement with image preview and CTA link rendering', async ({tournamentAdminPage}) => {
+    const announcementsPage = new AnnouncementsPage(tournamentAdminPage);
+    const uniqueTitle = `Announcement Media ${Date.now()}`;
+    const externalLink = 'https://example.com/announcement-media';
+    const linkText = 'Read Full Update';
+
+    await tournamentAdminPage.goto(`/announcements/create?tournamentId=${announcementTournamentId}`);
+    await expect(tournamentAdminPage.getByRole('heading', {name: /create announcement/i})).toBeVisible();
+    await expect(tournamentAdminPage.getByRole('heading', {name: /media & links/i})).toBeVisible();
+    await expect(tournamentAdminPage.locator('#imageFile')).toBeVisible();
+    await expect(tournamentAdminPage.locator('#externalLink')).toBeVisible();
+
+    await tournamentAdminPage.locator('#imageFile').setInputFiles(ANNOUNCEMENT_IMAGE_FIXTURE);
+    const imagePreview = tournamentAdminPage.locator('.image-preview');
+    await expect(imagePreview).toBeVisible();
+    await expect(imagePreview).toHaveAttribute('src', /^data:image\//);
+
+    await tournamentAdminPage.locator('#externalLink').fill(externalLink);
+    await expect(tournamentAdminPage.locator('#linkText')).toBeVisible();
+    await tournamentAdminPage.locator('#linkText').fill(linkText);
+    await tournamentAdminPage.locator('#title').fill(uniqueTitle);
+    await tournamentAdminPage.locator('#summary').fill('Announcement media summary.');
+    await tournamentAdminPage.locator('#longText').fill('Announcement media body for image and CTA coverage.');
+    await tournamentAdminPage.getByRole('button', {name: /general/i}).click();
+    await tournamentAdminPage.getByRole('button', {name: /create announcement/i}).click();
+
+    await announcementsPage.expectAnnouncementVisible(uniqueTitle);
+    await tournamentAdminPage.locator('.announcement-card').filter({hasText: uniqueTitle}).first().click();
+
+    const detailModal = tournamentAdminPage.locator('.modal-container');
+    await expect(detailModal).toBeVisible();
+    await expect(detailModal.locator('.announcement-image')).toBeVisible();
+    await expect(detailModal.locator('.announcement-image')).toHaveAttribute('src', /^data:image\//);
+    const ctaLink = detailModal.locator('.modal-link-button .btn-link');
+    await expect(ctaLink).toContainText(linkText);
+    await expect(ctaLink).toHaveAttribute('href', externalLink);
+    await expect(ctaLink).toHaveAttribute('target', '_blank');
+  });
+
+  test('FDBK-TOURN-006 should show the tournament logo only on scoped announcements routes', async ({publicPage}) => {
+    await publicPage.goto(`/announcements?tournamentId=${announcementTournamentId}`);
+    const scopedLogo = publicPage.locator('.tournament-logo');
+    await expect(scopedLogo).toBeVisible();
+    await expect(scopedLogo).toHaveAttribute('src', /e2e-announcements-logo\.png/);
+
+    await publicPage.goto('/announcements');
+    await expect(publicPage.locator('.tournament-logo')).toHaveCount(0);
   });
 
   test('ANN-007 should show a view counter for announcement reads', async ({publicPage}) => {

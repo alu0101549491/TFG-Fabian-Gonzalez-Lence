@@ -200,8 +200,13 @@ export class VisualBracketComponent {
   public getParticipantSeed(match: MatchDto, participantNumber: 1 | 2): number | null {
     const team = participantNumber === 1 ? match.participant1Team : match.participant2Team;
     if (team) return team.seedNumber ?? null;
+
+    const registrations = this._registrations();
     const participant = participantNumber === 1 ? match.participant1 : match.participant2;
-    return participant?.seed ?? null;
+    if (!participant) return null;
+
+    const registration = registrations.get(participant.id);
+    return registration?.seedNumber ?? participant.seed ?? null;
   }
 
   /**

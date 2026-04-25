@@ -55,7 +55,10 @@ export const config = {
   
   /** Rate limiting configuration */
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
-  rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+  rateLimitMaxRequests: parseInt(
+    process.env.RATE_LIMIT_MAX_REQUESTS || (process.env.NODE_ENV === 'production' ? '100' : '5000'),
+    10,
+  ),
   
   /** Image upload configuration */
   upload: {

@@ -44,6 +44,7 @@ export interface TournamentSeedOptions {
   regulations?: string;
   primaryColor?: string;
   secondaryColor?: string;
+  logoUrl?: string;
 }
 
 /** Supported match seed states used by critical E2E fixtures. */
@@ -57,6 +58,14 @@ export interface SinglesMatchSeedOptions {
   startTime?: string;
   publishBracket?: boolean;
   tournamentOptions?: TournamentSeedOptions;
+}
+
+/** Options used to seed a singles match with a participant-submitted pending result. */
+export interface PendingResultSeedOptions extends SinglesMatchSeedOptions {
+  submitterToken: string;
+  winnerId: string;
+  setScores: string[];
+  playerComments?: string;
 }
 
 /**
@@ -118,6 +127,7 @@ export class SeedHelper {
       regulations: options.regulations ?? 'Automated E2E tournament regulations.',
       primaryColor: options.primaryColor ?? '#2563eb',
       secondaryColor: options.secondaryColor ?? '#10b981',
+      logoUrl: options.logoUrl ?? null,
     }, this.adminSession.token, 201);
 
     this.createdTournamentIds.push(tournament.id);
@@ -398,6 +408,48 @@ export class SeedHelper {
       matchId: seededMatch.id,
       registrationIds,
       participantIds,
+    };
+  }
+
+  /**
+   * Creates a scheduled singles fixture and submits a result as one participant.
+   *
+   * @param name - Tournament name
+   * @param participantIds - Participants to register and approve
+   * @param options - Result-submission options for the seeded pending state
+   * @returns Seed summary enriched with the created pending result identifier
+   */
+  public async createPendingResultFixture(
+    name: string,
+    participantIds: string[],
+    options: PendingResultSeedOptions,
+  ): Promise<SeededTournament & {pendingResultId: string}> {
+    const fixture = await this.createSinglesMatchFixture(name, participantIds, {
+      ...options,
+      scheduledTime: options.scheduledTime ?? '2026-06-12T10:30:00.000Z',
+      matchStatus: options.matchStatus ?? 'SCHEDULED',
+    });
+
+    if (!fixture.matchId) {
+      throw new Error(`Pending-result fixture ${name} did not generate a match identifier`);
+    }
+
+    const result = await this.apiHelper.post<{id: string}>(
+      `/matches/${fixture.matchId}/result`,
+      {
+        winnerId: options.winnerId,
+        setScores: options.setScores,
+        player1Games: 0,
+        player2Games: 0,
+        playerComments: options.playerComments,
+      },
+      options.submitterToken,
+      201,
+    );
+
+    return {
+      ...fixture,
+      pendingResultId: result.id,
     };
   }
 

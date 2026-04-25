@@ -21,22 +21,43 @@ import {SeedHelper} from '../helpers/seed.helper';
 let apiHelper: ApiHelper | undefined;
 let seedHelper: SeedHelper | undefined;
 let bracketId = '';
+let highlightedParticipantName = '';
 
 test.describe('Bracket Visualization - High', () => {
   test.beforeAll(async () => {
+    test.setTimeout(120_000);
     apiHelper = await ApiHelper.create();
     const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     const participant1 = await apiHelper.login(TEST_USERS.participant1);
     const participant2 = await apiHelper.login(TEST_USERS.participant2);
     seedHelper = new SeedHelper(apiHelper, adminSession);
 
-    const fixture = await seedHelper.createSinglesMatchFixture(
-      `E2E Bracket ${Date.now()}`,
-      [participant1.user.id, participant2.user.id],
-      {publishBracket: true},
-    );
+    const timestamp = Date.now();
+    const participant3 = await seedHelper.createPlayer(`bracket_c_${timestamp}`);
 
-    bracketId = fixture.bracketId ?? '';
+    const tournament = await seedHelper.createTournament(`E2E Bracket ${timestamp}`, {
+      maxParticipants: 4,
+      tournamentType: 'SINGLES',
+    });
+    const categoryId = await seedHelper.createSizedCategory(tournament.id, 'Bracket Feedback Singles', 4);
+
+    await seedHelper.updateTournamentStatus(tournament.id, 'REGISTRATION_OPEN');
+
+    const registration1 = await seedHelper.registerParticipant(categoryId, participant1.user.id);
+    await seedHelper.approveRegistration(registration1, 'DIRECT_ACCEPTANCE');
+
+    const registration2 = await seedHelper.registerParticipant(categoryId, participant2.user.id);
+    await seedHelper.approveRegistration(registration2, 'WILD_CARD');
+
+    const registration3 = await seedHelper.registerParticipant(categoryId, participant3.user.id);
+    await seedHelper.approveRegistration(registration3, 'QUALIFIER');
+
+    await seedHelper.updateTournamentStatus(tournament.id, ['REGISTRATION_CLOSED', 'DRAW_PENDING']);
+
+    bracketId = await seedHelper.createBracket(tournament.id, categoryId, 3);
+    await seedHelper.publishBracket(bracketId);
+
+    highlightedParticipantName = `${participant1.user.firstName} ${participant1.user.lastName}`;
   });
 
   test.afterAll(async () => {
@@ -48,6 +69,21 @@ test.describe('Bracket Visualization - High', () => {
     const bracketPage = new BracketPage(publicPage);
     await bracketPage.gotoById(bracketId);
     await bracketPage.expectBracketVisible();
+  });
+
+  test('FDBK-DRAW-001 should distinguish BYE from TBD and show bracket feedback badges', async ({publicPage}) => {
+    const bracketPage = new BracketPage(publicPage);
+    await bracketPage.gotoById(bracketId);
+    await bracketPage.expectBracketVisible();
+
+    await expect(publicPage.locator('.seed-badge').first()).toBeVisible();
+    await expect(publicPage.locator('.acceptance-badge').first()).toBeVisible();
+    await expect(publicPage.locator('text=BYE').first()).toBeVisible();
+    await expect(publicPage.locator('text=TBD').first()).toBeVisible();
+    await expect(publicPage.locator('.format-badge').first()).toContainText(/best of 3/i);
+
+    const profileLink = publicPage.getByRole('link', {name: highlightedParticipantName}).first();
+    await expect(profileLink).toHaveAttribute('href', /\/users\//);
   });
 
   test('EXP-001 should expose a PDF export entry point from the bracket view', async ({tournamentAdminPage}) => {

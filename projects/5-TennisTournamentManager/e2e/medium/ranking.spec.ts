@@ -41,4 +41,20 @@ test.describe('Ranking - Medium', () => {
     const rankingPage = new RankingPage(sysAdminPage);
     await rankingPage.goto();
   });
+
+  test('FDBK-RANK-001 should let admins recalculate positions and hide the action for non-admins', async ({sysAdminPage, participantPage}) => {
+    const adminRankingPage = new RankingPage(sysAdminPage);
+    await adminRankingPage.goto();
+
+    await expect(sysAdminPage.getByRole('button', {name: /recalculate rankings/i})).toBeVisible();
+    await expect(sysAdminPage.locator('.rankings-table, .empty-section, .alert-error')).toBeVisible();
+
+    await sysAdminPage.getByRole('button', {name: /recalculate rankings/i}).click();
+    await expect(sysAdminPage.locator('.alert-success, .alert-error').first()).toBeVisible();
+    await expect(sysAdminPage.locator('.rankings-table, .empty-section, .alert-error')).toBeVisible();
+
+    const participantRankingPage = new RankingPage(participantPage);
+    await participantRankingPage.goto();
+    await expect(participantPage.getByRole('button', {name: /recalculate rankings/i})).toHaveCount(0);
+  });
 });

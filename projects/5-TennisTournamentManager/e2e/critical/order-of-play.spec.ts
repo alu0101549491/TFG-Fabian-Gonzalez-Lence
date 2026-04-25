@@ -50,6 +50,67 @@ async function createSeedContext(): Promise<{
 }
 
 test.describe('Order of Play - Critical', () => {
+  test('FDBK-TOURN-005 should support court CRUD and return cleanly to tournament detail', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+    const seeded = await seedContext.seedHelper.createTournament(`Court Management ${Date.now()}`);
+
+    try {
+      await tournamentAdminPage.goto(`/tournaments/${seeded.id}/courts`);
+      await expect(tournamentAdminPage.getByRole('heading', {name: /court management/i, level: 1})).toBeVisible();
+      await expect(tournamentAdminPage.getByText(seeded.name, {exact: true})).toBeVisible();
+      await expect(tournamentAdminPage.getByText(/no courts yet/i)).toBeVisible();
+
+      await tournamentAdminPage.getByRole('button', {name: /add first court/i}).click();
+      await expect(tournamentAdminPage.getByRole('heading', {name: /add new court/i})).toBeVisible();
+      await tournamentAdminPage.locator('#newCourtName').fill('Court Alpha');
+      await tournamentAdminPage.locator('#newOpeningTime').fill('08:00');
+      await tournamentAdminPage.locator('#newClosingTime').fill('22:00');
+      await tournamentAdminPage.getByRole('button', {name: /save court/i}).click();
+
+      const createdRow = tournamentAdminPage.locator('tbody tr').filter({hasText: 'Court Alpha'}).first();
+      await expect(createdRow).toBeVisible();
+      await expect(tournamentAdminPage.getByText(/added successfully/i)).toBeVisible();
+      await expect(createdRow).toContainText('08:00');
+      await expect(createdRow).toContainText('22:00');
+
+      await createdRow.getByRole('button', {name: /edit/i}).click();
+      const editRow = tournamentAdminPage.locator('tr.edit-row').first();
+      await expect(editRow).toBeVisible();
+      await editRow.locator('input[type="text"]').fill('Court Omega');
+      await editRow.locator('input[type="time"]').nth(0).fill('09:00');
+      await editRow.locator('input[type="time"]').nth(1).fill('21:00');
+      await editRow.getByRole('button', {name: /save/i}).click();
+
+      const updatedRow = tournamentAdminPage.locator('tbody tr').filter({hasText: 'Court Omega'}).first();
+      await expect(updatedRow).toBeVisible();
+      await expect(tournamentAdminPage.getByText(/updated successfully/i)).toBeVisible();
+      await expect(updatedRow).toContainText('09:00');
+      await expect(updatedRow).toContainText('21:00');
+
+      await tournamentAdminPage.reload();
+      const persistedRow = tournamentAdminPage.locator('tbody tr').filter({hasText: 'Court Omega'}).first();
+      await expect(persistedRow).toBeVisible();
+      await expect(persistedRow).toContainText('09:00');
+      await expect(persistedRow).toContainText('21:00');
+
+      await tournamentAdminPage.once('dialog', async (dialog) => {
+        expect(dialog.message()).toMatch(/delete court "Court Omega"/i);
+        await dialog.accept();
+      });
+      await persistedRow.getByRole('button', {name: /delete/i}).click();
+      await expect(tournamentAdminPage.locator('tbody tr').filter({hasText: 'Court Omega'})).toHaveCount(0);
+      await expect(tournamentAdminPage.getByText(/deleted successfully/i)).toBeVisible();
+      await expect(tournamentAdminPage.getByText(/no courts yet/i)).toBeVisible();
+
+      await tournamentAdminPage.getByRole('button', {name: /back to tournament/i}).click();
+      await expect(tournamentAdminPage).toHaveURL(new RegExp(`/tournaments/${seeded.id}$`));
+      await expect(tournamentAdminPage.getByRole('heading', {name: seeded.name})).toBeVisible();
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
+
   test('OOP-001 should expose admin schedule generation controls and courts list', async ({tournamentAdminPage}) => {
     const seedContext = await createSeedContext();
 

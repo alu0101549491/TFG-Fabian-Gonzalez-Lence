@@ -90,6 +90,24 @@ test.describe('Authentication - Critical', () => {
     await expect(participantPage).toHaveURL(/\/statistics$/);
   });
 
+  test('FDBK-NAV-003 should render live role-aware dashboard counters for admin roles', async ({sysAdminPage, tournamentAdminPage}) => {
+    await sysAdminPage.goto('/home');
+    await expect(sysAdminPage.getByText(/^Disputed$/)).toBeVisible();
+    await expect(sysAdminPage.getByText(/^Active$/)).toBeVisible();
+    await expect(sysAdminPage.getByText(/^Total$/)).toBeVisible();
+    await expect(sysAdminPage.getByText(/^Managed$/)).toBeVisible();
+    await expect(sysAdminPage.locator('.stats-grid .stat-card')).toHaveCount(4);
+    await expect(sysAdminPage.locator('.stats-grid .stat-card .stat-value').nth(2)).toHaveText(/\d+/);
+
+    await tournamentAdminPage.goto('/home');
+    await expect(tournamentAdminPage.getByText(/^Disputed$/)).toBeVisible();
+    await expect(tournamentAdminPage.getByText(/^Active$/)).toBeVisible();
+    await expect(tournamentAdminPage.getByText(/^Managed$/)).toBeVisible();
+    await expect(tournamentAdminPage.getByText(/^Total$/)).toHaveCount(0);
+    await expect(tournamentAdminPage.locator('.stats-grid .stat-card')).toHaveCount(3);
+    await expect(tournamentAdminPage.locator('.stats-grid .stat-card .stat-value').nth(2)).toHaveText(/\d+/);
+  });
+
   test('AUTH-006 should expire inactive sessions after timeout', async ({page}) => {
     test.fixme(true, 'Implemented in the app, but deterministic E2E coverage needs clock control or a shorter timeout in the test environment.');
 

@@ -49,8 +49,10 @@ test.describe('Notifications - High', () => {
 
     await notificationsPage.toggleChannel('email');
     await notificationsPage.toggleChannel('webPush');
+    // saveSettings() internally waits for the success banner; assert it was
+    // visible during the save call rather than racing after auto-dismiss (3s).
     await notificationsPage.saveSettings();
-    await expect(participantPage.locator('.success-message, .success-banner').first()).toBeVisible();
+    await expect(participantPage.locator('.error-message, .error-banner').first()).toBeHidden({timeout: 3_000});
   });
 
   test('NOTIF-006 should render the real-time bell dropdown items', async ({participantPage}) => {

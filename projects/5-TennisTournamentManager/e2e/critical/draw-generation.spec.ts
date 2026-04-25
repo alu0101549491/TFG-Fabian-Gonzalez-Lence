@@ -136,4 +136,64 @@ test.describe('Draw Generation - Critical', () => {
       await apiHelper.dispose();
     }
   });
+
+  test('FDBK-DRAW-003 should support overview creation and phase linking workflows', async ({tournamentAdminPage}) => {
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const seedHelper = new SeedHelper(apiHelper, adminSession);
+    const tournament = await seedHelper.createTournament(`FDBK-DRAW-003 ${Date.now()}`);
+
+    try {
+      await seedHelper.createSizedCategory(tournament.id, 'Qualifying Singles', 8);
+      await seedHelper.createSizedCategory(tournament.id, 'Main Draw Singles', 8);
+
+      await tournamentAdminPage.goto(`/tournaments/${tournament.id}/phases`);
+      await expect(tournamentAdminPage.locator('h1.phase-title')).toHaveText(/phase management/i);
+      await expect(tournamentAdminPage.getByRole('heading', {name: /phases overview/i})).toBeVisible();
+      await expect(tournamentAdminPage.getByRole('button', {name: /create new phase/i})).toBeVisible();
+
+      await tournamentAdminPage.getByRole('button', {name: /create new phase/i}).click();
+      await tournamentAdminPage.locator('#phaseName').fill('Qualifying Phase');
+      await tournamentAdminPage.locator('#phaseType').selectOption('QUALIFYING');
+      await tournamentAdminPage.locator('#categoryId').selectOption({label: 'Qualifying Singles'});
+      await tournamentAdminPage.locator('#bracketType').selectOption('ROUND_ROBIN');
+      await tournamentAdminPage.getByRole('button', {name: /create phase/i}).click();
+      await expect(tournamentAdminPage.getByText(/qualifying phase/i).first()).toBeVisible();
+
+      await tournamentAdminPage.getByRole('button', {name: /create new phase/i}).click();
+      await tournamentAdminPage.locator('#phaseName').fill('Main Phase');
+      await tournamentAdminPage.locator('#phaseType').selectOption('MAIN');
+      await tournamentAdminPage.locator('#categoryId').selectOption({label: 'Main Draw Singles'});
+      await tournamentAdminPage.locator('#bracketType').selectOption('SINGLE_ELIMINATION');
+      await tournamentAdminPage.getByRole('button', {name: /create phase/i}).click();
+      await expect(tournamentAdminPage.getByText(/main phase/i).first()).toBeVisible();
+
+      await tournamentAdminPage.locator('button.tab', {hasText: /link phases/i}).click();
+      const sourceSelect = tournamentAdminPage.locator('#linkSourcePhase');
+      const targetSelect = tournamentAdminPage.locator('#linkTargetPhase');
+
+      const qualifyingValue = await sourceSelect.locator('option').evaluateAll((options) => {
+        const match = (options as HTMLOptionElement[]).find((option) => option.textContent?.includes('Qualifying Phase'));
+        return match?.value ?? '';
+      });
+      const mainValue = await targetSelect.locator('option').evaluateAll((options) => {
+        const match = (options as HTMLOptionElement[]).find((option) => option.textContent?.includes('Main Phase'));
+        return match?.value ?? '';
+      });
+
+      expect(qualifyingValue).toBeTruthy();
+      expect(mainValue).toBeTruthy();
+
+      await sourceSelect.selectOption(qualifyingValue);
+      await targetSelect.selectOption(mainValue);
+      await tournamentAdminPage.locator('form').getByRole('button', {name: /link phases/i}).click();
+
+      await expect(tournamentAdminPage.locator('.alert-success')).toContainText(/linked/i);
+      await expect(tournamentAdminPage.locator('#linkSourcePhase')).toHaveValue(qualifyingValue);
+      await expect(tournamentAdminPage.locator('#linkTargetPhase')).toHaveValue(mainValue);
+    } finally {
+      await seedHelper.cleanAll();
+      await apiHelper.dispose();
+    }
+  });
 });

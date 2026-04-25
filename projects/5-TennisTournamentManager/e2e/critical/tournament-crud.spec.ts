@@ -21,6 +21,23 @@ import {TournamentDetailPage} from '../fixtures/page-objects/tournament-detail.p
 
 type TournamentListResponse = Array<{id: string; name: string}>;
 
+function hexToRgb(hexColor: string): string {
+  const normalizedHex = hexColor.replace('#', '');
+  const red = parseInt(normalizedHex.slice(0, 2), 16);
+  const green = parseInt(normalizedHex.slice(2, 4), 16);
+  const blue = parseInt(normalizedHex.slice(4, 6), 16);
+
+  return `rgb(${red}, ${green}, ${blue})`;
+}
+
+async function expectColorPreview(page: typeof test extends never ? never : any, primaryColor: string, secondaryColor: string): Promise<void> {
+  const preview = page.locator('.color-preview');
+  await expect(preview).toHaveCSS(
+    'background-image',
+    new RegExp(`${hexToRgb(primaryColor)}.*${hexToRgb(secondaryColor)}`.replace(/[()]/g, '\\$&')),
+  );
+}
+
 test.describe('Tournament CRUD - Critical', () => {
   test('TOURN-001 should validate dates and create a tournament successfully', async ({tournamentAdminPage}) => {
     const uniqueName = `${NEW_TOURNAMENT_DATA.valid.name} ${Date.now()}`;
@@ -56,6 +73,11 @@ test.describe('Tournament CRUD - Critical', () => {
       await tournamentAdminPage.locator('#secondaryColor').fill(NEW_TOURNAMENT_DATA.valid.secondaryColor);
       await tournamentAdminPage.locator('input[name="primaryColorHex"]').fill(NEW_TOURNAMENT_DATA.valid.primaryColor);
       await tournamentAdminPage.locator('input[name="secondaryColorHex"]').fill(NEW_TOURNAMENT_DATA.valid.secondaryColor);
+      await expectColorPreview(
+        tournamentAdminPage,
+        NEW_TOURNAMENT_DATA.valid.primaryColor,
+        NEW_TOURNAMENT_DATA.valid.secondaryColor,
+      );
       await tournamentAdminPage.locator('#logoUrl').fill(NEW_TOURNAMENT_DATA.valid.logoUrl);
 
       await tournamentAdminPage.getByRole('button', {name: /create tournament|save tournament|submit/i}).click();
@@ -78,14 +100,23 @@ test.describe('Tournament CRUD - Critical', () => {
     const apiHelper = await ApiHelper.create();
     const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     const seedHelper = new SeedHelper(apiHelper, adminSession);
-    const seeded = await seedHelper.createTournament(`Editable Tournament ${Date.now()}`);
+    const seeded = await seedHelper.createTournament(`Editable Tournament ${Date.now()}`, {
+      primaryColor: '#112233',
+      secondaryColor: '#445566',
+    });
     const updatedName = `${seeded.name} Updated`;
     const updatedLocation = 'Santa Cruz de Tenerife';
+    const updatedPrimaryColor = '#c2410c';
+    const updatedSecondaryColor = '#0f766e';
 
     try {
       await tournamentAdminPage.goto(`/tournaments/${seeded.id}/edit`);
+      await expectColorPreview(tournamentAdminPage, '#112233', '#445566');
       await tournamentAdminPage.locator('#name').fill(updatedName);
       await tournamentAdminPage.locator('#location').fill(updatedLocation);
+      await tournamentAdminPage.locator('input[name="primaryColorHex"]').fill(updatedPrimaryColor);
+      await tournamentAdminPage.locator('input[name="secondaryColorHex"]').fill(updatedSecondaryColor);
+      await expectColorPreview(tournamentAdminPage, updatedPrimaryColor, updatedSecondaryColor);
       await tournamentAdminPage.getByRole('button', {name: /save|update/i}).click();
 
       await expect.poll(async () => {
@@ -93,10 +124,12 @@ test.describe('Tournament CRUD - Critical', () => {
           id: string;
           name: string;
           location: string;
+          primaryColor: string;
+          secondaryColor: string;
         }>(`/tournaments/${seeded.id}`);
 
-        return `${tournament.name}|${tournament.location}`;
-      }).toBe(`${updatedName}|${updatedLocation}`);
+        return `${tournament.name}|${tournament.location}|${tournament.primaryColor}|${tournament.secondaryColor}`;
+      }).toBe(`${updatedName}|${updatedLocation}|${updatedPrimaryColor}|${updatedSecondaryColor}`);
     } finally {
       await seedHelper.cleanAll();
       await apiHelper.dispose();
@@ -109,6 +142,61 @@ test.describe('Tournament CRUD - Critical', () => {
 
     await participantPage.goto(`/tournaments/${TEST_TOURNAMENTS.openRegistration.id}/edit`);
     await expect(participantPage).toHaveURL(/\/tournaments/);
+  });
+
+  test('FDBK-TOURN-004 should auto-create a default category and gate editing by state', async ({tournamentAdminPage, participantPage}) => {
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const seedHelper = new SeedHelper(apiHelper, adminSession);
+    const seeded = await seedHelper.createTournament(`Default Category Tournament ${Date.now()}`, {
+      maxParticipants: 8,
+    });
+
+    try {
+      await expect.poll(async () => {
+        const categories = await apiHelper.get<Array<{id: string; name: string}>>(`/categories?tournamentId=${seeded.id}`);
+        return categories.length;
+      }).toBe(0);
+
+      await tournamentAdminPage.goto(`/tournaments/${seeded.id}`);
+      await expect(tournamentAdminPage.getByRole('heading', {name: seeded.name})).toBeVisible();
+      const categoriesCard = tournamentAdminPage.locator('.categories-card');
+      await expect(categoriesCard.getByRole('heading', {name: /categories/i})).toBeVisible();
+      await expect(categoriesCard.getByText('Open (Default Category)', {exact: true})).toBeVisible();
+
+      await expect.poll(async () => {
+        const categories = await apiHelper.get<Array<{id: string; name: string}>>(`/categories?tournamentId=${seeded.id}`);
+        return categories.map((category) => category.name).join('|');
+      }).toBe('Open (Default Category)');
+
+      await seedHelper.updateTournamentStatus(seeded.id, 'REGISTRATION_OPEN');
+
+      await participantPage.goto(`/tournaments/${seeded.id}`);
+      const registrationForm = participantPage.locator('.registration-form');
+      await expect(participantPage.getByRole('heading', {name: /register for tournament/i})).toBeVisible();
+      await expect(registrationForm.getByText(/select category/i)).toBeVisible();
+      await expect(registrationForm.getByText('Open (Default Category)', {exact: true})).toBeVisible();
+      await expect(participantPage.getByText(/no categories available for registration/i)).toHaveCount(0);
+
+      await seedHelper.updateTournamentStatus(seeded.id, ['REGISTRATION_CLOSED', 'DRAW_PENDING', 'IN_PROGRESS']);
+
+      await tournamentAdminPage.goto(`/tournaments/${seeded.id}`);
+      const editButton = tournamentAdminPage.locator('.management-bar .action-buttons .action-btn.edit');
+      await expect(editButton).toBeVisible();
+      await expect(editButton).toBeDisabled();
+      await expect(tournamentAdminPage.getByRole('button', {name: /add category/i})).toHaveCount(0);
+      await expect(tournamentAdminPage.getByText(/categories locked after registration closes/i)).toBeVisible();
+
+      await tournamentAdminPage.goto(`/tournaments/${seeded.id}/edit`);
+      await expect(tournamentAdminPage.getByRole('heading', {name: /tournament locked/i})).toBeVisible();
+      await expect(tournamentAdminPage.getByText(/cannot be edited in its current status/i)).toBeVisible();
+      await tournamentAdminPage.getByRole('button', {name: /back to tournament/i}).click();
+      await expect(tournamentAdminPage).toHaveURL(new RegExp(`/tournaments/${seeded.id}$`));
+      await expect(tournamentAdminPage.getByRole('heading', {name: seeded.name})).toBeVisible();
+    } finally {
+      await seedHelper.cleanAll();
+      await apiHelper.dispose();
+    }
   });
 
   test('TOURN-006 should filter tournament list without cross-contaminating results', async ({publicPage}) => {

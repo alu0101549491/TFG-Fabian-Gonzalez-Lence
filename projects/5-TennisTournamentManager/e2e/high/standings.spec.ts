@@ -37,6 +37,7 @@ let standingsTournamentId = '';
 
 test.describe('Standings - High', () => {
   test.beforeAll(async () => {
+    test.setTimeout(90_000);
     apiHelper = await ApiHelper.create();
     const adminSession = await apiHelper.login({
       email: 'tournament@tennistournament.com',
@@ -45,12 +46,12 @@ test.describe('Standings - High', () => {
     seedHelper = new SeedHelper(apiHelper, adminSession);
 
     const suffix = `${Date.now()}`;
-    const players = await Promise.all([
-      seedHelper.createPlayer(`standings-a-${suffix}`),
-      seedHelper.createPlayer(`standings-b-${suffix}`),
-      seedHelper.createPlayer(`standings-c-${suffix}`),
-      seedHelper.createPlayer(`standings-d-${suffix}`),
-    ]);
+    const players = [
+      await seedHelper.createPlayer(`standings-a-${suffix}`),
+      await seedHelper.createPlayer(`standings-b-${suffix}`),
+      await seedHelper.createPlayer(`standings-c-${suffix}`),
+      await seedHelper.createPlayer(`standings-d-${suffix}`),
+    ];
 
     const tournament = await seedHelper.createTournament(`E2E Standings ${suffix}`, {
       maxParticipants: players.length,

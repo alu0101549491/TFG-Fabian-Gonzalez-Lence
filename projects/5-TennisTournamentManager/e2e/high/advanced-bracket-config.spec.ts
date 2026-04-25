@@ -115,6 +115,16 @@ async function openFormWithAdvancedOptions(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await gotoTournamentDetailWithRetry(page);
 
+    // Wait for either a content card or an error banner to appear so we know
+    // the Angular API call has completed (avoids false "no error" check).
+    await page.waitForSelector('.info-card, .error-banner', {timeout: 10_000}).catch(() => undefined);
+
+    // Re-check for 429 after the page content has had time to load.
+    if (await rateLimitError.isVisible().catch(() => false)) {
+      await page.reload({waitUntil: 'domcontentloaded'});
+      continue;
+    }
+
     const bracketGenerationCard = page.locator('.info-card').filter({hasText: /bracket generation/i}).first();
     const categorySelect = page.locator('select[name="categoryId"]').first();
 
@@ -385,6 +395,7 @@ test.describe.serial('Feature 30: Advanced Bracket Configuration', () => {
 
     // Configure: Single Elimination + Top Seeded + Consolation + Top Seeds get Byes.
     await radioLabel(tournamentAdminPage, 'bracketType', /Single Elimination/i).click();
+    await radioLabel(tournamentAdminPage, 'matchFormat', /Pro Set/i).click();
     await radioLabel(tournamentAdminPage, 'seedingStrategy', 'Top Seeded').click();
     await radioLabel(tournamentAdminPage, 'consolationType', 'Consolation').click();
     await radioLabel(tournamentAdminPage, 'byeAssignment', /Top Seeds get Byes/).click();
@@ -403,6 +414,7 @@ test.describe.serial('Feature 30: Advanced Bracket Configuration', () => {
     await expect(
       tournamentAdminPage.locator('.visual-bracket-section, app-visual-bracket, .phase-card').first(),
     ).toBeVisible({timeout: 10_000});
+    await expect(tournamentAdminPage.locator('.format-badge').first()).toContainText(/pro set/i);
 
     // --- Verify form defaults reset after success ---
     // Navigate back to the tournament detail and re-open the generation form.

@@ -18,12 +18,92 @@ import {TEST_USERS} from '../fixtures/test-data';
 import {ApiHelper} from '../helpers/api.helper';
 import {SeedHelper} from '../helpers/seed.helper';
 
+interface ParticipantManagementFixture {
+  apiHelper: ApiHelper;
+  seedHelper: SeedHelper;
+  tournamentId: string;
+  mainCategoryId: string;
+  secondaryCategoryId: string;
+  pendingPlayer: {id: string; username: string; fullName: string};
+  directPlayer: {id: string; username: string; fullName: string};
+  wildcardPlayer: {id: string; username: string; fullName: string};
+  alternatePlayer: {id: string; username: string; fullName: string};
+  directRegistrationId: string;
+  pendingRegistrationId: string;
+}
+
 let apiHelper: ApiHelper | undefined;
 let seedHelper: SeedHelper | undefined;
 let openTournamentId = '';
 
+async function createParticipantManagementFixture(): Promise<ParticipantManagementFixture> {
+  const localApiHelper = await ApiHelper.create();
+  const adminSession = await localApiHelper.login(TEST_USERS.tournamentAdmin1);
+  const localSeedHelper = new SeedHelper(localApiHelper, adminSession);
+  const suffix = `${Date.now()}`;
+
+  const [pendingSession, directSession, wildcardSession, alternateSession] = await Promise.all([
+    localSeedHelper.createPlayer(`manage-pending-${suffix}`),
+    localSeedHelper.createPlayer(`manage-direct-${suffix}`),
+    localSeedHelper.createPlayer(`manage-wild-${suffix}`),
+    localSeedHelper.createPlayer(`manage-alt-${suffix}`),
+  ]);
+
+  const tournament = await localSeedHelper.createTournament(`FDBK-TOURN Participant ${suffix}`, {
+    maxParticipants: 8,
+  });
+  await localSeedHelper.updateTournamentStatus(tournament.id, 'REGISTRATION_OPEN');
+
+  const mainCategoryId = await localSeedHelper.createSizedCategory(tournament.id, 'Participant Main Singles', 8);
+  const secondaryCategoryId = await localSeedHelper.createSizedCategory(tournament.id, 'Participant Secondary Singles', 8);
+
+  const pendingRegistrationId = await localSeedHelper.registerParticipant(mainCategoryId, pendingSession.user.id);
+
+  const directRegistrationId = await localSeedHelper.registerParticipant(mainCategoryId, directSession.user.id);
+  await localSeedHelper.approveRegistration(directRegistrationId, 'DIRECT_ACCEPTANCE');
+  await localApiHelper.put(`/registrations/${directRegistrationId}`, {seedNumber: 1}, adminSession.token, 200);
+
+  const wildcardRegistrationId = await localSeedHelper.registerParticipant(mainCategoryId, wildcardSession.user.id);
+  await localSeedHelper.approveRegistration(wildcardRegistrationId, 'WILD_CARD');
+  await localApiHelper.put(`/registrations/${wildcardRegistrationId}`, {seedNumber: 2}, adminSession.token, 200);
+
+  const alternateRegistrationId = await localSeedHelper.registerParticipant(mainCategoryId, alternateSession.user.id);
+  await localSeedHelper.approveRegistration(alternateRegistrationId, 'ALTERNATE');
+
+  return {
+    apiHelper: localApiHelper,
+    seedHelper: localSeedHelper,
+    tournamentId: tournament.id,
+    mainCategoryId,
+    secondaryCategoryId,
+    pendingPlayer: {
+      id: pendingSession.user.id,
+      username: pendingSession.user.username,
+      fullName: `${pendingSession.user.firstName} ${pendingSession.user.lastName}`,
+    },
+    directPlayer: {
+      id: directSession.user.id,
+      username: directSession.user.username,
+      fullName: `${directSession.user.firstName} ${directSession.user.lastName}`,
+    },
+    wildcardPlayer: {
+      id: wildcardSession.user.id,
+      username: wildcardSession.user.username,
+      fullName: `${wildcardSession.user.firstName} ${wildcardSession.user.lastName}`,
+    },
+    alternatePlayer: {
+      id: alternateSession.user.id,
+      username: alternateSession.user.username,
+      fullName: `${alternateSession.user.firstName} ${alternateSession.user.lastName}`,
+    },
+    directRegistrationId,
+    pendingRegistrationId,
+  };
+}
+
 test.describe('Registration - High', () => {
   test.beforeAll(async () => {
+    test.setTimeout(60_000);
     apiHelper = await ApiHelper.create();
     const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     const participantSession = await apiHelper.login(TEST_USERS.participant2);
@@ -204,5 +284,103 @@ test.describe('Registration - High', () => {
 
     const detailPage = new TournamentDetailPage(participantPage);
     await detailPage.gotoById(openTournamentId);
+  });
+
+  test('FDBK-TOURN-002 should support admin participant filtering, badges, and public profile links', async ({tournamentAdminPage, publicPage}) => {
+    const fixture = await createParticipantManagementFixture();
+
+    try {
+      await tournamentAdminPage.goto(`/tournaments/${fixture.tournamentId}`);
+      await expect(tournamentAdminPage.getByRole('heading', {name: /registered participants/i})).toBeVisible();
+
+      const adminRows = tournamentAdminPage.locator('tbody tr');
+      await expect(adminRows.filter({hasText: fixture.pendingPlayer.username})).toBeVisible();
+      await expect(adminRows.filter({hasText: fixture.wildcardPlayer.username})).toBeVisible();
+
+      await tournamentAdminPage.locator('#statusFilter').selectOption('PENDING');
+      await expect(adminRows.filter({hasText: fixture.pendingPlayer.username})).toBeVisible();
+      await expect(adminRows.filter({hasText: fixture.directPlayer.username})).toHaveCount(0);
+
+      await tournamentAdminPage.locator('#statusFilter').selectOption('ACCEPTED');
+      await expect(adminRows.filter({hasText: fixture.directPlayer.username})).toBeVisible();
+      await expect(adminRows.filter({hasText: fixture.wildcardPlayer.username})).toBeVisible();
+      await expect(tournamentAdminPage.getByText('Alternate', {exact: true})).toBeVisible();
+      await expect(tournamentAdminPage.getByText('[WC]', {exact: true})).toBeVisible();
+
+      await tournamentAdminPage.locator('#statusFilter').selectOption('WITHDRAWN');
+      await expect(tournamentAdminPage.getByText(/no participants match the selected filter/i)).toBeVisible();
+
+      await publicPage.goto(`/tournaments/${fixture.tournamentId}`);
+      await expect(publicPage.getByRole('heading', {name: /registered players/i})).toBeVisible();
+      await expect(publicPage.locator(`a[href="/users/${fixture.directPlayer.id}"]`)).toBeVisible();
+      await expect(publicPage.locator(`a[href="/users/${fixture.wildcardPlayer.id}"]`)).toBeVisible();
+      await expect(publicPage.getByText(fixture.pendingPlayer.username)).toHaveCount(0);
+      await expect(publicPage.getByText(fixture.alternatePlayer.username)).toHaveCount(0);
+
+      await publicPage.locator(`a[href="/users/${fixture.directPlayer.id}"]`).click();
+      await expect(publicPage).toHaveURL(new RegExp(`/users/${fixture.directPlayer.id}$`));
+    } finally {
+      await fixture.seedHelper.cleanAll();
+      await fixture.apiHelper.dispose();
+    }
+  });
+
+  test('FDBK-TOURN-003 should use the unified edit modal with all acceptance types', async ({tournamentAdminPage}) => {
+    const fixture = await createParticipantManagementFixture();
+
+    try {
+      await tournamentAdminPage.goto(`/tournaments/${fixture.tournamentId}`);
+      const pendingRow = tournamentAdminPage.locator('tbody tr').filter({hasText: fixture.pendingPlayer.username}).first();
+      await expect(pendingRow).toBeVisible();
+
+      await pendingRow.getByRole('button', {name: /edit/i}).click();
+      const editModal = tournamentAdminPage.locator('.modal-content').filter({hasText: /edit participant/i});
+      await expect(editModal).toBeVisible();
+      await expect(editModal).toContainText(fixture.pendingPlayer.fullName);
+
+      await expect(editModal.locator('select[name="categoryId"]')).toBeVisible();
+      await expect(editModal.locator('input[name="seedNumber"]')).toBeVisible();
+      await expect(editModal.locator('select[name="status"]')).toBeVisible();
+      await expect(editModal.locator('select[name="acceptanceType"]')).toBeVisible();
+
+      const acceptanceTypeLabels = await editModal.locator('select[name="acceptanceType"] option').allTextContents();
+      expect(acceptanceTypeLabels).toEqual(expect.arrayContaining([
+        'Organizer Acceptance (OA)',
+        'Direct Acceptance (DA)',
+        'Special Exemption (SE)',
+        'Junior Exemption (JE)',
+        'Qualifier (Q)',
+        'Lucky Loser (LL)',
+        'Wild Card (WC)',
+        'Alternate (ALT)',
+        'Withdrawn (WD)',
+      ]));
+
+      const categoryOptions = await editModal.locator('select[name="categoryId"] option').allTextContents();
+      expect(categoryOptions).toEqual(expect.arrayContaining([
+        'Participant Main Singles',
+        'Participant Secondary Singles',
+      ]));
+
+      await editModal.locator('input[name="seedNumber"]').fill('4');
+      await editModal.locator('select[name="status"]').selectOption('ACCEPTED');
+      await editModal.locator('select[name="acceptanceType"]').selectOption('WILD_CARD');
+
+      await tournamentAdminPage.once('dialog', async (dialog) => {
+        expect(dialog.message()).toMatch(/participant updated successfully/i);
+        await dialog.accept();
+      });
+      await editModal.getByRole('button', {name: /save changes/i}).click();
+      await expect(editModal).toHaveCount(0);
+
+      await tournamentAdminPage.locator('#statusFilter').selectOption('ACCEPTED');
+      const updatedRow = tournamentAdminPage.locator('tbody tr').filter({hasText: fixture.pendingPlayer.username}).first();
+      await expect(updatedRow).toContainText('Seed #4');
+      await expect(updatedRow).toContainText('[WC]');
+      await expect(updatedRow).toContainText(/accepted/i);
+    } finally {
+      await fixture.seedHelper.cleanAll();
+      await fixture.apiHelper.dispose();
+    }
   });
 });

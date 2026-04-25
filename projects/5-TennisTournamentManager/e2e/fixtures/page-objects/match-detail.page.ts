@@ -85,16 +85,67 @@ export class MatchDetailPage extends BasePage {
   }
 
   /**
+   * Records a result for matches that use the single super-tiebreak format.
+   *
+   * @param winnerName - Visible label for the winning side
+   * @param points - Super-tiebreak points for each participant
+   */
+  public async recordSuperTiebreak(
+    winnerName: string,
+    points: {participant1: number; participant2: number},
+  ): Promise<void> {
+    await this.page.getByRole('button', {name: /record scores/i}).click();
+    await this.page.locator('.radio-group .radio-label').filter({hasText: winnerName}).first().click();
+    await this.page.locator('input[name="superTbP1"]').fill(String(points.participant1));
+    await this.page.locator('input[name="superTbP2"]').fill(String(points.participant2));
+    await this.page.getByRole('button', {name: /record result/i}).click();
+    await this.waitForPageLoad();
+  }
+
+  /**
    * Updates the match status using the status modal.
    *
    * @param statusValue - Raw enum value expected by the status select
    */
   public async updateStatus(statusValue: string): Promise<void> {
-    await this.page.getByRole('button', {name: /update status/i}).click();
-    const statusModal = this.page.locator('.modal-content').filter({hasText: 'Update Match Status'}).first();
+    await this.openStatusModal();
+    const statusModal = this.getStatusModal();
     await statusModal.locator('select').first().selectOption(statusValue);
     await statusModal.getByRole('button', {name: /update status/i}).click();
     await this.waitForPageLoad();
+  }
+
+  /**
+   * Opens the update-status modal.
+   */
+  public async openStatusModal(): Promise<void> {
+    await this.page.getByRole('button', {name: /update status/i}).click();
+    await expect(this.getStatusModal()).toBeVisible();
+  }
+
+  /**
+   * Selects a status value in the update-status modal.
+   *
+   * @param statusValue - Raw enum value expected by the select
+   */
+  public async selectStatus(statusValue: string): Promise<void> {
+    await this.getStatusModal().locator('#status').selectOption(statusValue);
+  }
+
+  /**
+   * Selects the visible winner label in the update-status modal.
+   *
+   * @param winnerLabel - Visible participant label
+   */
+  public async selectStatusWinner(winnerLabel: string): Promise<void> {
+    await this.getStatusModal().locator('#winnerId').selectOption({label: winnerLabel});
+  }
+
+  /**
+   * Submits the update-status modal without assuming it will succeed.
+   */
+  public async submitStatusModal(): Promise<void> {
+    await this.getStatusModal().getByRole('button', {name: /update status/i}).click();
   }
 
   /**
@@ -154,6 +205,15 @@ export class MatchDetailPage extends BasePage {
    */
   public async expectBallProvider(expected: string): Promise<void> {
     await expect(this.page.getByText(expected)).toBeVisible();
+  }
+
+  /**
+   * Returns the active update-status modal locator.
+   *
+   * @returns Status modal locator
+   */
+  public getStatusModal(): Locator {
+    return this.page.locator('.modal-content').filter({hasText: 'Update Match Status'}).first();
   }
 
   private async fillSetScores(sets: SetScore[]): Promise<void> {

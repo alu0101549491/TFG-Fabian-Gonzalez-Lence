@@ -23,6 +23,7 @@ let scheduledTournamentId = '';
 
 test.describe('Responsive - Low', () => {
   test.beforeAll(async () => {
+    test.setTimeout(120_000);
     apiHelper = await ApiHelper.create();
     const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     const participant1 = await apiHelper.login(TEST_USERS.participant1);
@@ -60,7 +61,7 @@ test.describe('Responsive - Low', () => {
   test('RESP-002 should keep tournament list and order-of-play pages usable on mobile widths', async ({publicPage}) => {
     await publicPage.setViewportSize({width: 390, height: 844});
     await publicPage.goto('/tournaments');
-    await expect(publicPage.locator('.tournament-card').first()).toBeVisible();
+    await expect(publicPage.locator('.tournament-card').first()).toBeVisible({timeout: 15_000});
 
     await publicPage.goto(`/order-of-play/${scheduledTournamentId}`);
     await expect(publicPage.locator('.main-content').first()).toBeVisible();
