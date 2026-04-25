@@ -339,11 +339,20 @@ export class BracketViewComponent implements OnInit {
 
   /**
    * Navigates back to tournament detail page.
+   * Falls back to bracket's tournamentId if tournament signal is not yet loaded,
+   * and ultimately falls back to the tournament list if no context is available.
    */
   public goBack(): void {
     const tournament = this.tournament();
     if (tournament) {
       void this.router.navigate(['/tournaments', tournament.id]);
+    } else {
+      const bracket = this.bracket();
+      if (bracket) {
+        void this.router.navigate(['/tournaments', bracket.tournamentId]);
+      } else {
+        void this.router.navigate(['/tournaments']);
+      }
     }
   }
 

@@ -298,9 +298,18 @@ export class AnnouncementEditComponent implements OnInit {
   }
 
   /**
-   * Navigates back to announcements list.
+   * Navigates back to the announcements list.
+   * Preserves the tournamentId query parameter so the user returns to the
+   * tournament-scoped announcement list they came from.
    */
   public goBack(): void {
-    void this.router.navigate(['/announcements']);
+    const tournamentId = this.formData().tournamentId;
+    if (tournamentId) {
+      void this.router.navigate(['/announcements'], {
+        queryParams: {tournamentId},
+      });
+    } else {
+      void this.router.navigate(['/announcements']);
+    }
   }
 }

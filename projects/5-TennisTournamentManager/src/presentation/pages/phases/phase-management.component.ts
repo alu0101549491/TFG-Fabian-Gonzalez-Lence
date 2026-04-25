@@ -352,7 +352,11 @@ export class PhaseManagementComponent implements OnInit {
 
           // Create options for each phase
           for (const phase of phases) {
-            const bracketName = bracket.category?.name || 'Main Draw';
+            const phaseTypeLabel =
+              phase.phaseType === 'QUALIFYING' ? 'Qualifying' :
+              phase.phaseType === 'CONSOLATION' ? 'Consolation' :
+              'Main Draw';
+            const bracketName = bracket.category?.name || phaseTypeLabel;
             const categoryId = bracket.category?.id || (bracket as any).categoryId;
 
             phaseOptions.push({

@@ -2,10 +2,12 @@
 <div class="bracket-container">
   @if (isLoading()) {
     <div class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading bracket information...</p>
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Loading bracket information...</p>
+      </div>
     </div>
-  }
+  } @else {
 
   @if (errorMessage()) {
     <div class="error-banner">
@@ -309,6 +311,7 @@
         </div>
       }
     </div>
+  }
   }
 </div>
 

@@ -1,16 +1,16 @@
 <!-- Hero Section -->
 <section class="hero-section">
   <div class="hero-overlay"></div>
-  <div class="hero-top">
-    <button
-      class="back-button"
-      (click)="goBack()"
-      type="button"
-      title="Go back">
-      ← Back
-    </button>
-  </div>
   <div class="hero-content">
+    <div class="hero-top">
+      <button
+        class="back-button"
+        (click)="goBack()"
+        type="button"
+        title="Go back">
+        ← Back
+      </button>
+    </div>
     <h1 class="hero-title">📢 Create Announcement</h1>
     <p class="hero-subtitle">
       @if (tournamentName()) {

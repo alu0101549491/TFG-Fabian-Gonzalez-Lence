@@ -16,7 +16,9 @@ import {Component, OnInit, inject, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {Router} from '@angular/router';
+import {Location} from '@angular/common';
 import {NotificationPreferencesService, NotificationPreferences} from '../../../application/services/notification-preferences.service';
+
 import {AuthStateService} from '../../services/auth-state.service';
 import templateHtml from './notification-preferences.component.html?raw';
 import componentStyles from './notification-preferences.component.css?inline';
@@ -36,6 +38,7 @@ export class NotificationPreferencesComponent implements OnInit {
   private readonly preferencesService = inject(NotificationPreferencesService);
   private readonly authState = inject(AuthStateService);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
 
   /**
    * Signal holding current preferences.
@@ -177,6 +180,6 @@ export class NotificationPreferencesComponent implements OnInit {
    * Navigates back to previous page.
    */
   protected goBack(): void {
-    void this.router.navigate(['/']);
+    this.location.back();
   }
 }

@@ -15,6 +15,7 @@
 import {Component, OnInit, signal, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Router, RouterModule} from '@angular/router';
+import {Location} from '@angular/common';
 import {RegistrationService} from '@application/services';
 import {type RegistrationDto} from '@application/dto';
 import {AuthStateService} from '@presentation/services/auth-state.service';
@@ -48,6 +49,7 @@ export class MyRegistrationsComponent implements OnInit {
   private readonly registrationService = inject(RegistrationService);
   private readonly authStateService = inject(AuthStateService);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
 
   /** User's registrations */
   public registrations = signal<RegistrationWithDetails[]>([]);
@@ -230,9 +232,9 @@ export class MyRegistrationsComponent implements OnInit {
   }
 
   /**
-   * Navigates back to the home page.
+   * Navigates back to the previous page.
    */
   public goBack(): void {
-    void this.router.navigate(['/']);
+    this.location.back();
   }
 }

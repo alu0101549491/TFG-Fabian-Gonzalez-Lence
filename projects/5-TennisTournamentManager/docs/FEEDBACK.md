@@ -28,9 +28,9 @@ Clean interface with many options, although somewhat confusing in its navigation
 
 ## Tournament features:
 
-* [-] Each tournament can contain multiple draws
-* [-] Different types of draws: Round Robin, Knockout, Match Play
-* [-] List of participating players, including their entry status in the tournament
+* [?] Each tournament can contain multiple draws
+* [x] Different types of draws: Round Robin, Knockout, Match Play
+* [x] List of participating players, including their entry status in the tournament
 * [x] Draw generator and seeding
 * [x] Order of play generator
 * [x] Ranking generator: based on points or ratios
@@ -39,23 +39,23 @@ Clean interface with many options, although somewhat confusing in its navigation
 ## Participants can register as system users, allowing them to:
 
 * [x] Register for tournaments
-* [?] Enter their own results immediately
+* [x] Enter their own results immediately
 * [x] Configure user profile and provide contact details
-* [ ] View other registered participants’ profiles and contact details
-* [?] Receive notifications about new results and announcements
-* [?] View personalized information about their upcoming and completed matches
-* [?] View non-public announcements restricted to registered users
-* [?] Receive personalized indicators of unseen results and alerts
-* [?] Receive personalized statistics of their results against other participants
+* [x] View other registered participants’ profiles and contact details
+* [x] Receive notifications about new results and announcements
+* [x] View personalized information about their upcoming and completed matches
+* [x] View non-public announcements restricted to registered users
+* [x] Receive personalized indicators of unseen results and alerts
+* [x] Receive personalized statistics of their results against other participants
 
 ## Match features:
 
-* [ ] Different match formats: 2 sets + super tiebreak, 3 sets, sets to 4 or 6 games
-* [?] Includes court or playing field assignment
-* [ ] Includes player comments on the match
-* [-] Supports unfinished matches: retirement, withdrawal, walkover (WO), bye, etc.
-* [ ] Ability to indicate who provided the balls for the match
-* [ ] Ability to export results
+* [X] Different match formats: 2 sets + super tiebreak, 3 sets, sets to 4 or 6 games
+* [X] Includes court or playing field assignment
+* [X] Includes player comments on the match
+* [X] Supports unfinished matches: retirement, withdrawal, walkover (WO), bye, etc.
+* [X] Ability to indicate who provided the balls for the match
+* [X] Ability to export results
 
 ## Announcement features:
 
@@ -63,7 +63,7 @@ Clean interface with many options, although somewhat confusing in its navigation
 * [x] Publication and expiration dates
 * [x] Includes summary and full text
 * [x] Includes tagging of announcements
-* [ ] Ability to include an image and a link in the announcement
+* [X] Ability to include an image and a link in the announcement
 
 ## Some anomalies or detected issues:
 

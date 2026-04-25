@@ -1048,6 +1048,9 @@ export class UserManagementComponent implements OnInit {
   /** Router for navigation */
   private readonly router = inject(Router);
 
+  /** Location for browser history navigation */
+  private readonly location = inject(Location);
+
   /** UserRole enum for template */
   protected readonly UserRole = UserRole;
 
@@ -1470,7 +1473,7 @@ export class UserManagementComponent implements OnInit {
    * Navigate back to previous page.
    */
   public navigateBack(): void {
-    window.history.back();
+    this.location.back();
   }
 
   /**

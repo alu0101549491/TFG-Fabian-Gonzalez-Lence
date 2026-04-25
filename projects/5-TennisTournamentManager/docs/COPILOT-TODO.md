@@ -45,10 +45,15 @@
 
 ### Priority: HIGH - Improves UX
 
-- [ ] **Fix back button behavior across all forms**
+- [x] **Fix back button behavior across all forms** ✅ COMPLETED (2026-04-25)
   - **Issue:** Back buttons don't return to previous steps, sometimes missing
   - **Files:** All form components (tournament, bracket, registration, etc.)
-  - **Fix:** Standardize using `Location.back()` or explicit routes
+  - **Fix:** Audited 25 back buttons; fixed 5 issues:
+    - `bracket-view`: Added two-level fallback (bracket.tournamentId → /tournaments) when tournament signal is null
+    - `announcement-edit`: Preserved `tournamentId` query param in goBack() to stay in tournament context
+    - `notification-preferences`: Replaced hardcoded `router.navigate(['/'])` with `location.back()`
+    - `my-registrations`: Replaced hardcoded `router.navigate(['/'])` with `location.back()`
+    - `user-management`: Replaced `window.history.back()` with Angular `Location.back()`
   - **Estimated:** 3 hours
   - **Test:** Navigate through multi-step forms, verify back button works correctly
 
