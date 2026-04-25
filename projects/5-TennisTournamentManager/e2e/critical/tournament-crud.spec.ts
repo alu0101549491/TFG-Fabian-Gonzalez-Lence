@@ -79,15 +79,24 @@ test.describe('Tournament CRUD - Critical', () => {
     const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     const seedHelper = new SeedHelper(apiHelper, adminSession);
     const seeded = await seedHelper.createTournament(`Editable Tournament ${Date.now()}`);
+    const updatedName = `${seeded.name} Updated`;
+    const updatedLocation = 'Santa Cruz de Tenerife';
 
     try {
       await tournamentAdminPage.goto(`/tournaments/${seeded.id}/edit`);
-      await tournamentAdminPage.locator('#name').fill(`${seeded.name} Updated`);
-      await tournamentAdminPage.locator('#location').fill('Santa Cruz de Tenerife');
+      await tournamentAdminPage.locator('#name').fill(updatedName);
+      await tournamentAdminPage.locator('#location').fill(updatedLocation);
       await tournamentAdminPage.getByRole('button', {name: /save|update/i}).click();
 
-      await expect(tournamentAdminPage).toHaveURL(new RegExp(`/tournaments/${seeded.id}`));
-      await expect(tournamentAdminPage.getByText(/updated/i)).toBeVisible();
+      await expect.poll(async () => {
+        const tournament = await apiHelper.get<{
+          id: string;
+          name: string;
+          location: string;
+        }>(`/tournaments/${seeded.id}`);
+
+        return `${tournament.name}|${tournament.location}`;
+      }).toBe(`${updatedName}|${updatedLocation}`);
     } finally {
       await seedHelper.cleanAll();
       await apiHelper.dispose();

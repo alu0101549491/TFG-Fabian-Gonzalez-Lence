@@ -26,6 +26,8 @@ const BACKEND_BASE_URL =
 	process.env.PLAYWRIGHT_API_BASE_URL?.replace(/\/api\/?$/, '') ??
 	'http://localhost:3000';
 
+const SHOULD_MANAGE_WEB_SERVERS = process.env.PLAYWRIGHT_SKIP_WEBSERVER !== '1';
+
 /**
  * Central Playwright configuration for all Tennis Tournament Manager E2E suites.
  */
@@ -34,7 +36,7 @@ export default defineConfig({
 	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
-	workers: process.env.CI ? 4 : undefined,
+	workers: Number(process.env.PLAYWRIGHT_WORKERS ?? (process.env.CI ? '4' : '1')),
 	reporter: [
 		['html', {outputFolder: 'playwright-report'}],
 		['json', {outputFile: 'test-results.json'}],
@@ -58,18 +60,20 @@ export default defineConfig({
 		{name: 'mobile-safari', use: {...devices['iPhone 12']}},
 		{name: 'tablet', use: {...devices['iPad (gen 7)']}},
 	],
-	webServer: [
-		{
-			command: 'cd backend && npm run dev',
-			url: `${BACKEND_BASE_URL}/api/health`,
-			reuseExistingServer: !process.env.CI,
-			timeout: 120000,
-		},
-		{
-			command: 'npm run dev',
-			url: FRONTEND_BASE_URL,
-			reuseExistingServer: !process.env.CI,
-			timeout: 120000,
-		},
-	],
+	webServer: SHOULD_MANAGE_WEB_SERVERS
+		? [
+				{
+					command: 'cd backend && npm run dev',
+					url: `${BACKEND_BASE_URL}/api/health`,
+					reuseExistingServer: !process.env.CI,
+					timeout: 120000,
+				},
+				{
+					command: 'npm run dev',
+					url: FRONTEND_BASE_URL,
+					reuseExistingServer: !process.env.CI,
+					timeout: 120000,
+				},
+			]
+		: undefined,
 });

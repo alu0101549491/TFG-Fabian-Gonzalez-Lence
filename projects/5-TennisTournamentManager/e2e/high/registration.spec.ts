@@ -78,6 +78,7 @@ test.describe('Registration - High', () => {
     const localApiHelper = await ApiHelper.create();
     const adminSession = await localApiHelper.login(TEST_USERS.tournamentAdmin1);
     const participantSession = await localApiHelper.login(TEST_USERS.participant1);
+    const alternateSourceSession = await localApiHelper.login(TEST_USERS.participant2);
     const localSeedHelper = new SeedHelper(localApiHelper, adminSession);
 
     const pendingTournament = await localSeedHelper.createTournament(`REG-010 Pending ${Date.now()}`);
@@ -90,9 +91,22 @@ test.describe('Registration - High', () => {
     await localSeedHelper.approveRegistration(alternateRegistrationId, 'ALTERNATE');
 
     const luckyLoserTournament = await localSeedHelper.createTournament(`REG-010 Lucky ${Date.now()}`);
+    await localSeedHelper.updateTournamentStatus(luckyLoserTournament.id, 'REGISTRATION_OPEN');
     const luckyLoserCategoryId = await localSeedHelper.createCategory(luckyLoserTournament.id, 'Lucky Loser Singles');
+    const directAcceptanceRegistrationId = await localSeedHelper.registerParticipant(
+      luckyLoserCategoryId,
+      alternateSourceSession.user.id,
+    );
+    await localSeedHelper.approveRegistration(directAcceptanceRegistrationId);
+
     const luckyLoserRegistrationId = await localSeedHelper.registerParticipant(luckyLoserCategoryId, participantSession.user.id);
-    await localSeedHelper.approveRegistration(luckyLoserRegistrationId, 'LUCKY_LOSER');
+    await localSeedHelper.approveRegistration(luckyLoserRegistrationId, 'ALTERNATE');
+    await localApiHelper.post(
+      `/registrations/${directAcceptanceRegistrationId}/withdraw`,
+      {},
+      alternateSourceSession.token,
+      200,
+    );
 
     try {
       await participantPage.goto('/my-registrations');
@@ -104,7 +118,7 @@ test.describe('Registration - High', () => {
 
       await expect(pendingCard).toContainText(/awaiting organizer approval/i);
       await expect(alternateCard).toContainText(/waiting list/i);
-      await expect(luckyLoserCard).toContainText(/promoted from waiting list/i);
+      await expect(luckyLoserCard).toContainText(/registration confirmed - ready to compete/i);
 
       await pendingCard.getByRole('link', {name: /view details/i}).click();
       await expect(participantPage).toHaveURL(new RegExp(`/tournaments/${pendingTournament.id}$`));

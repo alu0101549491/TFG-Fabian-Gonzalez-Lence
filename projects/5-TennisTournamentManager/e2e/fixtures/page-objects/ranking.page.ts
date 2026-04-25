@@ -29,8 +29,30 @@ export class RankingPage extends BasePage {
    * @param systemValue - Ranking system value
    */
   public async switchSystem(systemValue: string): Promise<void> {
-    await this.page.locator('.system-selector select').selectOption(systemValue);
-    await this.waitForPageLoad();
+    const systemSelect = this.page.locator('.system-selector select');
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await systemSelect.selectOption(systemValue);
+      await this.waitForPageLoad();
+
+      const currentValue = await systemSelect.inputValue().catch(() => '');
+      const hasTransientError = await this.errorFeedback
+        .filter({hasText: /failed to load rankings|request failed with status code 429|too many requests/i})
+        .first()
+        .isVisible()
+        .catch(() => false);
+
+      if (currentValue === systemValue && !hasTransientError) {
+        return;
+      }
+
+      if (hasTransientError) {
+        await this.page.reload({waitUntil: 'domcontentloaded'});
+        await this.waitForPageLoad();
+      }
+    }
+
+    await expect(systemSelect).toHaveValue(systemValue);
   }
 
   /**

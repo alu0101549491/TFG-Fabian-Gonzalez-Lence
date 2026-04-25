@@ -76,6 +76,24 @@ let seedHelper: SeedHelper | undefined;
 let tournamentId = '';
 let categoryId = '';
 
+async function gotoTournamentDetailWithRetry(page: Page): Promise<void> {
+  const rateLimitError = page
+    .locator('.error-container, .alert-error, .error-message, .error-banner')
+    .filter({hasText: /request failed with status code 429|too many requests/i})
+    .first();
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await page.goto(`/tournaments/${tournamentId}`);
+    await page.waitForURL(`**\/tournaments\/${tournamentId}**`);
+
+    if (!(await rateLimitError.isVisible().catch(() => false))) {
+      return;
+    }
+
+    await page.reload({waitUntil: 'domcontentloaded'});
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -89,17 +107,48 @@ let categoryId = '';
  * @param page - Playwright page object of the authenticated admin browser.
  */
 async function openFormWithAdvancedOptions(page: Page): Promise<void> {
-  await page.goto(`/tournaments/${tournamentId}`);
-  await page.waitForURL(`**\/tournaments\/${tournamentId}**`);
+  const rateLimitError = page
+    .locator('.error-container, .alert-error, .error-message, .error-banner')
+    .filter({hasText: /request failed with status code 429|too many requests/i})
+    .first();
 
-  // The "Generate Bracket" section header button opens the form.
-  // Its label toggles between "➕ Generate Bracket" (closed) and "✕ Close" (open).
-  const generateBracketBtn = page.getByRole('button', {name: /generate bracket/i}).first();
-  await expect(generateBracketBtn).toBeVisible({timeout: 10_000});
-  await generateBracketBtn.click();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await gotoTournamentDetailWithRetry(page);
 
-  // The bracket generation <form> should now be visible.
-  await expect(page.locator('form').first()).toBeVisible({timeout: 8_000});
+    const bracketGenerationCard = page.locator('.info-card').filter({hasText: /bracket generation/i}).first();
+    const categorySelect = page.locator('select[name="categoryId"]').first();
+
+    if (await categorySelect.isVisible().catch(() => false)) {
+      break;
+    }
+
+    const generateBracketButton = bracketGenerationCard
+      .getByRole('button', {name: /generate bracket/i})
+      .first();
+    const closeBracketButton = bracketGenerationCard
+      .getByRole('button', {name: /close/i})
+      .first();
+
+    await expect(generateBracketButton).toBeVisible({timeout: 10_000});
+    await generateBracketButton.click();
+
+    await closeBracketButton.waitFor({state: 'visible', timeout: 3_000}).catch(() => undefined);
+
+    if (await categorySelect.isVisible().catch(() => false)) {
+      break;
+    }
+
+    if (await rateLimitError.isVisible().catch(() => false)) {
+      await page.reload({waitUntil: 'domcontentloaded'});
+      continue;
+    }
+
+    await page.reload({waitUntil: 'domcontentloaded'});
+  }
+
+  // The bracket generation form should now be visible.
+  const categorySelect = page.locator('select[name="categoryId"]').first();
+  await expect(categorySelect).toBeVisible({timeout: 8_000});
 
   // Expand the Advanced Options <details> element.
   const advancedOptionsSummary = page.locator('details.advanced-options-details summary');
@@ -170,8 +219,7 @@ test.describe.serial('Feature 30: Advanced Bracket Configuration', () => {
   // Manual test guide: Feature 30, Part 1
   // -------------------------------------------------------------------------
   test('ADV-001 Advanced Options section is present and expands on click', async ({tournamentAdminPage}) => {
-    await tournamentAdminPage.goto(`/tournaments/${tournamentId}`);
-    await tournamentAdminPage.waitForURL(`**\/tournaments\/${tournamentId}**`);
+    await gotoTournamentDetailWithRetry(tournamentAdminPage);
 
     // Open the bracket generation form via the header toggle button.
     const generateBracketBtn = tournamentAdminPage.getByRole('button', {name: /generate bracket/i}).first();
@@ -358,8 +406,7 @@ test.describe.serial('Feature 30: Advanced Bracket Configuration', () => {
 
     // --- Verify form defaults reset after success ---
     // Navigate back to the tournament detail and re-open the generation form.
-    await tournamentAdminPage.goto(`/tournaments/${tournamentId}`);
-    await tournamentAdminPage.waitForURL(`**\/tournaments\/${tournamentId}**`);
+    await gotoTournamentDetailWithRetry(tournamentAdminPage);
 
     const generateBracketBtn = tournamentAdminPage.getByRole('button', {name: /generate bracket/i}).first();
     await expect(generateBracketBtn).toBeVisible({timeout: 10_000});

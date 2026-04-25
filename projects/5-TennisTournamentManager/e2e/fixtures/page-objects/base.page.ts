@@ -18,6 +18,7 @@ import {expect, type Locator, type Page} from '@playwright/test';
  * Shared page-object functionality for all Playwright pages.
  */
 export abstract class BasePage {
+  private static readonly MAX_RATE_LIMIT_RELOADS = 2;
   public readonly page: Page;
   public readonly header: Locator;
   public readonly userMenuTrigger: Locator;
@@ -65,13 +66,53 @@ export abstract class BasePage {
    * Waits for the current page to finish its initial loading work.
    */
   public async waitForPageLoad(): Promise<void> {
-    await this.page.waitForLoadState('domcontentloaded');
-    await this.page.waitForLoadState('networkidle').catch(() => undefined);
+    for (let attempt = 0; attempt <= BasePage.MAX_RATE_LIMIT_RELOADS; attempt += 1) {
+      await this.page.waitForLoadState('domcontentloaded');
+      await this.page.waitForLoadState('networkidle').catch(() => undefined);
 
-    const spinnerCount = await this.loadingIndicators.count();
-    for (let index = 0; index < spinnerCount; index += 1) {
-      await this.loadingIndicators.nth(index).waitFor({state: 'hidden', timeout: 10000}).catch(() => undefined);
+      const spinnerCount = await this.loadingIndicators.count();
+      for (let index = 0; index < spinnerCount; index += 1) {
+        await this.loadingIndicators.nth(index).waitFor({state: 'hidden', timeout: 10000}).catch(() => undefined);
+      }
+
+      const hasTransientFailure =
+        await this.hasTransientRateLimitError() ||
+        await this.hasBlankPageShell();
+
+      if (!hasTransientFailure || attempt === BasePage.MAX_RATE_LIMIT_RELOADS) {
+        return;
+      }
+
+      await this.page.reload({waitUntil: 'domcontentloaded'});
     }
+  }
+
+  /**
+   * Detects the transient global 429 banner some pages hit under E2E load.
+   *
+   * @returns True when the page settled into a retryable rate-limit error state
+   */
+  protected async hasTransientRateLimitError(): Promise<boolean> {
+    const rateLimitFeedback = this.errorFeedback
+      .filter({hasText: /request failed with status code 429|too many requests/i})
+      .first();
+
+    return rateLimitFeedback.isVisible().catch(() => false);
+  }
+
+  /**
+   * Detects rare blank-document settles seen on public navigations under load.
+   *
+   * @returns True when the page body is visible but effectively empty
+   */
+  protected async hasBlankPageShell(): Promise<boolean> {
+    const body = this.page.locator('body');
+    if (!(await body.isVisible().catch(() => false))) {
+      return false;
+    }
+
+    const text = await body.innerText().catch(() => '');
+    return text.trim().length === 0;
   }
 
   /**

@@ -61,7 +61,12 @@ export class AnnouncementsPage extends BasePage {
     pin?: boolean;
     tags?: string[];
   }): Promise<void> {
-    await this.page.locator('#tournament').selectOption(values.tournamentId);
+    const tournamentSelect = this.page.locator('#tournament');
+    await tournamentSelect.waitFor({state: 'visible'});
+    const isTournamentLocked = await tournamentSelect.isDisabled();
+    if (!isTournamentLocked) {
+      await tournamentSelect.selectOption(values.tournamentId);
+    }
     await this.page.locator('#title').fill(values.title);
     if (values.summary) {
       await this.page.locator('#summary').fill(values.summary);
@@ -93,6 +98,27 @@ export class AnnouncementsPage extends BasePage {
    * @param title - Announcement title
    */
   public async expectAnnouncementVisible(title: string): Promise<void> {
-    await expect(this.page.locator('.announcement-card').filter({hasText: title}).first()).toBeVisible();
+    const announcementCard = this.page.locator('.announcement-card').filter({hasText: title}).first();
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (await announcementCard.isVisible().catch(() => false)) {
+        return;
+      }
+
+      const hasTransientError = await this.errorFeedback
+        .filter({hasText: /failed to load announcements|request failed with status code 429|too many requests/i})
+        .first()
+        .isVisible()
+        .catch(() => false);
+
+      if (!hasTransientError) {
+        break;
+      }
+
+      await this.page.reload({waitUntil: 'domcontentloaded'});
+      await this.waitForPageLoad();
+    }
+
+    await expect(announcementCard).toBeVisible();
   }
 }

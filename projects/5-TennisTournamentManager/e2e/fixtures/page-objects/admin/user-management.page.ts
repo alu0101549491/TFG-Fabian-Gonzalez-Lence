@@ -92,7 +92,28 @@ export class UserManagementPage extends BasePage {
    * @param text - Username, name, or email text
    */
   public async expectUserVisible(text: string): Promise<void> {
-    await expect(this.page.locator('.users-table').filter({hasText: text})).toBeVisible();
+    const usersTable = this.page.locator('.users-table').filter({hasText: text});
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (await usersTable.isVisible().catch(() => false)) {
+        return;
+      }
+
+      const hasTransientError = await this.errorFeedback
+        .filter({hasText: /failed to load users|request failed with status code 429|too many requests/i})
+        .first()
+        .isVisible()
+        .catch(() => false);
+
+      if (!hasTransientError) {
+        break;
+      }
+
+      await this.page.reload({waitUntil: 'domcontentloaded'});
+      await this.waitForPageLoad();
+    }
+
+    await expect(usersTable).toBeVisible();
   }
 
   /** Asserts that the page is showing its no-results empty state. */

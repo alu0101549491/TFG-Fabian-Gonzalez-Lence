@@ -26,6 +26,8 @@ let seededAnnouncementTitle = '';
 
 test.describe('Announcements - Medium', () => {
   test.beforeAll(async () => {
+    test.setTimeout(60_000);
+
     apiHelper = await ApiHelper.create();
     const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     seedHelper = new SeedHelper(apiHelper, adminSession);
@@ -64,7 +66,7 @@ test.describe('Announcements - Medium', () => {
       tags: ['general'],
     });
 
-    await tournamentAdminPage.goto('/announcements');
+    await tournamentAdminPage.goto(`/announcements?tournamentId=${announcementTournamentId}`);
     await announcementsPage.expectAnnouncementVisible(uniqueTitle);
   });
 
@@ -81,7 +83,8 @@ test.describe('Announcements - Medium', () => {
 
   test('ANN-004 should open the announcement details modal', async ({publicPage}) => {
     const announcementsPage = new AnnouncementsPage(publicPage);
-    await announcementsPage.goto();
+    await publicPage.goto(`/announcements?tournamentId=${announcementTournamentId}`);
+    await announcementsPage.expectAnnouncementVisible(seededAnnouncementTitle);
     await publicPage.locator('.announcement-card').filter({hasText: seededAnnouncementTitle}).first().click();
 
     await expect(publicPage.locator('.modal-container')).toBeVisible();

@@ -13,6 +13,7 @@
  */
 
 import {expect, request, test, type APIRequestContext, type Browser, type BrowserContext, type Page} from '@playwright/test';
+import {ApiHelper} from './helpers/api.helper';
 
 const API_BASE_URL = process.env.PLAYWRIGHT_API_BASE_URL ?? 'http://localhost:3000';
 const ADMIN_EMAIL = process.env.PLAYWRIGHT_ADMIN_EMAIL ?? 'admin@tennistournament.com';
@@ -127,8 +128,8 @@ async function apiPost<T>(
   token?: string,
   expectedStatus: number = 201,
 ): Promise<T> {
-  const maxRetries = 4;
-  const baseDelay = 200; // ms
+  const maxRetries = 6;
+  const baseDelay = 250;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const response = await apiContext.post(withApiPrefix(path), {
@@ -141,13 +142,58 @@ async function apiPost<T>(
     }
 
     if (response.status() === 429 && attempt < maxRetries) {
-      const delay = baseDelay * Math.pow(2, attempt);
+      const retryAfterHeader = response.headers()['retry-after'];
+      const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : Number.NaN;
+      const delay = !Number.isNaN(retryAfterSeconds) && retryAfterSeconds > 0
+        ? retryAfterSeconds * 1000
+        : Math.min(baseDelay * Math.pow(2, attempt), 4000) + Math.floor(Math.random() * baseDelay);
       // eslint-disable-next-line no-await-in-loop
       await new Promise(resolve => setTimeout(resolve, delay));
       continue;
     }
 
     throw new Error(`POST ${path} failed with ${response.status()}: ${await response.text()}`);
+  }
+
+  throw new Error(`POST ${path} failed after ${maxRetries} retries`);
+}
+
+/**
+ * Performs an authenticated API POST and returns the raw response object.
+ * Retries transient 429 responses so callers can assert non-2xx outcomes.
+ *
+ * @param apiContext - Playwright API request context
+ * @param path - Endpoint path under the API prefix
+ * @param data - Request body to submit
+ * @param token - Optional bearer token
+ * @returns Final Playwright API response
+ */
+async function apiPostResponse(
+  apiContext: APIRequestContext,
+  path: string,
+  data: unknown,
+  token?: string,
+): Promise<Awaited<ReturnType<APIRequestContext['post']>>> {
+  const maxRetries = 6;
+  const baseDelay = 250;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await apiContext.post(withApiPrefix(path), {
+      data,
+      headers: token ? {Authorization: `Bearer ${token}`} : undefined,
+    });
+
+    if (response.status() !== 429 || attempt === maxRetries) {
+      return response;
+    }
+
+    const retryAfterHeader = response.headers()['retry-after'];
+    const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : Number.NaN;
+    const delay = !Number.isNaN(retryAfterSeconds) && retryAfterSeconds > 0
+      ? retryAfterSeconds * 1000
+      : Math.min(baseDelay * Math.pow(2, attempt), 4000) + Math.floor(Math.random() * baseDelay);
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise(resolve => setTimeout(resolve, delay));
   }
 
   throw new Error(`POST ${path} failed after ${maxRetries} retries`);
@@ -217,7 +263,7 @@ async function loginUser(
   email: string,
   password: string,
 ): Promise<AuthSession> {
-  return apiPost<AuthSession>(apiContext, '/auth/login', {email, password}, undefined, 200);
+  return new ApiHelper(apiContext).login({email, password});
 }
 
 /**
@@ -657,71 +703,65 @@ test.describe('Doubles Tournament Workflow', () => {
     const apiContext = await request.newContext({baseURL: API_BASE_URL});
 
     try {
-      const confirmedSubmitResponse = await apiContext.post(
-        withApiPrefix(`/matches/${seededState.confirmedTournament.matchId}/result`),
+      const confirmedSubmitResponse = await apiPostResponse(
+        apiContext,
+        `/matches/${seededState.confirmedTournament.matchId}/result`,
         {
-          data: {
-            winnerId: seededState.confirmedTournament.teamAlphaId,
-            setScores: ['6-4', '6-3'],
-            player1Games: 12,
-            player2Games: 7,
-            playerComments: 'Confirmed doubles result',
-          },
-          headers: {Authorization: `Bearer ${seededState.player1.token}`},
+          winnerId: seededState.confirmedTournament.teamAlphaId,
+          setScores: ['6-4', '6-3'],
+          player1Games: 12,
+          player2Games: 7,
+          playerComments: 'Confirmed doubles result',
         },
+        seededState.player1.token,
       );
       expect(confirmedSubmitResponse.status()).toBe(201);
 
-      const teammateConfirmResponse = await apiContext.post(
-        withApiPrefix(`/matches/${seededState.confirmedTournament.matchId}/result/confirm`),
-        {
-          data: {},
-          headers: {Authorization: `Bearer ${seededState.player2.token}`},
-        },
+      const teammateConfirmResponse = await apiPostResponse(
+        apiContext,
+        `/matches/${seededState.confirmedTournament.matchId}/result/confirm`,
+        {},
+        seededState.player2.token,
       );
       expect(teammateConfirmResponse.status()).toBe(403);
       await expect(teammateConfirmResponse.text()).resolves.toContain("Cannot confirm your teammate's result");
 
-      const opponentConfirmResponse = await apiContext.post(
-        withApiPrefix(`/matches/${seededState.confirmedTournament.matchId}/result/confirm`),
-        {
-          data: {},
-          headers: {Authorization: `Bearer ${seededState.player3.token}`},
-        },
+      const opponentConfirmResponse = await apiPostResponse(
+        apiContext,
+        `/matches/${seededState.confirmedTournament.matchId}/result/confirm`,
+        {},
+        seededState.player3.token,
       );
       expect(opponentConfirmResponse.status()).toBe(200);
 
-      const disputedSubmitResponse = await apiContext.post(
-        withApiPrefix(`/matches/${seededState.disputedTournament.matchId}/result`),
+      const disputedSubmitResponse = await apiPostResponse(
+        apiContext,
+        `/matches/${seededState.disputedTournament.matchId}/result`,
         {
-          data: {
-            winnerId: seededState.disputedTournament.teamAlphaId,
-            setScores: ['7-5', '6-4'],
-            player1Games: 13,
-            player2Games: 9,
-            playerComments: 'Result requires review',
-          },
-          headers: {Authorization: `Bearer ${seededState.player1.token}`},
+          winnerId: seededState.disputedTournament.teamAlphaId,
+          setScores: ['7-5', '6-4'],
+          player1Games: 13,
+          player2Games: 9,
+          playerComments: 'Result requires review',
         },
+        seededState.player1.token,
       );
       expect(disputedSubmitResponse.status()).toBe(201);
 
-      const teammateDisputeResponse = await apiContext.post(
-        withApiPrefix(`/matches/${seededState.disputedTournament.matchId}/result/dispute`),
-        {
-          data: {disputeReason: 'Teammate should not be able to dispute'},
-          headers: {Authorization: `Bearer ${seededState.player2.token}`},
-        },
+      const teammateDisputeResponse = await apiPostResponse(
+        apiContext,
+        `/matches/${seededState.disputedTournament.matchId}/result/dispute`,
+        {disputeReason: 'Teammate should not be able to dispute'},
+        seededState.player2.token,
       );
       expect(teammateDisputeResponse.status()).toBe(403);
       await expect(teammateDisputeResponse.text()).resolves.toContain("Cannot dispute your teammate's result");
 
-      const opponentDisputeResponse = await apiContext.post(
-        withApiPrefix(`/matches/${seededState.disputedTournament.matchId}/result/dispute`),
-        {
-          data: {disputeReason: 'Opponent disputes the submitted score'},
-          headers: {Authorization: `Bearer ${seededState.player3.token}`},
-        },
+      const opponentDisputeResponse = await apiPostResponse(
+        apiContext,
+        `/matches/${seededState.disputedTournament.matchId}/result/dispute`,
+        {disputeReason: 'Opponent disputes the submitted score'},
+        seededState.player3.token,
       );
       expect(opponentDisputeResponse.status()).toBe(200);
 

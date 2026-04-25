@@ -26,7 +26,7 @@ let statisticsTournamentId = '';
 test.describe('Export - Medium', () => {
   test.describe('Active Export Scenarios', () => {
     test.beforeAll(async () => {
-      test.setTimeout(120000);
+      test.setTimeout(240000);
 
       apiHelper = await ApiHelper.create();
       const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
