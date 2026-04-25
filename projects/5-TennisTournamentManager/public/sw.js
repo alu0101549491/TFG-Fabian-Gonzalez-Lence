@@ -5,16 +5,20 @@
  * Final Degree Project (TFG)
  *
  * @author Fabián González Lence <alu0101549491@ull.edu.es>
- * @since 2026-04-12
+ * @since 2026-04-25
  * @file public/sw.js
  * @desc Service worker for Tennis Tournament Manager PWA (NFR8).
  *       Implements a cache-first strategy for static assets (HTML, CSS, fonts)
- *       and a network-first strategy for API calls.
- *       JavaScript files are skipped only on localhost development to support HMR.
+ *       and a network-first strategy for API calls and HTML entry points.
+ *       JavaScript bundle files (.js) are intentionally NOT cached by the SW
+ *       to prevent cross-deployment hash mismatches (Vite generates new
+ *       content-hash filenames on each build; caching old JS causes lazy-loaded
+ *       chunks to 404 after a redeployment). The browser's HTTP cache handles
+ *       short-lived JS caching instead.
  * @see {@link https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/projects/5-TennisTournamentManager}
  */
 
-const CACHE_VERSION = 'ttm-v2-20260414';
+const CACHE_VERSION = 'ttm-v3-20260425';
 
 /** Static assets cache — stores app shell (HTML, CSS, fonts). */
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
@@ -77,8 +81,18 @@ self.addEventListener('fetch', (event) => {
 
   const isLocalDevelopment = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 
-  // Skip JavaScript files only on local development hosts to allow HMR.
+  // Skip JavaScript files on local development hosts to allow HMR.
   if (isLocalDevelopment && (url.pathname.endsWith('.js') || url.pathname.endsWith('.ts'))) {
+    return;
+  }
+
+  // Skip JavaScript bundle files in production as well.
+  // Vite generates content-hashed filenames (e.g. main-ABC123.js) that change
+  // on every build. Caching them in the SW means an old main.js served from
+  // cache will reference lazy-chunk filenames that no longer exist on the server
+  // after a redeployment, causing ERR_ABORTED 404 errors. The browser's built-in
+  // HTTP cache provides sufficient short-term caching for JS assets.
+  if (url.pathname.endsWith('.js')) {
     return;
   }
 
@@ -88,7 +102,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: cache-first, fall back to network then update cache
+  // HTML entry points (index.html): network-first so users always get the
+  // latest script tag references after a redeployment.
+  if (
+    url.pathname === '/' ||
+    url.pathname.endsWith('/index.html') ||
+    url.pathname.endsWith('/')
+  ) {
+    event.respondWith(networkFirstWithCache(request, STATIC_CACHE));
+    return;
+  }
+
+  // Other static assets (CSS, fonts, images, manifests): cache-first
   event.respondWith(cacheFirstWithNetwork(request, STATIC_CACHE));
 });
 

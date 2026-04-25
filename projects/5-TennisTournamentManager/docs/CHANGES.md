@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## Hotfix: Service Worker Cross-Deployment 404 (2026-04-25)
+
+### Fix: SW No Longer Caches JavaScript Bundles
+
+**Status:** ✅ COMPLETED
+
+**Location:**
+- `public/sw.js` *(modified)*
+
+**Description:**
+Fixed a production 404 error (`tournament-list.component-BPVzFeEh.js net::ERR_ABORTED 404`) caused by the service worker caching old Vite-hashed JS bundles across deployments.
+
+**Root Cause:**
+Vite generates new content-hash filenames on every build (e.g., `main-ABC.js` → `main-XYZ.js`). The old SW used `cacheFirstWithNetwork` for all static assets including JS files. After a redeployment, the SW kept serving the old `main-*.js` from cache; that old bundle then tried to lazy-load chunk files (e.g., `tournament-list.component-BPVzFeEh.js`) which no longer existed on the server (only the new hash `tournament-list.component-N-KBTDPH.js` was present), resulting in 404.
+
+**Changes Applied:**
+1. **Bumped `CACHE_VERSION`** from `ttm-v2-20260414` to `ttm-v3-20260425` — forces the browser to install the new SW and purge all old caches immediately.
+2. **Excluded all `.js` files from SW caching** — the fetch handler now skips JS files unconditionally (both dev and prod). The browser's native HTTP cache provides adequate short-term caching for JS assets without the cross-deployment staleness risk.
+3. **HTML entry points use network-first** — `index.html` and path-ending-in-`/` URLs now use `networkFirstWithCache` so users always receive the latest script references after a deployment.
+
+---
+
 ## Phase 2: Navigation & Discoverability (2026-04-25)
 
 ### Fix: Back Button Behavior Standardized Across All Forms
