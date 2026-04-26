@@ -50,10 +50,12 @@ export class BracketPage extends BasePage {
    */
   public async regenerateBracket(preserveResults: boolean = false): Promise<void> {
     await this.page.getByRole('button', {name: /regenerate bracket/i}).click();
+    const regenerateModal = this.page.locator('.modal-container');
+    await expect(regenerateModal).toBeVisible();
     if (preserveResults) {
-      await this.page.getByLabel(/preserve compatible completed results/i).check();
+      await regenerateModal.getByLabel(/preserve compatible completed results/i).check();
     }
-    await this.page.getByRole('button', {name: /regenerate bracket/i}).last().click();
+    await regenerateModal.getByRole('button', {name: /regenerate bracket/i}).click();
     await this.waitForPageLoad();
   }
 

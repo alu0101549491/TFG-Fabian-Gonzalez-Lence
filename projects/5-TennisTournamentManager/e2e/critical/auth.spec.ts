@@ -110,11 +110,25 @@ test.describe('Authentication - Critical', () => {
   });
 
   test('AUTH-006 should expire inactive sessions after timeout', async ({page}) => {
-    test.fixme(true, 'Implemented in the app, but deterministic E2E coverage needs clock control or a shorter timeout in the test environment.');
+    await page.addInitScript(() => {
+      const realSetInterval = window.setInterval.bind(window);
+      window.setInterval = ((handler: TimerHandler, timeout?: number, ...args: any[]) => {
+        const adjustedTimeout = timeout === 60_000 ? 25 : timeout;
+        return realSetInterval(handler, adjustedTimeout, ...args);
+      }) as typeof window.setInterval;
+    });
 
     const loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.login(TEST_USERS.participant1.email, TEST_USERS.participant1.password);
+
+    await expect(page).toHaveURL(/\/home$/);
+
+    await page.evaluate(() => {
+      localStorage.setItem('ttm_last_activity', String(Date.now() - (31 * 60 * 1000)));
+    });
+
+    await expect(page).toHaveURL(/\/login(?:\?.*reason=session_expired)?$/, {timeout: 5_000});
   });
 
   test('AUTH-007 should expose password recovery flow', async ({page}) => {

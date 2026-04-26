@@ -49,11 +49,33 @@ async function createSeedContext(): Promise<{
 }
 
 test.describe('Draw Generation - Critical', () => {
-  test('DRAW-001 should block bracket generation when fewer than two accepted players exist', async () => {
-    test.fixme(
-      true,
-      'The routed tournament detail page does not currently expose bracket-generation controls; this scenario remains pending until that UI is wired into the active route.',
-    );
+  test('DRAW-001 should block bracket generation when fewer than two accepted players exist', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const tournament = await seedContext.seedHelper.createTournament(`DRAW-001 ${Date.now()}`);
+      const categoryId = await seedContext.seedHelper.createSizedCategory(tournament.id, 'Single Accepted Singles', 8);
+      await seedContext.seedHelper.updateTournamentStatus(tournament.id, SEEDED_TOURNAMENT_STATUSES);
+
+      const registrationId = await seedContext.seedHelper.registerParticipant(categoryId, seedContext.participant1Id);
+      await seedContext.seedHelper.approveRegistration(registrationId);
+
+      await tournamentAdminPage.goto(`/tournaments/${tournament.id}`);
+
+      const toggleButton = tournamentAdminPage.getByRole('button', {name: /generate bracket/i}).first();
+      await expect(toggleButton).toBeVisible();
+      await toggleButton.click();
+
+      const categorySelect = tournamentAdminPage.locator('select[name="categoryId"]');
+      await categorySelect.selectOption({value: categoryId});
+
+      const submitButton = tournamentAdminPage.locator('button[type="submit"]').filter({hasText: /generate bracket/i}).first();
+      await expect(submitButton).toBeDisabled();
+      await expect(submitButton).toHaveAttribute('title', /need at least 2 accepted participants/i);
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
   });
 
   test('DRAW-002 should show bracket details and publish state for an existing bracket', async ({tournamentAdminPage}) => {
@@ -85,8 +107,43 @@ test.describe('Draw Generation - Critical', () => {
     }
   });
 
-  test('DRAW-003 should regenerate a draft bracket when the control is available', async () => {
-    test.fixme(true, 'Reliable regeneration coverage requires a seeded draft bracket with existing matches and a known route identifier.');
+  test('DRAW-003 should regenerate a draft bracket when the control is available', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `DRAW-003 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+        },
+      );
+
+      const bracketPage = new BracketPage(tournamentAdminPage);
+      await bracketPage.gotoById(fixture.bracketId!);
+      await bracketPage.expectBracketVisible();
+
+      const originalMatchIds = (await seedContext.seedHelper.getMatchesByBracket(fixture.bracketId!))
+        .map((match) => String(match.id))
+        .join('|');
+
+      await expect(tournamentAdminPage.getByRole('button', {name: /regenerate bracket/i}).first()).toBeVisible();
+      await tournamentAdminPage.once('dialog', async (dialog) => dialog.accept());
+      await bracketPage.regenerateBracket();
+
+      await expect.poll(async () => {
+        const regeneratedMatchIds = (await seedContext.seedHelper.getMatchesByBracket(fixture.bracketId!))
+          .map((match) => String(match.id))
+          .join('|');
+        return regeneratedMatchIds !== originalMatchIds;
+      }, {timeout: 10_000}).toBeTruthy();
+
+      await bracketPage.expectBracketVisible();
+      await expect(tournamentAdminPage.getByText(/draft/i)).toBeVisible();
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
   });
 
   test('DRAW-007 should keep bracket pages read-only for participants', async ({participantPage}) => {

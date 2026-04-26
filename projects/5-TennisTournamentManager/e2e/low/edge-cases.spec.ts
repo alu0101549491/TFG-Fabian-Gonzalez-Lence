@@ -50,9 +50,38 @@ test.describe('Edge Cases - Low', () => {
   });
 
   test('ERR-005 should preserve integrity for duplicate or stale registration flows', async ({participantPage}) => {
-    test.fixme(true, 'Deterministic duplicate-registration coverage requires a user fixture that is not already registered in the target category.');
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const participantSession = await apiHelper.login(TEST_USERS.participant1);
+    const seedHelper = new SeedHelper(apiHelper, adminSession);
 
-    await participantPage.goto('/my-registrations');
+    try {
+      const tournament = await seedHelper.createTournament(`ERR-005 ${Date.now()}`, {maxParticipants: 8});
+      await seedHelper.updateTournamentStatus(tournament.id, 'REGISTRATION_OPEN');
+      const categoryId = await seedHelper.createSizedCategory(tournament.id, 'Duplicate Guard Singles', 8);
+
+      await participantPage.goto(`/tournaments/${tournament.id}`);
+      await participantPage.locator('span.radio-label').filter({hasText: 'Duplicate Guard Singles'}).first().click();
+      await expect(participantPage.getByRole('button', {name: /register now/i})).toBeVisible();
+
+      await seedHelper.registerParticipant(categoryId, participantSession.user.id);
+
+      const [duplicateDialog] = await Promise.all([
+        participantPage.waitForEvent('dialog'),
+        participantPage.getByRole('button', {name: /register now/i}).click(),
+      ]);
+
+      await expect(duplicateDialog.message()).toMatch(/already registered/i);
+      await duplicateDialog.accept();
+
+      await expect.poll(async () => {
+        const registrations = await apiHelper.get<Array<{participantId: string}>>(`/registrations?categoryId=${categoryId}`);
+        return registrations.filter((registration) => registration.participantId === participantSession.user.id).length;
+      }).toBe(1);
+    } finally {
+      await seedHelper.cleanAll();
+      await apiHelper.dispose();
+    }
   });
 
   test('ERR-006 should reject invalid set scores and display a validation error', async ({tournamentAdminPage}) => {
