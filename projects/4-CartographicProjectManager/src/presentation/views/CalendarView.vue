@@ -123,12 +123,22 @@ const taskStore = useTaskStore();
 // Local State
 const selectedDate = ref<Date | null>(null);
 
+const accessibleProjectIds = computed<string[]>(() => {
+  const sourceProjects = projects.value.length > 0 ? projects.value : calendarProjects.value;
+  return [...new Set(sourceProjects.map((project) => project.id))];
+});
+
 // Computed - Convert all project tasks to CalendarTaskDto format
 const calendarTasks = computed<CalendarTaskDto[]>(() => {
   const allTasks: CalendarTaskDto[] = [];
+  const allowedProjectIds = new Set(accessibleProjectIds.value);
   
   // Get all tasks from all loaded projects
-  for (const [, tasks] of taskStore.tasksByProject.entries()) {
+  for (const [projectId, tasks] of taskStore.tasksByProject.entries()) {
+    if (!allowedProjectIds.has(projectId)) {
+      continue;
+    }
+
     for (const task of tasks) {
       allTasks.push({
         id: task.id,
@@ -230,23 +240,23 @@ async function handleMonthChange(date: Date): Promise<void> {
  * Load tasks for all projects in calendar
  */
 async function loadTasksForProjects(): Promise<void> {
-  const projects = [...calendarProjects.value];
-  if (projects.length === 0) {
+  const projectIds = accessibleProjectIds.value;
+  if (projectIds.length === 0) {
     return;
   }
 
   const concurrency = 5;
   let nextIndex = 0;
 
-  const workers = Array.from({length: Math.min(concurrency, projects.length)}, async () => {
-    while (nextIndex < projects.length) {
-      const project = projects[nextIndex];
+  const workers = Array.from({length: Math.min(concurrency, projectIds.length)}, async () => {
+    while (nextIndex < projectIds.length) {
+      const projectId = projectIds[nextIndex];
       nextIndex += 1;
 
       try {
-        await taskStore.fetchTasksByProject(project.id);
+        await taskStore.fetchTasksByProject(projectId);
       } catch (error) {
-        console.warn(`Failed to load tasks for project ${project.code}:`, error);
+        console.warn(`Failed to load tasks for project ${projectId}:`, error);
       }
     }
   });

@@ -66,6 +66,20 @@ async function resolveClientId(adminApi: CpmApiClient): Promise<string> {
   return (preferred || fallback).id;
 }
 
+function getCrossMonthTaskWindow(): {dueDate: Date; deliveryDate: Date} {
+  const now = new Date();
+
+  let dueDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 12, 0, 0, 0);
+  let deliveryDate = new Date(now.getFullYear(), now.getMonth() + 1, 1, 12, 0, 0, 0);
+
+  if (dueDate <= now) {
+    dueDate = new Date(now.getFullYear(), now.getMonth() + 2, 0, 12, 0, 0, 0);
+    deliveryDate = new Date(now.getFullYear(), now.getMonth() + 2, 1, 12, 0, 0, 0);
+  }
+
+  return {dueDate, deliveryDate};
+}
+
 test.describe('Calendar (medium)', () => {
   test.use({storageState: AUTH_STATE_ADMIN_PATH});
 
@@ -266,6 +280,7 @@ test.describe('Calendar (medium)', () => {
     test.setTimeout(90_000);
     const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
     const nonce = uniqueNonce('pw-cal-004');
+    const {dueDate, deliveryDate} = getCrossMonthTaskWindow();
 
     const {client: adminApi, session} = await CpmApiClient.login(
       apiContext,
@@ -274,7 +289,6 @@ test.describe('Calendar (medium)', () => {
 
     const isolatedClient = await registerIsolatedClient(adminApi, nonce);
     const code = `PW-CALT-${nonce.slice(-8)}`;
-    const dueDate = daysFromToday(1);
 
     const project = await adminApi.createProject({
       year: new Date().getFullYear(),
@@ -285,7 +299,7 @@ test.describe('Calendar (medium)', () => {
       coordinateX: null,
       coordinateY: null,
       contractDate: daysFromToday(0).toISOString(),
-      deliveryDate: daysFromToday(10).toISOString(),
+      deliveryDate: deliveryDate.toISOString(),
     });
 
     const taskDescription = `PW-TASK-${nonce.slice(-6)}`;

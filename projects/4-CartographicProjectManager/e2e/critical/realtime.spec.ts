@@ -408,8 +408,10 @@ test.describe('Real-time (critical)', () => {
       await clientPage.getByRole('tab', {name: 'Messages'}).click();
       await expect(clientPage.locator('.message-list')).toBeVisible();
 
-      // Ensure both sessions have joined the project room before typing.
-      await clientPage.waitForTimeout(750);
+      // Wait until the admin session observes the client as online in this room.
+      await expect(adminPage.locator('.presence-indicator')).toContainText('Online now: 1', {
+        timeout: 10_000,
+      });
 
       const adminTypingIndicator = adminPage.locator('.typing-indicator');
       await expect(adminTypingIndicator).toBeHidden();
