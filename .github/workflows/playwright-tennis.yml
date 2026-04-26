@@ -87,10 +87,10 @@ jobs:
         working-directory: projects/5-TennisTournamentManager/backend
         run: npm ci
 
-      - name: Run backend migrations and seed
+      - name: Bootstrap backend schema and seed
         working-directory: projects/5-TennisTournamentManager/backend
         run: |
-          npm run db:migrate
+          npx tsx src/infrastructure/database/reset.ts
           npm run db:seed
 
       - name: Install frontend dependencies
