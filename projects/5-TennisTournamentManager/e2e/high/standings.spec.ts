@@ -167,4 +167,29 @@ test.describe('Standings - High', () => {
     const standingsPage = new StandingsPage(publicPage);
     await standingsPage.gotoForTournament(standingsTournamentId);
   });
+
+  test('STAND-005 should render the personal statistics page for a player', async ({participantPage, publicPage}) => {
+    // Get authenticated participant's ID from localStorage.
+    await participantPage.goto('/home');
+    const participantUserId = await participantPage.evaluate(() => {
+      const raw = window.localStorage.getItem('app_user');
+      return raw ? (JSON.parse(raw) as {id: string}).id : '';
+    });
+    expect(participantUserId).toBeTruthy();
+
+    // Navigate directly to the statistics page.
+    await participantPage.goto('/statistics');
+    await expect(participantPage.getByRole('heading', {name: /statistics|performance/i})).toBeVisible({timeout: 8_000});
+
+    // The stats page should render without a hard error.
+    await expect(participantPage.locator('.error-banner, .error-container').first()).toBeHidden({timeout: 3_000});
+
+    // Visit the user-profile-view and click "View Statistics" button.
+    await publicPage.goto(`/users/${participantUserId}`);
+    const viewStatsBtn = publicPage.getByRole('button', {name: /view statistics/i});
+    if (await viewStatsBtn.count() > 0) {
+      await viewStatsBtn.click();
+      await expect(publicPage).toHaveURL(/\/statistics/);
+    }
+  });
 });

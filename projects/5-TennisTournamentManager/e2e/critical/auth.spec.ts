@@ -16,6 +16,7 @@ import {test, expect} from '../fixtures/auth.fixture';
 import {LoginPage} from '../fixtures/page-objects/login.page';
 import {DashboardPage} from '../fixtures/page-objects/dashboard.page';
 import {TEST_USERS} from '../fixtures/test-data';
+import {ApiHelper} from '../helpers/api.helper';
 
 test.describe('Authentication - Critical', () => {
   test('AUTH-001 should login with valid role credentials', async ({page}) => {
@@ -135,5 +136,99 @@ test.describe('Authentication - Critical', () => {
 
     const loginPage = new LoginPage(page);
     await loginPage.goto();
+  });
+
+  test('AUTH-002 should register a new account with GDPR consent and redirect to home', async ({page}) => {
+    const apiHelper = await ApiHelper.create();
+    const suffix = Date.now();
+    const newUser = {
+      email: `e2e-reg-${suffix}@tennis-test.com`,
+      username: `e2ereg${suffix}`,
+      firstName: 'E2E',
+      lastName: 'Registrant',
+      password: 'E2EPassword123!',
+    };
+
+    try {
+      await page.goto('/register');
+      await expect(page.getByRole('heading', {name: /create account|register/i})).toBeVisible();
+
+      await page.locator('#firstName').fill(newUser.firstName);
+      await page.locator('#lastName').fill(newUser.lastName);
+      await page.locator('#username').fill(newUser.username);
+      await page.locator('#email').fill(newUser.email);
+      await page.locator('#phone').fill('+34600000001');
+      await page.locator('#password').fill(newUser.password);
+      await page.locator('#confirmPassword').fill(newUser.password);
+      await page.locator('#gdprConsent').check();
+
+      await page.getByRole('button', {name: /create account|register|sign up/i}).click();
+
+      await expect(page).toHaveURL(/\/home$/, {timeout: 10_000});
+      await expect(page.locator('header.app-header')).toBeVisible();
+    } finally {
+      const adminSession = await apiHelper.login(TEST_USERS.sysAdmin).catch(() => null);
+      if (adminSession) {
+        const users = await apiHelper.get<Array<{id: string; email: string}>>('/users', adminSession.token).catch(() => []);
+        const created = users.find((user) => user.email === newUser.email);
+        if (created) {
+          await apiHelper.delete(`/users/${created.id}`, adminSession.token, true).catch(() => null);
+        }
+      }
+      await apiHelper.dispose();
+    }
+  });
+
+  test('DASH-001 should render guest landing page CTAs and navigate correctly', async ({publicPage}) => {
+    const dashboardPage = new DashboardPage(publicPage);
+    await dashboardPage.goto();
+    await dashboardPage.expectGuestLanding();
+
+    await publicPage.getByText(/browse tournaments/i).first().click();
+    await expect(publicPage).toHaveURL(/\/tournaments$/);
+
+    await publicPage.goto('/home');
+    await publicPage.getByText(/create account/i).first().click();
+    await expect(publicPage).toHaveURL(/\/register$/);
+
+    await publicPage.goto('/home');
+    await publicPage.getByText(/sign in/i).first().click();
+    await expect(publicPage).toHaveURL(/\/login$/);
+  });
+
+  test('DASH-002 should render authenticated dashboard with role-specific content', async ({participantPage, tournamentAdminPage, sysAdminPage}) => {
+    const participantDash = new DashboardPage(participantPage);
+    await participantDash.goto();
+    await participantDash.expectParticipantOverview();
+
+    await tournamentAdminPage.goto('/home');
+    await expect(tournamentAdminPage.getByText(/^Managed$/)).toBeVisible();
+    await expect(tournamentAdminPage.getByText(/^Active$/)).toBeVisible();
+    await expect(tournamentAdminPage.locator('.stats-grid .stat-card')).toHaveCount(3);
+
+    await sysAdminPage.goto('/home');
+    await expect(sysAdminPage.getByText(/^Total$/)).toBeVisible();
+    await expect(sysAdminPage.locator('.stats-grid .stat-card')).toHaveCount(4);
+  });
+
+  test('DASH-003 should show notification bell and user menu navigation links', async ({participantPage}) => {
+    const dashboardPage = new DashboardPage(participantPage);
+    await dashboardPage.goto();
+
+    await expect(dashboardPage.notificationBellButton).toBeVisible();
+    await dashboardPage.notificationBellButton.click();
+    await expect(participantPage.locator('.notification-dropdown')).toBeVisible();
+    // Click the overlay backdrop to dismiss the notification dropdown
+    await participantPage.locator('app-notification-bell .dropdown-overlay').click();
+    await expect(participantPage.locator('.notification-dropdown')).not.toBeVisible();
+
+    await dashboardPage.userMenuTrigger.click();
+    await expect(participantPage.locator('.user-dropdown, .dropdown-menu').first()).toBeVisible();
+
+    await participantPage.goto('/my-registrations');
+    await expect(participantPage.getByRole('heading', {name: /my registrations/i})).toBeVisible();
+
+    await participantPage.goto('/my-invitations');
+    await expect(participantPage.getByRole('heading', {name: /partner invitations/i})).toBeVisible();
   });
 });

@@ -62,16 +62,19 @@ export class UserManagementPage extends BasePage {
     password: string;
   }): Promise<void> {
     await this.page.getByRole('button', {name: /new user/i}).click();
-    await this.page.locator('#username').fill(values.username);
-    await this.page.locator('#email').fill(values.email);
-    await this.page.locator('#firstName').fill(values.firstName);
-    await this.page.locator('#lastName').fill(values.lastName);
-    await this.page.locator('#role').selectOption(values.role);
+    const createUserModal = this.page.locator('.modal-content, .modal-container').filter({hasText: /create new user|create user/i}).first();
+    await expect(createUserModal).toBeVisible();
+
+    await createUserModal.locator('#username').fill(values.username);
+    await createUserModal.locator('#email').fill(values.email);
+    await createUserModal.locator('#firstName').fill(values.firstName);
+    await createUserModal.locator('#lastName').fill(values.lastName);
+    await createUserModal.locator('#role').selectOption(values.role);
     if (values.phone) {
-      await this.page.locator('#phone').fill(values.phone);
+      await createUserModal.locator('#phone').fill(values.phone);
     }
-    await this.page.locator('#password').fill(values.password);
-    await this.page.getByRole('button', {name: /create new user|create user/i}).click();
+    await createUserModal.locator('#password').fill(values.password);
+    await createUserModal.getByRole('button', {name: /create new user|create user/i}).click();
     await this.waitForPageLoad();
   }
 

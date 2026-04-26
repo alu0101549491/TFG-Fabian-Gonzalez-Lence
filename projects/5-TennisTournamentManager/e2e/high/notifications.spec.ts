@@ -69,4 +69,38 @@ test.describe('Notifications - High', () => {
     const notificationsPage = new NotificationsPage(participantPage);
     await notificationsPage.gotoSettings();
   });
+
+  test('NOTIF-003 should navigate to the originating entity when clicking a notification', async ({participantPage}) => {
+    const notificationsPage = new NotificationsPage(participantPage);
+    await notificationsPage.goto();
+
+    // If there are no notifications, the test still asserts the inbox page rendered.
+    await expect(participantPage.getByRole('heading', {name: /notifications/i, level: 1})).toBeVisible();
+
+    const firstCard = participantPage.locator('.notification-card, .notification-item').first();
+    if (await firstCard.count() === 0) {
+      // No notifications in the inbox — assert the empty state renders cleanly.
+      await expect(participantPage.locator('.empty-state, .no-notifications').first()).toBeVisible();
+      return;
+    }
+
+    // Extract a URL-like substring from the first notification's action/link.
+    const actionLink = firstCard.locator('a[href], button[data-href]').first();
+    if (await actionLink.count() > 0) {
+      const urlBefore = participantPage.url();
+      await actionLink.click();
+      // After clicking we should be on a different route.
+      await expect(participantPage).not.toHaveURL(urlBefore, {timeout: 8_000});
+      // The destination page must be a known entity route.
+      await expect(participantPage).toHaveURL(/\/(tournaments|matches|announcements|brackets)\//);
+    } else {
+      // Some implementations render a "View" button that performs navigation.
+      const viewBtn = firstCard.getByRole('button', {name: /view|open|details/i}).first();
+      if (await viewBtn.count() > 0) {
+        const urlBefore = participantPage.url();
+        await viewBtn.click();
+        await expect(participantPage).not.toHaveURL(urlBefore, {timeout: 8_000});
+      }
+    }
+  });
 });

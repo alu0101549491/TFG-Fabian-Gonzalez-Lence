@@ -167,13 +167,15 @@ export class MatchDetailPage extends BasePage {
    */
   public async resumeMatch(values?: {date?: string; time?: string}): Promise<void> {
     await this.page.getByRole('button', {name: /resume match/i}).click();
+    const resumeModal = this.page.locator('.modal-content').filter({hasText: /resume match/i}).first();
+    await expect(resumeModal).toBeVisible();
     if (values?.date) {
-      await this.page.locator('#resumeScheduledDate').fill(values.date);
+      await resumeModal.locator('#resumeScheduledDate').fill(values.date);
     }
     if (values?.time) {
-      await this.page.locator('#resumeScheduledTime').fill(values.time);
+      await resumeModal.locator('#resumeScheduledTime').fill(values.time);
     }
-    await this.page.getByRole('button', {name: /resume match/i}).last().click();
+    await resumeModal.getByRole('button', {name: /resume match/i}).click();
     await this.waitForPageLoad();
   }
 

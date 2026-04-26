@@ -154,4 +154,108 @@ test.describe('Announcements - Medium', () => {
     const announcementsPage = new AnnouncementsPage(publicPage);
     await announcementsPage.goto();
   });
+
+  test('ANN-002 should create a private, scheduled, and expiring announcement', async ({tournamentAdminPage, participantPage}) => {
+    const announcementsPage = new AnnouncementsPage(tournamentAdminPage);
+    const uniqueTitle = `Private Scheduled ${Date.now()}`;
+
+    // Schedule for tomorrow and expire in two days.
+    const tomorrow = new Date(Date.now() + 86_400_000);
+    const inTwoDays = new Date(Date.now() + 2 * 86_400_000);
+    const formatForInput = (date: Date): string => date.toISOString().slice(0, 16); // 'YYYY-MM-DDTHH:mm'
+
+    await tournamentAdminPage.goto(`/announcements/create?tournamentId=${announcementTournamentId}`);
+    await expect(tournamentAdminPage.getByRole('heading', {name: /create announcement/i})).toBeVisible();
+
+    // Fill content fields.
+    await tournamentAdminPage.locator('#title').fill(uniqueTitle);
+    await tournamentAdminPage.locator('#summary').fill('Private scheduled summary.');
+    await tournamentAdminPage.locator('#longText').fill('Private scheduled body text.');
+
+    // Set PRIVATE visibility.
+    await tournamentAdminPage.locator('#type').selectOption('PRIVATE');
+
+    // Fill schedule and expiry date fields.
+    await tournamentAdminPage.locator('#scheduledPublishAt').fill(formatForInput(tomorrow));
+    await tournamentAdminPage.locator('#expirationDate').fill(formatForInput(inTwoDays));
+
+    await tournamentAdminPage.getByRole('button', {name: /create announcement/i}).click();
+    await announcementsPage.waitForPageLoad();
+
+    // Admin can see the private announcement in the tournament-scoped list.
+    await tournamentAdminPage.goto(`/announcements?tournamentId=${announcementTournamentId}`);
+    await announcementsPage.expectAnnouncementVisible(uniqueTitle);
+
+    // Participant should NOT see the private announcement (PRIVATE type).
+    await participantPage.goto(`/announcements?tournamentId=${announcementTournamentId}`);
+    await expect(participantPage.locator('.announcement-card').filter({hasText: uniqueTitle})).toHaveCount(0);
+  });
+
+  test('ANN-005 should let admins edit and then delete an announcement', async ({tournamentAdminPage}) => {
+    // Seed a fresh announcement specifically for this test.
+    const editTitle = `ANN-005 Edit ${Date.now()}`;
+    const updatedTitle = `${editTitle} Updated`;
+
+    await apiHelper!.post('/announcements', {
+      tournamentId: announcementTournamentId,
+      type: 'PUBLIC',
+      title: editTitle,
+      summary: 'Edit test summary.',
+      longText: 'Edit test body.',
+      tags: ['general'],
+    }, adminToken, 201);
+
+    // Navigate to the announcement list and open the edit route.
+    await tournamentAdminPage.goto(`/announcements?tournamentId=${announcementTournamentId}`);
+    const announcementsPage = new AnnouncementsPage(tournamentAdminPage);
+    await announcementsPage.expectAnnouncementVisible(editTitle);
+
+    // Click the card's dedicated edit button instead of the card wrapper.
+    const editCard = tournamentAdminPage.locator('.announcement-card').filter({hasText: editTitle}).first();
+    await editCard.getByRole('button', {name: /edit|✏️/i}).click();
+    await expect(tournamentAdminPage).toHaveURL(/\/announcements\/edit\//);
+
+    // Update the title field and save.
+    const titleInput = tournamentAdminPage.locator('#title');
+    await titleInput.clear();
+    await titleInput.fill(updatedTitle);
+    await tournamentAdminPage.getByRole('button', {name: /save|update/i}).click();
+
+    // Back on the list — updated title should be visible.
+    await tournamentAdminPage.goto(`/announcements?tournamentId=${announcementTournamentId}`);
+    await announcementsPage.expectAnnouncementVisible(updatedTitle);
+
+    // Delete the announcement.
+    const updatedCard = tournamentAdminPage.locator('.announcement-card').filter({hasText: updatedTitle}).first();
+    tournamentAdminPage.once('dialog', async (dialog) => dialog.accept());
+    await updatedCard.getByRole('button', {name: /delete|🗑️/i}).click();
+    await expect(updatedCard).toHaveCount(0, {timeout: 8_000});
+  });
+
+  test('ANN-006 should hide private announcements from non-admin participants and public users', async ({tournamentAdminPage, participantPage, publicPage}) => {
+    const privateTitle = `ANN-006 Private ${Date.now()}`;
+
+    // Create a PRIVATE announcement.
+    await apiHelper!.post('/announcements', {
+      tournamentId: announcementTournamentId,
+      type: 'PRIVATE',
+      title: privateTitle,
+      summary: 'Private-only summary.',
+      longText: 'Private-only body.',
+      tags: ['general'],
+    }, adminToken, 201);
+
+    // Admin sees it.
+    await tournamentAdminPage.goto(`/announcements?tournamentId=${announcementTournamentId}`);
+    const announcementsPage = new AnnouncementsPage(tournamentAdminPage);
+    await announcementsPage.expectAnnouncementVisible(privateTitle);
+
+    // Participant does NOT see it.
+    await participantPage.goto(`/announcements?tournamentId=${announcementTournamentId}`);
+    await expect(participantPage.locator('.announcement-card').filter({hasText: privateTitle})).toHaveCount(0);
+
+    // Public/guest does NOT see it.
+    await publicPage.goto(`/announcements?tournamentId=${announcementTournamentId}`);
+    await expect(publicPage.locator('.announcement-card').filter({hasText: privateTitle})).toHaveCount(0);
+  });
 });

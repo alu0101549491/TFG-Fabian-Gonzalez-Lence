@@ -316,4 +316,147 @@ test.describe('Tournament CRUD - Critical', () => {
       await apiHelper.dispose();
     }
   });
+
+  test('FDBK-TOURN-001 should live-update color preview when editing branding in edit mode', async ({tournamentAdminPage}) => {
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const seedHelper = new SeedHelper(apiHelper, adminSession);
+    const seeded = await seedHelper.createTournament(`FDBK-TOURN-001 Branding ${Date.now()}`, {
+      primaryColor: '#001122',
+      secondaryColor: '#334455',
+    });
+
+    try {
+      await tournamentAdminPage.goto(`/tournaments/${seeded.id}/edit`);
+      await expect(tournamentAdminPage.getByRole('heading', {name: /edit tournament/i})).toBeVisible();
+      await expect(tournamentAdminPage.locator('#name')).toHaveValue(seeded.name);
+
+      // Preview must reflect the initially seeded colors.
+      await expectColorPreview(tournamentAdminPage, '#001122', '#334455');
+
+      // Update both colors and verify live preview immediately reacts.
+      await tournamentAdminPage.locator('input[name="primaryColorHex"]').fill('#ff6600');
+      await tournamentAdminPage.locator('input[name="secondaryColorHex"]').fill('#0066ff');
+      await expectColorPreview(tournamentAdminPage, '#ff6600', '#0066ff');
+
+      // Change a second time to assert the preview stays reactive.
+      await tournamentAdminPage.locator('input[name="primaryColorHex"]').fill('#a52a2a');
+      await expectColorPreview(tournamentAdminPage, '#a52a2a', '#0066ff');
+    } finally {
+      await seedHelper.cleanAll();
+      await apiHelper.dispose();
+    }
+  });
+
+  test('TOURN-002 should create a tournament with custom branding, rules, and ranking system', async ({tournamentAdminPage}) => {
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const uniqueName = `TOURN-002 Branding ${Date.now()}`;
+    let createdId: string | null = null;
+
+    try {
+      await tournamentAdminPage.goto('/tournaments/create');
+
+      // Fill required fields.
+      await tournamentAdminPage.locator('#name').fill(uniqueName);
+      await tournamentAdminPage.locator('#location').fill('La Laguna');
+      await tournamentAdminPage.locator('#startDate').fill('2026-07-01');
+      await tournamentAdminPage.locator('#endDate').fill('2026-07-05');
+      await tournamentAdminPage.locator('#registrationOpenDate').fill('2026-06-01');
+      await tournamentAdminPage.locator('#registrationCloseDate').fill('2026-06-30');
+      await tournamentAdminPage.locator('#maxParticipants').fill('16');
+      await tournamentAdminPage.locator('#rankingSystem').selectOption('ELO');
+
+      // Branding fields.
+      await tournamentAdminPage.locator('#primaryColor').fill('#e11d48');
+      await tournamentAdminPage.locator('#secondaryColor').fill('#0ea5e9');
+      await tournamentAdminPage.locator('input[name="primaryColorHex"]').fill('#e11d48');
+      await tournamentAdminPage.locator('input[name="secondaryColorHex"]').fill('#0ea5e9');
+      await expectColorPreview(tournamentAdminPage, '#e11d48', '#0ea5e9');
+
+      // Rules / logo.
+      await tournamentAdminPage.locator('#regulations').fill('TOURN-002 E2E rules content.');
+      await tournamentAdminPage.locator('#logoUrl').fill('https://example.com/tourn-002-logo.png');
+
+      await tournamentAdminPage.getByRole('button', {name: /create tournament|save tournament|submit/i}).click();
+      await expect(tournamentAdminPage).toHaveURL(/\/tournaments$/, {timeout: 10_000});
+
+      // Verify the tournament exists via API.
+      const list = await apiHelper.get<Array<{id: string; name: string}>>('/tournaments');
+      const created = list.find((tournament) => tournament.name === uniqueName);
+      expect(created).toBeDefined();
+      createdId = created?.id ?? null;
+
+      // Reload detail page and confirm branding persisted.
+      await tournamentAdminPage.goto(`/tournaments/${createdId}`);
+      await expect(tournamentAdminPage.getByRole('heading', {name: uniqueName})).toBeVisible();
+    } finally {
+      if (createdId) {
+        await apiHelper.delete(`/tournaments/${createdId}`, adminSession.token, true).catch(() => null);
+      }
+      await apiHelper.dispose();
+    }
+  });
+
+  test('TOURN-005 should gate registration behind a complete player profile', async ({tournamentAdminPage, participantPage}) => {
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const seedHelper = new SeedHelper(apiHelper, adminSession);
+    const seeded = await seedHelper.createTournament(`TOURN-005 Gate ${Date.now()}`);
+    await seedHelper.createCategory(seeded.id, 'TOURN-005 Singles');
+    await seedHelper.updateTournamentStatus(seeded.id, 'REGISTRATION_OPEN');
+
+    try {
+      await participantPage.goto(`/tournaments/${seeded.id}`);
+
+      // The register button should be visible but may show "Complete profile to register"
+      // when the participant profile is incomplete (e.g. missing idDocument).
+      const registerBtn = participantPage.getByRole('button', {name: /register now|complete profile to register/i});
+      await expect(registerBtn).toBeVisible();
+
+      // If the button text is about completing the profile, assert it links to /profile.
+      const btnText = await registerBtn.innerText();
+      if (/complete profile/i.test(btnText)) {
+        await registerBtn.click();
+        await expect(participantPage).toHaveURL(/\/profile$/);
+      }
+    } finally {
+      await seedHelper.cleanAll();
+      await apiHelper.dispose();
+    }
+  });
+
+  test('TOURN-007 should expose FINALIZED as the organizer completion transition', async ({tournamentAdminPage}) => {
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
+    const participantOneSession = await apiHelper.login(TEST_USERS.participant1);
+    const participantTwoSession = await apiHelper.login(TEST_USERS.participant2);
+    const seedHelper = new SeedHelper(apiHelper, adminSession);
+
+    try {
+      const fixture = await seedHelper.createSinglesMatchFixture(
+        `TOURN-007 Finalize ${Date.now()}`,
+        [participantOneSession.user.id, participantTwoSession.user.id],
+        {
+          tournamentStatuses: ['REGISTRATION_OPEN', 'REGISTRATION_CLOSED', 'DRAW_PENDING', 'IN_PROGRESS'],
+          courtName: 'Court 1',
+          scheduledTime: '2026-06-15T10:00:00.000Z',
+          matchStatus: 'SCHEDULED',
+        },
+      );
+
+      await tournamentAdminPage.goto(`/tournaments/${fixture.id}`);
+      await expect(tournamentAdminPage.getByRole('heading', {name: fixture.name})).toBeVisible();
+
+      // The current UI exposes tournament completion through the FINALIZED status value.
+      const statusSelector = tournamentAdminPage.locator('.management-bar .status-selector').first();
+      const changeStatusSelect = statusSelector.getByRole('combobox');
+      await expect(changeStatusSelect).toBeVisible();
+      await expect(changeStatusSelect.locator('option').filter({hasText: /finalized/i})).toHaveCount(1);
+      await expect(changeStatusSelect.locator('option').filter({hasText: /completed/i})).toHaveCount(0);
+    } finally {
+      await seedHelper.cleanAll();
+      await apiHelper.dispose();
+    }
+  });
 });

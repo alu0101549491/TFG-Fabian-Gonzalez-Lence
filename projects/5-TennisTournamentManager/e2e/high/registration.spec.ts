@@ -383,4 +383,138 @@ test.describe('Registration - High', () => {
       await fixture.apiHelper.dispose();
     }
   });
+
+  test('REG-002 should place a participant on the alternate (waiting list) when quota is full', async ({participantPage}) => {
+    const localApiHelper = await ApiHelper.create();
+    const adminSession = await localApiHelper.login(TEST_USERS.tournamentAdmin1);
+    const playerSession = await localApiHelper.login(TEST_USERS.participant1);
+    const localSeedHelper = new SeedHelper(localApiHelper, adminSession);
+
+    try {
+      // Create a tournament with a single-slot category.
+      const tournament = await localSeedHelper.createTournament(`REG-002 Quota ${Date.now()}`, {maxParticipants: 8});
+      await localSeedHelper.updateTournamentStatus(tournament.id, 'REGISTRATION_OPEN');
+      const categoryId = await localSeedHelper.createSizedCategory(tournament.id, 'Quota Singles', 1);
+
+      // Pre-fill the single slot with participant2.
+      const p2Session = await localApiHelper.login(TEST_USERS.participant2);
+      const firstId = await localSeedHelper.registerParticipant(categoryId, p2Session.user.id);
+      await localSeedHelper.approveRegistration(firstId, 'DIRECT_ACCEPTANCE');
+
+      // Navigate to the tournament as participant1 — registering should place them as ALTERNATE.
+      const detailPage = new TournamentDetailPage(participantPage);
+      await detailPage.gotoById(tournament.id);
+      await detailPage.chooseCategory('Quota Singles');
+      await detailPage.registerNow();
+
+      // After registration the UI must indicate alternate / waiting-list placement.
+      const registrationConfirmText = participantPage.locator('.registered-state, .pending-state, .alert-success, .alert-info, .registration-status');
+      await expect(registrationConfirmText.first()).toBeVisible({timeout: 8_000});
+
+      // Verify via API that the registration is ALTERNATE.
+      await expect.poll(async () => {
+        const regs = await localApiHelper.get<Array<{
+          id: string;
+          participantId: string;
+          acceptanceType: string;
+        }>>(`/registrations?categoryId=${categoryId}`);
+        const mine = regs.find((reg) => reg.participantId === playerSession.user.id);
+        return mine?.acceptanceType;
+      }, {timeout: 8_000}).toBe('ALTERNATE');
+    } finally {
+      await localSeedHelper.cleanAll();
+      await localApiHelper.dispose();
+    }
+  });
+
+  test('REG-005 should promote an alternate participant to lucky loser status', async ({tournamentAdminPage}) => {
+    const localApiHelper = await ApiHelper.create();
+    const adminSession = await localApiHelper.login(TEST_USERS.tournamentAdmin1);
+    const localSeedHelper = new SeedHelper(localApiHelper, adminSession);
+
+    try {
+      const tournament = await localSeedHelper.createTournament(`REG-005 LuckyLoser ${Date.now()}`, {maxParticipants: 8});
+      await localSeedHelper.updateTournamentStatus(tournament.id, 'REGISTRATION_OPEN');
+      const categoryId = await localSeedHelper.createSizedCategory(tournament.id, 'Lucky Loser Singles', 2);
+
+      const p1Session = await localApiHelper.login(TEST_USERS.participant1);
+      const p2Session = await localApiHelper.login(TEST_USERS.participant2);
+
+      const reg1Id = await localSeedHelper.registerParticipant(categoryId, p1Session.user.id);
+      await localSeedHelper.approveRegistration(reg1Id, 'DIRECT_ACCEPTANCE');
+
+      const reg2Id = await localSeedHelper.registerParticipant(categoryId, p2Session.user.id);
+      await localSeedHelper.approveRegistration(reg2Id, 'ALTERNATE');
+
+      // Promote alternate to lucky loser via API.
+      await localApiHelper.put(`/registrations/${reg2Id}`, {acceptanceType: 'LUCKY_LOSER'}, adminSession.token, 200);
+
+      // Navigate to admin view and confirm the badge is shown.
+      await tournamentAdminPage.goto(`/tournaments/${tournament.id}`);
+      await tournamentAdminPage.locator('#statusFilter').selectOption('ACCEPTED');
+
+      const p2Row = tournamentAdminPage.locator('tbody tr').filter({hasText: p2Session.user.username}).first();
+      await expect(p2Row).toBeVisible({timeout: 8_000});
+      await expect(p2Row).toContainText(/lucky loser|\[LL\]/i);
+    } finally {
+      await localSeedHelper.cleanAll();
+      await localApiHelper.dispose();
+    }
+  });
+
+  test('REG-007 should display acceptance type badges and seed numbers in the participant table', async ({tournamentAdminPage}) => {
+    const fixture = await createParticipantManagementFixture();
+
+    try {
+      await tournamentAdminPage.goto(`/tournaments/${fixture.tournamentId}`);
+      await tournamentAdminPage.locator('#statusFilter').selectOption('ACCEPTED');
+
+      await expect(tournamentAdminPage.getByText('Alternate', {exact: true})).toBeVisible();
+      await expect(tournamentAdminPage.getByText('[WC]', {exact: true})).toBeVisible();
+      await expect(tournamentAdminPage.getByText('[DA]', {exact: true})).toBeVisible();
+
+      // Seed numbers for direct and wildcard players (1 and 2 respectively).
+      await expect(tournamentAdminPage.getByText('Seed #1')).toBeVisible();
+      await expect(tournamentAdminPage.getByText('Seed #2')).toBeVisible();
+    } finally {
+      await fixture.seedHelper.cleanAll();
+      await fixture.apiHelper.dispose();
+    }
+  });
+
+  test('REG-008 should reject duplicate registration and allow re-registration after withdrawal', async ({participantPage, tournamentAdminPage}) => {
+    const localApiHelper = await ApiHelper.create();
+    const adminSession = await localApiHelper.login(TEST_USERS.tournamentAdmin1);
+    const p1Session = await localApiHelper.login(TEST_USERS.participant1);
+    const localSeedHelper = new SeedHelper(localApiHelper, adminSession);
+
+    try {
+      const tournament = await localSeedHelper.createTournament(`REG-008 Dup ${Date.now()}`, {maxParticipants: 16});
+      await localSeedHelper.updateTournamentStatus(tournament.id, 'REGISTRATION_OPEN');
+      const categoryId = await localSeedHelper.createSizedCategory(tournament.id, 'Dup Test Singles', 8);
+
+      // Pre-register participant1.
+      const existingRegId = await localSeedHelper.registerParticipant(categoryId, p1Session.user.id);
+
+      // Attempt duplicate registration via UI — should be rejected.
+      const detailPage = new TournamentDetailPage(participantPage);
+      await detailPage.gotoById(tournament.id);
+      // Since participant1 is already registered, the page shows registered/pending state (no radio form).
+      const registeredState = participantPage.locator('.registered-state, .pending-state');
+      await expect(registeredState.first()).toBeVisible({timeout: 5_000});
+
+      // Withdraw the existing registration via API.
+      await localApiHelper.put(`/registrations/${existingRegId}/status`, {status: 'WITHDRAWN'}, adminSession.token, 200);
+
+      // After withdrawal, verify via API that the system allows re-registration.
+      // Note: The Angular UI may not immediately reflect WITHDRAWN state (the backend still
+      // returns the withdrawn registration in getRegistrationsByParticipant), so UI
+      // re-registration cannot be tested reliably. We verify the API allows re-registration.
+      const reRegId = await localSeedHelper.registerParticipant(categoryId, p1Session.user.id);
+      expect(reRegId).toBeTruthy();
+    } finally {
+      await localSeedHelper.cleanAll();
+      await localApiHelper.dispose();
+    }
+  });
 });

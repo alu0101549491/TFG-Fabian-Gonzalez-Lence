@@ -11,6 +11,47 @@ The suite was adapted to the real Angular UI surface discovered in `src/presenta
 - The Playwright `baseURL` was aligned with the deployed Vite subpath: `/5-TennisTournamentManager/`.
 - Unsupported or missing UI features were marked with explicit `test.skip()` or `test.fixme()` calls rather than being falsely represented as covered.
 
+## Later Coverage Additions
+
+The remainder of this document describes the original Phase 2 baseline. After that baseline landed, the Playwright suite was expanded in two additional passes that should be considered part of the current inventory.
+
+### Earlier FEEDBACK coverage already included in the suite
+
+The client-feedback automation pass described in `docs/testing/FEEDBACK_TESTING_PLAN.md` is no longer just a plan. Its coverage is already represented in the active suite through the following spec files and scenario groups:
+
+- `e2e/high/navigation-feedback.spec.ts`: `FDBK-NAV-001`, `FDBK-NAV-002`, `FDBK-STATS-001`
+- `e2e/critical/auth.spec.ts`: `FDBK-NAV-003`
+- `e2e/critical/tournament-crud.spec.ts`: `FDBK-TOURN-004`
+- `e2e/high/registration.spec.ts`: `FDBK-TOURN-002`, `FDBK-TOURN-003`
+- `e2e/critical/order-of-play.spec.ts`: `FDBK-TOURN-005`
+- `e2e/high/bracket-visualization.spec.ts`: `FDBK-DRAW-001`
+- `e2e/critical/draw-generation.spec.ts`: `FDBK-DRAW-003`
+- `e2e/medium/announcements.spec.ts`: `FDBK-CONTENT-001`, `FDBK-TOURN-006`
+- `e2e/medium/export.spec.ts`: `FDBK-EXP-001`, additional route-scoped `FDBK-TOURN-006` coverage for contextual branding
+- `e2e/medium/ranking.spec.ts`: `FDBK-RANK-001`
+- `e2e/high/advanced-bracket-config.spec.ts`: `ADV-001` through `ADV-005`, which were already serving as the advanced bracket feedback template before the later feedback plan was formalized
+
+### Current 29-test expansion recorded in this implementation pass
+
+The latest Playwright expansion added 29 runnable scenarios across critical, high, medium, and low priority buckets:
+
+- `e2e/critical/auth.spec.ts`: `AUTH-002`, `DASH-001`, `DASH-002`, `DASH-003`
+- `e2e/critical/tournament-crud.spec.ts`: `FDBK-TOURN-001`, `TOURN-002`, `TOURN-005`, `TOURN-007`
+- `e2e/critical/result-management.spec.ts`: `MATCH-002`
+- `e2e/critical/order-of-play.spec.ts`: `OOP-004`
+- `e2e/high/advanced-bracket-config.spec.ts`: `FDBK-DRAW-002`
+- `e2e/high/registration.spec.ts`: `REG-002`, `REG-005`, `REG-007`, `REG-008`
+- `e2e/high/standings.spec.ts`: `STAND-005`
+- `e2e/high/notifications.spec.ts`: `NOTIF-003`
+- `e2e/medium/announcements.spec.ts`: `ANN-002`, `ANN-005`, `ANN-006`
+- `e2e/medium/ranking.spec.ts`: `RANK-003`
+- `e2e/medium/privacy.spec.ts`: `PRIV-005`
+- `e2e/medium/communication.spec.ts`: `COMM-002`
+- `e2e/medium/system-management.spec.ts`: `SYS-001`, `SYS-002`
+- `e2e/low/edge-cases.spec.ts`: `ERR-006`, `CROSS-001`, `CROSS-002`, `CROSS-003`
+
+These 29 scenarios were verified with focused Chromium runs against the live local frontend and backend, typically using `PLAYWRIGHT_SKIP_WEBSERVER=1` with Playwright workers pinned to `1` for local stability.
+
 ## Generated E2E Structure
 
 ### Infrastructure

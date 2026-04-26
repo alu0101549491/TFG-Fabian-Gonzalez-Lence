@@ -12,8 +12,11 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {test} from '../fixtures/auth.fixture';
+import {test, expect} from '../fixtures/auth.fixture';
 import {UserManagementPage} from '../fixtures/page-objects/admin/user-management.page';
+import {ApiHelper} from '../helpers/api.helper';
+import {SeedHelper} from '../helpers/seed.helper';
+import {TEST_USERS} from '../fixtures/test-data';
 
 test.describe('System Management - Medium', () => {
   test('SYS-005 should filter users with search, role, and empty-state handling', async ({sysAdminPage}) => {
@@ -112,5 +115,67 @@ test.describe('System Management - Medium', () => {
     await sysAdminPage.getByLabel(/show only active users/i).uncheck();
     await userManagementPage.search(`missing-${Date.now()}`);
     await userManagementPage.expectEmptyState();
+  });
+
+  test('SYS-001 should grant system admins access to the admin dashboard with role-specific counters', async ({sysAdminPage, participantPage}) => {
+    // Sys admin can reach /admin.
+    await sysAdminPage.goto('/admin');
+    await expect(sysAdminPage.getByRole('heading', {name: /admin/i}).first()).toBeVisible();
+
+    // Dashboard shows system-admin tool section and key stat cards.
+    await expect(sysAdminPage.getByText(/Total Tournaments/i)).toBeVisible();
+    await expect(sysAdminPage.getByText(/Active Tournaments/i)).toBeVisible();
+    await expect(sysAdminPage.getByText(/System Admin Tools/i)).toBeVisible();
+    await expect(sysAdminPage.getByRole('button', {name: /Manage Users/i})).toBeVisible();
+
+    // The counter values must be numeric (0 or more).
+    const totalText = await sysAdminPage.locator('p').filter({hasText: 'Total Tournaments'}).locator('..').locator('h3').innerText();
+    expect(Number(totalText)).toBeGreaterThanOrEqual(0);
+
+    // Participants cannot access /admin — they get redirected.
+    await participantPage.goto('/admin');
+    await expect(participantPage).toHaveURL(/\/home|\/tournaments|\/login/);
+  });
+
+  test('SYS-002 should let system admins create a new user and assign a role', async ({sysAdminPage}) => {
+    const apiHelper = await ApiHelper.create();
+    const adminSession = await apiHelper.login(TEST_USERS.sysAdmin);
+    const suffix = Date.now();
+    const newUserEmail = `sys002-${suffix}@tennis-test.com`;
+
+    try {
+      const userManagementPage = new UserManagementPage(sysAdminPage);
+      await userManagementPage.goto();
+
+      await userManagementPage.createUser({
+        username: `sys002user${suffix}`,
+        email: newUserEmail,
+        firstName: 'Sys',
+        lastName: 'UserTwo',
+        role: 'PLAYER',
+        password: 'SysPass123!',
+      });
+
+      // Success: new user row appears in the table.
+      await userManagementPage.search(newUserEmail);
+      await userManagementPage.expectUserVisible(newUserEmail);
+
+      // Edit: change role to TOURNAMENT_ADMIN.
+      await userManagementPage.editFirstVisibleUser();
+      const roleSelect = sysAdminPage.locator('select[name="role"], #role').first();
+      if (await roleSelect.count() > 0) {
+        await roleSelect.selectOption('TOURNAMENT_ADMIN');
+        await sysAdminPage.getByRole('button', {name: /save|update/i}).click();
+        await expect(sysAdminPage.locator('.alert-success, .success-banner').first()).toBeVisible({timeout: 8_000});
+      }
+    } finally {
+      // Cleanup: delete the created user via API.
+      const users = await apiHelper.get<Array<{id: string; email: string}>>('/users', adminSession.token).catch(() => []);
+      const created = users.find((user) => user.email === newUserEmail);
+      if (created) {
+        await apiHelper.delete(`/users/${created.id}`, adminSession.token, true).catch(() => null);
+      }
+      await apiHelper.dispose();
+    }
   });
 });

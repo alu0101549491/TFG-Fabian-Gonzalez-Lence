@@ -437,4 +437,43 @@ test.describe.serial('Feature 30: Advanced Bracket Configuration', () => {
     await expect(radioInput(tournamentAdminPage, 'consolationType', 'Consolation')).not.toBeChecked();
     await expect(radioInput(tournamentAdminPage, 'consolationType', 'None')).toBeChecked();
   });
+
+  // -------------------------------------------------------------------------
+  // FDBK-DRAW-002: Generated bracket shows match-format badge matching the
+  //   format selected in the bracket generation form.
+  // -------------------------------------------------------------------------
+  test('FDBK-DRAW-002 generated bracket shows the match-format badge for the selected format', async ({tournamentAdminPage}) => {
+    // Reuse the shared tournament/category seeded in beforeAll.
+    await gotoTournamentDetailWithRetry(tournamentAdminPage);
+
+    const existingBrackets = await apiHelper!.get<Array<{id: string}>>(`/brackets?tournamentId=${tournamentId}`);
+    if (existingBrackets.length > 0) {
+      await tournamentAdminPage.goto(`/brackets/${existingBrackets[0].id}`);
+      await expect(
+        tournamentAdminPage.locator('.format-badge').first(),
+      ).toBeVisible({timeout: 10_000});
+      await expect(
+        tournamentAdminPage.locator('.format-badge').first(),
+      ).toContainText(/pro set|standard|super tiebreak/i);
+      return;
+    }
+
+    await openFormWithAdvancedOptions(tournamentAdminPage);
+
+    // Select category and wait for participant count confirmation.
+    await tournamentAdminPage.locator('select[name="categoryId"]').selectOption({value: categoryId});
+    await expect(
+      tournamentAdminPage.getByText(/accepted participant\(s\) - Ready to generate bracket/i),
+    ).toBeVisible({timeout: 8_000});
+
+    // Choose a concrete format that the real UI exposes.
+    await radioLabel(tournamentAdminPage, 'matchFormat', /Pro Set/i).click();
+
+    tournamentAdminPage.on('dialog', async (dialog) => dialog.accept());
+    await tournamentAdminPage.locator('button[type="submit"]').click();
+    await tournamentAdminPage.waitForURL(/\/brackets\//i, {timeout: 15_000});
+
+    await expect(tournamentAdminPage.locator('.format-badge').first()).toBeVisible({timeout: 10_000});
+    await expect(tournamentAdminPage.locator('.format-badge').first()).toContainText(/pro set/i);
+  });
 });

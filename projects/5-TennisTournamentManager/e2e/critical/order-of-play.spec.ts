@@ -14,6 +14,7 @@
 
 import {test, expect} from '../fixtures/auth.fixture';
 import {OrderOfPlayPage} from '../fixtures/page-objects/order-of-play.page';
+import {MatchDetailPage} from '../fixtures/page-objects/match-detail.page';
 import {TEST_USERS} from '../fixtures/test-data';
 import {ApiHelper} from '../helpers/api.helper';
 import {SeedHelper} from '../helpers/seed.helper';
@@ -227,5 +228,41 @@ test.describe('Order of Play - Critical', () => {
 
     const orderPage = new OrderOfPlayPage(tournamentAdminPage);
     await orderPage.gotoForTournament('pending');
+  });
+
+  test('OOP-004 should reschedule a match from the match-detail page', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `OOP-004 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Center Court',
+          scheduledTime: ORDER_OF_PLAY_DATE,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+
+      const matchPage = new MatchDetailPage(tournamentAdminPage);
+      await matchPage.gotoById(fixture.matchId!);
+
+      // Reschedule to a different date/time.
+      await matchPage.scheduleMatch({
+        courtLabel: 'Center Court',
+        date: '2026-06-14',
+        time: '15:00',
+      });
+
+      // Verify the updated schedule is reflected on the page.
+      await expect(tournamentAdminPage.getByText(/match scheduled successfully/i)).toBeVisible();
+      await expect(
+        tournamentAdminPage.getByText(/Sunday, June 14, 2026/i).first(),
+      ).toBeVisible({timeout: 8_000});
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
   });
 });

@@ -1,8 +1,9 @@
 # FEEDBACK TESTING PLAN
 ## Tennis Tournament Manager (TENNIS)
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Created:** April 25, 2026  
+**Updated:** April 26, 2026  
 **Author:** Testing Agent  
 **Testing Framework:** Playwright  
 **Purpose:** Define the end-to-end coverage required for the client-feedback features completed after the baseline E2E plan.
@@ -46,6 +47,26 @@ Out of scope for this plan:
 - Re-documenting the baseline authentication, registration, standings, or export coverage that already exists.
 - Unit-test-only concerns that do not add meaningful E2E value.
 - Features still marked pending or out of scope in the feedback backlog.
+
+### 1.1 Status update as of April 26, 2026
+
+This document started as a planning artifact, but the FEEDBACK coverage it describes is now included in the live Playwright suite.
+
+Implemented FEEDBACK coverage currently lives in:
+
+- `e2e/high/navigation-feedback.spec.ts`
+- `e2e/critical/auth.spec.ts`
+- `e2e/critical/tournament-crud.spec.ts`
+- `e2e/high/registration.spec.ts`
+- `e2e/critical/order-of-play.spec.ts`
+- `e2e/high/bracket-visualization.spec.ts`
+- `e2e/critical/draw-generation.spec.ts`
+- `e2e/medium/announcements.spec.ts`
+- `e2e/medium/export.spec.ts`
+- `e2e/medium/ranking.spec.ts`
+- `e2e/high/advanced-bracket-config.spec.ts`
+
+The later expansion also added 29 more scenarios outside the original FEEDBACK-only scope. Those additions are documented in `docs/testing/E2E_TEST_IMPLEMENTATION_SUMMARY.md` and include two directly feedback-linked follow-ups: `FDBK-TOURN-001` and `FDBK-DRAW-002`.
 
 ---
 

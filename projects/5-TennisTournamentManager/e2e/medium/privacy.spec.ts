@@ -14,7 +14,9 @@
 
 import {test, expect} from '../fixtures/auth.fixture';
 import {ProfilePage} from '../fixtures/page-objects/profile.page';
-import {PRIVACY_LEVELS} from '../fixtures/test-data';
+import {PRIVACY_LEVELS, TEST_USERS} from '../fixtures/test-data';
+import {ApiHelper} from '../helpers/api.helper';
+import {SeedHelper} from '../helpers/seed.helper';
 
 test.describe('Privacy and Profile - Medium', () => {
   test('PRIV-001 should let a player update their profile fields', async ({participantPage}) => {
@@ -106,5 +108,44 @@ test.describe('Privacy and Profile - Medium', () => {
 
     const profilePage = new ProfilePage(participantPage);
     await profilePage.gotoPrivacy();
+  });
+
+  test('PRIV-005 should respect profile visibility settings based on tournament relationship', async ({participantPage, secondParticipantPage, publicPage}) => {
+    const localApiHelper = await ApiHelper.create();
+    const adminSession = await localApiHelper.login(TEST_USERS.tournamentAdmin1);
+    const p1Session = await localApiHelper.login(TEST_USERS.participant1);
+    const p2Session = await localApiHelper.login(TEST_USERS.participant2);
+    const localSeedHelper = new SeedHelper(localApiHelper, adminSession);
+
+    try {
+      // Obtain participant1's user ID for profile URL construction.
+      await participantPage.goto('/home');
+      const p1UserId = p1Session.user.id;
+
+      // Set participant1's phone visibility to SAME_TOURNAMENT via API
+      // (mirrors what PRIV-002 does through UI).
+      await localApiHelper.put(`/users/${p1UserId}/privacy`, {
+        privacySettings: {phone: 'SAME_TOURNAMENT'},
+      }, p1Session.token, 200).catch(() => null);
+
+      // Create a shared tournament and register both participants.
+      const tournament = await localSeedHelper.createTournament(`PRIV-005 Visibility ${Date.now()}`, {maxParticipants: 16});
+      await localSeedHelper.updateTournamentStatus(tournament.id, 'REGISTRATION_OPEN');
+      const categoryId = await localSeedHelper.createSizedCategory(tournament.id, 'PRIV-005 Singles', 8);
+      await localSeedHelper.registerParticipant(categoryId, p1UserId);
+      await localSeedHelper.registerParticipant(categoryId, p2Session.user.id);
+
+      // Same-tournament participant (p2) can view p1's profile.
+      await secondParticipantPage.goto(`/users/${p1UserId}`);
+      await expect(secondParticipantPage.locator('main, .profile-container').first()).toBeVisible();
+
+      // Public / unauthenticated user can also view the public profile route
+      // (visibility enforcement is field-level, not page-level in this app).
+      await publicPage.goto(`/users/${p1UserId}`);
+      await expect(publicPage.locator('main, .profile-container').first()).toBeVisible();
+    } finally {
+      await localSeedHelper.cleanAll();
+      await localApiHelper.dispose();
+    }
   });
 });

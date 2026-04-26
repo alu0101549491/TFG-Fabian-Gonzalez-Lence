@@ -44,7 +44,7 @@ export class TournamentDetailPage extends BasePage {
    * @param categoryName - Visible category label
    */
   public async chooseCategory(categoryName: string): Promise<void> {
-    await this.page.getByText(categoryName, {exact: false}).click();
+    await this.page.locator('span.radio-label').filter({hasText: categoryName}).first().click();
   }
 
   /** Attempts to register the current user into the selected category. */

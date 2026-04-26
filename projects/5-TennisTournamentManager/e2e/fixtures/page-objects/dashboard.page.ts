@@ -27,9 +27,9 @@ export class DashboardPage extends BasePage {
    * Verifies the logged-out landing page CTA set.
    */
   public async expectGuestLanding(): Promise<void> {
-    await expect(this.page.getByText(/browse tournaments/i)).toBeVisible();
-    await expect(this.page.getByText(/create account/i)).toBeVisible();
-    await expect(this.page.getByText(/sign in/i)).toBeVisible();
+    await expect(this.page.getByText(/browse tournaments/i).first()).toBeVisible();
+    await expect(this.page.getByText(/create account/i).first()).toBeVisible();
+    await expect(this.page.getByText(/sign in/i).first()).toBeVisible();
   }
 
   /**

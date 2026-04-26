@@ -670,4 +670,47 @@ test.describe('Match and Result Management - Critical', () => {
       await seedContext.apiHelper.dispose();
     }
   });
+
+  test('MATCH-002 should transition a match through key status milestones', async ({tournamentAdminPage}) => {
+    const seedContext = await createSeedContext();
+
+    try {
+      // 1. Start from a SCHEDULED match.
+      const fixture = await seedContext.seedHelper.createSinglesMatchFixture(
+        `MATCH-002 ${Date.now()}`,
+        [seedContext.participant1Id, seedContext.participant2Id],
+        {
+          tournamentStatuses: SEEDED_TOURNAMENT_STATUSES,
+          courtName: 'Center Court',
+          scheduledTime: MATCH_SCHEDULED_TIME,
+          matchStatus: 'SCHEDULED',
+        },
+      );
+
+      const matchPage = new MatchDetailPage(tournamentAdminPage);
+      await matchPage.gotoById(fixture.matchId!);
+      await matchPage.expectStatus(/scheduled|sched/i);
+
+      // 2. Transition to IN_PROGRESS.
+      await matchPage.updateStatus('IN_PROGRESS');
+      await matchPage.expectStatus(/in progress|ip/i);
+
+      // 3. Transition to SUSPENDED.
+      await matchPage.suspendMatch('E2E rain delay');
+      await matchPage.expectStatus(/suspended|susp/i);
+      // Ensure any modal overlay is fully dismissed before proceeding.
+      await tournamentAdminPage.locator('.modal-overlay').waitFor({state: 'hidden'}).catch(() => {});
+
+      // 4. Resume → back to IN_PROGRESS.
+      await matchPage.resumeMatch();
+      await expect(tournamentAdminPage.locator('.status-badge').first()).toContainText(/in progress|ip/i);
+
+      // 5. Record scores to reach COMPLETED.
+      await matchPage.recordScores(seedContext.participant1Name, VALID_SCORE_SET.sets);
+      await expect(tournamentAdminPage.locator('.status-badge').first()).toContainText(/completed|comp/i);
+    } finally {
+      await seedContext.seedHelper.cleanAll();
+      await seedContext.apiHelper.dispose();
+    }
+  });
 });
