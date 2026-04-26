@@ -166,7 +166,14 @@ test.describe('System Management - Medium', () => {
       if (await roleSelect.count() > 0) {
         await roleSelect.selectOption('TOURNAMENT_ADMIN');
         await sysAdminPage.getByRole('button', {name: /save|update/i}).click();
-        await expect(sysAdminPage.locator('.alert-success, .success-banner').first()).toBeVisible({timeout: 8_000});
+
+        const editModal = sysAdminPage.locator('.modal-content').filter({hasText: /edit user/i}).first();
+        await expect(editModal).toHaveCount(0);
+
+        await userManagementPage.search(newUserEmail);
+        const updatedRow = sysAdminPage.locator('tbody tr').filter({hasText: newUserEmail}).first();
+        await expect(updatedRow).toBeVisible({timeout: 8_000});
+        await expect(updatedRow).toContainText(/tournament admin/i);
       }
     } finally {
       // Cleanup: delete the created user via API.

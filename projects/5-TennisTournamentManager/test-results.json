@@ -146,20 +146,20 @@
   },
   "suites": [
     {
-      "title": "doubles-tournament.spec.ts",
-      "file": "doubles-tournament.spec.ts",
+      "title": "medium/system-management.spec.ts",
+      "file": "medium/system-management.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Doubles Tournament Workflow",
-          "file": "doubles-tournament.spec.ts",
-          "line": 577,
+          "title": "System Management - Medium",
+          "file": "medium/system-management.spec.ts",
+          "line": 21,
           "column": 6,
           "specs": [
             {
-              "title": "enforces teammate confirmation restrictions and surfaces doubles statistics and dispute UI",
+              "title": "SYS-002 should let system admins create a new user and assign a role",
               "ok": true,
               "tags": [],
               "tests": [
@@ -174,12 +174,16 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2013,
+                      "duration": 2083,
                       "errors": [],
-                      "stdout": [],
+                      "stdout": [
+                        {
+                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
+                        }
+                      ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T11:05:20.863Z",
+                      "startTime": "2026-04-26T11:15:39.931Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -187,13 +191,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "0cd577ddd4c2af75f810-df621bb05cf4e6b16c24",
-              "file": "doubles-tournament.spec.ts",
-              "line": 702,
+              "id": "00ceed3972f61723c5f8-918f05dfb235c6ea9bcf",
+              "file": "medium/system-management.spec.ts",
+              "line": 140,
               "column": 3
             },
             {
-              "title": "enforces teammate confirmation restrictions and surfaces doubles statistics and dispute UI",
+              "title": "SYS-002 should let system admins create a new user and assign a role",
               "ok": true,
               "tags": [],
               "tests": [
@@ -208,12 +212,16 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2042,
+                      "duration": 1562,
                       "errors": [],
-                      "stdout": [],
+                      "stdout": [
+                        {
+                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
+                        }
+                      ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T11:05:25.073Z",
+                      "startTime": "2026-04-26T11:15:43.056Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -221,13 +229,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "0cd577ddd4c2af75f810-0014ba71f4378b4e07e4",
-              "file": "doubles-tournament.spec.ts",
-              "line": 702,
+              "id": "00ceed3972f61723c5f8-ad9c01e7209cbc0d4069",
+              "file": "medium/system-management.spec.ts",
+              "line": 140,
               "column": 3
             },
             {
-              "title": "enforces teammate confirmation restrictions and surfaces doubles statistics and dispute UI",
+              "title": "SYS-002 should let system admins create a new user and assign a role",
               "ok": true,
               "tags": [],
               "tests": [
@@ -242,12 +250,16 @@
                       "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2063,
+                      "duration": 1593,
                       "errors": [],
-                      "stdout": [],
+                      "stdout": [
+                        {
+                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
+                        }
+                      ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T11:05:29.357Z",
+                      "startTime": "2026-04-26T11:15:45.422Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -255,13 +267,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "0cd577ddd4c2af75f810-41479b5e90ea6fe8ee84",
-              "file": "doubles-tournament.spec.ts",
-              "line": 702,
+              "id": "00ceed3972f61723c5f8-c1c468e084db785a8d8e",
+              "file": "medium/system-management.spec.ts",
+              "line": 140,
               "column": 3
             },
             {
-              "title": "enforces teammate confirmation restrictions and surfaces doubles statistics and dispute UI",
+              "title": "SYS-002 should let system admins create a new user and assign a role",
               "ok": true,
               "tags": [],
               "tests": [
@@ -276,12 +288,16 @@
                       "workerIndex": 3,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1987,
+                      "duration": 1531,
                       "errors": [],
-                      "stdout": [],
+                      "stdout": [
+                        {
+                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
+                        }
+                      ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T11:05:33.689Z",
+                      "startTime": "2026-04-26T11:15:47.796Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -289,13 +305,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "0cd577ddd4c2af75f810-dc35fcfe2c8bb89a6369",
-              "file": "doubles-tournament.spec.ts",
-              "line": 702,
+              "id": "00ceed3972f61723c5f8-c76f06de4891b8c52a13",
+              "file": "medium/system-management.spec.ts",
+              "line": 140,
               "column": 3
             },
             {
-              "title": "enforces teammate confirmation restrictions and surfaces doubles statistics and dispute UI",
+              "title": "SYS-002 should let system admins create a new user and assign a role",
               "ok": true,
               "tags": [],
               "tests": [
@@ -310,12 +326,16 @@
                       "workerIndex": 4,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1949,
+                      "duration": 1563,
                       "errors": [],
-                      "stdout": [],
+                      "stdout": [
+                        {
+                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
+                        }
+                      ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T11:05:37.861Z",
+                      "startTime": "2026-04-26T11:15:50.120Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -323,9 +343,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "0cd577ddd4c2af75f810-bf196135bd9e5da15137",
-              "file": "doubles-tournament.spec.ts",
-              "line": 702,
+              "id": "00ceed3972f61723c5f8-6f8a311c957acdbf9573",
+              "file": "medium/system-management.spec.ts",
+              "line": 140,
               "column": 3
             }
           ]
@@ -335,8 +355,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-26T11:05:20.079Z",
-    "duration": 21252.067,
+    "startTime": "2026-04-26T11:15:39.043Z",
+    "duration": 12763.088,
     "expected": 5,
     "skipped": 0,
     "unexpected": 0,
