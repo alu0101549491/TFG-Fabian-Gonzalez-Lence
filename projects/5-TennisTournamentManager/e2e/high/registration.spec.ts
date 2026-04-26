@@ -210,7 +210,7 @@ test.describe('Registration - High', () => {
 
   test('REG-003 should show doubles partner invitations and response actions', async ({secondParticipantPage}) => {
     await secondParticipantPage.goto('/my-invitations');
-    await expect(secondParticipantPage.getByText(/partner invitations/i)).toBeVisible();
+    await expect(secondParticipantPage.getByRole('heading', {name: /partner invitations/i})).toBeVisible();
 
     const actionCard = secondParticipantPage.locator('.invitation-card').first();
     if (await actionCard.count() > 0) {

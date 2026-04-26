@@ -398,29 +398,33 @@ test.describe('Tournament CRUD - Critical', () => {
     }
   });
 
-  test('TOURN-005 should gate registration behind a complete player profile', async ({tournamentAdminPage, participantPage}) => {
+  test('TOURN-005 should gate registration behind a complete player profile', async ({browser}) => {
     const apiHelper = await ApiHelper.create();
     const adminSession = await apiHelper.login(TEST_USERS.tournamentAdmin1);
     const seedHelper = new SeedHelper(apiHelper, adminSession);
     const seeded = await seedHelper.createTournament(`TOURN-005 Gate ${Date.now()}`);
     await seedHelper.createCategory(seeded.id, 'TOURN-005 Singles');
     await seedHelper.updateTournamentStatus(seeded.id, 'REGISTRATION_OPEN');
+    const incompletePlayerSession = await seedHelper.createPlayer(`tourn005_${Date.now()}`);
+    const participantContext = await browser.newContext({
+      storageState: apiHelper.buildStorageState(incompletePlayerSession),
+    });
+    const participantPage = await participantContext.newPage();
 
     try {
       await participantPage.goto(`/tournaments/${seeded.id}`);
+      await participantPage.locator('span.radio-label').filter({hasText: 'TOURN-005 Singles'}).first().click();
 
-      // The register button should be visible but may show "Complete profile to register"
-      // when the participant profile is incomplete (e.g. missing idDocument).
       const registerBtn = participantPage.getByRole('button', {name: /register now|complete profile to register/i});
       await expect(registerBtn).toBeVisible();
+      await expect(registerBtn).toBeDisabled();
+      await expect(registerBtn).toContainText(/complete profile to register/i);
+      await expect(participantPage.locator('.profile-incomplete-warning')).toContainText(/profile incomplete/i);
 
-      // If the button text is about completing the profile, assert it links to /profile.
-      const btnText = await registerBtn.innerText();
-      if (/complete profile/i.test(btnText)) {
-        await registerBtn.click();
-        await expect(participantPage).toHaveURL(/\/profile$/);
-      }
+      await participantPage.getByRole('link', {name: /complete profile/i}).click();
+      await expect(participantPage).toHaveURL(/\/profile$/);
     } finally {
+      await participantContext.close();
       await seedHelper.cleanAll();
       await apiHelper.dispose();
     }

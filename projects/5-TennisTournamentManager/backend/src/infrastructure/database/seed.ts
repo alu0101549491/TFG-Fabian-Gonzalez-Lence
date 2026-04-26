@@ -121,6 +121,8 @@ async function seedDatabase(): Promise<void> {
       isActive: true,
       gdprConsent: true,
       phone: '+34600000003',
+      idDocument: '12345678A',
+      ranking: 150,
       lastLogin: null,
     });
     await userRepository.save(player1);
@@ -138,6 +140,8 @@ async function seedDatabase(): Promise<void> {
       isActive: true,
       gdprConsent: true,
       phone: '+34600000004',
+      idDocument: '87654321B',
+      ranking: 200,
       lastLogin: null,
     });
     await userRepository.save(player2);

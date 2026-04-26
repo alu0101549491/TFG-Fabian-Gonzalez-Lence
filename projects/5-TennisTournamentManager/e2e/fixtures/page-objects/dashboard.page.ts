@@ -44,10 +44,12 @@ export class DashboardPage extends BasePage {
 
   /** Verifies the participant dashboard overview panels and quick actions. */
   public async expectParticipantOverview(): Promise<void> {
+    const quickActions = this.page.locator('.quick-actions');
+
     await expect(this.page.getByRole('heading', {name: /welcome back/i})).toBeVisible();
-    await expect(this.page.getByRole('button', {name: /browse tournaments/i})).toBeVisible();
-    await expect(this.page.getByRole('button', {name: /my statistics/i})).toBeVisible();
-    await expect(this.page.getByRole('button', {name: /my profile/i})).toBeVisible();
+    await expect(quickActions.getByRole('button', {name: /browse tournaments/i})).toBeVisible();
+    await expect(quickActions.getByRole('button', {name: /my statistics/i})).toBeVisible();
+    await expect(quickActions.getByRole('button', {name: /my profile/i})).toBeVisible();
     await expect(this.page.getByText(/^Registered$/)).toBeVisible();
     await expect(this.page.getByText(/^Upcoming$/)).toBeVisible();
     await expect(this.page.getByText(/^Win Rate$/)).toBeVisible();
