@@ -92,9 +92,10 @@ The feedback scenarios must be implemented against the current Playwright baseli
 
 ### 2.3 Current suite constraints that affect feedback coverage
 
-- `DRAW-001` remains blocked unless the active tournament detail route exposes the bracket-generation controls consistently.
-- Pending-result workflows still need deterministic fixtures; current `MATCH-004` and `MATCH-005` are marked `fixme` for that reason.
+- `DRAW-001` is now implemented against the active tournament detail route, so bracket-generation constraints are no longer a blocker for FEEDBACK-adjacent draw coverage.
+- Pending-result workflows are now covered by runnable `MATCH-004` and `MATCH-005` scenarios using deterministic fixtures rather than `fixme` placeholders.
 - Seeded status transitions must respect backend rules, especially `REGISTRATION_CLOSED -> DRAW_PENDING` before moving further.
+- The remaining deferred cases are now concentrated in UI-gated features rather than bracket or result-management determinism.
 - Existing responsive projects are already configured, so feedback UI checks can reuse `mobile-chrome`, `mobile-safari`, and `tablet` without config changes.
 
 ### 2.4 Coverage policy for feedback work

@@ -139,7 +139,7 @@
     "shard": null,
     "tags": [],
     "updateSnapshots": "missing",
-    "updateSourceMethod": "3way",
+    "updateSourceMethod": "patch",
     "version": "1.58.2",
     "workers": 1,
     "webServer": null
@@ -171,15 +171,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4774,
+                      "duration": 4098,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:10.320Z",
+                      "startTime": "2026-04-26T10:11:47.091Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -205,15 +205,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1554,
+                      "duration": 1738,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:15.164Z",
+                      "startTime": "2026-04-26T10:11:51.256Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -239,15 +239,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1958,
+                      "duration": 1957,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:16.725Z",
+                      "startTime": "2026-04-26T10:11:53.003Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -273,10 +273,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1873,
+                      "duration": 1828,
                       "errors": [],
                       "stdout": [
                         {
@@ -285,7 +285,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:18.691Z",
+                      "startTime": "2026-04-26T10:11:54.968Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -311,10 +311,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1896,
+                      "duration": 1987,
                       "errors": [],
                       "stdout": [
                         {
@@ -323,7 +323,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:20.570Z",
+                      "startTime": "2026-04-26T10:11:56.804Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -349,10 +349,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2044,
+                      "duration": 2128,
                       "errors": [],
                       "stdout": [
                         {
@@ -364,7 +364,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:22.472Z",
+                      "startTime": "2026-04-26T10:11:58.800Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -390,15 +390,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1507,
+                      "duration": 1494,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:24.524Z",
+                      "startTime": "2026-04-26T10:12:00.936Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -434,15 +434,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "skipped",
-                      "duration": 116,
+                      "duration": 108,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:26.037Z",
+                      "startTime": "2026-04-26T10:12:02.438Z",
                       "annotations": [
                         {
                           "type": "skip",
@@ -488,15 +488,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "skipped",
-                      "duration": 109,
+                      "duration": 110,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:26.160Z",
+                      "startTime": "2026-04-26T10:12:02.553Z",
                       "annotations": [
                         {
                           "type": "skip",
@@ -542,7 +542,7 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "skipped",
                       "duration": 109,
@@ -550,7 +550,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:26.276Z",
+                      "startTime": "2026-04-26T10:12:02.672Z",
                       "annotations": [
                         {
                           "type": "skip",
@@ -586,15 +586,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4499,
+                      "duration": 4439,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:26.392Z",
+                      "startTime": "2026-04-26T10:12:02.787Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -620,15 +620,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2134,
+                      "duration": 2194,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:30.897Z",
+                      "startTime": "2026-04-26T10:12:07.233Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -654,10 +654,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3196,
+                      "duration": 3527,
                       "errors": [],
                       "stdout": [
                         {
@@ -672,7 +672,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:33.037Z",
+                      "startTime": "2026-04-26T10:12:09.434Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -698,10 +698,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2362,
+                      "duration": 2349,
                       "errors": [],
                       "stdout": [
                         {
@@ -710,7 +710,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:36.240Z",
+                      "startTime": "2026-04-26T10:12:12.968Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -753,10 +753,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1338,
+                      "duration": 1617,
                       "errors": [],
                       "stdout": [
                         {
@@ -765,7 +765,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:38.619Z",
+                      "startTime": "2026-04-26T10:12:15.334Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -791,10 +791,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1591,
+                      "duration": 1809,
                       "errors": [],
                       "stdout": [
                         {
@@ -803,7 +803,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:39.963Z",
+                      "startTime": "2026-04-26T10:12:16.958Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -829,10 +829,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2190,
+                      "duration": 2488,
                       "errors": [],
                       "stdout": [
                         {
@@ -841,7 +841,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:41.564Z",
+                      "startTime": "2026-04-26T10:12:18.775Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -867,10 +867,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1661,
+                      "duration": 1880,
                       "errors": [],
                       "stdout": [
                         {
@@ -879,7 +879,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:43.761Z",
+                      "startTime": "2026-04-26T10:12:21.272Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -905,10 +905,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1201,
+                      "duration": 1182,
                       "errors": [],
                       "stdout": [
                         {
@@ -917,7 +917,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:45.429Z",
+                      "startTime": "2026-04-26T10:12:23.158Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -943,10 +943,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1699,
+                      "duration": 1684,
                       "errors": [],
                       "stdout": [
                         {
@@ -955,7 +955,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:46.636Z",
+                      "startTime": "2026-04-26T10:12:24.349Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -998,10 +998,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2809,
+                      "duration": 2580,
                       "errors": [],
                       "stdout": [
                         {
@@ -1010,7 +1010,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:48.351Z",
+                      "startTime": "2026-04-26T10:12:26.050Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1036,10 +1036,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1464,
+                      "duration": 1720,
                       "errors": [],
                       "stdout": [
                         {
@@ -1048,7 +1048,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:51.166Z",
+                      "startTime": "2026-04-26T10:12:28.638Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1074,10 +1074,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2891,
+                      "duration": 3091,
                       "errors": [],
                       "stdout": [
                         {
@@ -1086,7 +1086,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:52.639Z",
+                      "startTime": "2026-04-26T10:12:30.367Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1112,15 +1112,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1400,
+                      "duration": 1684,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:55.537Z",
+                      "startTime": "2026-04-26T10:12:33.465Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1146,15 +1146,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1369,
+                      "duration": 1563,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:56.943Z",
+                      "startTime": "2026-04-26T10:12:35.156Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1190,10 +1190,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "skipped",
-                      "duration": 85,
+                      "duration": 86,
                       "errors": [],
                       "stdout": [
                         {
@@ -1202,7 +1202,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:58.318Z",
+                      "startTime": "2026-04-26T10:12:36.728Z",
                       "annotations": [
                         {
                           "type": "skip",
@@ -1238,10 +1238,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2152,
+                      "duration": 2256,
                       "errors": [],
                       "stdout": [
                         {
@@ -1250,7 +1250,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:02:58.409Z",
+                      "startTime": "2026-04-26T10:12:36.821Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1293,10 +1293,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2071,
+                      "duration": 2268,
                       "errors": [],
                       "stdout": [
                         {
@@ -1305,7 +1305,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:00.578Z",
+                      "startTime": "2026-04-26T10:12:39.097Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1331,10 +1331,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2186,
+                      "duration": 2407,
                       "errors": [],
                       "stdout": [
                         {
@@ -1343,7 +1343,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:02.656Z",
+                      "startTime": "2026-04-26T10:12:41.374Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1369,10 +1369,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2897,
+                      "duration": 3081,
                       "errors": [],
                       "stdout": [
                         {
@@ -1381,7 +1381,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:04.849Z",
+                      "startTime": "2026-04-26T10:12:43.790Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1407,10 +1407,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2111,
+                      "duration": 2361,
                       "errors": [],
                       "stdout": [
                         {
@@ -1419,7 +1419,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:07.753Z",
+                      "startTime": "2026-04-26T10:12:46.878Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1445,15 +1445,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1755,
+                      "duration": 2022,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:09.871Z",
+                      "startTime": "2026-04-26T10:12:49.246Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1479,10 +1479,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1435,
+                      "duration": 1969,
                       "errors": [],
                       "stdout": [
                         {
@@ -1491,7 +1491,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:11.632Z",
+                      "startTime": "2026-04-26T10:12:51.276Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1517,10 +1517,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1658,
+                      "duration": 1943,
                       "errors": [],
                       "stdout": [
                         {
@@ -1529,7 +1529,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:13.073Z",
+                      "startTime": "2026-04-26T10:12:53.251Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1555,10 +1555,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1279,
+                      "duration": 2207,
                       "errors": [],
                       "stdout": [
                         {
@@ -1567,7 +1567,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:14.739Z",
+                      "startTime": "2026-04-26T10:12:55.202Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1593,10 +1593,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1992,
+                      "duration": 2260,
                       "errors": [],
                       "stdout": [
                         {
@@ -1605,7 +1605,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:16.027Z",
+                      "startTime": "2026-04-26T10:12:57.415Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1631,10 +1631,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2230,
+                      "duration": 2433,
                       "errors": [],
                       "stdout": [
                         {
@@ -1643,7 +1643,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:18.025Z",
+                      "startTime": "2026-04-26T10:12:59.682Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1669,10 +1669,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1945,
+                      "duration": 2211,
                       "errors": [],
                       "stdout": [
                         {
@@ -1681,7 +1681,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:20.262Z",
+                      "startTime": "2026-04-26T10:13:02.122Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1707,10 +1707,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2282,
+                      "duration": 2599,
                       "errors": [],
                       "stdout": [
                         {
@@ -1719,7 +1719,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:22.213Z",
+                      "startTime": "2026-04-26T10:13:04.340Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1745,10 +1745,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1660,
+                      "duration": 1895,
                       "errors": [],
                       "stdout": [
                         {
@@ -1757,7 +1757,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:24.502Z",
+                      "startTime": "2026-04-26T10:13:06.946Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1783,10 +1783,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1717,
+                      "duration": 1927,
                       "errors": [],
                       "stdout": [
                         {
@@ -1795,7 +1795,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:26.170Z",
+                      "startTime": "2026-04-26T10:13:08.848Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1821,10 +1821,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2064,
+                      "duration": 2241,
                       "errors": [],
                       "stdout": [
                         {
@@ -1833,7 +1833,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:27.895Z",
+                      "startTime": "2026-04-26T10:13:10.783Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1859,10 +1859,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4341,
+                      "duration": 4617,
                       "errors": [],
                       "stdout": [
                         {
@@ -1871,7 +1871,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:29.967Z",
+                      "startTime": "2026-04-26T10:13:13.032Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1914,10 +1914,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4206,
+                      "duration": 4102,
                       "errors": [],
                       "stdout": [
                         {
@@ -1926,7 +1926,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:34.328Z",
+                      "startTime": "2026-04-26T10:13:17.667Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1952,10 +1952,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2636,
+                      "duration": 2660,
                       "errors": [],
                       "stdout": [
                         {
@@ -1964,7 +1964,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:38.541Z",
+                      "startTime": "2026-04-26T10:13:21.776Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1990,10 +1990,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1144,
+                      "duration": 1220,
                       "errors": [],
                       "stdout": [
                         {
@@ -2002,7 +2002,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:41.183Z",
+                      "startTime": "2026-04-26T10:13:24.443Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2028,10 +2028,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3989,
+                      "duration": 4203,
                       "errors": [],
                       "stdout": [
                         {
@@ -2043,7 +2043,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:42.336Z",
+                      "startTime": "2026-04-26T10:13:25.670Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2069,15 +2069,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1673,
+                      "duration": 1667,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:46.331Z",
+                      "startTime": "2026-04-26T10:13:29.882Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2103,10 +2103,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3932,
+                      "duration": 3994,
                       "errors": [],
                       "stdout": [
                         {
@@ -2118,7 +2118,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:48.012Z",
+                      "startTime": "2026-04-26T10:13:31.556Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2144,10 +2144,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1300,
+                      "duration": 1287,
                       "errors": [],
                       "stdout": [
                         {
@@ -2156,7 +2156,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:51.951Z",
+                      "startTime": "2026-04-26T10:13:35.558Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2182,10 +2182,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 818,
+                      "duration": 827,
                       "errors": [],
                       "stdout": [
                         {
@@ -2194,7 +2194,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:53.257Z",
+                      "startTime": "2026-04-26T10:13:36.851Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2220,10 +2220,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1895,
+                      "duration": 1888,
                       "errors": [],
                       "stdout": [
                         {
@@ -2232,7 +2232,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:54.083Z",
+                      "startTime": "2026-04-26T10:13:37.685Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2258,10 +2258,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1182,
+                      "duration": 1203,
                       "errors": [],
                       "stdout": [
                         {
@@ -2273,7 +2273,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:55.986Z",
+                      "startTime": "2026-04-26T10:13:39.580Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2299,10 +2299,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1354,
+                      "duration": 1683,
                       "errors": [],
                       "stdout": [
                         {
@@ -2311,7 +2311,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:03:57.174Z",
+                      "startTime": "2026-04-26T10:13:40.790Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2327,3893 +2327,14 @@
           ]
         }
       ]
-    },
-    {
-      "title": "doubles-tournament.spec.ts",
-      "file": "doubles-tournament.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Doubles Tournament Workflow",
-          "file": "doubles-tournament.spec.ts",
-          "line": 577,
-          "column": 6,
-          "specs": [
-            {
-              "title": "renders doubles creation, invitation, bracket, scheduling, scoring, and my matches UI",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4236,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:03:58.545Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "0cd577ddd4c2af75f810-b5cdffb93db276528491",
-              "file": "doubles-tournament.spec.ts",
-              "line": 657,
-              "column": 3
-            },
-            {
-              "title": "enforces teammate confirmation restrictions and surfaces doubles statistics and dispute UI",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1791,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:04.085Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "0cd577ddd4c2af75f810-df621bb05cf4e6b16c24",
-              "file": "doubles-tournament.spec.ts",
-              "line": 702,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "example.spec.ts",
-      "file": "example.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Application Smoke Test",
-          "file": "example.spec.ts",
-          "line": 17,
-          "column": 6,
-          "specs": [
-            {
-              "title": "should load the landing page",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 616,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:05.941Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "a30a6eba6312f6b87ea5-13fc66c178194406429d",
-              "file": "example.spec.ts",
-              "line": 18,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "high/advanced-bracket-config.spec.ts",
-      "file": "high/advanced-bracket-config.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Feature 30: Advanced Bracket Configuration",
-          "file": "high/advanced-bracket-config.spec.ts",
-          "line": 176,
-          "column": 15,
-          "specs": [
-            {
-              "title": "ADV-001 Advanced Options section is present and expands on click",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1188,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:06.571Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "aef5198cc080baef9956-56eb6c903fce32f5e091",
-              "file": "high/advanced-bracket-config.spec.ts",
-              "line": 231,
-              "column": 3
-            },
-            {
-              "title": "ADV-002 Seeding Strategy radio options update the description text",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1422,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:08.632Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "aef5198cc080baef9956-97d5a4a500b9d63cbb5f",
-              "file": "high/advanced-bracket-config.spec.ts",
-              "line": 266,
-              "column": 3
-            },
-            {
-              "title": "ADV-003 Consolation and Bye Assignment controls visible only for Single Elimination",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1646,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:10.065Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "aef5198cc080baef9956-cdf3f3e462869dd65ff8",
-              "file": "high/advanced-bracket-config.spec.ts",
-              "line": 293,
-              "column": 3
-            },
-            {
-              "title": "ADV-004 Players per Group control visible only for Round Robin",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1508,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:11.717Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "aef5198cc080baef9956-e6d6e0cc899e54121534",
-              "file": "high/advanced-bracket-config.spec.ts",
-              "line": 352,
-              "column": 3
-            },
-            {
-              "title": "ADV-005 Bracket generates with advanced options and form defaults reset on success",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2491,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:13.234Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "aef5198cc080baef9956-efd8c1278062e35bfad7",
-              "file": "high/advanced-bracket-config.spec.ts",
-              "line": 386,
-              "column": 3
-            },
-            {
-              "title": "FDBK-DRAW-002 generated bracket shows the match-format badge for the selected format",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1448,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:15.730Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "aef5198cc080baef9956-16fc531dde8dcb7e2a50",
-              "file": "high/advanced-bracket-config.spec.ts",
-              "line": 445,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "high/bracket-visualization.spec.ts",
-      "file": "high/bracket-visualization.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Bracket Visualization - High",
-          "file": "high/bracket-visualization.spec.ts",
-          "line": 26,
-          "column": 6,
-          "specs": [
-            {
-              "title": "DRAW-007 should render the main draw bracket for public users",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1244,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:17.217Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "01ec1cfa31434b97981a-832016a6b6538c5544e1",
-              "file": "high/bracket-visualization.spec.ts",
-              "line": 68,
-              "column": 3
-            },
-            {
-              "title": "FDBK-DRAW-001 should distinguish BYE from TBD and show bracket feedback badges",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1264,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:18.922Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "01ec1cfa31434b97981a-52ecc9b1822af67c55d3",
-              "file": "high/bracket-visualization.spec.ts",
-              "line": 74,
-              "column": 3
-            },
-            {
-              "title": "EXP-001 should expose a PDF export entry point from the bracket view",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1285,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:20.192Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "01ec1cfa31434b97981a-8a1ec9ab43468789428d",
-              "file": "high/bracket-visualization.spec.ts",
-              "line": 89,
-              "column": 3
-            },
-            {
-              "title": "RESP-003 should keep the bracket page usable on smaller viewports",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1230,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:21.484Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "01ec1cfa31434b97981a-719b3097e8b07f258c6a",
-              "file": "high/bracket-visualization.spec.ts",
-              "line": 96,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "high/navigation-feedback.spec.ts",
-      "file": "high/navigation-feedback.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Navigation Feedback - High",
-          "file": "high/navigation-feedback.spec.ts",
-          "line": 107,
-          "column": 6,
-          "specs": [
-            {
-              "title": "FDBK-NAV-001 should expose primary header links according to the authenticated role",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2354,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:22.752Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "92b63122c57c0e61a619-5673ff50902a02426164",
-              "file": "high/navigation-feedback.spec.ts",
-              "line": 108,
-              "column": 3
-            },
-            {
-              "title": "FDBK-NAV-002 should preserve contextual back navigation between My Matches, user profiles, and statistics",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2154,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:25.114Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "92b63122c57c0e61a619-c8b95245b4e6ab09b7b3",
-              "file": "high/navigation-feedback.spec.ts",
-              "line": 131,
-              "column": 3
-            },
-            {
-              "title": "FDBK-STATS-001 should preserve tournament branding on contextual statistics routes only",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2736,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:27.273Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "92b63122c57c0e61a619-02fe2398a1a85bc1e8c6",
-              "file": "high/navigation-feedback.spec.ts",
-              "line": 173,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "high/notifications.spec.ts",
-      "file": "high/notifications.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Notifications - High",
-          "file": "high/notifications.spec.ts",
-          "line": 18,
-          "column": 6,
-          "specs": [
-            {
-              "title": "NOTIF-001 should align bell badge counts with inbox unread totals",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1206,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:30.022Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "3ac9b3e0a86a6746afea-44a96cbda3689081343b",
-              "file": "high/notifications.spec.ts",
-              "line": 19,
-              "column": 3
-            },
-            {
-              "title": "NOTIF-002 should support read and delete actions in the inbox",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1203,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:31.234Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "3ac9b3e0a86a6746afea-bbc411530f7e90aef074",
-              "file": "high/notifications.spec.ts",
-              "line": 31,
-              "column": 3
-            },
-            {
-              "title": "NOTIF-004 should persist notification-channel preferences",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1248,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:32.443Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "3ac9b3e0a86a6746afea-981d63704c99dac3326c",
-              "file": "high/notifications.spec.ts",
-              "line": 46,
-              "column": 3
-            },
-            {
-              "title": "NOTIF-006 should render the real-time bell dropdown items",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1293,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:33.697Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "3ac9b3e0a86a6746afea-6ab5bd0e45cd454bd7fd",
-              "file": "high/notifications.spec.ts",
-              "line": 58,
-              "column": 3
-            },
-            {
-              "title": "NOTIF-007 should verify Telegram throttling feedback",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "Telegram throttling is not observable through the current frontend UI.",
-                      "location": {
-                        "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/high/notifications.spec.ts",
-                        "line": 67,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 87,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:34.996Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Telegram throttling is not observable through the current frontend UI.",
-                          "location": {
-                            "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/high/notifications.spec.ts",
-                            "line": 67,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "3ac9b3e0a86a6746afea-cbc5bcb8994feafba068",
-              "file": "high/notifications.spec.ts",
-              "line": 66,
-              "column": 3
-            },
-            {
-              "title": "NOTIF-003 should navigate to the originating entity when clicking a notification",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1144,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:35.089Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "3ac9b3e0a86a6746afea-473cf5c5eaae10523541",
-              "file": "high/notifications.spec.ts",
-              "line": 73,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "high/registration.spec.ts",
-      "file": "high/registration.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Registration - High",
-          "file": "high/registration.spec.ts",
-          "line": 104,
-          "column": 6,
-          "specs": [
-            {
-              "title": "REG-001 should expose self-registration controls on open tournaments",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1347,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:36.247Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-8f32e185710275c930db",
-              "file": "high/registration.spec.ts",
-              "line": 126,
-              "column": 3
-            },
-            {
-              "title": "REG-004 should let administrators bulk-approve pending registrations",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1315,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:37.744Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-86a236ac7cdac22832c6",
-              "file": "high/registration.spec.ts",
-              "line": 134,
-              "column": 3
-            },
-            {
-              "title": "REG-006 should let a participant inspect and withdraw eligible registrations",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 668,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:39.065Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-f3294999ea84fd623c98",
-              "file": "high/registration.spec.ts",
-              "line": 146,
-              "column": 3
-            },
-            {
-              "title": "REG-010 should show registration status cards, helper text, and tournament links",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2433,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:39.740Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-ced9e5f8869cc2c89d17",
-              "file": "high/registration.spec.ts",
-              "line": 157,
-              "column": 3
-            },
-            {
-              "title": "REG-003 should show doubles partner invitations and response actions",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 542,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant2.json for maria@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:42.179Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-3f845629295e21127bd2",
-              "file": "high/registration.spec.ts",
-              "line": 211,
-              "column": 3
-            },
-            {
-              "title": "REG-011 should let users manage partner invitations across pending, sent, and past states",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3086,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant2.json for maria@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:42.729Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-48f8d0baf3e51defebca",
-              "file": "high/registration.spec.ts",
-              "line": 221,
-              "column": 3
-            },
-            {
-              "title": "REG-009 should process registration payments",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "Registration payment checkout UI is not implemented in the current frontend.",
-                      "location": {
-                        "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/high/registration.spec.ts",
-                        "line": 283,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 79,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:45.822Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Registration payment checkout UI is not implemented in the current frontend.",
-                          "location": {
-                            "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/high/registration.spec.ts",
-                            "line": 283,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-28cdd873d2cd61bddbf5",
-              "file": "high/registration.spec.ts",
-              "line": 282,
-              "column": 3
-            },
-            {
-              "title": "FDBK-TOURN-002 should support admin participant filtering, badges, and public profile links",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2561,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:45.907Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-abfdb6a8f1fdd30b1c5f",
-              "file": "high/registration.spec.ts",
-              "line": 289,
-              "column": 3
-            },
-            {
-              "title": "FDBK-TOURN-003 should use the unified edit modal with all acceptance types",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1730,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:48.475Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-bbdd88e1e47e122d22eb",
-              "file": "high/registration.spec.ts",
-              "line": 328,
-              "column": 3
-            },
-            {
-              "title": "REG-002 should place a participant on the alternate (waiting list) when quota is full",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1695,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:50.212Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-086b243b70a816a47b44",
-              "file": "high/registration.spec.ts",
-              "line": 387,
-              "column": 3
-            },
-            {
-              "title": "REG-005 should promote an alternate participant to lucky loser status",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1540,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:51.914Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-8c55337c2746cebc0efa",
-              "file": "high/registration.spec.ts",
-              "line": 430,
-              "column": 3
-            },
-            {
-              "title": "REG-007 should display acceptance type badges and seed numbers in the participant table",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1327,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:53.460Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-cb9eac8dafa8c5f0d26e",
-              "file": "high/registration.spec.ts",
-              "line": 465,
-              "column": 3
-            },
-            {
-              "title": "REG-008 should reject duplicate registration and allow re-registration after withdrawal",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1575,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:54.793Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c549cfe31a8c97829bcf-6763148c5753fcde5d2d",
-              "file": "high/registration.spec.ts",
-              "line": 485,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "high/standings.spec.ts",
-      "file": "high/standings.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Standings - High",
-          "file": "high/standings.spec.ts",
-          "line": 38,
-          "column": 6,
-          "specs": [
-            {
-              "title": "STAND-001 should render grouped standings for tournaments with classification data",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1167,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:56.402Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6933ef31f06f132af8a2-301dd731b83e344e52d8",
-              "file": "high/standings.spec.ts",
-              "line": 121,
-              "column": 3
-            },
-            {
-              "title": "STAND-002 should expose updated standings rows after results are confirmed",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1194,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:58.520Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6933ef31f06f132af8a2-61d537b496e3179c4e4d",
-              "file": "high/standings.spec.ts",
-              "line": 129,
-              "column": 3
-            },
-            {
-              "title": "STAND-006 should show set and game ratio information for each row",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1128,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:04:59.721Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6933ef31f06f132af8a2-e1cab761aec67fa9dad4",
-              "file": "high/standings.spec.ts",
-              "line": 138,
-              "column": 3
-            },
-            {
-              "title": "STAND-008 should render tournament statistics overview, leaderboards, and admin exports",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1552,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:00.855Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6933ef31f06f132af8a2-b13314685dbb83601427",
-              "file": "high/standings.spec.ts",
-              "line": 147,
-              "column": 3
-            },
-            {
-              "title": "STAND-007 should expose head-to-head and split ratio views",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "Dedicated head-to-head and split classification UI is not implemented in the current frontend.",
-                      "location": {
-                        "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/high/standings.spec.ts",
-                        "line": 165,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 64,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:02.418Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Dedicated head-to-head and split classification UI is not implemented in the current frontend.",
-                          "location": {
-                            "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/high/standings.spec.ts",
-                            "line": 165,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "6933ef31f06f132af8a2-049d604ba65722139ded",
-              "file": "high/standings.spec.ts",
-              "line": 164,
-              "column": 3
-            },
-            {
-              "title": "STAND-005 should render the personal statistics page for a player",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1355,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:02.487Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6933ef31f06f132af8a2-423b32df04ecb53cbcc6",
-              "file": "high/standings.spec.ts",
-              "line": 171,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "low/accessibility.spec.ts",
-      "file": "low/accessibility.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Accessibility - Low",
-          "file": "low/accessibility.spec.ts",
-          "line": 17,
-          "column": 6,
-          "specs": [
-            {
-              "title": "A11Y-001 should support keyboard navigation on the login form",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 604,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:03.903Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "601d624612e5dc1bfb81-9dab71f64c47f6dae341",
-              "file": "low/accessibility.spec.ts",
-              "line": 18,
-              "column": 3
-            },
-            {
-              "title": "A11Y-002 should keep modal controls keyboard reachable",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 576,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:04.513Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "601d624612e5dc1bfb81-2014c6f3a796151be6f0",
-              "file": "low/accessibility.spec.ts",
-              "line": 26,
-              "column": 3
-            },
-            {
-              "title": "A11Y-003 should expose accessible header controls for authenticated users",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 579,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:05.095Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "601d624612e5dc1bfb81-bed2fb8f301a01ca9b36",
-              "file": "low/accessibility.spec.ts",
-              "line": 36,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "low/edge-cases.spec.ts",
-      "file": "low/edge-cases.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Edge Cases - Low",
-          "file": "low/edge-cases.spec.ts",
-          "line": 22,
-          "column": 6,
-          "specs": [
-            {
-              "title": "ERR-001 should redirect unknown routes to home",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 557,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:05.687Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c148fb44e4ade31a8c52-b3c4236595642752bf6b",
-              "file": "low/edge-cases.spec.ts",
-              "line": 23,
-              "column": 3
-            },
-            {
-              "title": "ERR-003 should show an error for failed login requests",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1083,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:06.249Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c148fb44e4ade31a8c52-075e8459d0e9253c5703",
-              "file": "low/edge-cases.spec.ts",
-              "line": 28,
-              "column": 3
-            },
-            {
-              "title": "ERR-004 should render stable error states for invalid tournament and match ids",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1535,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:07.338Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c148fb44e4ade31a8c52-da255becec961f689f78",
-              "file": "low/edge-cases.spec.ts",
-              "line": 44,
-              "column": 3
-            },
-            {
-              "title": "ERR-005 should preserve integrity for duplicate or stale registration flows",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1179,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:08.879Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c148fb44e4ade31a8c52-5727304f7df04533c72b",
-              "file": "low/edge-cases.spec.ts",
-              "line": 52,
-              "column": 3
-            },
-            {
-              "title": "ERR-006 should reject invalid set scores and display a validation error",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2433,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:10.064Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c148fb44e4ade31a8c52-846375308a40f11ced43",
-              "file": "low/edge-cases.spec.ts",
-              "line": 87,
-              "column": 3
-            },
-            {
-              "title": "CROSS-001 should render the correct header navigation and user dropdown for each role",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2352,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:12.502Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c148fb44e4ade31a8c52-3bd7e97e4599be0f6f5b",
-              "file": "low/edge-cases.spec.ts",
-              "line": 141,
-              "column": 3
-            },
-            {
-              "title": "CROSS-002 should show error banners when the server returns a failure response",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 492,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:14.862Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c148fb44e4ade31a8c52-ca314d41246e43931bb6",
-              "file": "low/edge-cases.spec.ts",
-              "line": 170,
-              "column": 3
-            },
-            {
-              "title": "CROSS-003 should redirect unauthenticated requests to the login page",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 812,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:15.363Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c148fb44e4ade31a8c52-77eaa28607647036fe21",
-              "file": "low/edge-cases.spec.ts",
-              "line": 182,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "low/responsive.spec.ts",
-      "file": "low/responsive.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Responsive - Low",
-          "file": "low/responsive.spec.ts",
-          "line": 24,
-          "column": 6,
-          "specs": [
-            {
-              "title": "RESP-001 should keep the landing and login pages usable on narrow screens",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 877,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:16.186Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ffba64a1f75eefe5c064-489cc0709115da9a15fa",
-              "file": "low/responsive.spec.ts",
-              "line": 51,
-              "column": 3
-            },
-            {
-              "title": "RESP-002 should keep tournament list and order-of-play pages usable on mobile widths",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1137,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:17.689Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ffba64a1f75eefe5c064-ed409459476b8f8da638",
-              "file": "low/responsive.spec.ts",
-              "line": 61,
-              "column": 3
-            },
-            {
-              "title": "RESP-004 should keep dashboard navigation visible on tablet widths",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 531,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:18.833Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ffba64a1f75eefe5c064-7c900ca7a21479be0077",
-              "file": "low/responsive.spec.ts",
-              "line": 70,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "medium/announcements.spec.ts",
-      "file": "medium/announcements.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Announcements - Medium",
-          "file": "medium/announcements.spec.ts",
-          "line": 33,
-          "column": 6,
-          "specs": [
-            {
-              "title": "ANN-001 should let admins create a public announcement",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3143,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:19.411Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4179d55c9ef248df728e-9fc7c18cf1008a517f39",
-              "file": "medium/announcements.spec.ts",
-              "line": 64,
-              "column": 3
-            },
-            {
-              "title": "ANN-003 should filter announcements by search and tag",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1139,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:22.643Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4179d55c9ef248df728e-6e1ba103cbd1ad31517f",
-              "file": "medium/announcements.spec.ts",
-              "line": 82,
-              "column": 3
-            },
-            {
-              "title": "ANN-004 should open the announcement details modal",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 839,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:23.789Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4179d55c9ef248df728e-dd2bfe5be7b03ab5cc20",
-              "file": "medium/announcements.spec.ts",
-              "line": 93,
-              "column": 3
-            },
-            {
-              "title": "FDBK-CONTENT-001 should create an announcement with image preview and CTA link rendering",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3213,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:24.635Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4179d55c9ef248df728e-37f4e274651115b27a67",
-              "file": "medium/announcements.spec.ts",
-              "line": 102,
-              "column": 3
-            },
-            {
-              "title": "FDBK-TOURN-006 should show the tournament logo only on scoped announcements routes",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 993,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:27.856Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4179d55c9ef248df728e-bf44ebcec2d83586b0ff",
-              "file": "medium/announcements.spec.ts",
-              "line": 141,
-              "column": 3
-            },
-            {
-              "title": "ANN-007 should show a view counter for announcement reads",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "Announcement view counters are not implemented in the current frontend.",
-                      "location": {
-                        "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/announcements.spec.ts",
-                        "line": 152,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 59,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:28.855Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Announcement view counters are not implemented in the current frontend.",
-                          "location": {
-                            "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/announcements.spec.ts",
-                            "line": 152,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "4179d55c9ef248df728e-422cd777221779607890",
-              "file": "medium/announcements.spec.ts",
-              "line": 151,
-              "column": 3
-            },
-            {
-              "title": "ANN-002 should create a private, scheduled, and expiring announcement",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2897,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:28.921Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4179d55c9ef248df728e-f68227b8fbba22374508",
-              "file": "medium/announcements.spec.ts",
-              "line": 158,
-              "column": 3
-            },
-            {
-              "title": "ANN-005 should let admins edit and then delete an announcement",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1674,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:31.825Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4179d55c9ef248df728e-ebe5db30fb76158df2be",
-              "file": "medium/announcements.spec.ts",
-              "line": 194,
-              "column": 3
-            },
-            {
-              "title": "ANN-006 should hide private announcements from non-admin participants and public users",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1929,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:33.505Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4179d55c9ef248df728e-0b5957f20065f2695201",
-              "file": "medium/announcements.spec.ts",
-              "line": 235,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "medium/communication.spec.ts",
-      "file": "medium/communication.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Communication - Medium",
-          "file": "medium/communication.spec.ts",
-          "line": 20,
-          "column": 6,
-          "specs": [
-            {
-              "title": "COMM-001 should show partner invitation messages in the invitations inbox",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 613,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:35.468Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "3f1998149417e9983c96-c7d6aa9f0d41fba2f40c",
-              "file": "medium/communication.spec.ts",
-              "line": 21,
-              "column": 3
-            },
-            {
-              "title": "COMM-003 should expose tournament chat, moderation, and group messaging",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "Chat, moderation, and group messaging UI is not implemented in the current frontend.",
-                      "location": {
-                        "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/communication.spec.ts",
-                        "line": 32,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 77,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:36.087Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Chat, moderation, and group messaging UI is not implemented in the current frontend.",
-                          "location": {
-                            "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/communication.spec.ts",
-                            "line": 32,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "3f1998149417e9983c96-f99a91bc42369ed078b4",
-              "file": "medium/communication.spec.ts",
-              "line": 31,
-              "column": 3
-            },
-            {
-              "title": "COMM-002 should update related UIs after accepting a doubles partner invitation",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1963,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant2.json for maria@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:36.170Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "3f1998149417e9983c96-38b1820b3cfc4f0eef09",
-              "file": "medium/communication.spec.ts",
-              "line": 37,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "medium/export.spec.ts",
-      "file": "medium/export.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Export - Medium",
-          "file": "medium/export.spec.ts",
-          "line": 29,
-          "column": 6,
-          "specs": [
-            {
-              "title": "EXP-003 should expose ITF CSV and TODS exports",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "fixme",
-                      "description": "ITF/TODS export services exist, but the active frontend template does not expose stable UI controls for them.",
-                      "location": {
-                        "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/export.spec.ts",
-                        "line": 114,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 89,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:38.146Z",
-                      "annotations": [
-                        {
-                          "type": "fixme",
-                          "description": "ITF/TODS export services exist, but the active frontend template does not expose stable UI controls for them.",
-                          "location": {
-                            "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/export.spec.ts",
-                            "line": 114,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "89e093ef8682c6fb8a37-d3f453fdf2fed96fd3f5",
-              "file": "medium/export.spec.ts",
-              "line": 113,
-              "column": 3
-            },
-            {
-              "title": "EXP-004 should generate documents and certificates",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "Document and certificate generation UI is not implemented in the current frontend.",
-                      "location": {
-                        "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/export.spec.ts",
-                        "line": 120,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 91,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:38.241Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Document and certificate generation UI is not implemented in the current frontend.",
-                          "location": {
-                            "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/export.spec.ts",
-                            "line": 120,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "89e093ef8682c6fb8a37-9a46e0646973fad33485",
-              "file": "medium/export.spec.ts",
-              "line": 119,
-              "column": 3
-            }
-          ],
-          "suites": [
-            {
-              "title": "Active Export Scenarios",
-              "file": "medium/export.spec.ts",
-              "line": 30,
-              "column": 8,
-              "specs": [
-                {
-                  "title": "EXP-001 should expose bracket PDF export",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 30000,
-                      "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 1,
-                          "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 1313,
-                          "errors": [],
-                          "stdout": [
-                            {
-                              "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                            }
-                          ],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-04-26T10:05:38.338Z",
-                          "annotations": [],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "expected"
-                    }
-                  ],
-                  "id": "89e093ef8682c6fb8a37-bca02f62740a08983573",
-                  "file": "medium/export.spec.ts",
-                  "line": 65,
-                  "column": 5
-                },
-                {
-                  "title": "EXP-002 should expose statistics export buttons for admins",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 30000,
-                      "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 1,
-                          "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 814,
-                          "errors": [],
-                          "stdout": [
-                            {
-                              "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                            }
-                          ],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-04-26T10:05:40.237Z",
-                          "annotations": [],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "expected"
-                    }
-                  ],
-                  "id": "89e093ef8682c6fb8a37-a0117b91f524020e1f4d",
-                  "file": "medium/export.spec.ts",
-                  "line": 72,
-                  "column": 5
-                },
-                {
-                  "title": "FDBK-EXP-001 should export tournament statistics PDF with the improved template content",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 30000,
-                      "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 1,
-                          "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 785,
-                          "errors": [],
-                          "stdout": [
-                            {
-                              "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                            }
-                          ],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-04-26T10:05:41.059Z",
-                          "annotations": [],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "expected"
-                    }
-                  ],
-                  "id": "89e093ef8682c6fb8a37-e886239c3457a67759dc",
-                  "file": "medium/export.spec.ts",
-                  "line": 80,
-                  "column": 5
-                },
-                {
-                  "title": "FDBK-TOURN-006 should show the tournament logo only on scoped matches routes",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 30000,
-                      "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 1,
-                          "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 1308,
-                          "errors": [],
-                          "stdout": [],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-04-26T10:05:41.850Z",
-                          "annotations": [],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "expected"
-                    }
-                  ],
-                  "id": "89e093ef8682c6fb8a37-1a3c300ebe4e6cf9a8c9",
-                  "file": "medium/export.spec.ts",
-                  "line": 101,
-                  "column": 5
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "medium/incidents.spec.ts",
-      "file": "medium/incidents.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Incidents - Medium",
-          "file": "medium/incidents.spec.ts",
-          "line": 17,
-          "column": 6,
-          "specs": [
-            {
-              "title": "INC-001 should render disputed matches for admins",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 551,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:43.196Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "073d2a07508c763c6c04-2e919f5f7f6836cd30a6",
-              "file": "medium/incidents.spec.ts",
-              "line": 18,
-              "column": 3
-            },
-            {
-              "title": "INC-002 should open the dispute-resolution modal",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 587,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:43.753Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "073d2a07508c763c6c04-9133397fe5628b9fc83e",
-              "file": "medium/incidents.spec.ts",
-              "line": 23,
-              "column": 3
-            },
-            {
-              "title": "INC-003 should open the annul-result modal",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 561,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:44.348Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "073d2a07508c763c6c04-329ea7514a5285583921",
-              "file": "medium/incidents.spec.ts",
-              "line": 33,
-              "column": 3
-            },
-            {
-              "title": "INC-004 should apply sanctions and order replays",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "Sanctions and replay-order UI is not implemented in the current frontend.",
-                      "location": {
-                        "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/incidents.spec.ts",
-                        "line": 44,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 98,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/tournament-admin.json for tournament@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:44.917Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Sanctions and replay-order UI is not implemented in the current frontend.",
-                          "location": {
-                            "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/incidents.spec.ts",
-                            "line": 44,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "073d2a07508c763c6c04-8f8e4df2ed2bf712742d",
-              "file": "medium/incidents.spec.ts",
-              "line": 43,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "medium/privacy.spec.ts",
-      "file": "medium/privacy.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Privacy and Profile - Medium",
-          "file": "medium/privacy.spec.ts",
-          "line": 21,
-          "column": 6,
-          "specs": [
-            {
-              "title": "PRIV-001 should let a player update their profile fields",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2740,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:45.033Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "9852ed2f0c0928a0355d-b6765591d2a1cb7db1b9",
-              "file": "medium/privacy.spec.ts",
-              "line": 22,
-              "column": 3
-            },
-            {
-              "title": "PRIV-002 should save and reset privacy settings",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3265,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:47.778Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "9852ed2f0c0928a0355d-348084625d553ad6a6a9",
-              "file": "medium/privacy.spec.ts",
-              "line": 58,
-              "column": 3
-            },
-            {
-              "title": "PRIV-003 and PRIV-004 should differentiate public and admin visibility on profile routes",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1541,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:51.051Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "9852ed2f0c0928a0355d-8007fd4529a69fcaf770",
-              "file": "medium/privacy.spec.ts",
-              "line": 92,
-              "column": 3
-            },
-            {
-              "title": "PRIV-007 should let a user delete their account from the UI",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "Delete-account self-service UI is not implemented in the current frontend.",
-                      "location": {
-                        "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/privacy.spec.ts",
-                        "line": 107,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 98,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:52.600Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Delete-account self-service UI is not implemented in the current frontend.",
-                          "location": {
-                            "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/privacy.spec.ts",
-                            "line": 107,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "9852ed2f0c0928a0355d-02cd9146a8d69325c55b",
-              "file": "medium/privacy.spec.ts",
-              "line": 106,
-              "column": 3
-            },
-            {
-              "title": "PRIV-005 should respect profile visibility settings based on tournament relationship",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1874,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant2.json for maria@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:52.704Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "9852ed2f0c0928a0355d-edc45b49d5abac2c8416",
-              "file": "medium/privacy.spec.ts",
-              "line": 113,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "medium/ranking.spec.ts",
-      "file": "medium/ranking.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Ranking - Medium",
-          "file": "medium/ranking.spec.ts",
-          "line": 21,
-          "column": 6,
-          "specs": [
-            {
-              "title": "RANK-001 should show the global ranking table",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1114,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:54.594Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "dc2d8939402e7a4f377b-a44bc3b7b9bfc40c539f",
-              "file": "medium/ranking.spec.ts",
-              "line": 22,
-              "column": 3
-            },
-            {
-              "title": "RANK-002 should switch between points-based and ELO modes",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1241,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:55.716Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "dc2d8939402e7a4f377b-bf5ec8696c52f024c145",
-              "file": "medium/ranking.spec.ts",
-              "line": 30,
-              "column": 3
-            },
-            {
-              "title": "RANK-004 should import external rankings for seeding",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "External ranking import UI is not implemented in the current frontend.",
-                      "location": {
-                        "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/ranking.spec.ts",
-                        "line": 42,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 89,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:56.964Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "External ranking import UI is not implemented in the current frontend.",
-                          "location": {
-                            "file": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/medium/ranking.spec.ts",
-                            "line": 42,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "dc2d8939402e7a4f377b-cb6904d57cab14997ac5",
-              "file": "medium/ranking.spec.ts",
-              "line": 41,
-              "column": 3
-            },
-            {
-              "title": "RANK-003 should update ranking positions after a result is confirmed",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1921,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:57.062Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "dc2d8939402e7a4f377b-67b446593752cd2688ab",
-              "file": "medium/ranking.spec.ts",
-              "line": 48,
-              "column": 3
-            },
-            {
-              "title": "FDBK-RANK-001 should let admins recalculate positions and hide the action for non-admins",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2531,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:05:58.992Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "dc2d8939402e7a4f377b-2aa54373125606cec5e7",
-              "file": "medium/ranking.spec.ts",
-              "line": 89,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "medium/system-management.spec.ts",
-      "file": "medium/system-management.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "System Management - Medium",
-          "file": "medium/system-management.spec.ts",
-          "line": 21,
-          "column": 6,
-          "specs": [
-            {
-              "title": "SYS-005 should filter users with search, role, and empty-state handling",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3874,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:06:01.537Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "00ceed3972f61723c5f8-22998b4721d67ce22ac7",
-              "file": "medium/system-management.spec.ts",
-              "line": 22,
-              "column": 3
-            },
-            {
-              "title": "SYS-001 should grant system admins access to the admin dashboard with role-specific counters",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1302,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
-                        },
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant1.json for player@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:06:05.417Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "00ceed3972f61723c5f8-64b73d8e606b1c68960b",
-              "file": "medium/system-management.spec.ts",
-              "line": 120,
-              "column": 3
-            },
-            {
-              "title": "SYS-002 should let system admins create a new user and assign a role",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 6100,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/sysadmin.json for admin@tennistournament.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:06:06.726Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "00ceed3972f61723c5f8-918f05dfb235c6ea9bcf",
-              "file": "medium/system-management.spec.ts",
-              "line": 140,
-              "column": 3
-            }
-          ]
-        }
-      ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-26T10:02:08.715Z",
-    "duration": 244433.66599999974,
-    "expected": 130,
-    "skipped": 14,
+    "startTime": "2026-04-26T10:11:46.204Z",
+    "duration": 116462.191,
+    "expected": 50,
+    "skipped": 4,
     "unexpected": 0,
     "flaky": 0
   }

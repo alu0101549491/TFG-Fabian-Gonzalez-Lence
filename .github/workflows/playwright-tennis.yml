@@ -1,0 +1,190 @@
+name: E2E (TennisTournamentManager)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    timeout-minutes: 90
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tennis_tournament_manager
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d tennis_tournament_manager"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      NODE_ENV: development
+      PORT: 3000
+
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: tennis_tournament_manager
+      DB_SYNCHRONIZE: 'false'
+
+      JWT_SECRET: e2e-jwt-secret
+      JWT_REFRESH_SECRET: e2e-jwt-refresh-secret
+      SEED_CONFIRM: I_UNDERSTAND
+      CORS_ORIGIN: http://localhost:4200
+      RATE_LIMIT_MAX_REQUESTS: 5000
+
+      VITE_API_BASE_URL: http://localhost:3000/api
+      VITE_SOCKET_URL: http://localhost:3000
+
+      PLAYWRIGHT_BASE_URL: http://localhost:4200/5-TennisTournamentManager/
+      PLAYWRIGHT_API_BASE_URL: http://localhost:3000/api
+      PLAYWRIGHT_WORKERS: 1
+
+      PW_E2E_ADMIN_PASSWORD: ${{ secrets.PW_E2E_ADMIN_PASSWORD }}
+      PW_E2E_TOURNAMENT_ADMIN_PASSWORD: ${{ secrets.PW_E2E_TOURNAMENT_ADMIN_PASSWORD }}
+      PW_E2E_PLAYER_PASSWORD: ${{ secrets.PW_E2E_PLAYER_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            projects/5-TennisTournamentManager/package-lock.json
+            projects/5-TennisTournamentManager/backend/package-lock.json
+
+      - name: Validate required secrets
+        run: |
+          missing=0
+          for name in PW_E2E_ADMIN_PASSWORD PW_E2E_TOURNAMENT_ADMIN_PASSWORD PW_E2E_PLAYER_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required GitHub secret: $name"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            echo "Configure these secrets in GitHub -> Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - name: Install backend dependencies
+        working-directory: projects/5-TennisTournamentManager/backend
+        run: npm ci
+
+      - name: Run backend migrations and seed
+        working-directory: projects/5-TennisTournamentManager/backend
+        run: |
+          npm run db:migrate
+          npm run db:seed
+
+      - name: Install frontend dependencies
+        working-directory: projects/5-TennisTournamentManager
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: projects/5-TennisTournamentManager
+        run: npx playwright install --with-deps chromium
+
+      - name: Start backend
+        working-directory: projects/5-TennisTournamentManager/backend
+        run: |
+          npm run dev > backend.log 2>&1 &
+          echo $! > backend.pid
+
+      - name: Start frontend
+        working-directory: projects/5-TennisTournamentManager
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 4200 --strictPort > frontend.log 2>&1 &
+          echo $! > frontend.pid
+
+      - name: Wait for services
+        run: |
+          backend_ready=0
+          frontend_ready=0
+
+          echo "Waiting for backend..."
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:3000/api/health >/dev/null 2>&1; then
+              echo "Backend is up"
+              backend_ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          echo "Waiting for frontend..."
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:4200/5-TennisTournamentManager/ >/dev/null 2>&1; then
+              echo "Frontend is up"
+              frontend_ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$backend_ready" -ne 1 ]; then
+            echo "Backend did not become ready in time"
+            if [ -f projects/5-TennisTournamentManager/backend/backend.log ]; then
+              tail -n 200 projects/5-TennisTournamentManager/backend/backend.log || true
+            fi
+            exit 1
+          fi
+
+          if [ "$frontend_ready" -ne 1 ]; then
+            echo "Frontend did not become ready in time"
+            if [ -f projects/5-TennisTournamentManager/frontend.log ]; then
+              tail -n 200 projects/5-TennisTournamentManager/frontend.log || true
+            fi
+            exit 1
+          fi
+
+      - name: Run Playwright E2E
+        working-directory: projects/5-TennisTournamentManager
+        run: PLAYWRIGHT_SKIP_WEBSERVER=1 npm run test:e2e -- --project=chromium --workers=1
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: tennis-playwright-report
+          path: |
+            projects/5-TennisTournamentManager/playwright-report/
+            projects/5-TennisTournamentManager/test-results.json
+            projects/5-TennisTournamentManager/test-results/
+          retention-days: 30
+
+      - name: Upload service logs
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: tennis-e2e-service-logs
+          path: |
+            projects/5-TennisTournamentManager/backend/backend.log
+            projects/5-TennisTournamentManager/frontend.log
+          retention-days: 7
+
+      - name: Stop services
+        if: ${{ always() }}
+        run: |
+          if [ -f projects/5-TennisTournamentManager/backend/backend.pid ]; then
+            kill $(cat projects/5-TennisTournamentManager/backend/backend.pid) || true
+          fi
+          if [ -f projects/5-TennisTournamentManager/frontend.pid ]; then
+            kill $(cat projects/5-TennisTournamentManager/frontend.pid) || true
+          fi

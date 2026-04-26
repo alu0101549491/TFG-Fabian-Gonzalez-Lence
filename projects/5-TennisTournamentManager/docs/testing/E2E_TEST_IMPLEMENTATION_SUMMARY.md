@@ -52,6 +52,16 @@ The latest Playwright expansion added 29 runnable scenarios across critical, hig
 
 These 29 scenarios were verified with focused Chromium runs against the live local frontend and backend, typically using `PLAYWRIGHT_SKIP_WEBSERVER=1` with Playwright workers pinned to `1` for local stability.
 
+### Follow-up implementation after the 29-test expansion
+
+A later follow-up pass converted four previously deferred scenarios into runnable coverage:
+
+- `e2e/critical/auth.spec.ts`: `AUTH-006`
+- `e2e/critical/draw-generation.spec.ts`: `DRAW-001`, `DRAW-003`
+- `e2e/low/edge-cases.spec.ts`: `ERR-005`
+
+Those four scenarios were validated in Chromium with a focused rerun alongside the matching draw spec coverage already present in the suite.
+
 ## Generated E2E Structure
 
 ### Infrastructure
@@ -116,9 +126,9 @@ Implemented 18 new spec files:
 
 - New spec files added: 18
 - New page-object files added: 16
-- New tests added: 76
-- Runnable coverage targets: 56
-- Explicitly deferred targets with `skip` or `fixme`: 20
+- New tests added: 80
+- Runnable coverage targets: 66
+- Explicitly deferred targets with `skip` or `fixme`: 14
 
 ### Full Playwright Discovery Result
 
@@ -158,14 +168,11 @@ The generated suite covers the currently implemented UI for:
 
 ## Deferred or Partially Covered Scenarios
 
-The following items are intentionally marked `skip` or `fixme` because the current UI or seed determinism is not sufficient for reliable end-to-end automation yet:
+The following items are the current explicit `skip` or `fixme` scenarios still left in source because the active frontend does not expose stable UI coverage for them yet:
 
 - Password recovery
 - Login lockout feedback
 - JWT refresh flow
-- Consolation and compass draw management
-- Deterministic draft-bracket regeneration scenario with known seeded bracket id
-- Deterministic opponent confirmation and dispute workflows for pending results
 - 24-hour order-of-play publication rule feedback
 - Registration payments
 - Head-to-head and split standings views
@@ -177,7 +184,6 @@ The following items are intentionally marked `skip` or `fixme` because the curre
 - Document and certificate generation UI
 - Sanctions and replay-order UI
 - Chat, moderation, and group messaging UI
-- Deterministic duplicate-registration integrity scenario
 
 ## Technical Notes
 
@@ -200,6 +206,9 @@ The following validation was completed during implementation:
 - Static diagnostics on the page-object layer
 - Static diagnostics on the full `e2e/` tree
 - Playwright suite discovery using `npx playwright test --list`
+- Focused Chromium reruns for the 29-scenario expansion slice
+- Focused Chromium rerun for `AUTH-006`, `DRAW-001`, `DRAW-003`, and `ERR-005`
+- Broader Chromium rerun of `e2e/critical` with `50` passed and `4` skipped
 
 Issues found and fixed during validation:
 
@@ -208,12 +217,18 @@ Issues found and fixed during validation:
 
 ## Not Yet Performed
 
-The full browser suite was not executed end-to-end in this implementation pass.
+The full multi-project browser suite was not executed end-to-end in this documentation pass.
+
+What was executed instead:
+
+- Focused Chromium reruns covering the previously failing scenarios fixed during stabilization
+- A focused Chromium rerun covering the four newly implemented formerly deferred scenarios
+- A broader Chromium rerun of the full `e2e/critical` bucket
 
 Reason:
 
 - Many scenarios depend on seeded backend data, API availability, and stable runtime fixtures.
-- Discovery and static validation were used first to ensure the suite loads correctly before running a long integration pass.
+- Local stability is better with `PLAYWRIGHT_SKIP_WEBSERVER=1` and `--workers=1`, so focused reruns were used to validate the touched slices before any broader closure run.
 
 ## Run Instructions
 
@@ -235,6 +250,6 @@ npx playwright show-report
 
 ## Recommended Next Steps
 
-1. Run the `critical/` suite against a known-good backend seed and refine any selectors that fail at runtime.
-2. Add deterministic backend seed helpers for pending-result, bracket-regeneration, and registration-payment scenarios.
+1. Run a broader Chromium closure pass, ideally the full `critical/` bucket or the full suite, against the same known-good local backend seed.
+2. Treat the remaining 14 deferred cases as an explicit product/UI-gap sign-off item before closing the testing phase.
 3. Introduce stable `data-testid` attributes for the highest-value admin and modal flows to reduce selector fragility.
