@@ -17,7 +17,7 @@
     "projects": [
       {
         "outputDir": "/home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/test-results",
-        "repeatEach": 1,
+        "repeatEach": 5,
         "retries": 0,
         "metadata": {
           "actualWorkers": 1
@@ -146,61 +146,6 @@
   },
   "suites": [
     {
-      "title": "critical/result-management.spec.ts",
-      "file": "critical/result-management.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Match and Result Management - Critical",
-          "file": "critical/result-management.spec.ts",
-          "line": 80,
-          "column": 6,
-          "specs": [
-            {
-              "title": "MATCH-005 should let an opponent dispute a pending result",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1472,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "[auth.fixture] Reusing storage-state /home/fabian/GitHub/TFG-Fabian-Gonzalez-Lence/projects/5-TennisTournamentManager/e2e/.auth/participant2.json for maria@example.com\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-04-26T10:49:27.174Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "637a450473cae56ade61-5e1b36d02b5e20cbb787",
-              "file": "critical/result-management.spec.ts",
-              "line": 384,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
       "title": "doubles-tournament.spec.ts",
       "file": "doubles-tournament.spec.ts",
       "column": 0,
@@ -229,12 +174,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1905,
+                      "duration": 2013,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-26T10:49:28.719Z",
+                      "startTime": "2026-04-26T11:05:20.863Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -246,6 +191,142 @@
               "file": "doubles-tournament.spec.ts",
               "line": 702,
               "column": 3
+            },
+            {
+              "title": "enforces teammate confirmation restrictions and surfaces doubles statistics and dispute UI",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2042,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-26T11:05:25.073Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0cd577ddd4c2af75f810-0014ba71f4378b4e07e4",
+              "file": "doubles-tournament.spec.ts",
+              "line": 702,
+              "column": 3
+            },
+            {
+              "title": "enforces teammate confirmation restrictions and surfaces doubles statistics and dispute UI",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2063,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-26T11:05:29.357Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0cd577ddd4c2af75f810-41479b5e90ea6fe8ee84",
+              "file": "doubles-tournament.spec.ts",
+              "line": 702,
+              "column": 3
+            },
+            {
+              "title": "enforces teammate confirmation restrictions and surfaces doubles statistics and dispute UI",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1987,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-26T11:05:33.689Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0cd577ddd4c2af75f810-dc35fcfe2c8bb89a6369",
+              "file": "doubles-tournament.spec.ts",
+              "line": 702,
+              "column": 3
+            },
+            {
+              "title": "enforces teammate confirmation restrictions and surfaces doubles statistics and dispute UI",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1949,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-26T11:05:37.861Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0cd577ddd4c2af75f810-bf196135bd9e5da15137",
+              "file": "doubles-tournament.spec.ts",
+              "line": 702,
+              "column": 3
             }
           ]
         }
@@ -254,9 +335,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-26T10:49:26.370Z",
-    "duration": 5611.519,
-    "expected": 2,
+    "startTime": "2026-04-26T11:05:20.079Z",
+    "duration": 21252.067,
+    "expected": 5,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

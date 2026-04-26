@@ -407,12 +407,9 @@ test.describe('Match and Result Management - Critical', () => {
       await expect(secondParticipantPage.getByRole('heading', {name: /dispute match result/i})).toBeVisible();
       await secondParticipantPage.locator('#disputeReason').fill('The submitted tiebreak scores do not match the played sets.');
 
-      const [successDialog] = await Promise.all([
-        secondParticipantPage.waitForEvent('dialog'),
-        secondParticipantPage.getByRole('button', {name: /submit dispute/i}).click(),
-      ]);
-      await expect(successDialog.message()).toContain('Result disputed successfully.');
-      await successDialog.accept();
+      await secondParticipantPage.getByRole('button', {name: /submit dispute/i}).click();
+
+      await expect(secondParticipantPage.getByRole('heading', {name: /dispute match result/i})).toHaveCount(0);
 
       await expect(secondParticipantPage.locator('.pending-card').filter({hasText: pendingScoreSummary})).toHaveCount(0);
 

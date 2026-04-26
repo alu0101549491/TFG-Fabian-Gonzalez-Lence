@@ -74,6 +74,44 @@ export class MatchController {
   }
 
   /**
+   * Resolves a participant display name for singles or doubles dispute notifications.
+   *
+   * @param match - Match entity containing singles or doubles participant references
+   * @param userId - Participant user identifier
+   * @returns Human-readable participant display name
+   */
+  private async resolveParticipantDisplayName(match: Match, userId: string): Promise<string> {
+    if (match.participant1Id === userId && match.participant1) {
+      return `${match.participant1.firstName} ${match.participant1.lastName}`.trim();
+    }
+
+    if (match.participant2Id === userId && match.participant2) {
+      return `${match.participant2.firstName} ${match.participant2.lastName}`.trim();
+    }
+
+    if (match.participant1TeamId || match.participant2TeamId) {
+      const doublesTeamRepo = AppDataSource.getRepository(DoublesTeam);
+      const teamIds = [match.participant1TeamId, match.participant2TeamId].filter(Boolean) as string[];
+      const teams = await doublesTeamRepo.find({
+        where: teamIds.map((id) => ({id})),
+        relations: ['player1', 'player2'],
+      });
+
+      for (const team of teams) {
+        if (team.player1Id === userId) {
+          return `${team.player1.firstName} ${team.player1.lastName}`.trim();
+        }
+
+        if (team.player2Id === userId) {
+          return `${team.player2.firstName} ${team.player2.lastName}`.trim();
+        }
+      }
+    }
+
+    return 'A participant';
+  }
+
+  /**
    * Applies privacy filtering to participant user objects in matches.
    * Filters participant1, participant2, and winner based on viewer permissions.
    * 
@@ -1026,10 +1064,13 @@ export class MatchController {
       await matchResultRepository.save(result);
 
       // Notify administrators about the dispute
-      const adminUserIds = await this.notificationService.getAdminUserIds();
-      const disputer = match.participant1Id === userId ? match.participant1 : match.participant2;
-      const disputerName = disputer ? `${disputer.firstName} ${disputer.lastName}` : 'A participant';
-      await this.notificationService.notifyResultDisputed(id, adminUserIds, disputerName, disputeReason);
+      try {
+        const adminUserIds = await this.notificationService.getAdminUserIds();
+        const disputerName = await this.resolveParticipantDisplayName(match, userId);
+        await this.notificationService.notifyResultDisputed(id, adminUserIds, disputerName, disputeReason);
+      } catch (notificationError) {
+        console.error('Failed to dispatch dispute notifications:', notificationError);
+      }
 
       res.status(HTTP_STATUS.OK).json(result);
     } catch (error) {

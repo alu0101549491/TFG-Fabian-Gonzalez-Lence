@@ -179,7 +179,7 @@ test.describe('Standings - High', () => {
 
     // Navigate directly to the statistics page.
     await participantPage.goto('/statistics');
-    await expect(participantPage.getByRole('heading', {name: /statistics|performance/i})).toBeVisible({timeout: 8_000});
+    await expect(participantPage.getByRole('heading', {name: /player statistics/i})).toBeVisible({timeout: 8_000});
 
     // The stats page should render without a hard error.
     await expect(participantPage.locator('.error-banner, .error-container').first()).toBeHidden({timeout: 3_000});
