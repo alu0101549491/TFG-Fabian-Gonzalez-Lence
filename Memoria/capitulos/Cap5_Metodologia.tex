@@ -1,0 +1,207 @@
+% ---------------------------------------------------
+% Trabajo Final de Grado
+% Author: Fabián González Lence <alu0101549491@ull.edu.es>
+% Chapter: Metodología
+% ----------------------------------------------------
+
+\chapter{Metodología} \label{chap:Metodology}
+
+El presente capítulo describe en detalle la metodología adoptada para el desarrollo experimental del trabajo.
+Se articulan los cinco proyectos que conforman el experimento, el flujo de trabajo multimodelo con sus cuatro fases, las plantillas de prompts empleadas, las métricas de evaluación definidas y la planificación temporal del proceso.\\
+
+\section{Diseño experimental} \label{sec:diseno-experimental}
+
+El experimento que vertebra este trabajo se articula en torno a cinco proyectos web de complejidad creciente, cada uno de los cuales actúa como caso de estudio independiente dentro de un mismo marco metodológico.
+La progresión de complejidad no es arbitraria: cada proyecto introduce uno o varios elementos nuevos ---arquitectónicos, tecnológicos o de escala--- que no estaban presentes en el anterior, permitiendo observar cómo las capacidades y limitaciones de los modelos de \ac{IA} se manifiestan de forma diferencial según el nivel de exigencia del sistema a desarrollar.\\
+
+La Tabla~\ref{tab:proyectos-resumen} recoge las características principales de los cinco proyectos, incluyendo la arquitectura adoptada, la pila tecnológica, el número aproximado de ficheros de producción y el tipo de pruebas generadas.\\
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+
+\begin{tabularx}{\textwidth}{|p{1.5cm}|p{2.5cm}|Y|Y|p{1.5cm}|p{2cm}|}
+\hline
+\textbf{Proyecto} & \textbf{Arquitectura} & \textbf{Tecnologías} & \textbf{Función clave} & \textbf{Ficheros aprox.} & \textbf{Testing} \\
+\hline
+
+\ac{HANGMAN} &
+\ac{MVC} + Composite, Observer &
+TypeScript, Vite, Canvas \ac{API}, Bulma, Jest &
+Juego de letras con renderizado en Canvas, diccionario externo &
+9 módulos &
+Jest unitario (AAA) \\
+\hline
+
+\ac{PLAYER} &
+Component-Based + Custom Hooks &
+React 18, TypeScript, Vite, Jest, React Testing Library &
+Reproducción de audio, gestión de playlist, persistencia en localStorage &
+$\sim$15 módulos &
+Jest + RTL unitario \\
+\hline
+
+\ac{BALATRO} &
+Layered Architecture (MVC + Services) &
+React, TypeScript, Vite, Jest &
+Manos de póker, progresión por niveles, tienda, cartas especiales, assets generados con IA &
+$\sim$30 módulos &
+Jest unitario \\
+\hline
+
+\ac{CARTO} &
+Clean Architecture (4 capas) &
+Vue.js 3, TypeScript, Pinia, Socket.io, Axios, Playwright &
+Gestión de proyectos, tareas, mensajería en tiempo real, integración Dropbox, roles diferenciados &
+$>$300 ficheros &
+Playwright E2E \\
+\hline
+
+\ac{TENNIS} &
+Hexagonal Architecture (frontend + backend separados) &
+Angular 19, TypeScript, Node.js, Socket.io, Playwright &
+Gestión de torneos, brackets, order of play, sistema de dobles, notificaciones, múltiples roles &
+$>$400 ficheros &
+Playwright E2E \\
+\hline
+
+\end{tabularx}
+
+\caption{Resumen comparativo de los cinco proyectos del experimento.}
+\label{tab:proyectos-resumen}
+\end{table}
+
+\subsection{Proyecto 1 — The Hangman Game (\ac{HANGMAN})} \label{subsec:p1-hangman}
+
+\ac{HANGMAN} es una \ac{SPA} que implementa el clásico juego del ahorcado en TypeScript puro, sin ningún framework de interfaz.
+Basado en una de las prácticas planteadas en la asignatura del \textbf{itinerario de Computación}, \ac{PAI}, el objetivo de la aplicación es que el jugador adivine palabras de un diccionario de animales antes de completar el dibujo del ahorcado en un canvas HTML5, con un máximo de seis intentos fallidos.
+Su arquitectura sigue el patrón \ac{MVC} con aplicación adicional del patrón Composite en la capa de vista ---que compone cuatro componentes especializados: \texttt{WordDisplay}, \texttt{AlphabetDisplay}, \texttt{HangmanRenderer} y \texttt{MessageDisplay}--- y del patrón Observer para la gestión de eventos de usuario.\\
+
+Este proyecto fue concebido como el punto de partida del experimento por varias razones: la ausencia de framework elimina variables externas, el número reducido de módulos (9) lo hace manejable como primer caso de prueba, y la arquitectura \ac{MVC} es suficientemente conocida como para disponer de criterios de evaluación bien establecidos.
+El stack tecnológico se limita a TypeScript, Vite, la \ac{Canvas API} nativa y Bulma como framework CSS, con Jest y ts-jest para las pruebas unitarias.\\
+
+\subsection{Proyecto 2 — Music Web Player (\ac{PLAYER})} \label{subsec:p2-player}
+
+\ac{PLAYER} es un reproductor de música web construido con React 18 y TypeScript que permite la reproducción de canciones locales, la gestión de una lista de reproducción y la visualización de información de cada pista.
+La arquitectura adopta el patrón de Component-Based Architecture con Custom Hooks, donde la lógica de estado se encapsula en tres hooks reutilizables: \texttt{useAudioPlayer} (integración con la \ac{API} de Audio HTML5), \texttt{usePlaylist} (gestión de la lista de reproducción) y \texttt{useLocalStorage} (persistencia entre sesiones).\\
+
+Respecto a \ac{HANGMAN}, este proyecto introduce tres elementos nuevos: el uso de React como framework declarativo de interfaz, la separación entre componentes contenedor y componentes presentacionales, y la necesidad de gestionar estado asíncrono asociado a eventos multimedia.
+El framework de testing combina Jest con React Testing Library, lo que exige pruebas orientadas al comportamiento visible del usuario en lugar de a la implementación interna.\\
+
+\subsection{Proyecto 3 — Mini Balatro (\ac{BALATRO})} \label{subsec:p3-balatro}
+
+\ac{BALATRO} es un juego de cartas inspirado en el videojuego Balatro, en el que el jugador debe superar niveles de puntuación jugando manos de póker con una baraja francesa de 52 cartas, complementadas por cartas especiales (planetas, tarot y jokers).
+El sistema incluye progresión por niveles, encuentros con jefes cada tres rondas, economía de compra en tienda y persistencia del estado de partida en localStorage.\\
+
+La arquitectura adopta una Layered Architecture que combina el patrón \ac{MVC} con una capa de servicios transversales para la tienda, la configuración del juego y la persistencia.
+Este proyecto supone un salto de complejidad lógica significativo respecto a los anteriores: la evaluación de manos de póker, el cálculo del sistema de puntuación chips/multiplicador y la gestión de las interacciones entre cartas especiales requieren un dominio del modelo con muchas más entidades y relaciones que los proyectos previos.
+Adicionalmente, los assets gráficos de las cartas fueron generados con Google Gemini, introduciendo por primera vez la dimensión de generación de recursos visuales mediante \ac{IA}.\\
+
+\subsection{Proyecto 4 — Cartographic Project Manager (\ac{CARTO})} \label{subsec:p4-carto}
+
+\ac{CARTO} es una aplicación web y móvil para la gestión de proyectos cartográficos entre un administrador y múltiples clientes simultáneos.
+Sus funcionalidades incluyen gestión de proyectos con seguimiento de estado, asignación bidireccional de tareas con cinco estados posibles, mensajería interna por proyecto con adjuntos, integración con Dropbox para ficheros técnicos, sistema de roles con permisos diferenciados y notificaciones en tiempo real mediante WebSockets.\\
+
+La arquitectura adopta los principios de Clean Architecture, organizando el código en cuatro capas: Dominio (entidades, objetos de valor, interfaces de repositorio), Aplicación (servicios e interfaces), Infraestructura (implementaciones de repositorios, cliente HTTP Axios, manejador de Socket.io, servicios externos) y Presentación (componentes Vue.js 3, stores Pinia, composables y router).
+Con más de trescientos ficheros distribuidos en estas capas, \ac{CARTO} representa el punto de inflexión en el que el flujo conversacional de los proyectos anteriores resultó inviable, motivando el cambio metodológico descrito en el Capítulo~\ref{chap:AIModels}.
+El testing abandona las pruebas unitarias con Jest para adoptar pruebas \textit{end-to-end} con Playwright, más adecuadas para verificar el comportamiento integrado de una aplicación full-stack.\\
+
+\subsection{Proyecto 5 — Tennis Tournament (\ac{TENNIS})} \label{subsec:p5-tennis}
+
+\ac{TENNIS} es una aplicación web responsive para la gestión integral de torneos de tenis, orientada a tres tipos de usuario con roles y permisos diferenciados: organizadores, participantes registrados y público general.
+El sistema cubre el ciclo completo de un torneo: creación y configuración, registro de participantes (incluyendo un sistema de invitaciones para modalidad dobles), diseño del cuadro, generación del order of play con gestión de pistas y horarios, registro de resultados, cálculo de clasificaciones y publicación de comunicados.\\
+
+Es el proyecto arquitectónicamente más complejo del experimento, con una separación explícita entre frontend y backend como subproyectos dentro del mismo monorepo.
+El frontend utiliza Angular 19 con componentes standalone, mientras que el backend está implementado en Node.js sobre Express e incorpora Socket.io para la comunicación en tiempo real.
+La arquitectura del frontend sigue una organización inspirada en principios hexagonales, con capas de dominio, aplicación, infraestructura y presentación.
+El agente de codificación planificó 24 categorías de ficheros y generó en torno a 420 ficheros de código fuente de producción, lo que lo convierte en el proyecto de mayor escala del trabajo.\\
+
+\subsection{Justificación de la progresión de complejidad} \label{subsec:justificacion-progresion}
+
+La secuencia de los cinco proyectos fue diseñada para que cada uno introdujera un incremento de complejidad manejable pero significativo respecto al anterior, de forma que las limitaciones de los modelos se manifestasen de forma gradual y observable.
+\ac{HANGMAN} establece la línea base con arquitectura \ac{MVC} plana y TypeScript puro; \ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono; \ac{BALATRO} añade complejidad lógica del dominio y generación de assets visuales; \ac{CARTO} escala a una aplicación full-stack multicapa con tiempo real e integración de servicios externos; y \ac{TENNIS} maximiza la complejidad con una arquitectura frontend/backend y funcionalidades de negocio sofisticadas.\\
+
+Esta progresión responde también a una lógica de aprendizaje metodológico: cada proyecto permitió refinar los prompts, ajustar los criterios de evaluación y detectar los patrones de fallo de los modelos antes de enfrentarse al siguiente nivel de exigencia.
+El cambio de herramientas entre los proyectos 3 y 4 ---de Mistral/Qwen a GitHub Copilot agente--- no fue planificado desde el inicio, sino que surgió precisamente como respuesta a las limitaciones observadas durante el desarrollo de \ac{BALATRO} y las primeras fases de \ac{CARTO}, convirtiéndose en uno de los hallazgos metodológicos más relevantes del trabajo.
+
+\section{Flujo de trabajo multimodelo} \label{sec:flujo-trabajo}
+
+El desarrollo de cada proyecto siguió un flujo de trabajo estructurado en cuatro fases secuenciales, cada una con una \ac{IA} asignada como responsable principal, artefactos de entrada y salida bien definidos, y criterios de transición hacia la siguiente fase.
+Este flujo reproduce, de forma deliberada, la dinámica de un equipo de desarrollo especializado, con la particularidad de que todos sus miembros son modelos de \ac{IA} y la coordinación entre ellos es responsabilidad del ingeniero supervisor.
+La Figura~\ref{fig:flujo-trabajo} ilustra la secuencia de fases y los actores involucrados.
+
+\subsection{Fase 1 — Arquitectura y diseño} \label{subsec:fase-arquitectura}
+
+\begin{itemize}
+    \item \textbf{Responsable:} Claude (IA Arquitecto).
+    \item \textbf{Entrada:} Especificación de requisitos, diagramas de clases UML, diagramas de casos de uso y decisiones de diseño sobre patrones y pila tecnológica.
+    \item \textbf{Salida:} Árbol completo de directorios y ficheros del proyecto, ficheros de configuración, esqueletos de clases con métodos declarados sin implementar, README.md y ARCHITECTURE.md.
+\end{itemize}
+
+En esta fase, el ingeniero proporcionaba a Claude un prompt estructurado que incluía el contexto del proyecto, la arquitectura seleccionada, la pila tecnológica, los artefactos de diseño como adjuntos y las instrucciones precisas sobre los entregables esperados.
+En algunos casos, resultó necesaria instrucción explícita ``\textit{DO NOT implement logic yet, only architecture structure}'' para obtener esqueletos limpios en lugar de código de negocio prematuro que pudiera entrar en conflicto con las decisiones de la fase de codificación.\\
+
+La calidad de esta fase fue determinante para el éxito de las fases posteriores: una estructura de directorios coherente con el diagrama de clases, nombres de ficheros y clases consistentes con las convenciones del Google TypeScript Style Guide \cite{URL::Google-style} y esqueletos con las responsabilidades correctamente asignadas facilitaban enormemente la tarea del \ac{IA} Desarrollador en la fase siguiente.
+Claude demostró en esta fase una capacidad superior a los demás modelos evaluados para mantener coherencia entre los distintos artefactos de salida ---el árbol de directorios, los esqueletos de clases y la documentación--- a lo largo de proyectos de creciente complejidad.
+
+\subsection{Fase 2 — Codificación} \label{subsec:fase-codificacion}
+
+\begin{itemize}
+    \item \textbf{Responsable:} Mistral (IA Desarrollador) en proyectos P1--P3; GitHub Copilot en modo \textbf{Agente de Desarrollo} en P4--P5.
+    \item \textbf{Entrada:} Artefactos generados en la Fase 1, especificación de requisitos, diagramas de clases y de casos de uso.
+    \item \textbf{Salida:} Código fuente completo de cada módulo con la lógica de negocio implementada, documentación JSDoc/TSDoc en todos los métodos públicos y gestión de excepciones.
+\end{itemize}
+
+En los proyectos P1--P3, la codificación se realizaba módulo a módulo mediante el chatbot web de Mistral.
+Para cada componente, el ingeniero enviaba un prompt estructurado que especificaba el nombre del módulo, sus responsabilidades, los métodos a implementar con sus precondiciones y postcondiciones, las dependencias con otras clases y las restricciones de estilo (Google Style Guide, principios \ac{SOLID}, patrones de desarrollo, etc.).
+El prompt incluía como adjuntos la especificación de requisitos, el diagrama de clases y el diagrama de casos de uso para que el modelo dispusiera del contexto completo del sistema, no solo del módulo en curso.\\
+
+En los proyectos P4--P5, GitHub Copilot en modo agente recibía un prompt equivalente pero operaba directamente sobre el sistema de ficheros: podía leer los esqueletos generados en la Fase 1, navegar por los ficheros de dependencias, ejecutar \texttt{tsc --noEmit} para verificar errores de tipado y aplicar correcciones iterativas dentro del mismo agente, sin intervención manual del ingeniero entre iteraciones.
+En \ac{TENNIS}, el agente de codificación planificó 24 categorías de ficheros antes de comenzar a implementar, definiendo el orden de generación basado en las dependencias entre módulos para minimizar los errores de importación circular.
+
+\subsection{Fase 3 — Revisión de código} \label{subsec:fase-revision}
+
+\textbf{Responsable:} GitHub Copilot (modelo GPT-4o mini) en todos los proyectos.\\
+\textbf{Entrada:} Código fuente implementado en la Fase 2, especificación de requisitos y diagramas de clases.\\
+\textbf{Salida:} Informe de revisión con puntuación ponderada (0--10) y decisión de aprobación o rechazo; código corregido.\\
+
+El prompt de revisión definía cinco criterios ponderados: \textbf{Adherencia al diseño} (30\%), \textbf{Calidad del código} (25\%), \textbf{Cumplimiento de requisitos} (25\%), \textbf{Mantenibilidad} (10\%) y \textbf{Buenas prácticas} (10\%).
+Para cada criterio, el revisor evaluaba una lista de comprobaciones específicas ---respeto de la arquitectura, detección de \textit{code smells}, gestión de excepciones, nomenclatura, principios \ac{SOLID}--- y asignaba una puntuación que se combinaba en una puntuación ponderada final.
+El informe incluía además una decisión ternaria: \textbf{APPROVED}, \textbf{APPROVED WITH RESERVATIONS} o \textbf{REJECTED}, con el listado de incidencias que bloqueaban la aprobación en el último caso.\\
+
+En los proyectos P1--P3, la revisión se realizaba componente a componente mediante el chatbot de Copilot en el \ac{IDE}.
+A partir de \ac{CARTO} (P4), el flujo evolucionó al \textbf{Revisor 2.0}: tres prompts secuenciales ejecutados por el agente de Copilot sobre toda la base de código.
+El primer prompt generaba una TODO List que organizaba todos los ficheros en grupos lógicos de revisión.
+El segundo prompt ejecutaba la revisión sistemática de cada grupo y producía un informe de incidencias con identificadores únicos, severidades (crítica, alta, media, baja) y propuestas de corrección.
+El tercer prompt seguía el informe para implementar las correcciones verificadas.
+En \ac{CARTO}, este proceso revisó 303 ficheros organizados en 41 grupos e identificó 225 incidencias.\\
+
+\subsection{Fase 4 — Testing} \label{subsec:fase-testing}
+
+\textbf{Responsable:} Qwen (IA Tester) en proyectos P1--P3; GitHub Copilot en modo agente en P4--P5.\\
+\textbf{Entrada:} Código fuente revisado y aprobado en la Fase 3, especificación de requisitos y diagramas de casos de uso.\\
+\textbf{Salida:} Suite de pruebas completa con cobertura de casos normales, límite y excepcionales; informe de cobertura.\\
+
+En los proyectos P1--P3, el prompt de testing proporcionaba a Qwen el código del módulo bajo prueba, la configuración de Jest y tsconfig, y las instrucciones para generar una suite siguiendo el patrón \textit{Arrange-Act-Assert} con casos normales, de frontera y excepcionales.
+El prompt incluía una matriz de cobertura como entregable explícito ---con filas por método y columnas por tipo de caso--- para forzar una cobertura razonada en lugar de tests triviales.
+La configuración del entorno de pruebas (jest-environment-jsdom para módulos con dependencias del DOM, mocks de módulos externos) debía especificarse en el prompt para evitar errores de importación en la primera ejecución.\\
+
+A partir de \ac{CARTO} (P4), la adopción de Playwright como framework de testing y la complejidad del sistema ---con autenticación JWT, comunicación WebSocket y flujos multiusuario--- hacía inviable el enfoque de testing módulo a módulo.
+El \textbf{Tester 2.0} adoptó un flujo de dos etapas agentivas.
+En la primera, el agente analizaba los diagramas de casos de uso y el código de las vistas y componentes para generar un documento de escenarios de prueba detallado, con precondiciones, pasos, resultados esperados y postcondiciones para cada escenario.
+En la segunda, el agente implementaba los tests de Playwright en ficheros organizados por prioridad (crítica, alta, media, baja) siguiendo el patrón Page Object Model, con fixtures de autenticación reutilizables y datos de prueba centralizados.
+En \ac{CARTO}, se definieron 132 escenarios de prueba y se implementaron 131 tests de Playwright.\\
+
+\subsection{Rol del ingeniero supervisor} \label{subsec:rol-ingeniero}
+
+A lo largo de las cuatro fases, la intervención humana siguió un principio de \textbf{supervisión activa con delegación máxima}: el ingeniero definía los artefactos de entrada, validaba los artefactos de salida y gestionaba las transiciones entre fases, pero delegaba en los modelos la generación de todos los artefactos de código, documentación y pruebas.\\
+
+Las intervenciones directas del ingeniero se limitaron a cuatro tipos de situaciones.
+\textbf{Errores de integración} que los modelos no podían resolver sin contexto del estado real del repositorio, como conflictos entre convenciones de nomenclatura de módulos generados en distintas sesiones.
+\textbf{Decisiones de diseño no especificadas} en los artefactos de entrada, como la elección entre dos alternativas de implementación igualmente válidas que el modelo no podía resolver sin criterio adicional.
+\textbf{Errores de entorno} no relacionados con la lógica del código, como problemas de configuración de Jest con módulos ES o incompatibilidades de versiones de dependencias.
+\textbf{Validación final} de que el resultado de cada fase cumplía con los criterios de calidad antes de pasar a la siguiente, incluyendo la decisión de reiterar una fase cuando el resultado no alcanzaba el umbral de aprobación definido en las métricas de evaluación ---descritas en la Sección~\ref{sec:metricas-evaluacion}---.\\
+
+Esta distribución de responsabilidades entre humano e \ac{IA} reproduce, de forma aproximada, el modelo de cooperación descrito por \cite{Khade:2025:AIinSD}: la \ac{IA} automatiza las tareas de producción mientras el humano aporta el juicio crítico y la toma de decisiones que los modelos no pueden realizar de forma fiable.
+La diferencia fundamental respecto a los escenarios estudiados en la literatura es que en este trabajo el humano no solo supervisa un modelo, sino que orquesta activamente un equipo heterogéneo de modelos especializados, gestionando los contratos entre fases y adaptando el flujo cuando las capacidades de un modelo se revelaban insuficientes para el nivel de complejidad del proyecto en curso.\\

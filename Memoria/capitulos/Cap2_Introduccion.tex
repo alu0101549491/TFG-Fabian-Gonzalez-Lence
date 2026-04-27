@@ -1,0 +1,89 @@
+% ---------------------------------------------------
+% Trabajo Final de Grado
+% Author: Fabián González Lence <alu0101549491@ull.edu.es>
+% Chapter: Introducción
+% ----------------------------------------------------
+
+\cleardoublepage
+\chapter{Introducción} \label{chap:Introduccion}
+
+\section{Motivación y contexto} \label{sec:motivacion}
+
+La Inteligencia Artificial (\ac{IA}), y en particular la \ac{IA} generativa, está redefiniendo el ciclo de vida del desarrollo de software (SDLC). Lo que hace apenas unos años se consideraba un complemento experimental se ha convertido en un activo central que potencia entornos de desarrollo inteligentes, capaces de automatizar tareas clave, mejorar la eficiencia, acelerar los ciclos de entrega y aumentar la calidad del producto final.\\
+
+El impacto de las herramientas asistidas por \ac{IA} en la industria del software es especialmente significativo porque se trata de uno de los dominios en los que estas tecnologías obtienen posiblemente sus mejores resultados. Las estadísticas respaldan esta afirmación: Según encuestas e informes recientes del sector \cite{StackOverflow:2025, JetBrains:2025}, la adopción de herramientas de \ac{IA} en el desarrollo de software actualmente es algo generalizado. Por ejemplo, una encuesta de Stack Overflow\footnote{Encuesta de Stack Overflow: \url{https://survey.stackoverflow.co/2025/}} realizada en 2025 indica que aproximadamente el 84\% de los desarrolladores ya utilizan o planean utilizar herramientas de \ac{IA} en sus flujos de trabajo, mientras que el informe \textit{State of Developer Ecosystem} de JetBrains\footnote{Informe de JetBrains: \url{https://www.jetbrains.com/lp/devecosystem-2025/}} sitúa esta cifra en torno al 85\%.\\
+
+El alcance de la \ac{IA} en el SDLC trasciende la mera generación de código. En las \textbf{fases iniciales} de planificación e ingeniería de requisitos, los modelos de \textit{Machine Learning} facilitan estimaciones de esfuerzo más precisas, mientras que el procesamiento de lenguaje natural permite generar historias de usuario, detectar inconsistencias en los requisitos y convertir especificaciones textuales en formatos accionables.\\
+
+En la \textbf{fase de diseño}, los \ac{LLMs} pueden proponer candidatos a arquitecturas de software y patrones de diseño a partir de requisitos, así como generar maquetas de interfaz y modelos de datos. En la \textbf{fase de desarrollo}, herramientas como GitHub Copilot\footnote{GitHub Copilot: \url{https://github.com/features/copilot}}, OpenAI Codex\footnote{OpenAI Codex: \url{https://openai.com/codex/}} o DeepMind AlphaCode\footnote{DeepMind AlphaCode: \url{https://deepmind.google/}} convierten descripciones en lenguaje natural en código ejecutable e integran asistencia en tiempo real dentro de los entornos de desarrollo. En la \textbf{fase de pruebas}, los algoritmos de IA generan casos de prueba, detectan defectos y optimizan la cobertura con menor intervención humana. Incluso en las \textbf{operaciones de despliegue}, la \ac{IA} automatiza la generación de flujos de trabajo automatizados para las aplicaciones mediante el uso de GitHub Actions\footnote{GitHub Actions: \url{https://github.com/features/actions}}, la monitorización del rendimiento y la detección de anomalías.\\
+
+Sin embargo, las investigaciones realizadas se han centrado mayoritariamente en evaluar el rendimiento individual de los modelos en tareas aisladas, prestando particular atención a la generación de código \cite{Wang:2023:LLMReview, Tosi:2024:CodeQuality}. El potencial de \textbf{colaboración entre múltiples \ac{IAs} especializadas} a lo largo del ciclo completo de desarrollo sigue siendo un terreno poco explorado \cite{Turunen:2023:FromIdeas}. ¿Qué ocurre cuando se asignan roles diferenciados a distintos modelos ---uno como arquitecto, otro como desarrollador, otro como revisor de código y otro como generador de pruebas--- y se les hace cooperar de forma coordinada para construir aplicaciones no triviales? Esta es una de las preguntas que motivan este trabajo.\\
+
+Precisamente en aportar información en el contexto antes señalado se enmarca este \textbf{Trabajo de Fin de Grado}, que propone analizar cómo diferentes agentes de \ac{IA} pueden cooperar de forma complementaria para desarrollar software de manera integrada, evaluando la coherencia, calidad y eficacia del producto resultante. Para ello, se diseña un experimento en el que \textbf{cinco proyectos web de complejidad creciente} ---desde un juego sencillo hasta un sistema de gestión de torneos de tenis con múltiples roles de usuario--- son construidos casi en su totalidad por herramientas de \ac{IA}, con intervención humana limitada a la supervisión, la validación y la corrección de errores puntuales, sin llegar a intervenir en el desarrollo de código.\\
+
+\begin{comment}
+    Los modelos empleados incluyen \textbf{ChatGPT} (OpenAI), \textbf{Claude} (Anthropic), \textbf{Mistral}, \textbf{GitHub Copilot} y \textbf{Qwen} (Alibaba), asignados a distintas fases del desarrollo según sus fortalezas observadas. Este enfoque multimodelo y multifase permite no solo evaluar la calidad del código generado, sino también estudiar la viabilidad de un flujo de trabajo semiautomático basado en la cooperación entre IAs especializadas, un paradigma que Khade \textit{et al.} \cite{Khade:2025:AIinSD} describen como el futuro previsible de la ingeniería del software.\\
+\end{comment}
+
+% \section{Objetivos del trabajo} \label{sec:objetivos}
+
+\section{Metodología general} \label{sec:metodologia-general}
+
+La metodología adoptada en este trabajo se articula en torno a dos ejes complementarios: un \textbf{diseño experimental basado en proyectos de creciente complejidad} y un \textbf{flujo de trabajo multimodelo} en el que distintos modelos de \ac{IA} asumen roles especializados dentro del SDLC.\\
+
+Se han definido cinco aplicaciones que, ordenadas de menor a mayor complejidad arquitectónica, funcional y tecnológica se referencian como \ac{HANGMAN}, \ac{PLAYER}, \ac{BALATRO}, \ac{CARTO} y \ac{TENNIS}. 
+Esta progresión permite observar cómo escalan las capacidades y limitaciones de los modelos a medida que aumentan las exigencias, desde una \ac{SPA} con patrón \ac{MVC} hasta un sistema multirrol con comunicación en tiempo real. Para cada proyecto, el proceso de desarrollo se estructura en cuatro fases inspiradas en el SDLC  tradicional, cada una asignada a un modelo o herramienta de \ac{IA} seleccionado por sus fortalezas observadas según el proyecto:
+
+\begin{enumerate}
+  \item \textbf{Arquitectura y diseño}: Se redacta la especificación de requisitos, y a partir de esta, el modelo genera la estructura del proyecto, los diagramas de clases, los casos de uso y la documentación detallada de cada módulo.
+
+  \item \textbf{Codificación}: Utilizando como entrada los artefactos de diseño producidos en la fase anterior, el modelo genera el código fuente completo de cada módulo, siguiendo las restricciones tecnológicas y los estándares de estilo definidos en el \textit{prompt}.
+
+  \item \textbf{Revisión de código}: El código generado se somete a un proceso de revisión automatizada mediante \textit{prompts} estructurados que evalúan adherencia al diseño, calidad del código, cumplimiento de requisitos, mantenibilidad y buenas prácticas, produciendo un informe con puntuación ponderada y recomendaciones de mejora.
+
+  \item \textbf{Testing}: A partir del código revisado y aprobado, se genera un conjunto completo de pruebas unitarias con Jest \cite{URL::Jest} o Playwright \cite{URL::Playwright}, verificando casos normales, casos límite, casos excepcionales y escenarios de integración.
+\end{enumerate}
+
+Este flujo de trabajo reproduce, de forma deliberada, la dinámica de un equipo de desarrollo en el que cada miembro posee una especialización diferente, con la particularidad de que todos los miembros son modelos de \ac{IA}. La intervención humana se limita a la redacción de las especificaciones iniciales, la supervisión del proceso, la validación de los resultados intermedios y la corrección de errores puntuales que los modelos no logran resolver por sí mismos.\\
+
+A lo largo del experimento, se documentan todas las decisiones tomadas, incluyendo las interacciones cuando un modelo produce resultados insatisfactorios. Este registro detallado constituye, en sí mismo, uno de los principales resultados del trabajo, ya que permite analizar no solo la calidad del software resultante sino también la eficacia del proceso de interacción con las \ac{IA}.\\
+
+\begin{comment}
+    Cabe señalar que, a partir del cuarto proyecto (\ac{CARTO}), se produjo un \textbf{cambio de enfoque metodológico}: el modelo empleado para la codificación y generación de pruebas pasó de ser un chatbot conversacional (Mistral y Qwen) a GitHub Copilot en modo agente, integrado directamente en el entorno de desarrollo con distintos modelos de \ac{IA}. Este cambio, motivado por las limitaciones de escalabilidad observadas en los proyectos anteriores, se documenta y analiza en detalle en el Capítulo~\ref{chap:AIModels} como un hallazgo metodológico relevante del trabajo. El Capítulo~\ref{chap:Metodology} desarrolla en profundidad cada uno de estos aspectos, incluyendo las plantillas de \textit{prompts} utilizadas, las métricas de evaluación definidas y la planificación temporal del experimento.\\
+\end{comment}
+
+\section{Estructura del documento} \label{sec:estructura-documento}
+
+\begin{description}
+
+  \item[Capítulo~\ref{chap:RelatedWork}: Estado del Arte.] Se sitúa el presente \ac{TFG} en el contexto de la literatura existente sobre generación de código con \ac{LLMs}, evaluación de calidad del software generado por \ac{IA} y colaboración multiagente.
+
+  \item[Capítulo~\ref{chap:AIModels}: Modelos de IA y Herramientas.] Se describen los modelos y herramientas de \ac{IA} utilizados en el trabajo, justificando la selección de cada uno y el rol asignado dentro del flujo de desarrollo. Se documenta también el cambio de enfoque metodológico introducido a partir del cuarto proyecto.
+
+  \item[Capítulo~\ref{chap:Metodology}: Metodología.] Se detalla el diseño experimental del trabajo: la definición de los cinco proyectos, el flujo de trabajo multimodelo, las plantillas de \textit{prompts} utilizadas y la planificación temporal del experimento.
+
+  \item[Capítulo~\ref{chap:Design}: Diseño de los Proyectos.] Se presentan las especificaciones de requisitos, los diagramas de clases y casos de uso, decisiones arquitectónicas y las tecnologías seleccionadas para cada uno de los cinco proyectos, con especial atención a la progresión en complejidad.
+
+  \item[Capítulo~\ref{chap:Codification}: Desarrollo.] Se documenta el proceso de codificación, revisión y \textit{testing} asistidos por \ac{IA} de cada proyecto, analizando los \textit{prompts} empleados, las decisiones tomadas y las diferencias observadas entre cada proyecto.
+
+  \item[Capítulo~\ref{chap:Results}: Resultados y Análisis.] Se presentan y analizan los resultados del experimento: métricas de calidad de software y valoración global del enfoque colaborativo multimodelo.
+
+  \item[Capítulo~\ref{chap:Conclusions}: Conclusiones y Trabajo Futuro.] Se sintetizan las principales conclusiones del trabajo, se discuten las limitaciones encontradas y se proponen líneas futuras de investigación orientadas a mejorar la cooperación entre modelos de \ac{IA} en el desarrollo de software.
+
+  \item[Capítulo~\ref{chap:Budget}: Presupuesto.] Se detalla la estimación del coste económico del proyecto, incluyendo suscripciones a chatbots y servicios de IA utilizados.
+\end{description}
+
+\begin{comment}
+
+En la última década, los avances en el campo del aprendizaje profundo (\textit{deep learning}) y del procesamiento del lenguaje natural han propiciado la aparición de los denominados \textbf{modelos de lenguaje de gran tamaño} (\textit{Large Language Models, LLMs}), capaces de comprender y generar texto con un grado de coherencia y precisión cada vez mayor, abriendo nuevas posiblidades en diversos ámbitos, entre ellos la \textbf{generación automática de código}, una de las áreas de mayor interés y controversia en la ingeniería informática contemporánea.\\
+
+\noindent El presente \textbf{Trabajo de Fin de Grado} tiene como objetivo principal \textbf{evaluar las capacidades de múltiples \textit{LLMs} en la generación de código} dentro del ámbito de las aplicaciones web, analizando la calidad, eficiencia y corrección de los resultados obtenidos frente a los estándares de desarrollo software actuales. Para ello, se estudiarán modelos representativos de la actualidad como \textbf{GPT-5}, \textbf{Claude Sonnet 4.5}, \textbf{Claude Opus 4.6}, \textbf{Mistral AI} y \textbf{Qwen-2.5 Max}, entre otros, con el propósito de determinar su rendimiento y fiabilidad en contextos de programación real, en donde se encargarán de construir cada proyecto desde cero casi en su totalidad en un proceso colaborativo entre ellas.\\
+
+\noindent La metodología adoptada se basa en la elaboración de un conjunto de \textbf{proyectos prácticos} de distinta complejidad, desde los que se evaluará el desempeño general de los modelos trabajando de forma colaborativa cumpliendo cada una un rol distintivo para generar código funcional, mantenible y estructurado conforme a los principios de la programación orientada a objetos, el diseño modular y las buenas prácticas de desarrollo web.\\
+
+\noindent Este trabajo busca contribuir al entendimiento del papel que desempeñan actualmente los modelos de lenguaje en la automatización de tareas de programación, así como reflexionar sobre su impacto en la \textbf{formación de futuros ingenieros informáticos} y en los \textbf{cambios que pueden ocasionar en el proceso de desarrollo de software}. En definitiva, con este estudio se busca ofrecer una visión crítica y fundamentada sobre el grado de madurez de estas herramientas, su aplicabilidad práctica y las implicaciones éticas y profesionales derivadas de su uso en entornos reales de programación de forma generalizada.\\
+
+Colocar al final del capítulo un apartado
+\textbf{Estructura del documento} en el que se explique el contenido de cada capítulo
+
+\end{comment}
