@@ -80,6 +80,13 @@ function getCrossMonthTaskWindow(): {dueDate: Date; deliveryDate: Date} {
   return {dueDate, deliveryDate};
 }
 
+function getCurrentMonthVisibleDate(offsetDays = 0): Date {
+  const now = new Date();
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const visibleDay = Math.min(now.getDate() + offsetDays, lastDayOfMonth);
+  return new Date(now.getFullYear(), now.getMonth(), visibleDay, 12, 0, 0, 0);
+}
+
 test.describe('Calendar (medium)', () => {
   test.use({storageState: AUTH_STATE_ADMIN_PATH});
 
@@ -427,6 +434,8 @@ test.describe('Calendar (client isolation)', () => {
   test('CAL-006: client calendar only shows client-visible projects', async ({browser}) => {
     const apiContext = await request.newContext({baseURL: getApiBaseUrl()});
     const nonce = uniqueNonce('pw-cal-006');
+    const visibleDeliveryDateA = getCurrentMonthVisibleDate(0);
+    const visibleDeliveryDateB = getCurrentMonthVisibleDate(1);
 
     const {client: adminApi} = await CpmApiClient.login(apiContext, DEV_ACCOUNTS.ADMIN);
 
@@ -461,8 +470,8 @@ test.describe('Calendar (client isolation)', () => {
       type: 'GIS',
       coordinateX: null,
       coordinateY: null,
-      contractDate: daysFromToday(0).toISOString(),
-      deliveryDate: daysFromToday(3).toISOString(),
+      contractDate: visibleDeliveryDateA.toISOString(),
+      deliveryDate: visibleDeliveryDateA.toISOString(),
     });
 
     const projectB = await adminApi.createProject({
@@ -473,8 +482,8 @@ test.describe('Calendar (client isolation)', () => {
       type: 'GIS',
       coordinateX: null,
       coordinateY: null,
-      contractDate: daysFromToday(0).toISOString(),
-      deliveryDate: daysFromToday(4).toISOString(),
+      contractDate: visibleDeliveryDateB.toISOString(),
+      deliveryDate: visibleDeliveryDateB.toISOString(),
     });
 
     const baseURL =
@@ -492,7 +501,8 @@ test.describe('Calendar (client isolation)', () => {
     try {
       await login(page, {email: clientAEmail, password: clientAPassword});
 
-      await page.goto('calendar');
+      await expect(page.getByRole('link', {name: 'Calendar'})).toBeVisible();
+      await page.getByRole('link', {name: 'Calendar'}).click();
       await expect(page.getByRole('heading', {name: 'Project Calendar'})).toBeVisible();
 
       await expect(
