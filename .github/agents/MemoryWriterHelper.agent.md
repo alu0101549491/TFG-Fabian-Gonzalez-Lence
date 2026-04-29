@@ -57,3 +57,12 @@ Antes de escribir cualquier capítulo, lee los capítulos existentes (especialme
 - Código LaTeX listo para copiar y pegar en el fichero correspondiente
 - Sin bloques de explicación alrededor del LaTeX salvo que se pidan expresamente
 - Si hay dudas sobre datos concretos (fechas, métricas, cifras), preguntar antes de inventar
+
+## IMPORTANT: TODO Style Guidelines
+
+- No puedes abusar de `textbf{}` en la escritura de los párrafos. Este no debe ser usado en medio de un párrafo.
+- Los términos y palabras en inglés deben ir en cursiva usando `\textit{}`. No usar negrita para términos en inglés.
+- Importante añadir referencias bibliográficas y notas a pie de página cuando se mencione un concepto, tecnología o dato específico que no sea de conocimiento común.
+- No abusar de los acrónimos. Si un término se menciona solo una vez, escribirlo sin acrónimo. Solo usar `\ac{}` para términos que se mencionan varias veces a lo largo de la memoria.
+- NO REPETIR COSAS YA EXPLICADAS EN OTROS CAPÍTULOS. Si un concepto ya se ha explicado en otro capítulo, referenciarlo con `\ref{}` y no volver a explicarlo.
+- Cada capítulo tiene un propósito específico, por lo que no deberías explicar cosas que no correspondan al propósito de ese capítulo y tengan otro capítulo (ya sea escrito o por escribir) que se encargue de explicar ese concepto. Por ejemplo, no deberías explicar alguno de los modelos de IA en el capítulo de metodología si ya hay un capítulo específico que se encarga de explicar los modelos de IA usados en el proyecto.
