@@ -51,47 +51,71 @@ Más allá del incremento absoluto de tamaño, la progresión obedece a una lóg
 
 \section{Roles de IA y flujo de trabajo} \label{sec:flujo-trabajo}
 
-El desarrollo de cada proyecto sigue un flujo en cuatro fases secuenciales inspirado en el \ac{SDLC}, en el que cada fase tiene una \ac{IA} responsable, artefactos de entrada y salida bien definidos y un criterio explícito de transición a la siguiente. La asignación concreta de modelos a roles se justifica en la Sección~\ref{sec:models-description}; aquí se describe la dinámica de trabajo y la división de responsabilidades.\\
+El desarrollo de cada proyecto sigue un flujo en cuatro fases secuenciales inspirado en el \ac{SDLC}, en el que cada fase tiene una \ac{IA} responsable, artefactos de entrada y salida bien definidos y un criterio explícito de transición a la siguiente. La asignación concreta de modelos a roles y la evolución de las herramientas empleadas se tratan en las Secciones~\ref{sec:models-description} y~\ref{sec:approach-change}; aquí se describe únicamente la dinámica de trabajo y la división de responsabilidades.\\
 
-\textbf{Fase 1 --- Arquitectura.} A partir de la especificación de requisitos y de los diagramas UML \cite{Fowler:2004:UML} de clases y de casos de uso, la \ac{IA} Arquitecto produce el árbol de directorios completo, los ficheros de configuración, los esqueletos de clases con métodos declarados pero sin implementar, y la documentación inicial (\texttt{README.md} y \texttt{ARCHITECTURE.md}). El prompt incluye una instrucción explícita ---``\textit{do not implement logic yet, only architecture structure}''--- para evitar que el modelo introduzca lógica de negocio prematura que después entre en conflicto con la fase de codificación.\\
+\textbf{Fase 1 --- Arquitectura.} A partir de la especificación de requisitos y de los diagramas UML \cite{Fowler:2004:UML} de clases y de casos de uso, la \ac{IA} Arquitecto produce el árbol de directorios, los esqueletos de clases sin lógica y la documentación inicial. La transición a la Fase 2 requiere que el árbol compile sin errores y que los esqueletos incluyan firma y cabecera documentada.\\\\
 
-\textbf{Fase 2 --- Codificación.} La \ac{IA} Desarrollador implementa el código de cada módulo a partir de los esqueletos generados en la Fase 1, respetando el Google TypeScript Style Guide \cite{URL::Google-style}, los principios SOLID y las restricciones detalladas en el prompt. En \ac{HANGMAN}, \ac{PLAYER} y \ac{BALATRO} la implementación se hizo módulo a módulo a través del chatbot web del modelo, con el ingeniero como mediador entre la respuesta y el sistema de ficheros. A partir de \ac{CARTO}, el agente opera directamente sobre el repositorio: lee las dependencias, ejecuta \texttt{tsc --noEmit} para detectar errores de tipado y aplica correcciones iterativas dentro de la misma sesión. En \ac{TENNIS} este patrón se llevó al extremo con un Desarrollador 2.0 que planifica el orden de generación de ficheros por dependencias antes de implementar cualquier línea de código.\\
+\textbf{Fase 2 --- Codificación.} La \ac{IA} Desarrollador implementa cada módulo sobre los esqueletos de la Fase 1, respetando el Google TypeScript Style Guide \cite{URL::Google-style} y los principios \ac{SOLID}. El criterio de transición es compilación y \textit{linting} limpios; la operativa concreta del Desarrollador y su evolución entre proyectos se detalla en el Capítulo~\ref{chap:Development}.\\
 
-\textbf{Fase 3 --- Revisión de código.} La \ac{IA} Revisor evalúa el código según cinco criterios ponderados ---Adherencia al diseño (30\,\%), Calidad del código (25\,\%), Cumplimiento de requisitos (25\,\%), Mantenibilidad (10\,\%) y Buenas prácticas (10\,\%)--- y emite una decisión ternaria: \textit{APPROVED}, \textit{APPROVED WITH RESERVATIONS} o \textit{REJECTED}. En los proyectos P1--P3 la revisión se hacía componente a componente; a partir de \ac{CARTO} se adoptó un flujo de tres prompts encadenados sobre toda la base de código (planificación, ejecución y aplicación de correcciones) que en este proyecto identificó 225 incidencias ---5 críticas, 30 altas, 111 medias y 79 bajas--- distribuidas en 41 grupos de revisión sobre 316 ficheros.\\
+\textbf{Fase 3 --- Revisión de código.} La \ac{IA} Revisor evalúa el código según cinco criterios ponderados ---Adherencia al diseño (30\,\%), Calidad del código (25\,\%), Cumplimiento de requisitos (25\,\%), Mantenibilidad (10\,\%) y Buenas prácticas (10\,\%)--- y emite una decisión ternaria: \textit{APPROVED}, \textit{APPROVED WITH RESERVATIONS} o \textit{REJECTED}. Las incidencias se clasifican por severidad y, si no se alcanza el umbral de la Sección~\ref{subsec:metricas-evaluacion}, sirven de entrada a una nueva iteración de la Fase 2.\\
 
-\textbf{Fase 4 --- Testing.} La \ac{IA} Tester genera las pruebas a partir del código revisado y de los diagramas de casos de uso. En P1--P3 se generan suites unitarias con Jest siguiendo el patrón \ac{AAA}, con casos normales, de frontera y excepcionales explícitos en una matriz de cobertura solicitada en el prompt. A partir de \ac{CARTO} se sustituye Jest por Playwright para pruebas \textit{end-to-end}, con un flujo en dos etapas: la primera produce un documento de escenarios (precondiciones, pasos, resultados esperados, postcondiciones) y la segunda implementa los tests organizados por prioridad (crítica, alta, media, baja), con \textit{Page Object Model}, \textit{fixtures} de autenticación y datos de prueba centralizados.\\
+\textbf{Fase 4 --- Testing.} La \ac{IA} Tester genera las pruebas a partir del código aprobado y de los diagramas de casos de uso, siguiendo el patrón \ac{AAA} sobre una matriz de cobertura que exige casos normales, de frontera y excepcionales. La granularidad ---unitaria en P1--P3, \textit{end-to-end} en P4--P5--- se ajusta a la naturaleza del proyecto.\\
 
-\textbf{Rol del ingeniero supervisor.} Se aplica un principio de supervisión activa con delegación máxima: el ingeniero define los artefactos de entrada, valida los de salida y orquesta las transiciones entre fases, pero delega en los modelos toda la generación de código, documentación y pruebas. La intervención directa se reserva a cuatro situaciones: errores de integración entre módulos generados en sesiones distintas, decisiones de diseño no especificadas en los artefactos de entrada, errores de entorno ajenos a la lógica del código (configuración de Jest con módulos ES, incompatibilidades de versiones) y la validación final antes de transitar a la siguiente fase. Esta distribución reproduce el modelo de cooperación humano-\ac{IA} descrito por \cite{Khade:2025:AIinSD}, con la diferencia de que aquí el humano orquesta un equipo heterogéneo de agentes especializados en lugar de supervisar a un único modelo.
+\textbf{Rol del ingeniero supervisor.} El ingeniero define los artefactos de entrada, valida los de salida y orquesta las transiciones entre fases, delegando en los modelos la generación de código, documentación y pruebas. Su intervención directa se reserva a errores de integración entre sesiones, decisiones de diseño no previstas y problemas de entorno ajenos a la lógica del código, en línea con el modelo de cooperación humano-\ac{IA} \cite{Khade:2025:AIinSD}.
 
 \section{Plantillas de prompts y estrategia de prompting} \label{sec:prompting}
 
-Cada fase del flujo dispone de una plantilla de \textit{prompt} reutilizable que codifica los contratos entre fases. La plantilla fija el rol asumido por el modelo, los artefactos de entrada que recibe, los entregables esperados, las restricciones técnicas (estilo, patrones, límites de complejidad) y el formato de salida. La estrategia de prompting consta de tres pasos: la plantilla se entrega primero a la \ac{IA} Arquitecto, que la rellena con el contexto concreto del proyecto a partir de los artefactos de diseño; el ingeniero revisa y edita manualmente el resultado para ajustarlo a la intención original; y finalmente el prompt resultante se ejecuta sobre el modelo responsable de la fase. Esta separación entre \textit{instanciación} y \textit{ejecución} aísla la responsabilidad de adaptar el contexto del proyecto y permite reutilizar las plantillas con cambios mínimos entre proyectos.\\
-
-A partir de \ac{CARTO}, las plantillas se materializaron como ficheros \texttt{.agent.md} y \texttt{.prompt.md} versionados en el directorio \texttt{.github/} del repositorio, con \textit{frontmatter} \ac{YAML} que asigna un modelo concreto (Claude Sonnet 4.5, Claude Opus 4.6, GPT-5) a cada agente personalizado de GitHub Copilot. La Tabla~\ref{tab:plantillas-prompts} resume las plantillas operativas en el último proyecto.\\
+Cada fase del flujo dispone de una plantilla de \textit{prompt} reutilizable que codifica el contrato entre fases: rol asumido por el modelo, artefactos de entrada, entregables, restricciones técnicas (estilo, patrones, límites de complejidad) y formato de salida. Las plantillas son estáticas con \textit{placeholders} que se instancian con el contexto concreto del proyecto antes de cada invocación. Para esa instanciación se reservó un chat dedicado de Claude por proyecto ---el \textit{prompt-building chat}---, donde el ingeniero discute el dominio con el modelo, este propone los valores que rellenan los \textit{placeholders} y el ingeniero valida el prompt resultante antes de ejecutarlo sobre el agente responsable de la fase. Esta separación entre instanciación y ejecución aísla la adaptación al dominio y permite reutilizar las plantillas con cambios mínimos entre proyectos. La Tabla~\ref{tab:prompt-building-chats} recoge los enlaces públicos a los cinco chats utilizados.\\
 
 \begin{table}[H]
 \centering
 \small
 \renewcommand{\arraystretch}{1.25}
-\begin{tabularx}{\textwidth}{|p{2.3cm}|p{3cm}|Y|p{2.6cm}|}
+\begin{tabularx}{\textwidth}{|p{2.2cm}|Y|}
 \hline
-\textbf{Fase} & \textbf{Plantilla} & \textbf{Entregable principal} & \textbf{Patrón de prompting} \\
+\textbf{Proyecto} & \textbf{\textit{Prompt-building chat}} \\
 \hline
-Arquitectura & \texttt{Architecture.agent.md} & Árbol de directorios, esqueletos de clases, \texttt{ARCHITECTURE.md} & Rol + restricciones de estilo + cabecera de fichero obligatoria \\
+\ac{HANGMAN} & \href{https://claude.ai/share/b55b10b1-1821-4d5e-a3b8-07852c8bc023}{1. \textit{The Hangman Game (Prompt Building)}} \\
 \hline
-Codificación & \texttt{codification-planning} + \texttt{codification} & \texttt{CODIFICATION-PROGRESS.md} + código por categoría & \textit{Plan-then-implement} con \textit{checklist} persistente \\
+\ac{PLAYER} & \href{https://claude.ai/share/fbdecc91-fa80-4456-af18-62f7ac983df6}{2. \textit{Music Web Player (Prompt Building)}} \\
 \hline
-Revisión & \texttt{review-groups} + \texttt{review-execution} + \texttt{review-fix} & \texttt{CODE\_REVIEW\_REPORT.md} con incidencias clasificadas por severidad & TODO list por grupos $\rightarrow$ revisión $\rightarrow$ corrección \\
+\ac{BALATRO} & \href{https://claude.ai/share/2ba985c2-4c80-48ab-a318-e0fa5c4ef493}{3. \textit{Mini Balatro (Prompt Building)}} \\
 \hline
-Testing & \texttt{test-planning} + \texttt{test-implementation} & \texttt{E2E\_TEST\_SCENARIOS.md} + tests Playwright por prioridad & Escenarios primero, implementación con \ac{POM} después \\
+\ac{CARTO} & \href{https://claude.ai/share/c244c208-d0f6-41ea-8865-c82e5251b43b}{4. \textit{Cartographic Project Manager (Prompt Building)}} \\
+\hline
+\ac{TENNIS} & \href{https://claude.ai/share/cb28a9f5-5399-4cb4-8213-8804c5eb1fb8}{5. \textit{Tennis Tournament Manager (Prompt Building)}} \\
 \hline
 \end{tabularx}
-\caption{Plantillas de prompts operativas en \ac{TENNIS}, organizadas por fase del flujo de trabajo.}
+\caption{Chats empleados para la instanciación de plantillas de \textit{prompts}.}
+\label{tab:prompt-building-chats}
+\end{table}
+
+A partir de \ac{CARTO}, las plantillas se materializaron como ficheros \texttt{.agent.md} y \texttt{.prompt.md} versionados en el directorio \texttt{.github/} del repositorio, con \textit{frontmatter} \ac{YAML} que asigna un modelo concreto a cada agente personalizado de GitHub Copilot. La Tabla~\ref{tab:plantillas-prompts} resume las plantillas operativas.\\
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\textwidth}{|p{2.3cm}|Y|p{6cm}|}
+\hline
+\textbf{Fase} & \textbf{Entregable principal} & \textbf{Patrón de prompting} \\
+\hline
+Arquitectura & Árbol de directorios, esqueletos de clases y \texttt{ARCHITECTURE.md} & \textit{Single-shot} con restricciones de estilo y cabecera obligatoria \\
+\hline
+Codificación & Código por módulo o categoría & \textit{Single-shot} en P1--P3; \textit{plan-then-implement} con planificación por categorías en \ac{TENNIS} \\
+\hline
+Revisión & \texttt{CODE\_REVIEW\_REPORT.md} con incidencias clasificadas por severidad & Tres prompts encadenados: TODO list por grupos $\rightarrow$ revisión $\rightarrow$ corrección \\
+\hline
+Testing & \texttt{E2E\_TEST\_SCENARIOS.md} y tests por prioridad & Dos prompts encadenados: escenarios primero, implementación con \ac{POM} después \\
+\hline
+\end{tabularx}
+\caption{Plantillas de prompts operativas a partir de \ac{CARTO}, organizadas por fase del flujo.}
 \label{tab:plantillas-prompts}
 \end{table}
 
-Las plantillas comparten un núcleo común de buenas prácticas de \textit{prompt engineering}: declaración explícita del rol y la fase, listado numerado de entregables, restricciones técnicas en bloque (Google Style Guide, principios \ac{SOLID}, prohibición del tipo \texttt{any}, gestión tipada de excepciones, cabecera obligatoria con metadatos del \ac{TFG}) y formato de salida prescrito en bloques Markdown o \ac{JSON} para que el resultado sea procesable por el siguiente agente de la cadena. El patrón \textit{plan-then-implement} ---generar primero un documento de planificación con \textit{checklist} y, en una segunda invocación, ejecutar la planificación marcando los \textit{checks}--- resultó decisivo para mantener la coherencia del agente de Copilot a la escala de \ac{CARTO} y \ac{TENNIS}, donde una única invocación habría desbordado la ventana de contexto.
+Las plantillas comparten un núcleo común de buenas prácticas de \textit{prompt engineering}: declaración explícita del rol y la fase, listado numerado de entregables, restricciones técnicas en bloque (Google Style Guide, principios \ac{SOLID}, prohibición del tipo \texttt{any}, gestión tipada de excepciones, cabecera obligatoria con metadatos del \ac{TFG}) y formato de salida prescrito en bloques Markdown o \ac{JSON} para que el resultado sea procesable por el siguiente agente de la cadena. El encadenamiento de varios prompts dentro de una misma fase ---revisión y \textit{testing} a partir de \ac{CARTO}, codificación a partir de \ac{TENNIS}--- resultó decisivo para mantener la coherencia del agente a la escala de los últimos proyectos, donde una única invocación habría desbordado la ventana de contexto.
 
+\begin{comment}
 \section{Métricas de evaluación y planificación temporal} \label{sec:metricas-planificacion}
 
 \subsection{Métricas de evaluación} \label{subsec:metricas-evaluacion}
@@ -130,3 +154,4 @@ Análisis de resultados y memoria & S28--S29 & Aplicación de las métricas de e
 \end{table}
 
 La planificación incorpora un solapamiento deliberado entre fases consecutivas: la fase de \textit{testing} de un proyecto se ejecuta en paralelo con la fase de arquitectura del siguiente, lo que permitió aprovechar los tiempos muertos de espera de respuestas largas de los modelos. Esta organización resultó especialmente productiva en la transición \ac{BALATRO} $\rightarrow$ \ac{CARTO}, donde el cambio de enfoque metodológico se gestó precisamente durante las pruebas finales del tercer proyecto.\\
+\end{comment}
