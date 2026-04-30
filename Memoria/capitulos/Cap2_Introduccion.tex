@@ -51,6 +51,16 @@ Este flujo de trabajo reproduce, de forma deliberada, la dinámica de un equipo 
 
 A lo largo del experimento, se documentan todas las decisiones tomadas, incluyendo las interacciones cuando un modelo produce resultados insatisfactorios. Este registro detallado constituye, en sí mismo, uno de los principales resultados del trabajo, ya que permite analizar no solo la calidad del software resultante sino también la eficacia del proceso de interacción con las \ac{IA}.
 
+\section{Calidad del software desarrollado} \label{sec:calidad}
+
+El código fuente de los cinco proyectos está disponible públicamente en el repositorio de GitHub del trabajo \cite{URL::TFG}. Cada proyecto se organiza como un subpaquete independiente del monorepo, con su propia configuración de compilación, \textit{linting} y pruebas.\\  
+
+El marco de evaluación de calidad adoptado es el estándar ISO/IEC 25010 (SQuaRE) \cite{ISO:25010:2023}, complementado con las categorías de reglas de SonarQube\footnote{SonarCloud: \url{https://sonarcloud.io}} ---\textit{Bugs}, \textit{Vulnerabilities}, \textit{Code Smells} y cobertura--- como referencia para la clasificación de incidencias. Los cinco proyectos cuentan con ficheros de configuración para análisis estático con SonarCloud, lo que permite obtener métricas de complejidad ciclomática\footnote{Complejidad Ciclomática: \url{https://es.wikipedia.org/wiki/Complejidad_ciclomatica}}, deuda técnica y duplicación de código de forma automatizada.\\  
+
+La conformidad con el estilo de código se garantiza mediante ESLint configurado según el Google TypeScript Style Guide \cite{URL::Google-style}, que impone restricciones de indentación, longitud de línea, convenciones de nomenclatura y prohibición del tipo \texttt{any}. Los principios \ac{SOLID} \cite{Martin:2003:Agile} se incorporan como restricciones explícitas en las plantillas de \textit{prompts} de codificación y revisión, de modo que los modelos generan y evalúan el código atendiendo a criterios de cohesión y acoplamiento. El uso de patrones de diseño \cite{Gamma:1994:Design} es transversal a los proyectos: Composite y Observer en \ac{HANGMAN}, \textit{custom hooks} como patrón de gestión de estado en \ac{PLAYER}, Clean Architecture en cuatro capas en \ac{CARTO} y arquitectura hexagonal en \ac{TENNIS}.\\  
+
+El análisis de calidad de cada proyecto se recoge en un informe individual disponible en el directorio \texttt{docs/} del repositorio, y los resultados agregados se analizan en el Capítulo~\ref{chap:Results}.
+
 \begin{comment}
     Cabe señalar que, a partir del cuarto proyecto (\ac{CARTO}), se produjo un \textbf{cambio de enfoque metodológico}: el modelo empleado para la codificación y generación de pruebas pasó de ser un chatbot conversacional (Mistral y Qwen) a GitHub Copilot en modo agente, integrado directamente en el entorno de desarrollo con distintos modelos de \ac{IA}. Este cambio, motivado por las limitaciones de escalabilidad observadas en los proyectos anteriores, se documenta y analiza en detalle en el Capítulo~\ref{chap:AIModels} como un hallazgo metodológico relevante del trabajo. El Capítulo~\ref{chap:Metodology} desarrolla en profundidad cada uno de estos aspectos, incluyendo las plantillas de \textit{prompts} utilizadas, las métricas de evaluación definidas y la planificación temporal del experimento.\\
 \end{comment}
