@@ -61,11 +61,11 @@ El desarrollo de cada proyecto sigue un flujo en cuatro fases secuenciales inspi
 
 \textbf{Fase 4 --- Testing.} La \ac{IA} Tester genera las pruebas a partir del código aprobado y de los diagramas de casos de uso, siguiendo el patrón \ac{AAA} sobre una matriz de cobertura que exige casos normales, de frontera y excepcionales. La granularidad ---unitaria en P1--P3, \textit{end-to-end} en P4--P5--- se ajusta a la naturaleza del proyecto.\\
 
-\textbf{Rol del ingeniero supervisor.} El ingeniero define los artefactos de entrada, valida los de salida y orquesta las transiciones entre fases, delegando en los modelos la generación de código, documentación y pruebas. Su intervención directa se reserva a errores de integración entre sesiones, decisiones de diseño no previstas y problemas de entorno ajenos a la lógica del código, en línea con el modelo de cooperación humano-\ac{IA} \cite{Khade:2025:AIinSD}.
+\textbf{Rol del ingeniero supervisor.} Definíamos los artefactos de entrada, validabamos los de salida y orquestabamos las transiciones entre fases, delegando en los modelos la generación de código, documentación y pruebas. Nuestra intervención directa se reservaba a errores de integración entre sesiones, decisiones de diseño no previstas y problemas de entorno ajenos a la lógica del código, en línea con el modelo de cooperación humano-\ac{IA} \cite{Khade:2025:AIinSD}.
 
 \section{Plantillas y estrategia de prompting} \label{sec:prompting}
 
-Cada fase del flujo dispone de una plantilla de \textit{prompt} reutilizable que codifica el contrato entre fases: rol del modelo, artefactos de entrada, entregables, restricciones técnicas y formato de salida. Las plantillas contienen \textit{placeholders} que se instancian con el contexto de cada proyecto mediante un chat dedicado de Claude ---el \textit{prompt-building chat}---, donde el ingeniero discute el dominio, el modelo propone los valores y el ingeniero valida el resultado antes de ejecutarlo. La Tabla~\ref{tab:prompt-building-chats} recoge los enlaces públicos a los cinco chats utilizados.
+Cada fase del flujo dispone de una plantilla de \textit{prompt} reutilizable que codifica el contrato entre fases: rol del modelo, artefactos de entrada, entregables, restricciones técnicas y formato de salida. Las plantillas contienen \textit{placeholders} que se instancian con el contexto de cada proyecto mediante un chat dedicado de Claude ---el \textit{prompt-building chat}---, donde discutíamos el dominio, el modelo propone los valores y validábamos el resultado antes de ejecutarlo. La Tabla~\ref{tab:prompt-building-chats} recoge los enlaces públicos a los cinco chats utilizados.
 
 \begin{table}[H]
 \centering

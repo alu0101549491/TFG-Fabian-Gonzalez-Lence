@@ -12,8 +12,8 @@ Este capítulo describe los modelos y herramientas de \ac{IA} empleados a lo lar
 \section{Panorama actual de los LLMs en el desarrollo de software} \label{sec:llm-overview}
 
 En el momento de realización de este trabajo, el ecosistema de \ac{LLMs} orientados al desarrollo de software ha alcanzado un grado de madurez suficiente para abordar tareas de complejidad real, más allá de la generación de fragmentos de código aislados.
-Modelos de propósito general como GPT-5 (OpenAI)\footnote{GPT-5: \url{https://cdn.openai.com/gpt-5-system-card.pdf}}, Claude Sonnet 4.5 (Anthropic)\footnote{Claude Sonnet 4.5: \url{https://www.anthropic.com/claude-sonnet-4-5-system-card}}, Gemini 3 Pro (Google)\footnote{Gemini 3: \url{https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf}} o Mistral Large (Mistral AI)\footnote{Mistral Large: \url{https://docs.mistral.ai/models/model-cards/mistral-large-2-0-24-07}} compiten en tareas de razonamiento sobre código, diseño arquitectónico y generación de documentación técnica.
-Paralelamente, herramientas integradas en el entorno de desarrollo (IDE) como GitHub Copilot han evolucionado desde el autocompletado inteligente hasta un modo agente capaz de ejecutar flujos de trabajo completos de forma autónoma dentro del IDE.\\
+Modelos de propósito general como GPT-5 (OpenAI)\footnote{GPT-5: \href{https://cdn.openai.com/gpt-5-system-card.pdf}{gpt-5-system-card.pdf}}, Claude Sonnet 4.5 (Anthropic)\footnote{Claude Sonnet 4.5: \href{https://www.anthropic.com/claude-sonnet-4-5-system-card}{claude-sonnet-4-5-system-card.pdf}}, Gemini 3 Pro (Google)\footnote{Gemini 3: \href{https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf}{Gemini-3-Pro-Model-Card.pdf}} o Mistral Large (Mistral AI)\footnote{Mistral Large: \href{https://docs.mistral.ai/models/model-cards/mistral-large-2-0-24-07}{mistral-large-model-card}} compiten en tareas de razonamiento sobre código, diseño arquitectónico y generación de documentación técnica.
+Paralelamente, herramientas integradas en el entorno de desarrollo (IDE) como GitHub Copilot han evolucionado desde el autocompletado inteligente hasta un modo agente capaz de ejecutar flujos de trabajo completos de forma autónoma dentro del \ac{IDE}.\\
 
 Esta dualidad entre modelos conversacionales y agentes integrados resultó especialmente relevante para el presente trabajo: los primeros ofrecen flexibilidad para el diseño y la supervisión de alto nivel, mientras que los agentes operan directamente sobre el sistema de ficheros, ejecutan comandos, leen errores del compilador y realizan múltiples iteraciones de corrección sin salir del editor. Conviene señalar que el panorama de los \ac{LLMs} evoluciona muy rápidamente; por ello, el análisis de este capítulo no pretende ofrecer una clasificación definitiva de modelos, sino documentar con fidelidad las herramientas concretas utilizadas, el rol asignado a cada una y el comportamiento observado en este experimento.
 
@@ -39,31 +39,31 @@ GitHub Copilot\footnote{GitHub Copilot: \url{https://github.com/copilot/agents}}
 
 Su principal fortaleza frente al enfoque conversacional previo reside en la integración directa con el sistema de ficheros, gracias a su extensión de Visual Studio Code: el agente lee el código existente, ejecuta comandos de compilación y estilizado (\textit{linting}), interpreta los errores y aplica correcciones iterativas sin salir del editor. Esta capacidad, sumada a la posibilidad de definir agentes personalizados mediante ficheros de configuración en el repositorio, permitió mapear cada agente a uno de los cuatro roles ---Arquitectura, Codificación, Revisión y \textit{Testing}--- con reglas y modelos específicos para cada fase.\\
 
-En cuanto al modelo subyacente, se empleó Claude Sonnet 4.5 para los roles de Arquitecto y Desarrollador, y modelos de la familia GPT-5 (mini, 5.4) para los roles de Revisor y Tester, utilizando de forma puntual modelos más potentes como Claude Opus 4.6.
+En cuanto al modelo subyacente, se empleó Claude Sonnet 4.5 para los roles de Arquitecto y Desarrollador, y modelos de la familia GPT-5 (mini, 5.4) para los roles de Revisor y \textit{Tester}, utilizando de forma puntual modelos más potentes como Claude Opus 4.6.
 
 \subsection{Qwen (Alibaba)} \label{subsec:qwen}
 
-Qwen AI\footnote{Qwen AI: \url{https://qwen.ai/home}} fue el agente de \ac{IA} Tester durante los tres primeros proyectos, responsable de generar las suites de pruebas unitarias con Jest\footnote{Jest: \url{https://jestjs.io/}}. Su elección respondía a su eficacia en la generación de casos de prueba siguiendo el patrón \ac{AAA}, con una tasa de compilación inicial elevada y cobertura de casos normales, límite y excepcionales.
+Qwen AI\footnote{Qwen AI: \url{https://qwen.ai/home}} fue el agente de \ac{IA} \textit{Tester} durante los tres primeros proyectos, responsable de generar las suites de pruebas unitarias con Jest\footnote{Jest: \url{https://jestjs.io/}}. Su elección respondía a su eficacia en la generación de casos de prueba siguiendo el patrón \ac{AAA}, con una tasa de compilación inicial elevada y cobertura de casos normales, límite y excepcionales.
 Al igual que Mistral, fue desplazado a partir de \ac{CARTO} por la inviabilidad del flujo manual de copiar código entre interfaces chatbot para proyectos de mayor escala.
 
 \subsection{ChatGPT (OpenAI)} \label{subsec:chatgpt}
 
 ChatGPT\footnote{ChatGPT: \url{https://chatgpt.com}} fue utilizado como herramienta de apoyo en las fases iniciales de los primeros proyectos, principalmente para la redacción de especificaciones de requisitos y la exploración de alternativas arquitectónicas.
 Su fortaleza es la fluidez en la generación de texto técnico; sin embargo, en tareas de codificación extensa mostró tendencia a perder coherencia contextual en conversaciones largas, lo que limitó su utilidad.
-Algunos modelos GPT más potentes fueron empleados en las fases de revisión y testing de forma integrada en el \ac{IDE} a través de GitHub Copilot.
+Algunos modelos GPT más potentes fueron empleados en las fases de revisión y pruebas de forma integrada en el \ac{IDE} a través de GitHub Copilot.
 
 \subsection{Gemini y Perplexity --- Uso puntual} \label{subsec:others}
 
-Google Gemini\footnote{Google Gemini: \url{https://gemini.google.com/app}} fue utilizado de forma puntual en el proyecto \ac{BALATRO} para la generación de los assets gráficos correspondientes a algunas de las cartas del juego, resolviendo directamente una necesidad de producción visual sin requerir diseño manual ni intervención humana. Perplexity\footnote{Perplexity: \url{https://www.perplexity.ai}} fue evaluado en las fases iniciales como motor de búsqueda potenciado por \ac{IA}, pero no llegó a integrarse en el flujo formal del trabajo al no ofrecer ventajas respecto a las herramientas adoptadas.
+Google Gemini\footnote{Google Gemini: \url{https://gemini.google.com/app}} fue utilizado de forma puntual en el proyecto \ac{BALATRO} para la generación de los recursos (\textit{assets}) gráficos correspondientes a algunas de las cartas del juego, resolviendo directamente una necesidad de producción visual sin requerir diseño manual ni intervención humana. Perplexity\footnote{Perplexity: \url{https://www.perplexity.ai}} fue evaluado en las fases iniciales como motor de búsqueda potenciado por \ac{IA}, pero no llegó a integrarse en el flujo formal del trabajo al no ofrecer ventajas respecto a las herramientas adoptadas.
 
 \section{El cambio de enfoque metodológico} \label{sec:approach-change}
 
-La transición de los proyectos 1--3 al proyecto 4 (\ac{CARTO}) supuso un punto de inflexión, motivado por las limitaciones de escalabilidad del flujo conversacional hasta entonces empleado. En los tres primeros proyectos, el agente de \ac{IA} Desarrollador operaba como \textit{chatbot} web: el alumno copiaba manualmente el \textit{prompt} en la interfaz, obtenía el código y lo transfería al editor módulo a módulo. Este flujo resultaba viable para proyectos de 9 a 15 módulos, pero mostró tres limitaciones críticas al escalar: pérdida de coherencia inter-módulo al generar ficheros en conversaciones independientes; fricción operativa del ciclo manual de copiar, compilar, detectar errores y volver al \textit{chatbot}; e imposibilidad práctica de revisar y testear a la escala de \ac{CARTO}, que llegó a gestionar más de trescientos ficheros en cinco capas de arquitectura.\\
+La transición de los proyectos 1--3 al proyecto 4 (\ac{CARTO}) supuso un punto de inflexión, motivado por las limitaciones de escalabilidad del flujo conversacional hasta entonces empleado. En los tres primeros proyectos, el agente de \ac{IA} Desarrollador operaba como \textit{chatbot} web: copiábamos manualmente el \textit{prompt} en la interfaz, obtenía el código y lo transfería al editor módulo a módulo. Este flujo resultaba viable para proyectos de 9 a 15 módulos, pero mostró tres limitaciones críticas al escalar: pérdida de coherencia inter-módulo al generar ficheros en conversaciones independientes; fricción operativa del ciclo manual de copiar, compilar, detectar errores y volver al \textit{chatbot}; e imposibilidad práctica de revisar y testear a la escala de \ac{CARTO}, que llegó a gestionar más de trescientos ficheros en cinco capas de arquitectura.\\
 
 La solución fue adoptar GitHub Copilot en modo agente como herramienta principal para Codificación, Revisión y Testing a partir de \ac{CARTO}. Esta decisión fue facilitada por un curso de herramientas de GitHub Copilot que realizamos en el ámbito de la asignatura de
-``Prácticas Externas'', en el que estudiamos la personalización de agentes \cite{URL::Agents}.\\
+``Prácticas Externas'', en el que estudiamos la personalización de agentes \cite{URL::TFG}.\\
 
-Los \textit{prompts} de Revisión y Testing fueron rediseñados para el modelo agente. El Revisor 2.0 adoptó un flujo de tres etapas: exploración de la base de código y generación de una TODO list; revisión sistemática por grupos de ficheros con informe de incidencias clasificadas por severidad; e implementación de correcciones siguiendo el informe. En \ac{CARTO} se identificaron 225 incidencias en 41 grupos de revisión. El Tester 2.0 generó pruebas \textit{end-to-end} con Playwright\footnote{Playwright: \url{https://playwright.dev}}: el agente analizaba los diagramas de casos de uso para definir escenarios y en una segunda pasada los implementaba; en \ac{CARTO} se generaron 131 tests reales. En el proyecto \ac{TENNIS}, la metodología evolucionó también para la codificación con un Desarrollador 2.0, que distribuía el trabajo en dos fases: planificación y categorización de módulos, seguida de implementación iterativa por categorías.
+Los \textit{prompts} de Revisión y Pruebas fueron rediseñados para el modelo agente. El Revisor 2.0 adoptó un flujo de tres etapas: exploración de la base de código y generación de una lista de tareas pendientes; revisión sistemática por grupos de ficheros con informe de incidencias clasificadas por severidad; e implementación de correcciones siguiendo el informe. En \ac{CARTO} se identificaron 225 incidencias en 41 grupos de revisión. El Tester 2.0 generó pruebas \textit{end-to-end} con Playwright: el agente analizaba los diagramas de casos de uso para definir escenarios y en una segunda pasada los implementaba; en \ac{CARTO} se generaron 131 tests reales. En el proyecto \ac{TENNIS}, la metodología evolucionó también para la codificación con un Desarrollador 2.0, que distribuía el trabajo en dos fases: planificación y categorización de módulos, seguida de implementación iterativa por categorías.
 
 \section{Comparativa de modelos} \label{sec:comparativa-modelos}
 
@@ -73,7 +73,13 @@ La Tabla~\ref{tab:comparativa-modelos} recoge de forma sintética los modelos em
 \centering
 \small
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|p{2.2cm}|p{3.2cm}|p{1.8cm}|p{3cm}|p{3cm}|}
+\begin{tabular}{|
+>{\raggedright\arraybackslash}p{2.2cm}|
+>{\raggedright\arraybackslash}p{3.2cm}|
+>{\raggedright\arraybackslash}p{1.8cm}|
+>{\raggedright\arraybackslash}p{3cm}|
+>{\raggedright\arraybackslash}p{3cm}|
+}
 \hline
 \textbf{Modelo} & \textbf{Rol y Fases} & \textbf{Proyectos} & \textbf{Fortalezas} & \textbf{Limitaciones} \\
 \hline
@@ -98,7 +104,7 @@ Dependencia de modelos externos; trazas no legibles en Markdown \\
 \textbf{Qwen} &
 Tester (testing) &
 P1--P3 &
-Eficaz con patrón \textit{Arrange-Act-Assert}; alta compilación inicial; cubre casos normales, límite y excepcionales &
+Eficaz con patrón \ac{AAA}; alta compilación inicial; cubre casos normales, límite y excepcionales &
 Flujo manual no escalable; desplazado por Copilot agente a partir de P4 \\
 \hline
 \textbf{ChatGPT} &

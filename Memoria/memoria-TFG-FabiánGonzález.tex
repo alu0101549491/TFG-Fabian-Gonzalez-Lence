@@ -49,7 +49,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{algorithmic}
 %\usepackage[pdftex=true,colorlinks=false,urlcolor=blue,plainpages=false,pagebackref=true,citecolor=red]{hyperref} %hiperenlaces y backcites
-\usepackage[colorlinks=true,urlcolor=blue,plainpages=false,pagebackref=true,citecolor=black]{hyperref} %hiperenlaces y backcites
+\usepackage[
+  colorlinks=true,
+  urlcolor=blue,
+  linkcolor=black,
+  citecolor=black,
+  plainpages=false,
+  pagebackref=true
+]{hyperref} %hiperenlaces y backcites
+
+\renewcommand{\ac}[1]{\textbf{\acs{#1}}}
+
 \hypersetup{breaklinks=true}
 % Redefinir el comando \url para cambiar el tamaño del texto de los enlaces
 % \let\oldurl\url
