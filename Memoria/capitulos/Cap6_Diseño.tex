@@ -1,7 +1,74 @@
 % ---------------------------------------------------
 % Trabajo Final de Grado
 % Author: Fabián González Lence <alu0101549491@ull.edu.es>
-% Chapter: Diseño
+% Chapter: Arquitectura y Diseño
 % ----------------------------------------------------
 
-\chapter{Diseño} \label{chap:Design}
+\chapter{Arquitectura y Diseño} \label{chap:Design}
+
+Este capítulo recoge los artefactos de diseño que sirvieron de entrada al flujo de cuatro fases descrito en el Capítulo~\ref{chap:Metodology}: la especificación de requisitos, los diagramas UML \cite{Fowler:2004:UML} de clases y de casos de uso, las decisiones arquitectónicas y las tecnologías seleccionadas para cada uno de los cinco proyectos. Como la caracterización general y la pila tecnológica resumida ya se han presentado en la Tabla~\ref{tab:proyectos-resumen}, el énfasis recae aquí sobre las decisiones de diseño y su progresión a lo largo del experimento.
+
+\section{Especificación de requisitos} \label{sec:requirements}
+
+La especificación de requisitos se abordó como un experimento en sí mismo, ensayando varios estilos de redacción para evaluar cuál ofrecía mejores resultados al alimentar a la \ac{IA} Arquitecto. Se trabajó sobre los niveles de formalización habituales en los lenguajes de especificación de requisitos \cite{Sommerville:2015:SE, Pohl:2010:RE, ISO:29148:2018}: una variante \textit{informal} centrada en caracterizar la aplicación con prosa libre, una versión \textit{semiformal} basada en una plantilla estructurada, y un tercer formato que varía entre proyectos: \textit{lenguaje natural controlado} (LNC) en sintaxis EARS \cite{Mavin:2009:EARS} para los tres primeros, e \textit{historias de usuario} con criterios de aceptación y prioridad para los dos últimos.\\
+
+La especificación semiformal sigue una plantilla de ocho apartados ---propósito, alcance, requisitos funcionales, requisitos no funcionales, requisitos de tecnologías, restricciones generales, criterios de aceptación y aclaraciones extra--- redactada con la ayuda de Claude. Es la representación canónica del proyecto y la fuente única de verdad para las fases posteriores. La variante informal se derivó posteriormente con ayuda de Claude a partir de la semiformal, con el objetivo de caracterizar mejor la aplicación de cara a los modelos generadores de diagramas. La versión LNC se construyó tras descartar Gemini y ChatGPT por la vaguedad de sus salidas: solo Mistral produjo una redacción EARS suficientemente detallada y consistente, indicando explícitamente el tipo de cada requisito (\textit{ubiquitous}, \textit{event-driven}, \textit{state-driven}, \textit{optional feature}, \textit{unwanted behaviour}, \textit{complex}). Las historias de usuario, por su parte, se generaron con ChatGPT siguiendo el formato \textit{HU-XX} con título, narrativa, criterios de aceptación, prioridad y tabla resumen al final.\\
+
+La elección del tercer formato responde a la naturaleza de cada proyecto. Los tres primeros ---\ac{HANGMAN}, \ac{PLAYER} y \ac{BALATRO}--- son aplicaciones autocontenidas sin cliente externo, en las que las historias de usuario aportaban poco valor frente al rigor que ofrece el \ac{LNC} con EARS para los modelos generadores de diagramas. Por el contrario, \ac{CARTO} y \ac{TENNIS} parten de necesidades reales transmitidas por dos clientes externos en forma de listas de requisitos en lenguaje cotidiano, por lo que las historias de usuario resultaron una traducción más natural y trazable de esas necesidades que la reformulación en EARS. La selección concreta de la variante usada como entrada en cada fase se documenta en el Capítulo~\ref{chap:Development}, dado el carácter experimental de toda esta exploración.\\
+
+El alcance del documento crece de forma marcada entre proyectos. \ac{HANGMAN} y \ac{PLAYER} se cubren con una decena de requisitos funcionales centrados en la mecánica del juego o de la reproducción. \ac{BALATRO} eleva la cifra a 30 requisitos funcionales y 9 no funcionales \cite{URL::TFG}, debido a la riqueza del modelo de dominio (manos de póker, tres familias de cartas especiales, cinco tipos de \textit{Boss Blind} y economía de tienda). \ac{CARTO} introduce además requisitos transversales de seguridad, sincronización en tiempo real e integración con servicios externos, y \ac{TENNIS} alcanza el mayor volumen del experimento al cubrir gestión de torneos, registro con nueve estados de inscripción\footnote{Estados ITF: \texttt{OA, DA, SE, JE, QU, LL, WC, ALT, WD}.}, doce estados de partido, generación de cuadros y \textit{order of play}, sistemas de \textit{ranking} ELO y notificaciones multicanal.\\
+
+Los requisitos no funcionales evolucionan en paralelo. En los tres primeros proyectos se limitan a aspectos como compatibilidad con navegadores modernos, modularidad del código y cobertura de pruebas unitarias. A partir de \ac{CARTO} aparecen restricciones de tiempo real (entrega de mensajes en menos de cinco segundos), gestión de sesión con expiración temporizada y trazabilidad de auditoría sobre las tareas; en \ac{TENNIS} se añaden conformidad con estándares ITF y TODS\footnote{\href{https://www.itftennis.com/en/about-us/governance/technical/tennis-open-data-standards/}{Tennis Open Data Standards}}, control de privacidad por usuario y \ac{API} REST documentada. Esta progresión es deliberada: cada nuevo proyecto introduce una clase de requisito no funcional que el anterior aún no obligaba a abordar.
+
+\section{Diagramas de clases y de casos de uso} \label{sec:uml}
+
+A partir de la especificación, generamos para cada proyecto un diagrama de clases y un diagrama de casos de uso en formato Mermaid\footnote{\href{https://mermaid.js.org}{Mermaid}}, almacenados junto al código fuente del proyecto en su directorio \texttt{docs/}. Ambos diagramas se usan como entrada estructurada para la \ac{IA} Arquitecto, complementando la prosa de la especificación con una representación formal del dominio y de las interacciones actor-sistema. La elección de Mermaid frente a herramientas más tradicionales se justifica por su versionado en texto plano y, sobre todo, por su capacidad de ser interpretado directamente por los modelos sin necesidad de exportar imágenes.\\
+
+El diagrama de clases describe las entidades del dominio, sus atributos, sus relaciones y la cardinalidad entre ellas. En \ac{HANGMAN} y \ac{PLAYER} se reduce a una decena de clases concentradas en la lógica del juego o del reproductor; en \ac{BALATRO} crece hasta agrupar baraja, evaluador de manos, sistema de puntuación, ciegas, tienda y las tres familias de cartas especiales; en \ac{CARTO} y \ac{TENNIS} se reorganiza por capas de Clean Architecture, distinguiendo entidades de dominio, contratos de repositorio y servicios de aplicación. En \ac{TENNIS}, este diagrama llegó a contener varias decenas de entidades que el agente de codificación utilizó como base para generar 13 interfaces de servicio y sus implementaciones.\\
+
+El diagrama de casos de uso documenta los actores y las interacciones que soportan cada requisito funcional, agrupadas por dominios funcionales (autenticación, gestión de proyectos, mensajería, etc.). En los dos primeros proyectos basta un único actor (jugador o usuario); a partir de \ac{CARTO} aparecen tres roles diferenciados (Administrador, Cliente y Usuario Especial) con permisos parametrizados, y en \ac{TENNIS} se elevan a cuatro al incorporar al público no registrado como actor de consulta. Estos diagramas resultaron especialmente decisivos en la fase de \textit{testing} de los proyectos 4 y 5, donde el Tester 2.0 los utilizó como guía para definir escenarios \textit{end-to-end} con Playwright\footnote{\href{https://playwright.dev}{Playwright}}, asegurando que cada interacción identificada se tradujera en al menos una prueba ejecutable.
+
+\section{Decisiones arquitectónicas} \label{sec:arch-decisions}
+
+La arquitectura de cada proyecto se eligió como el siguiente paso natural en una progresión incremental: cada proyecto incorpora un patrón o una capa adicional que el anterior aún no necesitaba, lo que permite atribuir las diferencias de comportamiento de los modelos a cambios arquitectónicos identificables.\\
+
+\ac{HANGMAN} adopta el patrón \ac{MVC} \cite{Reenskaug:1979:MVC} en su forma más plana, con tres directorios paralelos para modelo, vista y controlador, complementado por los patrones \textit{Composite} y \textit{Observer} \cite{Gamma:1994:Design} en la composición de la vista. Esta arquitectura es deliberadamente conservadora: sirve de línea base para validar el flujo conversacional sin introducir complejidad estructural. \ac{PLAYER} sustituye el \ac{MVC} clásico por una arquitectura basada en componentes con \textit{custom hooks} de React, en la que la lógica reutilizable se extrae a hooks como \texttt{useAudioPlayer}, \texttt{usePlaylist} o \texttt{useLocalStorage}, separando los componentes presentacionales de los contenedores. El cambio responde al paradigma declarativo del \textit{framework} y no a una crítica del \ac{MVC}.\\
+
+\ac{BALATRO} mantiene la separación \ac{MVC} pero añade una capa de servicios transversales (tienda, persistencia y configuración) para evitar que la lógica de juego absorba responsabilidades ajenas. La complejidad del modelo de dominio justifica la nueva capa, que también facilita la inyección de dependencias hacia las pruebas unitarias. \ac{CARTO} marca el salto cualitativo del experimento al adoptar Clean Architecture \cite{Martin:2018:CleanArchitecture} en cuatro capas ---Dominio, Aplicación, Infraestructura y Presentación--- con dependencias dirigidas hacia el interior y aplicación estricta del principio de inversión de dependencias \cite{Martin:2003:Agile}. El backend Node.js sigue el mismo esquema, con repositorios concretos en infraestructura que cumplen los contratos definidos en dominio.\\
+
+\ac{TENNIS} hereda la arquitectura limpia de \ac{CARTO} y la lleva al escenario más exigente del trabajo: frontend Angular y backend Node.js conviven como subproyectos independientes de un mismo monorepo, comunicados por una \ac{API} REST y por Socket.io para los eventos en tiempo real. Cada subproyecto reproduce las cuatro capas, lo que multiplica el número de interfaces y obliga al agente de codificación a respetar los límites de capa también a través del límite de proceso. Esta decisión se tomó tras observar en \ac{CARTO} que una sola base de código frontend con backend separado era escalable, y supuso la prueba de fuego del enfoque multimodelo.\\
+
+Junto a la arquitectura general, en cada proyecto se aplicaron de forma transversal los principios \ac{SOLID} \cite{Martin:2003:Agile} y la guía de estilo de Google para TypeScript \cite{URL::Google-style}, codificadas explícitamente en las plantillas de \textit{prompts}. La adherencia real a estos principios es uno de los puntos analizados en el Capítulo~\ref{chap:Results}.
+
+\section{Pila tecnológica y trazabilidad de decisiones} \label{sec:tech-stack}
+
+La selección tecnológica se rige por dos criterios: que cada elemento añadido aporte una capacidad ausente en los proyectos anteriores y que el conjunto siga siendo accesible para una sola persona. La progresión se resume en cuatro ejes ---\textit{framework} de interfaz, gestión de estado, comunicación con backend y \textit{testing}--- que la Tabla~\ref{tab:tech-progresion} sintetiza por proyecto.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.6cm}|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{2.6cm}|Y|>{\raggedright\arraybackslash}p{2.6cm}|}
+\hline
+\textbf{Proyecto} & \textbf{\textit{Framework} de UI} & \textbf{Gestión de estado} & \textbf{Comunicación con backend} & \textbf{Estrategia de \textit{testing}} \\
+\hline
+\ac{HANGMAN} & TypeScript + Vite & Estado interno del modelo & --- & Jest unitario \\
+\hline
+\ac{PLAYER} & React 18 & \textit{Custom hooks} y \texttt{localStorage} & --- & Jest + React Testing Library \\
+\hline
+\ac{BALATRO} & React + Vite & Servicios + \texttt{localStorage} & --- & Jest unitario \\
+\hline
+\ac{CARTO} & Vue 3 (Composition API) & Pinia & Axios + Socket.io & Playwright \textit{end-to-end} \\
+\hline
+\ac{TENNIS} & Angular 19 \textit{standalone} & Servicios Angular + RxJS & \ac{API} REST + Socket.io & Jest unitario + Playwright \\
+\hline
+\end{tabularx}
+\caption{Progresión de decisiones tecnológicas a lo largo de los cinco proyectos.}
+\label{tab:tech-progresion}
+\end{table}
+
+El cambio de \textit{framework} entre proyectos es deliberado y persigue exponer a los modelos de \ac{IA} a paradigmas distintos: \ac{HANGMAN} se construye sin \textit{framework} para aislar la capacidad de generar TypeScript idiomático; \ac{PLAYER} y \ac{BALATRO} usan React para evaluar el manejo de hooks y de estado declarativo; \ac{CARTO} introduce Vue 3 con su \textit{Composition API} y un ecosistema diferente (Pinia, vue-router); y \ac{TENNIS} cierra el experimento con Angular 19 y componentes \textit{standalone}, que imponen un estilo de inyección de dependencias y modularidad muy distinto al de los proyectos previos.\\
+
+Vite\footnote{\href{https://vitejs.dev}{Vite}} es la única herramienta de \textit{build} común a los cinco proyectos, lo que reduce la varianza atribuible a la cadena de compilación al comparar resultados. La comunicación cliente-servidor en los dos últimos proyectos combina HTTP con Axios para operaciones \ac{CRUD} y Socket.io para eventos en tiempo real, una pareja consolidada que simplifica el contrato y permite reusar la misma capa de infraestructura. El paso de \textit{testing} unitario con Jest a \textit{end-to-end} con Playwright a partir de \ac{CARTO} responde, como se discute en el Capítulo~\ref{chap:AIModels}, a la inviabilidad de mantener pruebas unitarias exhaustivas a la escala de los proyectos \textit{full-stack}.\\
+
+Cada decisión tecnológica queda registrada en el documento de especificación bajo el apartado de requisitos de tecnologías y se reproduce íntegra en la cabecera obligatoria de los \textit{prompts} de arquitectura y codificación, garantizando que los modelos no introduzcan dependencias adicionales por iniciativa propia. La eficacia de este mecanismo y los casos en que los modelos lo respetaron o lo desbordaron se analizan en el Capítulo~\ref{chap:Development}.
