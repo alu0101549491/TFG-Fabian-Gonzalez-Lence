@@ -1,23 +1,23 @@
-# Plantillas de Arquitectura
+# Architecture Templates
 
-## Descripción
+## Description
 
-Esta carpeta contiene la plantilla de prompt utilizada en la **fase de arquitectura** del proceso de codificación, que corresponde a la subfase **2.1 "Generación de la Estructura Base"** de la Guía de Codificación.
+This directory contains the prompt template used during the **architecture phase** of the coding process, corresponding to sub-phase **2.1 "Base Structure Generation"** of the Coding Guide.
 
-La plantilla es utilizada por la **IA Arquitecto** para generar el andamio inicial del proyecto: estructura de carpetas, configuración inicial y esqueletos de clases/módulos principales.
+The template is used by the **AI Architect** to generate the initial project scaffold: folder structure, initial configuration, and class/module skeletons.
 
-## Contenido
+## Contents
 
-| Fichero | Descripción |
+| File | Description |
 |---|---|
-| `architecture-template.md` | Plantilla genérica para la generación de la estructura base de cualquier proyecto del TFG. |
+| `architecture-template.md` | Generic template for generating the base structure of any TFG project. |
 
-## Proyectos en los que se aplicó
+## Projects where it was applied
 
-| Proyecto | Versión | IA Arquitecto |
+| Project | Version | AI Architect |
 |---|---|---|
 | 1 — The Hangman Game | V1 | Claude (Anthropic) |
 | 2 — Music Web Player | V1 | Claude (Anthropic) |
 | 3 — MiniBalatro | V1 | Claude (Anthropic) |
 
-> **Nota:** Para los proyectos V2 (CARTO y TENNIS) se utilizó **GitHub Copilot con Claude Opus 4.5** como IA Arquitecto, con prompts específicos para cada proyecto y sin una plantilla genérica reutilizable, por lo que no se guardaron en esta carpeta.
+> **Note:** For V2 projects (CARTO and TENNIS), **GitHub Copilot with Claude Opus 4.5** was used as AI Architect with project-specific prompts and no reusable generic template, so no files were stored in this directory.

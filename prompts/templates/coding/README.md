@@ -1,23 +1,23 @@
-# Plantillas de Codificación
+# Coding Templates
 
-## Descripción
+## Description
 
-Esta carpeta contiene los prompts utilizados en la **fase de implementación** del proceso de codificación, correspondiente a la subfase **2.2 "Implementación Iterativa por Componente"** de la Guía de Codificación.
+This directory contains the prompts used during the **implementation phase** of the coding process, corresponding to sub-phase **2.2 "Iterative Component Implementation"** of the Coding Guide.
 
-## Estructura
+## Structure
 
 ```
 coding/
-├── v1/    → Plantillas genéricas reutilizables (proyectos V1)
-└── v2/    → Prompts reales utilizados en el proyecto TENNIS (V2)
+├── v1/    → Generic reusable templates (V1 projects)
+└── v2/    → Real prompts used in the TENNIS project (V2)
 ```
 
-## Resumen de aplicación por proyecto
+## Application summary by project
 
-| Proyecto | Versión de prompt | IA Desarrollador |
+| Project | Prompt version | AI Developer |
 |---|---|---|
-| 1 — The Hangman Game | V1 (plantilla) | Mistral |
-| 2 — Music Web Player | V1 (plantilla) | Mistral |
-| 3 — MiniBalatro | V1 (plantilla) | Mistral |
-| 4 — Cartographic Project Manager | V2 (prompts específicos, no guardados) | GitHub Copilot (Claude Sonnet 4.5) |
-| 5 — Tennis Tournament Manager | V2 (prompts reales en `v2/`) | GitHub Copilot (Claude Sonnet 4.5) |
+| 1 — The Hangman Game | V1 (template) | Mistral |
+| 2 — Music Web Player | V1 (template) | Mistral |
+| 3 — MiniBalatro | V1 (template) | Mistral |
+| 4 — Cartographic Project Manager | V2 (project-specific prompts, not stored) | GitHub Copilot (Claude Sonnet 4.5) |
+| 5 — Tennis Tournament Manager | V2 (real prompts in `v2/`) | GitHub Copilot (Claude Sonnet 4.5) |

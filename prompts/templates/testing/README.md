@@ -1,23 +1,23 @@
-# Plantillas de Testing
+# Testing Templates
 
-## Descripción
+## Description
 
-Esta carpeta contiene los prompts utilizados en la **fase de testing** del proceso de codificación, correspondiente al rol **"IA Tester"** de la Guía de Codificación.
+This directory contains the prompts used during the **testing phase** of the coding process, corresponding to the **"AI Tester"** role in the Coding Guide.
 
-## Estructura
+## Structure
 
 ```
 testing/
-├── v1/    → Plantilla genérica de testing unitario con Jest/TSJest (proyectos V1)
-└── v2/    → Prompts reales de testing E2E con Playwright (proyectos V2 — CARTO)
+├── v1/    → Generic unit testing template with Jest/TSJest (V1 projects)
+└── v2/    → Real E2E testing prompts with Playwright (V2 projects — CARTO)
 ```
 
-## Resumen de aplicación por proyecto
+## Application summary by project
 
-| Proyecto | Versión de prompt | IA Tester |
+| Project | Prompt version | AI Tester |
 |---|---|---|
-| 1 — The Hangman Game | V1 (plantilla) | Qwen AI |
-| 2 — Music Web Player | V1 (plantilla) | Qwen AI |
-| 3 — MiniBalatro | V1 (plantilla) | Qwen AI |
-| 4 — Cartographic Project Manager | V2 (prompts reales en `v2/`) | GitHub Copilot (GPT-5.4) |
-| 5 — Tennis Tournament Manager | V2 (basado en prompts de CARTO) | GitHub Copilot (GPT-5.4) |
+| 1 — The Hangman Game | V1 (template) | Qwen AI |
+| 2 — Music Web Player | V1 (template) | Qwen AI |
+| 3 — MiniBalatro | V1 (template) | Qwen AI |
+| 4 — Cartographic Project Manager | V2 (real prompts in `v2/`) | GitHub Copilot (GPT-5.4) |
+| 5 — Tennis Tournament Manager | V2 (based on CARTO prompts) | GitHub Copilot (GPT-5.4) |

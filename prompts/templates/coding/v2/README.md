@@ -1,26 +1,26 @@
-# Prompts de Codificación — V2
+# Coding Prompts — V2
 
-## Descripción
+## Description
 
-> ⚠️ **Nota importante:** Esta carpeta **no contiene plantillas genéricas reutilizables**. Contiene los **prompts reales** utilizados durante el desarrollo del proyecto **5 — Tennis Tournament Manager (TENNIS)**, adaptados específicamente al contexto de dicho proyecto.
+> ⚠️ **Important note:** This directory **does not contain generic reusable templates**. It contains the **real prompts** used during the development of project **5 — Tennis Tournament Manager (TENNIS)**, specifically adapted to that project's context.
 
-En el flujo V2, la **IA Desarrollador** es **GitHub Copilot con Claude Sonnet 4.5**, que trabaja directamente sobre el agente de codificación de VS Code con acceso al codebase.
+In the V2 workflow, the **AI Developer** is **GitHub Copilot with Claude Sonnet 4.5**, working directly inside the VS Code coding agent with full codebase access.
 
-## Contenido
+## Contents
 
-| Fichero | Descripción |
+| File | Description |
 |---|---|
-| `planning-codification-template.md` | Prompt de **planificación previa** a la codificación. El agente genera el fichero `CODIFICATION-PROGRESS.md` con el plan completo de categorías, orden de dependencias e índice global de ficheros. No escribe código fuente en este paso. |
-| `general-codification-template.md` | Prompt principal de **implementación iterativa**. El agente recorre las categorías del plan en orden, escribe el código fuente completo de cada fichero, actualiza el progreso en `CODIFICATION-PROGRESS.md` y registra los cambios en `CHANGES.md`. |
+| `planning-codification-template.md` | **Pre-coding planning** prompt. The agent generates the `CODIFICATION-PROGRESS.md` file with the full category plan, dependency order and global file index. No source code is written in this step. |
+| `general-codification-template.md` | Main **iterative implementation** prompt. The agent walks through the plan categories in order, writes the full source code for each file, updates progress in `CODIFICATION-PROGRESS.md` and records changes in `CHANGES.md`. |
 
-## Origen de los prompts
+## Origin of the prompts
 
-A diferencia de los proyectos V1 (donde se usaban plantillas genéricas rellenables), en V2 los prompts evolucionaron a conversaciones más contextualizadas. Los prompts de TENNIS se construyeron tomando como base la experiencia del proyecto **CARTO** (4 — Cartographic Project Manager), adaptando el enfoque al dominio del torneo de tenis y a la arquitectura Angular + TypeScript.
+Unlike V1 projects (which used fillable generic templates), in V2 prompts evolved into more contextualised conversations. The TENNIS prompts were built on the experience from the **CARTO** project (4 — Cartographic Project Manager), adapting the approach to the tennis tournament domain and the Angular + TypeScript architecture.
 
-## Proyectos en los que se aplicó
+## Projects where it was applied
 
-| Proyecto | IA Desarrollador | Observación |
+| Project | AI Developer | Notes |
 |---|---|---|
-| 5 — Tennis Tournament Manager | GitHub Copilot (Claude Sonnet 4.5) | Prompts reales guardados aquí |
+| 5 — Tennis Tournament Manager | GitHub Copilot (Claude Sonnet 4.5) | Real prompts stored here |
 
-> **CARTO (proyecto 4)** también utilizó prompts V2, pero sus prompts de codificación no fueron guardados en esta carpeta al ser el primer proyecto V2 donde se fue explorando el flujo de trabajo.
+> **CARTO (project 4)** also used V2 prompts, but its coding prompts were not stored in this directory as it was the first V2 project where the workflow was being explored.

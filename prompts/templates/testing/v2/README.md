@@ -1,21 +1,21 @@
-# Prompts de Testing E2E — V2
+# E2E Testing Prompts — V2
 
-## Descripción
+## Description
 
-> ⚠️ **Nota importante:** Esta carpeta **no contiene plantillas genéricas reutilizables**. Contiene los **prompts reales** utilizados durante la fase de testing del proyecto **4 — Cartographic Project Manager (CARTO)**, diseñados como un flujo de testing E2E en 2 fases con **Playwright**.
+> ⚠️ **Important note:** This directory **does not contain generic reusable templates**. It contains the **real prompts** used during the testing phase of project **4 — Cartographic Project Manager (CARTO)**, designed as a 2-phase E2E testing workflow with **Playwright**.
 
-Los prompts son operativos y están adaptados directamente al contexto de CARTO (TypeScript 5.x, Vue.js 3, Pinia, Vue Router, Socket.io, Axios, autenticación JWT, roles ADMINISTRATOR/CLIENT/SPECIAL_USER).
+The prompts are operational and directly adapted to CARTO's context (TypeScript 5.x, Vue.js 3, Pinia, Vue Router, Socket.io, Axios, JWT authentication, ADMINISTRATOR/CLIENT/SPECIAL_USER roles).
 
-## Contenido
+## Contents
 
-| Fichero | Fase | Descripción |
+| File | Phase | Description |
 |---|---|---|
-| `test-scenario-template.md` | Fase 1 | El agente analiza los diagramas de casos de uso y el codebase de CARTO para generar el documento `E2E_TEST_SCENARIOS.md` con todos los escenarios de test (AUTH, PROJ, TASK, MSG, FILE, NOTIF, CAL, BACK…), con precondiciones, pasos detallados, resultados esperados y matriz de prioridad. |
-| `test-implementation-template.md` | Fase 2 | Siguiendo el documento de escenarios de la Fase 1, el agente genera los **ficheros de test Playwright** completos: configuración, Page Object Models, fixtures de autenticación, helpers, datos de prueba y tests organizados por prioridad (critical/high/medium/low). |
+| `test-scenario-template.md` | Phase 1 | The agent analyses CARTO's use case diagrams and codebase to generate the `E2E_TEST_SCENARIOS.md` document with all test scenarios (AUTH, PROJ, TASK, MSG, FILE, NOTIF, CAL, BACK…), including preconditions, detailed steps, expected results and a priority matrix. |
+| `test-implementation-template.md` | Phase 2 | Following the scenario document from Phase 1, the agent generates the full **Playwright test files**: configuration, Page Object Models, authentication fixtures, helpers, test data and tests organised by priority (critical/high/medium/low). |
 
-## Proyectos en los que se aplicó
+## Projects where it was applied
 
-| Proyecto | IA Tester | Observación |
+| Project | AI Tester | Notes |
 |---|---|---|
-| 4 — Cartographic Project Manager | GitHub Copilot (GPT-5.4) | Prompts originales guardados aquí |
-| 5 — Tennis Tournament Manager | GitHub Copilot (GPT-5.4) | El agente IA tomó estos prompts como base para generar los escenarios e implementaciones de testing específicos de TENNIS; no se creó un conjunto de prompts independiente |
+| 4 — Cartographic Project Manager | GitHub Copilot (GPT-5.4) | Original prompts stored here |
+| 5 — Tennis Tournament Manager | GitHub Copilot (GPT-5.4) | The AI agent used these prompts as a base to generate TENNIS-specific test scenarios and implementations; no separate prompt set was created |

@@ -1,20 +1,20 @@
-# Plantilla de Testing — V1
+# Testing Template — V1
 
-## Descripción
+## Description
 
-Esta carpeta contiene la **plantilla genérica de testing unitario V1**, utilizada con **Qwen AI** como IA Tester en los proyectos de primera generación del TFG.
+This directory contains the **generic V1 unit testing template**, used with **Qwen AI** as AI Tester in the first-generation projects of the TFG.
 
-Corresponde al prompt de la subfase **2.2 "IA Tester"** de la Guía de Codificación (versión V1).
+It corresponds to the prompt for sub-phase **2.2 "AI Tester"** of the Coding Guide (V1 version).
 
-## Contenido
+## Contents
 
-| Fichero | Descripción |
+| File | Description |
 |---|---|
-| `testing-template.md` | Plantilla para la generación de suites de tests unitarios con **Jest y TSJest**. La IA Tester recibe el código implementado, la configuración de Jest/TSJest/TypeScript, la especificación de requisitos y el diagrama de casos de uso, y genera tests AAA (Arrange-Act-Assert) cubriendo casos normales, de borde y excepcionales. Incluye matriz de cobertura y análisis de cobertura estimada. |
+| `testing-template.md` | Template for generating unit test suites with **Jest and TSJest**. The AI Tester receives the implemented code, the Jest/TSJest/TypeScript configuration, the requirement specification and the use case diagram, and generates AAA (Arrange-Act-Assert) tests covering normal, edge and exceptional cases. Includes a coverage matrix and estimated coverage analysis. |
 
-## Proyectos en los que se aplicó
+## Projects where it was applied
 
-| Proyecto | IA Tester |
+| Project | AI Tester |
 |---|---|
 | 1 — The Hangman Game | Qwen AI |
 | 2 — Music Web Player | Qwen AI |

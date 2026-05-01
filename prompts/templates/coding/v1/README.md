@@ -1,21 +1,21 @@
-# Plantillas de Codificación — V1
+# Coding Templates — V1
 
-## Descripción
+## Description
 
-Esta carpeta contiene las **plantillas genéricas de codificación V1**, utilizadas con **Mistral** como IA Desarrollador en los proyectos de primera generación del TFG.
+This directory contains the **generic V1 coding templates**, used with **Mistral** as AI Developer in the first-generation projects of the TFG.
 
-Corresponden a los prompts de la subfase **2.2 "Implementación Iterativa por Componente"** de la Guía de Codificación (versión V1).
+They correspond to the prompts for sub-phase **2.2 "Iterative Component Implementation"** of the Coding Guide (V1 version).
 
-## Contenido
+## Contents
 
-| Fichero | Descripción |
+| File | Description |
 |---|---|
-| `frontend-template.md` | Plantilla para la generación de páginas frontend (HTML/CSS/JS). Utilizada por la IA Desarrollador para crear páginas estáticas o landings completas con estructura semántica, estilos responsive y accesibilidad. |
-| `module-coding-template.md` | Plantilla para la implementación de clases y módulos TypeScript. La IA Desarrollador recibe el diagrama de clases, especificación de requisitos y diagrama de casos de uso, y genera el código completo del componente. |
+| `frontend-template.md` | Template for generating frontend pages (HTML/CSS/JS). Used by the AI Developer to create static pages or full landing pages with semantic structure, responsive styles and accessibility. |
+| `module-coding-template.md` | Template for implementing TypeScript classes and modules. The AI Developer receives the class diagram, requirement specification and use case diagram, and generates the full component code. |
 
-## Proyectos en los que se aplicó
+## Projects where it was applied
 
-| Proyecto | IA Desarrollador |
+| Project | AI Developer |
 |---|---|
 | 1 — The Hangman Game | Mistral |
 | 2 — Music Web Player | Mistral |
