@@ -8,7 +8,7 @@ Requirement specification was treated as an experiment in itself: for each proje
 
 ## Structure
 
-Each subdirectory corresponds to one project and contains 2–3 specification files, each representing a different formalization level:
+Each subdirectory corresponds to one project and contains 3 specification files, each representing a different formalization level:
 
 | File | Format | Description |
 |---|---|---|
@@ -31,4 +31,4 @@ Projects 1–3 use EARS because they were internally defined and suited to a for
 
 ## Usage in the TFG
 
-These documents were fed directly to the AI Architect model (Claude Sonnet) as input context for architecture and design generation. The experiment and its results are discussed in chapters 6 (*Arquitectura y Diseño*) and 8 (*Resultados y Análisis*) of the written report.
+These documents were fed directly to the AI Architect model (Claude Sonnet) as input context for architecture and design generation. The experiment and its results are discussed in chapters 6 (*Arquitectura y Diseño*) of the written report.
