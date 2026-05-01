@@ -58,12 +58,21 @@
   pagebackref=true
 ]{hyperref} %hiperenlaces y backcites
 
-\renewcommand{\ac}[1]{\textbf{\acs{#1}}}
+\let\origacs\acs
+\renewcommand{\acs}[1]{\textbf{\origacs{#1}}}
 
 \hypersetup{breaklinks=true}
 % Redefinir el comando \url para cambiar el tamaño del texto de los enlaces
 % \let\oldurl\url
 % \renewcommand{\url}[1]{{\scriptsize{\oldurl{#1}}}}
+
+\usepackage{titlesec}
+
+\titleformat{\chapter}[hang]
+  {\normalfont\huge\bfseries}
+  {\chaptername\ \thechapter:}
+  {0.5em}
+  {}
 
 \usepackage{url}
 \usepackage{subcaption}
@@ -486,7 +495,7 @@ Artificial Intelligence, Large Language Models, LLM, Code Generation, Software E
 % --------    Estan en el directorio capitulos/   ----------
 % ==========================================================
 % Comentar la siguiente línea en la versión final
-%\include{capitulos/Cap_Instrucciones}
+\include{capitulos/Cap_Instrucciones}
 \include{capitulos/Cap0_Preface}
 \include{capitulos/Cap1_Metas}
 \include{capitulos/Cap2_Introduccion}

@@ -1,11 +1,11 @@
 % ---------------------------------------------------
 % Trabajo Final de Grado
 % Author: Fabián González Lence <alu0101549491@ull.edu.es>
-% Chapter: Modelos de IA y Herramientas (versión reducida)
+% Chapter: Modelos de IA (versión reducida)
 % ----------------------------------------------------
 
 \cleardoublepage
-\chapter{Modelos de IA y Herramientas} \label{chap:AIModels}
+\chapter{Modelos de IA} \label{chap:AIModels}
 
 Este capítulo describe los modelos y herramientas de \ac{IA} empleados a lo largo del trabajo, justifica su selección y documenta el cambio de enfoque metodológico introducido a partir del cuarto proyecto, como se explica en la Sección~\ref{sec:approach-change}. Cada herramienta fue asignada a un rol concreto dentro del flujo de desarrollo, configurando un equipo de agentes especializados que no fue fijo desde el inicio, sino que evolucionó con la experiencia acumulada en cada proyecto hasta encontrar la combinación más adecuada para cada fase y nivel de complejidad.
 
@@ -43,7 +43,8 @@ En cuanto al modelo subyacente, se empleó Claude Sonnet 4.5 para los roles de A
 
 \subsection{Qwen (Alibaba)} \label{subsec:qwen}
 
-Qwen AI\footnote{\href{https://qwen.ai/home}{Qwen AI (\textit{chatbot})}} fue el agente de \ac{IA} \textit{Tester} durante los tres primeros proyectos, responsable de generar las suites de pruebas unitarias con Jest. Su elección respondía a su eficacia en la generación de casos de prueba siguiendo el patrón \ac{AAA}, con una tasa de compilación inicial elevada y cobertura de casos normales, límite y excepcionales.
+Qwen AI\footnote{\href{https://qwen.ai/home}{Qwen AI (\textit{chatbot})}} fue el agente de \ac{IA} \textit{Tester} durante los tres primeros proyectos, responsable de generar los conjuntos de pruebas unitarias con Jest. 
+Su elección respondía a su eficacia en la generación de casos de prueba siguiendo el patrón \ac{AAA} \cite{Wei:2024:AAA}, con una tasa de compilación inicial elevada y cobertura de casos normales, límite y excepcionales.
 Al igual que Mistral, fue desplazado a partir de \ac{CARTO} por la inviabilidad del flujo manual de copiar código entre interfaces chatbot para proyectos de mayor escala.
 
 \subsection{ChatGPT (OpenAI)} \label{subsec:chatgpt}
@@ -61,65 +62,65 @@ Google Gemini\footnote{\href{https://gemini.google.com/app}{Google Gemini (\text
 La transición de los proyectos 1--3 al proyecto 4 (\ac{CARTO}) supuso un punto de inflexión, motivado por las limitaciones de escalabilidad del flujo conversacional hasta entonces empleado. En los tres primeros proyectos, el agente de \ac{IA} Desarrollador operaba como \textit{chatbot} web: copiábamos manualmente el \textit{prompt} en la interfaz, obtenía el código y lo transfería al editor módulo a módulo. Este flujo resultaba viable para proyectos de 9 a 15 módulos, pero mostró tres limitaciones críticas al escalar: pérdida de coherencia inter-módulo al generar ficheros en conversaciones independientes; fricción operativa del ciclo manual de copiar, compilar, detectar errores y volver al \textit{chatbot}; e imposibilidad práctica de revisar y testear a la escala de \ac{CARTO}, que llegó a gestionar más de trescientos ficheros en cinco capas de arquitectura.\\
 
 La solución fue adoptar GitHub Copilot en modo agente como herramienta principal para Codificación, Revisión y Testing a partir de \ac{CARTO}. Esta decisión fue facilitada por un curso de herramientas de GitHub Copilot que realizamos en el ámbito de la asignatura de
-``Prácticas Externas'', en el que estudiamos la personalización de agentes \cite{URL::TFG}.\\
+``\textit{Prácticas Externas}'', en el que estudiamos la personalización de agentes \cite{URL::TFG}.\\
 
 Los \textit{prompts} de Revisión y Pruebas fueron rediseñados para el modelo agente. El Revisor 2.0 adoptó un flujo de tres etapas: exploración de la base de código y generación de una lista de tareas pendientes; revisión sistemática por grupos de ficheros con informe de incidencias clasificadas por severidad; e implementación de correcciones siguiendo el informe. En \ac{CARTO} se identificaron 225 incidencias en 41 grupos de revisión. El Tester 2.0 generó pruebas \textit{end-to-end} con Playwright: el agente analizaba los diagramas de casos de uso para definir escenarios y en una segunda pasada los implementaba; en \ac{CARTO} se generaron 131 tests reales. En el proyecto \ac{TENNIS}, la metodología evolucionó también para la codificación con un Desarrollador 2.0, que distribuía el trabajo en dos fases: planificación y categorización de módulos, seguida de implementación iterativa por categorías.
 
+\section{Uso de IA en la redacción de esta memoria} \label{sec:ia-memoria}
+
+La redacción de esta memoria también se apoyó en \ac{IA}, concretamente en el modelo Claude Sonnet 4.6, actuando como asistente de escritura LaTeX\footnote{\href{https://es.wikipedia.org/wiki/LaTeX}{LaTeX}}.
+Su uso no fue generativo desde cero, sino de asistencia y transformación: el punto de partida eran siempre notas propias en sucio ---borradores en lenguaje llano, listas de ideas y registros de decisiones en un cuaderno Notion personal--- y el agente se encargaba de proponer reescrituras que adaptaban ese material al registro académico exigido por un \ac{TFG}, respetando la densidad y el tono de los capítulos ya escritos.\\
+
+Las tareas concretas que se delegaron al asistente fueron: la estructuración de capítulos y secciones a partir de un índice tentativo, la reordenación y condensación de ideas para eliminar redundancias, la aplicación sistemática de convenciones de formato LaTeX del proyecto ---italización de términos en inglés con \texttt{\textbackslash textit\{\}}, uso consistente de \texttt{\textbackslash ac\{\}} para acrónimos, ajuste de tablas con \texttt{tabularx}--- y la corrección de configuraciones del documento principal. En ningún caso el agente fue fuente primaria de información, el asistente operó exclusivamente sobre el plano de la forma y la coherencia expositiva.
+
 \section{Comparativa de modelos} \label{sec:comparativa-modelos}
 
-La Tabla~\ref{tab:comparativa-modelos} recoge de forma sintética los modelos empleados, con su rol, proyectos, fortalezas y limitaciones, sirviendo de referencia para el análisis del Capítulo~\ref{chap:Results}. La tabla refleja la evolución metodológica del trabajo: en los tres primeros proyectos el equipo estaba distribuido entre tres herramientas conversacionales independientes, mientras que en los dos últimos los roles convergieron en GitHub Copilot teniendo subyacentes Claude y los modelos de OpenAI. Del análisis de esta Tabla~\ref{tab:comparativa-modelos} se deducen dos conclusiones: ningún modelo resultó adecuado para todas las fases, lo que justifica el enfoque multiagente adoptado; y el rol de Revisor fue el único estable a lo largo de los cinco proyectos, reflejo de que la integración directa con el sistema de ficheros es especialmente crítica en las tareas de revisión.
+La Tabla~\ref{tab:comparativa-modelos} sintetiza los modelos empleados y refleja la evolución metodológica del trabajo: en P1--P3 el equipo se distribuía entre tres \textit{chatbots} independientes, mientras que en P4--P5 los roles convergieron en GitHub Copilot con Claude y modelos GPT como subyacentes. De su lectura se extraen dos conclusiones: ningún modelo resultó adecuado para todas las fases, lo que justifica el enfoque multiagente; y el rol de Revisor fue el único constante, evidenciando que la integración con el sistema de ficheros es crítica en las tareas de revisión.
 
 \begin{table}[H]
 \centering
 \small
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|
->{\raggedright\arraybackslash}p{2.2cm}|
->{\raggedright\arraybackslash}p{3.2cm}|
->{\raggedright\arraybackslash}p{1.8cm}|
+\begin{tabularx}{\textwidth}{|
+>{\raggedright\arraybackslash}p{2cm}|
 >{\raggedright\arraybackslash}p{3cm}|
->{\raggedright\arraybackslash}p{3cm}|
+Y|
+Y|
 }
 \hline
-\textbf{Modelo} & \textbf{Rol y Fases} & \textbf{Proyectos} & \textbf{Fortalezas} & \textbf{Limitaciones} \\
+\textbf{Modelo} & \textbf{Rol (proyectos)} & \textbf{Fortalezas} & \textbf{Limitaciones} \\
 \hline
 \textbf{Claude} &
-Arquitecto (arquitectura) &
-Todos &
-Contexto amplio; coherencia arquitectónica; alta fidelidad al diseño; documentación técnica detallada &
+Arquitecto (P1--P4) &
+Contexto amplio; coherencia arquitectónica; alta fidelidad al diseño &
 Suscripción de pago; integración como agente dependiente de Copilot \\
 \hline
 \textbf{Mistral} &
-Desarrollador (codificación) &
-P1--P3 &
-Gratuito; buen rendimiento en módulos de complejidad media; sigue instrucciones estructuradas &
-Pérdida de coherencia inter-módulo; dificultad con patrones avanzados; flujo manual no escalable \\
+Desarrollador (P1--P3) &
+Buen rendimiento en módulos de complejidad media; sigue instrucciones estructuradas &
+Pérdida de coherencia inter-módulo; dificultad con patrones avanzados \\
 \hline
 \textbf{GitHub Copilot} &
-Revisor (todos); desarrollador y tester (P4--P5) &
-Todos &
+Revisor (P1--P5); Desarrollador y \textit{Tester} (P4--P5); Arquitecto (P5) &
 Integración directa con ficheros; ejecución iterativa de comandos; gestión coherente a gran escala &
-Dependencia de modelos externos; trazas no legibles en Markdown \\
+Dependencia de modelos externos con consumo de \textit{tokens} moderado; trazas no legibles en Markdown \\
 \hline
 \textbf{Qwen} &
-Tester (testing) &
-P1--P3 &
+\textit{Tester} (P1--P3) &
 Eficaz con patrón \ac{AAA}; alta compilación inicial; cubre casos normales, límite y excepcionales &
 Flujo manual no escalable; desplazado por Copilot agente a partir de P4 \\
 \hline
 \textbf{ChatGPT} &
-Apoyo en especificación de requisitos (diseño previo a codificación) &
-P1--P3 &
+Apoyo en requisitos (P1--P3) &
 Fluidez en texto técnico; familiaridad con convenciones estándar &
-Pérdida de coherencia en conversaciones largas; utilidad decreciente en proyectos complejos \\
+Pérdida de coherencia en conversaciones largas \\
 \hline
 \textbf{Perplexity} &
-Consulta técnica puntual (exploratoria) &
-Ninguno &
+Consulta puntual (ninguno) &
 Búsqueda en tiempo real con referencias verificables &
 No integrado en el flujo formal; descartado tras pruebas iniciales \\
 \hline
-\end{tabular}
+\end{tabularx}
 \caption{Comparativa de modelos y herramientas de \ac{IA} empleados. P1-\ac{HANGMAN}, P2-\ac{PLAYER}, P3-\ac{BALATRO}, P4-\ac{CARTO} y P5-\ac{TENNIS}.}
 \label{tab:comparativa-modelos}
 \end{table}
