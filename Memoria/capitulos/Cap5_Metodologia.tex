@@ -11,8 +11,10 @@ La justificación de los modelos concretos asignados a cada rol y la evolución 
 
 \section{Diseño experimental} \label{sec:diseno-experimental}
 
-Los cinco proyectos se han seleccionado para que cada uno introduzca un incremento de complejidad ---arquitectónica, tecnológica o de escala--- significativo respecto al anterior, sin saltos demasiado grandes que impidan atribuir las diferencias de comportamiento de los modelos a una variable concreta.
-\ac{HANGMAN} establece la línea base con TypeScript puro y una arquitectura \ac{MVC} plana; \ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono con \textit{custom hooks}; \ac{BALATRO} eleva la complejidad del modelo de dominio (póker, niveles, tienda, cartas especiales) y añade la generación de \textit{assets} visuales mediante \ac{IA}; \ac{CARTO} escala a una aplicación \textit{full-stack} con \textit{Clean Architecture}, comunicación en tiempo real e integración de servicios externos; y \ac{TENNIS} maximiza la complejidad con frontend y backend separados, múltiples roles de usuario y reglas de negocio sofisticadas. La Tabla~\ref{tab:proyectos-resumen} sintetiza las características que distinguen a cada caso de estudio. Las cifras de ficheros corresponden a código de producción real medido sobre el repositorio del proyecto, excluyendo \texttt{node\_modules} y artefactos de \textit{build}.
+Los cinco proyectos \cite{XXX} se han seleccionado para que cada uno suponga un incremento de complejidad ---arquitectónica, tecnológica o de escala--- significativo respecto al anterior, sin saltos demasiado grandes que impidan atribuir las diferencias de comportamiento de los modelos a una variable concreta.
+El proyecto \ac{HANGMAN} es una de las últimas prácticas que se propone al alumnado en la asignatura ``\textit{Programación de Aplicaciones Interactivas}'' del tercer curso del Grado y establece la línea base.
+Se desarrolla usando TypeScript puro sin intervención de entornos de desarrollo y una arquitectura \ac{MVC} plana. 
+Se trata de una ; \ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono con \textit{custom hooks}; \ac{BALATRO} eleva la complejidad del modelo de dominio (póker, niveles, tienda, cartas especiales) y añade la generación de \textit{assets} visuales mediante \ac{IA}; \ac{CARTO} escala a una aplicación \textit{full-stack} con \textit{Clean Architecture}, comunicación en tiempo real e integración de servicios externos; y \ac{TENNIS} maximiza la complejidad con frontend y backend separados, múltiples roles de usuario y reglas de negocio sofisticadas. La Tabla~\ref{tab:proyectos-resumen} sintetiza las características que distinguen a cada caso de estudio. Las cifras de ficheros corresponden a código de producción real medido sobre el repositorio del proyecto, excluyendo \texttt{node\_modules} y artefactos de \textit{build}.
 
 \begin{table}[H]
 \centering
@@ -90,7 +92,7 @@ Cada fase del flujo dispone de una plantilla de \textit{prompt} reutilizable que
 \label{tab:prompt-building-chats}
 \end{table}
 
-Las plantillas se mantienen versionadas en el directorio \texttt{prompts/templates/} del repositorio del \ac{TFG} \cite{URL::TFG}, organizadas por fase y por versión del flujo: V1 para los proyectos conversacionales P1--P3 y V2 para los proyectos con agentes personalizados P4--P5. En estos últimos las plantillas se trasladan adicionalmente al directorio \texttt{.github/} como ficheros \texttt{.agent.md} y \texttt{.prompt.md}. La evolución de los roles ---Desarrollador 2.0, Revisor 2.0 y Tester 2.0--- introducida a partir de \ac{CARTO} y consolidada en \ac{TENNIS} se discute en la Sección~\ref{sec:approach-change}. la Tabla~\ref{tab:plantillas-prompts} resume únicamente las plantillas operativas y su localización en el repositorio.
+Las plantillas se mantienen versionadas en el directorio \texttt{resources/templates/} del repositorio del \ac{TFG} \cite{URL::TFG}, organizadas por fase y por versión del flujo: V1 para los proyectos conversacionales P1--P3 y V2 para los proyectos con agentes personalizados P4--P5. En estos últimos las plantillas se trasladan adicionalmente al directorio \texttt{.github/} como ficheros \texttt{.agent.md} y \texttt{.prompt.md}. La evolución de los roles ---Desarrollador 2.0, Revisor 2.0 y Tester 2.0--- introducida a partir de \ac{CARTO} y consolidada en \ac{TENNIS} se discute en la Sección~\ref{sec:approach-change}. la Tabla~\ref{tab:plantillas-prompts} resume únicamente las plantillas operativas y su localización en el repositorio.
 
 \begin{table}[H]
 \centering
@@ -101,19 +103,19 @@ Las plantillas se mantienen versionadas en el directorio \texttt{prompts/templat
 \hline
 \textbf{Fase} & \textbf{Plantillas en el repositorio} & \textbf{Patrón de prompting} \\
 \hline
-Arquitectura V1 (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/prompts/templates/architecture/}{\texttt{architecture/}}: \texttt{architecture-template.md} & \textit{Single-shot} con restricciones de estilo y cabecera obligatoria \\
+Arquitectura V1 (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/resources/templates/architecture/}{\texttt{architecture/}}: \texttt{architecture-template.md} & \textit{Single-shot} con restricciones de estilo y cabecera obligatoria \\
 \hline
-Codificación V1 (P1--P4) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/prompts/templates/coding/v1}{\texttt{coding/v1/}}: \newline\texttt{frontend-template.md}, \texttt{module-coding-template.md} & \textit{Single-shot} por módulo \\
+Codificación V1 (P1--P4) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/coding/v1}{\texttt{coding/v1/}}: \newline\texttt{frontend-template.md}, \texttt{module-coding-template.md} & \textit{Single-shot} por módulo \\
 \hline
-Codificación V2 (P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/prompts/templates/coding/v2}{\texttt{coding/v2/}}: \texttt{general-codification-template.md}, \texttt{planning-codification-template.md} & \textit{Plan-then-implement} por categorías en \ac{TENNIS} \\
+Codificación V2 (P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/coding/v2}{\texttt{coding/v2/}}: \texttt{general-codification-template.md}, \texttt{planning-codification-template.md} & \textit{Plan-then-implement} por categorías en \ac{TENNIS} \\
 \hline
-Revisión V1 (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/prompts/templates/review/v1/}{\texttt{review/v1/}} & \textit{Single-shot} por módulo \\
+Revisión V1 (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/resources/templates/review/v1/}{\texttt{review/v1/}} & \textit{Single-shot} por módulo \\
 \hline
-Revisión V2 (P4--P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/prompts/templates/review/v2}{\texttt{review/v2/}}: \texttt{todo-list-review-template.md}, \texttt{report-review-template.md}, \texttt{incident-fix-review-template.md} & Tres prompts encadenados: Lista de tareas por grupos $\rightarrow$ revisión $\rightarrow$ corrección \\
+Revisión V2 (P4--P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/review/v2}{\texttt{review/v2/}}: \texttt{todo-list-review-template.md}, \texttt{report-review-template.md}, \texttt{incident-fix-review-template.md} & Tres prompts encadenados: Lista de tareas por grupos $\rightarrow$ revisión $\rightarrow$ corrección \\
 \hline
-Testing V1 (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/prompts/templates/testing/v1/}{\texttt{testing/v1/}}: \newline\texttt{testing-template.md} & Unitario con patrón \ac{AAA} y matriz de cobertura \\
+Testing V1 (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/resources/templates/testing/v1/}{\texttt{testing/v1/}}: \newline\texttt{testing-template.md} & Unitario con patrón \ac{AAA} y matriz de cobertura \\
 \hline
-Testing V2 (P4--P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/prompts/templates/testing/v2}{\texttt{testing/v2/}}: \texttt{test-scenario-template.md}, \texttt{test-implementation-template.md} & Dos prompts encadenados: escenarios e implementación\\
+Testing V2 (P4--P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/testing/v2}{\texttt{testing/v2/}}: \texttt{test-scenario-template.md}, \texttt{test-implementation-template.md} & Dos prompts encadenados: escenarios e implementación\\
 \hline
 \end{tabularx}
 \caption{Plantillas de \textit{prompts} del \ac{TFG}, organizadas por fase y versión.}

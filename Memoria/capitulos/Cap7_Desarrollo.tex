@@ -5,3 +5,39 @@
 % ----------------------------------------------------
 
 \chapter{Desarrollo} \label{chap:Development}
+
+Cada uno de los cinco proyectos recorrió el flujo en cuatro fases descrito en la Sección~\ref{sec:flujo-trabajo} partiendo de los artefactos de diseño elaborados en el Capítulo~\ref{chap:Design}.\\
+Este capítulo documenta la ejecución concreta de ese flujo: qué modelo ejerció de responsable en cada fase, qué decisiones se tomaron durante el proceso, qué incidencias surgieron y cómo se resolvieron antes de avanzar a la fase siguiente.\\
+Los tres primeros proyectos siguen el enfoque conversacional V1 ---Claude como Arquitecto, Mistral como Desarrollador, GitHub Copilot (GPT-5 mini) como Revisor y Qwen AI como Tester---; los dos últimos adoptan el enfoque V2 basado en agentes personalizados de GitHub Copilot, descrito en la Sección~\ref{sec:approach-change}.\\
+
+\section{The Hangman Game} \label{sec:dev-hangman}
+
+\ac{HANGMAN} es el primer proyecto en recorrer el flujo completo.
+Su alcance reducido ---once ficheros de producción, arquitectura \ac{MVC} plana sin \textit{framework}--- lo convirtió en el banco de pruebas en el que se validaron las plantillas de \textit{prompts} antes de escalar a proyectos de mayor complejidad, tal como se describe en la Sección~\ref{sec:diseno-experimental}.\\
+
+\subsection{Fase de Arquitectura}
+
+Los artefactos de entrada a esta fase fueron la especificación semiformal de requisitos, el diagrama de clases generado también en formato semiformal y el diagrama de casos de uso producido mediante \ac{LNC}, cuya elaboración se documenta en las Secciones~\ref{sec:requirements} y~\ref{sec:uml}.\\
+A partir de ellos, Claude ---en su rol de Arquitecto--- generó el árbol de directorios con los once ficheros de producción y los esqueletos de clases con firmas documentadas y sin lógica implementada.\\
+El resultado fue valorado positivamente: la estructura de directorios resultó sólida y bien organizada, y las firmas de los métodos eran coherentes con el diseño previsto en los diagramas.
+La validación manual del árbol y la compilación limpia sirvieron como criterio de transición a la fase siguiente.\\
+
+\subsection{Fase de Codificación}
+
+Mistral actuó como Desarrollador implementando cada módulo de forma independiente sobre los esqueletos generados por Claude, siguiendo el patrón \textit{single-shot} por componente definido en la plantilla de codificación V1 (Sección~\ref{sec:prompting}).\\
+El primer \textit{prompt} siguió el flujo de \textit{frontend}: se encargó a Mistral la generación de \texttt{index.html} y \texttt{src/styles/main.css}, cuya propuesta se validó manualmente y se integró al repositorio sin modificaciones.\\
+La codificación del resto de módulos avanzó en orden de dependencia: \texttt{GuessResult}, \texttt{WordDictionary}, \texttt{GameModel}, los cuatro componentes de vista (\texttt{WordDisplay}, \texttt{AlphabetDisplay}, \texttt{HangmanRenderer} y \texttt{MessageDisplay}), \texttt{GameView} y \texttt{GameController}.\\
+La única decisión técnica que se señaló como pendiente de revisión fue la implementación de \texttt{WordDictionary}, cuyo diccionario de animales Mistral incorporó como un \textit{array} literal embebido en el propio código fuente en lugar de cargarlo desde un fichero externo.\\
+
+\subsection{Fase de Revisión}
+
+GitHub Copilot en modo conversacional, con el modelo GPT-5 mini, ejerció el rol de Revisor.\\
+La revisión se realizó componente a componente: para cada fichero se instanció la plantilla V1 de revisión, que incluye como contexto la especificación de requisitos, el diagrama de clases y el código a revisar, y el Revisor emitió un informe con puntuación parcial por criterio y una decisión ternaria.\\
+La incidencia más relevante identificada afectó a \texttt{WordDictionary}: el \textit{array} embebido de nombres de animales se reemplazó por la carga de un fichero JSON externo, actualizando adicionalmente \texttt{styles.d.ts} para declarar correctamente los tipos de importación de JSON en TypeScript.
+El resto de componentes no presentaron incidencias de gravedad que requiriesen iteraciones adicionales de corrección.\\
+
+\subsection{Fase de Testing}
+
+Qwen AI actuó como Tester generando las pruebas unitarias con Jest 29.7.0 y ts-jest 29.2.5\footnote{\href{https://kulshekhar.github.io/ts-jest/}{ts-jest}} sobre los nueve componentes del proyecto, organizados en tres directorios que reproducen las capas de la arquitectura: \texttt{tests/controllers/}, \texttt{tests/models/} y \texttt{tests/views/}.\\
+Los resultados generales fueron satisfactorios, aunque la suite \texttt{hangman-renderer.test.ts} terminó en \textit{FAIL}: el entorno de ejecución \textit{JSDOM} de Jest no provee la \ac{API} de Canvas que \texttt{HangmanRenderer} utiliza para pintar el estado del ahorcado, lo que impidió ejecutar correctamente los \textit{tests} de renderizado.\\
+El resto de suites ---incluyendo las de \texttt{GameModel}, \texttt{WordDictionary}, \texttt{GuessResult}, \texttt{GameController} y los componentes de vista que no dependen de Canvas--- pasaron sin errores.\\
