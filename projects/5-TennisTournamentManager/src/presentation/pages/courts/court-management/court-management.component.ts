@@ -12,7 +12,7 @@
  * @see {@link https://typescripttutorial.net}
  */
 
-import {Component, OnInit, inject, signal, computed} from '@angular/core';
+import {Component, OnInit, AfterViewInit, inject, signal, computed} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
@@ -58,7 +58,7 @@ interface CourtForm {
   template: templateHtml,
   styles: [styles],
 })
-export class CourtManagementComponent implements OnInit {
+export class CourtManagementComponent implements OnInit, AfterViewInit {
   private readonly courtRepository = inject(CourtRepositoryImpl);
   private readonly tournamentService = inject(TournamentService);
   private readonly authStateService = inject(AuthStateService);
@@ -115,6 +115,17 @@ export class CourtManagementComponent implements OnInit {
     }
     this.tournamentId.set(id);
     await this.loadData();
+  }
+
+  /**
+   * @inheritdoc
+   * Resets scroll position to top after view initialization to ensure back button is visible.
+   */
+  public ngAfterViewInit(): void {
+    // Use setTimeout to ensure this runs after Angular's router scroll restoration
+    setTimeout(() => {
+      window.scrollTo({top: 0, behavior: 'instant'});
+    }, 0);
   }
 
   /**

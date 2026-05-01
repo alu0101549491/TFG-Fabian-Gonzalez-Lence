@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## Bug Fix: Court Management Page Scroll Position (2026-05-01)
+
+### Fix: Reset Scroll to Top When Navigating to Court Management
+
+**Status:** ✅ COMPLETED
+
+**Location:**
+- `src/presentation/pages/courts/court-management/court-management.component.ts` *(modified)*
+
+**Description:**
+Fixed an annoying UX issue where navigating to the Court Management page via the "Manage Courts" button would load the page scrolled to the bottom, hiding the back button and giving users the impression that they were stuck on the page.
+
+**Root Cause:**
+Angular's router restores the previous scroll position after component initialization. Calling `window.scrollTo()` in `ngOnInit()` was being overridden by the router's scroll restoration mechanism, which runs after the view is initialized.
+
+**Changes Applied:**
+1. **Implemented `AfterViewInit` lifecycle hook** — Added `ngAfterViewInit()` method to scroll to top after the view is fully rendered.
+2. **Used `setTimeout` with instant scroll** — Wrapped `window.scrollTo({top: 0, behavior: 'instant'})` in `setTimeout(..., 0)` to ensure it runs in the next tick after Angular's router scroll restoration completes.
+3. **Instant scroll behavior** — Changed from `'smooth'` to `'instant'` to prevent visible scrolling animation and provide immediate positioning.
+
+**User Impact:**
+Users now immediately see the page header and back button when navigating to the Court Management page, improving navigation clarity and reducing confusion.
+
+---
+
 ## Hotfix: Service Worker Cross-Deployment 404 (2026-04-25)
 
 ### Fix: SW No Longer Caches JavaScript Bundles
