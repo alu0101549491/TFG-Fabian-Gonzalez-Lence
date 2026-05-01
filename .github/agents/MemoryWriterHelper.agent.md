@@ -1,7 +1,7 @@
 ---
 name: Memory Writing Helper Agent
 description: Academic writing specialist for LaTeX TFG memory chapters, focused on conciseness, style consistency, and technical accuracy
-model: Claude Opus 4.7 (copilot)
+model: Claude Sonnet 4.6 (copilot)
 tools:
   - browser
   - read
