@@ -41,45 +41,31 @@ Para los diagramas de casos de uso la situación fue más contundente: Claude fu
 
 \section{Decisiones arquitectónicas} \label{sec:arch-decisions}
 
-La arquitectura de cada proyecto se eligió como el siguiente paso natural en una progresión incremental: cada proyecto incorpora un patrón o una capa adicional que el anterior aún no necesitaba, lo que permite atribuir las diferencias de comportamiento de los modelos a cambios arquitectónicos identificables.\\
-
-\ac{HANGMAN} adopta el patrón \ac{MVC} \cite{Reenskaug:1979:MVC} en su forma más plana, con tres directorios paralelos para modelo, vista y controlador, complementado por los patrones \textit{Composite} y \textit{Observer} \cite{Gamma:1994:Design} en la composición de la vista. Esta arquitectura es deliberadamente conservadora: sirve de línea base para validar el flujo conversacional sin introducir complejidad estructural. \ac{PLAYER} sustituye el \ac{MVC} clásico por una arquitectura basada en componentes con \textit{custom hooks} de React, en la que la lógica reutilizable se extrae a hooks como \texttt{useAudioPlayer}, \texttt{usePlaylist} o \texttt{useLocalStorage}, separando los componentes presentacionales de los contenedores. El cambio responde al paradigma declarativo del \textit{framework} y no a una crítica del \ac{MVC}.\\
-
-\ac{BALATRO} mantiene la separación \ac{MVC} pero añade una capa de servicios transversales (tienda, persistencia y configuración) para evitar que la lógica de juego absorba responsabilidades ajenas. La complejidad del modelo de dominio justifica la nueva capa, que también facilita la inyección de dependencias hacia las pruebas unitarias. \ac{CARTO} marca el salto cualitativo del experimento al adoptar Clean Architecture \cite{Martin:2018:CleanArchitecture} en cuatro capas ---Dominio, Aplicación, Infraestructura y Presentación--- con dependencias dirigidas hacia el interior y aplicación estricta del principio de inversión de dependencias \cite{Martin:2003:Agile}. El backend Node.js sigue el mismo esquema, con repositorios concretos en infraestructura que cumplen los contratos definidos en dominio.\\
-
-\ac{TENNIS} hereda la arquitectura limpia de \ac{CARTO} y la lleva al escenario más exigente del trabajo: frontend Angular y backend Node.js conviven como subproyectos independientes de un mismo monorepo, comunicados por una \ac{API} REST y por Socket.io para los eventos en tiempo real. Cada subproyecto reproduce las cuatro capas, lo que multiplica el número de interfaces y obliga al agente de codificación a respetar los límites de capa también a través del límite de proceso. Esta decisión se tomó tras observar en \ac{CARTO} que una sola base de código frontend con backend separado era escalable, y supuso la prueba de fuego del enfoque multimodelo.\\
-
-Junto a la arquitectura general, en cada proyecto se aplicaron de forma transversal los principios \ac{SOLID} \cite{Martin:2003:Agile} y la guía de estilo de Google para TypeScript \cite{URL::Google-style}, codificadas explícitamente en las plantillas de \textit{prompts}. La adherencia real a estos principios es uno de los puntos analizados en el Capítulo~\ref{chap:Results}.
+La progresión arquitectónica de los cinco proyectos queda recogida en la Tabla~\ref{tab:proyectos-resumen} y caracterizada en la Sección~\ref{sec:diseno-experimental}; esta sección recoge las motivaciones de cada elección no derivadas del tamaño o la pila tecnológica. \ac{HANGMAN} adopta \ac{MVC} \cite{Reenskaug:1979:MVC} con patrones \textit{Composite} y \textit{Observer} \cite{Gamma:1994:Design} en la vista como línea base deliberadamente conservadora. \ac{PLAYER} pasa a componentes React con \textit{custom hooks} porque el paradigma declarativo impone una separación presentacional-contenedor que el \ac{MVC} no modela con naturalidad. \ac{BALATRO} recupera \ac{MVC} pero añade una capa de servicios transversales para evitar que la lógica de juego absorba responsabilidades ajenas. \ac{CARTO} adopta Clean Architecture \cite{Martin:2018:CleanArchitecture} con inversión de dependencias \cite{Martin:2003:Agile}, condición necesaria para el \textit{testing end-to-end}. \ac{TENNIS} replica el mismo esquema \textit{full-stack}, cada extremo con sus propias cuatro capas de Clean Architecture, comunicadas por la \ac{API} REST y Socket.io. En todos los proyectos se aplicaron de forma transversal los principios \ac{SOLID} \cite{Martin:2003:Agile} y la guía de estilo de Google \cite{URL::Google-style}.
 
 \section{Pila tecnológica y trazabilidad de decisiones} \label{sec:tech-stack}
 
-La selección tecnológica se rige por dos criterios: que cada elemento añadido aporte una capacidad ausente en los proyectos anteriores y que el conjunto siga siendo accesible para una sola persona. La progresión se resume en cuatro ejes ---\textit{framework} de interfaz, gestión de estado, comunicación con backend y \textit{testing}--- que la Tabla~\ref{tab:tech-progresion} sintetiza por proyecto.
+La Tabla~\ref{tab:tech-progresion} desglosa en cuatro ejes las decisiones tecnológicas que en la Tabla~\ref{tab:proyectos-resumen} aparecen condensadas. El cambio de \textit{framework} entre proyectos es deliberado: persigue exponer a los modelos de \ac{IA} a paradigmas distintos y evaluar su capacidad de adaptación, no optimizar la homogeneidad del repositorio. Cada decisión queda registrada en la especificación y se reproduce en los \textit{prompts}, garantizando que los modelos no introduzcan dependencias adicionales por iniciativa propia; la eficacia de este mecanismo se analiza en el Capítulo~\ref{chap:Development}.
 
 \begin{table}[H]
 \centering
 \small
 \renewcommand{\arraystretch}{1.3}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.6cm}|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{2.6cm}|Y|>{\raggedright\arraybackslash}p{2.6cm}|}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.8cm}|>{\raggedright\arraybackslash}p{2.2cm}|>{\raggedright\arraybackslash}p{3cm}|Y|>{\raggedright\arraybackslash}p{2.6cm}|}
 \hline
 \textbf{Proyecto} & \textbf{\textit{Framework} de UI} & \textbf{Gestión de estado} & \textbf{Comunicación con backend} & \textbf{Estrategia de \textit{testing}} \\
 \hline
-\ac{HANGMAN} & TypeScript + Vite & Estado interno del modelo & --- & Jest unitario \\
+\ac{HANGMAN} & TypeScript & Estado interno & --- & Jest unitario \\
 \hline
-\ac{PLAYER} & React 18 & \textit{Custom hooks} y \texttt{localStorage} & --- & Jest + React Testing Library \\
+\ac{PLAYER} & React 18 & \textit{Custom hooks} + \texttt{localStorage} & --- & Jest unitario \\
 \hline
-\ac{BALATRO} & React + Vite & Servicios + \texttt{localStorage} & --- & Jest unitario \\
+\ac{BALATRO} & React 18 & Servicios + \texttt{localStorage} & --- & Jest unitario \\
 \hline
-\ac{CARTO} & Vue 3 (Composition API) & Pinia & Axios + Socket.io & Playwright \textit{end-to-end} \\
+\ac{CARTO} & Vue 3 & Pinia & Axios + Socket.io & Playwright \textit{end-to-end} \\
 \hline
-\ac{TENNIS} & Angular 19 \textit{standalone} & Servicios Angular + RxJS & \ac{API} REST + Socket.io & Jest unitario + Playwright \\
+\ac{TENNIS} & Angular 19 & Servicios Angular + RxJS & \ac{API} REST + Socket.io & Playwright \textit{end-to-end} \\
 \hline
 \end{tabularx}
 \caption{Progresión de decisiones tecnológicas a lo largo de los cinco proyectos.}
 \label{tab:tech-progresion}
 \end{table}
-
-El cambio de \textit{framework} entre proyectos es deliberado y persigue exponer a los modelos de \ac{IA} a paradigmas distintos: \ac{HANGMAN} se construye sin \textit{framework} para aislar la capacidad de generar TypeScript idiomático; \ac{PLAYER} y \ac{BALATRO} usan React para evaluar el manejo de hooks y de estado declarativo; \ac{CARTO} introduce Vue 3 con su \textit{Composition API} y un ecosistema diferente (Pinia, vue-router); y \ac{TENNIS} cierra el experimento con Angular 19 y componentes \textit{standalone}, que imponen un estilo de inyección de dependencias y modularidad muy distinto al de los proyectos previos.\\
-
-Vite\footnote{\href{https://vitejs.dev}{Vite}} es la única herramienta de \textit{build} común a los cinco proyectos, lo que reduce la varianza atribuible a la cadena de compilación al comparar resultados. La comunicación cliente-servidor en los dos últimos proyectos combina HTTP con Axios para operaciones \ac{CRUD} y Socket.io para eventos en tiempo real, una pareja consolidada que simplifica el contrato y permite reusar la misma capa de infraestructura. El paso de \textit{testing} unitario con Jest a \textit{end-to-end} con Playwright a partir de \ac{CARTO} responde, como se discute en el Capítulo~\ref{chap:AIModels}, a la inviabilidad de mantener pruebas unitarias exhaustivas a la escala de los proyectos \textit{full-stack}.\\
-
-Cada decisión tecnológica queda registrada en el documento de especificación bajo el apartado de requisitos de tecnologías y se reproduce íntegra en la cabecera obligatoria de los \textit{prompts} de arquitectura y codificación, garantizando que los modelos no introduzcan dependencias adicionales por iniciativa propia. La eficacia de este mecanismo y los casos en que los modelos lo respetaron o lo desbordaron se analizan en el Capítulo~\ref{chap:Development}.
