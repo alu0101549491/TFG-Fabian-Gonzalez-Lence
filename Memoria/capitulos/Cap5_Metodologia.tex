@@ -10,35 +10,61 @@ La metodología de este \ac{TFG} se sostiene sobre cuatro decisiones de diseño 
 
 \section{Diseño experimental} \label{sec:diseno-experimental}
 
-Los cinco proyectos \cite{XXX} se han seleccionado para que cada uno suponga un incremento de complejidad ---arquitectónica, tecnológica o de escala--- significativo respecto al anterior, sin saltos demasiado grandes que impidan atribuir las diferencias de comportamiento de los modelos a una variable concreta.
+Los cinco proyectos \cite{URL::TFG-Web} se han seleccionado para que cada uno suponga un incremento de complejidad ---arquitectónica, tecnológica o de escala--- significativo respecto al anterior, sin saltos demasiado grandes que impidan atribuir las diferencias de comportamiento de los modelos a una variable concreta.
 El proyecto \ac{HANGMAN} establece la línea base y se desarrolla usando TypeScript puro sin intervención de entornos de desarrollo y una arquitectura \ac{MVC} plana. 
 \ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono con \textit{custom hooks}; \ac{BALATRO} eleva la complejidad del modelo de dominio (póker, niveles, tienda, cartas especiales) y añade la generación de \textit{assets} visuales mediante \ac{IA}; 
 \ac{CARTO} escala a una aplicación \textit{full-stack} con \textit{Clean Architecture}, comunicación en tiempo real e integración de servicios externos; y \ac{TENNIS} maximiza la complejidad con frontend y backend separados, múltiples roles de usuario y reglas de negocio más complejas. 
 La Tabla~\ref{tab:proyectos-resumen} sintetiza las características que distinguen a cada caso de estudio. 
 En esa tabla el número de ficheros corresponde a código de producción real medido sobre el repositorio del proyecto, excluyendo \texttt{node\_modules} y artefactos de construcción (\textit{build}) de la aplicación.
+Las Tablas~\ref{tab:proyectos-escala} y~\ref{tab:proyectos-resumen} sintetizan, respectivamente, la caracterización funcional y las métricas de escala que distinguen a cada caso de estudio.
 
 \begin{table}[H]
 \centering
 \small
 \renewcommand{\arraystretch}{1.3}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.6cm}|>{\raggedright\arraybackslash}p{2.6cm}|Y|Y|>{\raggedright\arraybackslash}p{1.6cm}|>{\raggedright\arraybackslash}p{1.8cm}|}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.8cm}|Y|>{\raggedright\arraybackslash}p{2.6cm}|Y|>{\raggedright\arraybackslash}p{2cm}|}
 \hline
-\textbf{Proyecto} & \textbf{Arquitectura} & \textbf{Pila tecnológica} & \textbf{Función clave} & \textbf{Ficheros} & \textbf{Testing} \\
+\textbf{Proyecto} & \textbf{Función clave} & \textbf{Arquitectura} & \textbf{Pila tecnológica} & \textbf{Tipo de \textit{testing}} \\
 \hline
-\ac{HANGMAN} & \ac{MVC} + Composite + Observer & TypeScript, Vite, Canvas \ac{API}, Bulma & Juego del ahorcado con renderizado en \textit{canvas} y diccionario externo & 11 & Jest unitario \\
+\ac{HANGMAN} & Juego del ahorcado con renderizado en \textit{canvas} & \ac{MVC} + Composite + Observer & TypeScript, Vite, Canvas \ac{API}, Bulma & Jest unitario \\
 \hline
-\ac{PLAYER} & Componentes + \textit{Custom Hooks} & React 18, TypeScript, Vite & Reproducción de audio, \textit{playlist} y persistencia local & 25 & Jest unitario \\
+\ac{PLAYER} & Reproducción de audio, \textit{playlist} y persistencia local & Componentes + \textit{Custom Hooks} & React 18, TypeScript, Vite & Jest unitario \\
 \hline
-\ac{BALATRO} & Capas (\ac{MVC} + Servicios) & React, TypeScript, Vite & Juego de cartas con manos de póker, niveles, tienda y \textit{assets} generados con IA & 97 & Jest unitario \\
+\ac{BALATRO} & Juego de cartas con manos de póker, niveles y tienda & Capas (\ac{MVC} + Servicios) & React 18, TypeScript, Vite & Jest unitario \\
 \hline
-\ac{CARTO} & Clean Architecture (4 capas) & Vue.js 3, Pinia, Socket.io, Axios, Node.js, Playwright & Gestión de proyectos, tareas, mensajería en tiempo real e integración Dropbox & 316 & Playwright E2E \\
+\ac{CARTO} & Gestión de proyectos, tareas, mensajería en tiempo real e integración Dropbox & \textit{Clean Architecture} (4 capas) & Vue.js 3, Pinia, Socket.io, Axios, Node.js & Playwright E2E \\
 \hline
-\ac{TENNIS} & Hexagonal (frontend + backend) & Angular 19, Node.js, Express, Socket.io, Playwright & Gestión integral de torneos: cuadros, \textit{order of play}, dobles, ranking y notificaciones & 183 & Playwright E2E \\
+\ac{TENNIS} & Gestión integral de torneos: cuadros, \textit{order of play}, dobles, ranking y notificaciones & Hexagonal (\textit{frontend} + \textit{backend}) & Angular 19, Node.js, Express, Socket.io & Playwright E2E \\
 \hline
 \end{tabularx}
-\caption{Resumen comparativo de los cinco proyectos del experimento.}
+\caption{Caracterización funcional de los cinco proyectos del experimento.}
 \label{tab:proyectos-resumen}
 \end{table}
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|}
+\hline
+\textbf{Proyecto} & \textbf{Ficheros} & \textbf{Clases} & \textbf{\textit{LOC}} & \textbf{Conjuntos} & \textbf{Pruebas} \\
+\hline
+\ac{HANGMAN} & 11 & 9 & 1\,600 & 9 & $\approx$460 \\
+\hline
+\ac{PLAYER} & 25 & 24 & 3\,000 & 21 & $\approx$900 \\
+\hline
+\ac{BALATRO} & 97 & 71 & 9\,000 & 15 & $\approx$1400 \\
+\hline
+\ac{CARTO} & 316 & $\approx$130 & $\approx$16\,000 & 20 & $\approx$400 \\
+\hline
+\ac{TENNIS} & 183 & $\approx$190 & $\approx$14\,000 & 57 & $\approx$870 \\
+\hline
+\end{tabular}
+\caption{Métricas de escala de los cinco proyectos. Ficheros, clases, líneas de código, conjuntos de pruebas y pruebas. Los valores con $\approx$ son estimaciones.}
+\label{tab:proyectos-escala}
+\end{table}
+
+\newpage
 
 \ac{HANGMAN} es una \ac{SPA} desarrollada en TypeScript puro inspirada en una de las prácticas de la asignatura ``\textit{Programación de Aplicaciones Interactivas}'' del tercer curso del Grado, en la que un jugador adivina palabras antes de completar el dibujo del ahorcado\footnote{\href{https://es.wikipedia.org/wiki/Ahorcado_(juego)}{El Ahorcado}} en un elemento \textit{canvas} de HTML5. La capa de vista  (\textit{GameView}) compone cuatro elementos especializados ---\textit{HangmanRenderer}, \textit{AlphabetDisplay}, \textit{WordDisplay} y \textit{MessageDisplay}--- y utiliza una propagación de eventos que siguen los patrones \textit{Composite} y \textit{Observer} \cite{Gamma:1994:Design}. Su tamaño reducido y la ausencia de un \textit{framework} de desarrollo lo convierten en una línea base para este trabajo.\\
 
