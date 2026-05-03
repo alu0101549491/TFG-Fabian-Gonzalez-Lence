@@ -102,3 +102,5 @@ Esta es la estructura descrita en uno de los apartados del documento LaTeX:
 - No abusar de los acrónimos. Si un término se menciona solo una vez, escribirlo sin acrónimo. Solo usar `\ac{}` para términos que se mencionan varias veces a lo largo de la memoria.
 - NO REPETIR COSAS YA EXPLICADAS EN OTROS CAPÍTULOS. Si un concepto ya se ha explicado en otro capítulo, referenciarlo con `\ref{}` y no volver a explicarlo.
 - Cada capítulo tiene un propósito específico, por lo que no deberías explicar cosas que no correspondan al propósito de ese capítulo y tengan otro capítulo (ya sea escrito o por escribir) que se encargue de explicar ese concepto. Por ejemplo, no deberías explicar alguno de los modelos de IA en el capítulo de metodología si ya hay un capítulo específico que se encarga de explicar los modelos de IA usados en el proyecto.
+- Garantizar que las palabras ?rompt*, ?ester, ?esting, etc. se escriben SIEMPRE en cursiva.
+- Los ficheros y directorios se escriben con \texttt{}, mientras que las clases, métodos, funciones, variables, etc. se escriben con \textit{}. Por ejemplo, el fichero `\texttt{game-controller.ts}` y la clase `\textit{GameController}`.
