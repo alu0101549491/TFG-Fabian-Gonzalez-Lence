@@ -21,45 +21,15 @@ Claude devolvió en una única interacción la estructura completa del proyecto\
 
 \subsection{Fase de Codificación}
 
-Mistral implementó cada módulo de forma independiente tomando como contexto el \textit{prompt} base de codificación\footnote{\href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/prompts/1-TheHangmanGame/3-CodigoPorModulo}{\textit{Prompts} de código}}, que aportaba la especificación de requisitos, el diagrama de clases y el esqueleto de la clase correspondiente. El \texttt{index.html} y la hoja de estilos fueron los únicos artefactos integrados directamente sin modificación, señalando una fortaleza del modelo en código de presentación estático. La incidencia más destacable surgió en \textit{WordDictionary}: en lugar de externalizar el vocabulario, Mistral lo embebió como un \textit{array} literal dentro del método de inicialización (Listado~\ref{lst:hangman-worddictionary}). La solución era funcional, pero introducía deuda de mantenibilidad —ampliar el diccionario exigía modificar el fuente— y se registró como incidencia abierta para la fase siguiente.\\
-
-\begin{lstlisting}[style=logstyle,caption={Implementación inicial de \textit{initializeAnimalWords()} por Mistral: vocabulario embebido como literal en el fuente.},label={lst:hangman-worddictionary}]
-private initializeAnimalWords(): void {
-  this.words = [
-    'CAT', 'DOG', 'FOX', 'BEAR', 'LION',
-    'ELEPHANT', 'GIRAFFE', 'DOLPHIN', 'PENGUIN', 'TIGER',
-  ];
-}
-\end{lstlisting}
+Mistral implementó cada módulo de forma independiente tomando como contexto el \textit{prompt} base de codificación\footnote{\href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/prompts/1-TheHangmanGame/3-CodigoPorModulo}{\textit{Prompts} de código}}, que aportaba la especificación de requisitos, el diagrama de clases y el esqueleto de la clase correspondiente. El \texttt{index.html} y la hoja de estilos fueron los únicos artefactos integrados directamente sin modificación, señalando una fortaleza del modelo en código de presentación estático. La incidencia más destacable surgió en \textit{WordDictionary}: en lugar de externalizar el vocabulario, Mistral lo embebió como un \textit{array} literal dentro del método \textit{initializeAnimalWords()}\footnote{\href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/6ade2d937c5fc8507893551a8f82d8d46e6fcbb2/projects/1-TheHangmanGame/src/models/word-dictionary.ts\#L46-L54}{\texttt{word-dictionary.ts}, líneas 46--54} — versión inicial con \textit{array} embebido}. La solución era funcional, pero introducía deuda de mantenibilidad —ampliar el diccionario exigía modificar el fuente— y se registró como incidencia abierta para la fase siguiente.
 
 \subsection{Fase de Revisión}
 
-GitHub Copilot revisó los componentes de forma secuencial aplicando la plantilla de revisión\footnote{\href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/prompts/1-TheHangmanGame/4-RevisionPorModulo}{\textit{Prompts} de revisión}}, que aporta como contexto la especificación, el diagrama de clases y el código a evaluar, y produce un veredicto estructurado por requisito. Ante la incidencia de \texttt{WordDictionary}, el Revisor no se limitó a señalarla: generó autónomamente \texttt{src/data/animals.json} y reescribió la clase para cargarlo mediante importación estática, cerrando la incidencia sin intervención humana (Listado~\ref{lst:hangman-worddictionary-fix}).\\
-
-\begin{lstlisting}[style=logstyle,caption={Resolución autónoma de la incidencia por el Revisor: vocabulario externalizado a un fichero JSON importado estáticamente.},label={lst:hangman-worddictionary-fix}]
-import animals from '../data/animals.json';
-
-constructor() {
-  this.words = Array.isArray(animals)
-    ? animals.map((w: string) => w.toUpperCase())
-    : [];
-}
-\end{lstlisting}
-
-Este comportamiento, fue el primer indicio de que el Revisor podía absorber correcciones de implementación menores, capacidad que el otro enfoque explotaría de forma sistemática a partir de \ac{CARTO} (Sección~\ref{sec:approach-change}). El resto de módulos recibieron veredicto \textit{APPROVED} o \textit{APPROVED WITH RESERVATIONS} en primera revisión.
+GitHub Copilot revisó los componentes de forma secuencial aplicando la plantilla de revisión\footnote{\href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/prompts/1-TheHangmanGame/4-RevisionPorModulo}{\textit{Prompts} de revisión}}, que aporta como contexto la especificación, el diagrama de clases y el código a evaluar, y produce un veredicto estructurado por requisito. Ante la incidencia de \textit{WordDictionary}, el Revisor no se limitó a señalarla: generó autónomamente \texttt{src/data/animals.json} y reescribió el constructor para cargarlo mediante importación estática\footnote{\href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/projects/1-TheHangmanGame/src/models/word-dictionary.ts\#L30-L34}{\texttt{word-dictionary.ts}, líneas 30--34} — versión final con vocabulario externalizado}, cerrando la incidencia sin intervención humana. Este comportamiento, fue el primer indicio de que el Revisor podía absorber correcciones de implementación menores, capacidad que el otro enfoque explotaría de forma sistemática a partir de \ac{CARTO} (Sección~\ref{sec:approach-change}). El resto de módulos recibieron un veredicto aprobado en primera revisión.
 
 \subsection{Fase de Pruebas}
 
-Qwen AI generó nueve \textit{suites} de pruebas unitarias a partir de aplicar la plantilla de \textit{testing}\footnote{\href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/prompts/1-TheHangmanGame/5-TestingPorModulo}{\textit{Prompts} de \textit{testing}}}, distribuidas en las tres capas \ac{MVC}; ocho compilaron y pasaron sin correcciones. La excepción fue \texttt{hangman-renderer.test.ts}: JSDOM no implementa la \ac{API} de Canvas, y Qwen AI no introdujo el \textit{mock}\footnote{objeto que imita el comportamiento de un componente real en un entorno controlado} del contexto 2D en su primera propuesta. El \textit{mock} fue añadido finalmente por Qwen AI antes de integrar la \textit{suite} (Listado~\ref{lst:hangman-canvas-mock}). La cobertura final del proyecto alcanzó el 82\% de líneas, superando el umbral del 80\% en todos los módulos.\\
-
-\begin{lstlisting}[style=logstyle,caption={Mock del contexto 2D de Canvas necesario para ejecutar \texttt{HangmanRenderer} bajo \textit{JSDOM}.},label={lst:hangman-canvas-mock}]
-mockContext = {
-  clearRect: jest.fn(), beginPath: jest.fn(),
-  moveTo: jest.fn(),    lineTo: jest.fn(),
-  arc: jest.fn(),       stroke: jest.fn(),
-} as any;
-canvas.getContext = jest.fn().mockReturnValue(mockContext);
-\end{lstlisting}
+Qwen AI generó nueve \textit{suites} de pruebas unitarias a partir de aplicar la plantilla de \textit{testing}\footnote{\href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/prompts/1-TheHangmanGame/5-TestingPorModulo}{\textit{Prompts} de \textit{testing}}}, distribuidas en las tres capas \ac{MVC}; ocho compilaron y pasaron sin correcciones. La excepción fue \texttt{hangman-renderer.test.ts}: JSDOM no implementa la \ac{API} de Canvas, y Qwen AI no introdujo el \textit{mock} del contexto 2D en su primera propuesta\footnote{\href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/projects/1-TheHangmanGame/tests/views/hangman-renderer.test.ts\#L28-L45}{\texttt{hangman-renderer.test.ts}, líneas 28--45} — \textit{mock} del contexto 2D de Canvas}. El \textit{mock} fue añadido finalmente por Qwen AI antes de integrar la \textit{suite}. La cobertura final del proyecto alcanzó el 82\% de líneas, superando el umbral del 80\% en todos los módulos.\\
 
 % DEJAR ESTO PARA EL CAPITULO 8
 \begin{comment}
