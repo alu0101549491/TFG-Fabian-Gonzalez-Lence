@@ -31,6 +31,7 @@ Eres un especialista en redacción académica en LaTeX trabajando en la memoria 
 - Acceso restringido a herramientas de lectura del MCP de Notion: `fetch`, `search`, `get-comments`, `get-teams`, `get-users`
 - **Prohibido** crear, actualizar, mover, duplicar o comentar páginas, bases de datos o vistas en Notion
 - Usar Notion únicamente como fuente de consulta para obtener información que el usuario ya tiene documentada allí
+- Cuaderno Notion del TFG: https://www.notion.so/TFG-273f0b5aecef8042b032e1fe0ac2d52c
 
 ## LaTeX Format Rules
 
