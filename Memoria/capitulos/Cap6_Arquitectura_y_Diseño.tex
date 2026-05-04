@@ -16,11 +16,34 @@ La especificación de requisitos se abordó como un experimento en sí mismo, en
 La especificación semiformal sigue una plantilla estructurada ---introducción, alcance, definiciones y abreviaturas, requisitos funcionales, requisitos no funcionales, consideraciones opcionales, resumen de actores y arquitectura técnica detallada--- redactada con la ayuda de Claude.
 Se trata de la representación canónica del proyecto y la fuente única de verdad para las fases posteriores. La variante informal se derivó posteriormente con ayuda de Claude a partir de la semiformal, con el objetivo de tener una mejor caracterización de la aplicación de cara a los modelos generadores de diagramas. La versión \ac{LNC} se construyó tras descartar Gemini y ChatGPT por la vaguedad de sus salidas: solo Mistral produjo una redacción \ac{EARS} suficientemente detallada y consistente, indicando explícitamente el tipo de cada requisito ---\textit{ubiquitous}, \textit{event-driven}, \textit{state-driven}, \textit{optional feature}, \textit{unwanted behaviour}, \textit{complex}---. Las historias de usuario, por su parte, se generaron con ChatGPT siguiendo el formato \textit{HU-XX} con título, narrativa, criterios de aceptación, prioridad y tabla resumen al final.\\
 
-La elección del tercer formato responde a la naturaleza de cada proyecto. Los tres primeros ---\ac{HANGMAN}, \ac{PLAYER} y \ac{BALATRO}--- son aplicaciones autocontenidas sin cliente externo, en las que las historias de usuario aportaban poco valor frente al rigor que ofrece el \ac{LNC} con \ac{EARS} para los modelos generadores de diagramas. Por el contrario, \ac{CARTO} y \ac{TENNIS} parten de necesidades reales transmitidas por dos clientes externos en forma de listas de requisitos en lenguaje cotidiano, por lo que las historias de usuario resultaron una traducción más natural y trazable de esas necesidades que la reformulación en \ac{EARS}. La selección concreta de la variante usada como entrada para cada proyecto se documenta en el Capítulo~\ref{chap:Development}, dado el carácter experimental de esta fase exploratoria.\\
+La elección del tercer formato responde a la naturaleza de cada proyecto. Los tres primeros ---\ac{HANGMAN}, \ac{PLAYER} y \ac{BALATRO}--- son aplicaciones autocontenidas sin cliente externo, en las que las historias de usuario aportaban poco valor frente al rigor que ofrece el \ac{LNC} con \ac{EARS} para los modelos generadores de diagramas. Por el contrario, \ac{CARTO} y \ac{TENNIS} parten de necesidades reales transmitidas por dos clientes externos en forma de listas de requisitos en lenguaje cotidiano, por lo que las historias de usuario resultaron una traducción más natural y trazable de esas necesidades que la reformulación en \ac{EARS}. La selección concreta de la variante usada como entrada para cada proyecto se documenta en el Capítulo~\ref{chap:Development}, dado el carácter experimental de esta fase exploratoria. La Tabla~\ref{tab:requirements-count} resume el volumen y los aspectos diferenciadores de la especificación de cada proyecto.
 
-El alcance del documento crece de forma significativa entre proyectos. \ac{HANGMAN} y \ac{PLAYER} se cubren con una decena de requisitos funcionales centrados en la mecánica del juego o de la reproducción. \ac{BALATRO} eleva la cifra a 30 requisitos funcionales y 12 no funcionales, debido a la riqueza del modelo de dominio (manos de póker, tres familias de cartas especiales, cinco tipos de \textit{Boss Blind} y economía de tienda). \ac{CARTO} introduce además requisitos transversales de seguridad, sincronización en tiempo real e integración con servicios externos, y \ac{TENNIS} alcanza el mayor volumen del experimento al cubrir gestión de torneos, registro con nueve estados de inscripción\footnote{Estados ITF: \texttt{OA, DA, SE, JE, QU, LL, WC, ALT, WD}.}, doce estados de partido, generación de cuadros y orden de juego, sistemas de clasificación ELO y notificaciones multicanal.\\
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.7cm}|>{\raggedright\arraybackslash}p{0.7cm}|>{\raggedright\arraybackslash}p{0.9cm}|Y|}
+\hline
+\textbf{Proyecto} & \textbf{RF} & \textbf{RNF} & \textbf{Aspectos diferenciadores} \\
+\hline
+\ac{HANGMAN} & 10 & 8 & Arquitectura \ac{MVC}, diccionario de palabras externalizable \\
+\hline
+\ac{PLAYER} & 20 & 13 & Reproducción sobre \ac{API} de audio HTML5, arquitectura basada en \textit{custom hooks}, persistencia en \textit{localStorage} \\
+\hline
+\ac{BALATRO} & 30 & 12 & Evaluador de manos de póker, tres familias de cartas especiales, cinco \textit{Boss Blinds}, economía de tienda \\
+\hline
+\ac{CARTO} & 30 & 20 & Roles con permisos diferenciados, sincronización tiempo real, integración Dropbox, trazabilidad de auditoría \\
+\hline
+\ac{TENNIS} & 63 & 19 & Nueve estados de inscripción ITF\footnotemark[1], doce estados de partido, clasificación ELO, notificaciones, ITF/TODS \\
+\hline
+\end{tabularx}
+\caption{Volumen de la especificación de requisitos y aspectos diferenciadores por proyecto.}
+\label{tab:requirements-count}
+\end{table}
 
-Los requisitos no funcionales evolucionan en paralelo. En los tres primeros proyectos se limitan a aspectos como compatibilidad con navegadores modernos, modularidad del código y cobertura de pruebas unitarias. A partir de \ac{CARTO} aparecen restricciones de tiempo real (entrega de mensajes en menos de cinco segundos), gestión de sesión con expiración temporizada y trazabilidad de auditoría sobre las tareas; en \ac{TENNIS} se añaden conformidad con estándares de la Federación Internacional de Tenis (ITF) y TODS\footnote{\href{https://www.itftennis.com/en/about-us/governance/technical/tennis-open-data-standards/}{\textit{Tennis Open Data Standards}}}, control de privacidad por usuario y \ac{API} REST documentada.
+\footnotetext[1]{Estados ITF: \texttt{OA, DA, SE, JE, QU, LL, WC, ALT, WD}.}
+
+Los requisitos no funcionales siguen la misma progresión: compatibilidad y modularidad en los tres primeros proyectos, a los que \ac{CARTO} y \ac{TENNIS} añaden restricciones de seguridad, tiempo real y conformidad con estándares externos (ITF/TODS\footnote{\href{https://www.itftennis.com/en/about-us/governance/technical/tennis-open-data-standards/}{\textit{Tennis Open Data Standards}}}).
 
 \section{Diagramas de clases y de casos de uso} \label{sec:uml}
 
@@ -39,7 +62,7 @@ El diagrama de casos de uso documenta los actores y las interacciones que soport
 
 La generación de ambos tipos de diagrama fue un experimento comparativo entre modelos y variantes de especificación. Para los diagramas de clases se probaron Claude y Mistral: la especificación informal requirió varias iteraciones de ajuste antes de obtener un resultado pulido, mientras que la semiformal produjo diagramas más ricos y bien estructurados desde el primer intento. Sorprendentemente, el \ac{LNC} no mejoró los resultados de ninguno de los dos modelos respecto a la variante semiformal, lo que sugiere que las restricciones del \ac{EARS} no benefician al análisis estructural de clases. Para \ac{CARTO} y \ac{TENNIS}, la variante de las historias de usuario ofreció resultados comparables a la semiformal al reflejar con mayor fidelidad la complejidad real del dominio.\\
 
-Para los diagramas de casos de uso la situación fue más contundente: Claude fue el único modelo capaz de generar diagramas con sintaxis Mermaid válida y contenido fiel a los requisitos; Mistral, ChatGPT y Gemini fallaron sistemáticamente por errores de sintaxis o resultados demasiado vagos. Con Claude los resultados fueron satisfactorios desde el primer intento, la especificación \ac{LNC} condujo a los mejores diagramas para los tres primeros proyectos, mientras que para \ac{CARTO} y \ac{TENNIS} los diagramas definitivos se generaron a partir de las historias de usuario, al reflejar con mayor fidelidad los requisitos transmitidos por los clientes externos.
+Para los diagramas de casos de uso la situación fue más contundente: Claude fue el único modelo capaz de generar diagramas con sintaxis Mermaid válida y contenido fiel a los requisitos desde el primer intento; Mistral, ChatGPT y Gemini fallaron sistemáticamente por errores de sintaxis o resultados demasiado vagos. La especificación \ac{LNC} condujo a los mejores diagramas para los tres primeros proyectos, mientras que para \ac{CARTO} y \ac{TENNIS} los diagramas definitivos se generaron a partir de las historias de usuario, al reflejar con mayor fidelidad los requisitos transmitidos por los clientes externos.
 
 \section{Decisiones arquitectónicas} \label{sec:arch-decisions}
 
