@@ -12,7 +12,7 @@ La metodología de este \ac{TFG} se sostiene sobre cuatro decisiones de diseño 
 
 Los cinco proyectos \cite{URL::TFG-Web} se han seleccionado para que cada uno suponga un incremento de complejidad ---arquitectónica, tecnológica o de escala--- significativo respecto al anterior, sin saltos demasiado grandes que impidan atribuir las diferencias de comportamiento de los modelos a una variable concreta.
 El proyecto \ac{HANGMAN} establece la línea base y se desarrolla usando TypeScript puro sin intervención de entornos de desarrollo y una arquitectura \ac{MVC} plana. 
-\ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono con \textit{custom hooks}; \ac{BALATRO} eleva la complejidad del modelo de dominio (póker, niveles, tienda, cartas especiales) y añade la generación de \textit{assets} visuales mediante \ac{IA}; 
+\ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono con \textit{custom hooks}; \ac{BALATRO} eleva la complejidad del modelo de dominio (póker, niveles, tienda, cartas especiales) y añade la generación de recursos visuales mediante \ac{IA}; 
 \ac{CARTO} escala a una aplicación \textit{full-stack} con \textit{Clean Architecture}, comunicación en tiempo real e integración de servicios externos; y \ac{TENNIS} maximiza la complejidad con frontend y backend separados, múltiples roles de usuario y reglas de negocio más complejas. 
 La Tabla~\ref{tab:proyectos-resumen} sintetiza las características que distinguen a cada caso de estudio. 
 En esa tabla el número de ficheros corresponde a código de producción real medido sobre el repositorio del proyecto, excluyendo \texttt{node\_modules} y artefactos de construcción (\textit{build}) de la aplicación.
@@ -47,7 +47,7 @@ Las Tablas~\ref{tab:proyectos-escala} y~\ref{tab:proyectos-resumen} sintetizan, 
 \renewcommand{\arraystretch}{1.3}
 \begin{tabular}{|>{\raggedright\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|}
 \hline
-\textbf{Proyecto} & \textbf{Ficheros} & \textbf{Clases} & \textbf{\textit{LOC}} & \textbf{Conjuntos} & \textbf{Pruebas} \\
+\textbf{Proyecto} & \textbf{Ficheros} & \textbf{Clases} & \textbf{Líneas} & \textbf{Conjuntos} & \textbf{Pruebas} \\
 \hline
 \ac{HANGMAN} & 11 & 9 & 1\,600 & 9 & $\approx$460 \\
 \hline
@@ -155,8 +155,8 @@ Testing V2 (P4--P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez
 
 Todas las plantillas declaran explícitamente el rol del modelo, los artefactos de entrada y el formato de salida requerido, de modo que el resultado de cada una sea directamente procesable por la siguiente, según las buenas prácticas de \textit{prompt engineering} \cite{Prompt:Report:2024}. El encadenamiento de \textit{prompts} dentro de una misma fase ---revisión y \textit{testing} desde \ac{CARTO}, codificación desde \ac{TENNIS}--- fue clave para mantener la coherencia del agente a la escala de los últimos proyectos.
 
-\footnotetext[1]{\textit{Single-shot} es una técnica de \textit{prompting} en la que el modelo recibe toda la información necesaria en un único \textit{prompt}.}
-\footnotetext[2]{\textit{Plan-then-implement} es una técnica de \textit{prompting} en la que el modelo primero genera un plan o descomposición del problema y, posteriormente, ejecuta la solución siguiendo dicho plan.}
+\footnotetext[1]{\textit{Single-shot} Técnica de consulta (\textit{prompting}) en la que el modelo recibe toda la información necesaria en un único \textit{prompt}.}
+\footnotetext[2]{\textit{Plan-then-implement} Técnica de \textit{prompting} en la que el modelo primero genera un plan o descomposición del problema y, posteriormente ejecuta la solución siguiendo dicho plan.}
 
 \begin{comment}
 \section{Métricas de evaluación y planificación temporal} \label{sec:metricas-planificacion}
