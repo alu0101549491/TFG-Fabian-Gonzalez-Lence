@@ -86,7 +86,7 @@ El desarrollo de cada proyecto sigue un flujo en cuatro fases secuenciales inspi
 \textbf{Fase 1 --- Arquitectura.} A partir de la especificación de requisitos y de los diagramas UML \cite{Fowler:2004:UML} de clases y de casos de uso, la \ac{IA} Arquitecto produce la estructura de directorios de la aplicación, los esqueletos de clases sin lógica y la documentación inicial. La transición a la Fase 2 requiere que la estructura de código esté organizada y que los esqueletos incluyan firma y cabecera documentada.\\
 
 \textbf{Fase 2 --- Codificación.} La \ac{IA} Desarrolladora implementa cada módulo sobre los esqueletos de la Fase 1, exigiendo conformidad con la \textit{Guía de Estilo de Google para TypeScript} y los principios \ac{SOLID} \cite{Martin:2003:Agile}. 
-El criterio de transición es compilación y \textit{linting} limpios; la operativa concreta del Desarrollador y su evolución entre proyectos se detalla en el Capítulo~\ref{chap:Development}.\\
+El criterio de transición es compilación y \textit{linting} limpios; la operativa concreta de la Desarrolladora y su evolución entre proyectos se detalla en el Capítulo~\ref{chap:Development}.\\
 
 \textbf{Fase 3 --- Revisión de código.} La \ac{IA} Revisora evalúa el código según cinco criterios ponderados ---Adherencia al diseño (30\,\%), Calidad del código (25\,\%), Cumplimiento de requisitos (25\,\%), Mantenibilidad (10\,\%) y Buenas prácticas (10\,\%)--- y emite una decisión ternaria: \texttt{APPROVED}, \texttt{APPROVED WITH RESERVATIONS} o \texttt{REJECTED}. 
 Las incidencias se clasifican por severidad y, si no se alcanza el umbral definido, sirven de entrada a una nueva iteración dedicada a arreglar las deficiencias y rehacer la revisión.\\
@@ -122,8 +122,8 @@ Cada fase del flujo dispone de una plantilla de \textit{prompt} reutilizable que
 \label{tab:prompt-building-chats}
 \end{table}
 
-Las plantillas se mantienen versionadas en el directorio \texttt{resources/templates/} del repositorio del \ac{TFG} \cite{URL::TFG}, organizadas por fase y por versión del flujo: V1 para los proyectos conversacionales P1--P3 y V2 para los proyectos con agentes personalizados P4--P5. En estos últimos las plantillas se trasladan adicionalmente al directorio \texttt{.github/} como ficheros \texttt{.agent.md} y \texttt{.prompt.md}. La evolución de los roles ---Desarrollador 2.0, Revisor 2.0 y \textit{Tester} 2.0--- introducida a partir de \ac{CARTO} y consolidada en \ac{TENNIS} se discute en la Sección~\ref{sec:approach-change} de esta memoria. 
-la Tabla~\ref{tab:plantillas-prompts} resume únicamente las plantillas operativas y su localización en el repositorio.
+Las plantillas se mantienen versionadas en el directorio \texttt{resources/templates/} del repositorio del \ac{TFG} \cite{URL::TFG}, organizadas por fase y por versión del flujo: V1 para los proyectos conversacionales P1--P3 y V2 para los proyectos con agentes personalizados P4--P5. En estos últimos las plantillas se trasladan adicionalmente al directorio \texttt{.github/} como ficheros \texttt{.agent.md} y \texttt{.prompt.md}. La evolución de los roles ---Desarrolladora 2.0, Revisora 2.0 y \textit{Tester} 2.0--- introducida a partir de \ac{CARTO} y consolidada en \ac{TENNIS} se discute en la Sección~\ref{sec:approach-change} de esta memoria. 
+la Tabla~\ref{tab:plantillas-prompts} resume las plantillas operativas y su localización en el repositorio.
 
 \begin{table}[H]
 \centering

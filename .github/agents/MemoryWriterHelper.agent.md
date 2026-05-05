@@ -106,3 +106,8 @@ Esta es la estructura descrita en uno de los apartados del documento LaTeX:
 - Garantizar que las palabras ?rompt*, ?ester, ?esting, etc. se escriben SIEMPRE en cursiva.
 - Los ficheros y directorios se escriben con \texttt{}, mientras que las clases, métodos, funciones, variables, etc. se escriben con \textit{}. Por ejemplo, el fichero `\texttt{game-controller.ts}` y la clase `\textit{GameController}`.
 - A la hora de redactar fragmentos de texto como "A partir de las especificaciones, generamos para cada proyecto los diagramas de clases..." es importante que en lugar de utilizar un estilo personal, se utilice un estilo impersonal, por lo que la frase correcta debería ser "A partir de las especificaciones, se generan para cada proyecto los diagramas de clases...".
+- De cara a referirte a los agentes de IA tienes que seguir lo siguiente:
+  - el Arquitecto
+  - la Desarrolladora
+  - la Revisora
+  - el \textit{Tester}
