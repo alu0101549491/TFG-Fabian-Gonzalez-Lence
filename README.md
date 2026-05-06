@@ -56,7 +56,7 @@ The purpose of this Final Degree Project (TFG) is to explore the current capabil
 - Row Level Security (RLS) in database
 
 **Frontend:** [https://alu0101549491.github.io/TFG-Fabian-Gonzalez-Lence/4-CartographicProjectManager/](https://alu0101549491.github.io/TFG-Fabian-Gonzalez-Lence/4-CartographicProjectManager/)  
-**Backend:** [https://carto-backend-gl8l.onrender.com](https://carto-backend-gl8l.onrender.com) *(Deploying)*  
+**Backend:** [https://carto-backend-gl8l.onrender.com](https://carto-backend-gl8l.onrender.com)  
 **Backend Docs:** [projects/4-CartographicProjectManager/backend/RENDER.md](projects/4-CartographicProjectManager/backend/RENDER.md)  
 **Changelog:** [projects/4-CartographicProjectManager/CHANGES.md](projects/4-CartographicProjectManager/CHANGES.md)
 
@@ -75,7 +75,7 @@ The purpose of this Final Degree Project (TFG) is to explore the current capabil
 - Automatic Order of Play
 
 **Frontend:** [https://alu0101549491.github.io/TFG-Fabian-Gonzalez-Lence/5-TennisTournamentManager/](https://alu0101549491.github.io/TFG-Fabian-Gonzalez-Lence/5-TennisTournamentManager/)  
-**Backend:** *(Migrating to Supabase)*  
+**Backend:** [https://tennis-backend-ltkr.onrender.com](https://tennis-backend-ltkr.onrender.com)  
 **Docs:** [projects/5-TennisTournamentManager/docs/specification.md](projects/5-TennisTournamentManager/docs/specification.md)
 
 ---
@@ -107,10 +107,6 @@ The purpose of this Final Degree Project (TFG) is to explore the current capabil
 Projects 4 and 5 use Supabase for:
 - ✅ **PostgreSQL Database**: Session pooler for external connections
 - ✅ **Row Level Security (RLS)**: Row-level security
-- 🔄 **Edge Functions** (Future): Replace Express/NestJS
-- 🔄 **Supabase Auth** (Future): Replace custom JWT
-- 🔄 **Supabase Storage** (Future): Replace Dropbox
-- 🔄 **Supabase Realtime** (Future): Replace Socket.IO/WebSockets
 
 **Documentation:**
 - [docs/CARTO-SUPABASE-DEPLOYMENT.md](docs/CARTO-SUPABASE-DEPLOYMENT.md)
@@ -348,7 +344,7 @@ TFG-Fabian-Gonzalez-Lence/
 - ✅ Order of Play with court management
 - ✅ WebSockets for live updates
 - ✅ Complete E2E testing (Playwright)
-- 🔄 Migration to Supabase in progress
+- ✅ Backend deployed on Render + Supabase
 
 ---
 
@@ -377,7 +373,7 @@ npm run test:coverage
 | 2-MusicWebPlayer | ✅ Complete | GitHub Pages | - | - | ✅ |
 | 3-MiniBalatro | ✅ Complete | GitHub Pages | - | - | ✅ |
 | 4-CartographicProjectManager | ✅ Deployed | GitHub Pages | Render | Supabase | ✅ |
-| 5-TennisTournamentManager | 🔄 Migrating | GitHub Pages | Render | Supabase (🔄) | ✅ |
+| 5-TennisTournamentManager | ✅ Deployed | GitHub Pages | Render | Supabase | ✅ |
 
 ---
 
@@ -488,5 +484,5 @@ This project is part of a Final Degree Project (TFG) academic work at the Univer
 
 ---
 
-**Last update:** April 2026  
+**Last update:** May 2026  
 **Version:** 2.0.0 (Post-Supabase Migration)
