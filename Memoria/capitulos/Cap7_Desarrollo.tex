@@ -164,7 +164,24 @@ Al ejecutar la aplicación tras completar la codificación inicial, la interfaz 
 
 La corrección avanzó de forma incremental durante cuatro semanas. En una primera etapa se resolvieron los bloqueadores críticos: se implementaron los tres generadores de cuadros, el sistema de semillas con colocación estratégica de cabezas de serie por cuartiles y los seis criterios de desempate encadenados, el ciclo completo de confirmación de resultados con transición a estado en disputa cuando el marcador enviado por un jugador no era aceptado por el contrario, y la resolución administrativa posterior. En una segunda etapa se implementaron las funcionalidades de mayor alcance: el módulo de Orden de Juego con asignación automática de pistas, reprogramación manual y publicación de horarios, las estadísticas por torneo con exportación a cuatro formatos ---PDF, Excel, CSV con esquema ITF y TODS---, el sistema de notificaciones en tiempo real con cabecera de navegación persistente, el tablón de anuncios por torneo y los permisos de privacidad de perfiles de jugador.\\
 
-El proceso evidenció dos patrones de interacción de interés. En materia de estilo, al detectar que distintas páginas presentaban diseños dispares, se emplearon imágenes de \textit{mockup} de bloques de color representando la distribución deseada, junto con referencias explícitas a componentes ya implementados cuyo estilo se quería replicar; esta técnica, observada en el entorno profesional durante las prácticas externas, resultó más efectiva que describir la distribución en texto. En materia de depuración, los errores de integración más difíciles de localizar se resolvieron transmitiendo al agente una hipótesis sobre la causa raíz: ante el caso en que los marcadores de una partida resuelta en disputa no aparecían en la vista, anticipar que el cambio de estado se persistía antes de guardar el marcador ---bloqueando la posterior escritura del marcador en una partida ya finalizada--- dirigió al agente directamente al método \textit{resolveDispute()} del \textit{backend}, donde confirmó y corrigió el error.\\
+El proceso evidenció dos patrones de interacción de interés. En materia de estilo, al detectar que distintas páginas presentaban diseños dispares, se emplearon imágenes de \textit{mockup} de bloques de color representando la distribución deseada, junto con referencias explícitas a componentes ya implementados cuyo estilo se quería replicar (Figura~\ref{fig:tennis-ui-before-after}); esta técnica, observada en el entorno profesional durante las prácticas externas, resultó más efectiva que describir la distribución en texto. En materia de depuración, los errores de integración más difíciles de localizar se resolvieron transmitiendo al agente una hipótesis sobre la causa raíz: ante el caso en que los marcadores de una partida resuelta en disputa no aparecían en la vista, anticipar que el cambio de estado se persistía antes de guardar el marcador ---bloqueando la posterior escritura del marcador en una partida ya finalizada--- dirigió al agente directamente al método \textit{resolveDispute()} del \textit{backend}, donde confirmó y corrigió el error.\\
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{images/tennis-ui-before}
+    \caption*{\textit{Antes}: diseño inconsistente entre páginas.}
+  \end{minipage}
+  \par\vspace{1em}
+  \begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{images/tennis-ui-after}
+    \caption*{\textit{Después}: diseño homogeneizado tras las correcciones de estilo.}
+  \end{minipage}
+  \caption{Comparación de la interfaz de \ac{TENNIS} antes y después de la fase de corrección de estilos.}
+  \label{fig:tennis-ui-before-after}
+\end{figure}
 
 A mitad del proceso de corrección, se solicitó al agente un reescaneo sistemático de la base de código contra la especificación de requisitos, sin limitarlo a los bloqueadores ya conocidos. El agente identificó varios requisitos funcionales y no funcionales menores que no habían sido cubiertos en la codificación inicial y actualizó la lista de pendientes en consecuencia, completando todos los cambios restantes antes de cerrar la fase de desarrollo.\\
 
