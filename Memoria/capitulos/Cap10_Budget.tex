@@ -6,11 +6,13 @@
 
 \selectlanguage{spanish}
 \chapter{Presupuesto} \label{chap:Budget}
-El presupuesto de este \ac{TFG} se estructura en torno a dos componentes: las horas de trabajo invertidas durante el desarrollo del proyecto y las suscripciones a los servicios de \ac{IA} contratados como herramientas de desarrollo. A diferencia de proyectos basados en infraestructura computacional propia, el enfoque multimodelo adoptado en este trabajo prescinde de hardware dedicado; el coste de capital queda reducido al de las suscripciones mensuales a los modelos utilizados.
+El presupuesto de este \ac{TFG} se estructura en torno a dos componentes: las horas de trabajo empleadas durante el desarrollo del proyecto y las suscripciones a los servicios de \ac{IA} contratados. A diferencia de proyectos basados en infraestructura computacional propia, el enfoque multimodelo adoptado en este trabajo prescinde de hardware dedicado; el coste de capital queda reducido al de las suscripciones a los modelos utilizados.
 
 \section{Horas de trabajo} \label{sec:budget-hours}
 
-El coste por hora se estima en 13,50~€/h, valor representativo del salario de un desarrollador de \textit{software} junior en España según los datos publicados en Glassdoor España\footnote{\href{https://www.glassdoor.es/Sueldos/espa\%C3\%B1a-desarrollador-junior-sueldo-SRCH_IL.0,6_IN219_KO7,29.htm}{Glassdoor España --- Sueldo Desarrollador \textit{Software} Junior}}, Talent\footnote{\href{https://es.talent.com/salary?job=desarrollador+software+junior}{Talent.com --- Salario Desarrollador \textit{Software} Junior}} e Infojobs\footnote{\href{https://orientacion-laboral.infojobs.net/salario-desarrollador-software}{Infojobs --- Orientación laboral: Desarrollador \textit{Software}}}. El proyecto se desarrolló a lo largo de nueve meses, desde la reunión inicial del 18 de septiembre de 2025 hasta la defensa prevista en junio de 2026. El 	extit{roadmap} semanal registra 30 semanas de trabajo activo (con una semana sin avances significativos), a las que se suman aproximadamente cinco semanas adicionales de cierre de la memoria y preparación de la defensa. Considerando un ritmo medio de 14 horas semanales, propio de un proyecto desarrollado a tiempo parcial con carga intensiva en las fases de codificación, se estiman 476 horas totales de dedicación, este valor se corrobora mediante análisis automático del historial de \textit{commits} del repositorio con el algoritmo de \textit{git-hours}: aplicando márgenes de una y dos horas por sesión de trabajo (195 sesiones identificadas), el intervalo resultante es de 368--563~h, dentro del cual se sitúa la estimación manual. La Tabla~\ref{tab:budget-hours} recoge la distribución de ese tiempo por fase.
+El coste por hora se estima en 13,50~€/h, valor representativo del salario de un desarrollador de \textit{software} junior en España según los datos publicados en Glassdoor España\footnote{\href{https://www.glassdoor.es/Sueldos/espa\%C3\%B1a-desarrollador-junior-sueldo-SRCH_IL.0,6_IN219_KO7,29.htm}{Glassdoor España --- Sueldo Desarrollador \textit{Software} Junior}}, Talent\footnote{\href{https://es.talent.com/salary?job=desarrollador+software+junior}{Talent.com --- Salario Desarrollador \textit{Software} Junior}} e Infojobs\footnote{\href{https://orientacion-laboral.infojobs.net/salario-desarrollador-software}{Infojobs --- Orientación laboral: Desarrollador \textit{Software}}}. El proyecto se desarrolló a lo largo de nueve meses, desde la reunión inicial del 18 de septiembre de 2025 hasta la defensa prevista en junio de 2026. El plan de trabajo semanal registra 30 semanas de trabajo activo (con una semana sin avances significativos), a las que se suman aproximadamente cinco semanas adicionales de redacción de la memoria y preparación de la defensa. 
+Considerando un ritmo medio de 14 horas semanales, propio de un proyecto desarrollado a tiempo parcial con carga intensiva en las fases de codificación, se estiman 476 horas totales de dedicación.
+Este valor se corrobora mediante análisis automático del historial de \textit{commits} del repositorio con el algoritmo de \textit{git-hours}\footnote{\href{https://github.com/kimmobrunfeldt/git-hours}{git-hours}}: aplicando márgenes de una y dos horas por sesión de trabajo (195 sesiones identificadas), el intervalo resultante es de 368--563~horas, dentro del cual se sitúa la estimación manual. La Tabla~\ref{tab:budget-hours} recoge la distribución de ese tiempo por fases del proyecto.
 
 \begin{table}[H]
 \centering
@@ -20,17 +22,17 @@ El coste por hora se estima en 13,50~€/h, valor representativo del salario de 
 \hline
 \textbf{Tarea} & \textbf{Horas} & \textbf{Coste (€)} \\
 \hline
-Investigación y revisión del estado del arte & 65 & 877,50 \\
+Investigación y revisión del estado del arte & 15 & 203 \\
 \hline
-Especificación de requisitos y diseño (5 proyectos) & 80 & 1.080,00 \\
+Especificación de requisitos y diseño (5 proyectos) & 80 & 1.080 \\
 \hline
-Desarrollo asistido por \ac{IA} (5 proyectos) & 205 & 2.767,50 \\
+Desarrollo asistido por \ac{IA} (5 proyectos) & 205 & 2.768 \\
 \hline
-Revisión, pruebas y despliegue & 66 & 891,00 \\
+Revisión, pruebas y despliegue & 66 & 891 \\
 \hline
-Redacción de la memoria & 60 & 810,00 \\
+Redacción de la memoria & 60 & 810 \\
 \hline
-\textbf{Total} & \textbf{476} & \textbf{6.426,00} \\
+\textbf{Total} & \textbf{426} & \textbf{5.752} \\
 \hline
 \end{tabularx}
 \caption{Distribución estimada de horas de trabajo por fase del proyecto.}
@@ -51,15 +53,15 @@ La suscripción \textit{Claude Pro}\footnote{\href{https://claude.com/pricing/pr
 \hline
 \textbf{Servicio} & \textbf{Proveedor} & \textbf{Período} & \textbf{Detalle} & \textbf{Total (€)} \\
 \hline
-\textit{Claude Pro} & Anthropic & Nov 2025 – May 2026 & 7 meses $\times$ 18,00~€/mes & 126,00 \\
+\textit{Claude Pro} & Anthropic & Nov 2025 – May 2026 & 7 meses $\times$ 18~€/mes & 126 \\
 \hline
-\textit{Claude Pro} – uso extra & Anthropic & Feb 2026 & Uso prepagado adicional & 5,00 \\
+\textit{Claude Pro} – uso extra & Anthropic & Feb 2026 & Uso prepagado adicional & 5 \\
 \hline
-\textit{Le Chat Pro} & Mistral AI & Nov 2025 – Feb 2026 & 4 meses $\times$ 14,99~€/mes & 59,96 \\
+\textit{Le Chat Pro} & Mistral AI & Nov 2025 – Feb 2026 & 4 meses $\times$ 15~€/mes & 60 \\
 \hline
-\textit{Copilot Pro+} & GitHub & Mar 2026 – May 2026 & 2 facturas (\$56,40 $\approx$ 52,45~€)\textsuperscript{*} & 52,45 \\
+\textit{Copilot Pro+} & GitHub & Mar 2026 – May 2026 & 2 facturas (\$56 $\approx$ 52~€) & 52 \\
 \hline
-\multicolumn{4}{|r|}{\textbf{Total}} & \textbf{243,41} \\
+\multicolumn{4}{|r|}{\textbf{Total}} & \textbf{243} \\
 \hline
 \end{tabularx}
 \caption{Coste de las suscripciones a servicios de \ac{IA} durante el proyecto.}
@@ -78,15 +80,15 @@ La Tabla~\ref{tab:budget-total} presenta el desglose final del presupuesto, comb
 \hline
 \textbf{Componente} & \textbf{Coste (€)} & \textbf{Porcentaje} \\
 \hline
-Horas de trabajo & 6.426,00 & 96,3\,\% \\
+Horas de trabajo & 5.752 & 95,9\,\% \\
 \hline
-Suscripciones a servicios de \ac{IA} & 243,41 & 3,7\,\% \\
+Suscripciones a servicios de \ac{IA} & 243 & 4,1\,\% \\
 \hline
-\textbf{Total} & \textbf{6.669,41} & \textbf{100\,\%} \\
+\textbf{Total} & \textbf{5.995} & \textbf{100\,\%} \\
 \hline
 \end{tabularx}
 \caption{Desglose total del presupuesto del proyecto.}
 \label{tab:budget-total}
 \end{table}
 
-El coste total estimado del proyecto asciende a 6.669,41~€, de los cuales el componente predominante es el coste laboral (96,3\,\%). El gasto en suscripciones de \ac{IA} representa un gasto reducido de 243,41~€, notablemente inferior al que implicaría el acceso a los mismos modelos mediante \ac{API} de pago por consumo o el despliegue de infraestructura computacional propia equivalente.
+El coste total estimado del proyecto asciende a 5.995~€, de los cuales el componente predominante es el coste laboral (95,9\,\%). El gasto en suscripciones de \ac{IA} representa un desembolso reducido de 243~€, notablemente inferior al que implicaría el acceso a los mismos modelos mediante \ac{API} de pago por consumo o el despliegue de infraestructura computacional propia equivalente.
