@@ -5,136 +5,88 @@
 % ----------------------------------------------------
 
 \selectlanguage{spanish}
-\chapter{Budget} \label{chap:Budget} 
-Para elaborar este capítulo, consultar en el RIULL diferentes memorias de TFG que nos parezcan razonables y puedan servir de guía.
+\chapter{Presupuesto} \label{chap:Budget}
+El presupuesto de este \ac{TFG} se estructura en torno a dos componentes: las horas de trabajo invertidas durante el desarrollo del proyecto y las suscripciones a los servicios de \ac{IA} contratados como herramientas de desarrollo. A diferencia de proyectos basados en infraestructura computacional propia, el enfoque multimodelo adoptado en este trabajo prescinde de hardware dedicado; el coste de capital queda reducido al de las suscripciones mensuales a los modelos utilizados.
 
-This chapter presents a detailed budget for the development and deployment of the research project \textbf{"Application of Deep Learning Techniques in Multispectral Image Processing."}
+\section{Horas de trabajo} \label{sec:budget-hours}
 
-The budget has been carefully designed to reflect the scope and complexity of a project focused on the implementation and evaluation of six distinct neural network architectures for detecting roads and urban infrastructures in satellite imagery. 
-The cost estimation considers both human resources and computational infrastructure, ensuring a realistic projection of the resources required.
-
-The main cost components are:
-
-\begin{itemize}
-  \item \textbf{Working hours}: including research, data preprocessing, model development, experimentation, and documentation.
-  \item \textbf{Computational resources}: through cloud platforms or local hardware acquisition.
-\end{itemize}
-
-\section{Working Hours}
-The labor cost is calculated at \textbf{20.00€/hour}, based on the average salary of a junior machine learning/deep learning developer in Spain (35,000€-37,000€ annually), sourced from PayScale\footnote{https://www.payscale.com/research/ES/Job=Machine\_Learning\_Engineer/Salary}, Glassdoor España\footnote{https://www.glassdoor.es/Sueldos/machine-learning-engineer-sueldo-SRCH\_KO0,25.htm}, and specialized tech salary reports from Manfred\footnote{https://www.getmanfred.com/en/blog/guia-salarial-2024-salarios-en-tecnologia-espana-manfred}.
-
-The project spans \textbf{18 weeks} (4.5 months), with \textbf{37.5 hours per week}. Table \ref{tab:work_distribution} shows the distribution of the work.
+El coste por hora se estima en 13,50~€/h, valor representativo del salario de un desarrollador de \textit{software} junior en España según los datos publicados en Glassdoor España\footnote{\href{https://www.glassdoor.es/Sueldos/espa\%C3\%B1a-desarrollador-junior-sueldo-SRCH_IL.0,6_IN219_KO7,29.htm}{Glassdoor España --- Sueldo Desarrollador \textit{Software} Junior}}, Talent\footnote{\href{https://es.talent.com/salary?job=desarrollador+software+junior}{Talent.com --- Salario Desarrollador \textit{Software} Junior}} e Infojobs\footnote{\href{https://orientacion-laboral.infojobs.net/salario-desarrollador-software}{Infojobs --- Orientación laboral: Desarrollador \textit{Software}}}. El proyecto se desarrolló a lo largo de nueve meses, desde la reunión inicial del 18 de septiembre de 2025 hasta la defensa prevista en junio de 2026. El 	extit{roadmap} semanal registra 30 semanas de trabajo activo (con una semana sin avances significativos), a las que se suman aproximadamente cinco semanas adicionales de cierre de la memoria y preparación de la defensa. Considerando un ritmo medio de 14 horas semanales, propio de un proyecto desarrollado a tiempo parcial con carga intensiva en las fases de codificación, se estiman 476 horas totales de dedicación, este valor se corrobora mediante análisis automático del historial de \textit{commits} del repositorio con el algoritmo de \textit{git-hours}: aplicando márgenes de una y dos horas por sesión de trabajo (195 sesiones identificadas), el intervalo resultante es de 368--563~h, dentro del cual se sitúa la estimación manual. La Tabla~\ref{tab:budget-hours} recoge la distribución de ese tiempo por fase.
 
 \begin{table}[H]
 \centering
-\caption{Estimated cost of working hours by task}
-\label{tab:work_distribution}
-\begin{tabular}{|l|r|r|}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|r|r|}
 \hline
-\textbf{Task} & \textbf{Hours} & \textbf{Cost (€)} \\
+\textbf{Tarea} & \textbf{Horas} & \textbf{Coste (€)} \\
 \hline
-Literature Review \& Theoretical Framework & 112 & 2,240.00 \\
-Data Acquisition \& Preprocessing & 99 & 1,980.00 \\
-Architecture Implementation & 225 & 4,500.00 \\
-Experimentation \& Evaluation & 183 & 3,660.00 \\
-Documentation \& Writing & 56 & 1,120.00 \\
+Investigación y revisión del estado del arte & 65 & 877,50 \\
 \hline
-\textbf{Total} & \textbf{675} & \textbf{13,500.00} \\
+Especificación de requisitos y diseño (5 proyectos) & 80 & 1.080,00 \\
 \hline
-\end{tabular}
+Desarrollo asistido por \ac{IA} (5 proyectos) & 205 & 2.767,50 \\
+\hline
+Revisión, pruebas y despliegue & 66 & 891,00 \\
+\hline
+Redacción de la memoria & 60 & 810,00 \\
+\hline
+\textbf{Total} & \textbf{476} & \textbf{6.426,00} \\
+\hline
+\end{tabularx}
+\caption{Distribución estimada de horas de trabajo por fase del proyecto.}
+\label{tab:budget-hours}
 \end{table}
 
-\section{Execution Platform}
-Two approaches were considered: purchasing hardware or using cloud services.
+\section{Suscripciones a servicios de \ac{IA}} \label{sec:budget-subscriptions}
 
-\subsection*{Hardware Acquisition (Alternative Option)}
+Los tres modelos principales del flujo de trabajo se accedieron a través de planes de suscripción mensual, sin necesidad de infraestructura propia ni de pago por consumo de \ac{API}. Los períodos de vigencia de cada suscripción reflejan el rol de cada modelo a lo largo del experimento y el cambio de enfoque descrito en la Sección~\ref{sec:approach-change}.\\
 
-\begin{itemize}
-  \item \textbf{HPC Node (VERODE Cluster)}:
-    \begin{itemize}
-      \item \textbf{CPU:} 2× Intel Xeon Gold 6230N @ 2.30 GHz (40 cores).
-      \item \textbf{RAM:} 256 GB DDR4 ECC.
-      \item \textbf{GPU:} NVIDIA Tesla V100 PCIe (32 GB HBM2).
-      \item \textbf{Estimated hardware cost:} 14,700€ – 19,600€.
-    \end{itemize}
-    \item This configuration matches the computational node used from the VERODE HPC cluster, hosted by the ULL High-Performance Computing Group.
-    \item Access to this infrastructure was free of charge for this research project.
-\end{itemize}
-
-Based on market listings, the NVIDIA Tesla V100 32GB GPU ranges between \$11,458–\$19,200 USD \cite{microway2022,v100hp}, while the Intel Xeon Gold 6230N processor is listed between \$1,709–\$4,000 USD per unit \cite{intelRCP,distXeon}.
-
-\subsection*{Cloud Computing (Used Option)}
+La suscripción \textit{Claude Pro}\footnote{\href{https://claude.com/pricing/pro}{Anthropic Claude Pro --- 18,00~€/mes}} de Anthropic se contrató en noviembre de 2025 y se mantuvo activa durante los siete meses del proyecto hasta mayo de 2026, al ser Claude el modelo central del flujo en todas las fases y para los cinco proyectos. Durante febrero de 2026 se generó además un cargo puntual de 5,00~€ por uso prepagado extra. La suscripción \textit{Le Chat Pro}\footnote{\href{https://mistral.ai/pricing}{Mistral AI Le Chat Pro --- 14,99~€/mes (IVA no incluido)}} de Mistral AI estuvo activa durante los cuatro primeros meses (noviembre de 2025 --- febrero de 2026), período en que Mistral se empleó para la generación de especificaciones en \ac{LNC} y para la comparativa de diagramas detallada en la Sección~\ref{sec:uml}. La suscripción \textit{GitHub Copilot Pro+}\footnote{\href{https://github.com/features/copilot}{GitHub Copilot Pro+ --- 39,00~\$/mes}} se activó en marzo de 2026, coincidiendo con la introducción del modo agente de GitHub Copilot a partir del cuarto proyecto. La Tabla~\ref{tab:budget-subscriptions} detalla el coste de cada suscripción.
 
 \begin{table}[H]
 \centering
-\caption{GPU platform costs and specifications used in the project}
-\label{tab:gpu_costs}
-\begin{tabular}{|l|l|c|c|c|}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.3cm}|>{\raggedright\arraybackslash}p{2.0cm}|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}X|r|}
 \hline
-\textbf{GPU Platform} & \textbf{Provider} & \textbf{Hours} & \textbf{Rate/h} & \textbf{Cost (€)} \\
+\textbf{Servicio} & \textbf{Proveedor} & \textbf{Período} & \textbf{Detalle} & \textbf{Total (€)} \\
 \hline
-Quadro M4000 & Paperspace & 120 & 0.45€ & 54.00€ \\
-Tesla V100 & Paperspace & 150 & 2.30€ & 345.00€ \\
-H100 & Paperspace & 80 & 5.95€ & 476.00€ \\
+\textit{Claude Pro} & Anthropic & Nov 2025 – May 2026 & 7 meses $\times$ 18,00~€/mes & 126,00 \\
 \hline
-\multicolumn{4}{|r|}{\textbf{Total GPU usage cost:}} & \textbf{875.00€} \\
+\textit{Claude Pro} – uso extra & Anthropic & Feb 2026 & Uso prepagado adicional & 5,00 \\
 \hline
-\multicolumn{4}{|l|}{Pro subscription (\$8)} & $\approx$ 7.44€ \\
-\multicolumn{4}{|l|}{Disk storage 1000 GB (\$55)} & $\approx$ 51.15€ \\
-\multicolumn{4}{|l|}{Disk storage 100 GB (\$7)} & $\approx$ 6.51€ \\
-\multicolumn{4}{|l|}{Custom template fee (\$3.50)} & $\approx$ 3.26€ \\
+\textit{Le Chat Pro} & Mistral AI & Nov 2025 – Feb 2026 & 4 meses $\times$ 14,99~€/mes & 59,96 \\
 \hline
-\multicolumn{4}{|r|}{\textbf{Estimated monthly cost:}} & \textbf{68.36€} \\
+\textit{Copilot Pro+} & GitHub & Mar 2026 – May 2026 & 2 facturas (\$56,40 $\approx$ 52,45~€)\textsuperscript{*} & 52,45 \\
 \hline
-\multicolumn{4}{|r|}{\textbf{Estimated cost for 18 weeks (4.5 months):}} & \textbf{307.62€} \\
+\multicolumn{4}{|r|}{\textbf{Total}} & \textbf{243,41} \\
 \hline
-\multicolumn{4}{|r|}{\textbf{Estimated total cost:}} & \textbf{1,182.62€} \\
-\hline
-\end{tabular}
+\end{tabularx}
+\caption{Coste de las suscripciones a servicios de \ac{IA} durante el proyecto.}
+\label{tab:budget-subscriptions}
 \end{table}
 
-Table \ref{tab:gpu_costs} summarizes the computational costs associated with GPU usage during the project, based on the Paperspace platform rates and actual hours used.
+\section{Coste total} \label{sec:budget-total}
 
-In addition to the GPU hourly rates, there are recurring monthly fees for the Paperspace Pro subscription, disk storage, and custom template usage. These overhead costs, estimated at approximately 68.36€ per month, have been computed for the 18-week project duration (about 4.5 months), resulting in an additional cost of 307.62€.
-
-Combining the GPU usage cost (875.00€) with these overhead expenses, the total estimated cloud computing cost for the project amounts to approximately 1,182.62€.
-
-\section{Total Budget Breakdown}
+La Tabla~\ref{tab:budget-total} presenta el desglose final del presupuesto, combinando el coste laboral estimado y el coste real de las suscripciones a servicios de \ac{IA}.
 
 \begin{table}[H]
 \centering
-\caption{Total budget breakdown by category}
-\begin{tabular}{|l|r|r|}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|r|r|}
 \hline
-\textbf{Category} & \textbf{Cost (€)} & \textbf{Percentage} \\
+\textbf{Componente} & \textbf{Coste (€)} & \textbf{Porcentaje} \\
 \hline
-Working Hours & 13,500.00 & 91.9\% \\
-Execution Platform & 1,182.62 & 8.1\% \\
+Horas de trabajo & 6.426,00 & 96,3\,\% \\
 \hline
-\textbf{Total} & \textbf{14,682.62} & \textbf{100\%} \\
+Suscripciones a servicios de \ac{IA} & 243,41 & 3,7\,\% \\
 \hline
-\end{tabular}
+\textbf{Total} & \textbf{6.669,41} & \textbf{100\,\%} \\
+\hline
+\end{tabularx}
+\caption{Desglose total del presupuesto del proyecto.}
+\label{tab:budget-total}
 \end{table}
 
-\section{Final Budget Summary}
-
-\begin{table}[H]
-\centering
-\caption{Final budget summary by project phase}
-\label{tab:final_budget}
-\begin{tabular}{|l|r|r|r|}
-\hline
-\textbf{Phase} & \textbf{Working Hours (€)} & \textbf{Execution (€)} & \textbf{Total (€)} \\
-\hline
-Research & 2,240.00 & – & 2,240.00 \\
-Data Processing & 1,980.00 & – & 1,980.00 \\
-Implementation & 4,500.00 & – & 4,500.00 \\
-Experimentation & 3,660.00 & 1,182.62 & 4,842.62 \\
-Documentation & 1,120.00 & – & 1,120.00 \\
-\hline
-\textbf{Total} & \textbf{13,500.00} & \textbf{1,182.62} & \textbf{14,682.62} \\
-\hline
-\end{tabular}
-\end{table}
-
-Finally, as shown on Table \ref{tab:final_budget}, the total estimated budget for the project amounts to \textbf{14,682.62€}, covering both human resources and computational infrastructure. This amount represents the cost of carrying out the study presented in this project. Based on this estimate, it is possible to extrapolate the approximate cost of deploying a more ambitious version of the project, such as detecting all roads and urban infrastructure in a larger area beyond Tenerife.
+El coste total estimado del proyecto asciende a 6.669,41~€, de los cuales el componente predominante es el coste laboral (96,3\,\%). El gasto en suscripciones de \ac{IA} representa un gasto reducido de 243,41~€, notablemente inferior al que implicaría el acceso a los mismos modelos mediante \ac{API} de pago por consumo o el despliegue de infraestructura computacional propia equivalente.
