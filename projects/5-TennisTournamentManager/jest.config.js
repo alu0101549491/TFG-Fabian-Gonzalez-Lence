@@ -27,6 +27,8 @@ export default {
     '^@domain/(.*)$': '<rootDir>/src/domain/$1',
     '^@application/(.*)$': '<rootDir>/src/application/$1',
     '^@application/services/user.service$': '<rootDir>/tests/mocks/user.service.ts',
+    '^@infrastructure/http/axios-client$': '<rootDir>/tests/mocks/axios-client.ts',
+    '^(\\.\\.?/)+http/axios-client$': '<rootDir>/tests/mocks/axios-client.ts',
     '^@infrastructure/(.*)$': '<rootDir>/src/infrastructure/$1',
     '^@presentation/(.*)$': '<rootDir>/src/presentation/$1',
     '^@shared/constants$': '<rootDir>/tests/mocks/shared-constants.ts',
