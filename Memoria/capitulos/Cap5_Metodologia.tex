@@ -10,36 +10,7 @@ La metodología de este \ac{TFG} se sostiene sobre cuatro decisiones de diseño 
 
 \section{Diseño experimental} \label{sec:diseno-experimental}
 
-Los cinco proyectos \cite{URL::TFG-Web} se han seleccionado para que cada uno suponga un incremento de complejidad ---arquitectónica, tecnológica o de escala--- significativo respecto al anterior, sin saltos demasiado grandes que impidan atribuir las diferencias de comportamiento de los modelos a una variable concreta.
-El proyecto \ac{HANGMAN} establece la línea base y se desarrolla usando TypeScript puro sin intervención de entornos de desarrollo y una arquitectura \ac{MVC} plana. 
-\ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono con \textit{custom hooks}; \ac{BALATRO} eleva la complejidad del modelo de dominio (póker, niveles, tienda, cartas especiales) y añade la generación de recursos visuales mediante \ac{IA}; 
-\ac{CARTO} escala a una aplicación \textit{full-stack} con \textit{Clean Architecture}, comunicación en tiempo real e integración de servicios externos; y \ac{TENNIS} maximiza la complejidad con frontend y backend separados, múltiples roles de usuario y reglas de negocio más complejas. 
-La Tabla~\ref{tab:proyectos-resumen} sintetiza las características que distinguen a cada caso de estudio. 
-En esa tabla el número de ficheros corresponde a código de producción real medido sobre el repositorio del proyecto, excluyendo \texttt{node\_modules} y artefactos de construcción (\textit{build}) de la aplicación.
-Las Tablas~\ref{tab:proyectos-escala} y~\ref{tab:proyectos-resumen} sintetizan, respectivamente, la caracterización funcional y las métricas de escala que distinguen a cada caso de estudio.
-
-\begin{table}[H]
-\centering
-\small
-\renewcommand{\arraystretch}{1.3}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.8cm}|Y|>{\raggedright\arraybackslash}p{2.6cm}|Y|>{\raggedright\arraybackslash}p{2cm}|}
-\hline
-\textbf{Proyecto} & \textbf{Función clave} & \textbf{Arquitectura} & \textbf{Pila tecnológica} & \textbf{Tipo de \textit{testing}} \\
-\hline
-\ac{HANGMAN} & Juego del ahorcado con renderizado en \textit{canvas} & \ac{MVC} + Composite + Observer & TypeScript, Vite, Canvas \ac{API}, Bulma & Jest unitario \\
-\hline
-\ac{PLAYER} & Reproducción de audio, \textit{playlist} y persistencia local & Componentes + \textit{Custom Hooks} & React 18, TypeScript, Vite & Jest unitario \\
-\hline
-\ac{BALATRO} & Juego de cartas con manos de póker, niveles y tienda & Capas (\ac{MVC} + Servicios) & React 18, TypeScript, Vite & Jest unitario \\
-\hline
-\ac{CARTO} & Gestión de proyectos, tareas, mensajería en tiempo real e integración Dropbox & \textit{Clean Architecture} (4 capas) & Vue.js 3, Pinia, Socket.io, Axios, Node.js & Playwright E2E \\
-\hline
-\ac{TENNIS} & Gestión integral de torneos: cuadros, \textit{order of play}, dobles, ranking y notificaciones & Hexagonal (\textit{frontend} + \textit{backend}) & Angular 19, Node.js, Express, Socket.io & Playwright E2E \\
-\hline
-\end{tabularx}
-\caption{Caracterización funcional de los cinco proyectos del experimento.}
-\label{tab:proyectos-resumen}
-\end{table}
+Los cinco proyectos \cite{URL::TFG-Web} se han seleccionado para que cada uno suponga un incremento de complejidad ---arquitectónica, tecnológica o de escala--- significativo respecto al anterior, sin saltos demasiado grandes que impidan atribuir las diferencias de comportamiento de los modelos a una variable concreta. Las Tablas~\ref{tab:proyectos-escala} y~\ref{tab:proyectos-resumen} sintetizan, respectivamente, la caracterización funcional y las métricas de escala de cada caso de estudio; los valores de ficheros corresponden a código de producción real, excluyendo \texttt{node\_modules} y artefactos de construcción.
 
 \begin{table}[H]
 \centering
@@ -64,20 +35,32 @@ Las Tablas~\ref{tab:proyectos-escala} y~\ref{tab:proyectos-resumen} sintetizan, 
 \label{tab:proyectos-escala}
 \end{table}
 
-\newpage
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.8cm}|Y|>{\raggedright\arraybackslash}p{2.6cm}|Y|>{\raggedright\arraybackslash}p{2cm}|}
+\hline
+\textbf{Proyecto} & \textbf{Función clave} & \textbf{Arquitectura} & \textbf{Pila tecnológica} & \textbf{Tipo de \textit{testing}} \\
+\hline
+\ac{HANGMAN} & Juego del ahorcado con renderizado en \textit{canvas} & \ac{MVC} + Composite + Observer & TypeScript, Vite, Canvas \ac{API}, Bulma & Jest unitario \\
+\hline
+\ac{PLAYER} & Reproducción de audio, \textit{playlist} y persistencia local & Componentes + \textit{Custom Hooks} & React 18, TypeScript, Vite & Jest unitario \\
+\hline
+\ac{BALATRO} & Juego de cartas con manos de póker, niveles y tienda & Capas (\ac{MVC} + Servicios) & React 18, TypeScript, Vite & Jest unitario \\
+\hline
+\ac{CARTO} & Gestión de proyectos, tareas, mensajería en tiempo real e integración Dropbox & \textit{Clean Architecture} (4 capas) & Vue.js 3, Pinia, Socket.io, Axios, Node.js & Playwright E2E \\
+\hline
+\ac{TENNIS} & Gestión integral de torneos: cuadros, \textit{order of play}, dobles, ranking y notificaciones & Hexagonal (\textit{frontend} + \textit{backend}) & Angular 19, Node.js, Express, Socket.io & Playwright E2E \\
+\hline
+\end{tabularx}
+\caption{Caracterización funcional de los cinco proyectos del experimento.}
+\label{tab:proyectos-resumen}
+\end{table}
 
-\ac{HANGMAN} es una \ac{SPA} desarrollada en TypeScript puro inspirada en una de las prácticas de la asignatura ``\textit{Programación de Aplicaciones Interactivas}'' del tercer curso del Grado, en la que un jugador adivina palabras antes de completar el dibujo del ahorcado\footnote{\href{https://es.wikipedia.org/wiki/Ahorcado_(juego)}{El Ahorcado}} en un elemento \textit{canvas} de HTML5. La capa de vista  (\textit{GameView}) compone cuatro elementos especializados ---\textit{HangmanRenderer}, \textit{AlphabetDisplay}, \textit{WordDisplay} y \textit{MessageDisplay}--- y utiliza una propagación de eventos que siguen los patrones \textit{Composite} y \textit{Observer} \cite{Gamma:1994:Design}. Su tamaño reducido y la ausencia de un \textit{framework} de desarrollo lo convierten en una línea base para este trabajo.\\
+\ac{HANGMAN}, inspirado en una de las prácticas de la asignatura \textit{Programación de Aplicaciones Interactivas} del tercer curso del Grado, establece la línea base del experimento: TypeScript puro sin \textit{framework}, arquitectura \ac{MVC} con los patrones \textit{Composite} y \textit{Observer} \cite{Gamma:1994:Design} y once ficheros de producción que permiten calibrar el flujo sin variables de entorno adicionales. \ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono derivada de la \ac{API} de audio de HTML5. \ac{BALATRO} representa el mayor salto de complejidad de dominio del trío: recrea el sistema de puntuación del videojuego homónimo ---manos de póker, cartas especiales (\textit{jokers}, \textit{tarots} y planetas), tienda y progresión por niveles--- con persistencia en \textit{localStorage}; al tratarse de un juego conocido, fue posible recabar retroalimentación de usuarios familiarizados con el original, lo que facilitó la detección de errores.\\
 
-\ac{PLAYER} es un reproductor web de música construido con React que delega la lógica de estado a cuatro \textit{custom hooks} ---\textit{useAudioPlayer}, \textit{useResourceLoader},  \textit{useLocalStorage} y \textit{usePlaylist}---, separando los componentes presentacionales de los contenedores. Introduce el paradigma declarativo, la gestión de estado asíncrono asociado a eventos multimedia y un \textit{testing} con Jest, orientado al comportamiento del usuario además de a la implementación interna.\\
-
-\ac{BALATRO} es un juego de cartas construido en React que recrea el sistema de puntuación del videojuego homónimo, con manos de póker, progresión por niveles, encuentros con jefes cada tres rondas, economía de tienda y persistencia del estado de partida en la \ac{API} de almacenamiento del navegador (\textit{localStorage}). Su modelo de dominio agrupa baraja, evaluador de manos, sistema de puntuación fichas/multiplicador, ciegas y tres familias de cartas especiales (planetas, \textit{tarots} y \textit{jokers}), apoyado en una capa de servicios transversales para la tienda, la configuración y la persistencia.\\
-
-\ac{CARTO} es una aplicación web y móvil para la gestión de proyectos cartográficos que comparten un administrador y múltiples clientes, con tareas de cinco estados, mensajería interna por proyecto, integración con Dropbox, roles diferenciados y notificaciones en tiempo real sobre Socket.io\footnote{\href{https://socket.io}{Socket.io}}. La organización del código sigue \textit{Clean Architecture} \cite{Martin:2018:CleanArchitecture} en cuatro capas (Dominio, Aplicación, Infraestructura, Presentación) tanto en el frontend Vue.js como en el backend Node.js\footnote{\href{https://nodejs.org/es}{Node.js}}. Marca el punto de inflexión en el que el flujo conversacional dejó de escalar y se introdujo GitHub Copilot en modo agente como herramienta principal de codificación, revisión y pruebas.\\
-
-\ac{TENNIS} es la aplicación de mayor complejidad funcional del trabajo: cubre la gestión completa de un torneo de tenis ---configuración, registro con sistema de invitaciones para dobles, diseño del cuadro, generación del orden de juego, registro de resultados, sistema de puntuación ELO\footnote{\href{https://es.wikipedia.org/wiki/Sistema_de_puntuacion_Elo}{Puntuación ELO}} y comunicados--- para tres tipos de usuarios con permisos diferenciados. 
-El frontend desarrollado en Angular con componentes \textit{standalone} y el backend en Node.js sobre Express\footnote{\href{https://expressjs.com}{Express}} conviven como subproyectos del mismo monorepo\footnote{\href{https://en.wikipedia.org/wiki/Monorepo}{Monorepo}}, comunicados por Socket.io y por una \ac{API} REST\footnote{\href{https://www.redhat.com/es/topics/api/what-is-a-rest-api}{API REST}}. El agente de codificación organizó el trabajo en 19 categorías de código de producción más cuatro categorías de pruebas y una de documentación.\\
-
-Más allá del incremento absoluto del tamaño de las aplicaciones, la progresión obedece a una lógica de aprendizaje: cada proyecto permitió refinar las plantillas de \textit{prompts}, ajustar los criterios de evaluación y detectar los patrones de fallo de los modelos antes de afrontar el siguiente nivel de exigencia. El cambio de herramientas entre \ac{BALATRO} y \ac{CARTO} no fue planificado, sino que surgió como respuesta a las limitaciones observadas y se documenta como un hallazgo metodológico en el Capítulo~\ref{chap:AIModels}.
+\ac{CARTO} escala el experimento a una aplicación \textit{fullstack}: \textit{Clean Architecture} \cite{Martin:2018:CleanArchitecture} en cuatro capas replicada tanto en el \textit{frontend} Vue.js como en el \textit{backend} Node.js\footnote{\href{https://nodejs.org/es}{Node.js}}, con mensajería en tiempo real sobre Socket.io\footnote{\href{https://socket.io}{Socket.io}} e integración con Dropbox. Marca el punto de inflexión en el que el flujo conversacional dejó de escalar y se adoptó GitHub Copilot en modo agente como herramienta principal, decisión no planificada que surgió como respuesta a las limitaciones observadas y se documenta como hallazgo metodológico en el Capítulo~\ref{chap:AIModels}. \ac{TENNIS} maximiza la complejidad: gestión integral de torneos con sistema de puntuación ELO\footnote{\href{https://es.wikipedia.org/wiki/Sistema_de_puntuacion_Elo}{Puntuación ELO}}, modalidad de torneos dobles con invitaciones, tres tipos de usuario con permisos diferenciados, y \textit{frontend} Angular 19 con componentes \textit{standalone} conviviendo en el mismo monorepo\footnote{\href{https://en.wikipedia.org/wiki/Monorepo}{Monorepo}} con el \textit{backend} Express\footnote{\href{https://expressjs.com}{Express}}. Más allá del incremento de escala, la progresión obedece a una lógica de aprendizaje: cada proyecto permitió refinar las plantillas de \textit{prompts}, ajustar los criterios de evaluación y detectar los patrones de fallo de los modelos antes de afrontar el siguiente nivel de exigencia.
 
 \section{Roles de IA y flujo de trabajo} \label{sec:flujo-trabajo}
 
@@ -93,7 +76,7 @@ Las incidencias se clasifican por severidad y, si no se alcanza el umbral defini
 
 \textbf{Fase 4 --- \textit{Testing}.} La \ac{IA} \textit{Tester} genera las pruebas a partir del código aprobado y de los diagramas de casos de uso, siguiendo el patrón \ac{AAA} sobre una matriz de cobertura que exige casos normales, de frontera y excepcionales. La granularidad ---unitaria en P1--P3, \textit{end-to-end} en P4--P5--- se ajusta a la naturaleza del proyecto.\\
 
-\textbf{Rol del ingeniero supervisor.} Cumpliendo este rol, definíamos los artefactos de entrada, validábamos los de salida y orquestábamos las transiciones entre fases, delegando en los modelos la generación de código, documentación y pruebas. Nuestra intervención directa se reservaba a errores de integración entre sesiones, decisiones de diseño no previstas y problemas de entorno ajenos a la lógica del código, en línea con el modelo de cooperación humano-\ac{IA} \cite{Khade:2025:AIinSD}.
+\textbf{Rol del ingeniero supervisor.} Este rol consistió en definir los artefactos de entrada, validar los de salida y orquestar las transiciones entre fases, delegando en los modelos la generación de código, documentación y pruebas. La intervención directa del ingeniero se reservó a errores de integración entre sesiones, decisiones de diseño no previstas y problemas de entorno ajenos a la lógica del código, en línea con el modelo de cooperación humano-\ac{IA} \cite{Khade:2025:AIinSD}.
 
 \section{Plantillas y estrategia de consultas (\textit{prompting})} \label{sec:prompting}
 
