@@ -6,17 +6,19 @@
 
 \chapter{Resultados} \label{chap:Results}
 
-Los cinco proyectos desarrollados en el experimento están disponibles de forma pública y accesible: los tres primeros exclusivamente como \textit{frontend} estático, y los dos últimos con \textit{backend} desplegado en la nube. Este capítulo documenta la infraestructura de despliegue adoptada (Sección~\ref{sec:results-deployment}), las métricas de calidad de código obtenidas mediante SonarQube\footnote{\href{https://sonarcloud.io}{SonarQube Cloud}} y el análisis del agente de \ac{IA} (Sección~\ref{sec:results-code-quality}), y una valoración global de los proyectos resultantes (Sección~\ref{sec:results-analysis}).
+Los cinco proyectos desarrollados en el experimento están disponibles \cite{URL::TFG-Web} de forma pública y accesible: los tres primeros exclusivamente siendo un \textit{frontend} estático, y los dos últimos incluyendo \textit{backend} desplegado en la nube. Este capítulo documenta la infraestructura de despliegue adoptada (Sección~\ref{sec:results-deployment}), las métricas de calidad de código obtenidas mediante SonarQube\footnote{\href{https://sonarcloud.io}{SonarQube Cloud}} y el análisis del agente de \ac{IA} (Sección~\ref{sec:results-code-quality}), y una valoración global de los proyectos resultantes (Sección~\ref{sec:results-analysis}).
 
 \section{Despliegue de los proyectos} \label{sec:results-deployment}
 
-Los cinco proyectos se despliegan desde el mismo repositorio monorepo bajo dos estrategias según su naturaleza. Los cinco \textit{frontends} se publican como sitios estáticos en GitHub Pages mediante un flujo de GitHub Actions que construye cada proyecto en secuencia, inyecta la variable \texttt{BASE\_URL} en el fichero \texttt{vite.config.ts} de cada uno para que se sirva bajo su propio subdirectorio, y se genera una página de entrada que enlaza a los cinco subproyectos\footnote{\href{https://alu0101549491.github.io/TFG-Fabian-Gonzalez-Lence/}{Página de entrada a los proyectos}}.\\
+Los cinco proyectos se despliegan desde el mismo repositorio monorepo bajo dos estrategias según su naturaleza. Los cinco \textit{frontends} se publican como sitios estáticos en GitHub Pages mediante un flujo de \textit{GitHub Actions} que construye cada proyecto en secuencia, inyecta la variable \texttt{BASE\_URL} en el fichero \texttt{vite.config.ts} de cada uno para que se sirva bajo su propio subdirectorio, y se genera una página de entrada que enlaza a los cinco subproyectos \cite{URL::TFG-Web}.\\
 
-Los backends de \ac{CARTO} y \ac{TENNIS} se desplegaron en Render\footnote{\href{https://render.com}{Render}}, con base de datos PostgreSQL alojada en Supabase\footnote{\href{https://supabase.com}{Supabase}}. Para \ac{CARTO} se exploró inicialmente Railway\footnote{\href{https://railway.app}{Railway}}, pero las restricciones de su plan gratuito y la incompatibilidad con la estructura monorepo motivaron su cambio. Ambos servicios se definen en el fichero \texttt{render.yaml} de la raíz del repositorio, centralizando la gestión de infraestructura en el mismo. Durante la migración de \ac{CARTO} a Supabase, las credenciales de conexión de la base de datos fueron expuestas accidentalmente en el repositorio público a causa de un error cometido por el agente de GitHub Copilot, estas fueron detectadas por GitGuardian\footnote{\href{https://www.gitguardian.com}{GitGuardian}} y rotadas de inmediato.
+Los backends de \ac{CARTO} y \ac{TENNIS} se desplegaron en Render\footnote{\href{https://render.com}{Render}}, con base de datos PostgreSQL alojada en Supabase\footnote{\href{https://supabase.com}{Supabase}}. Para \ac{CARTO} se exploró inicialmente Railway\footnote{\href{https://railway.app}{Railway}}, pero las restricciones de su plan gratuito y la incompatibilidad con la estructura monorepo motivaron el cambio. Ambos servicios se definen en el fichero \texttt{render.yaml} de la raíz del repositorio, centralizando la gestión de infraestructura en el mismo. 
+Durante la migración de \ac{CARTO} a Supabase, las credenciales de conexión de la base de datos fueron expuestas accidentalmente en el repositorio público a causa de un error cometido por el agente de GitHub Copilot, esa exposición fue detectada por GitGuardian\footnote{\href{https://www.gitguardian.com}{GitGuardian}} y las claves fueron invalidadas y regeneradas de inmediato.
 
 \section{Métricas de calidad del código} \label{sec:results-code-quality}
 
-La calidad del código se evaluó mediante dos herramientas complementarias. La primera es SonarQube Cloud\footnote{\href{https://sonarcloud.io/organizations/alu0101549491}{Organización del \texttt{TFG} en SonarQube Cloud}}, integrado en el repositorio vía GitHub Actions con un fichero \texttt{sonar-project.properties} por proyecto. La segunda es un agente personalizado de GitHub Copilot denominado \textit{Code Quality Agent}, generado mediante \textit{meta-prompting} con Claude Opus 4.7, debido a su gran ventana de contexto. El agente aplica el estándar ISO/IEC 25010 \cite{ISO25010:2023} recorriendo las mismas características de calidad que SonarCloud (fiabilidad, seguridad, mantenibilidad, etc.), con el objetivo de contrastar ambas evaluaciones. Las Tablas~\ref{tab:sonarqube-issues} y~\ref{tab:sonarqube-ratings} recogen las métricas obtenidas directamente de la \ac{API} de SonarCloud. La cobertura de \ac{CARTO} y \ac{TENNIS} figura como no disponible porque ambos proyectos utilizan exclusivamente pruebas \textit{end-to-end} con Playwright, cuya cobertura no es compatible con el formato LCOV esperado por SonarCloud.
+La calidad del código se evaluó mediante dos herramientas complementarias. La primera es SonarQube Cloud\footnote{\href{https://sonarcloud.io/organizations/alu0101549491}{Organización del \texttt{TFG} en SonarQube Cloud}}, integrado en el repositorio vía GitHub Actions con un fichero \texttt{sonar-project.properties} por proyecto. La segunda es un agente personalizado de GitHub Copilot denominado \textit{Code Quality Agent}, generado mediante \textit{meta-prompting} con Claude Opus 4.7, debido a su gran ventana de contexto. 
+El agente aplica el estándar ISO/IEC 25010 \cite{ISO25010:2023} recorriendo las mismas métricas de calidad que SonarCloud (fiabilidad, seguridad, mantenibilidad, etc.), con el objetivo de contrastar ambas evaluaciones. Las Tablas~\ref{tab:sonarqube-issues} y~\ref{tab:sonarqube-ratings} recogen las métricas obtenidas directamente de la \ac{API} de SonarCloud. La cobertura de \ac{CARTO} y \ac{TENNIS} figura como no disponible porque ambos proyectos utilizan exclusivamente pruebas \textit{end-to-end} con Playwright, cuya cobertura no es compatible con el formato LCOV esperado por SonarCloud.
 
 \begin{table}[H]
 \centering
@@ -60,7 +62,7 @@ La calidad del código se evaluó mediante dos herramientas complementarias. La 
 \ac{TENNIS}  & E & A & A & \texttt{ERROR} \\
 \hline
 \end{tabular}
-\caption{Calificaciones de calidad según SonarCloud. Fiabilidad, Seguridad y Mantenibilidad se expresan en escala A--E.}
+\caption{Calificaciones de calidad según SonarCloud. Fiabilidad, Seguridad y Mantenibilidad en una escala de A--E, donde A es la mejor calificación y E la peor.}
 \label{tab:sonarqube-ratings}
 \end{table}
 
@@ -70,9 +72,9 @@ La única excepción al \textit{Quality Gate} es \ac{TENNIS}: sus 61 bugs concen
 \centering
 \small
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{1.8cm}|>{\centering\arraybackslash}p{1.5cm}|>{\centering\arraybackslash}p{1.5cm}|>{\centering\arraybackslash}p{1.5cm}|>{\centering\arraybackslash}p{1.5cm}|>{\centering\arraybackslash}p{1.5cm}|>{\centering\arraybackslash}p{2cm}|}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{1.8cm}|>{\centering\arraybackslash}p{2.1cm}|>{\centering\arraybackslash}p{1.4cm}|>{\centering\arraybackslash}p{1.4cm}|>{\centering\arraybackslash}p{1.4cm}|>{\centering\arraybackslash}p{1.4cm}|>{\centering\arraybackslash}p{2cm}|}
 \hline
-\textbf{Proyecto} & \textbf{Bloq.} & \textbf{Crít.} & \textbf{Mayor} & \textbf{Menor} & \textbf{Total} & \textbf{Valoración} \\
+\textbf{Proyecto} & \textbf{Bloqueante} & \textbf{Crítica} & \textbf{Mayor} & \textbf{Menor} & \textbf{Total} & \textbf{Valoración} \\
 \hline
 \ac{HANGMAN} & 0 & 0 & 1  & 5  & 6   & Bueno \\
 \hline
