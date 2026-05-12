@@ -59,7 +59,7 @@
 ]{hyperref} %hiperenlaces y backcites
 
 \let\origacs\acs
-\renewcommand{\acs}[1]{\textbf{\origacs{#1}}}
+\renewcommand{\acs}[1]{\origacs{#1}}
 
 \hypersetup{breaklinks=true}
 % Redefinir el comando \url para cambiar el tamaño del texto de los enlaces
@@ -331,7 +331,7 @@
     
     \vspace*{\stretch{1}}
     \begin{center}
-        \fontsize{18pt}{18pt}\selectfont La Laguna, \today
+        \fontsize{18pt}{18pt}\selectfont La Laguna, {\selectlanguage{spanish}\today}
     \end{center}
 }
 
@@ -422,7 +422,7 @@ El rápido avance de los grandes modelos de lenguaje (LLMs) ha abierto nuevas po
 
 Con el objetivo de evaluar de manera sistemática el rendimiento de estos modelos, se ha diseñado y seguido una metodología experimental basada en las fases clásicas de la ingeniería del software: especificación de requisitos, diseño, implementación, revisión, pruebas y despliegue. Dicha metodología se ha aplicado al desarrollo de cinco aplicaciones de complejidad creciente: un juego del ahorcado, un reproductor web de música, una versión simplificada del videojuego Balatro, un gestor de proyectos cartográficos y un gestor de torneos de tenis.\\
 
-Para cada aplicación, se han generado múltiples versiones de los artefactos de desarrollo ---requisitos en lenguaje natural, semiformales y en lenguaje controlado, diagramas UML y código fuente--- utilizando distintos modelos de IA como agentes especializados. El proceso ha sido documentado rigurosamente, registrando los prompts empleados, las respuestas obtenidas y las decisiones tomadas en cada etapa.\\
+Para cada aplicación, se han generado múltiples versiones de los artefactos de desarrollo ---requisitos en lenguaje natural, semiformales y en lenguaje controlado, diagramas UML y código fuente--- utilizando distintos modelos de IA como agentes especializados. El proceso ha sido documentado rigurosa y  exhaustivamente, registrando los prompts empleados, las respuestas obtenidas y las decisiones tomadas en cada etapa.\\
 
 Los resultados obtenidos permiten valorar el grado de madurez actual de los LLMs en tareas de ingeniería del software, identificar sus fortalezas y limitaciones en contextos reales de desarrollo, y extraer conclusiones sobre el potencial del enfoque colaborativo multiagente como paradigma emergente en la generación semiautomática de aplicaciones.
 }

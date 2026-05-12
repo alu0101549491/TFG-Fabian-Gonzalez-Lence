@@ -35,8 +35,9 @@ Precisamente en aportar información en el contexto antes señalado se enmarca e
 La metodología adoptada en este trabajo se articula en torno a dos ejes complementarios: un diseño experimental basado en proyectos de complejidad creciente y un flujo de trabajo multimodelo en el que distintos modelos de \ac{IA} asumen roles especializados dentro del \ac{SDLC}.\\
 
 Se han definido cinco aplicaciones que, ordenadas de menor a mayor complejidad arquitectónica, funcional y tecnológica se referencian como \ac{HANGMAN}, \ac{PLAYER}, \ac{BALATRO}, \ac{CARTO} y \ac{TENNIS}. 
-Todas están disponibles para su evaluación a través de una página \cite{URL::TFG-Web} pública.
-Esta progresión permite observar cómo escalan las capacidades y limitaciones de los modelos a medida que aumentan las exigencias, desde una \ac{SPA} con patrón \ac{MVC} hasta un sistema multirrol con comunicación en tiempo real. Para cada proyecto, el proceso de desarrollo se estructura en cuatro fases inspiradas en el \ac{SDLC}  tradicional, cada una asignada a un modelo o herramienta de \ac{IA} seleccionado por sus fortalezas observadas según el proyecto:
+El resultado final de cada una de ellas está disponible para su evaluación a través de una página \cite{URL::TFG-Web} pública.
+El desarrollo de los cinco proyectos responde no solo a una secuencia creciente en complejidad sino también temporal: \ac{HANGMAN} el más simple, fue el primer proyecto desarrollado y \ac{TENNIS} (el más complejo) el último. 
+La secuenciación de las cinco aplicaciones permite observar cómo escalan las capacidades y limitaciones de los modelos a medida que aumentan las exigencias, desde una \ac{SPA} con patrón \ac{MVC} hasta un sistema multirrol con comunicación en tiempo real. Para cada proyecto, el proceso de desarrollo se estructura en cuatro fases inspiradas en el \ac{SDLC}  tradicional, cada una asignada a un modelo o herramienta de \ac{IA} seleccionado por sus fortalezas observadas según el proyecto:
 
 \begin{enumerate}
   \item \textbf{Arquitectura y diseño}: Se redacta la especificación de requisitos, y a partir de esta, el modelo genera la estructura del proyecto, los diagramas de clases, los casos de uso y la documentación detallada de cada módulo.
@@ -54,7 +55,7 @@ A lo largo del experimento, se documentan todas las decisiones tomadas, incluyen
 
 \section{Calidad del software desarrollado} \label{sec:calidad}
 
-El código fuente de los cinco proyectos está disponible públicamente en el repositorio de GitHub del trabajo \cite{URL::TFG}. Cada proyecto se organiza como un subpaquete independiente del monorepo, con su propia configuración de compilación, \textit{linting} y pruebas; las referencias a fragmentos de código concretos en este documento incluyen un enlace directo al fichero correspondiente en el repositorio.\\  
+El código fuente de los cinco proyectos está disponible públicamente en el repositorio de GitHub del trabajo \cite{URL::TFG}. Cada proyecto se organiza como un subpaquete independiente del monorepo, con su propia configuración de compilación, \textit{linting} y pruebas; las referencias a fragmentos de código concretos en este documento incluyen un enlace directo al fichero correspondiente en el repositorio.\\    
 
 El marco de evaluación de calidad adoptado es el estándar ISO/IEC 25010 (SQuaRE) \cite{ISO:25010:2023}, complementado con las categorías de reglas de SonarQube\footnote{\href{https://sonarcloud.io}{SonarQube Cloud}} ---\textit{Bugs}, \textit{Vulnerabilities}, \textit{Code Smells} y cobertura--- como referencia para la clasificación de incidencias. Los cinco proyectos cuentan con ficheros de configuración para análisis estático con SonarCloud, lo que permite obtener métricas de complejidad ciclomática \cite{McCabe:1976:Complexity}, deuda técnica y duplicación de código de forma automatizada.\\ 
 
