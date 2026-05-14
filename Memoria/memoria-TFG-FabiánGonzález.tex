@@ -79,7 +79,7 @@
 \usepackage{titlesec}
 \titleformat{\chapter}[hang]
   {\normalfont\huge\bfseries}
-  {Chapter \thechapter\\:}
+  {Capítulo \thechapter\\:}
   {0.5em}
   {}
 \titlespacing*{\chapter}
@@ -132,6 +132,8 @@
 \renewcommand{\algorithmicwhile}{\textbf{mientras}}
 
 \addto\captionsspanish{\renewcommand{\tablename}{Tabla}}
+\addto\captionsenglish{\renewcommand{\tablename}{Tabla}}
+\addto\captionsenglish{\renewcommand{\figurename}{Figura}}
 
 %%%%%%%%%%%%%%%%% Se crea un entorno para listar código fuente %%%%%%%%%%%%%%%
 \newenvironment{sourcecode}
