@@ -10,9 +10,7 @@ Los cinco proyectos desarrollados en el experimento están disponibles \cite{URL
 
 \section{Despliegue de los proyectos} \label{sec:results-deployment}
 
-Los cinco proyectos se despliegan desde el mismo repositorio monorepo bajo dos estrategias según su naturaleza. Los cinco \textit{frontends} se publican como sitios estáticos en GitHub Pages mediante un flujo de \textit{GitHub Actions} que construye cada proyecto en secuencia, inyecta la variable \texttt{BASE\_URL} en el fichero \texttt{vite.config.ts} de cada uno para que se sirva bajo su propio subdirectorio, y se genera una página de entrada que enlaza a los cinco subproyectos \cite{URL::TFG-Web}.\\
-
-Los backends de \ac{CARTO} y \ac{TENNIS} se desplegaron en Render\footnote{\href{https://render.com}{Render}}, con base de datos PostgreSQL alojada en Supabase\footnote{\href{https://supabase.com}{Supabase}}. Para \ac{CARTO} se exploró inicialmente Railway\footnote{\href{https://railway.app}{Railway}}, pero las restricciones de su plan gratuito y la incompatibilidad con la estructura monorepo motivaron el cambio. Ambos servicios se definen en el fichero \texttt{render.yaml} de la raíz del repositorio, centralizando la gestión de infraestructura en el mismo. 
+Los cinco proyectos se despliegan desde el mismo repositorio monorepo bajo dos estrategias según su naturaleza. Los cinco \textit{frontends} se publican como sitios estáticos en GitHub Pages mediante un flujo de \textit{GitHub Actions} que construye cada proyecto en secuencia, inyecta la variable \texttt{BASE\_URL} en el fichero \texttt{vite.config.ts} de cada uno para que se sirva bajo su propio subdirectorio, y se genera una página de entrada que enlaza a los cinco subproyectos \cite{URL::TFG-Web}. Los backends de \ac{CARTO} y \ac{TENNIS} se desplegaron en Render\footnote{\href{https://render.com}{Render}}, con base de datos PostgreSQL alojada en Supabase\footnote{\href{https://supabase.com}{Supabase}}. Para \ac{CARTO} se exploró inicialmente Railway\footnote{\href{https://railway.app}{Railway}}, pero las restricciones de su plan gratuito y la incompatibilidad con la estructura monorepo motivaron el cambio. Ambos servicios se definen en el fichero \texttt{render.yaml} de la raíz del repositorio, centralizando la gestión de infraestructura en el mismo. 
 Durante la migración de \ac{CARTO} a Supabase, las credenciales de conexión de la base de datos fueron expuestas accidentalmente en el repositorio público a causa de un error cometido por el agente de GitHub Copilot, esa exposición fue detectada por GitGuardian\footnote{\href{https://www.gitguardian.com}{GitGuardian}} y las claves fueron invalidadas y regeneradas de inmediato.
 
 \section{Métricas de calidad del código} \label{sec:results-code-quality}
@@ -24,9 +22,9 @@ El agente aplica el estándar ISO/IEC 25010 \cite{ISO25010:2023} recorriendo las
 \centering
 \small
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\centering\arraybackslash}p{1.4cm}|>{\centering\arraybackslash}p{1.6cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{1.4cm}|>{\centering\arraybackslash}p{3.4cm}|>{\centering\arraybackslash}p{2.4cm}|>{\centering\arraybackslash}p{2cm}|}
 \hline
-\textbf{Proyecto} & \textbf{Bugs} & \textbf{Vulner.} & \textbf{\textit{Code smells}} & \textbf{Cobertura} \\
+\textbf{Proyecto} & \textbf{Bugs} & \textbf{Vulnerabilidades} & \textbf{\textit{Code smells}} & \textbf{Cobertura} \\
 \hline
 \ac{HANGMAN} & 0  & 0 & 20  & 95,8\,\% \\
 \hline

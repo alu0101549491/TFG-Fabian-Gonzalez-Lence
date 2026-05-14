@@ -66,15 +66,15 @@ Los cinco proyectos \cite{URL::TFG-Web} se han seleccionado para que cada uno su
 
 El desarrollo de cada proyecto sigue un flujo en cuatro fases secuenciales inspirado en el \ac{SDLC}, en el que cada fase tiene una \ac{IA} responsable, artefactos de entrada y salida bien definidos y un criterio explícito de transición a la siguiente. La asignación concreta de modelos a roles y la evolución de las herramientas empleadas se abordaron en las Secciones~\ref{sec:models-description} y~\ref{sec:approach-change} de este documento.\\
 
-\textbf{Fase 1 --- Arquitectura.} A partir de la especificación de requisitos y de los diagramas UML \cite{Fowler:2004:UML} de clases y de casos de uso, la \ac{IA} Arquitecto produce la estructura de directorios de la aplicación, los esqueletos de clases sin lógica y la documentación inicial. La transición a la Fase 2 requiere que la estructura de código esté organizada y que los esqueletos incluyan firma y cabecera documentada.\\
+\textbf{Fase 1 --- Arquitectura.} A partir de la especificación de requisitos y de los diagramas UML \cite{Fowler:2004:UML} de clases y de casos de uso, la \ac{IA} Arquitecto produce la estructura de directorios de la aplicación, los esqueletos de clases sin lógica y la documentación inicial. La transición a la Fase 2 requiere que la estructura de código esté organizada y que los esqueletos incluyan firma y cabecera documentada.
 
 \textbf{Fase 2 --- Codificación.} La \ac{IA} Desarrolladora implementa cada módulo sobre los esqueletos de la Fase 1, exigiendo conformidad con la \textit{Guía de Estilo de Google para TypeScript} y los principios \ac{SOLID} \cite{Martin:2003:Agile}. 
-El criterio de transición es compilación y \textit{linting} limpios; la operativa concreta de la Desarrolladora y su evolución entre proyectos se detalla en el Capítulo~\ref{chap:Development}.\\
+El criterio de transición es compilación y \textit{linting} limpios; la operativa concreta de la Desarrolladora y su evolución entre proyectos se detalla en el Capítulo~\ref{chap:Development}.
 
 \textbf{Fase 3 --- Revisión de código.} La \ac{IA} Revisora evalúa el código según cinco criterios ponderados ---Adherencia al diseño (30\,\%), Calidad del código (25\,\%), Cumplimiento de requisitos (25\,\%), Mantenibilidad (10\,\%) y Buenas prácticas (10\,\%)--- y emite una decisión ternaria: \texttt{APPROVED}, \texttt{APPROVED WITH RESERVATIONS} o \texttt{REJECTED}. 
-Las incidencias se clasifican por severidad y, si no se alcanza el umbral definido, sirven de entrada a una nueva iteración dedicada a arreglar las deficiencias y rehacer la revisión.\\
+Las incidencias se clasifican por severidad y, si no se alcanza el umbral definido, sirven de entrada a una nueva iteración dedicada a arreglar las deficiencias y rehacer la revisión.
 
-\textbf{Fase 4 --- \textit{Testing}.} La \ac{IA} \textit{Tester} genera las pruebas a partir del código aprobado y de los diagramas de casos de uso, siguiendo el patrón \ac{AAA} sobre una matriz de cobertura que exige casos normales, de frontera y excepcionales. La granularidad ---unitaria en P1--P3, \textit{end-to-end} en P4--P5--- se ajusta a la naturaleza del proyecto.\\
+\textbf{Fase 4 --- \textit{Testing}.} La \ac{IA} \textit{Tester} genera las pruebas a partir del código aprobado y de los diagramas de casos de uso, siguiendo el patrón \ac{AAA} sobre una matriz de cobertura que exige casos normales, de frontera y excepcionales. La granularidad ---unitaria en P1--P3, \textit{end-to-end} en P4--P5--- se ajusta a la naturaleza del proyecto.
 
 \textbf{Rol del ingeniero supervisor.} Este rol consistió en definir los artefactos de entrada, validar los de salida y orquestar las transiciones entre fases, delegando en los modelos la generación de código, documentación y pruebas. La intervención directa del ingeniero se reservó a errores de integración entre sesiones, decisiones de diseño no previstas y problemas de entorno ajenos a la lógica del código, en línea con el modelo de cooperación humano-\ac{IA} \cite{Khade:2025:AIinSD}.
 
@@ -140,44 +140,3 @@ Todas las plantillas declaran explícitamente el rol del modelo, los artefactos 
 
 \footnotetext[1]{\textit{Single-shot} Técnica de consulta (\textit{prompting}) en la que el modelo recibe toda la información necesaria en un único \textit{prompt}.}
 \footnotetext[2]{\textit{Plan-then-implement} Técnica de \textit{prompting} en la que el modelo primero genera un plan o descomposición del problema y, posteriormente ejecuta la solución siguiendo dicho plan.}
-
-\begin{comment}
-\section{Métricas de evaluación y planificación temporal} \label{sec:metricas-planificacion}
-
-\subsection{Métricas de evaluación} \label{subsec:metricas-evaluacion}
-
-La evaluación de los cinco proyectos se apoya en el estándar ISO/IEC 25010 (SQuaRE), seleccionado por su uso extendido en la literatura académica y por ofrecer un marco multidimensional que va más allá de la corrección funcional medida por \textit{benchmarks} como HumanEval \cite{Chen:2021:Codex}. De las ocho características definidas en el modelo, este trabajo se centra en las cinco más relevantes para el dominio de aplicaciones web: Adecuación funcional, verificada mediante una tabla de trazabilidad por requisito (estados \textit{Completo}, \textit{Parcial} o \textit{Ausente}); Mantenibilidad, medida con SonarQube\footnote{SonarQube: \url{https://www.sonarqube.org/}} y ESLint sobre métricas de complejidad ciclomática, \textit{code smells}, duplicación y deuda técnica; Fiabilidad, evaluada a través de la cobertura de tests y la gestión de excepciones; Compatibilidad, comprobada en los entornos objetivo de cada proyecto; y Usabilidad, inspeccionada mediante las diez heurísticas de Nielsen con una rúbrica de 0 a 4 por heurística.\\
-
-A estas métricas de producto se añaden indicadores específicos del proceso multimodelo, recogidos durante el desarrollo: número de iteraciones por módulo hasta alcanzar la aprobación del Revisor, distribución de incidencias por severidad y grupo de revisión, número de escenarios de prueba definidos frente a tests efectivamente implementados, y porcentaje de intervención manual del ingeniero sobre el código generado. El umbral de aprobación de la Fase 3 se fija en una puntuación ponderada $\geq 7{,}0$ sobre 10 sin incidencias críticas pendientes; por debajo de ese umbral, la fase se reitera con el informe de incidencias como entrada adicional. El detalle de los resultados obtenidos para cada proyecto bajo este esquema se desarrolla en el Capítulo~\ref{chap:Results}.
-
-\subsection{Planificación temporal} \label{subsec:planificacion-temporal}
-
-El trabajo se desarrolló a lo largo de aproximadamente 29 semanas entre octubre de 2025 y abril de 2026, organizadas en seis fases solapadas. La Tabla~\ref{tab:planificacion-temporal} resume la distribución temporal por hitos.\\
-
-\begin{table}[H]
-\centering
-\small
-\renewcommand{\arraystretch}{1.3}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{4.8cm}|>{\raggedright\arraybackslash}p{2.2cm}|Y|}
-\hline
-\textbf{Fase} & \textbf{Semanas} & \textbf{Hitos principales} \\
-\hline
-Estado del arte y diseño metodológico & S1--S4 & Revisión de literatura; selección inicial de modelos; definición del flujo de cuatro fases \\
-\hline
-Desarrollo de \ac{HANGMAN} y \ac{PLAYER} & S5--S10 & Validación del flujo conversacional con Mistral y Qwen sobre proyectos pequeños \\
-\hline
-Desarrollo de \ac{BALATRO} & S11--S15 & Detección de los límites de escalabilidad del flujo conversacional; uso de Gemini para \textit{assets} \\
-\hline
-Cambio de enfoque y desarrollo de \ac{CARTO} & S16--S22 & Adopción de GitHub Copilot en modo agente; diseño del Revisor 2.0 y del Tester 2.0 \\
-\hline
-Desarrollo de \ac{TENNIS} & S23--S27 & Aparición del Desarrollador 2.0 con planificación por categorías; mayor escala del experimento \\
-\hline
-Análisis de resultados y memoria & S28--S29 & Aplicación de las métricas de evaluación; redacción del documento final \\
-\hline
-\end{tabularx}
-\caption{Planificación temporal del trabajo, agrupada por hitos.}
-\label{tab:planificacion-temporal}
-\end{table}
-
-La planificación incorpora un solapamiento deliberado entre fases consecutivas: la fase de \textit{testing} de un proyecto se ejecuta en paralelo con la fase de arquitectura del siguiente, lo que permitió aprovechar los tiempos muertos de espera de respuestas largas de los modelos. Esta organización resultó especialmente productiva en la transición \ac{BALATRO} $\rightarrow$ \ac{CARTO}, donde el cambio de enfoque metodológico se gestó precisamente durante las pruebas finales del tercer proyecto.\\
-\end{comment}

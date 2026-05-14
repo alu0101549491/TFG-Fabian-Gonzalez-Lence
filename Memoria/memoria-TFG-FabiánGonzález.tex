@@ -12,6 +12,7 @@
 \usepackage{ragged2e}
 \newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
 
+
 \usepackage{acronym}
 \usepackage{listingsutf8}
 \usepackage{listings}
@@ -73,6 +74,50 @@
   {\chaptername\ \thechapter:}
   {0.5em}
   {}
+
+% Para títulos de capítulos
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]
+  {\normalfont\huge\bfseries}
+  {Chapter \thechapter\\:}
+  {0.5em}
+  {}
+\titlespacing*{\chapter}
+  {0pt}   % left margin
+  {0pt}   % space before
+  {8pt}  % space after
+
+\titlespacing*{\section}
+  {0pt}   % left margin
+  {8pt}   % space before
+  {5pt}  % space after
+
+\titlespacing*{\subsection}
+  {0pt}   % left margin
+  {8pt}   % space before
+  {5pt}  % space after
+
+\titlespacing*{\subsubsection}
+  {0pt}   % left margin
+  {8pt}   % space before
+  {2pt}  % space after
+
+
+\usepackage{enumitem}
+% Global settings
+\setlist{
+  itemsep=2pt,    % space between items
+  topsep=4pt,     % space before and after the list
+  parsep=0pt,     % space between paragraphs within items
+  partopsep=0pt   % extra space when list starts a new paragraph
+}
+
+\begin{comment}
+% Spacing around floats (tables, figures)
+\setlength{\intextsep}{8pt}      % space above and below [h]/[H] floats
+\setlength{\textfloatsep}{10pt}  % space between float and text at top/bottom of page
+\setlength{\floatsep}{8pt}       % space between consecutive floats
+\end{comment}
 
 \usepackage{url}
 \usepackage{subcaption}
@@ -386,7 +431,7 @@ Agradecimientos
 \vspace*{0.3cm}
 
 \hspace{3mm}
-Quiero agradecer a mi tutor, D. Francisco de Sande, por su guía, disponibilidad y orientación a lo largo de todo el desarrollo de este trabajo. Sus consejos y el rigor con el que ha dirigido el proyecto han sido fundamentales para llevar esta investigación a buen puerto.
+Quiero agradecer a Francisco de Sande, por su guía, disponibilidad y orientación a lo largo de todo el desarrollo de este trabajo. Sus consejos y el rigor con el que ha dirigido el proyecto han sido fundamentales para llevar esta investigación a buen puerto.
 \vspace*{0.3cm}
 
 A la Universidad de La Laguna y a la Escuela Superior de Ingeniería y Tecnología, por la formación recibida durante estos años y por los recursos puestos a disposición del alumnado.
@@ -418,9 +463,9 @@ Licencia
 \selectlanguage{spanish}
 \begin{abstract}
 {\em
-El rápido avance de los grandes modelos de lenguaje (LLMs) ha abierto nuevas posibilidades en el ámbito del desarrollo de software asistido por inteligencia artificial. Este Trabajo de Fin de Grado analiza las capacidades de distintos modelos de IA generativa ---Claude, ChatGPT, GitHub Copilot, Mistral, entre otros--- para dar soporte a las diferentes fases del ciclo de vida del software de forma colaborativa y semiautomática.\\
+El rápido avance de los grandes modelos de lenguaje (LLMs) ha abierto nuevas posibilidades en el ámbito del desarrollo de software asistido por inteligencia artificial. Este Trabajo de Fin de Grado analiza las capacidades de distintos modelos de IA generativa para dar soporte a las diferentes fases del ciclo de vida del software de forma colaborativa y semiautomática.\\
 
-Con el objetivo de evaluar de manera sistemática el rendimiento de estos modelos, se ha diseñado y seguido una metodología experimental basada en las fases clásicas de la ingeniería del software: especificación de requisitos, diseño, implementación, revisión, pruebas y despliegue. Dicha metodología se ha aplicado al desarrollo de cinco aplicaciones de complejidad creciente: un juego del ahorcado, un reproductor web de música, una versión simplificada del videojuego Balatro, un gestor de proyectos cartográficos y un gestor de torneos de tenis.\\
+Con el objetivo de evaluar de manera sistemática el rendimiento de estos modelos, se ha diseñado y seguido una metodología experimental basada en las fases clásicas del desarrollo de software: especificación de requisitos, diseño, implementación, revisión, pruebas y despliegue. Dicha metodología se ha aplicado al desarrollo de cinco aplicaciones de complejidad creciente: un juego del ahorcado, un reproductor web de música, una versión simplificada del videojuego Balatro, un gestor de proyectos cartográficos y un gestor de torneos de tenis.\\
 
 Para cada aplicación, se han generado múltiples versiones de los artefactos de desarrollo ---requisitos en lenguaje natural, semiformales y en lenguaje controlado, diagramas UML y código fuente--- utilizando distintos modelos de IA como agentes especializados. El proceso ha sido documentado rigurosa y  exhaustivamente, registrando los prompts empleados, las respuestas obtenidas y las decisiones tomadas en cada etapa.\\
 
@@ -497,15 +542,15 @@ Artificial Intelligence, Large Language Models, LLM, Code Generation, Software E
 % Comentar la siguiente línea en la versión final
 %\include{capitulos/Cap_Instrucciones}
 %\include{capitulos/Cap0_Preface}
-\include{capitulos/Cap1_Metas}
-\include{capitulos/Cap2_Introduccion}
-\include{capitulos/Cap3_Estado_del_Arte}
-\include{capitulos/Cap4_Modelos_de_IA}
-\include{capitulos/Cap5_Metodologia}
-\include{capitulos/Cap6_Arquitectura_y_Diseño}
-\include{capitulos/Cap7_Desarrollo}
-\include{capitulos/Cap8_Resultados}
-\include{capitulos/Cap9_Conclusiones_y_Lineas_de_Trabajo_Futuras}
+%\include{capitulos/Cap1_Metas}
+\include{capitulos/Cap1_Introduccion}
+\include{capitulos/Cap2_Estado_del_Arte}
+\include{capitulos/Cap3_Modelos_de_IA}
+\include{capitulos/Cap4_Metodologia}
+\include{capitulos/Cap5_Arquitectura_y_Diseño}
+\include{capitulos/Cap6_Desarrollo}
+\include{capitulos/Cap7_Resultados}
+\include{capitulos/Cap8_Conclusiones_y_Lineas_de_Trabajo_Futuras}
 \include{capitulos/Cap9_Conclusions_and_Future_Lines_of_Work}
 \include{capitulos/Cap10_Budget}
 \include{capitulos/Cap_Acronimos}

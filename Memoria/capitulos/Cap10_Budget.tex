@@ -7,12 +7,12 @@
 \selectlanguage{spanish}
 \chapter{Presupuesto} \label{chap:Budget}
 
-El presupuesto de este \ac{TFG} se estructura en torno a dos componentes: las horas de trabajo empleadas durante el desarrollo del proyecto y las suscripciones a los servicios de \ac{IA} contratados. A diferencia de proyectos basados en infraestructura computacional propia, el enfoque multimodelo adoptado en este trabajo prescinde de hardware dedicado; el coste de capital queda reducido al de las suscripciones a los modelos utilizados.
+El presupuesto de este \ac{TFG} se estructura en torno a dos componentes: las horas de trabajo empleadas durante el desarrollo del proyecto y las suscripciones a los servicios de \ac{IA} contratados. A diferencia de proyectos basados en infraestructura computacional, el enfoque multimodelo adoptado prescinde de hardware dedicado; el coste de capital queda reducido al de las suscripciones a los modelos utilizados.
 
 \section{Horas de trabajo} \label{sec:budget-hours}
 
 El coste por hora se estima en 13,50~€/h, valor representativo del salario de un desarrollador de \textit{software} junior en España según los datos publicados en Glassdoor España\footnote{\href{https://www.glassdoor.es/Sueldos/espa\%C3\%B1a-desarrollador-junior-sueldo-SRCH_IL.0,6_IN219_KO7,29.htm}{Glassdoor España --- Sueldo Desarrollador \textit{Software} Junior}}, Talent\footnote{\href{https://es.talent.com/salary?job=desarrollador+software+junior}{Talent.com --- Salario Desarrollador \textit{Software} Junior}} e Infojobs\footnote{\href{https://orientacion-laboral.infojobs.net/salario-desarrollador-software}{Infojobs --- Orientación laboral: Desarrollador \textit{Software}}}. El proyecto se desarrolló a lo largo de nueve meses, desde la reunión inicial del 18 de septiembre de 2025 hasta la defensa prevista en junio de 2026. El plan de trabajo semanal registra 30 semanas de trabajo activo (con una semana sin avances significativos), a las que se suman aproximadamente cinco semanas adicionales de redacción de la memoria y preparación de la defensa. 
-Considerando un ritmo medio de 14 horas semanales, propio de un proyecto desarrollado a tiempo parcial con carga intensiva en las fases de codificación, se estiman 426 horas totales de dedicación.
+Considerando un ritmo medio de 14 horas semanales, propio de un proyecto desarrollado a tiempo parcial con carga intensiva en las fases de codificación, se estiman 426 horas totales.
 Este valor se corrobora mediante análisis automático del historial de \textit{commits} del repositorio con el algoritmo de \textit{git-hours}\footnote{\href{https://github.com/kimmobrunfeldt/git-hours}{git-hours}}: aplicando márgenes de una y dos horas por sesión de trabajo (195 sesiones identificadas), el intervalo resultante es de 368--563~horas, dentro del cual se sitúa la estimación manual. La Tabla~\ref{tab:budget-hours} recoge la distribución de ese tiempo por fases del proyecto.
 
 \begin{table}[H]
@@ -42,15 +42,13 @@ Redacción de la memoria & 60 & 810 \\
 
 \section{Suscripciones a servicios de \ac{IA}} \label{sec:budget-subscriptions}
 
-Los tres modelos principales del flujo de trabajo se accedieron a través de planes de suscripción mensual, sin necesidad de infraestructura propia ni de pago por consumo de \ac{API}. Los períodos de vigencia de cada suscripción reflejan el rol de cada modelo a lo largo del experimento y el cambio de enfoque descrito en la Sección~\ref{sec:approach-change}.\\
-
-La suscripción \textit{Claude Pro}\footnote{\href{https://claude.com/pricing/pro}{Anthropic Claude Pro --- 18,00~€/mes}} de Anthropic se contrató en noviembre de 2025 y se mantuvo activa durante siete meses del trabajo, hasta mayo de 2026, al ser Claude el modelo central del flujo de trabajo en todas las fases para los cinco proyectos. Durante febrero de 2026 se generó además un cargo puntual de 5,00~€ por uso prepagado extra. La suscripción \textit{Le Chat Pro}\footnote{\href{https://mistral.ai/pricing}{Mistral AI Le Chat Pro --- 14,99~€/mes (IVA no incluido)}} de Mistral AI estuvo activa durante los cuatro primeros meses (noviembre de 2025 --- febrero de 2026), período en que Mistral se empleó para la generación de especificaciones en \ac{LNC} y para la comparativa de diagramas detallada en la Sección~\ref{sec:uml}. La suscripción \textit{GitHub Copilot Pro+}\footnote{\href{https://github.com/features/copilot}{GitHub Copilot Pro+ --- 39,00~\$/mes}} se activó en marzo de 2026, coincidiendo con la introducción del modo agente de GitHub Copilot a partir del cuarto proyecto. La Tabla~\ref{tab:budget-subscriptions} detalla el coste de cada suscripción.
+Los tres modelos principales se contrataron mediante planes de suscripción mensual, sin infraestructura propia ni pago por consumo de \ac{API}. Los períodos activos reflejan el rol de cada herramienta en el experimento: \textit{Claude Pro}\footnote{\href{https://claude.com/pricing/pro}{Anthropic Claude Pro --- 18,00~€/mes}} estuvo activo los siete meses completos del trabajo, siendo el modelo central del desarrollo; \textit{Le Chat Pro}\footnote{\href{https://mistral.ai/pricing}{Mistral AI Le Chat Pro --- 14,99~€/mes (IVA no incluido)}} cubrió únicamente los cuatro primeros meses, coincidiendo con el uso de Mistral en P1--P3; \textit{GitHub Copilot Pro+}\footnote{\href{https://github.com/features/copilot}{GitHub Copilot Pro+ --- 39,00~\$/mes}} se activó en marzo de 2026, al adoptar el modo agente desde \ac{CARTO}. La Tabla~\ref{tab:budget-subscriptions} detalla el coste de cada suscripción.
 
 \begin{table}[H]
 \centering
 \small
 \renewcommand{\arraystretch}{1.3}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.3cm}|>{\raggedright\arraybackslash}p{2.0cm}|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}X|r|}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.3cm}|>{\raggedright\arraybackslash}p{1.9cm}|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}X|>{\raggedleft\arraybackslash}p{1.8cm}|}
 \hline
 \textbf{Servicio} & \textbf{Proveedor} & \textbf{Período} & \textbf{Detalle} & \textbf{Total (€)} \\
 \hline
@@ -71,7 +69,7 @@ La suscripción \textit{Claude Pro}\footnote{\href{https://claude.com/pricing/pr
 
 \section{Coste total} \label{sec:budget-total}
 
-La Tabla~\ref{tab:budget-total} presenta el desglose final del presupuesto, combinando el coste laboral estimado y el coste real de las suscripciones a servicios de \ac{IA}.
+El coste total estimado del proyecto asciende a 5.995~€, de los cuales el componente predominante es el coste laboral. El gasto en suscripciones de \ac{IA} representa un desembolso de 243~€, notablemente inferior al que implicaría el acceso a los modelos mediante \ac{API} de pago por consumo. La Tabla~\ref{tab:budget-total} presenta el desglose final del presupuesto, combinando el coste laboral y el coste real de las suscripciones.
 
 \begin{table}[H]
 \centering
@@ -91,5 +89,3 @@ Suscripciones a servicios de \ac{IA} & 243 & 4,1\,\% \\
 \caption{Desglose total del presupuesto del proyecto.}
 \label{tab:budget-total}
 \end{table}
-
-El coste total estimado del proyecto asciende a 5.995~€, de los cuales el componente predominante es el coste laboral (95,9\,\%). El gasto en suscripciones de \ac{IA} representa un desembolso reducido de 243~€, notablemente inferior al que implicaría el acceso a los mismos modelos mediante \ac{API} de pago por consumo o el despliegue de infraestructura computacional propia equivalente.
