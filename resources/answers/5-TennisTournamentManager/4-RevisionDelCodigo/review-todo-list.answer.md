@@ -1,0 +1,847 @@
+# Respuesta
+
+## Answer 1 (TODO List)
+
+## Answer 1 (TODO List) {toggle="true"}
+		```json
+## CODE REVIEW TODO LIST - TENNIS Tournament Manager
+
+> Scope: All tracked files in `projects/5-TennisTournamentManager` (573 files total, excluding `node_modules`, build outputs, and other untracked local artifacts).
+> This TODO list groups frontend + backend source, tests, documentation, and operational/configuration artifacts.
+
+### Phase 1: Frontend Domain Layer Review
+- [ ] **Group 1.1: Frontend Enumerations** (20 files)
+  - Files:
+    - src/domain/enumerations/acceptance-type.ts
+    - src/domain/enumerations/age-group.ts
+    - src/domain/enumerations/announcement-type.ts
+    - src/domain/enumerations/bracket-type.ts
+    - src/domain/enumerations/confirmation-status.ts
+    - src/domain/enumerations/export-format.ts
+    - src/domain/enumerations/facility-type.ts
+    - src/domain/enumerations/gender.ts
+    - src/domain/enumerations/match-status.ts
+    - src/domain/enumerations/notification-channel.ts
+    - src/domain/enumerations/notification-type.ts
+    - src/domain/enumerations/payment-status.ts
+    - src/domain/enumerations/privacy-level.ts
+    - src/domain/enumerations/ranking-system.ts
+    - src/domain/enumerations/registration-status.ts
+    - src/domain/enumerations/sanction-type.ts
+    - src/domain/enumerations/surface.ts
+    - src/domain/enumerations/tournament-status.ts
+    - src/domain/enumerations/tournament-type.ts
+    - src/domain/enumerations/user-role.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+- [ ] **Group 1.2: Frontend Value Objects** (1 file)
+  - Files:
+    - src/domain/value-objects/privacy-settings.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+- [ ] **Group 1.3: Frontend Entities** (18 files)
+  - Files:
+    - src/domain/entities/announcement.ts
+    - src/domain/entities/bracket.ts
+    - src/domain/entities/category.ts
+    - src/domain/entities/court.ts
+    - src/domain/entities/global-ranking.ts
+    - src/domain/entities/match-result.ts
+    - src/domain/entities/match.ts
+    - src/domain/entities/notification.ts
+    - src/domain/entities/order-of-play.ts
+    - src/domain/entities/payment.ts
+    - src/domain/entities/phase.ts
+    - src/domain/entities/registration.ts
+    - src/domain/entities/sanction.ts
+    - src/domain/entities/score.ts
+    - src/domain/entities/standing.ts
+    - src/domain/entities/statistics.ts
+    - src/domain/entities/tournament.ts
+    - src/domain/entities/user.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 1.4: Frontend Repository Interfaces** (18 files)
+  - Files:
+    - src/domain/repositories/announcement-repository.interface.ts
+    - src/domain/repositories/bracket-repository.interface.ts
+    - src/domain/repositories/category-repository.interface.ts
+    - src/domain/repositories/court-repository.interface.ts
+    - src/domain/repositories/global-ranking-repository.interface.ts
+    - src/domain/repositories/match-repository.interface.ts
+    - src/domain/repositories/match-result-repository.interface.ts
+    - src/domain/repositories/notification-repository.interface.ts
+    - src/domain/repositories/order-of-play-repository.interface.ts
+    - src/domain/repositories/payment-repository.interface.ts
+    - src/domain/repositories/phase-repository.interface.ts
+    - src/domain/repositories/registration-repository.interface.ts
+    - src/domain/repositories/sanction-repository.interface.ts
+    - src/domain/repositories/score-repository.interface.ts
+    - src/domain/repositories/standing-repository.interface.ts
+    - src/domain/repositories/statistics-repository.interface.ts
+    - src/domain/repositories/tournament-repository.interface.ts
+    - src/domain/repositories/user-repository.interface.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+### Phase 2: Backend Domain Layer Review
+- [ ] **Group 2.1: Backend Enumerations** (17 files)
+  - Files:
+    - backend/src/domain/enumerations/acceptance-type.ts
+    - backend/src/domain/enumerations/audit-action.ts
+    - backend/src/domain/enumerations/audit-resource-type.ts
+    - backend/src/domain/enumerations/bracket-type.ts
+    - backend/src/domain/enumerations/facility-type.ts
+    - backend/src/domain/enumerations/match-status.ts
+    - backend/src/domain/enumerations/notification-channel.ts
+    - backend/src/domain/enumerations/notification-type.ts
+    - backend/src/domain/enumerations/payment-status.ts
+    - backend/src/domain/enumerations/privacy-level.ts
+    - backend/src/domain/enumerations/ranking-system.ts
+    - backend/src/domain/enumerations/registration-status.ts
+    - backend/src/domain/enumerations/sanction-type.ts
+    - backend/src/domain/enumerations/surface.ts
+    - backend/src/domain/enumerations/tournament-status.ts
+    - backend/src/domain/enumerations/tournament-type.ts
+    - backend/src/domain/enumerations/user-role.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+- [ ] **Group 2.2: Backend Entities** (23 files)
+  - Files:
+    - backend/src/domain/entities/announcement.entity.ts
+    - backend/src/domain/entities/audit-log.entity.ts
+    - backend/src/domain/entities/bracket.entity.ts
+    - backend/src/domain/entities/category.entity.ts
+    - backend/src/domain/entities/court.entity.ts
+    - backend/src/domain/entities/doubles-team.entity.ts
+    - backend/src/domain/entities/global-ranking.entity.ts
+    - backend/src/domain/entities/match-result.entity.ts
+    - backend/src/domain/entities/match.entity.ts
+    - backend/src/domain/entities/notification-preferences.entity.ts
+    - backend/src/domain/entities/notification.entity.ts
+    - backend/src/domain/entities/order-of-play.entity.ts
+    - backend/src/domain/entities/partner-invitation.entity.ts
+    - backend/src/domain/entities/payment.entity.ts
+    - backend/src/domain/entities/phase.entity.ts
+    - backend/src/domain/entities/push-subscription.entity.ts
+    - backend/src/domain/entities/registration.entity.ts
+    - backend/src/domain/entities/sanction.entity.ts
+    - backend/src/domain/entities/score.entity.ts
+    - backend/src/domain/entities/standing.entity.ts
+    - backend/src/domain/entities/statistics.entity.ts
+    - backend/src/domain/entities/tournament.entity.ts
+    - backend/src/domain/entities/user.entity.ts
+  - Priority: High
+  - Estimated complexity: High
+
+### Phase 3: Frontend Application Layer Review
+- [ ] **Group 3.1: Frontend DTOs** (16 files)
+  - Files:
+    - src/application/dto/announcement.dto.ts
+    - src/application/dto/bracket.dto.ts
+    - src/application/dto/category.dto.ts
+    - src/application/dto/common.dto.ts
+    - src/application/dto/export.dto.ts
+    - src/application/dto/gdpr.dto.ts
+    - src/application/dto/match.dto.ts
+    - src/application/dto/notification.dto.ts
+    - src/application/dto/order-of-play.dto.ts
+    - src/application/dto/payment.dto.ts
+    - src/application/dto/ranking.dto.ts
+    - src/application/dto/registration.dto.ts
+    - src/application/dto/standing.dto.ts
+    - src/application/dto/statistics.dto.ts
+    - src/application/dto/tournament.dto.ts
+    - src/application/dto/user.dto.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+- [ ] **Group 3.2: Frontend Service Interfaces** (17 files)
+  - Files:
+    - src/application/interfaces/authentication-service.interface.ts
+    - src/application/interfaces/authorization-service.interface.ts
+    - src/application/interfaces/bracket-generator.interface.ts
+    - src/application/interfaces/bracket-service.interface.ts
+    - src/application/interfaces/court-scheduler.interface.ts
+    - src/application/interfaces/export-service.interface.ts
+    - src/application/interfaces/gdpr-service.interface.ts
+    - src/application/interfaces/match-service.interface.ts
+    - src/application/interfaces/notification-channel-adapter.interface.ts
+    - src/application/interfaces/notification-service.interface.ts
+    - src/application/interfaces/order-of-play-service.interface.ts
+    - src/application/interfaces/payment-service.interface.ts
+    - src/application/interfaces/ranking-service.interface.ts
+    - src/application/interfaces/registration-service.interface.ts
+    - src/application/interfaces/standing-service.interface.ts
+    - src/application/interfaces/statistics-service.interface.ts
+    - src/application/interfaces/tournament-service.interface.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+- [ ] **Group 3.3: Competition Flow Services** (14 files)
+  - Files:
+    - src/application/services/bracket-generator.factory.ts
+    - src/application/services/bracket.service.ts
+    - src/application/services/category.service.ts
+    - src/application/services/match.service.ts
+    - src/application/services/order-of-play.service.ts
+    - src/application/services/phase-progression.service.ts
+    - src/application/services/phase.service.ts
+    - src/application/services/registration.service.ts
+    - src/application/services/result-confirmation.service.ts
+    - src/application/services/seeding.service.ts
+    - src/application/services/standing.service.ts
+    - src/application/services/statistics.service.ts
+    - src/application/services/tiebreak-resolver.service.ts
+    - src/application/services/tournament.service.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+- [ ] **Group 3.4: Auth, User, Ranking & Privacy Services** (9 files)
+  - Files:
+    - src/application/services/authentication.service.ts
+    - src/application/services/authorization.service.ts
+    - src/application/services/gdpr.service.ts
+    - src/application/services/payment.service.ts
+    - src/application/services/privacy.service.ts
+    - src/application/services/ranking.service.ts
+    - src/application/services/session-inactivity.service.ts
+    - src/application/services/user-management.service.ts
+    - src/application/services/user.service.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 3.5: Announcements, Notifications & Export Services** (9 files)
+  - Files:
+    - src/application/services/announcement.service.ts
+    - src/application/services/export.service.ts
+    - src/application/services/notification-preferences.service.ts
+    - src/application/services/notification.service.ts
+    - src/application/services/notification/channels/email-channel.adapter.ts
+    - src/application/services/notification/channels/in-app-channel.adapter.ts
+    - src/application/services/notification/channels/telegram-channel.adapter.ts
+    - src/application/services/notification/channels/web-push-channel.adapter.ts
+    - src/application/services/notification/notification-channel.factory.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 3.6: Generators, Scheduling & Service Support** (6 files)
+  - Files:
+    - src/application/services/common/errors.ts
+    - src/application/services/common/utils.ts
+    - src/application/services/generators/match-play.generator.ts
+    - src/application/services/generators/round-robin.generator.ts
+    - src/application/services/generators/single-elimination.generator.ts
+    - src/application/services/scheduling/court-scheduler.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+### Phase 4: Backend Application Layer Review
+- [ ] **Group 4.1: Backend Competition Services** (7 files)
+  - Files:
+    - backend/src/application/services/announcement.service.ts
+    - backend/src/application/services/match-generator.service.ts
+    - backend/src/application/services/partner-invitation.service.ts
+    - backend/src/application/services/ranking.service.ts
+    - backend/src/application/services/schedule-generation.service.ts
+    - backend/src/application/services/seeding.service.ts
+    - backend/src/application/services/standing.service.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+- [ ] **Group 4.2: Backend Support & Delivery Services** (8 files)
+  - Files:
+    - backend/src/application/dto/notification-preferences.dto.ts
+    - backend/src/application/services/audit.service.ts
+    - backend/src/application/services/cache.service.ts
+    - backend/src/application/services/export.service.ts
+    - backend/src/application/services/image-optimization.service.ts
+    - backend/src/application/services/notification-preferences.service.ts
+    - backend/src/application/services/notification.service.ts
+    - backend/src/application/services/privacy.service.ts
+  - Priority: High
+  - Estimated complexity: High
+
+### Phase 5: Frontend Infrastructure Review
+- [ ] **Group 5.1: Frontend Repository Implementations** (18 files)
+  - Files:
+    - src/infrastructure/repositories/announcement.repository.ts
+    - src/infrastructure/repositories/bracket.repository.ts
+    - src/infrastructure/repositories/category.repository.ts
+    - src/infrastructure/repositories/court.repository.ts
+    - src/infrastructure/repositories/global-ranking.repository.ts
+    - src/infrastructure/repositories/match-result.repository.ts
+    - src/infrastructure/repositories/match.repository.ts
+    - src/infrastructure/repositories/notification.repository.ts
+    - src/infrastructure/repositories/order-of-play.repository.ts
+    - src/infrastructure/repositories/payment.repository.ts
+    - src/infrastructure/repositories/phase.repository.ts
+    - src/infrastructure/repositories/registration.repository.ts
+    - src/infrastructure/repositories/sanction.repository.ts
+    - src/infrastructure/repositories/score.repository.ts
+    - src/infrastructure/repositories/standing.repository.ts
+    - src/infrastructure/repositories/statistics.repository.ts
+    - src/infrastructure/repositories/tournament.repository.ts
+    - src/infrastructure/repositories/user.repository.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 5.2: Frontend External Integrations** (6 files)
+  - Files:
+    - src/infrastructure/external/email-adapter.ts
+    - src/infrastructure/external/export-service.ts
+    - src/infrastructure/external/payment-gateway-adapter.ts
+    - src/infrastructure/external/telegram-adapter.ts
+    - src/infrastructure/external/web-push-adapter.ts
+    - src/infrastructure/services/partner-invitation.service.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 5.3: Frontend HTTP & WebSocket Clients** (3 files)
+  - Files:
+    - src/infrastructure/http/axios-client.ts
+    - src/infrastructure/websocket/socket-client.ts
+    - src/infrastructure/websocket/websocket.service.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+### Phase 6: Backend Infrastructure Review
+- [ ] **Group 6.1: Database Bootstrap, Seeds & Tools** (6 files)
+  - Files:
+    - backend/src/infrastructure/database/add-categories.ts
+    - backend/src/infrastructure/database/data-source.ts
+    - backend/src/infrastructure/database/migrate.ts
+    - backend/src/infrastructure/database/reset.ts
+    - backend/src/infrastructure/database/seed-production.ts
+    - backend/src/infrastructure/database/seed.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+- [ ] **Group 6.2: Database Migrations** (11 files)
+  - Files:
+    - backend/src/infrastructure/database/migrations/001-add-performance-indexes.ts
+    - backend/src/infrastructure/database/migrations/002-remove-referee-spectator-roles.ts
+    - backend/src/infrastructure/database/migrations/003-add-user-id-document-ranking.ts
+    - backend/src/infrastructure/database/migrations/004-add-unique-constraint-id-document.ts
+    - backend/src/infrastructure/database/migrations/005-add-ball-provider-to-matches.ts
+    - backend/src/infrastructure/database/migrations/006-add-visual-customization-to-tournaments.ts
+    - backend/src/infrastructure/database/migrations/007-add-facility-type-and-regulations-to-tournaments.ts
+    - backend/src/infrastructure/database/migrations/008-add-is-guest-to-users.ts
+    - backend/src/infrastructure/database/migrations/009-add-withdrawal-date-and-partner-id-to-registrations.ts
+    - backend/src/infrastructure/database/migrations/010-create-partner-invitations-table.ts
+    - backend/src/infrastructure/database/migrations/011-create-doubles-teams-table.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 6.3: Notification Delivery Integrations** (3 files)
+  - Files:
+    - backend/src/infrastructure/email/email.service.ts
+    - backend/src/infrastructure/push/web-push.service.ts
+    - backend/src/infrastructure/telegram/telegram.service.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+### Phase 7: Frontend Presentation Shell & Components Review
+- [ ] **Group 7.1: App Shell, Guards, Interceptors & Presentation Services** (10 files)
+  - Files:
+    - src/main.ts
+    - src/presentation/app.component.ts
+    - src/presentation/app.config.ts
+    - src/presentation/app.routes.ts
+    - src/presentation/guards/auth.guard.ts
+    - src/presentation/guards/role.guard.ts
+    - src/presentation/interceptors/auth.interceptor.ts
+    - src/presentation/interceptors/error.interceptor.ts
+    - src/presentation/services/auth-state.service.ts
+    - src/presentation/test.component.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 7.2: Header Component & Legacy Backups** (4 files)
+  - Files:
+    - src/presentation/components/header/header.component.css
+    - src/presentation/components/header/header.component.css.backup
+    - src/presentation/components/header/header.component.html.backup
+    - src/presentation/components/header/header.component.ts
+  - Priority: Medium
+  - Estimated complexity: Medium
+
+- [ ] **Group 7.3: Notification & Bracket Components** (6 files)
+  - Files:
+    - src/presentation/components/notification-bell/notification-bell.component.css
+    - src/presentation/components/notification-bell/notification-bell.component.html
+    - src/presentation/components/notification-bell/notification-bell.component.ts
+    - src/presentation/components/visual-bracket/visual-bracket.component.css
+    - src/presentation/components/visual-bracket/visual-bracket.component.html
+    - src/presentation/components/visual-bracket/visual-bracket.component.ts
+  - Priority: High
+  - Estimated complexity: High
+
+### Phase 8: Frontend Feature Pages Review
+- [ ] **Group 8.1: Admin, Auth, Home & Dashboard Pages** (16 files)
+  - Files:
+    - src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.html
+    - src/presentation/pages/admin/admin-dashboard/admin-dashboard.component.ts
+    - src/presentation/pages/admin/disputed-matches/disputed-matches.component.css
+    - src/presentation/pages/admin/disputed-matches/disputed-matches.component.css.backup
+    - src/presentation/pages/admin/disputed-matches/disputed-matches.component.html
+    - src/presentation/pages/admin/disputed-matches/disputed-matches.component.ts
+    - src/presentation/pages/admin/user-management/user-management.component.ts
+    - src/presentation/pages/auth/login/login.component.css
+    - src/presentation/pages/auth/login/login.component.html
+    - src/presentation/pages/auth/login/login.component.ts
+    - src/presentation/pages/auth/register/register.component.html
+    - src/presentation/pages/auth/register/register.component.ts
+    - src/presentation/pages/dashboard.component.css
+    - src/presentation/pages/dashboard.component.html
+    - src/presentation/pages/dashboard.component.ts
+    - src/presentation/pages/home.component.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 8.2: Announcement Pages** (9 files)
+  - Files:
+    - src/presentation/pages/announcements/announcement-create/announcement-create.component.css
+    - src/presentation/pages/announcements/announcement-create/announcement-create.component.html
+    - src/presentation/pages/announcements/announcement-create/announcement-create.component.ts
+    - src/presentation/pages/announcements/announcement-edit/announcement-edit.component.css
+    - src/presentation/pages/announcements/announcement-edit/announcement-edit.component.html
+    - src/presentation/pages/announcements/announcement-edit/announcement-edit.component.ts
+    - src/presentation/pages/announcements/announcement-list/announcement-list.component.css
+    - src/presentation/pages/announcements/announcement-list/announcement-list.component.html
+    - src/presentation/pages/announcements/announcement-list/announcement-list.component.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 8.3: Match & Bracket Pages** (12 files)
+  - Files:
+    - src/presentation/pages/brackets/bracket-view/bracket-view.component.css
+    - src/presentation/pages/brackets/bracket-view/bracket-view.component.html
+    - src/presentation/pages/brackets/bracket-view/bracket-view.component.ts
+    - src/presentation/pages/matches/match-detail/match-detail.component.css
+    - src/presentation/pages/matches/match-detail/match-detail.component.html
+    - src/presentation/pages/matches/match-detail/match-detail.component.ts
+    - src/presentation/pages/matches/match-list/match-list.component.css
+    - src/presentation/pages/matches/match-list/match-list.component.html
+    - src/presentation/pages/matches/match-list/match-list.component.ts
+    - src/presentation/pages/matches/my-matches/my-matches.component.css
+    - src/presentation/pages/matches/my-matches/my-matches.component.html
+    - src/presentation/pages/matches/my-matches/my-matches.component.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+- [ ] **Group 8.4: Order of Play, Ranking, Standings & Statistics Pages** (14 files)
+  - Files:
+    - src/presentation/pages/order-of-play/order-of-play-admin/order-of-play-admin.component.html
+    - src/presentation/pages/order-of-play/order-of-play-admin/order-of-play-admin.component.ts
+    - src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.css
+    - src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.html
+    - src/presentation/pages/order-of-play/order-of-play-view/order-of-play-view.component.ts
+    - src/presentation/pages/ranking/ranking-view/ranking-view.component.css
+    - src/presentation/pages/ranking/ranking-view/ranking-view.component.html
+    - src/presentation/pages/ranking/ranking-view/ranking-view.component.ts
+    - src/presentation/pages/standings/standings-view/standings-view.component.css
+    - src/presentation/pages/standings/standings-view/standings-view.component.html
+    - src/presentation/pages/standings/standings-view/standings-view.component.ts
+    - src/presentation/pages/statistics/statistics-view/statistics-view.component.css
+    - src/presentation/pages/statistics/statistics-view/statistics-view.component.html
+    - src/presentation/pages/statistics/statistics-view/statistics-view.component.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 8.5: Registrations, Notifications, Invitations, Profile & Phase Pages** (27 files)
+  - Files:
+    - src/presentation/pages/my-invitations/my-invitations.component.css
+    - src/presentation/pages/my-invitations/my-invitations.component.html
+    - src/presentation/pages/my-invitations/my-invitations.component.ts
+    - src/presentation/pages/notification-preferences/notification-preferences.component.css
+    - src/presentation/pages/notification-preferences/notification-preferences.component.html
+    - src/presentation/pages/notification-preferences/notification-preferences.component.ts
+    - src/presentation/pages/notifications/notification-list/notification-list.component.css
+    - src/presentation/pages/notifications/notification-list/notification-list.component.html
+    - src/presentation/pages/notifications/notification-list/notification-list.component.ts
+    - src/presentation/pages/phases/phase-management-old.component.css
+    - src/presentation/pages/phases/phase-management-old.component.html
+    - src/presentation/pages/phases/phase-management.component.css
+    - src/presentation/pages/phases/phase-management.component.html
+    - src/presentation/pages/phases/phase-management.component.ts
+    - src/presentation/pages/profile/privacy-settings/privacy-settings.component.css
+    - src/presentation/pages/profile/privacy-settings/privacy-settings.component.html
+    - src/presentation/pages/profile/privacy-settings/privacy-settings.component.ts
+    - src/presentation/pages/profile/profile-view/profile-view.component.css
+    - src/presentation/pages/profile/profile-view/profile-view.component.html
+    - src/presentation/pages/profile/profile-view/profile-view.component.ts
+    - src/presentation/pages/registrations/my-registrations/my-registrations.component.css
+    - src/presentation/pages/registrations/my-registrations/my-registrations.component.html
+    - src/presentation/pages/registrations/my-registrations/my-registrations.component.ts
+    - src/presentation/pages/shared-modern.css
+    - src/presentation/pages/users/user-profile-view/user-profile-view.component.css
+    - src/presentation/pages/users/user-profile-view/user-profile-view.component.html
+    - src/presentation/pages/users/user-profile-view/user-profile-view.component.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 8.6: Tournament Management Pages** (17 files)
+  - Files:
+    - src/presentation/pages/tournaments/tournament-create/tournament-create.component.css
+    - src/presentation/pages/tournaments/tournament-create/tournament-create.component.html
+    - src/presentation/pages/tournaments/tournament-create/tournament-create.component.ts
+    - src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.css
+    - src/presentation/pages/tournaments/tournament-detail/tournament-detail-new.component.html
+    - src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.html
+    - src/presentation/pages/tournaments/tournament-detail/tournament-detail.component.ts
+    - src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.css
+    - src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.html
+    - src/presentation/pages/tournaments/tournament-edit/tournament-edit.component.ts
+    - src/presentation/pages/tournaments/tournament-list/tournament-list.component.css
+    - src/presentation/pages/tournaments/tournament-list/tournament-list.component.html
+    - src/presentation/pages/tournaments/tournament-list/tournament-list.component.html.backup
+    - src/presentation/pages/tournaments/tournament-list/tournament-list.component.ts
+    - src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.css
+    - src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.html
+    - src/presentation/pages/tournaments/tournament-statistics/tournament-statistics.component.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+### Phase 9: Backend API Presentation Review
+- [ ] **Group 9.1: Core Tournament, Match & Registration Controllers** (13 files)
+  - Files:
+    - backend/src/presentation/controllers/bracket.controller.ts
+    - backend/src/presentation/controllers/category.controller.ts
+    - backend/src/presentation/controllers/court.controller.ts
+    - backend/src/presentation/controllers/match.controller.ts
+    - backend/src/presentation/controllers/order-of-play.controller.ts
+    - backend/src/presentation/controllers/payment.controller.ts
+    - backend/src/presentation/controllers/phase.controller.ts
+    - backend/src/presentation/controllers/ranking.controller.ts
+    - backend/src/presentation/controllers/registration.controller.ts
+    - backend/src/presentation/controllers/sanction.controller.ts
+    - backend/src/presentation/controllers/standing.controller.ts
+    - backend/src/presentation/controllers/statistics.controller.ts
+    - backend/src/presentation/controllers/tournament.controller.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+- [ ] **Group 9.2: Auth, User, Announcement & Notification Controllers** (8 files)
+  - Files:
+    - backend/src/presentation/controllers/announcement.controller.ts
+    - backend/src/presentation/controllers/audit-log.controller.ts
+    - backend/src/presentation/controllers/auth.controller.ts
+    - backend/src/presentation/controllers/export.controller.ts
+    - backend/src/presentation/controllers/notification-preferences.controller.ts
+    - backend/src/presentation/controllers/notification.controller.ts
+    - backend/src/presentation/controllers/partner-invitation.controller.ts
+    - backend/src/presentation/controllers/user.controller.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+- [ ] **Group 9.3: Middleware, Upload & Route Wiring** (7 files)
+  - Files:
+    - backend/src/presentation/middleware/admin.middleware.ts
+    - backend/src/presentation/middleware/auth.middleware.ts
+    - backend/src/presentation/middleware/error.middleware.ts
+    - backend/src/presentation/middleware/role.middleware.ts
+    - backend/src/presentation/middleware/validation.middleware.ts
+    - backend/src/presentation/middlewares/cache.middleware.ts
+    - backend/src/presentation/middlewares/upload.middleware.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+### Phase 10: Shared, Entry & Cross-Cutting Review
+- [ ] **Group 10.1: Frontend Shared Utilities, Pipes & Environments** (7 files)
+  - Files:
+    - src/environments/environment.prod.ts
+    - src/environments/environment.ts
+    - src/shared/constants.ts
+    - src/shared/pipes/enum-format.pipe.ts
+    - src/shared/pipes/index.ts
+    - src/shared/utils.ts
+    - src/shared/utils/tennis-score-validator.ts
+  - Priority: Medium
+  - Estimated complexity: Medium
+
+- [ ] **Group 10.2: Frontend Styles & Type Definitions** (7 files)
+  - Files:
+    - src/styles/components.css
+    - src/styles/global.css
+    - src/styles/reset.css
+    - src/styles/responsive.css
+    - src/styles/variables.css
+    - src/test-simple.ts
+    - src/vite-env.d.ts
+  - Priority: Medium
+  - Estimated complexity: Low
+
+- [ ] **Group 10.3: Backend Shared Config, Constants & Utilities** (6 files)
+  - Files:
+    - backend/src/shared/config/swagger.config.ts
+    - backend/src/shared/constants/websocket-events.ts
+    - backend/src/shared/utils/cdn-helper.ts
+    - backend/src/shared/utils/date-formatter.ts
+    - backend/src/shared/utils/id-generator.ts
+    - backend/src/shared/utils/tennis-score-validator.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+- [ ] **Group 10.4: Application Entry Points & Runtime Bootstrap** (4 files)
+  - Files:
+    - backend/src/app.ts
+    - backend/src/scripts/populate-phase-tournament-ids.ts
+    - backend/src/server.ts
+    - backend/src/websocket-server.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+- [ ] **Group 10.5: Barrel Exports & Module Indexes** (27 files)
+  - Files:
+    - backend/src/domain/entities/index.ts
+    - backend/src/domain/enumerations/index.ts
+    - backend/src/presentation/middleware/index.ts
+    - backend/src/presentation/routes/index.ts
+    - backend/src/shared/config/index.ts
+    - backend/src/shared/constants/index.ts
+    - src/application/dto/index.ts
+    - src/application/index.ts
+    - src/application/interfaces/index.ts
+    - src/application/services/generators/index.ts
+    - src/application/services/index.ts
+    - src/application/services/notification/channels/index.ts
+    - src/domain/entities/index.ts
+    - src/domain/enumerations/index.ts
+    - src/domain/index.ts
+    - src/domain/repositories/index.ts
+    - src/domain/value-objects/index.ts
+    - src/infrastructure/external/index.ts
+    - src/infrastructure/http/index.ts
+    - src/infrastructure/index.ts
+    - src/infrastructure/repositories/index.ts
+    - src/infrastructure/websocket/index.ts
+    - src/presentation/guards/index.ts
+    - src/presentation/index.ts
+    - src/presentation/interceptors/index.ts
+    - src/presentation/services/index.ts
+    - src/shared/index.ts
+  - Priority: Medium
+  - Estimated complexity: Low
+
+### Phase 11: Testing Review
+- [ ] **Group 11.1: Frontend Application Service Tests** (16 files)
+  - Files:
+    - src/application/services/__tests__/standing-tiebreaker.test.ts
+    - tests/application/services/authentication.service.test.ts
+    - tests/application/services/authorization.service.test.ts
+    - tests/application/services/bracket-generator.factory.test.ts
+    - tests/application/services/bracket.service.test.ts
+    - tests/application/services/match.service.test.ts
+    - tests/application/services/notification.service.test.ts
+    - tests/application/services/order-of-play.service.test.ts
+    - tests/application/services/payment.service.test.ts
+    - tests/application/services/privacy.service.test.ts
+    - tests/application/services/ranking.service.test.ts
+    - tests/application/services/registration.service.test.ts
+    - tests/application/services/seeding.service.test.ts
+    - tests/application/services/standing.service.test.ts
+    - tests/application/services/statistics.service.test.ts
+    - tests/application/services/tournament.service.test.ts
+  - Priority: High
+  - Estimated complexity: High
+
+- [ ] **Group 11.2: Frontend Domain Entity Tests** (18 files)
+  - Files:
+    - tests/domain/entities/announcement.test.ts
+    - tests/domain/entities/bracket.test.ts
+    - tests/domain/entities/category.test.ts
+    - tests/domain/entities/court.test.ts
+    - tests/domain/entities/global-ranking.test.ts
+    - tests/domain/entities/match-result.test.ts
+    - tests/domain/entities/match.test.ts
+    - tests/domain/entities/notification.test.ts
+    - tests/domain/entities/order-of-play.test.ts
+    - tests/domain/entities/payment.test.ts
+    - tests/domain/entities/phase.test.ts
+    - tests/domain/entities/registration.test.ts
+    - tests/domain/entities/sanction.test.ts
+    - tests/domain/entities/score.test.ts
+    - tests/domain/entities/standing.test.ts
+    - tests/domain/entities/statistics.test.ts
+    - tests/domain/entities/tournament.test.ts
+    - tests/domain/entities/user.test.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+- [ ] **Group 11.3: Frontend Manual Validators & Mocks** (3 files)
+  - Files:
+    - tests/manual/privacy-configuration-validator.ts
+    - tests/mocks/shared-constants.ts
+    - tests/mocks/user.service.ts
+  - Priority: Medium
+  - Estimated complexity: Medium
+
+- [ ] **Group 11.4: End-to-End Tests** (2 files)
+  - Files:
+    - e2e/doubles-tournament.spec.ts
+    - e2e/example.spec.ts
+  - Priority: Critical
+  - Estimated complexity: High
+
+- [ ] **Group 11.5: Backend Application Tests** (1 file)
+  - Files:
+    - backend/src/application/services/__tests__/audit.service.test.ts
+  - Priority: High
+  - Estimated complexity: Medium
+
+### Phase 12: Configuration, Documentation & Operations Review
+- [ ] **Group 12.1: Root Configuration & Tooling** (16 files)
+  - Files:
+    - .env.backup.example
+    - .gitguardian.yaml
+    - .gitignore
+    - eslint.config.mjs
+    - index.html
+    - jest.config.js
+    - jest.setup.js
+    - package-lock.json
+    - package.json
+    - playwright.config.ts
+    - tsconfig.app.json
+    - tsconfig.json
+    - tsconfig.node.json
+    - tsconfig.spec.json
+    - typedoc.json
+    - vite.config.ts
+  - Priority: Medium
+  - Estimated complexity: Low
+
+- [ ] **Group 12.2: Root Docs, Specifications & Review Inputs** (25 files)
+  - Files:
+    - DEPLOYMENT-CHECKLIST.md
+    - README.md
+    - docs/API.md
+    - docs/ARCHITECTURE.md
+    - docs/CHANGES.md
+    - docs/GITHUB-PAGES-DEPLOYMENT.md
+    - docs/IMPLEMENTATION_STATUS.md
+    - docs/ORDER_OF_PLAY_TESTING_GUIDE.md
+    - docs/PHASE_LINKING_TEST_GUIDE.md
+    - docs/PRIVACY-TESTING-REPORT.md
+    - docs/TEST-REPORT-NOTIFICATIONS.md
+    - docs/TESTING-FR1-FR8.md
+    - docs/UI_PHASE_LINKING_GUIDE.md
+    - docs/class-diagram.mermaid
+    - docs/code/CODIFICATION-PROGRESS.md
+    - docs/nfr-verification/NFR1-responsive-design-validation.md
+    - docs/nfr-verification/NFR16-backup-restoration.md
+    - docs/nfr-verification/NFR17-uptime-monitoring-alerting.md
+    - docs/nfr-verification/NFR2-cross-browser-validation.md
+    - docs/nfr-verification/NFR5-realtime-sla.md
+    - docs/nfr-verification/NFR6-NFR7-performance-metrics.md
+    - docs/requirements-checklist.md
+    - docs/specification.md
+    - docs/testing/test-notifications.md
+    - docs/use-case-diagram.mermaid
+  - Priority: Low
+  - Estimated complexity: Low
+
+- [ ] **Group 12.3: Public Assets & PWA Files** (6 files)
+  - Files:
+    - public/404.html
+    - public/favicon.ico
+    - public/icons/icon-192.png
+    - public/icons/icon-512.png
+    - public/manifest.webmanifest
+    - public/sw.js
+  - Priority: Low
+  - Estimated complexity: Low
+
+- [ ] **Group 12.4: Frontend Operational Scripts** (6 files)
+  - Files:
+    - scripts/README.md
+    - scripts/backup-database.sh
+    - scripts/restore-database.sh
+    - scripts/test-standings.sh
+    - scripts/test-tiebreaker.ts
+    - scripts/verify-tiebreaker.sh
+  - Priority: Medium
+  - Estimated complexity: Medium
+
+- [ ] **Group 12.5: Backend Configuration & Deployment Notes** (13 files)
+  - Files:
+    - backend/.env.example
+    - backend/.env.render.example
+    - backend/.gitignore
+    - backend/QUICK-START-RENDER.md
+    - backend/RENDER.md
+    - backend/docs/BACKEND_SUMMARY.md
+    - backend/docs/QUICKSTART.md
+    - backend/docs/TESTING-NOTIFICATIONS.md
+    - backend/docs/test-consolation-lucky-loser.md
+    - backend/jest.config.js
+    - backend/package-lock.json
+    - backend/package.json
+    - backend/tsconfig.json
+  - Priority: Medium
+  - Estimated complexity: Low
+
+- [ ] **Group 12.6: Backend Operational Scripts & SQL Utilities** (43 files)
+  - Files:
+    - backend/scripts/add-usernames.ts
+    - backend/scripts/check-admin-user.ts
+    - backend/scripts/check-and-fix-roles.sql
+    - backend/scripts/check-db.sh
+    - backend/scripts/check-registrations.ts
+    - backend/scripts/check-token.ts
+    - backend/scripts/check-tournament-status.sql
+    - backend/scripts/check-tournament.ts
+    - backend/scripts/check-users.sh
+    - backend/scripts/cleanup-admin-registrations.ts
+    - backend/scripts/cleanup-duplicate-tournaments.ts
+    - backend/scripts/cleanup-wrong-qualifiers.ts
+    - backend/scripts/complete-next-round.ts
+    - backend/scripts/create-courts.ts
+    - backend/scripts/debug-consolation.ts
+    - backend/scripts/delete-duplicates.sh
+    - backend/scripts/finalize-test-tournament-setup.ts
+    - backend/scripts/fix-notification-metadata.sql
+    - backend/scripts/fix-qualifier-seeds.ts
+    - backend/scripts/fix-roles.sql
+    - backend/scripts/fix-tournament-registration.ts
+    - backend/scripts/generate-match-results.ts
+    - backend/scripts/init-database.sh
+    - backend/scripts/manage-consolation-by-round.ts
+    - backend/scripts/repair-consolation-matches.ts
+    - backend/scripts/repair-registration-integrity.ts
+    - backend/scripts/reset-database.sh
+    - backend/scripts/setup-consolation-lucky-loser-test.ts
+    - backend/scripts/setup-db.sh
+    - backend/scripts/setup-phase-linking-test.ts
+    - backend/scripts/setup-test-tournament.ts
+    - backend/scripts/test-consolation-workflow.ts
+    - backend/scripts/test-delete-direct.ts
+    - backend/scripts/test-delete-tournament.ts
+    - backend/scripts/test-fr12-fr13-fr15.sh
+    - backend/scripts/test-notifications.ts
+    - backend/scripts/update-match-schedules.ts
+    - backend/scripts/update-notifications-metadata.sql
+    - backend/scripts/update-notifications.ts
+    - backend/scripts/verify-consolation-separation.ts
+    - backend/scripts/verify-lucky-loser-flow.ts
+    - backend/scripts/verify-registration-integrity.ts
+    - backend/scripts/verify-tournament.sh
+  - Priority: Medium
+  - Estimated complexity: Medium
+
+---
+
+## SUMMARY
+- Total Files to Review: 573
+- Total Review Groups: 48
+- Estimated Review Time: 36-48 hours
+- Critical Priority Groups: 11
+- High Priority Groups: 26
+- Medium Priority Groups: 9
+- Low Priority Groups: 2
+		```
