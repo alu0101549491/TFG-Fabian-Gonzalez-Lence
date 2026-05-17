@@ -1,0 +1,346 @@
+# Respuesta
+
+## 2.2. Respuesta {toggle="true"}
+```markdown
+Here are the complete files for your Music Web Player SPA:
+
+---
+
+### File 1: `index.html`
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive web music player with playlist management, playback controls, and track visualization. Built with React and TypeScript." />
+  <meta name="theme-color" content="#1a1a1a" />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content="Music Web Player - Your Personal Audio Player" />
+  <meta property="og:description" content="Interactive web music player with playlist management, playback controls, and track visualization. Built with React and TypeScript." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/cover-placeholder.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Music Web Player - Your Personal Audio Player" />
+  <meta name="twitter:description" content="Interactive web music player with playlist management, playback controls, and track visualization. Built with React and TypeScript." />
+  <meta name="twitter:image" content="/cover-placeholder.jpg" />
+  <link rel="canonical" href="https://yourdomain.com" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <title>Music Web Player - Your Personal Audio Player</title>
+</head>
+<body>
+  <div id="root"></div>
+  <noscript>
+    <div style="padding: 2rem; background: #1a1a1a; color: white; text-align: center; font-family: sans-serif;">
+      You need to enable JavaScript to run this application.
+    </div>
+  </noscript>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
+```
+
+---
+
+### File 2: `src/styles/main.css`
+```css
+/* === CSS CUSTOM PROPERTIES (VARIABLES) === */
+:root {
+  /* Colors - Light Theme (fallback) */
+  --color-primary: #3b82f6;
+  --color-secondary: #60a5fa;
+  --color-background: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #666666;
+  --color-border: #e0e0e0;
+  --color-progress-inactive: #e0e0e0;
+  --color-progress-active: #3b82f6;
+  --color-error: #ef4444;
+  --color-success: #10b981;
+
+  /* Spacing */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  --spacing-2xl: 4rem;
+
+  /* Typography */
+  --font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-h1: clamp(1.5rem, 4vw, 2rem);
+  --font-size-h2: clamp(1.25rem, 3vw, 1.5rem);
+  --font-size-h3: clamp(1.125rem, 2.5vw, 1.25rem);
+  --font-size-body: 1rem;
+  --font-size-small: 0.875rem;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-heading: 1.2;
+  --line-height-body: 1.5;
+  --line-height-compact: 1.4;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+
+  /* Transitions */
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-full: 9999px;
+
+  /* Layout */
+  --container-padding-mobile: var(--spacing-md);
+  --container-padding-tablet: var(--spacing-lg);
+  --container-padding-desktop: var(--spacing-xl);
+  --card-padding: var(--spacing-sm);
+  --button-padding-vertical: 0.75rem;
+  --button-padding-horizontal: 1.5rem;
+  --input-padding-vertical: 0.75rem;
+  --input-padding-horizontal: 1rem;
+  --section-margin: var(--spacing-lg);
+  --element-gap: var(--spacing-sm);
+
+  /* Sizing */
+  --cover-size-mobile: 200px;
+  --cover-size-tablet: 250px;
+  --cover-size-desktop: 300px;
+  --playlist-thumbnail-size: 48px;
+  --progress-height: 6px;
+  --button-min-height: 2.75rem;
+}
+
+/* Dark Theme (default) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #1a1a1a;
+    --color-surface: #2a2a2a;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #a0a0a0;
+    --color-border: #333333;
+    --color-progress-inactive: #333333;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* === CSS RESET / NORMALIZE === */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body);
+  color: var(--color-text-primary);
+  background-color: var(--color-background);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: var(--container-padding-mobile);
+  isolation: isolate;
+}
+
+@media (min-width: 768px) {
+  #root {
+    padding: var(--container-padding-tablet);
+  }
+}
+
+@media (min-width: 1024px) {
+  #root {
+    padding: var(--container-padding-desktop);
+  }
+}
+
+/* === TYPOGRAPHY === */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-normal);
+}
+
+a:hover {
+  color: var(--color-secondary);
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+/* === UTILITY CLASSES === */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* === ACCESSIBILITY === */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* === MEDIA QUERIES === */
+@media (max-width: 767px) {
+  /* Mobile-specific adjustments */
+  :root {
+    --container-padding-mobile: var(--spacing-sm);
+  }
+}
+
+@media (min-width: 768px) {
+  /* Tablet styles */
+  :root {
+    --cover-size-mobile: var(--cover-size-tablet);
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Desktop styles */
+  :root {
+    --cover-size-mobile: var(--cover-size-desktop);
+  }
+}
+
+/* === GLOBAL ANIMATIONS === */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* === TOAST NOTIFICATIONS === */
+.toast {
+  position: fixed;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  z-index: 1000;
+  animation: slideUp var(--transition-normal) forwards;
+  max-width: 300px;
+}
+
+.toast--error {
+  background: var(--color-error);
+  color: white;
+}
+
+.toast--success {
+  background: var(--color-success);
+  color: white;
+}
+
+@media (max-width: 767px) {
+  .toast {
+    left: var(--spacing-md);
+    right: var(--spacing-md);
+    max-width: none;
+  }
+}
+```
+
+---
+
+### Key Features and Notes:
+- **index.html**: Includes all required meta tags, favicon links, preconnect for fonts, and the React mount point. It is optimized for SEO, social sharing, and accessibility.
+- **main.css**: Defines all CSS custom properties (variables) for theming, spacing, typography, and effects. It uses a mobile-first approach and includes dark theme support via `prefers-color-scheme`. The file is structured for easy maintenance and scalability.
+- **Responsiveness**: Media queries are included for mobile, tablet, and desktop layouts.
+- **Accessibility**: Focus styles and utility classes for screen readers are included.
+- **Performance**: The CSS is optimized for performance, with minimal and efficient selectors.
+
+These files are ready to be integrated into your Vite + React + TypeScript project. Place `index.html` in the root and `main.css` in `src/styles/`. Ensure your `main.tsx` imports the CSS file as shown in your architecture.
+```

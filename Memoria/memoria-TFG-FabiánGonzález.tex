@@ -31,6 +31,8 @@
 \usepackage{multirow}
 \usepackage{ccicons}
 \usepackage{float}
+\usepackage{etoolbox}
+\apptocmd{\thebibliography}{\setlength{\itemsep}{2pt}\setlength{\parsep}{0pt}}{}{}
 \floatstyle{ruled}
 \newfloat{Code}{htbp}{lop}
 \floatname{Code}{Listing}
