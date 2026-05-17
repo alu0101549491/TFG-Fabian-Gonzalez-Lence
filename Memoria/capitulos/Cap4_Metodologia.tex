@@ -43,7 +43,7 @@ Los cinco proyectos \cite{URL::TFG-Web} se han seleccionado para que cada uno su
 \hline
 \textbf{Proyecto} & \textbf{Función clave} & \textbf{Arquitectura} & \textbf{Pila tecnológica} & \textbf{Tipo de \textit{testing}} \\
 \hline
-\ac{HANGMAN} & Juego del ahorcado con renderizado en \textit{canvas} & \ac{MVC} + Composite + Observer & TypeScript, Vite, Canvas \ac{API}, Bulma & Jest unitario \\
+\ac{HANGMAN} & Juego del ahorcado con renderizado en \textit{canvas} & \ac{MVC} + \textit{Composite} + \textit{Observer} & TypeScript, Vite, Canvas \ac{API}, Bulma & Jest unitario \\
 \hline
 \ac{PLAYER} & Reproducción de audio, \textit{playlist} y persistencia local & Componentes + \textit{Custom Hooks} & React 18, TypeScript, Vite & Jest unitario \\
 \hline
@@ -60,11 +60,13 @@ Los cinco proyectos \cite{URL::TFG-Web} se han seleccionado para que cada uno su
 
 \ac{HANGMAN}, inspirado en una de las prácticas de la asignatura \textit{Programación de Aplicaciones Interactivas} del tercer curso del Grado, establece la línea base del experimento: TypeScript puro sin \textit{framework}, arquitectura \ac{MVC} con los patrones \textit{Composite} y \textit{Observer} \cite{Gamma:1994:Design} y once ficheros de producción que permiten calibrar el flujo sin variables de entorno adicionales. \ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono derivada de la \ac{API} de audio de HTML5. \ac{BALATRO} representa el mayor salto de complejidad de dominio del trío: recrea el sistema de puntuación del videojuego homónimo ---manos de póker, cartas especiales (\textit{jokers}, \textit{tarots} y planetas), tienda y progresión por niveles--- con persistencia en \textit{localStorage}; al tratarse de un juego conocido, fue posible recabar retroalimentación de usuarios familiarizados con el original, lo que facilitó la detección de errores.\\
 
-\ac{CARTO} escala el experimento a una aplicación \textit{fullstack}: \textit{Clean Architecture} \cite{Martin:2018:CleanArchitecture} en cuatro capas replicada tanto en el \textit{frontend} Vue.js como en el \textit{backend} Node.js\footnote{\href{https://nodejs.org/es}{Node.js}}, con mensajería en tiempo real sobre Socket.io\footnote{\href{https://socket.io}{Socket.io}} e integración con Dropbox. Marca el punto de inflexión en el que el flujo conversacional dejó de escalar y se adoptó GitHub Copilot en modo agente como herramienta principal, decisión no planificada que surgió como respuesta a las limitaciones observadas y se documenta como hallazgo metodológico en el Capítulo~\ref{chap:AIModels}. \ac{TENNIS} maximiza la complejidad: gestión integral de torneos con sistema de puntuación ELO\footnote{\href{https://es.wikipedia.org/wiki/Sistema_de_puntuacion_Elo}{Puntuación ELO}}, modalidad de torneos dobles con invitaciones, tres tipos de usuario con permisos diferenciados, y \textit{frontend} Angular 19 con componentes \textit{standalone} conviviendo en el mismo monorepo\footnote{\href{https://en.wikipedia.org/wiki/Monorepo}{Monorepo}} con el \textit{backend} Express\footnote{\href{https://expressjs.com}{Express}}. Más allá del incremento de escala, la progresión obedece a una lógica de aprendizaje: cada proyecto permitió refinar las plantillas de \textit{prompts}, ajustar los criterios de evaluación y detectar los patrones de fallo de los modelos antes de afrontar el siguiente nivel de exigencia.
+\ac{CARTO} escala el experimento a una aplicación \textit{fullstack}: \textit{Clean Architecture} \cite{Martin:2018:CleanArchitecture} en cuatro capas replicada tanto en el \textit{frontend} Vue.js como en el \textit{backend} Node.js\footnote{\href{https://nodejs.org/es}{Node.js -- \texttt{nodejs.org/es}}}, con mensajería en tiempo real sobre Socket.io\footnote{\href{https://socket.io}{Socket.io -- \texttt{socket.io}}} e integración con Dropbox\footnote{\href{https://www.dropbox.com/}{Dropbox -- \texttt{dropbox.com}}}. Marca el punto de inflexión en el que el flujo conversacional dejó de escalar y se adoptó GitHub Copilot en modo agente como herramienta principal, decisión no planificada que surgió como respuesta a las limitaciones observadas y se documenta como hallazgo metodológico en el Capítulo~\ref{chap:AIModels}. \ac{TENNIS} maximiza la complejidad: gestión integral de torneos con sistema de puntuación ELO\footnote{\href{https://es.wikipedia.org/wiki/Sistema_de_puntuacion_Elo}{Puntuación ELO -- \texttt{es.wikipedia.org/wiki/Sistema\_de\_puntuacion\_Elo}}}, modalidad de torneos dobles con invitaciones, tres tipos de usuario con permisos diferenciados, y \textit{frontend} Angular 19 con componentes \textit{standalone} conviviendo en el mismo monorepo con el \textit{backend} Express\footnote{\href{https://expressjs.com}{Express -- \texttt{expressjs.com}}}. Más allá del incremento de escala, la progresión obedece a una lógica de aprendizaje: cada proyecto permitió refinar las plantillas de \textit{prompts}, ajustar los criterios de evaluación y detectar los patrones de fallo de los modelos antes de afrontar el siguiente nivel de exigencia.
 
 \section{Roles de IA y flujo de trabajo} \label{sec:flujo-trabajo}
 
 El desarrollo de cada proyecto sigue un flujo en cuatro fases secuenciales inspirado en el \ac{SDLC}, en el que cada fase tiene una \ac{IA} responsable, artefactos de entrada y salida bien definidos y un criterio explícito de transición a la siguiente. La asignación concreta de modelos a roles y la evolución de las herramientas empleadas se abordaron en las Secciones~\ref{sec:models-description} y~\ref{sec:approach-change} de este documento.\\
+
+\textbf{Fase 0 --- Especificación y diseño.} Antes de ejecutar las fases del flujo, se elaboran los artefactos de diseño que constituyen la entrada de la Fase~1: la especificación de requisitos del proyecto y los diagramas de clases y de casos de uso, sirviendo también de referencia durante las fases de revisión y \textit{testing}. El contenido concreto de esta fase para cada proyecto se recoge en el Capítulo~\ref{chap:Design}.
 
 \textbf{Fase 1 --- Arquitectura.} A partir de la especificación de requisitos y de los diagramas UML \cite{Fowler:2004:UML} de clases y de casos de uso, la \ac{IA} Arquitecto produce la estructura de directorios de la aplicación, los esqueletos de clases sin lógica y la documentación inicial. La transición a la Fase 2 requiere que la estructura de código esté organizada y que los esqueletos incluyan firma y cabecera documentada.
 
@@ -72,15 +74,15 @@ El desarrollo de cada proyecto sigue un flujo en cuatro fases secuenciales inspi
 El criterio de transición es compilación y \textit{linting} limpios; la operativa concreta de la Desarrolladora y su evolución entre proyectos se detalla en el Capítulo~\ref{chap:Development}.
 
 \textbf{Fase 3 --- Revisión de código.} La \ac{IA} Revisora evalúa el código según cinco criterios ponderados ---Adherencia al diseño (30\,\%), Calidad del código (25\,\%), Cumplimiento de requisitos (25\,\%), Mantenibilidad (10\,\%) y Buenas prácticas (10\,\%)--- y emite una decisión ternaria: \texttt{APPROVED}, \texttt{APPROVED WITH RESERVATIONS} o \texttt{REJECTED}. 
-Las incidencias se clasifican por severidad y, si no se alcanza el umbral definido, sirven de entrada a una nueva iteración dedicada a arreglar las deficiencias y rehacer la revisión.
+Las incidencias se clasifican por severidad y, si no se alcanza el umbral definido, sirven de entrada a una nueva iteración dedicada a arreglar las deficiencias y rehacer la revisión. La operativa concreta de la Revisora y su evolución metodológica en P4--P5 se detallan en la Sección~\ref{sec:dev-review}.
 
-\textbf{Fase 4 --- \textit{Testing}.} La \ac{IA} \textit{Tester} genera las pruebas a partir del código aprobado y de los diagramas de casos de uso, siguiendo el patrón \ac{AAA} sobre una matriz de cobertura que exige casos normales, de frontera y excepcionales. La granularidad ---unitaria en P1--P3, \textit{end-to-end} en P4--P5--- se ajusta a la naturaleza del proyecto.
+\textbf{Fase 4 --- \textit{Testing}.} La \ac{IA} \textit{Tester} genera las pruebas a partir del código aprobado en la fase anterior y de los diagramas de casos de uso, siguiendo el patrón \ac{AAA} ---principalmente para pruebas unitarias--- sobre una matriz de cobertura que exige desde casos normales hasta excepcionales. La granularidad ---unitaria en P1--P3, \textit{end-to-end} en P4--P5--- se ajusta según la naturaleza del proyecto.
 
-\textbf{Rol del ingeniero supervisor.} Este rol consistió en definir los artefactos de entrada, validar los de salida y orquestar las transiciones entre fases, delegando en los modelos la generación de código, documentación y pruebas. La intervención directa del ingeniero se reservó a errores de integración entre sesiones, decisiones de diseño no previstas y problemas de entorno ajenos a la lógica del código, en línea con el modelo de cooperación humano-\ac{IA} \cite{Khade:2025:AIinSD}.
+\textbf{Rol del ingeniero supervisor.} Este rol consistió en validar los artefactos de entrada y los de salida, y orquestar las transiciones entre fases, delegando en los modelos la generación de código, documentación y pruebas. La intervención directa del ingeniero se reservó a errores de integración entre sesiones, decisiones de diseño no previstas y problemas de entorno ajenos a la lógica del código, en línea con el modelo de cooperación humano-\ac{IA} \cite{Khade:2025:AIinSD}.
 
 \section{Plantillas y estrategia de consultas (\textit{prompting})} \label{sec:prompting}
 
-Cada fase del flujo dispone de una plantilla de \textit{prompt} reutilizable que codifica el contrato entre fases: rol del modelo, artefactos de entrada, entregables, restricciones técnicas y formato de salida. Las plantillas contienen \textit{placeholders} que se instancian con el contexto de cada proyecto mediante un chat dedicado de Claude ---el \textit{prompt-building chat}---, donde discutíamos el dominio, el modelo proponía los valores y validábamos el resultado antes de ejecutarlo. La Tabla~\ref{tab:prompt-building-chats} recoge los enlaces públicos a los cinco chats utilizados.
+Cada fase del flujo dispone de una plantilla de \textit{prompt} reutilizable que codifica el contrato entre fases: rol del modelo, artefactos de entrada, entregables, restricciones técnicas y formato de salida. Las plantillas contienen \textit{placeholders} que se instancian con el contexto de cada proyecto mediante un chat dedicado de Claude ---\textit{prompt-building chat}---, donde discutíamos el dominio, el modelo proponía los valores y validábamos el resultado antes de ejecutarlo. La Tabla~\ref{tab:prompt-building-chats} recoge los enlaces públicos a los cinco chats utilizados.
 
 \begin{table}[H]
 \centering
@@ -90,22 +92,22 @@ Cada fase del flujo dispone de una plantilla de \textit{prompt} reutilizable que
 \hline
 \textbf{Proyecto} & \textbf{\textit{Prompt-building chat}} \\
 \hline
-\ac{HANGMAN} & \href{https://claude.ai/share/b55b10b1-1821-4d5e-a3b8-07852c8bc023}{1. \textit{The Hangman Game (Prompt Building)}} \\
+\ac{HANGMAN} & \href{https://claude.ai/share/b55b10b1-1821-4d5e-a3b8-07852c8bc023}{\texttt{claude.ai/share/b55b10b1-1821-4d5e-a3b8-07852c8bc023}} \\
 \hline
-\ac{PLAYER} & \href{https://claude.ai/share/fbdecc91-fa80-4456-af18-62f7ac983df6}{2. \textit{Music Web Player (Prompt Building)}} \\
+\ac{PLAYER} & \href{https://claude.ai/share/fbdecc91-fa80-4456-af18-62f7ac983df6}{\texttt{claude.ai/share/fbdecc91-fa80-4456-af18-62f7ac983df6}} \\
 \hline
-\ac{BALATRO} & \href{https://claude.ai/share/2ba985c2-4c80-48ab-a318-e0fa5c4ef493}{3. \textit{Mini Balatro (Prompt Building)}} \\
+\ac{BALATRO} & \href{https://claude.ai/share/2ba985c2-4c80-48ab-a318-e0fa5c4ef493}{\texttt{claude.ai/share/2ba985c2-4c80-48ab-a318-e0fa5c4ef493}} \\
 \hline
-\ac{CARTO} & \href{https://claude.ai/share/c244c208-d0f6-41ea-8865-c82e5251b43b}{4. \textit{Cartographic Project Manager (Prompt Building)}} \\
+\ac{CARTO} & \href{https://claude.ai/share/c244c208-d0f6-41ea-8865-c82e5251b43b}{\texttt{claude.ai/share/c244c208-d0f6-41ea-8865-c82e5251b43b}} \\
 \hline
-\ac{TENNIS} & \href{https://claude.ai/share/cb28a9f5-5399-4cb4-8213-8804c5eb1fb8}{5. \textit{Tennis Tournament Manager (Prompt Building)}} \\
+\ac{TENNIS} & \href{https://claude.ai/share/cb28a9f5-5399-4cb4-8213-8804c5eb1fb8}{\texttt{claude.ai/share/cb28a9f5-5399-4cb4-8213-8804c5eb1fb8}} \\
 \hline
 \end{tabularx}
 \caption{Chats empleados para la instanciación de plantillas de \textit{prompts}.}
 \label{tab:prompt-building-chats}
 \end{table}
 
-Las plantillas se mantienen versionadas en el directorio \texttt{resources/templates/} del repositorio del \ac{TFG} \cite{URL::TFG}, organizadas por fase y por versión del flujo: V1 para los proyectos conversacionales P1--P3 y V2 para los proyectos con agentes personalizados P4--P5. En estos últimos las plantillas se trasladan adicionalmente al directorio \texttt{.github/} como ficheros \texttt{.agent.md} y \texttt{.prompt.md}. La evolución de los roles ---Desarrolladora 2.0, Revisora 2.0 y \textit{Tester} 2.0--- introducida a partir de \ac{CARTO} y consolidada en \ac{TENNIS} se discute en la Sección~\ref{sec:approach-change} de esta memoria. 
+Las plantillas se mantienen versionadas en el directorio \texttt{resources/templates/} del repositorio del \ac{TFG} \cite{URL::TFG}, organizadas por fase y por versión del flujo: \texttt{V1} para los proyectos conversacionales P1--P3 y \texttt{V2} para los proyectos con agentes personalizados P4--P5. En estos últimos las plantillas se trasladan adicionalmente al directorio \texttt{.github/} como ficheros \texttt{.agent.md} y \texttt{.prompt.md}. La evolución de los roles ---Desarrolladora 2.0, Revisora 2.0 y \textit{Tester} 2.0--- introducida a partir de \ac{CARTO} y consolidada en \ac{TENNIS} se discute en la Sección~\ref{sec:approach-change} de esta memoria. 
 la Tabla~\ref{tab:plantillas-prompts} resume las plantillas operativas y su localización en el repositorio.
 
 \begin{table}[H]
@@ -117,19 +119,19 @@ la Tabla~\ref{tab:plantillas-prompts} resume las plantillas operativas y su loca
 \hline
 \textbf{Fase} & \textbf{Plantillas en el repositorio \cite{URL::TFG}} & \textbf{Patrón de consulta} \\
 \hline
-Arquitectura V1 (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/resources/templates/architecture/}{\texttt{architecture/}}: \texttt{architecture-template.md} & \textit{Single-shot}\footnotemark[1] con restricciones de estilo y cabecera obligatoria \\
+Arquitectura \texttt{V1} (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/resources/templates/architecture/}{\texttt{resources/templates/architecture/}}: \texttt{architecture-template.md} & \textit{Single-shot}\footnotemark[1] con restricciones de estilo y cabecera obligatoria \\
 \hline
-Codificación V1 (P1--P4) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/coding/v1}{\texttt{coding/v1/}}: \newline\texttt{frontend-template.md}, \texttt{module-coding-template.md} & \textit{Single-shot} por módulo \\
+Codificación \texttt{V1} (P1--P4) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/coding/v1}{\texttt{resources/templates/coding/v1/}}: \newline\texttt{frontend-template.md}, \texttt{module-coding-template.md} & \textit{Single-shot} por módulo \\
 \hline
-Codificación V2 (P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/coding/v2}{\texttt{coding/v2/}}: \texttt{general-codification-template.md}, \texttt{planning-codification-template.md} & \textit{Plan-then-implement}\footnotemark[2] por categorías en \ac{TENNIS} \\
+Codificación \texttt{V2} (P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/coding/v2}{\texttt{resources/templates/coding/v2/}}: \texttt{general-codification-template.md}, \texttt{planning-codification-template.md} & \textit{Plan-then-implement}\footnotemark[2] por categorías en \ac{TENNIS} \\
 \hline
-Revisión V1 (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/resources/templates/review/v1/}{\texttt{review/v1/}} & \textit{Single-shot} por módulo \\
+Revisión \texttt{V1} (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/resources/templates/review/v1/}{\texttt{resources/templates/review/v1/}} & \textit{Single-shot} por módulo \\
 \hline
-Revisión V2 (P4--P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/review/v2}{\texttt{review/v2/}}: \texttt{todo-list-review-template.md}, \texttt{report-review-template.md}, \texttt{incident-fix-review-template.md} & Tres prompts encadenados: Lista de tareas por grupos $\rightarrow$ revisión $\rightarrow$ corrección \\
+Revisión \texttt{V2} (P4--P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/review/v2}{\texttt{resources/templates/review/v2/}}: \texttt{todo-list-review-template.md}, \texttt{report-review-template.md}, \texttt{incident-fix-review-template.md} & Tres prompts encadenados: Lista de tareas por grupos $\rightarrow$ revisión $\rightarrow$ corrección \\
 \hline
-Testing V1 (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/resources/templates/testing/v1/}{\texttt{testing/v1/}}: \newline\texttt{testing-template.md} & Unitario con patrón \ac{AAA} y matriz de cobertura \\
+Pruebas \texttt{V1} (P1--P3) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/blob/main/resources/templates/testing/v1/}{\texttt{resources/templates/testing/v1/}}: \newline\texttt{testing-template.md} & Unitario con patrón \ac{AAA} y matriz de cobertura \\
 \hline
-Testing V2 (P4--P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/testing/v2}{\texttt{testing/v2/}}: \texttt{test-scenario-template.md}, \texttt{test-implementation-template.md} & Dos prompts encadenados: escenarios e implementación\\
+Pruebas \texttt{V2} (P4--P5) & \href{https://github.com/alu0101549491/TFG-Fabian-Gonzalez-Lence/tree/main/resources/templates/testing/v2}{\texttt{resources/templates/testing/v2/}}: \texttt{test-scenario-template.md}, \texttt{test-implementation-template.md} & Dos prompts encadenados: escenarios e implementación\\
 \hline
 \end{tabularx}
 \caption{Plantillas de \textit{prompts} del \ac{TFG}, organizadas por fase y versión.}
