@@ -53,14 +53,6 @@ Su principal fortaleza frente al enfoque conversacional previo reside en la inte
 
 La transición de los proyectos 1--3 al proyecto 4 (\ac{CARTO}) supuso un punto de inflexión, motivado por las limitaciones de escalabilidad del flujo conversacional hasta entonces empleado. En los tres primeros proyectos, la \ac{IA} Desarrolladora operaba como \textit{chatbot} web: se transfería el código al editor módulo a módulo de forma manual. 
 
-Este flujo resultaba viable para proyectos de 9 a 15 módulos, pero mostró tres limitaciones críticas al escalar: \textbf{pérdida de coherencia inter-módulo} al generar ficheros en conversaciones independientes; \textbf{fricción operativa} del ciclo manual de copiar, pegar, detectar errores y volver al \textit{chatbot}; e \textbf{imposibilidad práctica de revisar y probar} a la escala de proyectos como \ac{CARTO}, que llegó a gestionar aproximadamente 240 ficheros en cuatro capas de arquitectura. La solución fue adoptar GitHub Copilot en modo agente como herramienta principal para Codificación, Revisión y \textit{Testing} a partir de \ac{CARTO}, decisión influenciada por un curso de agentes personalizados de GitHub Copilot cursado en el ámbito de la asignatura de ``\textit{Prácticas Externas}'' en simultáneo con el desarrollo del \ac{TFG}.
-
-Los \textit{prompts} de los tres roles fueron rediseñados para el modelo agente. La Revisora adoptó una metodología de tres etapas: \textbf{exploración de la base de código} y generación de una lista de tareas; \textbf{revisión sistemática por grupos de ficheros} con informe de incidencias clasificadas por severidad; e \textbf{implementación de correcciones} siguiendo el informe. El \textit{Tester} generó pruebas \textit{end-to-end} con Playwright a partir de los diagramas de casos de uso: en una primera pasada se definían los escenarios y en una segunda se implementaban. En \ac{TENNIS}, la Desarrolladora incorporó además una fase de planificación previa que categoriza los módulos y establece su orden de dependencia antes de comenzar la implementación.
-
-\section{Comparativa de modelos} \label{sec:comparativa-modelos}
-
-La Tabla~\ref{tab:comparativa-modelos} sintetiza los modelos empleados: en P1--P3 el equipo se distribuía entre tres \textit{chatbots} independientes; en P4--P5 los roles convergieron en GitHub Copilot con modelos de Claude y GPT como subyacentes. Ningún modelo resultó adecuado para todas las fases, lo que justifica el enfoque multiagente. el rol de Revisora fue el único constante, evidenciando que la integración con el sistema de ficheros resulta crítica en las tareas de revisión.
-
 \begin{table}[H]
 \centering
 \small
@@ -108,6 +100,14 @@ No aporta ventajas en desarrollo de código \\
 \caption{Comparativa de modelos y herramientas de \ac{IA} empleados. P1-\ac{HANGMAN}, P2-\ac{PLAYER}, P3-\ac{BALATRO}, P4-\ac{CARTO} y P5-\ac{TENNIS}.}
 \label{tab:comparativa-modelos}
 \end{table}
+
+Este flujo resultaba viable para proyectos de 9 a 15 módulos, pero mostró tres limitaciones críticas al escalar: \textbf{pérdida de coherencia inter-módulo} al generar ficheros en conversaciones independientes; \textbf{fricción operativa} del ciclo manual de copiar, pegar, detectar errores y volver al \textit{chatbot}; e \textbf{imposibilidad práctica de revisar y probar} a la escala de proyectos como \ac{CARTO}, que llegó a gestionar aproximadamente 240 ficheros en cuatro capas de arquitectura. La solución fue adoptar GitHub Copilot en modo agente como herramienta principal para Codificación, Revisión y \textit{Testing} a partir de \ac{CARTO}, decisión influenciada por un curso de agentes personalizados de GitHub Copilot cursado en el ámbito de la asignatura de ``\textit{Prácticas Externas}'' en simultáneo con el desarrollo del \ac{TFG}.
+
+Los \textit{prompts} de los tres roles fueron rediseñados para el modelo agente. La Revisora adoptó una metodología de tres etapas: \textbf{exploración de la base de código} y generación de una lista de tareas; \textbf{revisión sistemática por grupos de ficheros} con informe de incidencias clasificadas por severidad; e \textbf{implementación de correcciones} siguiendo el informe. El \textit{Tester} generó pruebas \textit{end-to-end} con Playwright a partir de los diagramas de casos de uso: en una primera pasada se definían los escenarios y en una segunda se implementaban. En \ac{TENNIS}, la Desarrolladora incorporó además una fase de planificación previa que categoriza los módulos y establece su orden de dependencia antes de comenzar la implementación.
+
+\section{Comparativa de modelos} \label{sec:comparativa-modelos}
+
+La Tabla~\ref{tab:comparativa-modelos} sintetiza los modelos empleados: en P1--P3 el equipo se distribuía entre tres \textit{chatbots} independientes; en P4--P5 los roles convergieron en GitHub Copilot con modelos de Claude y GPT como subyacentes. Ningún modelo resultó adecuado para todas las fases, lo que justifica el enfoque multiagente. el rol de Revisora fue el único constante, evidenciando que la integración con el sistema de ficheros resulta crítica en las tareas de revisión.
 
 \section{Uso de IA en la redacción de este documento} \label{sec:ia-memoria}
 

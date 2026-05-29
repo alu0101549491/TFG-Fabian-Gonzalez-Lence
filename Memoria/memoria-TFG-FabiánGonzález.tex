@@ -19,6 +19,7 @@
 \usepackage[scale=0.82]{FiraMono}
 \usepackage[T1]{fontenc}
 \usepackage[a4paper]{geometry}
+%\geometry{left=2cm, right=2cm, top=2cm, bottom=3.3cm}
 \usepackage[spanish, main=english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern,textcomp}  % For € symbol
@@ -61,8 +62,19 @@
   pagebackref=true
 ]{hyperref} %hiperenlaces y backcites
 
+\begin{comment}
+\usepackage[colorlinks=true,
+            urlcolor=blue,
+            plainpages=false,
+            pagebackref=true,
+            citecolor=black
+]{hyperref}
+\end{comment}
+
 \let\origacs\acs
 \renewcommand{\acs}[1]{\origacs{#1}}
+
+\hyphenation{se-mi-au-to-má-ti-ca}
 
 \hypersetup{breaklinks=true}
 % Redefinir el comando \url para cambiar el tamaño del texto de los enlaces
@@ -382,7 +394,7 @@
     
     \vspace*{\stretch{1}}
     \begin{center}
-        \fontsize{18pt}{18pt}\selectfont La Laguna, {\selectlanguage{spanish}\today}
+        \fontsize{18pt}{18pt}\selectfont La Laguna, 29 de mayo de 2026
     \end{center}
 }
 
@@ -419,7 +431,7 @@ Que el presente trabajo de Fin de Grado titulado:
 \bigskip
 
 Y para que así conste, en cumplimiento de la legislación vigente y a los efectos
-oportunos firman la presente memoria del Trabajo en La Laguna a {\selectlanguage{spanish}\today}.
+oportunos firman la presente memoria del Trabajo en La Laguna a 29 de mayo de 2026.
 
 %\cleardoublepage
 \newpage
@@ -447,6 +459,12 @@ A mi familia y amigos, por el apoyo incondicional durante toda la carrera y, esp
 \vspace*{0.3cm}
 
 Por último, a todas las personas que, de una forma u otra, han contribuido a que este proyecto saliera adelante.
+
+­\newline
+
+Este trabajo ha sido financiado por el Ministerio de Ciencia e Innovación a través del proyecto
+PID2023-151073NB-I00 Aceleración y Optimización en Aprendizaje Automático: Análisis de Rendimiento y Energia
+
 \end{large}
 }
 
@@ -469,7 +487,7 @@ Licencia
 \selectlanguage{spanish}
 \begin{abstract}
 {\em
-El rápido avance de los grandes modelos de lenguaje (LLMs) ha abierto nuevas posibilidades en el ámbito del desarrollo de software asistido por inteligencia artificial. Este Trabajo de Fin de Grado analiza las capacidades de distintos modelos de IA generativa para dar soporte a las diferentes fases del ciclo de vida del desarrollo de software de forma colaborativa y semiautomática.\\
+El rápido avance de los grandes modelos de lenguaje (LLMs) ha abierto nuevas posibilidades en el ámbito del desarrollo de software asistido por inteligencia artificial. Este Trabajo de Fin de Grado analiza las capacidades de distintos modelos de IA (Inteligencia Artificial) generativa para dar soporte a las diferentes fases del ciclo de vida del desarrollo de software de forma colaborativa y semiautomática.\\
 
 Con el objetivo de evaluar de manera sistemática el rendimiento de estos modelos, se ha diseñado y seguido una metodología experimental basada en las fases clásicas del desarrollo de software: especificación de requisitos, diseño, implementación, revisión, pruebas y despliegue. Dicha metodología se ha aplicado al desarrollo de cinco aplicaciones de complejidad creciente: un juego del ahorcado, un reproductor web de música, una versión simplificada del videojuego Balatro, un gestor de proyectos cartográficos y un gestor de torneos de tenis.\\
 
