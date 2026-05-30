@@ -64,16 +64,19 @@ export class GamePersistence {
 
       const serialized = this.serializeGameState(gameState);
       
+      // Sanitize serialized data before writing to browser storage
+      const sanitized = this.sanitizeStorageData(serialized);
+
       // Validate serialized data before saving
-      if (!this.isValidJSON(serialized)) {
+      if (!this.isValidJSON(sanitized)) {
         throw new Error('Invalid serialized data');
       }
       
-      if (serialized.length > this.MAX_STORAGE_SIZE) {
+      if (sanitized.length > this.MAX_STORAGE_SIZE) {
         throw new Error('Serialized data exceeds maximum size');
       }
       
-      localStorage.setItem(this.storageKey, serialized);
+      localStorage.setItem(this.storageKey, sanitized);
       console.log('Game state saved successfully');
     } catch (error) {
       console.error('Failed to save game state:', error);
@@ -234,12 +237,14 @@ export class GamePersistence {
       
       const serialized = JSON.stringify(controllerState);
       
-      // Validate serialized data
-      if (serialized.length > this.MAX_STORAGE_SIZE) {
+      // Sanitize and validate serialized data before writing to browser storage
+      const sanitized = this.sanitizeStorageData(serialized);
+
+      if (sanitized.length > this.MAX_STORAGE_SIZE) {
         throw new Error('Controller state exceeds maximum size');
       }
       
-      localStorage.setItem(this.controllerStateKey, serialized);
+      localStorage.setItem(this.controllerStateKey, sanitized);
       console.log(`Controller state saved: isInShop=${isInShop}, pendingVictory=${validatedVictoryState.isPending}, shopItems=${validatedShopItems.length}`);
     } catch (error) {
       console.error('Failed to save controller state:', error);
