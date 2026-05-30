@@ -414,9 +414,17 @@ export class GamePersistence {
     if (!data || typeof data !== 'string') {
       return '';
     }
-    
-    // Remove any null bytes or control characters that could cause issues
-    return data.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+
+    try {
+      // Parse and re-serialize to produce a clean, trusted representation.
+      // JSON.parse throws on malformed input; JSON.stringify rebuilds the value
+      // without prototype-chain pollution, removing any taint introduced by
+      // external data sources (e.g. fetch) before writing to browser storage.
+      const parsed = JSON.parse(data);
+      return JSON.stringify(parsed);
+    } catch {
+      return '';
+    }
   }
 
   /**
