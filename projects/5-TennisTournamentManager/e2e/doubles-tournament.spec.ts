@@ -306,10 +306,11 @@ async function createDoublesTournament(
   admin: AuthSession,
   name: string,
 ): Promise<TournamentSeed> {
-  const startDate = new Date('2026-05-20T09:00:00.000Z');
-  const endDate = new Date('2026-05-22T18:00:00.000Z');
-  const registrationOpenDate = new Date('2026-05-01T09:00:00.000Z');
-  const registrationCloseDate = new Date('2026-05-19T18:00:00.000Z');
+  const now = new Date();
+  const startDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);   // +7 days
+  const endDate = new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000);     // +9 days
+  const registrationOpenDate = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);  // +1 day
+  const registrationCloseDate = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000); // +6 days
 
   const tournament = await apiPost<{id: string}>(
     apiContext,
@@ -603,7 +604,8 @@ test.describe('Doubles Tournament Workflow', () => {
     await acceptInvitation(apiContext, player4, confirmedInvitationBeta);
     await approveTournamentRegistrations(apiContext, admin, confirmedTournament.tournamentId);
     await generateBracket(apiContext, admin, confirmedTournament);
-    await scheduleMatch(apiContext, admin, confirmedTournament, '2026-05-20T09:00:00.000Z');
+    const matchDate1 = new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString();
+    await scheduleMatch(apiContext, admin, confirmedTournament, matchDate1);
 
     const disputedInvitationAlpha = await sendInvitation(apiContext, player1, player2, disputedTournament);
     const disputedInvitationBeta = await sendInvitation(apiContext, player3, player4, disputedTournament);
@@ -611,7 +613,8 @@ test.describe('Doubles Tournament Workflow', () => {
     await acceptInvitation(apiContext, player4, disputedInvitationBeta);
     await approveTournamentRegistrations(apiContext, admin, disputedTournament.tournamentId);
     await generateBracket(apiContext, admin, disputedTournament);
-    await scheduleMatch(apiContext, admin, disputedTournament, '2026-05-21T09:00:00.000Z');
+    const matchDate2 = new Date(Date.now() + 8 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString();
+    await scheduleMatch(apiContext, admin, disputedTournament, matchDate2);
 
     seededState = {
       admin,
