@@ -33,6 +33,11 @@ Mistral AI\footnote{\href{https://chat.mistral.ai/chat}{Mistral (\textit{chatbot
 
 En la práctica, Mistral produjo implementaciones funcionales para módulos de complejidad media; sin embargo, a medida que los proyectos escalaron, se hicieron evidentes sus limitaciones: la gestión del estado entre módulos interdependientes resultaba inconsistente al superar ciertos límites de contexto, y la generación de patrones arquitectónicos avanzados requería numerosas iteraciones y correcciones. Estas limitaciones motivaron el cambio de enfoque descrito en la Sección~\ref{sec:approach-change}.
 
+\subsection{Qwen AI} \label{subsec:qwen}
+
+Qwen AI\footnote{\href{https://qwen.ai/home}{Qwen AI (\textit{chatbot}) -- \texttt{qwen.ai}}} fue el agente de \ac{IA} \textit{Tester} durante los tres primeros proyectos, responsable de generar los conjuntos de pruebas unitarias con Jest. Su elección respondía a su eficacia en la generación de casos de prueba siguiendo el patrón \ac{AAA}, con una tasa de compilación inicial elevada y cobertura de casos normales, límite y excepcionales.
+Al igual que Mistral, fue desplazado a partir de \ac{CARTO} por la inviabilidad del flujo manual de copiar código entre interfaces chatbot para proyectos de mayor escala.
+
 \subsection{ChatGPT} \label{subsec:chatgpt}
 
 ChatGPT\footnote{\href{https://chatgpt.com}{ChatGPT (\textit{chatbot}) -- \texttt{chatgpt.com}}} fue utilizado como herramienta de apoyo en las fases iniciales de los primeros proyectos, principalmente para la redacción de especificaciones de requisitos y la exploración de alternativas arquitectónicas.
@@ -53,10 +58,18 @@ Su principal fortaleza frente al enfoque conversacional previo reside en la inte
 
 La transición de los proyectos 1--3 al proyecto 4 (\ac{CARTO}) supuso un punto de inflexión, motivado por las limitaciones de escalabilidad del flujo conversacional hasta entonces empleado. En los tres primeros proyectos, la \ac{IA} Desarrolladora operaba como \textit{chatbot} web: se transfería el código al editor módulo a módulo de forma manual. 
 
+Este flujo resultaba viable para proyectos de 9 a 15 módulos, pero mostró tres limitaciones críticas al escalar: \textbf{pérdida de coherencia inter-módulo} al generar ficheros en conversaciones independientes; \textbf{fricción operativa} del ciclo manual de copiar, pegar, detectar errores y volver al \textit{chatbot}; e \textbf{imposibilidad práctica de revisar y probar} a la escala de proyectos como \ac{CARTO}, que llegó a gestionar aproximadamente 240 ficheros en cuatro capas de arquitectura. La solución fue adoptar GitHub Copilot en modo agente como herramienta principal para Codificación, Revisión y \textit{Testing} a partir de \ac{CARTO}, decisión influenciada por un curso de agentes personalizados de GitHub Copilot cursado en el ámbito de la asignatura de ``\textit{Prácticas Externas}'' en simultáneo con el desarrollo del \ac{TFG}.
+
+Los \textit{prompts} de los tres roles fueron rediseñados para el modelo agente. La Revisora adoptó una metodología de tres etapas: \textbf{exploración de la base de código} y generación de una lista de tareas; \textbf{revisión sistemática por grupos de ficheros} con informe de incidencias clasificadas por severidad; e \textbf{implementación de correcciones} siguiendo el informe. El \textit{Tester} generó pruebas \textit{end-to-end} con Playwright a partir de los diagramas de casos de uso: en una primera pasada se definían los escenarios y en una segunda se implementaban. En \ac{TENNIS}, la Desarrolladora incorporó además una fase de planificación previa que categoriza los módulos y establece su orden de dependencia antes de comenzar la implementación.
+
+\section{Comparativa de modelos} \label{sec:comparativa-modelos}
+
+La Tabla~\ref{tab:comparativa-modelos} sintetiza los modelos empleados: en P1--P3 el equipo se distribuía entre \textit{chatbots} independientes; en P4--P5 los roles convergieron en GitHub Copilot con modelos de Claude y GPT como subyacentes. Ningún modelo resultó adecuado para todas las fases, lo que justifica el enfoque multiagente.
+
 \begin{table}[H]
 \centering
 \small
-\renewcommand{\arraystretch}{1.2}
+\renewcommand{\arraystretch}{1}
 \begin{tabularx}{\textwidth}{|
 >{\raggedright\arraybackslash}p{2cm}|
 >{\raggedright\arraybackslash}p{3cm}|
@@ -97,18 +110,10 @@ Búsqueda en tiempo real con referencias &
 No aporta ventajas en desarrollo de código \\
 \hline
 \end{tabularx}
-\caption{Comparativa de modelos y herramientas de \ac{IA} empleados. P1-\ac{HANGMAN}, P2-\ac{PLAYER}, P3-\ac{BALATRO}, P4-\ac{CARTO} y P5-\ac{TENNIS}.}
+\caption{Comparativa de modelos y herramientas de \ac{IA} empleados.}
 \label{tab:comparativa-modelos}
 \end{table}
 
-Este flujo resultaba viable para proyectos de 9 a 15 módulos, pero mostró tres limitaciones críticas al escalar: \textbf{pérdida de coherencia inter-módulo} al generar ficheros en conversaciones independientes; \textbf{fricción operativa} del ciclo manual de copiar, pegar, detectar errores y volver al \textit{chatbot}; e \textbf{imposibilidad práctica de revisar y probar} a la escala de proyectos como \ac{CARTO}, que llegó a gestionar aproximadamente 240 ficheros en cuatro capas de arquitectura. La solución fue adoptar GitHub Copilot en modo agente como herramienta principal para Codificación, Revisión y \textit{Testing} a partir de \ac{CARTO}, decisión influenciada por un curso de agentes personalizados de GitHub Copilot cursado en el ámbito de la asignatura de ``\textit{Prácticas Externas}'' en simultáneo con el desarrollo del \ac{TFG}.
-
-Los \textit{prompts} de los tres roles fueron rediseñados para el modelo agente. La Revisora adoptó una metodología de tres etapas: \textbf{exploración de la base de código} y generación de una lista de tareas; \textbf{revisión sistemática por grupos de ficheros} con informe de incidencias clasificadas por severidad; e \textbf{implementación de correcciones} siguiendo el informe. El \textit{Tester} generó pruebas \textit{end-to-end} con Playwright a partir de los diagramas de casos de uso: en una primera pasada se definían los escenarios y en una segunda se implementaban. En \ac{TENNIS}, la Desarrolladora incorporó además una fase de planificación previa que categoriza los módulos y establece su orden de dependencia antes de comenzar la implementación.
-
-\section{Comparativa de modelos} \label{sec:comparativa-modelos}
-
-La Tabla~\ref{tab:comparativa-modelos} sintetiza los modelos empleados: en P1--P3 el equipo se distribuía entre tres \textit{chatbots} independientes; en P4--P5 los roles convergieron en GitHub Copilot con modelos de Claude y GPT como subyacentes. Ningún modelo resultó adecuado para todas las fases, lo que justifica el enfoque multiagente. el rol de Revisora fue el único constante, evidenciando que la integración con el sistema de ficheros resulta crítica en las tareas de revisión.
-
 \section{Uso de IA en la redacción de este documento} \label{sec:ia-memoria}
 
-La redacción de esta memoria se apoyó en el modelo Claude Sonnet 4.6 como asistente de escritura LaTeX\footnote{\href{https://www.latex-project.org}{LaTeX -- \texttt{latex-project.org}}}, con un uso de asistencia y transformación, no generativo desde cero: el punto de partida se establece en notas propias ---borradores en lenguaje llano, listas de ideas y registros en un cuaderno Notion\footnote{\href{https://www.notion.com/es-es}{Notion -- \texttt{notion.com/es-es}}} personal--- y el agente proponía reescrituras adaptadas al registro académico del \ac{TFG}. Las tareas delegadas abarcaron la estructuración de capítulos, la condensación de ideas para eliminar redundancias y la aplicación de convenciones de formato LaTeX ---italización de términos en inglés, uso consistente de acrónimos, ajuste de tablas---. En ningún caso operó como fuente primaria de información.
+La redacción de esta memoria se apoyó en el modelo Claude Sonnet 4.6 como asistente de escritura LaTeX\footnote{\href{https://www.latex-project.org}{LaTeX -- \texttt{latex-project.org}}}, con un uso de asistencia y transformación, no generativo desde cero: el punto de partida se establece en notas propias ---borradores en lenguaje llano en un cuaderno Notion\footnote{\href{https://www.notion.com/es-es}{Notion -- \texttt{notion.com/es-es}}} personal--- y el agente proponía reescrituras adaptadas al registro académico del \ac{TFG}. Las tareas delegadas abarcaron la estructuración de capítulos, la condensación de ideas y la aplicación de convenciones de formato LaTeX ---italización de términos en inglés, uso de acrónimos, ajuste de tablas---. En ningún caso operó como fuente primaria de información.

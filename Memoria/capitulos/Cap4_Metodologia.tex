@@ -15,7 +15,7 @@ Los cinco proyectos \cite{URL::TFG-Web} se han seleccionado para que cada uno su
 \begin{table}[H]
 \centering
 \small
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.2}
 \begin{tabular}{|>{\raggedright\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|>{\centering\arraybackslash}p{2cm}|}
 \hline
 \textbf{Proyecto} & \textbf{Ficheros} & \textbf{Clases} & \textbf{Líneas} & \textbf{Conjuntos} & \textbf{Pruebas} \\
@@ -35,10 +35,14 @@ Los cinco proyectos \cite{URL::TFG-Web} se han seleccionado para que cada uno su
 \label{tab:proyectos-escala}
 \end{table}
 
+\ac{HANGMAN}, inspirado en una de las prácticas de la asignatura \textit{Programación de Aplicaciones Interactivas} del tercer curso del Grado, establece la línea base del experimento: TypeScript puro sin \textit{framework}, arquitectura \ac{MVC} con los patrones \textit{Composite} y \textit{Observer} \cite{Gamma:1994:Design} y once ficheros de producción que permiten calibrar el flujo sin variables de entorno adicionales. \ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono derivada de la \ac{API} de audio de HTML5. \ac{BALATRO} representa el mayor salto de complejidad de dominio del trío: recrea el sistema de puntuación del videojuego homónimo ---manos de póker, cartas especiales (\textit{jokers}, tarots y planetas), tienda y progresión por niveles--- con persistencia en \textit{localStorage}; al tratarse de un juego conocido, fue posible recabar retroalimentación de usuarios familiarizados con el original, lo que facilitó la detección de errores.
+
+\ac{CARTO} escala el experimento a una aplicación \textit{fullstack}: \textit{Clean Architecture} \cite{Martin:2018:CleanArchitecture} en cuatro capas replicada tanto en el \textit{frontend} Vue.js como en el \textit{backend} Node.js\footnote{\href{https://nodejs.org/es}{Node.js -- \texttt{nodejs.org/es}}}, con mensajería en tiempo real sobre Socket.io\footnote{\href{https://socket.io}{Socket.io -- \texttt{socket.io}}} e integración con Dropbox\footnote{\href{https://www.dropbox.com/}{Dropbox -- \texttt{dropbox.com}}}. Marca el punto de inflexión en el que el flujo conversacional dejó de escalar y se adoptó GitHub Copilot en modo agente como herramienta principal, decisión no planificada que surgió como respuesta a las limitaciones observadas y se documenta como hallazgo metodológico en el Capítulo~\ref{chap:AIModels}. \ac{TENNIS} maximiza la complejidad: gestión integral de torneos con sistema de puntuación ELO\footnote{\href{https://www.ultimatetennisstatistics.com/eloRatings}{Puntuación ELO -- \texttt{ultimatetennisstatistics.com/eloRatings}}}, modalidad de torneos dobles con invitaciones, tres tipos de usuario con permisos diferenciados, y \textit{frontend} Angular 19 con componentes \textit{standalone} conviviendo en el mismo monorepo con el \textit{backend} Express\footnote{\href{https://expressjs.com}{Express -- \texttt{expressjs.com}}}. Más allá del incremento de escala, la progresión obedece a una lógica de aprendizaje: cada proyecto permitió refinar las plantillas de \textit{prompts}, ajustar los criterios de evaluación y detectar los patrones de fallo de los modelos antes de afrontar el siguiente nivel de exigencia.
+
 \begin{table}[H]
 \centering
 \small
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.2}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{1.8cm}|Y|>{\raggedright\arraybackslash}p{2.6cm}|Y|>{\raggedright\arraybackslash}p{2cm}|}
 \hline
 \textbf{Proyecto} & \textbf{Función clave} & \textbf{Arquitectura} & \textbf{Pila tecnológica} & \textbf{Tipo de \textit{testing}} \\
@@ -57,10 +61,6 @@ Los cinco proyectos \cite{URL::TFG-Web} se han seleccionado para que cada uno su
 \caption{Caracterización funcional de los cinco proyectos del experimento.}
 \label{tab:proyectos-resumen}
 \end{table}
-
-\ac{HANGMAN}, inspirado en una de las prácticas de la asignatura \textit{Programación de Aplicaciones Interactivas} del tercer curso del Grado, establece la línea base del experimento: TypeScript puro sin \textit{framework}, arquitectura \ac{MVC} con los patrones \textit{Composite} y \textit{Observer} \cite{Gamma:1994:Design} y once ficheros de producción que permiten calibrar el flujo sin variables de entorno adicionales. \ac{PLAYER} introduce el paradigma declarativo de React y la gestión de estado asíncrono derivada de la \ac{API} de audio de HTML5. \ac{BALATRO} representa el mayor salto de complejidad de dominio del trío: recrea el sistema de puntuación del videojuego homónimo ---manos de póker, cartas especiales (\textit{jokers}, tarots y planetas), tienda y progresión por niveles--- con persistencia en \textit{localStorage}; al tratarse de un juego conocido, fue posible recabar retroalimentación de usuarios familiarizados con el original, lo que facilitó la detección de errores.\\
-
-\ac{CARTO} escala el experimento a una aplicación \textit{fullstack}: \textit{Clean Architecture} \cite{Martin:2018:CleanArchitecture} en cuatro capas replicada tanto en el \textit{frontend} Vue.js como en el \textit{backend} Node.js\footnote{\href{https://nodejs.org/es}{Node.js -- \texttt{nodejs.org/es}}}, con mensajería en tiempo real sobre Socket.io\footnote{\href{https://socket.io}{Socket.io -- \texttt{socket.io}}} e integración con Dropbox\footnote{\href{https://www.dropbox.com/}{Dropbox -- \texttt{dropbox.com}}}. Marca el punto de inflexión en el que el flujo conversacional dejó de escalar y se adoptó GitHub Copilot en modo agente como herramienta principal, decisión no planificada que surgió como respuesta a las limitaciones observadas y se documenta como hallazgo metodológico en el Capítulo~\ref{chap:AIModels}. \ac{TENNIS} maximiza la complejidad: gestión integral de torneos con sistema de puntuación ELO\footnote{\href{https://www.ultimatetennisstatistics.com/eloRatings}{Puntuación ELO -- \texttt{ultimatetennisstatistics.com/eloRatings}}}, modalidad de torneos dobles con invitaciones, tres tipos de usuario con permisos diferenciados, y \textit{frontend} Angular 19 con componentes \textit{standalone} conviviendo en el mismo monorepo con el \textit{backend} Express\footnote{\href{https://expressjs.com}{Express -- \texttt{expressjs.com}}}. Más allá del incremento de escala, la progresión obedece a una lógica de aprendizaje: cada proyecto permitió refinar las plantillas de \textit{prompts}, ajustar los criterios de evaluación y detectar los patrones de fallo de los modelos antes de afrontar el siguiente nivel de exigencia.
 
 \section{Roles de IA y flujo de trabajo} \label{sec:flujo-trabajo}
 
