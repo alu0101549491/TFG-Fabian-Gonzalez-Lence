@@ -40,6 +40,8 @@ jobs:
 
   sonar-music-web-player:
     name: "Sonar — Music Web Player"
+    needs: sonar-hangman-game
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -71,6 +73,8 @@ jobs:
 
   sonar-mini-balatro:
     name: "Sonar — Mini Balatro"
+    needs: sonar-music-web-player
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -102,6 +106,8 @@ jobs:
 
   sonar-cartographic-project-manager:
     name: "Sonar — Cartographic Project Manager"
+    needs: sonar-mini-balatro
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -118,6 +124,8 @@ jobs:
 
   sonar-tennis-tournament-manager:
     name: "Sonar — Tennis Tournament Manager"
+    needs: sonar-cartographic-project-manager
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
