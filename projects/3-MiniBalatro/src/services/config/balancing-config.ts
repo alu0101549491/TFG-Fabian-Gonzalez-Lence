@@ -136,7 +136,17 @@ export class BalancingConfig {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      this.jokerDefinitions = data.jokers || [];
+      this.jokerDefinitions = (data.jokers || []).map((raw: unknown) => {
+        const joker = (raw !== null && typeof raw === 'object') ? raw as Record<string, unknown> : {};
+        return {
+          id: String(joker['id'] ?? ''),
+          name: String(joker['name'] ?? ''),
+          description: joker['description'] != null ? String(joker['description']) : undefined,
+          type: String(joker['type'] ?? ''),
+          value: joker['value'] != null ? Number(joker['value']) : undefined,
+          condition: joker['condition'] != null ? String(joker['condition']) : undefined,
+        } satisfies JokerDefinition;
+      });
     } catch (error) {
       console.warn('Failed to load jokers from JSON, using defaults:', error);
       this.loadDefaultJokers();
@@ -155,10 +165,18 @@ export class BalancingConfig {
       const data = await response.json();
       
       // Map JSON hand type names to HandType enum in planet definitions
-      this.planetDefinitions = (data.planets || []).map((planet: any) => ({
-          ...planet,
-          targetHandType: BalancingConfig.handTypeMapping[planet.targetHandType] || planet.targetHandType
-        }));
+      this.planetDefinitions = (data.planets || []).map((raw: unknown) => {
+        const planet = (raw !== null && typeof raw === 'object') ? raw as Record<string, unknown> : {};
+        const handTypeKey = String(planet['targetHandType'] ?? '');
+        return {
+          id: String(planet['id'] ?? ''),
+          name: String(planet['name'] ?? ''),
+          description: planet['description'] != null ? String(planet['description']) : undefined,
+          targetHandType: BalancingConfig.handTypeMapping[handTypeKey] ?? handTypeKey,
+          chipsBonus: planet['chipsBonus'] != null ? Number(planet['chipsBonus']) : undefined,
+          multBonus: planet['multBonus'] != null ? Number(planet['multBonus']) : undefined,
+        } satisfies PlanetDefinition;
+      });
     } catch (error) {
       console.warn('Failed to load planets from JSON, using defaults:', error);
       this.loadDefaultPlanets();
@@ -177,12 +195,18 @@ export class BalancingConfig {
       const data = await response.json();
       
       // Map JSON effect types to TarotEffect enum
-      this.tarotDefinitions = (data.tarots || []).map((tarot: any) => ({
-          ...tarot,
-          effectType: tarot.effectType === 'instant'
-            ? 'instant'
-            : BalancingConfig.tarotEffectMapping[tarot.effectType] || tarot.effectType
-        }));
+      this.tarotDefinitions = (data.tarots || []).map((raw: unknown) => {
+        const tarot = (raw !== null && typeof raw === 'object') ? raw as Record<string, unknown> : {};
+        const effectTypeKey = String(tarot['effectType'] ?? '');
+        return {
+          id: String(tarot['id'] ?? ''),
+          name: String(tarot['name'] ?? ''),
+          description: tarot['description'] != null ? String(tarot['description']) : undefined,
+          effectType: effectTypeKey === 'instant' ? 'instant' : BalancingConfig.tarotEffectMapping[effectTypeKey] ?? effectTypeKey,
+          effectValue: tarot['effectValue'] != null ? Number(tarot['effectValue']) : undefined,
+          targetRequired: tarot['targetRequired'] != null ? Boolean(tarot['targetRequired']) : undefined,
+        } satisfies TarotDefinition;
+      });
     } catch (error) {
       console.warn('Failed to load tarots from JSON, using defaults:', error);
       this.loadDefaultTarots();
